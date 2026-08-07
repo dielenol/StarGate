@@ -1,0 +1,170 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "INDEXER"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:INDEXER:self-acceptance",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "자기혐오 직시와 생존 선택",
+          "summary": "컨텐처가 드러낸 자기혐오를 인정하고 더 나은 자신이 되어야 한다는 강박보다 계속 살아가기를 선택했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "그저 있자. 살아가자."},
+            {"kind": "action", "text": "팔뚝 크기로 커진 열쇠를 검은 핵에 꽂아 현실 귀환을 선택함"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "INDEXER"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:INDEXER:individual-attachment",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "추상적 이념보다 개별 관계 인정",
+          "summary": "줄루 일반을 추상적으로 사랑하는 존재가 아니라 다른 사람들처럼 각 개인을 좋아하거나 싫어하는 평범한 사람이라고 인정했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "난 줄루를 좋아하는 게 아냐."},
+            {"kind": "description", "text": "동료 각자에 대한 존경, 질투와 열등감이 기억 장벽으로 나타남"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "INDEXER"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:INDEXER:instrumentality-remorse",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "수단화 반성과 개인 존중",
+          "summary": "메리골드를 줄루 인정의 수단으로 여겼던 과거를 반성하고 마가렛의 웃음과 취향을 좋아하는 개인적 애착을 인정했다.",
+          "evidence": [
+            {"kind": "description", "text": "초기에는 메리골드를 줄루의 가치를 인정받기 위한 수단으로 관측함"},
+            {"kind": "description", "text": "이후 실뜨기와 꽃향기와 웃음을 좋아하는 마가렛 개인을 필요로 했다고 회고함"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "OTILIA"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:OTILIA:enduring-attachment",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "지속적 애착과 상실 수용",
+          "summary": "해쉬가 자신을 바꾸었다고 밝히고 그가 먼저 죽더라도 기억을 안고 살아가며 자신의 세상에 오래 남기겠다고 약속했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "당신이 죽은 뒤에도 안고 살아가겠다고 해쉬에게 약속함"},
+            {"kind": "action", "text": "현실 귀환 뒤 해쉬에게 손을 내밀고 함께 도서관을 떠남"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "YUHOE"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:YUHOE:non-dominance",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "우위보다 다름과 중용",
+          "summary": "줄루가 핍박받았어도 인간보다 우위에 서기를 원하지 않으며 서로의 다름과 중용이 중요하다고 말했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "인간보다 우위에 서고 싶지 않으며 모든 것은 중용이 중요하다고 대응체에게 말함"},
+            {"kind": "dialogue", "text": "귀환 뒤 해쉬에게 드러난 감정도 모두 자신의 것이므로 사랑하라고 조언함"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "AEGIS"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:AEGIS:anti-domination",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "지배의 반복 거부",
+          "summary": "인간에게 탄압받았다는 이유로 같은 폭력을 인간에게 반복하면 나아진 것이 없다고 내부의 우월주의를 비판했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "같은 폭력을 반복한다면 무엇이 나아졌는지 엔시스에게 반문함"},
+            {"kind": "action", "text": "강제 전입을 거부하고 현장팀의 귀환 전투에 참여함"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "네베드"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:NEVED:role-equality",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "인간·줄루 비위계 인식",
+          "summary": "인간과 줄루는 본질적 우열 관계가 아니라 각자의 역할과 차이를 가진다고 주장하며 내부 위계를 거부했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "인간은 줄루보다 나약하지 않고 줄루도 인간보다 악하지 않으며 각자 역할을 할 뿐이라고 말함"},
+            {"kind": "action", "text": "라이언의 인간 식용과 강제 전입을 거부함"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {"codename": "TIME"},
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-ROMANTID:TIME:world-duty",
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "trait": "차별보다 세계 보호 우선",
+          "summary": "노부스 오르도에서 무시와 차별을 받더라도 세계를 지켜야 한다는 책임을 이유로 전입 유혹을 거부했다.",
+          "evidence": [
+            {"kind": "dialogue", "text": "무시와 차별을 받더라도 세계를 지켜야 한다고 오케아노스에게 말함"},
+            {"kind": "action", "text": "오케아노스의 조력을 받으며 현장팀의 해쉬 회수에 참여함"}
+          ],
+          "sourceLabel": "작전 보고서 MINI05: 로맨티드",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  }
+]

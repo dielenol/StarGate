@@ -48,3 +48,37 @@ test("세션 ID가 달라도 S1E5 악 part 2 제목은 05.5 fallback을 쓴다",
 
   assert.equal(numbering[0]?.number, "05.5");
 });
+
+test("로맨티드를 미니 시리즈 다섯 번째 보고서로 고정한다", () => {
+  const reports = [
+    {
+      sessionId: "NOSB-MINI-HWAYANGYEONHWA",
+      sessionTitle: "작전 보고서 MINI04: 화양연화",
+      createdAt: "2026-06-09T00:00:00.000Z",
+    },
+    {
+      sessionId: "NOSB-MINI-ROMANTID",
+      sessionTitle: "작전 보고서 MINI05: 로맨티드",
+      createdAt: "2026-07-19T00:00:00.000Z",
+    },
+  ];
+
+  const numbering = buildOperationReportNumbering(reports);
+
+  assert.deepEqual(
+    numbering.map(({ number }) => number),
+    ["MINI04", "MINI05"],
+  );
+});
+
+test("세션 ID가 달라도 로맨티드 제목은 MINI05 fallback을 쓴다", () => {
+  const report = {
+    sessionId: "LEGACY-ROMANTID",
+    sessionTitle: "Romantid 미니세션",
+    createdAt,
+  };
+
+  const numbering = buildOperationReportNumbering([report]);
+
+  assert.equal(numbering[0]?.number, "MINI05");
+});

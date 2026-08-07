@@ -1,0 +1,230 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "MR_ODD"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "다름슈타트 긴급 회수 작전 브리핑 담당",
+          "summary": "해쉬 테거의 소실을 확인한 뒤 가용 인원을 20분 안에 독일로 차출하고, 810번 도서 내부에 진입해 신변을 확보하도록 지시했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "INDEXER"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "컨텐처"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "810번 도서 소실·회수 대상 및 내면 현상 중심 인물",
+          "summary": "810번 도서 내부로 소실된 뒤 기억 장벽과 컨텐처의 공격을 통과하며 자기혐오를 직시했고, 개별 관계와 계속 살아가기를 선택한 뒤 현실로 귀환했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "OTILIA"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "해쉬회수"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "해쉬 회수 현장요원 및 대체 거부자",
+          "summary": "컨텐처가 해쉬 대신 현실로 나가려 하자 대체를 거부했고, 해쉬의 자기혐오에 맞서 지속적인 사랑과 기억을 약속하며 귀환을 이끌었다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "YUHOE"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "현회"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "도서 내부 대응 및 귀환 후 감정 수용 조언자",
+          "summary": "줄루가 인간보다 우위에 서야 한다는 내부 논리를 거부했고, 귀환한 해쉬에게 내부에서 드러난 감정도 모두 자신의 것이므로 사랑하라고 조언했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "LEE DONGSIK"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "고정형"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "도서 내부 진입·전투 및 기억 장벽 통과 요원",
+          "summary": "해쉬 회수팀과 함께 810번 도서에 진입해 대응체와 컨텐처 전투에 참여하고 기억 장벽을 통과한 뒤 현실로 귀환했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "네베드"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "포모르"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "도서 내부 대응 및 인간·줄루 비위계 주장자",
+          "summary": "인간 식용과 강제 전입을 거부하고 인간과 줄루는 우열이 아니라 서로 다른 역할을 가질 뿐이라고 주장하며 전투와 기억 장벽 통과에 참여했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "MARGARET"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "실버레이스", "메리골드"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "실버레이스 대응체 조우 및 메리골드 기억 대상",
+          "summary": "자신을 비튼 실버레이스와 조우했고, 해쉬의 프로젝트 데드핸즈 기억에서 메리골드로 배정된 초기 관측과 개인으로 존중받기 시작한 변화가 드러났다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "TIGER298"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "라이언"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "라이언 대응체 조우 및 도서 내부 전투 요원",
+          "summary": "자신을 비튼 라이언의 인간 학대와 자유를 관찰하고 동요했으며, 현장팀과 함께 컨텐처 전투와 기억 장벽을 통과해 귀환했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "AEGIS"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "엔시스"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "엔시스 대응체 조우 및 위계적 폭력 반박자",
+          "summary": "인간에게 탄압받았다는 이유로 같은 폭력을 반복하면 나아진 것이 없다고 엔시스와 내부 위계를 비판하고 전투에 참여했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "MARIA"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "지핵권의침식자"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "도서 내부 분석·회복 반전 활용 및 현장 물품 회수자",
+          "summary": "내부 현상과 전략 자산 가능성을 분석하고 넥타이핀의 회복 반전을 이용해 컨텐처를 공격했으며, 귀환 뒤 810번 도서와 열쇠형 책갈피를 회수했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "TIME"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "810번도서", "오케아노스"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "오케아노스 대응체 조우 및 도서 내부 전투 요원",
+          "summary": "차별을 감수하더라도 세계를 지켜야 한다며 전입을 거부했고, 오케아노스의 조력을 받으며 컨텐처 전투와 기억 장벽 통과에 참여했다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {"codename": "DOCTOR_MOSS"},
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-ROMANTID",
+        "lore.loreTags": {"$each": ["MINI05", "로맨티드", "프로젝트데드핸즈", "메리골드"]},
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-ROMANTID",
+          "role": "해쉬의 기억 속 프로젝트 데드핸즈 배정 책임자",
+          "summary": "해쉬의 기억에서 프로젝트 데드핸즈의 줄루 메리골드를 맡기고 약물과 자극 중심의 초기 관측을 지시한 인물로 나타났다.",
+          "sourceLabel": "NOVUS ORDO 사무국 기록통제실 보존본 「로맨티드」",
+          "updatedAt": "2026-08-07T00:00:00.000Z"
+        }
+      },
+      "$set": {"updatedAt": "2026-08-07T00:00:00.000Z"}
+    }
+  }
+]
