@@ -115,7 +115,9 @@ export async function getErpDashboardResponse(input: {
     viewerDiscordId
       ? countParticipationForUser(viewerDiscordId).catch(() => 0)
       : Promise.resolve(null),
-    listRecentWikiPagesLite(RECENT_WIKI_LIMIT).catch(() => []),
+    listRecentWikiPagesLite(RECENT_WIKI_LIMIT, { includePrivate: false }).catch(
+      () => [],
+    ),
   ]);
 
   const mainCharacter = mainCharacterResult.ok
