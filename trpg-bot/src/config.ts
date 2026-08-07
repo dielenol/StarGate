@@ -3,7 +3,8 @@
  *
  * 봇 실행에 필요한 DISCORD_TOKEN, DISCORD_CLIENT_ID, MONGODB_URI 및
  * Phase 2 신규 추가 변수 (TRPG_GUILD_ID, TRPG_FALLBACK_CHANNEL_ID,
- * TRPG_MUSIC_CHANNEL_ID, TRPG_WEB_BASE_URL, polling/reminder interval) 를
+ * TRPG_MUSIC_CHANNEL_ID, TRPG_ALERT_USER_ID, TRPG_ALERT_CHANNEL_ID,
+ * TRPG_WEB_BASE_URL, polling/reminder interval) 를
  * process.env 에서 읽어 검증 후 반환합니다.
  *
  * @module config
@@ -89,6 +90,16 @@ function getTrpgMusicChannelId(): string | undefined {
   return process.env.TRPG_MUSIC_CHANNEL_ID?.trim() || undefined;
 }
 
+/** 운영 장애 알림 DM을 받을 Discord 사용자 ID (선택). */
+function getTrpgAlertUserId(): string | undefined {
+  return process.env.TRPG_ALERT_USER_ID?.trim() || undefined;
+}
+
+/** 운영 장애를 별도 메시지로 남길 일반 텍스트 채널 ID (선택). */
+function getTrpgAlertChannelId(): string | undefined {
+  return process.env.TRPG_ALERT_CHANNEL_ID?.trim() || undefined;
+}
+
 /**
  * trpg-web 베이스 URL (Phase 2 필수).
  *
@@ -139,6 +150,8 @@ export const config = {
   trpgGuildId: getTrpgGuildId(),
   trpgFallbackChannelId: getTrpgFallbackChannelId(),
   trpgMusicChannelId: getTrpgMusicChannelId(),
+  trpgAlertUserId: getTrpgAlertUserId(),
+  trpgAlertChannelId: getTrpgAlertChannelId(),
   trpgWebBaseUrl: getTrpgWebBaseUrl(),
   trpgPollingIntervalMs: getTrpgPollingIntervalMs(),
   trpgReminderIntervalMs: getTrpgReminderIntervalMs(),

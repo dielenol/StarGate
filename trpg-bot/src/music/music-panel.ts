@@ -228,6 +228,7 @@ export class MusicPanel {
     private readonly client: Client,
     private readonly guildId: string,
     readonly channelId: string | undefined,
+    private readonly onUpdateError?: (error: unknown) => void | Promise<void>,
   ) {}
 
   async initialize(): Promise<void> {
@@ -251,6 +252,18 @@ export class MusicPanel {
     this.updateDrain = this.drainUpdates()
       .catch((error) => {
         console.error("[music] 상태판 갱신 실패:", error);
+        try {
+          void Promise.resolve(this.onUpdateError?.(error)).catch(
+            (callbackError) => {
+              console.error(
+                "[music] 상태판 오류 알림 콜백 실패:",
+                callbackError,
+              );
+            },
+          );
+        } catch (callbackError) {
+          console.error("[music] 상태판 오류 알림 콜백 실패:", callbackError);
+        }
       })
       .finally(() => {
         this.updateDrain = null;

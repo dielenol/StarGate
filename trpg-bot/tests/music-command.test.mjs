@@ -22,6 +22,7 @@ function queueInteraction(channelId) {
       channelId,
       guildId: "guild-id",
       guild: { id: "guild-id" },
+      user: { id: "request-user" },
       deferred: false,
       replied: false,
       inGuild: () => true,
@@ -107,6 +108,24 @@ test("다른 채널의 음악 명령은 전용 채널 링크를 비공개로 안
   assert.equal(replies.length, 1);
   assert.equal(replies[0].flags, MessageFlags.Ephemeral);
   assert.match(replies[0].content, /<#music-channel-id>/);
+});
+
+test("예상하지 못한 음악 명령 오류는 사용자 안내와 운영 알림을 함께 처리한다", async () => {
+  const { interaction, replies } = queueInteraction("music-channel-id");
+  const reports = [];
+  await handleMusicCommand(interaction, {
+    getSnapshot() {
+      throw new Error("unexpected queue error");
+    },
+    async reportUnexpectedCommandFailure(error, context) {
+      reports.push({ error, context });
+    },
+  });
+
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].context.userId, "request-user");
+  assert.equal(replies.length, 1);
+  assert.match(replies[0].content, /오류가 발생/);
 });
 
 test("재생 요청도 처음부터 비공개로 defer한 뒤 같은 응답을 수정한다", async () => {

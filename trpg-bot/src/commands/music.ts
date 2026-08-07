@@ -336,6 +336,12 @@ export async function handleMusicCommand(
       return;
     }
     console.error(`[music] 명령 처리 실패 command=${interaction.commandName}:`, error);
+    void service.reportUnexpectedCommandFailure(error, {
+      commandName: interaction.commandName,
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      userId: interaction.user.id,
+    });
     await replyError(
       interaction,
       "음악 명령을 처리하는 중 오류가 발생했습니다. 잠시 뒤 다시 시도해 주세요.",

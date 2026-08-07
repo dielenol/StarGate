@@ -143,6 +143,9 @@ function createSession({
   createAudioResource = async (item) => managedResource(item),
   idleDisconnectMs = 1_000,
   emptyChannelDisconnectMs = 1_000,
+  onPlaybackSucceeded,
+  onPlaybackFailure,
+  onVoiceConnectionFailure,
 } = {}) {
   const panel = new FakePanel();
   const player = new FakePlayer();
@@ -155,7 +158,14 @@ function createSession({
     panel,
     (_session, notice) => destroyedNotices.push(notice),
     player,
-    { createAudioResource, idleDisconnectMs, emptyChannelDisconnectMs },
+    {
+      createAudioResource,
+      idleDisconnectMs,
+      emptyChannelDisconnectMs,
+      onPlaybackSucceeded,
+      onPlaybackFailure,
+      onVoiceConnectionFailure,
+    },
   );
   return { session, panel, player, connection, destroyedNotices };
 }
@@ -284,6 +294,125 @@ test("재생 오류가 난 곡은 반복 대기열에 다시 넣지 않는다", 
   assert.equal(session.snapshot().current?.videoId, "video-2");
   assert.equal(session.snapshot().upcoming.length, 0);
   session.disconnect();
+});
+
+test("세션은 실제 재생 실패와 외부 음성 연결 종료를 운영 이벤트로 보고한다", async () => {
+  const playbackFailures = [];
+  const voiceFailures = [];
+  const { session, connection } = createSession({
+    createAudioResource: async () => {
+      throw new Error("stream preparation failed");
+    },
+    onPlaybackFailure: (event) => playbackFailures.push(event),
+    onVoiceConnectionFailure: (event) => voiceFailures.push(event),
+  });
+
+  session.enqueue(track(1));
+  await waitFor(
+    () => playbackFailures.length === 1,
+    "재생 준비 실패가 보고되지 않았습니다.",
+  );
+  assert.equal(playbackFailures[0].stage, "prepare");
+  assert.equal(playbackFailures[0].track.videoId, "video-1");
+
+  connection.destroy();
+  assert.equal(voiceFailures.length, 1);
+  assert.match(voiceFailures[0].reason, /외부/);
+});
+
+test("재생 성공은 시작 직후가 아니라 곡이 정상 종료된 뒤 보고한다", async () => {
+  const successes = [];
+  const { session, player } = createSession({
+    onPlaybackSucceeded: (event) => successes.push(event),
+  });
+  session.enqueue(track(1));
+  await waitFor(() => player.played.length === 1, "재생이 시작되지 않았습니다.");
+  assert.equal(successes.length, 0);
+
+  player.finish();
+  await waitFor(() => successes.length === 1, "정상 종료가 보고되지 않았습니다.");
+  assert.equal(successes[0].track.videoId, "video-1");
+  session.disconnect();
+});
+
+test("5분 내 연속 재생 실패 3회부터 운영자 알림을 보낸다", async () => {
+  const alerts = [];
+  let resourceAttempts = 0;
+  let metadataIndex = 0;
+  const panel = new FakePanel();
+  const service = new MusicService({}, "guild-id", "music-channel-id", {
+    panel,
+    operatorAlerts: {
+      async notify(event) {
+        alerts.push(event);
+        return { suppressed: false, dm: "sent", channel: "disabled" };
+      },
+    },
+    resolveTrack: async () => metadata(++metadataIndex),
+    inspectRuntime: async () => ({
+      ytDlpVersion: "test",
+      ffmpegVersion: "test",
+    }),
+    connectSession: async (channel, sessionPanel, onDestroyed, events) =>
+      new GuildMusicSession(
+        channel.guild.id,
+        channel.id,
+        new FakeConnection(),
+        sessionPanel,
+        onDestroyed,
+        new FakePlayer(),
+        {
+          ...events,
+          createAudioResource: async () => {
+            resourceAttempts += 1;
+            throw new Error(
+              "https://media.example.test/audio?token=secret playback failed",
+            );
+          },
+          idleDisconnectMs: 10_000,
+          emptyChannelDisconnectMs: 10_000,
+        },
+      ),
+  });
+  await service.initialize();
+  const { guild, voiceA } = createGuildAndChannels(["user-1"]);
+
+  for (let index = 1; index <= 3; index += 1) {
+    await service.resolveAndEnqueue(
+      enqueueRequest(guild, voiceA, "user-1", `실패 곡 ${index}`),
+    );
+    await waitFor(
+      () => resourceAttempts === index && service.getSnapshot(guild.id)?.current === null,
+      `${index}번째 재생 실패가 처리되지 않았습니다.`,
+    );
+  }
+
+  await waitFor(() => alerts.length === 1, "연속 재생 실패 알림이 전송되지 않았습니다.");
+  assert.equal(alerts[0].key, "music-playback-consecutive-guild-id");
+  assert.match(alerts[0].description, /3회 연속/);
+  assert.equal(alerts[0].context.영상ID, "video-3");
+  await service.destroyAll();
+});
+
+test("음악 런타임 초기화 실패는 음악 기능을 막고 운영자에게 알린다", async () => {
+  const alerts = [];
+  const service = new MusicService({}, "guild-id", "music-channel-id", {
+    panel: new FakePanel(),
+    operatorAlerts: {
+      async notify(event) {
+        alerts.push(event);
+        return { suppressed: false, dm: "sent", channel: "disabled" };
+      },
+    },
+    inspectRuntime: async () => {
+      throw new Error("yt-dlp runtime missing");
+    },
+  });
+
+  await assert.rejects(() => service.initialize(), /runtime missing/);
+  assert.equal(alerts.length, 1);
+  assert.equal(alerts[0].key, "music-runtime-initialize");
+  assert.match(alerts[0].title, /런타임 준비 실패/);
 });
 
 test("준비 중 skip은 AbortSignal을 전달하고 다음 곡을 재생한다", async () => {

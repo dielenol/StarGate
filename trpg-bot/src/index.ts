@@ -42,6 +42,10 @@ import {
   isMusicCommandName,
   SESSION_CHECK_NAME,
 } from "./slash/ko-names.js";
+import {
+  OperatorAlertService,
+  type OperatorAlertEvent,
+} from "./utils/operator-alerts.js";
 import { closeTrpgCalendarBrowser } from "./utils/trpg-calendar-image.js";
 
 // Guilds: 기본 길드 정보 / GuildMembers: 멤버 fetch + add/remove/update 이벤트
@@ -56,11 +60,24 @@ const client = new Client({
   partials: [Partials.GuildMember, Partials.User],
 });
 
+const operatorAlerts = new OperatorAlertService(client, {
+  guildId: config.trpgGuildId,
+  userId: config.trpgAlertUserId,
+  channelId: config.trpgAlertChannelId,
+});
+
 const musicService = new MusicService(
   client,
   config.trpgGuildId,
   config.trpgMusicChannelId,
+  { operatorAlerts },
 );
+
+function notifyOperator(event: OperatorAlertEvent): void {
+  void operatorAlerts.notify(event).catch((error) => {
+    console.error("[TRPG Bot] 운영 알림 처리 실패:", error);
+  });
+}
 
 /** 폴링 스케줄러 cleanup 핸들 — shutdown 에서 호출 */
 let stopNotificationChecker: (() => void) | null = null;
@@ -108,10 +125,22 @@ async function verifyFallbackChannel(): Promise<void> {
 
 client.on(Events.Error, (err) => {
   console.error("[TRPG Bot] Discord 클라이언트 오류:", err);
+  notifyOperator({
+    key: "discord-client-error",
+    title: "Discord 클라이언트 오류",
+    description:
+      "Discord 게이트웨이 또는 REST 클라이언트에서 오류가 발생했습니다.",
+    error: err,
+  });
 });
 
 client.once(Events.ClientReady, async (readyClient) => {
   console.log(`[TRPG Bot] 로그인: ${readyClient.user.tag}`);
+  if (!config.trpgAlertUserId) {
+    console.warn(
+      "[TRPG Bot] TRPG_ALERT_USER_ID가 없어 운영 장애 DM이 비활성화되어 있습니다.",
+    );
+  }
 
   try {
     await registerCommands();
@@ -120,6 +149,13 @@ client.once(Events.ClientReady, async (readyClient) => {
     );
   } catch (err) {
     console.error("[TRPG Bot] 커맨드 등록 실패:", err);
+    notifyOperator({
+      key: "command-registration",
+      title: "슬래시 커맨드 등록 실패",
+      description:
+        "Discord에 최신 명령어를 등록하지 못했습니다. Application ID와 등록 범위를 확인해 주세요.",
+      error: err,
+    });
   }
 
   try {
@@ -142,6 +178,14 @@ client.once(Events.ClientReady, async (readyClient) => {
     );
   } catch (err) {
     console.error("[TRPG Bot] 멤버 동기화 실패:", err);
+    notifyOperator({
+      key: "member-initial-sync",
+      title: "길드 멤버 초기 동기화 실패",
+      description:
+        "봇 시작 시 운영 길드 멤버 정보를 DB와 동기화하지 못했습니다.",
+      error: err,
+      context: { 길드: config.trpgGuildId },
+    });
   }
 
   // 24h 주기 재동기화 — GuildMemberAdd/Remove 이벤트 누락 보정용 안전망
@@ -265,7 +309,17 @@ async function main(): Promise<void> {
   await client.login(config.discordToken);
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("[TRPG Bot] 시작 실패:", err);
-  process.exit(1);
+  try {
+    await operatorAlerts.notify({
+      key: "bot-startup",
+      title: "다채봇 시작 실패",
+      description:
+        "DB 연결 또는 Discord 로그인 단계에서 프로세스가 시작되지 못했습니다.",
+      error: err,
+    });
+  } finally {
+    process.exit(1);
+  }
 });

@@ -23,6 +23,12 @@ import type {
 } from "discord.js";
 
 import {
+  NOOP_OPERATOR_ALERTS,
+  type OperatorAlertEvent,
+  type OperatorAlertSink,
+} from "../utils/operator-alerts.js";
+
+import {
   createYoutubeAudioResource,
   type AudioResourceRequestOptions,
   type ManagedAudioResource,
@@ -54,6 +60,8 @@ const IDLE_DISCONNECT_MS = 5 * 60_000;
 const EMPTY_CHANNEL_DISCONNECT_MS = 30_000;
 const VOICE_READY_TIMEOUT_MS = 30_000;
 const MAX_CONCURRENT_RESOLUTIONS_PER_GUILD = 2;
+const PLAYBACK_FAILURE_ALERT_THRESHOLD = 3;
+const PLAYBACK_FAILURE_WINDOW_MS = 5 * 60_000;
 
 export interface QueueSnapshot {
   current: MusicTrack | null;
@@ -105,6 +113,7 @@ type SessionConnector = (
   channel: VoiceBasedChannel,
   panel: MusicPanel,
   onDestroyed: (session: GuildMusicSession, notice: string) => void,
+  events: GuildMusicSessionEvents,
 ) => Promise<GuildMusicSession>;
 
 interface PendingMusicSession {
@@ -121,6 +130,7 @@ interface TrackRequestReservation {
 
 export interface MusicServiceDependencies {
   panel: MusicPanel;
+  operatorAlerts: OperatorAlertSink;
   resolveTrack: TrackResolver;
   resolvePlaylist: PlaylistResolver;
   inspectRuntime: () => Promise<MusicRuntimeInfo>;
@@ -133,7 +143,35 @@ type AudioResourceFactory = (
   options?: AudioResourceRequestOptions,
 ) => Promise<ManagedAudioResource>;
 
-export interface GuildMusicSessionDependencies {
+export type MusicPlaybackFailureStage = "prepare" | "stream" | "transition";
+
+export interface MusicPlaybackSucceededEvent {
+  guildId: string;
+  voiceChannelId: string;
+  track: MusicTrack;
+}
+
+export interface MusicPlaybackFailureEvent extends MusicPlaybackSucceededEvent {
+  stage: MusicPlaybackFailureStage;
+  error: unknown;
+}
+
+export interface MusicVoiceConnectionFailureEvent {
+  guildId: string;
+  voiceChannelId: string;
+  reason: string;
+  error?: unknown;
+}
+
+export interface GuildMusicSessionEvents {
+  onPlaybackSucceeded?: (event: MusicPlaybackSucceededEvent) => void;
+  onPlaybackFailure?: (event: MusicPlaybackFailureEvent) => void;
+  onVoiceConnectionFailure?: (
+    event: MusicVoiceConnectionFailureEvent,
+  ) => void;
+}
+
+export interface GuildMusicSessionDependencies extends GuildMusicSessionEvents {
   createAudioResource: AudioResourceFactory;
   idleDisconnectMs: number;
   emptyChannelDisconnectMs: number;
@@ -144,6 +182,10 @@ const DEFAULT_SESSION_DEPENDENCIES: GuildMusicSessionDependencies = {
   idleDisconnectMs: IDLE_DISCONNECT_MS,
   emptyChannelDisconnectMs: EMPTY_CHANNEL_DISCONNECT_MS,
 };
+
+interface PlaybackFailureState {
+  timestamps: number[];
+}
 
 function createMusicAudioPlayer(): AudioPlayer {
   return createAudioPlayer({
@@ -204,6 +246,7 @@ export class GuildMusicSession {
         error,
       );
       if (failedTrack) {
+        this.reportPlaybackFailure(failedTrack, "stream", error);
         this.recentError = "오디오 스트림이 중단되어 다음 곡으로 넘어갔습니다.";
         this.finishCurrent(false, false);
       }
@@ -212,6 +255,11 @@ export class GuildMusicSession {
       if (newState.status === VoiceConnectionStatus.Disconnected) {
         void this.recoverConnection();
       } else if (newState.status === VoiceConnectionStatus.Destroyed) {
+        if (!this.destroyed) {
+          this.reportVoiceConnectionFailure(
+            "외부에서 음성 연결이 종료되었습니다.",
+          );
+        }
         this.dispose(false, "음성 연결이 종료되었습니다.");
       }
     });
@@ -222,6 +270,7 @@ export class GuildMusicSession {
     channel: VoiceBasedChannel,
     panel: MusicPanel,
     onDestroyed: (session: GuildMusicSession, notice: string) => void,
+    events: GuildMusicSessionEvents = {},
   ): Promise<GuildMusicSession> {
     const connection = joinVoiceChannel({
       adapterCreator: channel.guild.voiceAdapterCreator,
@@ -241,6 +290,16 @@ export class GuildMusicSession {
       if (connection.state.status !== VoiceConnectionStatus.Destroyed) {
         connection.destroy();
       }
+      try {
+        events.onVoiceConnectionFailure?.({
+          guildId: channel.guild.id,
+          voiceChannelId: channel.id,
+          reason: "음성 채널 최초 연결에 실패했습니다.",
+          error,
+        });
+      } catch (callbackError) {
+        console.error("[music] 음성 연결 오류 알림 콜백 실패:", callbackError);
+      }
       throw new MusicUserError(
         "음성 채널에 연결하지 못했습니다. 봇의 연결·말하기 권한을 확인해 주세요.",
         { cause: error },
@@ -253,6 +312,8 @@ export class GuildMusicSession {
       connection,
       panel,
       onDestroyed,
+      undefined,
+      events,
     );
   }
 
@@ -389,6 +450,9 @@ export class GuildMusicSession {
       .then(() => this.startNextIfIdle())
       .catch((error) => {
         console.error(`[music] 다음 곡 시작 실패 guild=${this.guildId}:`, error);
+        if (this.current) {
+          this.reportPlaybackFailure(this.current, "transition", error);
+        }
       });
   }
 
@@ -449,6 +513,7 @@ export class GuildMusicSession {
         `[music] 트랙 재생 준비 실패 guild=${this.guildId} track=${next.videoId}:`,
         error,
       );
+      this.reportPlaybackFailure(next, "prepare", error);
       if (this.playbackToken === token && this.current === next) {
         this.current = null;
         this.currentQualityMode = null;
@@ -468,6 +533,7 @@ export class GuildMusicSession {
   ): void {
     if (!this.current) return;
     const finished = this.current;
+    if (allowRepeat) this.reportPlaybackSucceeded(finished);
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
@@ -519,7 +585,11 @@ export class GuildMusicSession {
           ),
         ]);
         return;
-      } catch {
+      } catch (error) {
+        this.reportVoiceConnectionFailure(
+          "서버에서 종료한 음성 연결을 복구하지 못했습니다.",
+          error,
+        );
         this.dispose(true, "서버에서 음성 연결이 종료되어 자동으로 나갔습니다.");
         return;
       }
@@ -537,6 +607,9 @@ export class GuildMusicSession {
       }
       if (this.connection.rejoin()) return;
     }
+    this.reportVoiceConnectionFailure(
+      "음성 연결 재시도 한도를 초과했습니다.",
+    );
     this.dispose(true, "음성 연결을 복구하지 못해 자동으로 나갔습니다.");
   }
 
@@ -601,6 +674,52 @@ export class GuildMusicSession {
       notice,
     });
   }
+
+  private reportPlaybackSucceeded(track: MusicTrack): void {
+    try {
+      this.dependencies.onPlaybackSucceeded?.({
+        guildId: this.guildId,
+        voiceChannelId: this.voiceChannelId,
+        track,
+      });
+    } catch (error) {
+      console.error("[music] 재생 완료 알림 콜백 실패:", error);
+    }
+  }
+
+  private reportPlaybackFailure(
+    track: MusicTrack,
+    stage: MusicPlaybackFailureStage,
+    error: unknown,
+  ): void {
+    try {
+      this.dependencies.onPlaybackFailure?.({
+        guildId: this.guildId,
+        voiceChannelId: this.voiceChannelId,
+        track,
+        stage,
+        error,
+      });
+    } catch (callbackError) {
+      console.error("[music] 재생 오류 알림 콜백 실패:", callbackError);
+    }
+  }
+
+  private reportVoiceConnectionFailure(
+    reason: string,
+    error?: unknown,
+  ): void {
+    try {
+      this.dependencies.onVoiceConnectionFailure?.({
+        guildId: this.guildId,
+        voiceChannelId: this.voiceChannelId,
+        reason,
+        error,
+      });
+    } catch (callbackError) {
+      console.error("[music] 음성 연결 오류 알림 콜백 실패:", callbackError);
+    }
+  }
 }
 
 export class MusicService {
@@ -613,7 +732,9 @@ export class MusicService {
     string,
     Set<AbortController>
   >();
+  private readonly playbackFailures = new Map<string, PlaybackFailureState>();
   private readonly panel: MusicPanel;
+  private readonly operatorAlerts: OperatorAlertSink;
   private readonly resolveTrack: TrackResolver;
   private readonly resolvePlaylist: PlaylistResolver;
   private readonly inspectRuntime: () => Promise<MusicRuntimeInfo>;
@@ -628,8 +749,20 @@ export class MusicService {
     musicChannelId: string | undefined,
     dependencies: Partial<MusicServiceDependencies> = {},
   ) {
+    this.operatorAlerts =
+      dependencies.operatorAlerts ?? NOOP_OPERATOR_ALERTS;
     this.panel =
-      dependencies.panel ?? new MusicPanel(client, guildId, musicChannelId);
+      dependencies.panel ??
+      new MusicPanel(client, guildId, musicChannelId, (error) =>
+        this.notifyOperator({
+          key: "music-panel-update",
+          title: "음악 상태판 갱신 실패",
+          description:
+            "음악은 계속 재생될 수 있지만 전용 채널의 상태가 최신으로 표시되지 않을 수 있습니다.",
+          error,
+          context: { 길드: guildId, 채널: musicChannelId },
+        }),
+      );
     this.resolveTrack = dependencies.resolveTrack ?? resolveYoutubeTrack;
     this.resolvePlaylist =
       dependencies.resolvePlaylist ?? resolveYoutubePlaylist;
@@ -667,12 +800,44 @@ export class MusicService {
         );
         await this.panel.flush();
       }
+      await this.notifyOperator({
+        key: "music-runtime-initialize",
+        title: "음악 재생 런타임 준비 실패",
+        description:
+          "yt-dlp·FFmpeg 또는 음악 상태판을 준비하지 못해 음악 명령이 비활성화되었습니다.",
+        error,
+      });
       throw error;
     }
   }
 
   getRuntimeInfo(): MusicRuntimeInfo | null {
     return this.runtimeInfo;
+  }
+
+  /** 사용자 입력 오류가 아닌 음악 명령 예외를 운영자에게 알린다. */
+  async reportUnexpectedCommandFailure(
+    error: unknown,
+    context: {
+      commandName: string;
+      guildId?: string | null;
+      channelId?: string | null;
+      userId?: string;
+    },
+  ): Promise<void> {
+    await this.notifyOperator({
+      key: `music-command-${context.commandName}`,
+      title: "음악 명령 처리 실패",
+      description:
+        "사용자 오류로 분류되지 않은 예외가 발생했습니다. 실행 로그와 Discord 권한을 확인해 주세요.",
+      error,
+      context: {
+        명령: context.commandName,
+        길드: context.guildId,
+        텍스트채널: context.channelId,
+        요청자: context.userId,
+      },
+    });
   }
 
   private assertRuntimeReady(): void {
@@ -901,6 +1066,7 @@ export class MusicService {
       session.disconnect("봇이 종료되어 음악 재생을 정리했습니다.");
     }
     this.sessions.clear();
+    this.playbackFailures.clear();
     await this.panel.flush();
   }
 
@@ -936,13 +1102,46 @@ export class MusicService {
           this.panel.updateIdle(notice);
         }
       },
+      {
+        onPlaybackSucceeded: (event) => {
+          this.playbackFailures.delete(event.guildId);
+        },
+        onPlaybackFailure: (event) => {
+          this.recordPlaybackFailure(event);
+        },
+        onVoiceConnectionFailure: (event) => {
+          void this.notifyOperator({
+            key: `music-voice-connection-${event.guildId}`,
+            title: "음악 음성 연결 실패",
+            description: event.reason,
+            error: event.error,
+            context: {
+              길드: event.guildId,
+              음성채널: event.voiceChannelId,
+            },
+          });
+        },
+      },
     );
     this.pendingSessions.set(guild.id, {
       voiceChannelId: channel.id,
       promise: connectionPromise,
     });
     try {
-      const session = await connectionPromise;
+      let session: GuildMusicSession;
+      try {
+        session = await connectionPromise;
+      } catch (error) {
+        await this.notifyOperator({
+          key: `music-voice-connection-${guild.id}`,
+          title: "음악 음성 연결 실패",
+          description:
+            "음성 채널에 연결하지 못했습니다. 봇 권한과 Discord 음성 게이트웨이 상태를 확인해 주세요.",
+          error,
+          context: { 길드: guild.id, 음성채널: channel.id },
+        });
+        throw error;
+      }
       this.sessions.set(guild.id, session);
       // 연결을 만드는 동안 마지막 사용자가 나가 VoiceState 이벤트를 놓친 경우도
       // 여기서 한 번 더 확인해 빈 채널 연결이 계속 남지 않게 한다.
@@ -1115,5 +1314,40 @@ export class MusicService {
     const next = (map.get(guildId) ?? amount) - amount;
     if (next <= 0) map.delete(guildId);
     else map.set(guildId, next);
+  }
+
+  private recordPlaybackFailure(event: MusicPlaybackFailureEvent): void {
+    const now = Date.now();
+    const previous = this.playbackFailures.get(event.guildId);
+    const next: PlaybackFailureState = {
+      timestamps: [...(previous?.timestamps ?? []), now].filter(
+        (timestamp) => now - timestamp <= PLAYBACK_FAILURE_WINDOW_MS,
+      ),
+    };
+    this.playbackFailures.set(event.guildId, next);
+    if (next.timestamps.length < PLAYBACK_FAILURE_ALERT_THRESHOLD) return;
+
+    void this.notifyOperator({
+      key: `music-playback-consecutive-${event.guildId}`,
+      title: "음악 재생이 연속으로 실패했습니다",
+      description: `최근 5분 안에 재생 실패가 ${next.timestamps.length}회 연속 발생했습니다. YouTube 추출 상태와 네트워크·FFmpeg 로그를 확인해 주세요.`,
+      error: event.error,
+      context: {
+        길드: event.guildId,
+        음성채널: event.voiceChannelId,
+        단계: event.stage,
+        영상ID: event.track.videoId,
+        곡명: event.track.title,
+      },
+    });
+  }
+
+  private async notifyOperator(event: OperatorAlertEvent): Promise<void> {
+    try {
+      await this.operatorAlerts.notify(event);
+    } catch (error) {
+      // 알림 장애가 음악 수명주기를 다시 실패시키거나 재귀 알림을 만들면 안 된다.
+      console.error("[music] 운영 알림 처리 실패:", error);
+    }
   }
 }
