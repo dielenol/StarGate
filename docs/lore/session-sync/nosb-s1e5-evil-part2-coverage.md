@@ -2,19 +2,19 @@
 title: NOSB-S1E5-EVIL-PART2 session sync coverage
 category: session-sync
 tags: [NOSB-S1E5-EVIL-PART2, S1E5, 악, sector-c, stargate-lore]
-updated: 2026-08-06
+updated: 2026-08-07
 source: stargate-lore
 ---
 
 # NOSB-S1E5-EVIL-PART2 동기화 커버리지
 
-이 문서는 공개 위키가 아니라 `stargate-lore` 동기화 감사를 위한 내부 기록이다. 사용자 제공 보존본에서 확인한 사실, durable payload에 포함한 범위, live ERP 적용 전 검토 항목과 경제·인벤토리·주식 비변경 경계를 분리한다.
+이 문서는 공개 위키가 아니라 `stargate-lore` 동기화 감사를 위한 내부 기록이다. 사용자 제공 보존본에서 확인한 사실, durable payload와 live ERP 적용 결과, 경제·인벤토리·주식 비변경 경계를 분리한다.
 
 ## Session Coverage Identity
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E5-EVIL-PART2` | `scripts/seed-payloads/nosb-s1e5-evil-part2-sync.json` | available | partial |
+| `NOSB-S1E5-EVIL-PART2` | `scripts/seed-payloads/nosb-s1e5-evil-part2-sync.json` | available | complete |
 
 ## Source Profile
 
@@ -42,52 +42,52 @@ source: stargate-lore
 
 | subject | source evidence | target surface | action | status |
 |---|---|---|---|---|
-| 5화 2부 전체 기록 | p.2-p.112 | `session_reports`, 작전 보고서 wiki mirror | 사건·결과·후속 훅과 동일 순서의 시각 자료 15장을 독립 보고서로 등록 | durable-ready · live pending |
-| 섹터 C 전면전과 냉각 복구 | p.2-p.30, p.76-p.83 | report, `wiki_pages.sector-c` | 해동 감염자 방어, 수동 냉각 장치, 페초린의 데드핸드 실행과 시설 안정화 기록 | durable-ready · live pending |
-| 그리고리 페초린 | p.21-p.29, p.74-p.83 | NPC spec + existing Dossier | 동료 보호, 자결, 마가렛의 망자 조종을 통한 냉각 활성화, 사망 상태 반영 | durable-ready · live pending |
-| 로드리온 라스콜니코프 | p.58-p.70, p.88-p.99 | NPC spec + existing Dossier | 게라쉬모프와의 충돌, 포로의 광원화 샘플화, 실각 투표와 오브에 의한 사망 반영 | durable-ready · live pending |
-| 니콜라이 바자로프 | p.100, p.112 | NPC spec + existing Dossier | 레짐 체인지 프로토콜에 따른 섹터 C 감독관 취임과 후속 안정화 기록 | durable-ready · live pending |
-| 러시아 장군 게라쉬모프 | p.58-p.60, p.92-p.97 + 사용자 제공 초상 | 신규 NPC spec + Dossier, report 1·2부 | 성을 표시명으로 보존하고 `MILITARY` 외부 인물·등급 없음으로 등록, 오틸리아·로드리온 관계와 사망 반영 | durable-ready · live pending |
-| 화이트로즈 수장 R | p.61-p.65 | 신규 NPC spec + Dossier, report, `wiki_pages.white-rose` | `WHITE_ROSE_R` 공개 Dossier를 무이미지·등급 없음으로 등록하고, 자칭 수장·지도부 동시 실각 제안·인질 증언과 후속 레짐 체인지를 증언/확인 사실로 분리 | durable-ready · live pending |
-| 섹터 C 전기 오브 | p.14-p.19, p.71-p.99 | 신규 `wiki_pages.sector-c-electrical-orb` | 전자기기 추적, 전자 장비 무력화, 고열·전기 피해와 맘모스·로드리온 사망 연계 기록 | durable-ready · public · live pending |
-| 스트리고이와 노스페라투 | p.34-p.56 | 신규 `wiki_pages.sector-c-strigoi` | 빛·은 반응, 노스페라투의 포커 통행 거래, 섹터 C 이탈 기록 | durable-ready · public · live pending |
-| 맘모스 | p.70-p.88 | 신규 `wiki_pages.sector-c-mammoth` | 연구동 파괴, 오브 충돌과 사망을 정식 번호 미확정 개체 사건으로 등록 | durable-ready · public · live pending |
-| 발레리나 | p.74-p.75 | `wiki_pages.sector-c-ballerina` | 맘모스가 무너뜨린 연구동 잔해에 매몰된 마지막 관측을 추가하되 사망은 단정하지 않음 | durable-ready · live pending |
-| ZULU-0103 웬디고 | p.20-p.21, p.30-p.31, p.74-p.80, p.101-p.112 | `wiki_pages.zulu-0103-wendigo` | 절망 유발 괴성, 냉기, 화염 반응, 마을 도주와 `Мама` 발화를 추가 | durable-ready · live pending |
-| 루빈 인근 마을 | p.101-p.112 | report, `wiki_pages.sector-c` | 현장팀의 동료 구조 우선 결정과 마을 한 곳 초토화 결과 기록 | durable-ready · live pending |
-| 루빈 마을의 바부슈카 | p.111-p.112 + 사용자 제공 초상 | 신규 NPC spec + Dossier, report | `CIVIL` 외부 주민·등급 없음으로 등록하고 `Мама`, `내 아들` 발화는 보존하되 생물학적 가족관계는 확정하지 않음 | durable-ready · live pending |
-| 광명회 사보타주 | p.68-p.69, p.112 | `wiki_pages.illuminati`, report | 나치 문양 금괴와 종료 시점 GM 확정을 근거로 섹터 C 사보타주 귀속을 확정 기록 | durable-ready · live pending |
-| 데드핸드 프로젝트 | p.81-p.83 | report, PECHORIN·MARGARET Dossier | 명칭과 이번 실행만 보존하고 조직 전체 프로젝트 규격은 별도 문서로 확장하지 않음 | durable-ready · broader concept candidate-only |
-| 확인된 Dossier 참가자 | 전체 speaker set + 기존 codename 대조 | 신규 Dossier 3건 + existing Dossiers 21건 | 신규 외부 인물 등록, `appearsInEvents`, `sessionAppearances`와 확인된 관계를 멱등 추가 | durable-ready · live pending |
+| 5화 2부 전체 기록 | p.2-p.112 | `session_reports`, 작전 보고서 wiki mirror | 사건·결과·후속 훅과 동일 순서의 시각 자료 15장을 독립 보고서로 등록 | applied |
+| 섹터 C 전면전과 냉각 복구 | p.2-p.30, p.76-p.83 | report, `wiki_pages.sector-c` | 해동 감염자 방어, 수동 냉각 장치, 페초린의 데드핸드 실행과 시설 안정화 기록 | applied |
+| 그리고리 페초린 | p.21-p.29, p.74-p.83 | NPC spec + existing Dossier | 동료 보호, 자결, 마가렛의 망자 조종을 통한 냉각 활성화, 사망 상태 반영 | applied |
+| 로드리온 라스콜니코프 | p.58-p.70, p.88-p.99 | NPC spec + existing Dossier | 게라쉬모프와의 충돌, 포로의 광원화 샘플화, 실각 투표와 오브에 의한 사망 반영 | applied |
+| 니콜라이 바자로프 | p.100, p.112 | NPC spec + existing Dossier | 레짐 체인지 프로토콜에 따른 섹터 C 감독관 취임과 후속 안정화 기록 | applied |
+| 러시아 장군 게라쉬모프 | p.58-p.60, p.92-p.97 + 사용자 제공 초상 | 신규 NPC spec + Dossier, report 1·2부 | 성을 표시명으로 보존하고 `MILITARY` 외부 인물·등급 없음으로 등록, 오틸리아·로드리온 관계와 사망 반영 | applied |
+| 화이트로즈 수장 R | p.61-p.65 | 신규 NPC spec + Dossier, report, `wiki_pages.white-rose` | `WHITE_ROSE_R` 공개 Dossier를 무이미지·등급 없음으로 등록하고, 자칭 수장·지도부 동시 실각 제안·인질 증언과 후속 레짐 체인지를 증언/확인 사실로 분리 | applied |
+| 섹터 C 전기 오브 | p.14-p.19, p.71-p.99 | 신규 `wiki_pages.sector-c-electrical-orb` | 전자기기 추적, 전자 장비 무력화, 고열·전기 피해와 맘모스·로드리온 사망 연계 기록 | applied · public |
+| 스트리고이와 노스페라투 | p.34-p.56 | 신규 `wiki_pages.sector-c-strigoi` | 빛·은 반응, 노스페라투의 포커 통행 거래, 섹터 C 이탈 기록 | applied · public |
+| 맘모스 | p.70-p.88 | 신규 `wiki_pages.sector-c-mammoth` | 연구동 파괴, 오브 충돌과 사망을 정식 번호 미확정 개체 사건으로 등록 | applied · public |
+| 발레리나 | p.74-p.75 | `wiki_pages.sector-c-ballerina` | 맘모스가 무너뜨린 연구동 잔해에 매몰된 마지막 관측을 추가하되 사망은 단정하지 않음 | applied |
+| ZULU-0103 웬디고 | p.20-p.21, p.30-p.31, p.74-p.80, p.101-p.112 | `wiki_pages.zulu-0103-wendigo` | 절망 유발 괴성, 냉기, 화염 반응, 마을 도주와 `Мама` 발화를 추가 | applied |
+| 루빈 인근 마을 | p.101-p.112 | report, `wiki_pages.sector-c` | 현장팀의 동료 구조 우선 결정과 마을 한 곳 초토화 결과 기록 | applied |
+| 루빈 마을의 바부슈카 | p.111-p.112 + 사용자 제공 초상 | 신규 NPC spec + Dossier, report | `CIVIL` 외부 주민·등급 없음으로 등록하고 `Мама`, `내 아들` 발화는 보존하되 생물학적 가족관계는 확정하지 않음 | applied |
+| 광명회 사보타주 | p.68-p.69, p.112 | `wiki_pages.illuminati`, report | 나치 문양 금괴와 종료 시점 GM 확정을 근거로 섹터 C 사보타주 귀속을 확정 기록 | applied |
+| 데드핸드 프로젝트 | p.81-p.83 | report, PECHORIN·MARGARET Dossier | 명칭과 이번 실행만 보존하고 조직 전체 프로젝트 규격은 별도 문서로 확장하지 않음 | applied to report/Dossier · broader concept candidate-only |
+| 확인된 Dossier 참가자 | 전체 speaker set + 기존 codename 대조 | 신규 Dossier 3건 + existing Dossiers 21건 | 신규 외부 인물 등록, `appearsInEvents`, `sessionAppearances`와 확인된 관계를 멱등 추가 | applied |
 
 ## Dossier Event Link Pass
 
 | source name | canonical target | action | status |
 |---|---|---|---|
-| 해쉬 테거 | `INDEXER` | R 교신, 후계 대안 검증, 로드리온 인계 제안과 레짐 체인지 단말 연결 | durable-ready |
-| 스타크 일로니손 | `CLOWN` | 스트리고이 조우와 마을 추격·동료 구조 논쟁 참여 | durable-ready |
-| 박애솔 / 빅보이 | `BIG BOY` | 절망 상태의 킴라박 보호, 웬디고 냉기에 동결, 회복 | durable-ready |
-| 츠키시로 쿠즈하 / 유회 | `YUHOE` | 노스페라투 포커와 철수 결정 논의 | durable-ready |
-| 휘트모어 핀치 | `PIPETTE` | 붕괴 프로토콜 확인, 오브·맘모스 회피, 지도부 투표 | durable-ready |
-| 키아나 오 캘러핸 / 네베드 | `네베드` | 연구동 탈출, 해쉬 구조, 지도부 투표 | durable-ready |
-| 시유 / 타이거 | `TIGER298` | 연구동 그룹과 붕괴 대응 | durable-ready |
-| 크로노스 | `TIME` | 은 도금으로 스트리고이 피해, 노스페라투 포커, 민간인 구조 주장 | durable-ready |
-| 마가렛 | `MARGARET` | 모든 정신력을 소모해 페초린의 시체를 조종하고 비상 냉각 활성화 | durable-ready |
-| 마리아 | `MARIA` | 사망자 기억 확인, 지도부 투표, 로드리온을 오브에 투척 | durable-ready |
-| 이동식 | `LEE DONGSIK` | 킴라박 구조와 방패 엄호, 동료 회수 대상 | durable-ready |
-| 킴라박 리 | `KIMLEE` | 병사 즉결처형 저지, 웬디고 절망 피해와 구조 | durable-ready |
-| 수잔 델라웨어 | `CLAIRVOYANCE` | 대립 중재 후 킴라박·박애솔·마가렛 구조와 이동식 회수안 제시 | durable-ready |
-| 백진연 / 운연 | `UNYEON` | 스트리고이 조우, 광역 회복, 철수 결정 수용 | durable-ready |
-| 우디 | `WD-(𝓃)` | 스트리고이 조우와 동료 구조 철수 참여 | durable-ready |
-| 발레리아 아젠트 | `AEGIS` | 빛으로 스트리고이 억제, 민간인 구조 주장, 철수 참여 | durable-ready |
-| 오틸리아 발트만 | `OTILIA` | 오브 대응 제안, 맘모스 돌진에서 해쉬 구조, 게라쉬모프 처단 | durable-ready |
-| 닥터 모스 | `DOCTOR_MOSS` | 마가렛 관측에서 데드핸드 프로젝트 명칭과 망자 조종 가능성 제시 | durable-ready |
-| 그리고리 페초린 | `PECHORIN` | 유지시설 방어와 동료 보호, 자결로 냉각 복구 수단 제공, 사망 | durable-ready |
-| 로드리온 라스콜니코프 | `RODION` | 사보타주 대응 실패, 포로 샘플화, 실각과 오브에 의한 사망 | durable-ready |
-| 니콜라이 바자로프 | `BAZAROV` | 레짐 체인지 프로토콜로 섹터 C 감독관 취임 | durable-ready |
-| 게라쉬모프 | `GERASIMOV` | 1부의 러시아 장군 정체 연결, 섹터 C 국영화 시도와 오틸리아의 처단 | durable-ready |
-| R | `WHITE_ROSE_R` | 화이트로즈 수장 자칭, 지도부 동시 실각·후임 파견 제안과 해쉬의 절차 검토 | durable-ready |
-| 바부슈카 | `RUBIN_BABUSHKA` | 초토화된 마을의 주민으로 등록하고 웬디고와의 발화는 testimony로 제한 | durable-ready |
+| 해쉬 테거 | `INDEXER` | R 교신, 후계 대안 검증, 로드리온 인계 제안과 레짐 체인지 단말 연결 | applied |
+| 스타크 일로니손 | `CLOWN` | 스트리고이 조우와 마을 추격·동료 구조 논쟁 참여 | applied |
+| 박애솔 / 빅보이 | `BIG BOY` | 절망 상태의 킴라박 보호, 웬디고 냉기에 동결, 회복 | applied |
+| 츠키시로 쿠즈하 / 유회 | `YUHOE` | 노스페라투 포커와 철수 결정 논의 | applied |
+| 휘트모어 핀치 | `PIPETTE` | 붕괴 프로토콜 확인, 오브·맘모스 회피, 지도부 투표 | applied |
+| 키아나 오 캘러핸 / 네베드 | `네베드` | 연구동 탈출, 해쉬 구조, 지도부 투표 | applied |
+| 시유 / 타이거 | `TIGER298` | 연구동 그룹과 붕괴 대응 | applied |
+| 크로노스 | `TIME` | 은 도금으로 스트리고이 피해, 노스페라투 포커, 민간인 구조 주장 | applied |
+| 마가렛 | `MARGARET` | 모든 정신력을 소모해 페초린의 시체를 조종하고 비상 냉각 활성화 | applied |
+| 마리아 | `MARIA` | 사망자 기억 확인, 지도부 투표, 로드리온을 오브에 투척 | applied |
+| 이동식 | `LEE DONGSIK` | 킴라박 구조와 방패 엄호, 동료 회수 대상 | applied |
+| 킴라박 리 | `KIMLEE` | 병사 즉결처형 저지, 웬디고 절망 피해와 구조 | applied |
+| 수잔 델라웨어 | `CLAIRVOYANCE` | 대립 중재 후 킴라박·박애솔·마가렛 구조와 이동식 회수안 제시 | applied |
+| 백진연 / 운연 | `UNYEON` | 스트리고이 조우, 광역 회복, 철수 결정 수용 | applied |
+| 우디 | `WD-(𝓃)` | 스트리고이 조우와 동료 구조 철수 참여 | applied |
+| 발레리아 아젠트 | `AEGIS` | 빛으로 스트리고이 억제, 민간인 구조 주장, 철수 참여 | applied |
+| 오틸리아 발트만 | `OTILIA` | 오브 대응 제안, 맘모스 돌진에서 해쉬 구조, 게라쉬모프 처단 | applied |
+| 닥터 모스 | `DOCTOR_MOSS` | 마가렛 관측에서 데드핸드 프로젝트 명칭과 망자 조종 가능성 제시 | applied |
+| 그리고리 페초린 | `PECHORIN` | 유지시설 방어와 동료 보호, 자결로 냉각 복구 수단 제공, 사망 | applied |
+| 로드리온 라스콜니코프 | `RODION` | 사보타주 대응 실패, 포로 샘플화, 실각과 오브에 의한 사망 | applied |
+| 니콜라이 바자로프 | `BAZAROV` | 레짐 체인지 프로토콜로 섹터 C 감독관 취임 | applied |
+| 게라쉬모프 | `GERASIMOV` | 1부의 러시아 장군 정체 연결, 섹터 C 국영화 시도와 오틸리아의 처단 | applied |
+| R | `WHITE_ROSE_R` | 화이트로즈 수장 자칭, 지도부 동시 실각·후임 파견 제안과 해쉬의 절차 검토 | applied |
+| 바부슈카 | `RUBIN_BABUSHKA` | 초토화된 마을의 주민으로 등록하고 웬디고와의 발화는 testimony로 제한 | applied |
 
 ## NPC Approval Ledger
 
@@ -95,12 +95,12 @@ source: stargate-lore
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `PECHORIN` | 그리고리 페초린 | 없음(기록 없음) | 섹터 C 전방 수호대 통솔 대령 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `H`(기존 승인값 유지) | `/assets/npcs/Pechorin-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이·신장·체중 미상 | 마가렛에게 데드핸드 실행을 맡기고 자결해 비상 냉각을 가능하게 함; 사망 상태 추가 | ready-for-apply |
-| `RODION` | 로드리온 로마노비치 라스콜니코프 | `грибы(버섯들)` | 전 섹터 C 감독관 / 심부 굴착 생존자 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `M`(기존 승인값 유지) | `/assets/npcs/Rodion-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 67세; 190cm; 체중 미상 | 실각 투표 뒤 마리아가 오브에 투척했고 화염·전기 피해로 사망 | ready-for-apply |
-| `BAZAROV` | 니콜라이 바자로프 | `богослов(신학자)` | 섹터 C 연구원장 → 섹터 C 감독관 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 연구원장→감독관 직책 변경 | `H → M`(사용자 승인; 섹터 C 단일 부서 감독관 취임에 따른 부서 관리자 등급) | `/assets/npcs/Bazarov-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이 미상; 176cm; 체중 미상 | 레짐 체인지 프로토콜로 새 감독관이 되었고 섹터 C 사태가 후속 안정화됨 | ready-for-apply |
-| `GERASIMOV` | 게라쉬모프(성만 확인; 이름·부칭은 원문 미상) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 호명, 1·2부 역할 연속성, 사용자 제공 초상 매칭; 성 기반 기술 식별자 | `MILITARY` 외부 군부 | 러시아 측 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 남성; 나이·신장·체중은 원문 미상 | 로드리온과 지휘권 경쟁; 지도부 투표 뒤 오틸리아의 공격으로 사망; 양방향 Dossier 관계 | ready-for-apply |
-| `WHITE_ROSE_R` | R(교신 식별명; 실명·전체 이름은 원문 미상) | 없음(`R`은 현재 확인된 주 식별명) | 화이트로즈 수장(자칭) / 레짐 체인지 제안자 | 통신에서 본인이 조직 수장 R이라고 발화; 조직명과 식별명을 결합한 기술 식별자 | `CIVIL / WHITE_ROSE` 외부 시민사회 | 본부 긴급 통신망 개입 / 섹터 C 후임 파견 제안 | 없음(외부 조직 인물; `agentLevel` 미저장) | 빈 값(사용자 명시적 무이미지 결정; 교신 컷신 재사용 금지) | `true`(앞선 공개 결정 유지) | 성별·나이·신장·체중은 원문 미상 | 지도부 동시 실각과 화이트로즈 인사 파견을 제안; `INDEXER`와 양방향 testimony 관계 | ready-for-apply |
-| `RUBIN_BABUSHKA` | 바부슈카(실명은 원문 미상; speaker label을 표시명으로 보존) | 없음(바부슈카는 기록 표시명) | 루빈 인근 마을 주민 / 실명 미상 | 종료 장면 speaker label과 사용자 제공 초상; 사건 기반 기술 식별자 | `CIVIL` 외부 시민사회 | 루빈 인근 마을 주민 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Rubin-Babushka-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 여성 노인; 신장·체중은 원문 미상 | 웬디고와 `Мама`·`내 아들` 발화를 교환했다는 증언만 보존하고 실제 가족관계는 확정하지 않음 | ready-for-apply |
+| `PECHORIN` | 그리고리 페초린 | 없음(기록 없음) | 섹터 C 전방 수호대 통솔 대령 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `H`(기존 승인값 유지) | `/assets/npcs/Pechorin-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이·신장·체중 미상 | 마가렛에게 데드핸드 실행을 맡기고 자결해 비상 냉각을 가능하게 함; 사망 상태 추가 | applied |
+| `RODION` | 로드리온 로마노비치 라스콜니코프 | `грибы(버섯들)` | 전 섹터 C 감독관 / 심부 굴착 생존자 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `M`(기존 승인값 유지) | `/assets/npcs/Rodion-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 67세; 190cm; 체중 미상 | 실각 투표 뒤 마리아가 오브에 투척했고 화염·전기 피해로 사망 | applied |
+| `BAZAROV` | 니콜라이 바자로프 | `богослов(신학자)` | 섹터 C 연구원장 → 섹터 C 감독관 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 연구원장→감독관 직책 변경 | `H → M`(사용자 승인; 섹터 C 단일 부서 감독관 취임에 따른 부서 관리자 등급) | `/assets/npcs/Bazarov-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이 미상; 176cm; 체중 미상 | 레짐 체인지 프로토콜로 새 감독관이 되었고 섹터 C 사태가 후속 안정화됨 | applied |
+| `GERASIMOV` | 게라쉬모프(성만 확인; 이름·부칭은 원문 미상) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 호명, 1·2부 역할 연속성, 사용자 제공 초상 매칭; 성 기반 기술 식별자 | `MILITARY` 외부 군부 | 러시아 측 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 남성; 나이·신장·체중은 원문 미상 | 로드리온과 지휘권 경쟁; 지도부 투표 뒤 오틸리아의 공격으로 사망; 양방향 Dossier 관계 | applied |
+| `WHITE_ROSE_R` | R(교신 식별명; 실명·전체 이름은 원문 미상) | 없음(`R`은 현재 확인된 주 식별명) | 화이트로즈 수장(자칭) / 레짐 체인지 제안자 | 통신에서 본인이 조직 수장 R이라고 발화; 조직명과 식별명을 결합한 기술 식별자 | `CIVIL / WHITE_ROSE` 외부 시민사회 | 본부 긴급 통신망 개입 / 섹터 C 후임 파견 제안 | 없음(외부 조직 인물; `agentLevel` 미저장) | 빈 값(사용자 명시적 무이미지 결정; 교신 컷신 재사용 금지) | `true`(앞선 공개 결정 유지) | 성별·나이·신장·체중은 원문 미상 | 지도부 동시 실각과 화이트로즈 인사 파견을 제안; `INDEXER`와 양방향 testimony 관계 | applied |
+| `RUBIN_BABUSHKA` | 바부슈카(실명은 원문 미상; speaker label을 표시명으로 보존) | 없음(바부슈카는 기록 표시명) | 루빈 인근 마을 주민 / 실명 미상 | 종료 장면 speaker label과 사용자 제공 초상; 사건 기반 기술 식별자 | `CIVIL` 외부 시민사회 | 루빈 인근 마을 주민 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Rubin-Babushka-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 여성 노인; 신장·체중은 원문 미상 | 웬디고와 `Мама`·`내 아들` 발화를 교환했다는 증언만 보존하고 실제 가족관계는 확정하지 않음 | applied |
 
 ### NPC Decision Register
 
@@ -116,41 +116,41 @@ source: stargate-lore
 
 | from | to | beat | confidence | persistence target | status |
 |---|---|---|---|---|---|
-| `PECHORIN` | `MARGARET` | 자신의 사망 뒤 시체를 조종해 수동 냉각을 활성화하도록 임무를 맡김 | confirmed | 양측 Dossier relation | durable-ready |
-| `MARGARET` | `PECHORIN` | 모든 정신력을 소모해 페초린의 시체를 조종하고 비상 냉각 장치를 활성화 | confirmed | 양측 Dossier relation | durable-ready |
-| `MARIA` | `RODION` | 지도부 투표 뒤 제압된 로드리온을 오브에 던져 사망하게 함 | confirmed | `MARIA` Dossier relation | durable-ready |
-| `INDEXER` | `WHITE_ROSE_R` | R의 지도부 교체안을 검토하며 후계 적임자와 절차적 위험을 반복 질의 | testimony | 양측 Dossier relation | durable-ready |
-| `WHITE_ROSE_R` | `INDEXER` | 지도부 동시 실각과 화이트로즈 측 후임 파견을 제안하고 해쉬의 질문에 응답 | testimony | 양측 Dossier relation | durable-ready |
-| `GERASIMOV` | `RODION` | 섹터 C 국영화와 지휘권을 두고 대립 | confirmed | 양측 Dossier relation | durable-ready |
-| `RODION` | `GERASIMOV` | 섹터 C 국영화와 지휘권을 두고 대립 | confirmed | 양측 Dossier relation | durable-ready |
-| `OTILIA` | `GERASIMOV` | 지도부 투표 결과에 따라 게라쉬모프 장군을 처단 | confirmed | 양측 Dossier relation | durable-ready |
-| `GERASIMOV` | `OTILIA` | 지도부 투표 결과에 따른 공격으로 사망 | confirmed | 양측 Dossier relation | durable-ready |
+| `PECHORIN` | `MARGARET` | 자신의 사망 뒤 시체를 조종해 수동 냉각을 활성화하도록 임무를 맡김 | confirmed | 양측 Dossier relation | applied |
+| `MARGARET` | `PECHORIN` | 모든 정신력을 소모해 페초린의 시체를 조종하고 비상 냉각 장치를 활성화 | confirmed | 양측 Dossier relation | applied |
+| `MARIA` | `RODION` | 지도부 투표 뒤 제압된 로드리온을 오브에 던져 사망하게 함 | confirmed | `MARIA` Dossier relation | applied |
+| `INDEXER` | `WHITE_ROSE_R` | R의 지도부 교체안을 검토하며 후계 적임자와 절차적 위험을 반복 질의 | testimony | 양측 Dossier relation | applied |
+| `WHITE_ROSE_R` | `INDEXER` | 지도부 동시 실각과 화이트로즈 측 후임 파견을 제안하고 해쉬의 질문에 응답 | testimony | 양측 Dossier relation | applied |
+| `GERASIMOV` | `RODION` | 섹터 C 국영화와 지휘권을 두고 대립 | confirmed | 양측 Dossier relation | applied |
+| `RODION` | `GERASIMOV` | 섹터 C 국영화와 지휘권을 두고 대립 | confirmed | 양측 Dossier relation | applied |
+| `OTILIA` | `GERASIMOV` | 지도부 투표 결과에 따라 게라쉬모프 장군을 처단 | confirmed | 양측 Dossier relation | applied |
+| `GERASIMOV` | `OTILIA` | 지도부 투표 결과에 따른 공격으로 사망 | confirmed | 양측 Dossier relation | applied |
 | `WENDIGO` | `RUBIN_BABUSHKA` | `Мама`와 `내 아들` 발화가 교환됨 | testimony | report와 바부슈카 Dossier prose | candidate-only — 가족관계 미확정 |
 
 ## Personality Evidence Ledger
 
 | observation id | codename | sessionId | trait | evidence kind | evidence | source label | confidence | persistence |
 |---|---|---|---|---|---|---|---|---|
-| `NOSB-S1E5-EVIL-PART2:PECHORIN:self-sacrifice` | `PECHORIN` | `NOSB-S1E5-EVIL-PART2` | 자기희생적 책임감 | action + dialogue | 웬디고에게서 마가렛과 킴라박을 보호했고, 죽은 몸으로 냉각 장치에 접근할 수 있도록 자결하며 `내가 도와주지`라고 말함 | 작전 보고서 S1E5: 악 2부 | confirmed | ready-for-apply |
-| `NOSB-S1E5-EVIL-PART2:KIMLEE:anti-expendability` | `KIMLEE` | `NOSB-S1E5-EVIL-PART2` | 소모품화 거부 | action + dialogue | 자폭 임무를 맡은 병사를 유인해 구하고 페초린의 권총을 쏘아 즉결처형을 막은 뒤 `우리 식으로 처리하겠습니다`라고 말함 | 작전 보고서 S1E5: 악 2부 | confirmed | ready-for-apply |
-| `NOSB-S1E5-EVIL-PART2:MARGARET:total-commitment` | `MARGARET` | `NOSB-S1E5-EVIL-PART2` | 극단적 임무 헌신 | action | 모든 정신력을 사용해 페초린의 시체를 조종하고 수동 냉각 장치를 활성화함 | 작전 보고서 S1E5: 악 2부 | confirmed | ready-for-apply |
-| `NOSB-S1E5-EVIL-PART2:INDEXER:procedural-skepticism` | `INDEXER` | `NOSB-S1E5-EVIL-PART2` | 절차적 회의와 견제 | dialogue | R에게 교체 적임자와 실각의 선례를 반복 질의했고 제압된 로드리온은 본부 인계를 주장함 | 작전 보고서 S1E5: 악 2부 | confirmed | ready-for-apply |
-| `NOSB-S1E5-EVIL-PART2:TIME:civilian-life-priority` | `TIME` | `NOSB-S1E5-EVIL-PART2` | 민간인 생명 우선 | dialogue | `누구도 죽어 마땅한 사람은 없습니다`, `한 사람이라도 더 희생을 막아야` 한다며 마을 추격을 주장함 | 작전 보고서 S1E5: 악 2부 | confirmed | ready-for-apply |
-| `NOSB-S1E5-EVIL-PART2:CLAIRVOYANCE:pragmatic-mediation` | `CLAIRVOYANCE` | `NOSB-S1E5-EVIL-PART2` | 실용적 중재 | action + dialogue | 대립 중인 일행 사이에 개입해 철수, 세 동료 구조와 이동식 회수·상황 보고를 하나의 실행안으로 제시함 | 작전 보고서 S1E5: 악 2부 | confirmed | ready-for-apply |
+| `NOSB-S1E5-EVIL-PART2:PECHORIN:self-sacrifice` | `PECHORIN` | `NOSB-S1E5-EVIL-PART2` | 자기희생적 책임감 | action + dialogue | 웬디고에게서 마가렛과 킴라박을 보호했고, 죽은 몸으로 냉각 장치에 접근할 수 있도록 자결하며 `내가 도와주지`라고 말함 | 작전 보고서 S1E5: 악 2부 | confirmed | applied |
+| `NOSB-S1E5-EVIL-PART2:KIMLEE:anti-expendability` | `KIMLEE` | `NOSB-S1E5-EVIL-PART2` | 소모품화 거부 | action + dialogue | 자폭 임무를 맡은 병사를 유인해 구하고 페초린의 권총을 쏘아 즉결처형을 막은 뒤 `우리 식으로 처리하겠습니다`라고 말함 | 작전 보고서 S1E5: 악 2부 | confirmed | applied |
+| `NOSB-S1E5-EVIL-PART2:MARGARET:total-commitment` | `MARGARET` | `NOSB-S1E5-EVIL-PART2` | 극단적 임무 헌신 | action | 모든 정신력을 사용해 페초린의 시체를 조종하고 수동 냉각 장치를 활성화함 | 작전 보고서 S1E5: 악 2부 | confirmed | applied |
+| `NOSB-S1E5-EVIL-PART2:INDEXER:procedural-skepticism` | `INDEXER` | `NOSB-S1E5-EVIL-PART2` | 절차적 회의와 견제 | dialogue | R에게 교체 적임자와 실각의 선례를 반복 질의했고 제압된 로드리온은 본부 인계를 주장함 | 작전 보고서 S1E5: 악 2부 | confirmed | applied |
+| `NOSB-S1E5-EVIL-PART2:TIME:civilian-life-priority` | `TIME` | `NOSB-S1E5-EVIL-PART2` | 민간인 생명 우선 | dialogue | `누구도 죽어 마땅한 사람은 없습니다`, `한 사람이라도 더 희생을 막아야` 한다며 마을 추격을 주장함 | 작전 보고서 S1E5: 악 2부 | confirmed | applied |
+| `NOSB-S1E5-EVIL-PART2:CLAIRVOYANCE:pragmatic-mediation` | `CLAIRVOYANCE` | `NOSB-S1E5-EVIL-PART2` | 실용적 중재 | action + dialogue | 대립 중인 일행 사이에 개입해 철수, 세 동료 구조와 이동식 회수·상황 보고를 하나의 실행안으로 제시함 | 작전 보고서 S1E5: 악 2부 | confirmed | applied |
 
 ## Worldbuilding and ERP Surface Decisions
 
 | surface | decision | rationale | status |
 |---|---|---|---|
-| operation report | `05.5` 신규 보고서와 world-map pin 등록 | 독립 정규 세션이며 1부와 같은 좌표를 공유하므로 카드 오프셋을 분리해야 함 | durable-ready |
-| report wiki mirror | 보고서와 동일한 15개 시각 자료 tuple을 `isPublic: true`로 등록 | report/wiki 시각 자료 순서·경로·alt·caption parity 계약과 사용자 공개 결정 | durable-ready |
-| `sector-c` | 기존 도판은 보존하고 텍스트만 2부 결과로 갱신 | 기존 concept/place page에 현재 컷신을 임의 삽입하지 않음 | durable-ready |
-| `zulu-0103-wendigo` | 기존 도판 보존, 2부 행동·상태 텍스트 추가 | 기존 entity page의 시각 자산 확대는 별도 승인 필요 | durable-ready |
-| `sector-c-ballerina` | 기존 도판 보존, 매몰 마지막 관측만 추가 | 사망 확정 근거 없음 | durable-ready |
-| `white-rose` | 기존 페이지에 R 교신과 레짐 체인지 관여 기록 추가 | R의 조직 내 정체성은 자칭 증언으로 표시 | durable-ready |
-| `illuminati` | 섹터 C 사보타주 귀속을 확정 사건으로 추가 | 종료 시점 GM 확정과 나치 문양 금괴가 동시 근거 | durable-ready |
-| 신규 오브·스트리고이·맘모스 wiki | 각 개체의 관측과 최종 상태를 `isPublic: true`로 독립 문서화 | 사용자 공개 결정; 맘모스 category는 번호 미확정이므로 `개체` | durable-ready |
-| Dossier portrait | 게라쉬모프·바부슈카는 사용자 제공 세로 초상 사용, 세션 컷신은 재사용 금지 | 정확히 매칭된 제공 이미지와 report-cutscene의 자산 역할을 분리 | durable-ready |
+| operation report | `05.5` 신규 보고서와 world-map pin 등록 | 독립 정규 세션이며 1부와 같은 좌표를 공유하므로 카드 오프셋을 분리해야 함 | applied |
+| report wiki mirror | 보고서와 동일한 15개 시각 자료 tuple을 `isPublic: true`로 등록 | report/wiki 시각 자료 순서·경로·alt·caption parity 계약과 사용자 공개 결정 | applied |
+| `sector-c` | 기존 도판은 보존하고 텍스트만 2부 결과로 갱신 | 기존 concept/place page에 현재 컷신을 임의 삽입하지 않음 | applied |
+| `zulu-0103-wendigo` | 기존 도판 보존, 2부 행동·상태 텍스트 추가 | 기존 entity page의 시각 자산 확대는 별도 승인 필요 | applied |
+| `sector-c-ballerina` | 기존 도판 보존, 매몰 마지막 관측만 추가 | 사망 확정 근거 없음 | applied |
+| `white-rose` | 기존 페이지에 R 교신과 레짐 체인지 관여 기록 추가 | R의 조직 내 정체성은 자칭 증언으로 표시 | applied |
+| `illuminati` | 섹터 C 사보타주 귀속을 확정 사건으로 추가 | 종료 시점 GM 확정과 나치 문양 금괴가 동시 근거 | applied |
+| 신규 오브·스트리고이·맘모스 wiki | 각 개체의 관측과 최종 상태를 `isPublic: true`로 독립 문서화 | 사용자 공개 결정; 맘모스 category는 번호 미확정이므로 `개체` | applied |
+| Dossier portrait | 게라쉬모프·바부슈카는 사용자 제공 세로 초상 사용, 세션 컷신은 재사용 금지 | 정확히 매칭된 제공 이미지와 report-cutscene의 자산 역할을 분리 | applied |
 
 ## Economy / Inventory / Stock Audit
 
@@ -166,14 +166,16 @@ source: stargate-lore
 - 여섯 session-sync payload와 바자로프 1건 전용 등급 repair payload의 도메인 envelope는 `session_reports`, `wiki_pages`, `characters`만 대상으로 준비한다. 실제 실행 시 runner는 별도로 `lore_ingestion_runs` 감사 레코드를 기록한다.
 - `credit_transactions`, `credit_balances`, `character_inventory`, `shop_inventory`, `shop_daily_stock`, `stock_prices`, `stock_holdings`, `stock_price_history`, `master_items`에는 envelope를 만들지 않는다.
 - 나치 문양 금괴는 수사 증거이지 플레이어 보상이나 판매 카탈로그가 아니다.
-- 사용자 승인으로 focused BAZAROV 등급 repair 1건만 live 실행했다. 그 외 2부 payload mutation은 실행하지 않으며, 실제 적용은 별도 승인 뒤 payload별 정확한 대상과 부수효과를 다시 제시해야 한다.
+- 사용자 승인으로 focused BAZAROV 등급 repair와 2부 session-sync payload 6개를 live 실행했다. 도메인 쓰기는 `session_reports`·`wiki_pages`·`characters` 46건과 runner 감사·출처·wiki revision 부수효과로 제한됐고, 경제·인벤토리·상점·주식 컬렉션은 실행 범위에 포함하지 않았다.
 
 ### Focused BAZAROV Grade Repair (live applied 2026-08-07)
 
 - `nosb-s1e5-evil-part2-bazarov-level-repair.json`은 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`인 `characters.BAZAROV`의 `agentLevel` 도메인 필드만 `H → M`으로 바꾸는 별도 CAS repair다. role이 다르거나 등급이 `H`·`M` 어느 쪽도 아니면 실행을 중단한다. 변경 시 runner-managed `BAZAROV.updatedAt` 갱신과 `lore_ingestion_runs` 감사 레코드 기록이 함께 발생한다.
-- 이 repair는 사용자에게 부수효과를 제시하고 별도 승인을 받은 뒤 전체 2부 sync 전에 독립 실행했다. 실행 후 `codename`, `role`, `agentLevel`, `updatedAt`과 audit run 상태를 재조회했다. 이후 전체 sync의 21건 Dossier 단계는 같은 `M`을 재확인하므로 등급에 관해서는 멱등이다. 다만 BAZAROV 행의 다른 2부 Dossier 필드는 아직 전체 payload 적용 전이므로 원장 판정은 `ready-for-apply`를 유지한다.
+- 이 repair는 사용자에게 부수효과를 제시하고 별도 승인을 받은 뒤 전체 2부 sync 전에 독립 실행했다. 실행 후 `codename`, `role`, `agentLevel`, `updatedAt`과 audit run 상태를 재조회했다. 이후 전체 sync의 21건 Dossier 단계가 같은 `M`과 나머지 2부 필드를 재확인했고, DB·Dossier consumer 검증 뒤 원장 판정을 `applied`로 마감했다.
 
-### Ordered Live Runbook (approval required)
+### Ordered Live Runbook (executed 2026-08-07)
+
+아래 순서는 사용자 승인 뒤 그대로 실행했다. 각 파일의 원자 트랜잭션과 저장 후 재조회가 통과한 경우에만 다음 단계로 진행했으며, 여섯 실행 모두 `succeeded`로 완료됐다.
 
 1. 이 변경의 정확한 revision을 먼저 배포한다. `/assets/npcs/Gerasimov-profile.webp`, `/assets/npcs/Rubin-Babushka-profile.webp`의 production 응답과 report/wiki 상세의 `agentLevel` 미지정 인물 메타가 `NPC`로만 렌더링되는 코드를 확인하기 전에는 이미지 경로를 포함한 DB payload를 실행하지 않는다.
 2. 사용자 공개 결정, 외부 NPC 소속·등급 없음, 게라쉬모프·바부슈카 초상 매칭과 R의 명시적 무이미지 결정을 payload와 coverage에 반영한 구조·apply-ready·schema·read-only DB dry-run 결과를 다시 확인한다.
@@ -191,50 +193,50 @@ source: stargate-lore
 
 각 자산은 report, mirror, 전용 wiki, catalog, Dossier 소비처를 독립 판정한다. `source-frame crop: yes`는 PDF에 들어가기 전 VTT 장면 프레임 자체가 1035×503 가로 구도라는 뜻이다.
 
-15개 보고서 장면 자산과 사용자 제공 Dossier 초상 2개는 사용자 공개 결정에 따라 Next.js `public/` 경로 사용이 승인되었다. 로컬 커밋은 배포가 아니며, 초상 경로를 DB에 저장하기 전에 해당 revision 배포와 production URL 응답을 확인해야 한다.
+15개 보고서 장면 자산과 사용자 제공 Dossier 초상 2개는 사용자 공개 결정에 따라 Next.js `public/` 경로 사용이 승인되었다. revision `bac615e0b16bc1b8b59cda6f221b17f0bb9517a9`를 production으로 승격한 뒤 17개 경로가 모두 `200 image/webp`임을 확인하고 DB payload를 실행했다.
 
 | asset | source | source dimensions | source-frame crop | source role | report | report wiki mirror | dedicated wiki | catalog | Dossier/personnel | decision/evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `/assets/npcs/Gerasimov-profile.webp` | 사용자 제공 `Photo 1.jpg` | 876×1280 | no — full-frame portrait | personnel-image | excluded: dedicated portrait, not report cutscene | excluded: report와 동일 제외 | not-applicable | not-applicable | included (`GERASIMOV`) | 사용자 이미지 매칭·공개 승인; 크롭·생성 변형 없이 WebP 변환 |
-| `/assets/npcs/Rubin-Babushka-profile.webp` | 사용자 제공 `Photo 2.jpg` | 956×1280 | no — full-frame portrait | personnel-image | excluded: dedicated portrait, not report cutscene | excluded: report와 동일 제외 | not-applicable | not-applicable | included (`RUBIN_BABUSHKA`) | 사용자 이미지 매칭·공개 승인; 크롭·생성 변형 없이 WebP 변환 |
-| `/assets/session-reports/s1e5-sector-c-part2/sector-c-front-guard-counterattack.webp` | p.2 섹터 C 전방 방어 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 해동 감염자 전면전의 첫 장면 |
+| `/assets/npcs/Gerasimov-profile.webp` | 사용자 제공 `Photo 1.jpg` | 876×1280 | no — full-frame portrait | personnel-image | excluded: dedicated portrait, not report cutscene | excluded: report와 동일 제외 | not-applicable | not-applicable | included (`GERASIMOV`, applied) | 사용자 이미지 매칭·공개 승인; 크롭·생성 변형 없이 WebP 변환 |
+| `/assets/npcs/Rubin-Babushka-profile.webp` | 사용자 제공 `Photo 2.jpg` | 956×1280 | no — full-frame portrait | personnel-image | excluded: dedicated portrait, not report cutscene | excluded: report와 동일 제외 | not-applicable | not-applicable | included (`RUBIN_BABUSHKA`, applied) | 사용자 이미지 매칭·공개 승인; 크롭·생성 변형 없이 WebP 변환 |
+| `/assets/session-reports/s1e5-sector-c-part2/sector-c-front-guard-counterattack.webp` | p.2 섹터 C 전방 방어 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 해동 감염자 전면전의 첫 장면 |
 | `p006-front-guard-standard` | p.6 자폭 돌격 장면 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.76 유사 수호대 도판과 중복 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: report cutscene, not portrait | 반복 구도 축소 |
-| `/assets/session-reports/s1e5-sector-c-part2/research-building-casualties.webp` | p.7 피와 시체로 가득한 연구동 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 연구동 붕괴 프로토콜의 배경 |
+| `/assets/session-reports/s1e5-sector-c-part2/research-building-casualties.webp` | p.7 피와 시체로 가득한 연구동 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 연구동 붕괴 프로토콜의 배경 |
 | `p009-sector-c-layout-repeat` | p.9 시설 지도 | 1035×503 | yes — embedded VTT frame | report-cutscene + place-archive | excluded: 1부의 정식 섹터 C 지도와 중복 | excluded: report와 동일 제외 | excluded: existing-page image insertion not authorized | not-applicable | not-applicable | 기존 `sector-c-layout.webp`를 유지 |
-| `/assets/session-reports/s1e5-sector-c-part2/electrical-orb-first-contact.webp` | p.14 전기 오브 첫 관측 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (durable-ready) | included (durable-ready) | included (`sector-c-electrical-orb`) | not-applicable | excluded: entity scene, not portrait | 신규 개체의 대표 도판 |
-| `/assets/session-reports/s1e5-sector-c-part2/wendigo-among-infected.webp` | p.20 감염자 사이 웬디고 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | excluded: existing-page image insertion not authorized | not-applicable | excluded: entity scene, not portrait | 웬디고와 감염자 상호작용 장면 |
+| `/assets/session-reports/s1e5-sector-c-part2/electrical-orb-first-contact.webp` | p.14 전기 오브 첫 관측 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (applied) | included (applied) | included (`sector-c-electrical-orb`, applied) | not-applicable | excluded: entity scene, not portrait | 신규 개체의 대표 도판 |
+| `/assets/session-reports/s1e5-sector-c-part2/wendigo-among-infected.webp` | p.20 감염자 사이 웬디고 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | excluded: existing-page image insertion not authorized | not-applicable | excluded: entity scene, not portrait | 웬디고와 감염자 상호작용 장면 |
 | `p028-research-corridor` | p.28 연구동 복도 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: 사건 식별력이 낮은 전환 컷 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: report cutscene, not portrait | 저정보 전환 프레임 |
 | `p028-purple-laboratory` | p.28 보라색 연구실 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: 인접 전환 컷과 중복 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: report cutscene, not portrait | 페이지 경계 장면 |
 | `p029-purple-laboratory-repeat` | p.29 보라색 연구실 반복 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.28 페이지 경계 중복 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: report cutscene, not portrait | 동일 장면의 페이지 분할 |
 | `p030-manual-cooling-control` | p.30 수동 냉각 장치 소개 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.83 실제 활성화 도판 우선 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: report cutscene, not portrait | 같은 장치의 서사적 중복 |
 | `p032-sector-c-exterior` | p.32 최고 격리구역 외부 | 1035×503 | yes — embedded VTT frame | report-cutscene + place-archive | excluded: 1부 최고 격리구역 도판과 중복 | excluded: report와 동일 제외 | excluded: existing-page image insertion not authorized | not-applicable | not-applicable | 기존 장소 도판 보존 |
-| `/assets/session-reports/s1e5-sector-c-part2/aegis-strigoi-light.webp` | p.39 아젠트의 빛과 스트리고이 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | excluded: group action, not neutral entity plate | not-applicable | excluded: report cutscene, not portrait | 빛 취약성의 직접 장면 |
-| `/assets/session-reports/s1e5-sector-c-part2/nosferatu-poker.webp` | p.47 노스페라투 포커 제안 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (durable-ready) | included (durable-ready) | included (`sector-c-strigoi`) | not-applicable | excluded: report cutscene, not portrait | 노스페라투와 포커 사건 대표 도판 |
+| `/assets/session-reports/s1e5-sector-c-part2/aegis-strigoi-light.webp` | p.39 아젠트의 빛과 스트리고이 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | excluded: group action, not neutral entity plate | not-applicable | excluded: report cutscene, not portrait | 빛 취약성의 직접 장면 |
+| `/assets/session-reports/s1e5-sector-c-part2/nosferatu-poker.webp` | p.47 노스페라투 포커 제안 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (applied) | included (applied) | included (`sector-c-strigoi`, applied) | not-applicable | excluded: report cutscene, not portrait | 노스페라투와 포커 사건 대표 도판 |
 | `p056-research-building-casualties-repeat` | p.56 피로 물든 연구동 반복 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.7 도판과 중복 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: report cutscene, not portrait | 반복 배경 제거 |
-| `/assets/session-reports/s1e5-sector-c-part2/rodion-gerasimov-confrontation.webp` | p.58 로드리온과 게라쉬모프 대치 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: multi-person scene, not portrait | 지도부 충돌의 직접 장면 |
-| `/assets/session-reports/s1e5-sector-c-part2/white-rose-r-transmission.webp` | p.61 화이트로즈 R 교신 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | excluded: existing-page image insertion not authorized | not-applicable | excluded: user-approved no-image Dossier; session cutscene is not a portrait | 사용자 명시적 무이미지 결정에 따라 R의 정식 초상으로 재사용 금지 |
+| `/assets/session-reports/s1e5-sector-c-part2/rodion-gerasimov-confrontation.webp` | p.58 로드리온과 게라쉬모프 대치 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: multi-person scene, not portrait | 지도부 충돌의 직접 장면 |
+| `/assets/session-reports/s1e5-sector-c-part2/white-rose-r-transmission.webp` | p.61 화이트로즈 R 교신 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | excluded: existing-page image insertion not authorized | not-applicable | excluded: user-approved no-image Dossier; session cutscene is not a portrait | 사용자 명시적 무이미지 결정에 따라 R의 정식 초상으로 재사용 금지 |
 | `p063-hostage-village-testimony` | p.63 마을 인질 증언 장면 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: 증언 장면의 자극적 반복을 줄임 | excluded: report와 동일 제외 | excluded: existing-page image insertion not authorized | not-applicable | excluded: report cutscene, not portrait | R의 증언을 객관 사실처럼 보이게 할 위험 |
 | `p065-research-group-transition` | p.65 연구 그룹 전환 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: 사건 식별력이 낮은 전환 컷 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: group scene, not portrait | 저정보 전환 프레임 |
-| `/assets/session-reports/s1e5-sector-c-part2/mammoth-breakout.webp` | p.71 맘모스 연구동 돌파 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (durable-ready) | included (durable-ready) | included (`sector-c-mammoth`) | not-applicable | excluded: entity scene, not portrait | 맘모스의 대표 전투 도판 |
+| `/assets/session-reports/s1e5-sector-c-part2/mammoth-breakout.webp` | p.71 맘모스 연구동 돌파 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (applied) | included (applied) | included (`sector-c-mammoth`, applied) | not-applicable | excluded: entity scene, not portrait | 맘모스의 대표 전투 도판 |
 | `p072-mammoth-closeup` | p.72 맘모스 근접 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.71 대표 도판과 중복 | excluded: report와 동일 제외 | excluded: p.71 대표 도판 사용 | not-applicable | excluded: entity scene, not portrait | 반복 근접 컷 |
 | `p073-mammoth-roar` | p.73 맘모스 포효 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.71 대표 도판과 중복 | excluded: report와 동일 제외 | excluded: p.71 대표 도판 사용 | not-applicable | excluded: entity scene, not portrait | 반복 전투 컷 |
-| `/assets/session-reports/s1e5-sector-c-part2/sector-c-last-stand.webp` | p.76 섹터 C 수호대 최후 방어 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 페초린 개인 초상이 아닌 전투 상징 장면 |
-| `/assets/session-reports/s1e5-sector-c-part2/big-boy-rescue.webp` | p.78 박애솔의 킴라박 보호 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 동료 구조와 동결 사건 대표 장면 |
+| `/assets/session-reports/s1e5-sector-c-part2/sector-c-last-stand.webp` | p.76 섹터 C 수호대 최후 방어 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 페초린 개인 초상이 아닌 전투 상징 장면 |
+| `/assets/session-reports/s1e5-sector-c-part2/big-boy-rescue.webp` | p.78 박애솔의 킴라박 보호 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 동료 구조와 동결 사건 대표 장면 |
 | `p080-wendigo-combat` | p.80 웬디고 전투 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: 장면 내 비정식 표식으로 오인 위험 | excluded: report와 동일 제외 | excluded: existing-page image insertion not authorized | not-applicable | excluded: report cutscene, not portrait | 이미지의 외부 표식을 캐논 인물명으로 해석하지 않음 |
-| `/assets/session-reports/s1e5-sector-c-part2/emergency-cooling-activation.webp` | p.83 비상 냉각 버튼 활성화 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: object scene, not portrait | 데드핸드 결과의 직접 도판 |
-| `/assets/session-reports/s1e5-sector-c-part2/pechorin-dead-hand.webp` | p.83 감염자 사이의 페초린 시체 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: corpse cutscene, not approved portrait | 사망·망자 조종 상태를 보고서에서만 사용 |
+| `/assets/session-reports/s1e5-sector-c-part2/emergency-cooling-activation.webp` | p.83 비상 냉각 버튼 활성화 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: object scene, not portrait | 데드핸드 결과의 직접 도판 |
+| `/assets/session-reports/s1e5-sector-c-part2/pechorin-dead-hand.webp` | p.83 감염자 사이의 페초린 시체 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: corpse cutscene, not approved portrait | 사망·망자 조종 상태를 보고서에서만 사용 |
 | `p084-mammoth-repeat` | p.84 맘모스 근접 반복 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.71 대표 도판과 중복 | excluded: report와 동일 제외 | excluded: p.71 대표 도판 사용 | not-applicable | excluded: entity scene, not portrait | 반복 장면 축소 |
 | `p087-electrical-orb-repeat` | p.87 오브 재등장 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.14 첫 관측 도판과 중복 | excluded: report와 동일 제외 | excluded: p.14 대표 도판 사용 | not-applicable | excluded: entity scene, not portrait | 반복 오브 컷 |
-| `/assets/session-reports/s1e5-sector-c-part2/wendigo-to-village.webp` | p.101 웬디고의 마을 도주 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 최종 선택의 위험 배경 |
-| `/assets/session-reports/s1e5-sector-c-part2/village-aftermath.webp` | p.111 눈 덮인 마을 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | excluded: existing-place identity not confirmed | not-applicable | excluded: report cutscene, not portrait | 바부슈카·웬디고 종료 장면의 장소 도판 |
+| `/assets/session-reports/s1e5-sector-c-part2/wendigo-to-village.webp` | p.101 웬디고의 마을 도주 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | not-applicable | not-applicable | excluded: report cutscene, not portrait | 최종 선택의 위험 배경 |
+| `/assets/session-reports/s1e5-sector-c-part2/village-aftermath.webp` | p.111 눈 덮인 마을 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (applied) | included (applied) | excluded: existing-place identity not confirmed | not-applicable | excluded: report cutscene, not portrait | 바부슈카·웬디고 종료 장면의 장소 도판 |
 | `p113-authorized-personnel-logo` | p.113 종료 로고 | 1035×503 | yes — embedded VTT frame | candidate-only | excluded: decorative end card | excluded: report와 동일 제외 | not-applicable | not-applicable | not-applicable | 서사 정보 없는 장식 로고 |
 
 ## Source Conflict / Open Questions
 
 | issue | source state | durable decision | remaining need |
 |---|---|---|---|
-| 신규 wiki 공개 여부 | 사용자가 공개로 결정 | report mirror·오브·스트리고이·맘모스를 `isPublic: true`로 준비 | 없음 — live 적용·재조회만 남음 |
-| 시각 자산 직접 URL 공개 | 사용자가 공개로 결정 | 장면 자산 15개와 Dossier 초상 2개의 `public/` 경로 사용 | DB 적용 전 해당 revision 배포와 production URL 응답 확인 |
+| 신규 wiki 공개 여부 | 사용자가 공개로 결정 | report mirror·오브·스트리고이·맘모스를 `isPublic: true`로 live 적용 | 없음 — DB 재조회와 ERP consumer 확인 완료 |
+| 시각 자산 직접 URL 공개 | 사용자가 공개로 결정 | 장면 자산 15개와 Dossier 초상 2개의 `public/` 경로를 production 배포 | 없음 — 17개 production URL `200 image/webp` 확인 |
 | 게라쉬모프 신원 | 성·장군 직함·러시아 측 역할과 사용자 제공 초상 확인 | `GERASIMOV`, `MILITARY`, 등급 없음, 공개 Dossier; 이름·부칭은 미상으로 보존 | 전체 이름이 후속 소스에서 밝혀질 경우 갱신 |
 | R 신원 | 화이트로즈 수장이라고 자칭; 사용자가 Dossier 생성·무이미지를 명시 | `WHITE_ROSE_R`, `CIVIL / WHITE_ROSE`, 등급 없음, 빈 초상, 공개 Dossier; 실명 미상 보존 | 전체 이름·인적 정보·실제 조직 직책이 후속 소스에서 밝혀질 경우 갱신 |
 | 바부슈카 신원과 웬디고 | speaker label·여성 노인 묘사·사용자 제공 초상, 상호 `Mama`·`내 아들` 발화 | `RUBIN_BABUSHKA`, `CIVIL`, 등급 없음, 공개 Dossier; 관계는 testimony로 보존 | 실명과 실제 가족관계 확인 |
@@ -242,8 +244,9 @@ source: stargate-lore
 | 스트리고이·노스페라투 | 자칭·speaker label과 행동 확인 | 하나의 집단 사건 문서로 등록 | 정식 ZULU 번호·개체 수·현 위치 |
 | 광원화와 뇌 파괴 | 페초린 발화와 사망체 비표적화 관측 | 이번 사건의 관측으로만 기록 | 일반 법칙화 가능한 추가 실험·문서 |
 | 데드핸드 프로젝트 | 모스가 명칭만 발화 | 사건명과 실행만 기록 | 프로젝트 기원·권한·전체 범위 |
-| NPC apply-ready 계약 | 신규 NPC 3건과 기존 변경 NPC 3건의 결정이 모두 확인됨 | 본 coverage와 `nosb-s1e5-evil-part2-npc-apply.md`를 같은 apply-ready 대상으로 유지 | live 적용·DB 재조회·Dossier consumer 확인 |
-| 신규 대상의 보고서 구조화 참조 | 신규 wiki 3건과 NPC 3건은 아직 live에 없음 | 최초 생성 뒤 `nosb-s1e5-evil-part2-reference-followup.json`이 2부 보고서의 구조화 배열만 합집합으로 보강; 1부는 Dossier 사건·세션 역링크로 연결 | live 적용 뒤 명시 배열·typed link 재조회 |
+| NPC 적용 계약 | 신규 NPC 3건과 기존 변경 NPC 3건의 결정이 모두 확인됨 | 본 coverage와 `nosb-s1e5-evil-part2-npc-apply.md`를 동일한 `applied` 원장으로 마감 | 없음 — live 적용·DB 재조회·Dossier consumer 확인 완료 |
+| 신규 대상의 보고서 구조화 참조 | 신규 wiki 3건과 NPC 3건을 생성·재조회함 | `nosb-s1e5-evil-part2-reference-followup.json`이 2부 보고서의 구조화 배열만 합집합으로 보강; 1부는 Dossier 사건·세션 역링크로 연결 | 없음 — 명시 배열·typed link·역링크 재조회 완료 |
+| 작전보고서 목록 hydration 경고 | 기존 `NOSB-S1E1-ORDER.createdAt=2026-03-15T15:00:00Z`가 Vercel UTC SSR에서는 3월 15일, KST 브라우저에서는 3월 16일로 포맷됨 | 5화 2부 데이터와 무관하며 상세·wiki·Dossier는 console error 0; 목록 카드 05/05.5와 최종 날짜 표시는 정상 | `formatDate(..., "padded")`를 고정 KST 기준으로 바꾸는 별도 UI 유지보수 후보 |
 
 ## Verification Contract
 
@@ -257,7 +260,7 @@ source: stargate-lore
 - focused grade repair: `BAZAROV` role이 승인된 감독관 이력과 같고 현재 등급이 `H`이면 1건 `예상 update`, 같은 role에서 이미 `M`이면 1건 `예상 unchanged`, role/등급 precondition이 다르면 `예상 missing`으로 중단해야 한다. 실제 update 뒤 `updatedAt` 증가와 `lore_ingestion_runs` 성공 audit을 함께 확인한다.
 - personality: 6개 observation은 immutable ID별 단일 `$addToSet` envelope이며 timestamp를 포함하지 않아야 한다.
 - 경제: payload 전체에 경제·인벤토리·상점·주식·`master_items` mutation이 없어야 한다.
-- focused BAZAROV 등급 교정은 live 적용·DB 재조회·감사 레코드 확인까지 완료했다. 나머지 2부 payload의 live mutation과 인증 브라우저 검증은 별도 실행 범위로 남는다.
+- focused BAZAROV 등급 교정과 나머지 2부 payload 6개는 live 적용·DB 재조회·감사 레코드·인증 브라우저 검증까지 완료했다.
 
 ## Verification Evidence
 
@@ -268,8 +271,12 @@ source: stargate-lore
 - 2026-08-07 live read-only 등급 preflight에서 `BAZAROV`의 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`, `agentLevel`이 `H`임을 확인했고, `nosb-s1e5-evil-part2-bazarov-level-repair.json`의 `H → M` 단일 등급 변경이 1건 `예상 update`로 판정됐다.
 - 2026-08-07 사용자 실행 승인 뒤 focused repair를 live `stargate.characters`에 적용했다. `_id=6a57248f3f2831d09ed5ebff`의 role·소속·공개·초상은 유지되고 `agentLevel: M`과 `updatedAt: 2026-08-07T06:22:04.851Z`가 재조회됐으며, `lore_ingestion_runs.runId=seed-payload:82b0090c-b5db-4326-94bc-12ac3a3d6b33`은 `succeeded`, `written=1`, `failed=0`이었다. 사후 dry-run은 같은 대상 1건을 `예상 unchanged`로 판정했다.
 - live 연결 read-only seed dry-run에서 여섯 파일 46개 계획을 검증했다. sync 10건은 `session_reports` 신규 1건, `wiki_pages` 공개 신규 4건·기존 5건이었고, 생성 전용 Dossier 3건은 `GERASIMOV`, `RUBIN_BABUSHKA`, `WHITE_ROSE_R` 예상 insert, 기존 Dossier 21건과 personality observation 6건은 모두 예상 update였다.
-- 관계 파일은 현재 `GERASIMOV`, `WHITE_ROSE_R`이 없으므로 두 대상 `예상 missing`, `RODION`·`OTILIA`·`INDEXER`는 예상 update로 확인됐다. 신규 Dossier 생성·재조회 뒤 다섯 대상이 모두 update 또는 unchanged인 live 연결 dry-run을 통과해야 관계 트랜잭션을 실행한다.
-- live preflight 재조회에서 2부 report·신규 wiki 4건·신규 NPC 3건은 아직 없고, 1부 report와 mirror에는 당시 기록인 `이름이 확인되지 않은 러시아 장군` 문구가 남아 있음을 확인했다. follow-up은 문자열 치환 없이 2부 report의 구조화 배열만 합집합으로 보강하며, 신규 target 생성·재조회 뒤 live 연결 dry-run을 통과해야 실행할 수 있다.
+- 적용 전 관계 preflight에서는 `GERASIMOV`, `WHITE_ROSE_R`이 없어 두 대상 `예상 missing`이었고, 신규 Dossier 생성·재조회 뒤 다섯 대상 모두 `예상 update`인 live 연결 dry-run을 통과했다. 이어 여섯 관계를 원자 적용하고 양방향 Dossier 앵커를 확인했다.
+- 적용 전 preflight에서는 2부 report·신규 wiki 4건·신규 NPC 3건이 없었고, 1부 report와 mirror에는 당시 기록인 `이름이 확인되지 않은 러시아 장군` 문구가 남아 있음을 확인했다. 신규 target 생성 뒤 follow-up을 실행해 문자열 치환 없이 2부 report의 구조화 배열만 합집합으로 보강했다.
 - 연관 인물 링크 테스트 12건(외부 NPC의 미지정 등급 비노출 포함), 번호 formatter 테스트 2건, personality update/seed normalization 테스트 13건, frontmatter·NPC·seed payload corpus 테스트 46건이 모두 통과했다.
 - `pnpm --filter @stargate/shared-db build`, `pnpm typecheck`, `pnpm lint`, `git diff --check`가 통과했다.
-- focused BAZAROV 등급 repair의 live `--execute`와 DB·감사 재조회는 완료했다. 나머지 2부 sync payload 실행, push/deploy, 경제·인벤토리·주식 mutation, 인증 브라우저 확인은 수행하지 않았으므로 전체 세션 audit status는 `partial`을 유지한다.
+- production deployment `dpl_3Mq9MkXanknHMY94GF4UNs23PoME`가 `Ready` 상태로 `www.ordonet.co.kr`·`ordonet.co.kr` 별칭을 인계했고, 보고서 장면 15개와 Dossier 초상 2개를 production에서 직접 검증했다.
+- 여섯 payload는 순서대로 10·3·5·21·6·1건, 합계 46개 도메인 쓰기를 완료했다. 각 `lore_ingestion_runs`는 `succeeded`, `processed=discovered`, `failed=0`, `blocked=0`이었고 여섯 `lore_sources` provenance를 독립 재조회했다.
+- 독립 DB 대조에서 report `05.5`, 공개 wiki 9건, report/wiki mirror 시각 자료 15개 parity, 신규 NPC 3건의 `agentLevel` 부재와 R의 빈 초상, 기존 Dossier 21건, `BAZAROV.agentLevel=M`, 관계 6개, personality observation 6개를 확인했다.
+- 인증 production ERP에서 `05`·`05.5` 카드 분리, 보고서 15장, wiki mirror 15장(본문 14장+인포박스 1장), 전용 wiki 3건의 보고서 역링크, 신규 Dossier 3건, R의 무이미지·개인 U 등급 비노출, 바자로프 M 등급, 관계 카드의 정·역방향 앵커를 확인했다. 상세·wiki·Dossier console error는 0건이다.
+- 경제·인벤토리·상점·주식 mutation은 의도적으로 수행하지 않았으며, 전체 세션 audit status는 `complete`다. 작전보고서 목록의 기존 UTC/KST hydration 경고는 별도 UI 유지보수 후보로 남긴다.
