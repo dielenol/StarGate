@@ -42,10 +42,12 @@ test("음악 도움말은 전용 채널·상태판·전체 제어 명령과 음�
   assert.match(text, /<#test-music-channel-id>/);
   for (const command of [
     "재생",
+    "재생목록",
     "일시정지",
     "재개",
     "건너뛰기",
-    "정지",
+    "반복",
+    "초기화",
     "대기열",
     "퇴장",
   ]) {
@@ -54,6 +56,7 @@ test("음악 도움말은 전용 채널·상태판·전체 제어 명령과 음�
   assert.match(text, /상태판/);
   assert.match(text, /재인코딩 없이/);
   assert.match(text, /볼륨·EQ는 제공하지 않습니다/);
+  assert.match(text, /사용자 음량/);
 });
 
 test("모든 도움말 임베드는 Discord 필드 길이 제한 안에 있다", () => {

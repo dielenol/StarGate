@@ -14,7 +14,9 @@ import type {
 
 import { config } from "../config.js";
 import {
+  MUSIC_PLAYLIST_OPTION,
   MUSIC_QUERY_OPTION,
+  MUSIC_REPEAT_MODE_OPTION,
   MusicSubcommand,
   type MusicSubcommandName,
 } from "../slash/ko-names.js";
@@ -22,7 +24,13 @@ import {
   MusicService,
   type QueueSnapshot,
 } from "../music/music-service.js";
-import { MusicUserError, type MusicTrack } from "../music/types.js";
+import {
+  MusicRepeatMode,
+  MusicUserError,
+  isMusicRepeatMode,
+  type MusicRepeatMode as MusicRepeatModeValue,
+  type MusicTrack,
+} from "../music/types.js";
 
 const MAX_QUEUE_LINES = 10;
 
@@ -51,11 +59,18 @@ function trackLink(track: MusicTrack): string {
   return `[${escapeMarkdown(truncate(track.title, 120))}](${track.url})`;
 }
 
+function repeatModeLabel(mode: MusicRepeatModeValue): string {
+  if (mode === MusicRepeatMode.track) return "현재 곡";
+  if (mode === MusicRepeatMode.queue) return "대기열 전체";
+  return "끔";
+}
+
 function formatQueue(snapshot: QueueSnapshot): string {
   if (!snapshot.current && snapshot.upcoming.length === 0) {
     return "현재 재생 중인 음악이 없습니다.";
   }
   const lines: string[] = [];
+  lines.push(`🔁 **반복:** ${repeatModeLabel(snapshot.repeatMode)}`);
   if (snapshot.current) {
     const state = snapshot.paused ? "⏸️" : "▶️";
     const quality =
@@ -77,6 +92,41 @@ function formatQueue(snapshot: QueueSnapshot): string {
   const hidden = snapshot.upcoming.length - visible.length;
   if (hidden > 0) lines.push(`… 외 ${hidden}곡`);
   return truncate(lines.join("\n"), 1_900);
+}
+
+async function handlePlaylist(
+  interaction: ChatInputCommandInteraction,
+  service: MusicService,
+  guild: Guild,
+): Promise<void> {
+  const voiceChannel = await requireUserVoiceChannel(interaction, guild);
+  const query = interaction.options.getString(MUSIC_PLAYLIST_OPTION, true);
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const result = await service.resolveAndEnqueuePlaylist({
+    guild,
+    voiceChannel,
+    query,
+    requestedBy: interaction.user,
+    requestedByName: requesterDisplayName(interaction, voiceChannel),
+  });
+
+  const lines = [
+    `📃 **${escapeMarkdown(truncate(result.playlistTitle, 120))}** 재생목록에서 ${result.addedCount}곡을 추가했습니다.`,
+    result.startedImmediately
+      ? "첫 곡의 재생을 준비하고 있습니다."
+      : `첫 곡은 대기열 ${result.firstQueuePosition}번에 등록됐습니다.`,
+  ];
+  if (result.omittedCount > 0) {
+    lines.push(`요청·대기열 제한 또는 재생 불가 항목 ${result.omittedCount}곡은 제외했습니다.`);
+  }
+  if (result.truncated) {
+    lines.push("한 요청에서는 재생목록 앞부분 최대 50곡까지만 처리합니다.");
+  }
+  await interaction.editReply({
+    content: lines.join("\n"),
+    allowedMentions: { parse: [] },
+  });
 }
 
 async function replyError(
@@ -185,10 +235,15 @@ async function handleControl(
   guild: Guild,
   subcommandName: Exclude<
     MusicSubcommandName,
-    typeof MusicSubcommand.play | typeof MusicSubcommand.queue
+    | typeof MusicSubcommand.play
+    | typeof MusicSubcommand.playlist
+    | typeof MusicSubcommand.queue
   >,
 ): Promise<void> {
   const voiceChannel = await requireUserVoiceChannel(interaction, guild);
+  if (subcommandName === MusicSubcommand.reset) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  }
   let content: string;
   switch (subcommandName) {
     case MusicSubcommand.pause:
@@ -208,9 +263,24 @@ async function handleControl(
         : "현재 건너뛸 음악이 없습니다.";
       break;
     }
-    case MusicSubcommand.stop: {
-      const removed = service.stop(guild.id, voiceChannel.id);
-      content = `⏹️ 재생을 멈추고 ${removed}곡을 정리했습니다.`;
+    case MusicSubcommand.repeat: {
+      const mode = interaction.options.getString(
+        MUSIC_REPEAT_MODE_OPTION,
+        true,
+      );
+      if (!isMusicRepeatMode(mode)) {
+        throw new MusicUserError("올바른 반복 재생 방식을 선택해 주세요.");
+      }
+      service.setRepeatMode(guild.id, voiceChannel.id, mode);
+      content = `🔁 반복 모드를 **${repeatModeLabel(mode)}**으로 설정했습니다.`;
+      break;
+    }
+    case MusicSubcommand.reset: {
+      const result = await service.reset(guild.id, voiceChannel.id);
+      content = [
+        "♻️ 음악 플레이어를 초기화했습니다.",
+        `현재 곡·예약곡 ${result.removedTracks}곡 · 처리 중 요청 ${result.cancelledRequests}건 · 반복 설정을 정리했습니다.`,
+      ].join("\n");
       break;
     }
     case MusicSubcommand.leave:
@@ -218,11 +288,18 @@ async function handleControl(
       content = "👋 재생을 종료하고 음성 채널에서 나갔습니다.";
       break;
   }
-  await interaction.reply({
-    content,
-    flags: MessageFlags.Ephemeral,
-    allowedMentions: { parse: [] },
-  });
+  if (interaction.deferred) {
+    await interaction.editReply({
+      content,
+      allowedMentions: { parse: [] },
+    });
+  } else {
+    await interaction.reply({
+      content,
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: { parse: [] },
+    });
+  }
 }
 
 export async function handleMusicCommand(
@@ -237,6 +314,10 @@ export async function handleMusicCommand(
     ) as MusicSubcommandName;
     if (subcommandName === MusicSubcommand.play) {
       await handlePlay(interaction, service, guild);
+      return;
+    }
+    if (subcommandName === MusicSubcommand.playlist) {
+      await handlePlaylist(interaction, service, guild);
       return;
     }
     if (subcommandName === MusicSubcommand.queue) {

@@ -14,8 +14,10 @@ import {
 } from "./types.js";
 
 const YT_DLP_TIMEOUT_MS = 45_000;
+const YT_DLP_PLAYLIST_TIMEOUT_MS = 60_000;
 const PROCESS_OUTPUT_LIMIT_BYTES = 8 * 1024 * 1024;
 const MAX_SEARCH_LENGTH = 200;
+export const MAX_PLAYLIST_TRACKS_PER_REQUEST = 50;
 
 /** Opus/WebM을 최우선으로 선택하고 없을 때만 다른 최상 음원을 사용한다. */
 const AUDIO_FORMAT_SELECTOR =
@@ -46,6 +48,9 @@ interface YtDlpInfo extends YtDlpDownload {
   thumbnails?: unknown;
   is_live?: unknown;
   live_status?: unknown;
+  availability?: unknown;
+  playlist_count?: unknown;
+  n_entries?: unknown;
   requested_downloads?: unknown;
   entries?: unknown;
 }
@@ -58,6 +63,13 @@ export interface YoutubeTrackMetadata {
   thumbnailUrl: string | null;
   isLive: boolean;
   preferredQualityMode: AudioQualityMode;
+}
+
+export interface YoutubePlaylistMetadata {
+  title: string;
+  tracks: YoutubeTrackMetadata[];
+  sourceTrackCount: number | null;
+  truncated: boolean;
 }
 
 export interface YoutubeMediaSource {
@@ -153,6 +165,21 @@ export function normalizeYoutubeRequest(rawInput: string): string {
     );
   }
   return `ytsearch1:${input}`;
+}
+
+/** 명시적인 YouTube 재생목록 URL만 허용하고 `list` 식별자를 검증한다. */
+export function normalizeYoutubePlaylistRequest(rawInput: string): string {
+  const input = normalizeYoutubeRequest(rawInput);
+  if (input.startsWith("ytsearch1:")) {
+    throw new YoutubeSourceError("YouTube 재생목록 링크를 입력해 주세요.");
+  }
+  const parsed = new URL(input);
+  if (!parsed.searchParams.get("list")?.trim()) {
+    throw new YoutubeSourceError(
+      "재생목록 식별자가 포함된 YouTube 링크를 입력해 주세요.",
+    );
+  }
+  return parsed.toString();
 }
 
 function appendWithLimit(
@@ -360,36 +387,121 @@ function parseInfoJson(raw: string): YtDlpInfo {
   }
 }
 
-/** 테스트와 실제 해석에서 공유하는 트랙 메타데이터 정규화. */
-export function parseYoutubeTrackMetadata(raw: string): YoutubeTrackMetadata {
-  const info = firstInfoEntry(parseInfoJson(raw));
-  const format = selectedDownload(info);
+function normalizedDuration(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : null;
+}
+
+function normalizedTrackUrl(info: YtDlpInfo): string | null {
+  const candidate =
+    asString(info.webpage_url) ??
+    asString(info.original_url) ??
+    asString(info.url);
+  if (candidate) {
+    try {
+      const normalized = normalizeYoutubeRequest(candidate);
+      if (!normalized.startsWith("ytsearch1:")) return normalized;
+    } catch {
+      // flat-playlist의 `url`이 영상 ID인 경우 아래 표준 URL을 사용한다.
+    }
+  }
+  const videoId = asString(info.id);
+  return videoId && /^[\w-]{6,64}$/.test(videoId)
+    ? `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`
+    : null;
+}
+
+function isUnavailablePlaylistEntry(info: YtDlpInfo): boolean {
+  const availability = asString(info.availability)?.toLowerCase();
+  const title = asString(info.title)?.toLowerCase();
+  return (
+    availability === "private" ||
+    availability === "premium_only" ||
+    availability === "subscriber_only" ||
+    availability === "needs_auth" ||
+    title === "[private video]" ||
+    title === "[deleted video]"
+  );
+}
+
+function trackMetadataFromInfo(
+  info: YtDlpInfo,
+  allowMissingFormat: boolean,
+): YoutubeTrackMetadata | null {
+  if (isUnavailablePlaylistEntry(info)) return null;
   const videoId = asString(info.id);
   const title = asString(info.title);
-  const url = asString(info.webpage_url) ?? asString(info.original_url);
-  if (!videoId || !title || !url) {
-    throw new YoutubeSourceError("YouTube 영상 메타데이터가 불완전합니다.");
-  }
-  const normalizedUrl = normalizeYoutubeRequest(url);
-  if (normalizedUrl.startsWith("ytsearch1:")) {
-    throw new YoutubeSourceError("YouTube 영상 주소가 올바르지 않습니다.");
-  }
-
-  const rawDuration = info.duration;
-  const durationSeconds =
-    typeof rawDuration === "number" && Number.isFinite(rawDuration)
-      ? Math.max(0, Math.floor(rawDuration))
-      : null;
-
+  const url = normalizedTrackUrl(info);
+  if (!videoId || !title || !url) return null;
+  const format = selectedDownload(info);
   return {
     videoId,
     title,
-    url: normalizedUrl,
-    durationSeconds,
+    url,
+    durationSeconds: normalizedDuration(info.duration),
     thumbnailUrl:
       safeHttpUrl(info.thumbnail) ?? safeHttpUrl(lastThumbnailUrl(info.thumbnails)),
     isLive: info.is_live === true || info.live_status === "is_live",
-    preferredQualityMode: qualityModeFor(format),
+    // flat-playlist에는 포맷 정보가 없다. 실제 재생 직전에 다시 해석하므로
+    // 이 값은 힌트일 뿐이며 상태판에는 실제 사용한 경로만 표시한다.
+    preferredQualityMode:
+      allowMissingFormat && !asString(format.ext)
+        ? "opus-passthrough"
+        : qualityModeFor(format),
+  };
+}
+
+/** 테스트와 실제 해석에서 공유하는 트랙 메타데이터 정규화. */
+export function parseYoutubeTrackMetadata(raw: string): YoutubeTrackMetadata {
+  const info = firstInfoEntry(parseInfoJson(raw));
+  const metadata = trackMetadataFromInfo(info, false);
+  if (!metadata) {
+    throw new YoutubeSourceError("YouTube 영상 메타데이터가 불완전합니다.");
+  }
+  return metadata;
+}
+
+/** flat-playlist 응답을 재생 가능한 트랙 목록으로 정규화한다. */
+export function parseYoutubePlaylistMetadata(
+  raw: string,
+  maxTracks = MAX_PLAYLIST_TRACKS_PER_REQUEST,
+): YoutubePlaylistMetadata {
+  const root = parseInfoJson(raw);
+  if (!Array.isArray(root.entries)) {
+    throw new YoutubeSourceError("YouTube 재생목록을 찾지 못했습니다.");
+  }
+  const entries = root.entries
+    .map(asRecord)
+    .filter((entry): entry is Record<string, unknown> => entry !== null)
+    .slice(0, maxTracks);
+  const tracks = entries.flatMap((entry) => {
+    const metadata = trackMetadataFromInfo(entry as YtDlpInfo, true);
+    return metadata ? [metadata] : [];
+  });
+  if (tracks.length === 0) {
+    throw new YoutubeSourceError(
+      "재생목록에서 재생 가능한 공개 영상을 찾지 못했습니다.",
+    );
+  }
+  const rawCount =
+    typeof root.playlist_count === "number"
+      ? root.playlist_count
+      : typeof root.n_entries === "number"
+        ? root.n_entries
+        : null;
+  const sourceTrackCount =
+    rawCount !== null && Number.isFinite(rawCount)
+      ? Math.max(0, Math.floor(rawCount))
+      : null;
+  return {
+    title: asString(root.title) ?? "YouTube 재생목록",
+    tracks,
+    sourceTrackCount,
+    truncated:
+      sourceTrackCount !== null
+        ? sourceTrackCount > entries.length
+        : entries.length >= maxTracks,
   };
 }
 
@@ -444,6 +556,27 @@ function ytDlpInfoArgs(input: string): string[] {
   ];
 }
 
+function ytDlpPlaylistArgs(input: string): string[] {
+  return [
+    "--ignore-config",
+    "--dump-single-json",
+    "--flat-playlist",
+    "--yes-playlist",
+    "--playlist-end",
+    String(MAX_PLAYLIST_TRACKS_PER_REQUEST),
+    "--skip-download",
+    "--no-warnings",
+    "--socket-timeout",
+    "20",
+    "--extractor-retries",
+    "3",
+    "--js-runtimes",
+    "node",
+    "--",
+    input,
+  ];
+}
+
 function sourceFailureMessage(error: unknown): string {
   const stderr =
     error instanceof ProcessExecutionError ? error.stderr.trim() : "";
@@ -476,6 +609,26 @@ export async function resolveYoutubeTrack(
       options.signal,
     );
     return parseYoutubeTrackMetadata(stdout);
+  } catch (error) {
+    if (isMusicOperationAbortedError(error)) throw error;
+    if (error instanceof YoutubeSourceError) throw error;
+    throw new YoutubeSourceError(sourceFailureMessage(error), { cause: error });
+  }
+}
+
+export async function resolveYoutubePlaylist(
+  rawInput: string,
+  options: YoutubeResolveOptions = {},
+): Promise<YoutubePlaylistMetadata> {
+  const input = normalizeYoutubePlaylistRequest(rawInput);
+  try {
+    const { stdout } = await runProcess(
+      getYtDlpExecutable(),
+      ytDlpPlaylistArgs(input),
+      YT_DLP_PLAYLIST_TIMEOUT_MS,
+      options.signal,
+    );
+    return parseYoutubePlaylistMetadata(stdout);
   } catch (error) {
     if (isMusicOperationAbortedError(error)) throw error;
     if (error instanceof YoutubeSourceError) throw error;

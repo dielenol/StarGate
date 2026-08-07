@@ -29,17 +29,22 @@ import {
 } from "./audio-source.js";
 import { MusicPanel } from "./music-panel.js";
 import {
+  MusicRepeatMode,
   MusicOperationAbortedError,
   MusicUserError,
   isMusicOperationAbortedError,
   type AudioQualityMode,
+  type MusicRepeatMode as MusicRepeatModeValue,
   type MusicTrack,
 } from "./types.js";
 import {
+  MAX_PLAYLIST_TRACKS_PER_REQUEST,
   inspectMusicRuntime,
+  resolveYoutubePlaylist,
   resolveYoutubeTrack,
   YoutubeSourceError,
   type MusicRuntimeInfo,
+  type YoutubePlaylistMetadata,
   type YoutubeResolveOptions,
   type YoutubeTrackMetadata,
 } from "./youtube-source.js";
@@ -55,12 +60,27 @@ export interface QueueSnapshot {
   currentQualityMode: AudioQualityMode | null;
   upcoming: readonly MusicTrack[];
   paused: boolean;
+  repeatMode: MusicRepeatModeValue;
 }
 
 export interface EnqueueResult {
   track: MusicTrack;
   startedImmediately: boolean;
   queuePosition: number;
+}
+
+export interface PlaylistEnqueueResult {
+  playlistTitle: string;
+  addedCount: number;
+  omittedCount: number;
+  truncated: boolean;
+  startedImmediately: boolean;
+  firstQueuePosition: number;
+}
+
+export interface MusicResetResult {
+  removedTracks: number;
+  cancelledRequests: number;
 }
 
 interface EnqueueRequest {
@@ -76,6 +96,11 @@ type TrackResolver = (
   options?: YoutubeResolveOptions,
 ) => Promise<YoutubeTrackMetadata>;
 
+type PlaylistResolver = (
+  rawInput: string,
+  options?: YoutubeResolveOptions,
+) => Promise<YoutubePlaylistMetadata>;
+
 type SessionConnector = (
   channel: VoiceBasedChannel,
   panel: MusicPanel,
@@ -90,12 +115,14 @@ interface PendingMusicSession {
 interface TrackRequestReservation {
   signal: AbortSignal;
   finishResolution(): void;
+  reserveUpTo(trackCount: number): number;
   release(): void;
 }
 
 export interface MusicServiceDependencies {
   panel: MusicPanel;
   resolveTrack: TrackResolver;
+  resolvePlaylist: PlaylistResolver;
   inspectRuntime: () => Promise<MusicRuntimeInfo>;
   connectSession: SessionConnector;
   maxConcurrentResolutionsPerGuild: number;
@@ -138,6 +165,7 @@ export class GuildMusicSession {
   private startChain: Promise<void> = Promise.resolve();
   private playbackToken = 0;
   private recentError: string | null = null;
+  private repeatMode: MusicRepeatModeValue = MusicRepeatMode.off;
   private destroyed = false;
 
   constructor(
@@ -177,7 +205,7 @@ export class GuildMusicSession {
       );
       if (failedTrack) {
         this.recentError = "오디오 스트림이 중단되어 다음 곡으로 넘어갔습니다.";
-        this.finishCurrent(false);
+        this.finishCurrent(false, false);
       }
     });
     this.connection.on("stateChange", (_oldState, newState) => {
@@ -232,29 +260,40 @@ export class GuildMusicSession {
     return this.queue.length + (this.current ? 1 : 0);
   }
 
-  assertCanAcceptTrack(): void {
-    if (this.totalTrackCount >= MAX_QUEUED_TRACKS) {
+  enqueue(track: MusicTrack): EnqueueResult {
+    const result = this.enqueueMany([track]);
+    return {
+      track,
+      startedImmediately: result.startedImmediately,
+      queuePosition: result.firstQueuePosition,
+    };
+  }
+
+  enqueueMany(tracks: readonly MusicTrack[]): {
+    startedImmediately: boolean;
+    firstQueuePosition: number;
+  } {
+    if (this.destroyed) {
+      throw new MusicUserError("음성 연결이 종료되었습니다. 다시 시도해 주세요.");
+    }
+    if (tracks.length === 0) {
+      throw new MusicUserError("대기열에 추가할 음악이 없습니다.");
+    }
+    if (this.totalTrackCount + tracks.length > MAX_QUEUED_TRACKS) {
       throw new MusicUserError(
         `대기열은 최대 ${MAX_QUEUED_TRACKS}곡까지 추가할 수 있습니다.`,
       );
     }
-  }
-
-  enqueue(track: MusicTrack): EnqueueResult {
-    if (this.destroyed) {
-      throw new MusicUserError("음성 연결이 종료되었습니다. 다시 시도해 주세요.");
-    }
-    this.assertCanAcceptTrack();
     this.clearIdleTimer();
     this.recentError = null;
     const startedImmediately = this.current === null && this.queue.length === 0;
-    this.queue.push(track);
-    const queuePosition = startedImmediately
+    const firstQueuePosition = startedImmediately
       ? 0
-      : this.queue.length - (this.current ? 0 : 1);
+      : this.queue.length + (this.current ? 1 : 0);
+    this.queue.push(...tracks);
     this.syncPanel();
     this.queueStart();
-    return { track, startedImmediately, queuePosition };
+    return { startedImmediately, firstQueuePosition };
   }
 
   snapshot(): QueueSnapshot {
@@ -262,6 +301,7 @@ export class GuildMusicSession {
       current: this.current,
       currentQualityMode: this.currentQualityMode,
       upcoming: [...this.queue],
+      repeatMode: this.repeatMode,
       paused:
         this.player.state.status === AudioPlayerStatus.Paused ||
         this.player.state.status === AudioPlayerStatus.AutoPaused,
@@ -280,6 +320,15 @@ export class GuildMusicSession {
     return changed;
   }
 
+  setRepeatMode(mode: MusicRepeatModeValue): MusicRepeatModeValue {
+    if (this.destroyed) {
+      throw new MusicUserError("음성 연결이 종료되었습니다. 다시 시도해 주세요.");
+    }
+    this.repeatMode = mode;
+    this.syncPanel();
+    return mode;
+  }
+
   skip(): MusicTrack | null {
     const skipped = this.current;
     if (!skipped) return null;
@@ -294,16 +343,19 @@ export class GuildMusicSession {
     return skipped;
   }
 
-  stop(): number {
+  reset(): number {
     const removed = this.totalTrackCount;
     this.playbackToken += 1;
     this.queue.length = 0;
     this.current = null;
     this.currentQualityMode = null;
     this.recentError = null;
+    this.repeatMode = MusicRepeatMode.off;
     this.disposeActiveResource();
     this.player.stop(true);
-    this.syncPanel("재생과 대기열을 정리했습니다. 새 요청을 기다리고 있습니다.");
+    this.syncPanel(
+      "현재 곡·예약곡·반복 설정을 초기화했습니다. 새 요청을 기다리고 있습니다.",
+    );
     this.scheduleIdleDisconnect();
     return removed;
   }
@@ -410,12 +462,21 @@ export class GuildMusicSession {
     }
   }
 
-  private finishCurrent(clearRecentError = true): void {
+  private finishCurrent(
+    clearRecentError = true,
+    allowRepeat = true,
+  ): void {
     if (!this.current) return;
+    const finished = this.current;
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
     if (clearRecentError) this.recentError = null;
+    if (allowRepeat && this.repeatMode === MusicRepeatMode.track) {
+      this.queue.unshift(finished);
+    } else if (allowRepeat && this.repeatMode === MusicRepeatMode.queue) {
+      this.queue.push(finished);
+    }
     this.disposeActiveResource();
     this.syncPanel();
     this.queueStart();
@@ -511,6 +572,7 @@ export class GuildMusicSession {
     this.queue.length = 0;
     this.current = null;
     this.currentQualityMode = null;
+    this.repeatMode = MusicRepeatMode.off;
     this.clearIdleTimer();
     this.clearEmptyChannelTimer();
     this.disposeActiveResource();
@@ -531,6 +593,7 @@ export class GuildMusicSession {
       current: this.current,
       currentQualityMode: this.currentQualityMode,
       upcoming: this.queue,
+      repeatMode: this.repeatMode,
       paused:
         this.player.state.status === AudioPlayerStatus.Paused ||
         this.player.state.status === AudioPlayerStatus.AutoPaused,
@@ -552,6 +615,7 @@ export class MusicService {
   >();
   private readonly panel: MusicPanel;
   private readonly resolveTrack: TrackResolver;
+  private readonly resolvePlaylist: PlaylistResolver;
   private readonly inspectRuntime: () => Promise<MusicRuntimeInfo>;
   private readonly connectSession: SessionConnector;
   private readonly maxConcurrentResolutionsPerGuild: number;
@@ -567,6 +631,8 @@ export class MusicService {
     this.panel =
       dependencies.panel ?? new MusicPanel(client, guildId, musicChannelId);
     this.resolveTrack = dependencies.resolveTrack ?? resolveYoutubeTrack;
+    this.resolvePlaylist =
+      dependencies.resolvePlaylist ?? resolveYoutubePlaylist;
     this.inspectRuntime = dependencies.inspectRuntime ?? inspectMusicRuntime;
     this.connectSession =
       dependencies.connectSession ?? GuildMusicSession.connect;
@@ -665,6 +731,78 @@ export class MusicService {
     }
   }
 
+  async resolveAndEnqueuePlaylist(
+    request: EnqueueRequest,
+  ): Promise<PlaylistEnqueueResult> {
+    this.assertRuntimeReady();
+    const reservation = this.reserveTrackRequest(
+      request.guild.id,
+      request.voiceChannel.id,
+    );
+    try {
+      let playlist: YoutubePlaylistMetadata;
+      try {
+        playlist = await this.resolvePlaylist(request.query, {
+          signal: reservation.signal,
+        });
+      } catch (error) {
+        if (isMusicOperationAbortedError(error)) {
+          throw new MusicUserError("재생목록 요청이 취소되었습니다.", {
+            cause: error,
+          });
+        }
+        if (error instanceof YoutubeSourceError) {
+          throw new MusicUserError(error.message, { cause: error });
+        }
+        throw error;
+      } finally {
+        reservation.finishResolution();
+      }
+      this.assertTrackRequestActive(reservation.signal);
+
+      if (
+        request.guild.voiceStates.cache.get(request.requestedBy.id)?.channelId !==
+        request.voiceChannel.id
+      ) {
+        throw new MusicUserError(
+          "재생목록을 확인하는 동안 음성 채널에서 나갔습니다. 다시 시도해 주세요.",
+        );
+      }
+
+      const requestTracks = playlist.tracks.slice(
+        0,
+        MAX_PLAYLIST_TRACKS_PER_REQUEST,
+      );
+      const acceptedCount = reservation.reserveUpTo(requestTracks.length);
+      const selectedTracks = requestTracks.slice(0, acceptedCount).map(
+        (metadata): MusicTrack => ({
+          ...metadata,
+          requestedById: request.requestedBy.id,
+          requestedByName: request.requestedByName,
+        }),
+      );
+      const session = await this.getOrCreateSession(
+        request.guild,
+        request.voiceChannel,
+      );
+      this.assertTrackRequestActive(reservation.signal);
+      const enqueueResult = session.enqueueMany(selectedTracks);
+      const sourceTrackCount =
+        playlist.sourceTrackCount ?? playlist.tracks.length;
+      return {
+        playlistTitle: playlist.title,
+        addedCount: selectedTracks.length,
+        omittedCount: Math.max(0, sourceTrackCount - selectedTracks.length),
+        truncated:
+          playlist.truncated ||
+          playlist.tracks.length > MAX_PLAYLIST_TRACKS_PER_REQUEST,
+        ...enqueueResult,
+      };
+    } finally {
+      reservation.release();
+    }
+  }
+
   getSnapshot(guildId: string): QueueSnapshot | null {
     return this.sessions.get(guildId)?.snapshot() ?? null;
   }
@@ -679,15 +817,61 @@ export class MusicService {
     return session.resume();
   }
 
+  setRepeatMode(
+    guildId: string,
+    voiceChannelId: string,
+    mode: MusicRepeatModeValue,
+  ): MusicRepeatModeValue {
+    const session = this.requireSession(guildId, voiceChannelId);
+    return session.setRepeatMode(mode);
+  }
+
   skip(guildId: string, voiceChannelId: string): MusicTrack | null {
     const session = this.requireSession(guildId, voiceChannelId);
     return session.skip();
   }
 
-  stop(guildId: string, voiceChannelId: string): number {
-    const session = this.requireSession(guildId, voiceChannelId);
+  async reset(
+    guildId: string,
+    voiceChannelId: string,
+  ): Promise<MusicResetResult> {
+    const session = this.sessions.get(guildId);
+    const pendingSession = this.pendingSessions.get(guildId);
+    const reservedVoiceChannelId = this.reservedVoiceChannelIds.get(guildId);
+    const activeVoiceChannelId =
+      session?.voiceChannelId ??
+      pendingSession?.voiceChannelId ??
+      reservedVoiceChannelId;
+    if (!activeVoiceChannelId) {
+      throw new MusicUserError("현재 초기화할 음악이나 예약 요청이 없습니다.");
+    }
+    if (activeVoiceChannelId !== voiceChannelId) {
+      throw new MusicUserError("봇과 같은 음성 채널에서 명령을 사용해 주세요.");
+    }
+
     const cancelledRequests = this.cancelPendingTrackRequests(guildId);
-    return session.stop() + cancelledRequests;
+    if (session) {
+      return {
+        removedTracks: session.reset(),
+        cancelledRequests,
+      };
+    }
+
+    if (pendingSession) {
+      try {
+        const connectedSession = await pendingSession.promise;
+        return {
+          removedTracks: connectedSession.reset(),
+          cancelledRequests,
+        };
+      } catch {
+        // 연결 요청 자체가 실패했어도 앞에서 예약 해석 요청은 모두 취소됐다.
+      }
+    }
+    this.panel.updateIdle(
+      "현재 곡·예약곡·반복 설정을 초기화했습니다. 새 요청을 기다리고 있습니다.",
+    );
+    return { removedTracks: 0, cancelledRequests };
   }
 
   leave(guildId: string, voiceChannelId: string): void {
@@ -840,16 +1024,49 @@ export class MusicService {
 
     let resolving = true;
     let released = false;
+    let reservedTrackCount = 1;
     const finishResolution = (): void => {
       if (!resolving) return;
       resolving = false;
       this.decrementCounter(this.activeResolutions, guildId);
     };
+    const reserveUpTo = (trackCount: number): number => {
+      if (!Number.isInteger(trackCount) || trackCount < 1) {
+        throw new MusicUserError("대기열에 추가할 음악이 없습니다.");
+      }
+      this.assertTrackRequestActive(controller.signal);
+      const currentSession = this.sessions.get(guildId);
+      const allReservedSlots = this.reservedTrackSlots.get(guildId) ?? 0;
+      const otherReservedSlots = Math.max(
+        0,
+        allReservedSlots - reservedTrackCount,
+      );
+      const availableForRequest = Math.max(
+        0,
+        MAX_QUEUED_TRACKS -
+          (currentSession?.totalTrackCount ?? 0) -
+          otherReservedSlots,
+      );
+      const acceptedCount = Math.min(trackCount, availableForRequest);
+      if (acceptedCount < 1) {
+        throw new MusicUserError(
+          `대기열은 최대 ${MAX_QUEUED_TRACKS}곡까지 추가할 수 있습니다.`,
+        );
+      }
+      const delta = acceptedCount - reservedTrackCount;
+      this.reservedTrackSlots.set(guildId, allReservedSlots + delta);
+      reservedTrackCount = acceptedCount;
+      return acceptedCount;
+    };
     const release = (): void => {
       if (released) return;
       released = true;
       finishResolution();
-      this.decrementCounter(this.reservedTrackSlots, guildId);
+      this.decrementCounter(
+        this.reservedTrackSlots,
+        guildId,
+        reservedTrackCount,
+      );
       controllers.delete(controller);
       if (controllers.size === 0) {
         this.pendingRequestControllers.delete(guildId);
@@ -858,7 +1075,12 @@ export class MusicService {
         this.reservedVoiceChannelIds.delete(guildId);
       }
     };
-    return { signal: controller.signal, finishResolution, release };
+    return {
+      signal: controller.signal,
+      finishResolution,
+      reserveUpTo,
+      release,
+    };
   }
 
   private cancelPendingTrackRequests(guildId: string): number {
@@ -885,8 +1107,12 @@ export class MusicService {
     });
   }
 
-  private decrementCounter(map: Map<string, number>, guildId: string): void {
-    const next = (map.get(guildId) ?? 1) - 1;
+  private decrementCounter(
+    map: Map<string, number>,
+    guildId: string,
+    amount = 1,
+  ): void {
+    const next = (map.get(guildId) ?? amount) - amount;
     if (next <= 0) map.delete(guildId);
     else map.set(guildId, next);
   }

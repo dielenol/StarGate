@@ -11,6 +11,7 @@ process.env.TRPG_MUSIC_CHANNEL_ID ||= "music-channel-id";
 process.env.TRPG_WEB_BASE_URL ||= "https://example.test";
 
 const { handleMusicCommand } = await import("../dist/commands/music.js");
+const { MusicRepeatMode } = await import("../dist/music/types.js");
 
 function queueInteraction(channelId) {
   const replies = [];
@@ -27,6 +28,64 @@ function queueInteraction(channelId) {
       options: { getSubcommand: () => "대기열" },
       async reply(payload) {
         replies.push(payload);
+      },
+    },
+  };
+}
+
+function voiceInteraction(subcommand, optionValues = {}) {
+  const replies = [];
+  const deferred = [];
+  const edited = [];
+  const guild = {
+    id: "guild-id",
+    voiceStates: { cache: new Map() },
+    members: { me: { id: "bot-user" } },
+  };
+  const voiceChannel = {
+    id: "voice-channel-id",
+    type: ChannelType.GuildVoice,
+    guild,
+    members: new Map([["request-user", { displayName: "요청자" }]]),
+    permissionsFor: () => ({ has: () => true }),
+  };
+  guild.voiceStates.cache.set("request-user", {
+    channel: voiceChannel,
+    channelId: voiceChannel.id,
+  });
+  return {
+    replies,
+    deferred,
+    edited,
+    guild,
+    voiceChannel,
+    interaction: {
+      commandName: "음악",
+      channelId: "music-channel-id",
+      guildId: "guild-id",
+      guild,
+      user: {
+        id: "request-user",
+        username: "request-user",
+        globalName: null,
+      },
+      deferred: false,
+      replied: false,
+      inGuild: () => true,
+      options: {
+        getSubcommand: () => subcommand,
+        getString: (name) => optionValues[name] ?? null,
+      },
+      async reply(payload) {
+        replies.push(payload);
+        this.replied = true;
+      },
+      async deferReply(payload) {
+        deferred.push(payload);
+        this.deferred = true;
+      },
+      async editReply(payload) {
+        edited.push(payload);
       },
     },
   };
@@ -119,4 +178,53 @@ test("재생 요청도 처음부터 비공개로 defer한 뒤 같은 응답을 �
   assert.equal(deferred[0].flags, MessageFlags.Ephemeral);
   assert.equal(edited.length, 1);
   assert.match(edited[0].content, /재생을 준비합니다/);
+});
+
+test("재생목록은 비공개로 처리하고 추가·제외 곡 수를 안내한다", async () => {
+  const context = voiceInteraction("재생목록", {
+    링크: "https://youtube.com/playlist?list=test-list",
+  });
+  let receivedQuery;
+  await handleMusicCommand(context.interaction, {
+    async resolveAndEnqueuePlaylist(request) {
+      receivedQuery = request.query;
+      return {
+        playlistTitle: "테스트 목록",
+        addedCount: 48,
+        omittedCount: 2,
+        truncated: true,
+        startedImmediately: true,
+        firstQueuePosition: 0,
+      };
+    },
+  });
+
+  assert.equal(receivedQuery, "https://youtube.com/playlist?list=test-list");
+  assert.equal(context.deferred[0].flags, MessageFlags.Ephemeral);
+  assert.match(context.edited[0].content, /48곡/);
+  assert.match(context.edited[0].content, /2곡은 제외/);
+});
+
+test("반복 모드와 초기화 결과는 명령 사용자에게만 안내한다", async () => {
+  const repeat = voiceInteraction("반복", { 모드: MusicRepeatMode.queue });
+  let selectedMode;
+  await handleMusicCommand(repeat.interaction, {
+    setRepeatMode(_guildId, _voiceChannelId, mode) {
+      selectedMode = mode;
+      return mode;
+    },
+  });
+  assert.equal(selectedMode, MusicRepeatMode.queue);
+  assert.equal(repeat.replies[0].flags, MessageFlags.Ephemeral);
+  assert.match(repeat.replies[0].content, /대기열 전체/);
+
+  const reset = voiceInteraction("초기화");
+  await handleMusicCommand(reset.interaction, {
+    async reset() {
+      return { removedTracks: 12, cancelledRequests: 1 };
+    },
+  });
+  assert.equal(reset.deferred[0].flags, MessageFlags.Ephemeral);
+  assert.match(reset.edited[0].content, /12곡/);
+  assert.match(reset.edited[0].content, /1건/);
 });

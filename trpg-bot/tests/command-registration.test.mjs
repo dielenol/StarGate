@@ -14,11 +14,14 @@ const {
   HELP_NAME,
   HELP_TOPIC_OPTION,
   HelpTopic,
+  MUSIC_PLAYLIST_OPTION,
   MUSIC_QUERY_OPTION,
+  MUSIC_REPEAT_MODE_OPTION,
   MUSIC_ROOT,
   MusicSubcommand,
   isMusicCommandName,
 } = await import("../dist/slash/ko-names.js");
+const { MusicRepeatMode } = await import("../dist/music/types.js");
 
 test("활성 명령은 세션·주사위·도움말·한글 음악 루트 다섯 개만 등록한다", () => {
   assert.deepEqual(
@@ -37,7 +40,7 @@ test("도움말은 전체·세션·주사위·음악 주제를 선택할 수 있
   );
 });
 
-test("음악 기능은 일곱 개 한글 서브커맨드로 묶인다", () => {
+test("음악 기능은 아홉 개 한글 서브커맨드로 묶인다", () => {
   assert.equal(isMusicCommandName(MUSIC_ROOT), true);
   assert.equal(isMusicCommandName("play"), false);
 
@@ -56,6 +59,25 @@ test("음악 기능은 일곱 개 한글 서브커맨드로 묶인다", () => {
   assert.deepEqual(
     play.options.map((option) => option.name),
     [MUSIC_QUERY_OPTION],
+  );
+
+  const playlist = music.options.find(
+    (option) => option.name === MusicSubcommand.playlist,
+  );
+  assert.ok(playlist && "options" in playlist);
+  assert.deepEqual(
+    playlist.options.map((option) => option.name),
+    [MUSIC_PLAYLIST_OPTION],
+  );
+
+  const repeat = music.options.find(
+    (option) => option.name === MusicSubcommand.repeat,
+  );
+  assert.ok(repeat && "options" in repeat);
+  assert.equal(repeat.options[0].name, MUSIC_REPEAT_MODE_OPTION);
+  assert.deepEqual(
+    repeat.options[0].choices.map((choice) => choice.value),
+    Object.values(MusicRepeatMode),
   );
 });
 

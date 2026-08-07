@@ -13,11 +13,14 @@
 import { REST, Routes } from "discord.js";
 
 import { config } from "../config.js";
+import { MusicRepeatMode } from "../music/types.js";
 import {
   HELP_NAME,
   HELP_TOPIC_OPTION,
   HelpTopic,
+  MUSIC_PLAYLIST_OPTION,
   MUSIC_QUERY_OPTION,
+  MUSIC_REPEAT_MODE_OPTION,
   MUSIC_ROOT,
   MusicSubcommand,
   ROLL_NAME,
@@ -138,9 +141,24 @@ const MUSIC_COMMAND = {
         {
           type: 3 as const,
           name: MUSIC_QUERY_OPTION,
-          description: "YouTube 영상 링크 또는 제목·검색어 (재생목록은 첫 영상만)",
+          description: "YouTube 영상 링크 또는 제목·검색어 (항상 한 곡만 추가)",
           min_length: 1,
           max_length: 200,
+          required: true,
+        },
+      ],
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.playlist,
+      description: "YouTube 재생목록을 순서대로 최대 50곡까지 추가합니다",
+      options: [
+        {
+          type: 3 as const,
+          name: MUSIC_PLAYLIST_OPTION,
+          description: "list 식별자가 포함된 YouTube 재생목록 링크를 입력합니다",
+          min_length: 1,
+          max_length: 500,
           required: true,
         },
       ],
@@ -162,8 +180,26 @@ const MUSIC_COMMAND = {
     },
     {
       type: 1 as const,
-      name: MusicSubcommand.stop,
-      description: "현재 재생을 멈추고 대기열을 비웁니다",
+      name: MusicSubcommand.repeat,
+      description: "반복 재생을 끄거나 현재 곡·대기열 전체 반복을 선택합니다",
+      options: [
+        {
+          type: 3 as const,
+          name: MUSIC_REPEAT_MODE_OPTION,
+          description: "현재 음악 세션에 적용할 반복 재생 방식을 선택합니다",
+          required: true,
+          choices: [
+            { name: "끔", value: MusicRepeatMode.off },
+            { name: "현재 곡", value: MusicRepeatMode.track },
+            { name: "대기열 전체", value: MusicRepeatMode.queue },
+          ],
+        },
+      ],
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.reset,
+      description: "현재 곡·예약곡·처리 중 요청·반복 설정을 모두 초기화합니다",
     },
     {
       type: 1 as const,

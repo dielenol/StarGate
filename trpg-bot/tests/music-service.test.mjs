@@ -13,6 +13,7 @@ import {
   MusicService,
 } from "../dist/music/music-service.js";
 import {
+  MusicRepeatMode,
   MusicOperationAbortedError,
   MusicUserError,
 } from "../dist/music/types.js";
@@ -235,6 +236,56 @@ test("연속 enqueue의 첫 대기곡 번호는 1이고 재생 종료 후 다음
   session.disconnect();
 });
 
+test("현재 곡 반복은 정상 종료만 반복하고 건너뛰기는 다음 곡으로 진행한다", async () => {
+  const { session, player } = createSession();
+  session.enqueue(track(1));
+  session.enqueue(track(2));
+  session.setRepeatMode(MusicRepeatMode.track);
+  await waitFor(() => player.played.length === 1, "첫 트랙이 재생되지 않았습니다.");
+
+  player.finish();
+  await waitFor(() => player.played.length === 2, "현재 곡이 반복되지 않았습니다.");
+  assert.equal(session.snapshot().current?.videoId, "video-1");
+  assert.equal(session.snapshot().upcoming[0]?.videoId, "video-2");
+
+  assert.equal(session.skip()?.videoId, "video-1");
+  await waitFor(() => player.played.length === 3, "건너뛴 뒤 다음 곡이 재생되지 않았습니다.");
+  assert.equal(session.snapshot().current?.videoId, "video-2");
+  assert.equal(session.snapshot().repeatMode, MusicRepeatMode.track);
+  session.disconnect();
+});
+
+test("대기열 전체 반복은 완료한 곡을 끝으로 보내 순서를 순환한다", async () => {
+  const { session, player } = createSession();
+  session.enqueueMany([track(1), track(2)]);
+  session.setRepeatMode(MusicRepeatMode.queue);
+  await waitFor(() => player.played.length === 1, "첫 트랙이 재생되지 않았습니다.");
+
+  player.finish();
+  await waitFor(() => player.played.length === 2, "둘째 트랙으로 전환되지 않았습니다.");
+  assert.equal(session.snapshot().current?.videoId, "video-2");
+  assert.equal(session.snapshot().upcoming[0]?.videoId, "video-1");
+
+  player.finish();
+  await waitFor(() => player.played.length === 3, "대기열 처음으로 순환하지 않았습니다.");
+  assert.equal(session.snapshot().current?.videoId, "video-1");
+  assert.equal(session.snapshot().upcoming[0]?.videoId, "video-2");
+  session.disconnect();
+});
+
+test("재생 오류가 난 곡은 반복 대기열에 다시 넣지 않는다", async () => {
+  const { session, player } = createSession();
+  session.enqueueMany([track(1), track(2)]);
+  session.setRepeatMode(MusicRepeatMode.queue);
+  await waitFor(() => player.played.length === 1, "첫 트랙이 재생되지 않았습니다.");
+
+  player.emit("error", new Error("stream failed"));
+  await waitFor(() => player.played.length === 2, "오류 뒤 다음 곡으로 넘어가지 않았습니다.");
+  assert.equal(session.snapshot().current?.videoId, "video-2");
+  assert.equal(session.snapshot().upcoming.length, 0);
+  session.disconnect();
+});
+
 test("준비 중 skip은 AbortSignal을 전달하고 다음 곡을 재생한다", async () => {
   let preparingSignal;
   const createAudioResource = (item, options) => {
@@ -268,7 +319,7 @@ test("준비 중 skip은 AbortSignal을 전달하고 다음 곡을 재생한다"
   session.disconnect();
 });
 
-test("stop은 현재 곡과 대기열을 정리하고 유휴 시간이 지나면 연결을 종료한다", async () => {
+test("초기화는 현재 곡·대기열·반복 설정을 정리하고 유휴 시 연결을 종료한다", async () => {
   let disposeCount = 0;
   const { session, player, connection, destroyedNotices } = createSession({
     createAudioResource: async (item) =>
@@ -279,11 +330,13 @@ test("stop은 현재 곡과 대기열을 정리하고 유휴 시간이 지나면
   });
   session.enqueue(track(1));
   session.enqueue(track(2));
+  session.setRepeatMode(MusicRepeatMode.queue);
   await waitFor(() => player.played.length === 1, "재생이 시작되지 않았습니다.");
 
-  assert.equal(session.stop(), 2);
+  assert.equal(session.reset(), 2);
   assert.equal(session.snapshot().current, null);
   assert.equal(session.snapshot().upcoming.length, 0);
+  assert.equal(session.snapshot().repeatMode, MusicRepeatMode.off);
   assert.equal(disposeCount, 1);
   await waitFor(
     () => connection.state.status === VoiceConnectionStatus.Destroyed,
@@ -421,6 +474,114 @@ test("MusicService는 길드별 동시 해석과 음성 채널 선점을 제한�
   await service.destroyAll();
 });
 
+test("재생목록은 남은 대기열 자리까지만 원래 순서로 일괄 추가한다", async () => {
+  let resolvedTrackIndex = 0;
+  const panel = new FakePanel();
+  const service = new MusicService({}, "guild-id", "music-channel-id", {
+    panel,
+    resolveTrack: async () => metadata(++resolvedTrackIndex),
+    resolvePlaylist: async (query) =>
+      query.includes("large")
+        ? {
+            title: "대형 재생목록",
+            tracks: Array.from({ length: 60 }, (_, index) => metadata(101 + index)),
+            sourceTrackCount: 60,
+            truncated: false,
+          }
+        : {
+            title: "테스트 재생목록",
+            tracks: [metadata(201), metadata(202), metadata(203)],
+            sourceTrackCount: 3,
+            truncated: false,
+          },
+    inspectRuntime: async () => ({
+      ytDlpVersion: "test",
+      ffmpegVersion: "test",
+    }),
+    connectSession: async (channel, sessionPanel, onDestroyed) =>
+      new GuildMusicSession(
+        channel.guild.id,
+        channel.id,
+        new FakeConnection(),
+        sessionPanel,
+        onDestroyed,
+        new FakePlayer(),
+        {
+          createAudioResource: async (item) => managedResource(item),
+          idleDisconnectMs: 1_000,
+          emptyChannelDisconnectMs: 1_000,
+        },
+      ),
+  });
+  await service.initialize();
+  const { guild, voiceA } = createGuildAndChannels(["user-1"]);
+
+  const largeResult = await service.resolveAndEnqueuePlaylist(
+    enqueueRequest(guild, voiceA, "user-1", "https://youtube.com/playlist?list=large"),
+  );
+  assert.equal(largeResult.addedCount, 50);
+  assert.equal(largeResult.omittedCount, 10);
+  assert.equal(largeResult.truncated, true);
+
+  for (let index = 0; index < 49; index += 1) {
+    await service.resolveAndEnqueue(
+      enqueueRequest(guild, voiceA, "user-1", `단일 곡 ${index + 1}`),
+    );
+  }
+
+  const result = await service.resolveAndEnqueuePlaylist(
+    enqueueRequest(guild, voiceA, "user-1", "https://youtube.com/playlist?list=test"),
+  );
+  assert.deepEqual(result, {
+    playlistTitle: "테스트 재생목록",
+    addedCount: 1,
+    omittedCount: 2,
+    truncated: false,
+    startedImmediately: false,
+    firstQueuePosition: 99,
+  });
+  const snapshot = service.getSnapshot(guild.id);
+  assert.equal((snapshot.current ? 1 : 0) + snapshot.upcoming.length, 100);
+  assert.equal(snapshot.upcoming.at(-1)?.videoId, "video-201");
+  await service.destroyAll();
+});
+
+test("세션 연결 전 초기화도 해석 중 요청을 취소한다", async () => {
+  let pendingSignal;
+  const service = new MusicService({}, "guild-id", "music-channel-id", {
+    panel: new FakePanel(),
+    resolveTrack: (_query, options) => {
+      pendingSignal = options.signal;
+      return new Promise((_resolve, reject) => {
+        const handleAbort = () => reject(options.signal.reason);
+        options.signal.addEventListener("abort", handleAbort, { once: true });
+      });
+    },
+    inspectRuntime: async () => ({
+      ytDlpVersion: "test",
+      ffmpegVersion: "test",
+    }),
+  });
+  await service.initialize();
+  const { guild, voiceA } = createGuildAndChannels(["user-1"]);
+  const pending = service.resolveAndEnqueue(
+    enqueueRequest(guild, voiceA, "user-1", "해석 중인 곡"),
+  );
+  await waitFor(() => Boolean(pendingSignal), "해석 요청이 시작되지 않았습니다.");
+
+  assert.deepEqual(await service.reset(guild.id, voiceA.id), {
+    removedTracks: 0,
+    cancelledRequests: 1,
+  });
+  assert.equal(pendingSignal.aborted, true);
+  await assert.rejects(
+    pending,
+    (error) =>
+      error instanceof MusicUserError && /취소되었습니다/.test(error.message),
+  );
+  await service.destroyAll();
+});
+
 test("예약 슬롯은 해석 완료 전에도 100곡 대기열 상한을 지킨다", async () => {
   let resolvedTrackIndex = 0;
   const panel = new FakePanel();
@@ -473,7 +634,10 @@ test("예약 슬롯은 해석 완료 전에도 100곡 대기열 상한을 지킨
     (error) =>
       error instanceof MusicUserError && /최대 100곡/.test(error.message),
   );
-  assert.equal(service.stop(guild.id, voiceA.id), 100);
+  assert.deepEqual(await service.reset(guild.id, voiceA.id), {
+    removedTracks: 99,
+    cancelledRequests: 1,
+  });
   await assert.rejects(
     reserved,
     (error) =>

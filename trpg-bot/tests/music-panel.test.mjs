@@ -7,6 +7,7 @@ import {
   buildMusicPanelEmbed,
   idleMusicPanelView,
 } from "../dist/music/music-panel.js";
+import { MusicRepeatMode } from "../dist/music/types.js";
 
 function track(index = 1) {
   return {
@@ -37,6 +38,7 @@ test("재생 상태판은 현재 곡·음질·요청자와 압축된 대기열�
     currentQualityMode: "opus-passthrough",
     upcoming: Array.from({ length: 7 }, (_, index) => track(index + 2)),
     paused: false,
+    repeatMode: MusicRepeatMode.queue,
     recentError: null,
     notice: null,
   }).toJSON();
@@ -44,6 +46,7 @@ test("재생 상태판은 현재 곡·음질·요청자와 압축된 대기열�
   assert.equal(embed.title, "▶️ 현재 재생 중");
   assert.ok(embed.fields.some((field) => field.value.includes("재인코딩 없음")));
   assert.ok(embed.fields.some((field) => field.value.includes("요청자 1")));
+  assert.ok(embed.fields.some((field) => field.value.includes("대기열 전체")));
   const queue = embed.fields.find((field) => field.name.includes("총 7곡"));
   assert.ok(queue);
   assert.match(queue.value, /외 2곡/);
@@ -57,6 +60,7 @@ test("일시정지와 최근 오류도 새 메시지 없이 표현할 수 있다
     currentQualityMode: "opus-transcode",
     upcoming: [],
     paused: true,
+    repeatMode: MusicRepeatMode.track,
     recentError: "앞선 곡의 스트림이 중단되었습니다.",
     notice: null,
   }).toJSON();
@@ -108,6 +112,7 @@ test("기존 상태판을 복구한 뒤 새 메시지 없이 순서대로 수정
     currentQualityMode: null,
     upcoming: [],
     paused: false,
+    repeatMode: MusicRepeatMode.off,
     recentError: null,
     notice: null,
   });
@@ -118,6 +123,7 @@ test("기존 상태판을 복구한 뒤 새 메시지 없이 순서대로 수정
     currentQualityMode: "opus-passthrough",
     upcoming: [],
     paused: false,
+    repeatMode: MusicRepeatMode.off,
     recentError: null,
     notice: null,
   });
@@ -181,6 +187,7 @@ test("편집 중 상태가 여러 번 바뀌면 현재 편집과 최신 상태�
     currentQualityMode: null,
     upcoming: [],
     paused: false,
+    repeatMode: MusicRepeatMode.off,
     recentError: null,
     notice: null,
   });
@@ -194,6 +201,7 @@ test("편집 중 상태가 여러 번 바뀌면 현재 편집과 최신 상태�
       currentQualityMode: "opus-passthrough",
       upcoming: [],
       paused: index === 20,
+      repeatMode: MusicRepeatMode.off,
       recentError: null,
       notice: null,
     });

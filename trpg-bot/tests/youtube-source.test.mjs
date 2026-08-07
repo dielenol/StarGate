@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   isWebmOpusFormat,
+  normalizeYoutubePlaylistRequest,
   normalizeYoutubeRequest,
   parseYoutubeMediaSource,
+  parseYoutubePlaylistMetadata,
   parseYoutubeTrackMetadata,
   resolveYoutubeTrack,
   YoutubeSourceError,
@@ -41,6 +43,24 @@ test("외부 URL과 로컬 스킴을 차단한다", () => {
   ]) {
     assert.throws(
       () => normalizeYoutubeRequest(input),
+      (error) => error instanceof YoutubeSourceError,
+    );
+  }
+});
+
+test("재생목록 요청은 YouTube list 식별자가 있는 URL만 허용한다", () => {
+  assert.equal(
+    normalizeYoutubePlaylistRequest(
+      "https://www.youtube.com/watch?v=video123&list=playlist123",
+    ),
+    "https://www.youtube.com/watch?v=video123&list=playlist123",
+  );
+  for (const input of [
+    "검색어 재생목록",
+    "https://www.youtube.com/watch?v=video123",
+  ]) {
+    assert.throws(
+      () => normalizeYoutubePlaylistRequest(input),
       (error) => error instanceof YoutubeSourceError,
     );
   }
@@ -95,6 +115,46 @@ test("검색 결과 wrapper의 첫 영상과 선택 포맷을 정규화한다", 
     isLive: false,
     preferredQualityMode: "opus-passthrough",
   });
+});
+
+test("flat 재생목록은 순서를 유지하고 비공개 영상을 제외한다", () => {
+  const playlist = parseYoutubePlaylistMetadata(
+    JSON.stringify({
+      title: "테스트 목록",
+      playlist_count: 4,
+      entries: [
+        {
+          id: "video-1",
+          title: "첫 곡",
+          url: "video-1",
+          duration: 61.8,
+        },
+        {
+          id: "private-2",
+          title: "[Private video]",
+          availability: "private",
+        },
+        {
+          id: "video-3",
+          title: "셋째 곡",
+          webpage_url: "https://www.youtube.com/watch?v=video-3",
+          duration: 183,
+        },
+      ],
+    }),
+  );
+
+  assert.equal(playlist.title, "테스트 목록");
+  assert.equal(playlist.sourceTrackCount, 4);
+  assert.equal(playlist.truncated, true);
+  assert.deepEqual(
+    playlist.tracks.map((track) => [track.videoId, track.title, track.url]),
+    [
+      ["video-1", "첫 곡", "https://www.youtube.com/watch?v=video-1"],
+      ["video-3", "셋째 곡", "https://www.youtube.com/watch?v=video-3"],
+    ],
+  );
+  assert.equal(playlist.tracks[0].durationSeconds, 61);
 });
 
 test("직접 미디어 헤더를 정규화하고 비 Opus 포맷은 변환 경로로 둔다", () => {

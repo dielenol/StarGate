@@ -4,7 +4,12 @@ import { ChannelType, EmbedBuilder } from "discord.js";
 
 import type { Client, Message, TextChannel } from "discord.js";
 
-import type { AudioQualityMode, MusicTrack } from "./types.js";
+import {
+  MusicRepeatMode,
+  type AudioQualityMode,
+  type MusicRepeatMode as MusicRepeatModeValue,
+  type MusicTrack,
+} from "./types.js";
 
 const PANEL_MARKER = "다채봇 음악 상태판";
 const PANEL_HISTORY_LIMIT = 25;
@@ -17,6 +22,7 @@ export interface MusicPanelView {
   currentQualityMode: AudioQualityMode | null;
   upcoming: readonly MusicTrack[];
   paused: boolean;
+  repeatMode: MusicRepeatModeValue;
   recentError: string | null;
   notice: string | null;
 }
@@ -53,6 +59,12 @@ function qualityLabel(mode: AudioQualityMode | null): string {
   if (mode === "opus-passthrough") return "원본 WebM/Opus · 재인코딩 없음";
   if (mode === "opus-transcode") return "48 kHz stereo Opus 128 kbps VBR · 1회 변환";
   return "오디오 소스 준비 중";
+}
+
+function repeatModeLabel(mode: MusicRepeatModeValue): string {
+  if (mode === MusicRepeatMode.track) return "🔂 현재 곡";
+  if (mode === MusicRepeatMode.queue) return "🔁 대기열 전체";
+  return "끔";
 }
 
 function statusFor(view: MusicPanelView): {
@@ -110,11 +122,18 @@ export function buildMusicPanelEmbed(view: MusicPanelView): EmbedBuilder {
     .setTimestamp();
 
   if (view.voiceChannelId) {
-    embed.addFields({
-      name: "음성 채널",
-      value: `<#${view.voiceChannelId}>`,
-      inline: true,
-    });
+    embed.addFields(
+      {
+        name: "음성 채널",
+        value: `<#${view.voiceChannelId}>`,
+        inline: true,
+      },
+      {
+        name: "반복",
+        value: repeatModeLabel(view.repeatMode),
+        inline: true,
+      },
+    );
   }
 
   if (view.current) {
@@ -193,6 +212,7 @@ export function idleMusicPanelView(notice: string | null = null): MusicPanelView
     currentQualityMode: null,
     upcoming: [],
     paused: false,
+    repeatMode: MusicRepeatMode.off,
     recentError: null,
     notice,
   };

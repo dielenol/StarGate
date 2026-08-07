@@ -147,7 +147,9 @@ function buildMusicHelpEmbed(musicChannelId: string | undefined): EmbedBuilder {
         "`/음악 재생 검색어:<YouTube 링크 또는 검색어>`",
         "예시: `/음악 재생 검색어:Persona 5 Beneath the Mask`",
         "예시: `/음악 재생 검색어:https://youtu.be/영상ID`",
-        "재생 중이면 최대 100곡의 대기열에 추가합니다. 재생목록 링크는 첫 영상만 처리합니다.",
+        "단일 곡만 처리하며 재생 중이면 최대 100곡의 대기열에 추가합니다.",
+        "`/음악 재생목록 링크:<YouTube 재생목록 URL>`",
+        "재생목록은 앞에서부터 한 요청 최대 50곡까지 순서대로 추가합니다.",
       ].join("\n"),
       inline: false,
     },
@@ -155,7 +157,8 @@ function buildMusicHelpEmbed(musicChannelId: string | undefined): EmbedBuilder {
       name: "재생 제어",
       value: [
         "`/음악 일시정지` · `/음악 재개`",
-        "`/음악 건너뛰기` · `/음악 정지`",
+        "`/음악 건너뛰기` · `/음악 반복 모드:<끔|현재 곡|대기열 전체>`",
+        "`/음악 초기화` — 현재 곡·예약곡·처리 중 요청·반복 설정을 모두 정리",
         "`/음악 대기열` · `/음악 퇴장`",
         "제어 명령은 봇과 같은 음성 채널에서만 사용할 수 있습니다.",
       ].join("\n"),
@@ -170,7 +173,7 @@ function buildMusicHelpEmbed(musicChannelId: string | undefined): EmbedBuilder {
     {
       name: "음질",
       value:
-        "WebM/Opus 원본은 재인코딩 없이 전달하고, 그 외 소스만 고품질 Opus로 한 번 변환합니다. 추가 변환을 피하기 위해 봇 볼륨·EQ는 제공하지 않습니다.",
+        "WebM/Opus 원본은 재인코딩 없이 전달하고, 그 외 소스만 고품질 Opus로 한 번 변환합니다. 추가 변환을 피하기 위해 봇 볼륨·EQ는 제공하지 않습니다. 음량은 음성 채널의 다채봇을 우클릭한 뒤 사용자 음량에서 조절하세요.",
       inline: false,
     },
   );

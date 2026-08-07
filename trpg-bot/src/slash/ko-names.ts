@@ -36,10 +36,12 @@ export const MUSIC_ROOT = "음악";
 /** `/음악` 아래에 노출되는 한글 서브커맨드. */
 export const MusicSubcommand = {
   play: "재생",
+  playlist: "재생목록",
   pause: "일시정지",
   resume: "재개",
   skip: "건너뛰기",
-  stop: "정지",
+  repeat: "반복",
+  reset: "초기화",
   queue: "대기열",
   leave: "퇴장",
 } as const;
@@ -48,6 +50,8 @@ export type MusicSubcommandName =
   (typeof MusicSubcommand)[keyof typeof MusicSubcommand];
 
 export const MUSIC_QUERY_OPTION = "검색어";
+export const MUSIC_PLAYLIST_OPTION = "링크";
+export const MUSIC_REPEAT_MODE_OPTION = "모드";
 
 export function isMusicCommandName(value: string): value is typeof MUSIC_ROOT {
   return value === MUSIC_ROOT;
