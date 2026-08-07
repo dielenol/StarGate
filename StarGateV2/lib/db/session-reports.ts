@@ -6,11 +6,17 @@ import "./init";
 
 export {
   listSessionReports,
+  listVisibleSessionReports,
   listSessionReportRefs,
+  listVisibleSessionReportRefs,
   findReportBySessionId,
   findReportById,
+  findVisibleReportById,
   findSessionReportsBySessionIds,
   findSessionReportsForPersonnel,
+  normalizeSessionReportMinRole,
+  isSessionReportVisibleToRole,
+  sessionReportVisibilityFilter,
   findSessionReportReferenceTargetIssues,
   validateAndLockSessionReportWrite,
   sanitizeSessionReportReferencesForPublicTargets,

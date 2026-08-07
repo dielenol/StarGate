@@ -2,11 +2,14 @@
  * session_reports CRUD
  */
 
-import { ObjectId, type ClientSession, type Db } from "mongodb";
+import { ObjectId, type ClientSession, type Db, type Document } from "mongodb";
 
-import type {
-  CreateSessionReportInput,
-  SessionReport,
+import {
+  ROLE_LEVEL_RANK,
+  ROLE_LEVELS,
+  type CreateSessionReportInput,
+  type RoleLevel,
+  type SessionReport,
 } from "../types/index.js";
 
 import { sessionReportsCol } from "../collections.js";
@@ -30,6 +33,40 @@ export type { SessionReportReferenceField } from "./session-report-reference-int
 const REPORT_REFERENCE_MAX_COUNT = 200;
 const REPORT_REFERENCE_MAX_LENGTH = 160;
 const REPORT_REFERENCE_FIELDS = SESSION_REPORT_REFERENCE_FIELDS;
+
+/** 미설정 legacy 보고서는 전체 인증 사용자에게 열려 있던 기존 계약(U)을 유지한다. */
+export function normalizeSessionReportMinRole(value: unknown): RoleLevel | null {
+  if (value === undefined || value === null) return "U";
+  if (
+    typeof value === "string" &&
+    (ROLE_LEVELS as readonly string[]).includes(value)
+  ) {
+    return value as RoleLevel;
+  }
+  return null;
+}
+
+export function isSessionReportVisibleToRole(
+  report: { minRole?: unknown },
+  viewerRole: RoleLevel,
+): boolean {
+  const minRole = normalizeSessionReportMinRole(report.minRole);
+  return minRole !== null && ROLE_LEVEL_RANK[viewerRole] >= ROLE_LEVEL_RANK[minRole];
+}
+
+/** Mongo 조회 단계에서 제한 보고서의 제목·본문·존재 자체를 fail-closed 한다. */
+export function sessionReportVisibilityFilter(viewerRole: RoleLevel): Document {
+  const allowedMinRoles = ROLE_LEVELS.filter(
+    (minRole) => ROLE_LEVEL_RANK[viewerRole] >= ROLE_LEVEL_RANK[minRole],
+  );
+  return {
+    $or: [
+      { minRole: { $exists: false } },
+      { minRole: null },
+      { minRole: { $in: allowedMinRoles } },
+    ],
+  };
+}
 
 export interface SessionReportReferenceTargetIssue {
   field: SessionReportReferenceField;
@@ -77,8 +114,9 @@ function uniqueReferenceValues(values: readonly string[]): string[] {
   return [...new Set(values)].sort();
 }
 
-async function resolvePublicSessionReportReferences(
+async function resolveSessionReportReferencesForMinRole(
   references: SessionReportReferences,
+  reportMinRole: unknown,
   options: { session?: ClientSession; db?: Db } = {},
 ): Promise<ResolvedSessionReportReferences> {
   const relatedWikiSlugs = uniqueReferenceValues(
@@ -96,12 +134,21 @@ async function resolvePublicSessionReportReferences(
     relatedPersonnelCodenames: [],
     relatedCatalogSlugs: [],
   };
+  const minRole = normalizeSessionReportMinRole(reportMinRole);
+  if (minRole === null) return resolved;
+
+  const canViewPrivateWikiAndCatalog =
+    ROLE_LEVEL_RANK[minRole] >= ROLE_LEVEL_RANK.V;
+  const canViewPrivatePersonnel = minRole === "GM";
   const db = options.db ?? await getDb();
   if (relatedWikiSlugs.length > 0) {
     const rows = await db
       .collection("wiki_pages")
       .find(
-        { slug: { $in: relatedWikiSlugs }, isPublic: true },
+        {
+          slug: { $in: relatedWikiSlugs },
+          ...(canViewPrivateWikiAndCatalog ? {} : { isPublic: true }),
+        },
         { projection: { slug: 1 }, session: options.session },
       )
       .toArray();
@@ -115,7 +162,7 @@ async function resolvePublicSessionReportReferences(
       .find(
         {
           codename: { $in: relatedPersonnelCodenames },
-          isPublic: { $ne: false },
+          ...(canViewPrivatePersonnel ? {} : { isPublic: { $ne: false } }),
         },
         { projection: { codename: 1 }, session: options.session },
       )
@@ -128,7 +175,9 @@ async function resolvePublicSessionReportReferences(
       .find(
         {
           slug: { $in: relatedCatalogSlugs },
-          isPublic: { $ne: false },
+          ...(canViewPrivateWikiAndCatalog
+            ? {}
+            : { isPublic: { $ne: false } }),
         },
         { projection: { slug: 1 }, session: options.session },
       )
@@ -178,25 +227,61 @@ export function filterSessionReportReferencesToResolvedTargets<
   });
 }
 
-/** 모든 보고서 출력 표면에 적용하는 공개 target 기반 fail-closed 정제. */
+/**
+ * 모든 보고서 출력 표면에 적용하는 target 기반 fail-closed 정제.
+ * legacy(U) 보고서는 공개 target만, V+ 제한 보고서는 그 최소 역할로 열람 가능한
+ * 비공개 wiki/catalog까지 보존한다. 함수명은 기존 호출 호환을 위해 유지한다.
+ */
 export async function sanitizeSessionReportReferencesForPublicTargets<
-  T extends SessionReportReferences,
+  T extends SessionReportReferences & { minRole?: unknown },
 >(
   reports: readonly T[],
   options: { session?: ClientSession; db?: Db } = {},
 ): Promise<T[]> {
   if (reports.length === 0) return [];
-  const references: SessionReportReferences = {};
-  for (const field of REPORT_REFERENCE_FIELDS) {
-    references[field] = uniqueReferenceValues(
-      reports.flatMap((report) => report[field] ?? []),
-    );
+  const roles = new Set<RoleLevel>();
+  for (const report of reports) {
+    const minRole = normalizeSessionReportMinRole(report.minRole);
+    if (minRole !== null) roles.add(minRole);
   }
-  const resolved = await resolvePublicSessionReportReferences(
-    references,
-    options,
+  const resolvedByRole = new Map<
+    RoleLevel,
+    ResolvedSessionReportReferences
+  >();
+  await Promise.all(
+    [...roles].map(async (minRole) => {
+      const group = reports.filter(
+        (report) => normalizeSessionReportMinRole(report.minRole) === minRole,
+      );
+      const references: SessionReportReferences = {};
+      for (const field of REPORT_REFERENCE_FIELDS) {
+        references[field] = uniqueReferenceValues(
+          group.flatMap((report) => report[field] ?? []),
+        );
+      }
+      resolvedByRole.set(
+        minRole,
+        await resolveSessionReportReferencesForMinRole(
+          references,
+          minRole,
+          options,
+        ),
+      );
+    }),
   );
-  return filterSessionReportReferencesToResolvedTargets(reports, resolved);
+  const emptyResolved: ResolvedSessionReportReferences = {
+    relatedWikiSlugs: [],
+    relatedPersonnelCodenames: [],
+    relatedCatalogSlugs: [],
+  };
+  return reports.flatMap((report) => {
+    const minRole = normalizeSessionReportMinRole(report.minRole);
+    const resolved =
+      minRole === null
+        ? emptyResolved
+        : resolvedByRole.get(minRole) ?? emptyResolved;
+    return filterSessionReportReferencesToResolvedTargets([report], resolved);
+  });
 }
 
 export function collectSessionReportReferenceTargetIssues(
@@ -224,10 +309,15 @@ export function collectSessionReportReferenceTargetIssues(
  */
 export async function findSessionReportReferenceTargetIssues(
   references: SessionReportReferences,
-  options: { session?: ClientSession; db?: Db } = {},
+  options: {
+    session?: ClientSession;
+    db?: Db;
+    reportMinRole?: unknown;
+  } = {},
 ): Promise<SessionReportReferenceTargetIssue[]> {
-  const resolved = await resolvePublicSessionReportReferences(
+  const resolved = await resolveSessionReportReferencesForMinRole(
     references,
+    options.reportMinRole,
     options,
   );
   return collectSessionReportReferenceTargetIssues(references, resolved);
@@ -288,7 +378,7 @@ export async function lockSessionReportReferenceTargets(
  * 신규 운영 report create가 공유하는 source + reference 불변조건 게이트.
  *
  * - 등록된 sessions/trpg_sessions source를 같은 transaction에서 write-lock
- * - 최종 3개 reference 배열을 공개 exact identity로 검증
+ * - 최종 3개 reference 배열을 보고서 최소 역할이 볼 수 있는 exact identity로 검증
  * - target lifecycle mutation과 같은 document를 touch해 TOCTTOU 차단
  * - 표시 제목은 source SSOT에서만 파생
  */
@@ -296,7 +386,7 @@ export async function validateAndLockSessionReportWrite(
   sessionId: string,
   references: SessionReportReferences,
   session: ClientSession,
-  options: { db?: Db } = {},
+  options: { db?: Db; reportMinRole?: unknown } = {},
 ): Promise<{ sessionTitle: string }> {
   const source = await lockReportSessionSource(sessionId, session, options);
   if (!source) throw new SessionReportSourceNotFoundError(sessionId);
@@ -309,7 +399,7 @@ export async function validateAndLockSessionReportWrite(
 export async function validateAndLockSessionReportReferences(
   references: SessionReportReferences,
   session: ClientSession,
-  options: { db?: Db } = {},
+  options: { db?: Db; reportMinRole?: unknown } = {},
 ): Promise<void> {
   const issues = await findSessionReportReferenceTargetIssues(references, {
     ...options,
@@ -345,6 +435,17 @@ function normalizeReportReferences(
 export async function listSessionReports(): Promise<SessionReport[]> {
   const col = await sessionReportsCol();
   const reports = await col.find().sort({ createdAt: -1 }).toArray();
+  return sanitizeSessionReportReferencesForPublicTargets(reports);
+}
+
+export async function listVisibleSessionReports(
+  viewerRole: RoleLevel,
+): Promise<SessionReport[]> {
+  const col = await sessionReportsCol();
+  const reports = await col
+    .find(sessionReportVisibilityFilter(viewerRole))
+    .sort({ createdAt: -1 })
+    .toArray();
   return sanitizeSessionReportReferencesForPublicTargets(reports);
 }
 
@@ -394,6 +495,7 @@ export async function findSessionReportsBySessionIds(
 export async function findSessionReportsForPersonnel(
   sessionIds: string[],
   codename: string,
+  viewerRole: RoleLevel,
 ): Promise<SessionReportRefLite[]> {
   const clauses: Record<string, unknown>[] = [];
   if (sessionIds.length > 0) clauses.push({ sessionId: { $in: sessionIds } });
@@ -405,7 +507,12 @@ export async function findSessionReportsForPersonnel(
 
   const col = await sessionReportsCol();
   return col
-    .find(clauses.length === 1 ? clauses[0] : { $or: clauses })
+    .find({
+      $and: [
+        sessionReportVisibilityFilter(viewerRole),
+        clauses.length === 1 ? clauses[0] : { $or: clauses },
+      ],
+    })
     .project<SessionReportRefLite>({
       sessionId: 1,
       sessionTitle: 1,
@@ -423,6 +530,7 @@ export type SessionReportRef = Pick<
   | "sessionId"
   | "sessionTitle"
   | "reportNumber"
+  | "minRole"
   | "locationLabel"
   | "participants"
   | "relatedCatalogSlugs"
@@ -454,6 +562,31 @@ export async function listSessionReportRefs(): Promise<SessionReportRef[]> {
       sessionId: 1,
       sessionTitle: 1,
       reportNumber: 1,
+      minRole: 1,
+      locationLabel: 1,
+      participants: 1,
+      relatedCatalogSlugs: 1,
+      relatedPersonnelCodenames: 1,
+      relatedWikiSlugs: 1,
+      createdAt: 1,
+    })
+    .sort({ createdAt: -1 })
+    .toArray();
+  return sanitizeSessionReportReferencesForPublicTargets(reports);
+}
+
+export async function listVisibleSessionReportRefs(
+  viewerRole: RoleLevel,
+): Promise<SessionReportRef[]> {
+  const col = await sessionReportsCol();
+  const reports = await col
+    .find(sessionReportVisibilityFilter(viewerRole))
+    .project<SessionReportRef>({
+      _id: 1,
+      sessionId: 1,
+      sessionTitle: 1,
+      reportNumber: 1,
+      minRole: 1,
       locationLabel: 1,
       participants: 1,
       relatedCatalogSlugs: 1,
@@ -473,6 +606,28 @@ export async function findReportById(
   if (!ObjectId.isValid(id)) return null;
   const col = await sessionReportsCol();
   return col.findOne({ _id: new ObjectId(id) }, { session: options.session });
+}
+
+export async function findVisibleReportById(
+  id: string,
+  viewerRole: RoleLevel,
+  options: { session?: ClientSession } = {},
+): Promise<SessionReport | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const col = await sessionReportsCol();
+  const report = await col.findOne(
+    {
+      $and: [
+        { _id: new ObjectId(id) },
+        sessionReportVisibilityFilter(viewerRole),
+      ],
+    },
+    { session: options.session },
+  );
+  if (!report) return null;
+  const [safeReport] =
+    await sanitizeSessionReportReferencesForPublicTargets([report], options);
+  return safeReport;
 }
 
 export async function createSessionReport(
@@ -509,7 +664,7 @@ export async function createSessionReport(
     sessionId,
     normalizedReferences,
     options.session,
-    options,
+    { ...options, reportMinRole: input.minRole },
   );
   // Source document lock serializes concurrent creates. The in-transaction
   // existence check therefore remains race-safe even before the unique index
@@ -610,7 +765,7 @@ export async function updateSessionReport(
   await validateAndLockSessionReportReferences(
     finalReferences,
     options.session,
-    options,
+    { ...options, reportMinRole: current.minRole },
   );
 
   const updateDoc: Record<string, unknown> = {

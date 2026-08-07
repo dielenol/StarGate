@@ -48,6 +48,24 @@ test("collection에 없는 payload 필드는 거부", () => {
   );
 });
 
+test("session report minRole은 공유 ERP 역할 도메인만 허용", () => {
+  for (const minRole of ["GM", "V", "A", "M", "H", "G", "J", "U"]) {
+    assert.doesNotThrow(() =>
+      validateSeedPayloadPatch("session_reports", { minRole }),
+    );
+  }
+  assert.throws(
+    () => validateSeedPayloadPatch("session_reports", { minRole: "R" }),
+    /schema 오류|Invalid option/u,
+  );
+  assert.doesNotThrow(() =>
+    validateSeedUpdate("session_reports", { $set: { minRole: "U" } }),
+  );
+  assert.doesNotThrow(() =>
+    validateSeedUpdate("session_reports", { $unset: { minRole: "" } }),
+  );
+});
+
 test("허용되지 않은 update operator와 root field를 거부", () => {
   assert.throws(
     () => validateSeedUpdate("wiki_pages", { $rename: { title: "name" } }),

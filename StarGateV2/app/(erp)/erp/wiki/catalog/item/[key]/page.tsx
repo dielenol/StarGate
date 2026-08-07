@@ -17,7 +17,7 @@ import {
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { findVisibleMasterItemBySlugOrId } from "@/lib/db/inventory";
-import { listSessionReports } from "@/lib/db/session-reports";
+import { listVisibleSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
 import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
@@ -107,7 +107,7 @@ export default async function CatalogItemPage({
 
   const [allPages, allReports] = await Promise.all([
     listWikiPages({ includePrivate: isCurator }).catch(() => []),
-    listSessionReports().catch(() => []),
+    listVisibleSessionReports(session.user.role).catch(() => []),
   ]);
   const visiblePages = isCurator
     ? allPages

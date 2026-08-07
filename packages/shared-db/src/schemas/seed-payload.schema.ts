@@ -522,6 +522,7 @@ const sessionReportPatchSchema = z
     provenanceSourceIds: uniqueStrings(z.string().min(1).max(200), 200),
     sessionTitle: z.string().min(1),
     reportNumber: z.string(),
+    minRole: z.enum(["GM", "V", "A", "M", "H", "G", "J", "U"]),
     summary: z.string(),
     highlights: stringArraySchema,
     participants: stringArraySchema,

@@ -7,7 +7,7 @@ import type {
 
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
-import { listSessionReports } from "@/lib/db/session-reports";
+import { listVisibleSessionReports } from "@/lib/db/session-reports";
 
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -35,9 +35,9 @@ export default async function SessionReportListPage() {
   }
 
   const isGmOrAbove = hasRole(session.user.role, "V");
-  const reports = (await listSessionReports().catch(() => [])).map(
-    serializeReport,
-  );
+  const reports = (
+    await listVisibleSessionReports(session.user.role).catch(() => [])
+  ).map(serializeReport);
 
   return (
     <>

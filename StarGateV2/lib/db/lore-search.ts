@@ -1,4 +1,8 @@
-import { searchLoreDocuments } from "@stargate/shared-db";
+import {
+  isSessionReportVisibleToRole,
+  searchLoreDocuments,
+  sessionReportVisibilityFilter,
+} from "@stargate/shared-db";
 import {
   ROLE_LEVEL_RANK,
   type LoreEntityKind,
@@ -150,6 +154,7 @@ async function resolveLiveIndexDocuments(
         ],
       };
   const publicVisibility = canViewPrivate ? {} : { isPublic: true };
+  const reportVisibility = sessionReportVisibilityFilter(viewer.role);
   const [wiki, reports, personnel, catalog, factions, institutions] =
     await Promise.all([
       db
@@ -170,12 +175,17 @@ async function resolveLiveIndexDocuments(
       db
         .collection("session_reports")
         .find({
-          $or: [
-            { sessionId: { $in: nonEmpty("report") } },
-            { _id: { $in: ids(nonEmpty("report")) } },
+          $and: [
+            reportVisibility,
+            {
+              $or: [
+                { sessionId: { $in: nonEmpty("report") } },
+                { _id: { $in: ids(nonEmpty("report")) } },
+              ],
+            },
           ],
         })
-        .project({ sessionId: 1, updatedAt: 1 })
+        .project({ sessionId: 1, minRole: 1, updatedAt: 1 })
         .toArray(),
       // Personnel index summaries can contain fields above the viewer's
       // clearance. Only existence is read here; indexed personnel results are
@@ -269,7 +279,7 @@ async function resolveLiveIndexDocuments(
       [`report:${asString(doc.sessionId)}`, `report:${String(doc._id)}`],
       `/erp/sessions/report/${String(doc._id)}`,
       doc,
-      true,
+      isSessionReportVisibleToRole(doc, "U"),
     );
   }
   // Keep the query above as an explicit live existence/visibility check, but
@@ -394,6 +404,7 @@ async function searchFallbackLore(
   // wiki/character/organization은 isPublic === true만 공개다. master_items만
   // 기존 카탈로그 계약상 명시적 false가 아니면 legacy public으로 처리한다.
   const publicVisibility = canViewPrivate ? {} : { isPublic: true };
+  const reportVisibility = sessionReportVisibilityFilter(viewer.role);
   const characterVisibility =
     viewer.role === "GM" ? {} : { isPublic: true };
   const characterBaseSearchFields = [
@@ -502,13 +513,18 @@ async function searchFallbackLore(
     db
       .collection("session_reports")
       .find({
-        $or: [
-          { sessionId: { $regex: regex } },
-          { sessionTitle: { $regex: regex } },
-          { summary: { $regex: regex } },
-          { highlights: { $regex: regex } },
-          { participants: { $regex: regex } },
-          { locationLabel: { $regex: regex } },
+        $and: [
+          reportVisibility,
+          {
+            $or: [
+              { sessionId: { $regex: regex } },
+              { sessionTitle: { $regex: regex } },
+              { summary: { $regex: regex } },
+              { highlights: { $regex: regex } },
+              { participants: { $regex: regex } },
+              { locationLabel: { $regex: regex } },
+            ],
+          },
         ],
       })
       .project({
@@ -517,6 +533,7 @@ async function searchFallbackLore(
         summary: 1,
         highlights: 1,
         locationLabel: 1,
+        minRole: 1,
         updatedAt: 1,
       })
       .sort({ updatedAt: -1, _id: -1 })
@@ -642,7 +659,7 @@ async function searchFallbackLore(
       category: "작전 보고서",
       tags: [asString(doc.sessionId), asString(doc.locationLabel)].filter(Boolean),
       href: `/erp/sessions/report/${String(doc._id)}`,
-      isPublic: true,
+      isPublic: isSessionReportVisibleToRole(doc, "U"),
       updatedAt: asDate(doc.updatedAt),
       source: "fallback" as const,
     })),

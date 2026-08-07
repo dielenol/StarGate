@@ -43,6 +43,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const relatedReports = await findPersonnelRelatedReports(
       filtered.lore,
       filtered.codename,
+      session.user.role,
     );
     return NextResponse.json({ character: filtered, relatedReports });
   } catch (err) {

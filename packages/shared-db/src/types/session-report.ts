@@ -1,5 +1,7 @@
 import type { ObjectId } from "mongodb";
 
+import type { RoleLevel } from "./character.js";
+
 export type SessionReportMapPrecision = "confirmed" | "estimated";
 
 export interface SessionReport {
@@ -11,6 +13,8 @@ export interface SessionReport {
   sessionTitle: string;
   /** 지도/목록에 표시할 고정 보고서 번호. 없으면 날짜순 위치로 계산한다. */
   reportNumber?: string;
+  /** 보고서 본문·역링크·검색 결과를 열람할 수 있는 최소 ERP 역할. 미설정 legacy 행은 U로 본다. */
+  minRole?: RoleLevel;
   summary: string;
   highlights: string[];
   participants: string[];

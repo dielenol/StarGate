@@ -15,7 +15,7 @@ import {
 import {
   deleteSessionReport,
   findReportById,
-  sanitizeSessionReportReferencesForPublicTargets,
+  findVisibleReportById,
   SessionReportReferenceTargetError,
   SessionReportReferenceConflictError,
   SessionReportSourceNotFoundError,
@@ -42,7 +42,7 @@ export async function GET(
   }
 
   try {
-    const report = await findReportById(id);
+    const report = await findVisibleReportById(id, session.user.role);
     if (!report) {
       return NextResponse.json(
         { error: "리포트를 찾을 수 없습니다." },
@@ -50,9 +50,7 @@ export async function GET(
       );
     }
 
-    const [safeReport] =
-      await sanitizeSessionReportReferencesForPublicTargets([report]);
-    return NextResponse.json({ report: safeReport });
+    return NextResponse.json({ report });
   } catch {
     return NextResponse.json(
       { error: "리포트 조회 실패" },
@@ -109,9 +107,14 @@ export async function PATCH(
   if ("error" in references) return references.error;
 
   try {
-    const before = await findReportById(id);
+    const before = await findVisibleReportById(id, session.user.role);
+    if (!before) {
+      return NextResponse.json(
+        { error: "리포트를 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
     if (
-      before &&
       !isExpectedUpdatedAtCurrent(before.updatedAt, expectedUpdatedAt.value)
     ) {
       return NextResponse.json(

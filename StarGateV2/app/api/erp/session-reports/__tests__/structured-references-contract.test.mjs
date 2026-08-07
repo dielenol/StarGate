@@ -47,14 +47,22 @@ test("보고서 생성·수정 API가 검증된 구조화 링크만 CRUD로 전�
   assert.match(sharedCrud, /lockSessionReportReferenceTargets\(/u);
 });
 
-test("보고서 조회는 공개 target 정제를 거치고 shared 수정이 전체 최종 참조를 재검증한다", async () => {
+test("보고서 조회는 역할·target 정제를 거치고 shared 수정이 전체 최종 참조를 재검증한다", async () => {
   const [updateRoute, sharedCrud] = await Promise.all([
     readFile(UPDATE_ROUTE, "utf8"),
     readFile(new URL("session-reports.ts", SHARED_CRUD_ROOT), "utf8"),
   ]);
   assert.match(
     updateRoute,
-    /sanitizeSessionReportReferencesForPublicTargets\(\[report\]\)/u,
+    /findVisibleReportById\(id, session\.user\.role\)/u,
+  );
+  const visibleReadFunction = sharedCrud.slice(
+    sharedCrud.indexOf("export async function findVisibleReportById("),
+    sharedCrud.indexOf("export async function createSessionReport("),
+  );
+  assert.match(
+    visibleReadFunction,
+    /sanitizeSessionReportReferencesForPublicTargets\(\[report\], options\)/u,
   );
   assert.match(sharedCrud, /const current = await col\.findOne/u);
   assert.match(sharedCrud, /const finalReferences: SessionReportReferences/u);

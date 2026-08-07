@@ -11,7 +11,7 @@ import {
 } from "@/lib/api/session-report-validators";
 import {
   createSessionReport,
-  listSessionReports,
+  listVisibleSessionReports,
   SessionReportAlreadyExistsError,
   SessionReportReferenceTargetError,
   SessionReportReferenceConflictError,
@@ -30,7 +30,7 @@ export async function GET() {
   }
 
   try {
-    const reports = await listSessionReports();
+    const reports = await listVisibleSessionReports(session.user.role);
     return NextResponse.json(
       { reports },
       { headers: { "Cache-Control": "private, no-store" } },

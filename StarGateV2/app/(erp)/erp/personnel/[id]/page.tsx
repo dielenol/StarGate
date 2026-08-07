@@ -58,9 +58,11 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
   const [reportsForEvents, charactersForRelations] = await Promise.all([
     // SSR은 보고서 저장소 장애 시 Dossier 본문을 계속 보여주되, polling API는
     // 오류를 전파해 TanStack Query가 마지막 정상 링크 데이터를 보존하게 한다.
-    findPersonnelRelatedReports(filtered.lore, filtered.codename).catch(
-      () => [],
-    ),
+    findPersonnelRelatedReports(
+      filtered.lore,
+      filtered.codename,
+      session.user.role,
+    ).catch(() => []),
     relationTargetCodes.size > 0
       ? findCharactersByCodenames(Array.from(relationTargetCodes)).catch(
           () => [],

@@ -7,9 +7,8 @@ import { relatedCatalogItemsForReport } from "@/lib/catalog/related";
 import { listCharacterRefs } from "@/lib/db/characters";
 import { listMasterItemRefs } from "@/lib/db/inventory";
 import {
-  findReportById,
-  listSessionReportRefs,
-  sanitizeSessionReportReferencesForPublicTargets,
+  findVisibleReportById,
+  listVisibleSessionReportRefs,
   type SessionReportRef,
 } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
@@ -79,12 +78,10 @@ export default async function SessionReportDetailPage({ params }: Props) {
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
 
-  const rawReport = await findReportById(id);
-  if (!rawReport) {
+  const report = await findVisibleReportById(id, session.user.role);
+  if (!report) {
     notFound();
   }
-  const [report] =
-    await sanitizeSessionReportReferencesForPublicTargets([rawReport]);
 
   const isGmOrAbove = hasRole(session.user.role, "V");
   const isAdmin = hasRole(session.user.role, "GM");
@@ -110,7 +107,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
     listWikiPages({ includePrivate: isGmOrAbove }).catch(() => []),
     listCharacterRefs().catch(() => []),
     listMasterItemRefs().catch(() => []),
-    listSessionReportRefs().catch(() => [report]),
+    listVisibleSessionReportRefs(session.user.role).catch(() => [report]),
   ]);
   const reportNumberMeta = findOperationReportNumberMeta<SessionReportRef>(
     report,

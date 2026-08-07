@@ -808,6 +808,7 @@ function summarizeSavedDoc(
         ...base,
         sessionId: doc.sessionId,
         sessionTitle: doc.sessionTitle,
+        minRole: doc.minRole,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         locationLabel: doc.locationLabel,
@@ -1074,7 +1075,7 @@ async function auditSeedReferenceIntegrity(
     }
     const issues = await findSessionReportReferenceTargetIssues(
       reportReferencesFromCandidate(candidate),
-      { db },
+      { db, reportMinRole: candidate.minRole },
     );
     if (issues.length > 0) {
       throw new Error(
@@ -1445,7 +1446,7 @@ async function enforceSessionReportReferenceIntegrity(
         sessionId,
         references,
         session,
-        { db },
+        { db, reportMinRole: candidate.minRole },
       );
       if (sessionTitle !== integrity.sessionTitle) {
         throw new Error(
@@ -1453,7 +1454,10 @@ async function enforceSessionReportReferenceIntegrity(
         );
       }
     } else {
-      await validateAndLockSessionReportReferences(references, session, { db });
+      await validateAndLockSessionReportReferences(references, session, {
+        db,
+        reportMinRole: candidate.minRole,
+      });
     }
     return;
   }

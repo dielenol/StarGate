@@ -1,4 +1,5 @@
 import type { LoreSheet } from "@/types/character";
+import type { UserRole } from "@/types/user";
 
 import { findSessionReportsForPersonnel } from "@/lib/db/session-reports";
 
@@ -14,6 +15,7 @@ export interface PersonnelRelatedReport {
 export async function findPersonnelRelatedReports(
   lore: LoreSheet,
   codename: string,
+  viewerRole: UserRole,
 ): Promise<PersonnelRelatedReport[]> {
   const personalityObservations = Array.isArray(lore.personalityObservations)
     ? lore.personalityObservations
@@ -34,6 +36,7 @@ export async function findPersonnelRelatedReports(
   const reports = await findSessionReportsForPersonnel(
     validSessionIds,
     codename,
+    viewerRole,
   );
   return reports
     .map((report) => ({

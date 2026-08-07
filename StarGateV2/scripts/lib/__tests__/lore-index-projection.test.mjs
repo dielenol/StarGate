@@ -152,6 +152,19 @@ test("6개 도메인을 source/alias/edge/claim/search projection으로 변환",
   assert.equal(bundle.warnings.length, 0);
 });
 
+test("제한 보고서의 lore projection도 같은 최소 역할을 강제", () => {
+  const input = snapshot();
+  input.sessionReports[0].minRole = "V";
+  const bundle = buildLoreProjection(input);
+  const report = bundle.searchDocuments.find(
+    (doc) => doc.entityRef === "report:SESSION-1",
+  );
+  assert.deepEqual(report?.access, {
+    visibility: "restricted",
+    allowedRoles: ["V"],
+  });
+});
+
 test("같은 snapshot은 stable IDs와 logical keys를 재현", () => {
   const first = buildLoreProjection(snapshot());
   const second = buildLoreProjection(snapshot());

@@ -7,7 +7,7 @@ import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForWiki } from "@/lib/catalog/related";
 import { listCharacterRefs } from "@/lib/db/characters";
 import { listMasterItemRefs } from "@/lib/db/inventory";
-import { listSessionReportRefs } from "@/lib/db/session-reports";
+import { listVisibleSessionReportRefs } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { findVisibleWikiPageById, listWikiPageRefs } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
@@ -91,7 +91,7 @@ export default async function WikiDetailPage({
     await Promise.all([
       findVisibleWikiPageById(id, { includePrivate: canViewPrivate }),
       listWikiPageRefs({ includePrivate: canViewPrivate }).catch(() => []),
-      listSessionReportRefs().catch(() => []),
+      listVisibleSessionReportRefs(session.user.role).catch(() => []),
       listCharacterRefs().catch(() => []),
       listMasterItemRefs().catch(() => []),
     ]);

@@ -21,8 +21,13 @@ import type {
   LoreSearchDocument,
   LoreSearchFacets,
   LoreSource,
+  RoleLevel,
 } from "@stargate/shared-db/types";
-import { LORE_DOMAIN_SEARCH_PROJECTION_OWNER } from "@stargate/shared-db/types";
+import {
+  LORE_DOMAIN_SEARCH_PROJECTION_OWNER,
+  ROLE_LEVEL_RANK,
+  ROLE_LEVELS,
+} from "@stargate/shared-db/types";
 import type { Document } from "mongodb";
 
 export interface LoreDomainSnapshot {
@@ -162,6 +167,25 @@ function publicFlagAccess(
     return { visibility: "public" };
   }
   return restrictedAccess(options.ownerId);
+}
+
+function sessionReportAccess(value: unknown): LoreAccess {
+  const minRole: RoleLevel =
+    value === undefined || value === null
+      ? "U"
+      : typeof value === "string" &&
+          (ROLE_LEVELS as readonly string[]).includes(value)
+        ? (value as RoleLevel)
+        : "GM";
+  if (minRole === "U") return { visibility: "authenticated" };
+  if (minRole === "GM") return { visibility: "gm-only" };
+  return {
+    visibility: "restricted",
+    allowedRoles: ROLE_LEVELS.filter(
+      (role) =>
+        role !== "GM" && ROLE_LEVEL_RANK[role] >= ROLE_LEVEL_RANK[minRole],
+    ),
+  };
 }
 
 export function intersectLoreAccess(left: LoreAccess, right: LoreAccess): LoreAccess {
@@ -419,7 +443,7 @@ function buildEntities(snapshot: LoreDomainSnapshot): EntityCandidate[] {
         sessionIds: [key],
       }),
       status: "session-confirmed",
-      access: { visibility: "authenticated" },
+      access: sessionReportAccess(doc.minRole),
       sourceCollection: "session_reports",
       sourceKey: key,
       sourceTitle: title,

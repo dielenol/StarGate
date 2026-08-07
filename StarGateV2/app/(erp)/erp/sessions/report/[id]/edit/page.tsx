@@ -8,8 +8,7 @@ import type {
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import {
-  findReportById,
-  sanitizeSessionReportReferencesForPublicTargets,
+  findVisibleReportById,
 } from "@/lib/db/session-reports";
 import { isValidObjectId } from "@/lib/db/utils";
 import { formatOperationReportTitle } from "@/lib/format/session-report";
@@ -52,12 +51,10 @@ export default async function EditReportPage({ params }: Props) {
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
 
-  const rawReport = await findReportById(id);
-  if (!rawReport) {
+  const report = await findVisibleReportById(id, session.user.role);
+  if (!report) {
     notFound();
   }
-  const [report] =
-    await sanitizeSessionReportReferencesForPublicTargets([rawReport]);
 
   const reportId = report._id?.toString() ?? id;
   const title = formatOperationReportTitle(report.sessionTitle);
