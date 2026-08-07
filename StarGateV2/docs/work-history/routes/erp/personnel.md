@@ -59,3 +59,12 @@
 - 세션 로그로 확정된 5명(로드리온, 페초린, 게라쉬모프, 퍼크슈타인 에스홀, 닥터 모스)의 spec과 멱등 payload를 작성했다. 라이브 DB write는 실행하지 않았다.
 - 검증: shared-db schema 159건, lore 전체 감사와 NPC 승인 게이트, payload live read-only dry-run, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 데스크톱·모바일 목록/상세 브라우저 확인, critical risk review
 - 관련 커밋: `daa34eb8`
+
+## 2026-08-07 · 버그 수정 · 사망 아카이브 집계 및 데이터 계약
+
+- 명시적 사망 인원을 조직도의 `HEADCOUNT`·등급 분포와 직속·하위 조직의 `AGENT`/`NPC` 현역 집계에서 제외하고 아카이브 건수로만 분리했다.
+- `lifeStatus`·`lifeStatusAt`·`lifeStatusEventId`가 최종 문서에서 모두 함께 존재하거나 모두 없도록 검증하고, 목록 projection에서는 상세 Dossier만 사용하는 근거 사건 ID를 제외했다.
+- 아카이브와 사망 스탬프의 협폭 보정을 viewport가 아닌 실제 `personnel` 컨테이너 폭 기준으로 전환했다.
+- 검증: shared-db schema 162건, 대상 회귀 테스트 31건, NPC 승인 게이트, payload live read-only dry-run, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 820px·590px·580px 브라우저 확인, critical risk review
+- 관련 커밋: `aaafb429`
+- 후속 작업: 별도 라이브 실행 승인 후 사망 인원 5명 payload 적용·DB 재조회·상세 보고서 링크 확인
