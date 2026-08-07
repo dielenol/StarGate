@@ -159,12 +159,12 @@ test("S6: toDbNpc — mainImage와 posterImage 독립성 (서로 영향 없음)"
   const doc = toDbNpc(
     {
       ...baseFrontmatter,
+      mainImage: "/assets/profile.webp",
       posterImage: "/assets/wide.png",
     },
     emptyBody
   );
-  // mainImage는 toDbNpc에서 항상 ""로 초기화 (frontmatter에 main image는 없음)
-  assert.equal(doc.lore.mainImage, "");
+  assert.equal(doc.lore.mainImage, "/assets/profile.webp");
   // posterImage는 frontmatter 값이 그대로 반영
   assert.equal(doc.lore.posterImage, "/assets/wide.png");
 });

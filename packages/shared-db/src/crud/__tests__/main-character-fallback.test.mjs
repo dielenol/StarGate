@@ -31,6 +31,12 @@ if (!HAS_MODULE_MOCK) {
   function matchesFilter(doc, filter) {
     if (filter.type && doc.type !== filter.type) return false;
     if (filter.ownerId && doc.ownerId !== filter.ownerId) return false;
+    if (
+      filter._id?.$in &&
+      !filter._id.$in.some((id) => id.toHexString() === doc._id.toHexString())
+    ) {
+      return false;
+    }
     if (filter.$or && !filter.$or.some((condition) => matchesTierCondition(doc, condition))) {
       return false;
     }
@@ -40,6 +46,10 @@ if (!HAS_MODULE_MOCK) {
   function projectDoc(doc, projection) {
     const projected = {};
     for (const key of Object.keys(projection)) {
+      if (key === "lore.name" && doc.lore?.name !== undefined) {
+        projected.lore = { name: doc.lore.name };
+        continue;
+      }
       if (projection[key] && key in doc) projected[key] = doc[key];
     }
     return projected;
@@ -81,6 +91,8 @@ if (!HAS_MODULE_MOCK) {
   );
 
   const {
+    findDisplayCharacterByOwner,
+    findDisplayCharacterLiteByOwner,
     findMainCharacterByOwner,
     findMainCharacterLiteByOwner,
   } = await import("../../../dist/crud/characters.js");
@@ -118,6 +130,50 @@ if (!HAS_MODULE_MOCK) {
     const main = await findMainCharacterByOwner(OWNER_ID);
     assert.equal(main.codename, "AGENT_MAIN");
     assert.equal(main.type, "AGENT");
+  });
+
+  test("ACTIVE GM의 명시적 NPC는 표시 신원만 바꾸고 경제 메인은 유지", async () => {
+    resetFixtures();
+    const mainAgentId = new ObjectId();
+    const selectedNpcId = new ObjectId();
+    userDocs = [
+      {
+        _id: new ObjectId(OWNER_ID),
+        role: "GM",
+        status: "ACTIVE",
+        characterIds: [mainAgentId.toHexString(), selectedNpcId.toHexString()],
+      },
+    ];
+    characterDocs = [
+      {
+        _id: mainAgentId,
+        codename: "AGENT_MAIN",
+        type: "AGENT",
+        ownerId: OWNER_ID,
+        tier: "MAIN",
+        agentLevel: "G",
+        isPublic: false,
+        lore: { name: "경제 메인" },
+      },
+      {
+        _id: selectedNpcId,
+        codename: "CLAIRVOYANCE",
+        type: "NPC",
+        ownerId: OWNER_ID,
+        agentLevel: "H",
+        isPublic: true,
+        lore: { name: "수잔 델라웨어" },
+      },
+    ];
+
+    const main = await findMainCharacterByOwner(OWNER_ID);
+    const display = await findDisplayCharacterByOwner(OWNER_ID);
+    const displayLite = await findDisplayCharacterLiteByOwner(OWNER_ID);
+    assert.equal(main.codename, "AGENT_MAIN");
+    assert.equal(display.codename, "CLAIRVOYANCE");
+    assert.equal(display.agentLevel, "H");
+    assert.equal(displayLite.codename, "CLAIRVOYANCE");
+    assert.equal(displayLite.lore.name, "수잔 델라웨어");
   });
 
   test("ACTIVE GM이 AGENT 없이 NPC 1건만 소유하면 NPC fallback 반환", async () => {

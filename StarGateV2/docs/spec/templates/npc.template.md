@@ -4,7 +4,8 @@
   ─────────────────────
   필수: codename, type, role, nameKo, isPublic
   권장: slug, factionCode, institutionCode, gender, age, height, weight, source
-  선택: department, nameEn, nameNative, nickname, loreTags, appearsInEvents, previewImage, createdAt, updatedAt,
+  선택: department, nameEn, nameNative, nickname, loreTags, appearsInEvents, previewImage, mainImage,
+        pixelCharacterImage, posterImage, createdAt, updatedAt,
         lifeStatus, lifeStatusAt, lifeStatusEventId
 
   규칙
@@ -44,6 +45,9 @@ loreTags: []
 appearsInEvents: []
 source: create-lore
 previewImage:
+mainImage:
+pixelCharacterImage:
+posterImage:
 createdAt: 2026-04-20T00:00:00Z
 updatedAt: 2026-04-20T00:00:00Z
 ---

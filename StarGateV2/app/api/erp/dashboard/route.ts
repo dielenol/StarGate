@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   try {
     const payload = await getErpDashboardResponse({
       userId: session.user.id,
+      viewerRole: session.user.role,
       viewerDiscordId: session.user.discordId ?? null,
     });
     return jsonWithETag(request, payload);

@@ -495,8 +495,8 @@ export function toDbNpc(
       background: sections.background ?? "",
       quote: sections.quote ?? "",
 
-      // 이미지 — NPC frontmatter 에 mainImage 가 없으므로 ""로 초기화
-      mainImage: "",
+      // 이미지 — Dossier 기본 초상과 와이드 포스터를 독립적으로 보존
+      mainImage: parsed.mainImage ?? "",
       posterImage: emptyToUndefined(parsed.posterImage),
 
       // 메타 — frontmatter 에서 lore 영역으로 이동된 필드들

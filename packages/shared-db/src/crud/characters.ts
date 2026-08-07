@@ -444,6 +444,34 @@ async function canUseOwnedNpcFallback(ownerId: string): Promise<boolean> {
   return owner?.role === "GM" && owner.status === "ACTIVE";
 }
 
+async function selectedOwnedNpcIdsForDisplay(
+  ownerId: string,
+): Promise<ObjectId[]> {
+  if (!ObjectId.isValid(ownerId)) return [];
+
+  const users = await usersCol();
+  const owner = await users.findOne(
+    { _id: new ObjectId(ownerId) },
+    { projection: { role: 1, status: 1, characterIds: 1 } },
+  );
+  if (owner?.role !== "GM" || owner.status !== "ACTIVE") return [];
+
+  return (owner.characterIds ?? [])
+    .filter((id) => ObjectId.isValid(id))
+    .map((id) => new ObjectId(id));
+}
+
+function selectedDisplayCharacterIntegrityError(
+  ownerId: string,
+  docs: Pick<Character, "codename">[],
+): Error {
+  const codenames = docs.map((doc) => doc.codename).join(", ");
+  return new Error(
+    `findDisplayCharacterByOwner: owner=${ownerId} has ${docs.length} selected NPCs (${codenames}). ` +
+      `표시 NPC는 정확히 1건이어야 합니다.`,
+  );
+}
+
 /**
  * owner의 메인 캐릭터 조회.
  *
@@ -487,6 +515,38 @@ export async function findMainCharacterByOwner(
   return withoutSessionReportReferenceStorageFields(
     fallbackDocs[0],
   ) as MainCharacter;
+}
+
+/**
+ * ERP 신원 표시에 사용할 캐릭터 조회.
+ *
+ * 경제·인벤토리·주식의 메인 캐릭터는 `findMainCharacterByOwner`가 계속 결정한다.
+ * ACTIVE GM은 `users.characterIds`에 명시적으로 연결된 소유 NPC가 정확히 1건이면
+ * 그 NPC를 헤더/대시보드 표시 캐릭터로 사용한다. 선택 NPC가 없으면 기존 메인
+ * 캐릭터 정책으로 폴백한다.
+ */
+export async function findDisplayCharacterByOwner(
+  ownerId: string,
+): Promise<Character | null> {
+  const selectedIds = await selectedOwnedNpcIdsForDisplay(ownerId);
+  if (selectedIds.length > 0) {
+    const col = await charactersCol();
+    const docs = await col
+      .find({
+        _id: { $in: selectedIds },
+        type: "NPC",
+        ownerId,
+      })
+      .toArray();
+    if (docs.length === 1) {
+      return withoutSessionReportReferenceStorageFields(docs[0]);
+    }
+    if (docs.length > 1) {
+      throw selectedDisplayCharacterIntegrityError(ownerId, docs);
+    }
+  }
+
+  return findMainCharacterByOwner(ownerId);
 }
 
 /**
@@ -559,14 +619,14 @@ export type MainCharacterDisplayLite = MainCharacterIdentity & {
 /**
  * `findMainCharacterByOwner` 의 렌더 패스 표시용 경량 projection 변형.
  *
- * (erp)/layout 헤더 identity(lore.name/codename/agentLevel)와 크레딧/주식/상점
- * 페이지(_id/codename)가 소비하는 필드만 포함한다. 같은 렌더 패스의 layout·page 가
- * 동일 변형을 공유해야 React cache 가 1쿼리로 합쳐지므로, 페이지 렌더 경로는
- * 이 함수(의 cached 래퍼)로 통일한다. 조회 조건·GM NPC fallback·0건 null·
- * 2건 이상 throw(1인 1 MAIN 정합성)의 의미론은 원본과 동일하다.
+ * 일반 사용자 ERP 헤더와 크레딧/주식/상점 페이지가 소비하는 필드만 포함한다.
+ * 같은 렌더 패스의 layout·page가 동일 cached wrapper를 공유하면 React cache가
+ * 1쿼리로 합친다. GM 헤더는 표시 NPC가 경제 메인과 다를 수 있어 display 전용
+ * 변형을 사용한다. 조회 조건·GM NPC fallback·0건 null·2건 이상 throw 의미론은
+ * 원본과 동일하다.
  *
- * lore 전문/play 시트가 필요한 렌더 경로(장비 상점 라이선스 자격 판정, 시뮬레이터
- * 스탯, 대시보드 displayCharacter)는 원본 `findMainCharacterByOwner` 를 유지할 것.
+ * lore 전문/play 시트가 필요한 경제·스탯 렌더 경로는 원본
+ * `findMainCharacterByOwner`를 유지할 것.
  */
 export async function findMainCharacterDisplayLiteByOwner(
   ownerId: string
@@ -610,6 +670,42 @@ export async function findMainCharacterDisplayLiteByOwner(
   }
 
   return fallbackDocs[0];
+}
+
+/**
+ * ERP 헤더용 표시 캐릭터 경량 projection.
+ * 표시 선택 정책은 `findDisplayCharacterByOwner`와 같고, 경제 메인 조회와 분리된다.
+ */
+export async function findDisplayCharacterLiteByOwner(
+  ownerId: string,
+): Promise<MainCharacterDisplayLite | null> {
+  const selectedIds = await selectedOwnedNpcIdsForDisplay(ownerId);
+  if (selectedIds.length > 0) {
+    const col = await charactersCol();
+    const docs = await col
+      .find({
+        _id: { $in: selectedIds },
+        type: "NPC",
+        ownerId,
+      })
+      .project<MainCharacterDisplayLite>({
+        _id: 1,
+        codename: 1,
+        ownerId: 1,
+        type: 1,
+        tier: 1,
+        agentLevel: 1,
+        isPublic: 1,
+        "lore.name": 1,
+      })
+      .toArray();
+    if (docs.length === 1) return docs[0];
+    if (docs.length > 1) {
+      throw selectedDisplayCharacterIntegrityError(ownerId, docs);
+    }
+  }
+
+  return findMainCharacterDisplayLiteByOwner(ownerId);
 }
 
 /**

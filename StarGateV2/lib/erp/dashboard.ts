@@ -1,10 +1,12 @@
 import type { Character } from "@/types/character";
+import type { UserRole } from "@/types/user";
 import type {
   ErpDashboardResponse,
   ErpDashboardSession,
 } from "@/types/erp-realtime";
 
 import {
+  findDisplayCharacterByOwnerCached as findDisplayCharacterByOwner,
   findCharacterById,
   findMainCharacterByOwnerCached as findMainCharacterByOwner,
   listCharactersByOwner,
@@ -66,9 +68,10 @@ function serializeDashboardSession(
 
 export async function getErpDashboardResponse(input: {
   userId: string;
+  viewerRole: UserRole;
   viewerDiscordId: string | null;
 }): Promise<ErpDashboardResponse> {
-  const { userId, viewerDiscordId } = input;
+  const { userId, viewerRole, viewerDiscordId } = input;
   const guildId = process.env.GUILD_ID ?? "";
   const todayKst = toKstDateString(new Date());
   const todayKstYearMonth = currentKstYearMonth();
@@ -82,11 +85,25 @@ export async function getErpDashboardResponse(input: {
           : "메인 캐릭터 조회 실패 (정합성 위반)",
     }),
   );
+  const displayCharacterPromise =
+    viewerRole === "GM"
+      ? findDisplayCharacterByOwner(userId).then(
+          (value) => ({ ok: true as const, value }),
+          (error: unknown) => ({
+            ok: false as const,
+            message:
+              error instanceof Error
+                ? error.message
+                : "표시 캐릭터 조회 실패 (정합성 위반)",
+          }),
+        )
+      : mainCharacterPromise;
 
   const [
     user,
     myCharRefs,
     mainCharacterResult,
+    displayCharacterResult,
     notifications,
     unreadCount,
     upcomingRaw,
@@ -97,6 +114,7 @@ export async function getErpDashboardResponse(input: {
     findUserById(userId).catch(() => null),
     listCharactersByOwner(userId).catch(() => []),
     mainCharacterPromise,
+    displayCharacterPromise,
     listUserNotifications(userId, 20).catch(() => []),
     countUnread(userId).catch(() => 0),
     guildId
@@ -124,17 +142,20 @@ export async function getErpDashboardResponse(input: {
     ? mainCharacterResult.value
     : null;
   const mainIntegrityError = mainCharacterResult.ok
-    ? null
+    ? displayCharacterResult.ok
+      ? null
+      : displayCharacterResult.message
     : mainCharacterResult.message;
+  const resolvedDisplayCharacter = displayCharacterResult.ok
+    ? displayCharacterResult.value
+    : mainCharacter;
   const firstCharRef = myCharRefs[0];
   const firstCharId = firstCharRef?._id ? String(firstCharRef._id) : null;
   const mainCharacterId = mainCharacter
     ? String(mainCharacter._id)
     : null;
-  const firstIsMain =
-    Boolean(firstCharId) && firstCharId === mainCharacterId;
 
-  const [balance, enrichedUpcoming, firstCharacter] = await Promise.all([
+  const [balance, enrichedUpcoming, firstCharacterFallback] = await Promise.all([
     mainCharacterId
       ? getCharacterBalance(mainCharacterId).catch(() => 0)
       : Promise.resolve(0),
@@ -143,14 +164,13 @@ export async function getErpDashboardResponse(input: {
       : Promise.resolve(
           [] as Awaited<ReturnType<typeof enrichSessions>>,
         ),
-    firstCharId && !firstIsMain
+    !resolvedDisplayCharacter && firstCharId
       ? findCharacterById(firstCharId).catch(() => null)
       : Promise.resolve(null),
   ]);
 
-  const displayCharacter = (
-    firstIsMain ? mainCharacter : firstCharacter ?? mainCharacter
-  ) as Character | null;
+  const displayCharacter = (resolvedDisplayCharacter ??
+    firstCharacterFallback) as Character | null;
   const myRsvpUpcoming = enrichedUpcoming
     .filter(
       ({ raw, myRsvp }) =>

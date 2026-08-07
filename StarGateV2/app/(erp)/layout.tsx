@@ -7,7 +7,10 @@ import {
   hasPlayerServiceTestAccess,
   hasPlayerServiceTestPathAccess,
 } from "@/lib/auth/player-service-test-access";
-import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import {
+  findDisplayCharacterLiteByOwnerCached as findDisplayCharacterByOwner,
+  findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner,
+} from "@/lib/db/characters";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 import { getRealtimeClientMode } from "@/lib/realtime/config";
 
@@ -50,14 +53,18 @@ export default async function ERPLayout({
   const bypassCurrentPageLock =
     bypassPageLocks ||
     hasPlayerServiceTestPathAccess(session.user, pathname);
-  const [mainCharacter, pageLockOverrides] = await Promise.all([
-    findMainCharacterByOwner(session.user.id),
+  const headerCharacterPromise =
+    session.user.role === "GM"
+      ? findDisplayCharacterByOwner(session.user.id)
+      : findMainCharacterByOwner(session.user.id);
+  const [displayCharacter, pageLockOverrides] = await Promise.all([
+    headerCharacterPromise,
     getErpPageLockOverrides(),
   ]);
-  const headerIdentity = mainCharacter
+  const headerIdentity = displayCharacter
     ? {
-        name: mainCharacter.lore.name || mainCharacter.codename,
-        agentLevel: mainCharacter.agentLevel ?? null,
+        name: displayCharacter.lore.name || displayCharacter.codename,
+        agentLevel: displayCharacter.agentLevel ?? null,
       }
     : null;
   const pageLocked =

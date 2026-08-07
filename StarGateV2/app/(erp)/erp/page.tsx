@@ -14,6 +14,7 @@ export default async function ERPDashboardPage() {
 
   const initialData = await getErpDashboardResponse({
     userId: session.user.id,
+    viewerRole: session.user.role,
     viewerDiscordId: session.user.discordId ?? null,
   });
 

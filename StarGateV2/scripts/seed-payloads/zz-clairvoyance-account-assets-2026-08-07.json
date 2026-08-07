@@ -1,0 +1,29 @@
+{
+  "collection": "characters",
+  "type": "npc-image-account-sync",
+  "filter": {
+    "codename": "CLAIRVOYANCE",
+    "type": "NPC",
+    "agentLevel": "H",
+    "ownerId": {
+      "$in": [null, "69f2e63103373369795418fd"]
+    }
+  },
+  "update": {
+    "$set": {
+      "ownerId": "69f2e63103373369795418fd",
+      "previewImage": "/assets/npcs/Clairvoyance-pixel-profile.webp",
+      "pixelCharacterImage": "/assets/npcs/Clairvoyance-pixel-character.webp",
+      "lore.mainImage": "/assets/npcs/Clairvoyance-profile.webp"
+    }
+  },
+  "postcondition": {
+    "codename": "CLAIRVOYANCE",
+    "type": "NPC",
+    "agentLevel": "H",
+    "ownerId": "69f2e63103373369795418fd",
+    "previewImage": "/assets/npcs/Clairvoyance-pixel-profile.webp",
+    "pixelCharacterImage": "/assets/npcs/Clairvoyance-pixel-character.webp",
+    "lore.mainImage": "/assets/npcs/Clairvoyance-profile.webp"
+  }
+}

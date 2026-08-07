@@ -99,6 +99,7 @@ $stargate-lore equipment/consumable/catalog 문서를 작성해 줘
 | `appearsInEvents` | string[] | | 등장 이벤트 |
 | `source` | enum | | `manual` / `discord` / `legacy-json` / `session-log` / `session-reward` / `containment-archive`; `create-lore`는 기존 문서 호환 값 |
 | `previewImage` | url | | |
+| `mainImage` | url | | Dossier 기본 초상. lore sub-document 하위(`lore.mainImage`)로 적재 |
 | `pixelCharacterImage` | string | | 도트/픽셀 스타일 대표 이미지 URL (자유 문자열, URL 권장) |
 | `posterImage` | string | | 캐릭터 상세 히어로 와이드 이미지. lore sub-document 하위(`lore.posterImage`) 로 적재 |
 | `warningVideo` | string | | 경고/틀징 영상 URL (자유 문자열, URL 권장) |

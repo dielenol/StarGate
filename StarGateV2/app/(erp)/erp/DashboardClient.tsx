@@ -61,16 +61,20 @@ function buildDiscordLink(opts: {
  */
 function CharAvatar({
   codename,
+  pixelCharacterImage,
   previewImage,
   initial,
   variant = "mini",
 }: {
   codename: string;
+  pixelCharacterImage?: string | null;
   previewImage: string;
   initial: string;
   variant?: "mini" | "hero";
 }) {
-  const pixelChar = getPixelCharacterPath(codename);
+  const pixelChar = pixelCharacterImage
+    ? preferOptimizedPublicImagePath(pixelCharacterImage)
+    : getPixelCharacterPath(codename);
   const src = pixelChar || preferOptimizedPublicImagePath(previewImage) || null;
   const avatarClassName = [
     styles.charMini__avatar,
@@ -303,6 +307,7 @@ export default function DashboardClient({
             {displayCharacter ? (
               <CharAvatar
                 codename={displayCharacter.codename}
+                pixelCharacterImage={displayCharacter.pixelCharacterImage}
                 previewImage={displayCharacter.previewImage}
                 initial={(displayCharacter.lore.name || displayCharacter.codename)
                   .charAt(0)

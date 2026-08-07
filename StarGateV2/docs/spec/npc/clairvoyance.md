@@ -20,9 +20,11 @@ isPublic: true
 loreTags: [현장요원, 섹터A, 전략고문, 리모트뷰잉, Project Stargate, 수잔 델러웨이]
 appearsInEvents: [NOSB-S1E1-ORDER, NOSB-S1E1-MINI]
 source: manual
-previewImage: /assets/npcs/Clairvoyance-profile.png
+previewImage: /assets/npcs/Clairvoyance-pixel-profile.webp
+mainImage: /assets/npcs/Clairvoyance-profile.webp
+pixelCharacterImage: /assets/npcs/Clairvoyance-pixel-character.webp
 createdAt: 2026-03-16T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-08-07T00:00:00Z
 ---
 
 ## 대사
@@ -59,5 +61,7 @@ updatedAt: 2026-06-02T00:00:00Z
 - **S1E1 질서 미니 세션**: 블랙 피라미드 식당가에서 문제의 스테이크 가게 철거 현장에 모습을 보였고, 현장팀과 짧게 조우했다.
 
 ## 데이터 연동 (참고)
-- Dossier 이미지: `/assets/npcs/Clairvoyance-profile.png`
+- Dossier 메인 이미지: `/assets/npcs/Clairvoyance-profile.webp`
+- Dossier 프리뷰 이미지: `/assets/npcs/Clairvoyance-pixel-profile.webp`
+- Dossier 픽셀 전신 이미지: `/assets/npcs/Clairvoyance-pixel-character.webp`
 - 등장 이벤트: `NOSB-S1E1-ORDER`, `NOSB-S1E1-MINI`
