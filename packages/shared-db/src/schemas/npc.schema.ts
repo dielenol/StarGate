@@ -207,6 +207,9 @@ export const playSheetSchema = z.object({
 /** types/character.ts AgentLevel 거울. NPC에도 CharacterBase 규약상 optional. */
 const agentLevelSchema = z.enum(["V", "A", "M", "H", "G", "J", "U"]);
 
+/** types/character.ts CharacterLifeStatus 거울. 필드 부재는 생존 확정이 아니다. */
+export const characterLifeStatusSchema = z.enum(["DECEASED"]);
+
 const npcBaseFields = {
   codename: codeSchema,
   type: z.literal("NPC"),
@@ -214,6 +217,9 @@ const npcBaseFields = {
   department: z.string().optional(),
   factionCode: codeSchema.optional(),
   institutionCode: codeSchema.optional(),
+  lifeStatus: characterLifeStatusSchema.optional(),
+  lifeStatusAt: dateSchema.optional(),
+  lifeStatusEventId: z.string().min(1).max(80).optional(),
   previewImage: previewImageSchema,
   pixelCharacterImage: z.string().optional(),
   warningVideo: z.string().optional(),
@@ -256,6 +262,9 @@ export const npcFrontmatterSchema = z.object({
   factionCode: optionalCodeOrEmpty,
   institutionCode: optionalCodeOrEmpty,
   department: z.string().optional(),
+  lifeStatus: characterLifeStatusSchema.optional(),
+  lifeStatusAt: isoDateStringSchema.optional(),
+  lifeStatusEventId: z.string().min(1).max(80).optional(),
   nameKo: z.string(),
   nameEn: z.string().optional(),
   /** 원어 표기 (한자/일본어 등). LoreSheet.nameNative. */

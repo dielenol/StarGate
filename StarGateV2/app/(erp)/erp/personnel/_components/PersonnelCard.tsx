@@ -11,6 +11,7 @@ import { getLevelDisplayRank, getLevelDisplayTotal } from "@/lib/personnel";
 import { getTopLevelGroup, isInternalOrgCode } from "@/lib/org-structure";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getCharacterRoleLine } from "@/lib/format/character-display";
+import { formatDate } from "@/lib/format/date";
 import {
   getPersonnelAliasOrNull,
   getPersonnelPrimaryNameOrNull,
@@ -62,6 +63,10 @@ export default function PersonnelCard({
       : null;
   const roleLine = getCharacterRoleLine(character);
   const isHostile = isHostileCharacter(character);
+  const isDeceased = character.lifeStatus === "DECEASED";
+  const lifeStatusDate = character.lifeStatusAt
+    ? formatDate(character.lifeStatusAt, "numeric")
+    : "일자 미상";
 
   const avatarNode = renderAvatar(character, isRedacted);
 
@@ -72,13 +77,18 @@ export default function PersonnelCard({
     matchState === "dimmed" ? styles["card--dimmed"] : "",
     isRedacted ? styles["card--redacted"] : "",
     isHostile ? styles["card--hostile"] : "",
+    isDeceased ? styles["card--archived"] : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <Link href={`/erp/personnel/${id}`} className={cardClasses}>
-      {isLead ? (
+    <Link
+      href={`/erp/personnel/${id}`}
+      className={cardClasses}
+      data-status={isDeceased ? "deceased" : undefined}
+    >
+      {isLead && !isDeceased ? (
         <span className={styles.commanderBadge} aria-label="COMMANDER">
           <svg
             width="12"
@@ -92,6 +102,11 @@ export default function PersonnelCard({
             <path d="M12 2 L14.5 8.6 L21.5 9 L16 13.4 L18 20.5 L12 16.6 L6 20.5 L8 13.4 L2.5 9 L9.5 8.6 Z" />
           </svg>
           <span>COMMANDER</span>
+        </span>
+      ) : null}
+      {isDeceased ? (
+        <span className={styles.deceasedStamp} aria-label="사망 확인">
+          DECEASED
         </span>
       ) : null}
       <div className={styles.head}>
@@ -123,6 +138,13 @@ export default function PersonnelCard({
         </div>
       </div>
 
+      {isDeceased ? (
+        <div className={styles.lifeStatus}>
+          <span className={styles.lifeStatus__label}>사망 확인</span>
+          <span className={styles.lifeStatus__date}>{lifeStatusDate}</span>
+        </div>
+      ) : null}
+
       <div className={styles.meta}>
         {isRedacted ? (
           <>
@@ -135,7 +157,9 @@ export default function PersonnelCard({
           <>
             <Tag
               tone={
-                isHostile
+                isDeceased
+                  ? "default"
+                  : isHostile
                   ? "danger"
                   : character.type === "AGENT"
                     ? "gold"

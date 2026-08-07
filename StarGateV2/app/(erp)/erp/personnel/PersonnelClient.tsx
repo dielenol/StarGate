@@ -141,6 +141,10 @@ function characterUsesAgentLevels(c: CharacterListItemDto): boolean {
   return isInternalOrgCode(resolveGroup(c));
 }
 
+function isDeceasedPersonnel(c: CharacterListItemDto): boolean {
+  return c.lifeStatus === "DECEASED";
+}
+
 function getExternalSubOrgUnits(groupCode: string): readonly SubUnitItem[] {
   return EXTERNAL_SUB_ORGS.filter((org) => org.parentCode === groupCode).map(
     (org) => ({ code: org.code, label: org.label }),
@@ -774,38 +778,72 @@ export default function PersonnelClient({
     return searchMatches.ids.has(String(c._id)) ? "matched" : "dimmed";
   };
 
+  const renderCards = (members: CharacterListItemDto[]) => (
+    <div className={styles.cardGrid}>
+      {members.map((c) => {
+        const usesAgentLevels = characterUsesAgentLevels(c);
+        const isDeceased = isDeceasedPersonnel(c);
+        return (
+          <PersonnelCard
+            key={String(c._id)}
+            character={c}
+            showIdentity={showIdentity}
+            showAgentLevel={usesAgentLevels}
+            isLead={Boolean(
+              !isDeceased &&
+                usesAgentLevels &&
+                c.agentLevel &&
+                compareLevels(c.agentLevel, "A") >= 0,
+            )}
+            isRedacted={
+              !canViewField(clearance, "identity") &&
+              !canViewField(clearance, "profile")
+            }
+            matchState={matchState(c)}
+            classifiedFieldsCount={hiddenFieldsCount}
+            requiredLevelForHidden={hiddenMinLevel}
+          />
+        );
+      })}
+    </div>
+  );
+
   const renderCardGrid = (members: CharacterListItemDto[]) => {
     if (members.length === 0) {
       return <div className={styles.empty}>소속 인원 없음</div>;
     }
 
+    const activeMembers = members.filter(
+      (member) => !isDeceasedPersonnel(member),
+    );
+    const archivedMembers = members.filter(isDeceasedPersonnel);
+
+    if (archivedMembers.length === 0) {
+      return renderCards(activeMembers);
+    }
+
     return (
-      <div className={styles.cardGrid}>
-        {members.map((c) => {
-          const usesAgentLevels = characterUsesAgentLevels(c);
-          return (
-            <PersonnelCard
-              key={String(c._id)}
-              character={c}
-              showIdentity={showIdentity}
-              showAgentLevel={usesAgentLevels}
-              isLead={
-                Boolean(
-                  usesAgentLevels &&
-                    c.agentLevel &&
-                    compareLevels(c.agentLevel, "A") >= 0,
-                )
-              }
-              isRedacted={
-                !canViewField(clearance, "identity") &&
-                !canViewField(clearance, "profile")
-              }
-              matchState={matchState(c)}
-              classifiedFieldsCount={hiddenFieldsCount}
-              requiredLevelForHidden={hiddenMinLevel}
-            />
-          );
-        })}
+      <div className={styles.personnelRecords}>
+        {activeMembers.length > 0 ? renderCards(activeMembers) : null}
+        <section
+          className={styles.archiveSection}
+          aria-label={`사망 인원 기록 ${archivedMembers.length}명`}
+        >
+          <div className={styles.archiveSection__head}>
+            <div>
+              <div className={styles.archiveSection__eyebrow}>
+                ARCHIVED PERSONNEL
+              </div>
+              <h3 className={styles.archiveSection__title}>사망 인원 기록</h3>
+            </div>
+            <span className={styles.archiveSection__count}>
+              {archivedMembers.length} RECORDS
+            </span>
+          </div>
+          <div className={styles.archiveSection__body}>
+            {renderCards(archivedMembers)}
+          </div>
+        </section>
       </div>
     );
   };
@@ -816,6 +854,9 @@ export default function PersonnelClient({
     ).length;
     const directNpcCount = selectedDirectMembers.filter(
       (m) => m.type === "NPC",
+    ).length;
+    const directArchivedCount = selectedDirectMembers.filter(
+      isDeceasedPersonnel,
     ).length;
     const directLabel =
       selectedGroup === "CIVIL"
@@ -830,9 +871,11 @@ export default function PersonnelClient({
       const npcCount = members.filter((m) => m.type === "NPC").length;
       const leadCount = members.filter(
         (m) =>
+          !isDeceasedPersonnel(m) &&
           characterUsesAgentLevels(m) &&
           Boolean(m.agentLevel && compareLevels(m.agentLevel, "A") >= 0),
       ).length;
+      const archivedCount = members.filter(isDeceasedPersonnel).length;
       const sorted = [...members].sort(compareForCardOrder);
 
       return (
@@ -843,6 +886,7 @@ export default function PersonnelClient({
           agentCount={agentCount}
           npcCount={npcCount}
           leadCount={leadCount}
+          archivedCount={archivedCount}
           expanded={expandedSubUnit === unit.code}
           onToggle={() => handleToggleSubUnit(unit.code)}
         >
@@ -873,6 +917,9 @@ export default function PersonnelClient({
               </span>
               <span className={styles.directMembers__meta}>
                 {directAgentCount} AGENT · {directNpcCount} NPC
+                {directArchivedCount > 0
+                  ? ` · 사망 기록 ${directArchivedCount}`
+                  : ""}
               </span>
             </div>
             <div className={styles.directMembers__body}>

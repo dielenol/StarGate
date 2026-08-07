@@ -1,0 +1,130 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-dossier-life-status",
+    "filter": { "codename": "RODION" },
+    "update": {
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-07-12T00:00:00.000Z",
+        "lifeStatusEventId": "NOSB-S1E5-EVIL-PART2"
+      },
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART2"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier-life-status",
+    "filter": { "codename": "PECHORIN" },
+    "update": {
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-07-12T00:00:00.000Z",
+        "lifeStatusEventId": "NOSB-S1E5-EVIL-PART2"
+      },
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E5-EVIL-PART2"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier-life-status",
+    "filter": { "codename": "GERASIMOV" },
+    "upsert": true,
+    "update": {
+      "$setOnInsert": {
+        "type": "NPC",
+        "role": "러시아 측 파견 장군 / 섹터 C 국영화 추진자",
+        "factionCode": "MILITARY",
+        "previewImage": "/assets/npcs/Gerasimov-profile.webp",
+        "isPublic": true,
+        "lore.name": "게라쉬모프",
+        "lore.nameEn": "Gerasimov",
+        "lore.gender": "남성",
+        "lore.age": "미상",
+        "lore.height": "미상",
+        "lore.weight": "미상",
+        "lore.appearance": "사용자 제공 초상 기준, 짧게 정돈한 머리와 각진 인상의 남성이다. 러시아 국기와 문장이 부착된 군복을 착용했고 견장, 약장과 별 모양 훈장을 달고 있다. 등록 초상 밖의 상세 신체 정보는 확인되지 않았다.",
+        "lore.personality": "확인된 발언과 행동에서는 섹터 C를 러시아 국가 통제 아래 두고 현 지도부를 교체하려는 강경한 태도가 드러난다. 로드리온과의 대립에서 자신이 시설을 맡겠다는 의사를 굽히지 않았으나, 그 밖의 일상적 성향은 확인되지 않았다.",
+        "lore.background": "게라쉬모프는 러시아 측에서 섹터 C로 파견된 장군이다. 악 1부에서 이름이 확인되지 않은 러시아 장군으로 등장해 시설 국영화와 지도부 교체를 압박했고, 로드리온의 통치를 비판했다. 악 2부에서 로드리온이 그를 `게라쉬모프`라고 호명하면서 성이 확인되었다.\n\n격리 붕괴 수습 과정에서 로드리온을 끌어내고 자신이 섹터 C를 맡으려 했다. 화이트로즈 수장이라고 밝힌 R은 두 지도자를 함께 실각시키는 방안을 제안했고, 현장 투표 뒤 오틸리아가 게라쉬모프를 공격했다. 게라쉬모프는 이 공격으로 사망했다.",
+        "lore.quote": "",
+        "lore.mainImage": "/assets/npcs/Gerasimov-profile.webp",
+        "lore.loreTags": [
+          "군부",
+          "러시아",
+          "장군",
+          "섹터C",
+          "국영화",
+          "지도부교체",
+          "NOSB-S1E5-EVIL-PART1",
+          "NOSB-S1E5-EVIL-PART2"
+        ],
+        "lore.sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E5-EVIL-PART1",
+            "role": "섹터 C 국영화·지도부 교체 요구자",
+            "summary": "이름이 확인되지 않은 러시아 장군으로 등장해 섹터 C 국영화와 지도부 교체를 압박하고 로드리온의 통치를 비판했다.",
+            "sourceLabel": "작전 보고서 S1E5: 악 1부"
+          },
+          {
+            "sessionId": "NOSB-S1E5-EVIL-PART2",
+            "role": "러시아 측 파견 장군 및 지도부 처리 대상",
+            "summary": "로드리온을 끌어내고 자신이 섹터 C를 맡으려 했으며, 지도부 처리 투표 뒤 오틸리아의 공격으로 사망했다.",
+            "sourceLabel": "작전 보고서 S1E5: 악 2부"
+          }
+        ],
+        "lore.roleDetail": "- 정규 분류: 외부 군부(MILITARY) 러시아 측 인사\n- 파견 목적: 섹터 C 국영화와 지도부 교체\n- 내부 권한등급: 없음. 노부스 오르도 내부 인원이 아니므로 `agentLevel`을 저장하지 않는다.\n- 확인된 대립: 섹터 C 감독관 로드리온\n- 현재 상태: 2026-07-12 지도부 처리 투표 뒤 사망",
+        "lore.notes": "보존 기록에서 확인된 이름은 성인 `게라쉬모프`뿐이다. 이름과 부칭은 확인되지 않았으며, `GERASIMOV`는 기록상 성을 UPPER_SNAKE_CASE로 정규화한 Dossier 식별자다.",
+        "source": "manual",
+        "ownerId": null,
+        "createdAt": "2026-06-28T00:00:00.000Z"
+      },
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-07-12T00:00:00.000Z",
+        "lifeStatusEventId": "NOSB-S1E5-EVIL-PART2"
+      },
+      "$addToSet": {
+        "lore.appearsInEvents": {
+          "$each": [
+            "NOSB-S1E5-EVIL-PART1",
+            "NOSB-S1E5-EVIL-PART2"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier-life-status",
+    "filter": { "codename": "PERK_ESHHALL" },
+    "update": {
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-06-11T00:00:00.000Z",
+        "lifeStatusEventId": "NOSB-MINI-S1E1-NEW-DUBLIN"
+      },
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-S1E1-NEW-DUBLIN"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier-life-status",
+    "filter": { "codename": "DOCTOR_MOSS" },
+    "update": {
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-06-15T00:00:00.000Z",
+        "lifeStatusEventId": "NOSB-S1E4-PRATO-PART2"
+      },
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E4-PRATO-PART2"
+      }
+    }
+  }
+]

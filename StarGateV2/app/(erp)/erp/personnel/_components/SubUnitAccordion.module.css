@@ -216,6 +216,16 @@
   font-size: 14px;
 }
 
+.archiveCount {
+  position: relative;
+  z-index: 1;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
 .summary {
   position: relative;
   z-index: 1;

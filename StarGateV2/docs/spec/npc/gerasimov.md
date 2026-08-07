@@ -14,13 +14,16 @@ weight: 미상
 factionCode: MILITARY
 institutionCode:
 department:
+lifeStatus: DECEASED
+lifeStatusAt: 2026-07-12T00:00:00.000Z
+lifeStatusEventId: NOSB-S1E5-EVIL-PART2
 isPublic: true
 loreTags: [군부, 러시아, 장군, 섹터C, 국영화, 지도부교체, NOSB-S1E5-EVIL-PART1, NOSB-S1E5-EVIL-PART2]
 appearsInEvents: [NOSB-S1E5-EVIL-PART1, NOSB-S1E5-EVIL-PART2]
 source: manual
 previewImage: /assets/npcs/Gerasimov-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-08-06T00:00:00.000Z
+updatedAt: 2026-08-07T00:00:00.000Z
 ---
 
 ## 대사

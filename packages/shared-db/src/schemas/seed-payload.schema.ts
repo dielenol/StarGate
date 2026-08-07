@@ -3,7 +3,11 @@ import { z } from "zod";
 import { factionRelationshipSchema, factionScopeSchema } from "./faction.schema.js";
 import { institutionSubUnitSchema } from "./institution.schema.js";
 import { catalogSlugSchema, codeSchema, slugSchema } from "./common.js";
-import { loreSheetSchema, playSheetSchema } from "./npc.schema.js";
+import {
+  characterLifeStatusSchema,
+  loreSheetSchema,
+  playSheetSchema,
+} from "./npc.schema.js";
 
 export const SEED_PAYLOAD_COLLECTIONS = [
   "characters",
@@ -348,6 +352,9 @@ const characterPatchSchema = z
     department: z.string(),
     factionCode: z.string(),
     institutionCode: z.string(),
+    lifeStatus: characterLifeStatusSchema,
+    lifeStatusAt: dateLikeSchema,
+    lifeStatusEventId: z.string().min(1).max(80),
     ownerId: z.string().nullable(),
     isPublic: z.boolean(),
     lore: unknownObjectSchema,
@@ -702,6 +709,42 @@ function assertAllowedUpdateFields(
   }
 }
 
+function getUpdateOperandPaths(operand: unknown, operator: string): string[] {
+  if (operator === "$unset" && Array.isArray(operand)) {
+    return operand.filter((path): path is string => typeof path === "string");
+  }
+  return isRecord(operand) ? Object.keys(operand) : [];
+}
+
+function updatePathsConflict(left: string, right: string): boolean {
+  return (
+    left === right ||
+    left.startsWith(`${right}.`) ||
+    right.startsWith(`${left}.`)
+  );
+}
+
+/** MongoDB classic update가 거부하는 동일/부모-자식 경로 충돌을 실행 전에 차단한다. */
+function assertNoConflictingUpdatePaths(
+  collection: SeedPayloadCollection,
+  entries: [string, unknown][],
+): void {
+  const visited: { operator: string; path: string }[] = [];
+  for (const [operator, operand] of entries) {
+    for (const path of getUpdateOperandPaths(operand, operator)) {
+      const conflict = visited.find((candidate) =>
+        updatePathsConflict(candidate.path, path),
+      );
+      if (conflict) {
+        throw new Error(
+          `[seed-payload] ${collection} update 경로 충돌: ${conflict.operator} ${conflict.path} / ${operator} ${path}`,
+        );
+      }
+      visited.push({ operator, path });
+    }
+  }
+}
+
 function validateCharacterSheetUpdatePath(
   path: string,
   value: unknown,
@@ -793,4 +836,5 @@ export function validateSeedUpdate(
     }
     assertAllowedUpdateFields(collection, operand, operator);
   }
+  assertNoConflictingUpdatePaths(collection, entries);
 }

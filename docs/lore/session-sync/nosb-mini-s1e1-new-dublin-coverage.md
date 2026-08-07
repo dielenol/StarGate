@@ -2,7 +2,7 @@
 title: NOSB-MINI-S1E1-NEW-DUBLIN session sync coverage
 category: session-sync
 tags: [NOSB-MINI-S1E1-NEW-DUBLIN, MINI01, stargate-lore]
-updated: 2026-08-05
+updated: 2026-08-07
 source: stargate-lore-audit
 ---
 
@@ -30,7 +30,11 @@ source: stargate-lore-audit
 
 ## NPC Approval Ledger
 
-- skipped: source unavailable — five historical NPC create envelopes and later profile repairs predate the current approval ledger; no new identity, clearance, portrait, visibility, demographic, prose, or relation apply is authorized here.
+이번 패스는 기존 `PERK_ESHHALL` 레코드의 신원·소속·권한·초상·공개 여부·인적 정보·서술·관계를 그대로 보존하고, 기존 session appearance가 확정한 사망만 구조화 상태로 승격한다. 다른 역사적 NPC 필드는 변경하지 않는다.
+
+| codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `PERK_ESHHALL` | 퍼크슈타인 에스홀(기존 spec/ERP 값 유지) | 없음(기록 없음) | NOGA 더블린 지부 지부장(기존값 유지) | 기존 ERP 내부 식별자와 durable spec | `MILITARY / NOGA`(기존값 유지) | 없음(정규 소속 유지) | 없음(외부 인물; `agentLevel` 미저장 유지) | `/assets/npcs/Puck-Asshole-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 41세; 189cm; 체중 미상(기존값 유지) | 기존 서술·관계는 보존; `NOSB-MINI-S1E1-NEW-DUBLIN` session appearance의 현장 사망을 `DECEASED` 상태로 구조화 | ready-for-apply |
 
 ## Visual Asset Ledger
 

@@ -13,6 +13,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   height: 100%;
   padding: 14px 14px 12px;
   border: 1px solid color-mix(in srgb, var(--card-accent) 18%, var(--line-strong));
@@ -89,6 +90,24 @@
   box-shadow: 0 0 0 1px var(--danger);
 }
 
+.card--archived {
+  --card-accent: color-mix(in srgb, var(--ink-2) 76%, var(--line-strong));
+  --card-accent-dim: color-mix(in srgb, var(--ink-3) 58%, transparent);
+  --card-accent-bg: color-mix(in srgb, var(--ink-2) 7%, transparent);
+
+  border-color: color-mix(in srgb, var(--ink-3) 42%, var(--line-strong));
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 50%),
+    var(--card-pattern),
+    color-mix(in srgb, var(--bg-1) 88%, var(--ink-3) 12%);
+}
+
+.card--archived.card--matched,
+.card--hostile.card--archived.card--matched {
+  border-color: var(--ink-1);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink-1) 64%, transparent);
+}
+
 /* 우상단 미니 COMMANDER 배지 — 별 아이콘 + 텍스트. 좌상단 노랑 큰 박스 대신 컴팩트. */
 .commanderBadge {
   position: absolute;
@@ -134,6 +153,26 @@
   /* sealed avatar + redacted name only */
 }
 
+.deceasedStamp {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  right: -17px;
+  width: 96px;
+  padding: 3px 0;
+  border: 1px solid color-mix(in srgb, var(--ink-1) 56%, transparent);
+  background: color-mix(in srgb, var(--bg-0) 88%, transparent);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-align: center;
+  transform: rotate(28deg);
+  pointer-events: none;
+}
+
 /* Head */
 
 .head {
@@ -170,6 +209,10 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.card--archived .avatar__img {
+  filter: grayscale(1) saturate(0) contrast(0.9) brightness(0.78);
 }
 
 .avatar--sealed {
@@ -239,6 +282,32 @@
   white-space: nowrap;
 }
 
+.lifeStatus {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 11px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--ink-3) 42%, var(--line));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ink-3) 7%, transparent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.lifeStatus__label {
+  color: var(--ink-1);
+  font-weight: 700;
+}
+
+.lifeStatus__date {
+  color: var(--ink-3);
+}
+
 /* Meta */
 
 .meta {
@@ -292,4 +361,18 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.12em;
+}
+
+@media (max-width: 600px) {
+  .deceasedStamp {
+    top: 7px;
+    right: 5px;
+    width: 82px;
+    font-size: 9px;
+    transform: rotate(10deg);
+  }
+
+  .lifeStatus {
+    flex-wrap: wrap;
+  }
 }

@@ -780,6 +780,7 @@ export default function DossierClient({
   const level = character.agentLevel;
   const department = character.department ?? "UNASSIGNED";
   const isAgent = character.type === "AGENT";
+  const isDeceased = character.lifeStatus === "DECEASED";
 
   const topGroup = resolveCharacterGroup(character);
   const isHostile = topGroup === "HOSTILE";
@@ -819,6 +820,9 @@ export default function DossierClient({
   const relatedReportBySessionId = new Map(
     currentRelatedReports.map((report) => [report.sessionId, report]),
   );
+  const lifeStatusReport = character.lifeStatusEventId
+    ? relatedReportBySessionId.get(character.lifeStatusEventId)
+    : undefined;
   const relationTargetsByCodename = new Map(
     relatedCharacters.map((target) => [target.codename, target]),
   );
@@ -1681,6 +1685,7 @@ export default function DossierClient({
       className={styles.dossierPage}
       data-pixel-font={isEditing ? undefined : "ui"}
       data-tone={isHostile ? "hostile" : undefined}
+      data-status={isDeceased ? "deceased" : undefined}
     >
       <PageHead
         breadcrumb={<OrgDrillCrumbs items={drillItems} />}
@@ -1744,11 +1749,21 @@ export default function DossierClient({
         <div className={styles.side}>
           {/* Portrait — dossier 좌측 메인 이미지: lore.mainImage 우선, 폴백으로 previewImage(pixel-profile). */}
           <Box variant="gold" className={styles.portraitBox}>
-            <DossierPortraitImage
-              src={character.lore.mainImage || character.previewImage || ""}
-              alt={character.codename}
-              fallbackInitial={getInitial(character)}
-            />
+            <div className={styles.portraitFrame}>
+              <DossierPortraitImage
+                src={character.lore.mainImage || character.previewImage || ""}
+                alt={character.codename}
+                fallbackInitial={getInitial(character)}
+              />
+              {isDeceased ? (
+                <span
+                  className={styles.portraitDeathStamp}
+                  aria-label="사망 확인"
+                >
+                  DECEASED
+                </span>
+              ) : null}
+            </div>
 
             <h2 className={styles.portraitName}>
               {displayName ?? (
@@ -1801,6 +1816,39 @@ export default function DossierClient({
               </div>
             ) : null}
           </Box>
+
+          {isDeceased ? (
+            <Box className={styles.statusRecord}>
+              <PanelTitle>STATUS RECORD</PanelTitle>
+              <div className={styles.statusRecord__flag}>
+                <span className={styles.statusRecord__code}>DECEASED</span>
+                <span className={styles.statusRecord__label}>사망 확인</span>
+              </div>
+              <dl className={styles.kv}>
+                <KVRow label="확정일">
+                  <span className={styles.mono}>
+                    {character.lifeStatusAt
+                      ? formatDate(character.lifeStatusAt)
+                      : "일자 미상"}
+                  </span>
+                </KVRow>
+                <KVRow label="근거 사건">
+                  {lifeStatusReport ? (
+                    <Link
+                      href={`/erp/sessions/report/${lifeStatusReport.id}`}
+                      className={styles.statusRecord__link}
+                    >
+                      {lifeStatusReport.sessionTitle}
+                    </Link>
+                  ) : (
+                    <span className={styles.mono}>
+                      {character.lifeStatusEventId ?? "기록 미연결"}
+                    </span>
+                  )}
+                </KVRow>
+              </dl>
+            </Box>
+          ) : null}
 
           {/* IDENTITY */}
           <Box>

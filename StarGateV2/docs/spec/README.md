@@ -91,6 +91,9 @@ $stargate-lore equipment/consumable/catalog 문서를 작성해 줘
 | `institutionCode` | UPPER_SNAKE | | 소속 기관 |
 | `department` | string | | 부서 |
 | `agentLevel` | enum | | `"V" \| "A" \| "M" \| "H" \| "G" \| "J" \| "U"` 중 하나 (CharacterBase와 공유되는 AGENT 레벨) |
+| `lifeStatus` | `"DECEASED"` | | 로그/공식 기록으로 사망이 확정된 경우만 선언. 필드 부재는 생존 확정이 아니라 구조화 상태 미기록 |
+| `lifeStatusAt` | ISO datetime | | `lifeStatus`와 함께 저장하는 상태 확정일 |
+| `lifeStatusEventId` | string ≤80 | | 상태 판정 근거인 `session_reports.sessionId`; `appearsInEvents`에도 같은 ID를 보존 |
 | `isPublic` | boolean | ✓ | 공개 노출 여부 |
 | `loreTags` | string[] | | 자유 태그 |
 | `appearsInEvents` | string[] | | 등장 이벤트 |

@@ -59,6 +59,31 @@ test("허용되지 않은 update operator와 root field를 거부", () => {
   );
 });
 
+test("classic update의 동일·부모-자식 경로 충돌을 실행 전에 거부", () => {
+  assert.throws(
+    () =>
+      validateSeedUpdate("characters", {
+        $setOnInsert: { "lore.appearsInEvents": [] },
+        $addToSet: { "lore.appearsInEvents": "SESSION-1" },
+      }),
+    /update 경로 충돌/,
+  );
+  assert.throws(
+    () =>
+      validateSeedUpdate("wiki_pages", {
+        $set: { tags: [] },
+        $unset: { "tags.0": "" },
+      }),
+    /update 경로 충돌/,
+  );
+  assert.doesNotThrow(() =>
+    validateSeedUpdate("characters", {
+      $set: { lifeStatus: "DECEASED" },
+      $addToSet: { "lore.appearsInEvents": "SESSION-1" },
+    }),
+  );
+});
+
 test("partial patch를 신규 문서로 upsert하지 못하게 막는다", () => {
   assert.throws(
     () =>

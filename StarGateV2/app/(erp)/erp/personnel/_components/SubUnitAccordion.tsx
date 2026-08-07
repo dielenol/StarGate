@@ -22,6 +22,7 @@ interface Props {
   agentCount: number;
   npcCount: number;
   leadCount?: number;
+  archivedCount?: number;
   expanded: boolean;
   onToggle: () => void;
   children?: ReactNode;
@@ -34,6 +35,7 @@ export default function SubUnitAccordion({
   agentCount,
   npcCount,
   leadCount,
+  archivedCount = 0,
   expanded,
   onToggle,
   children,
@@ -97,6 +99,11 @@ export default function SubUnitAccordion({
             <span className={styles.subCount}>
               / {agentCount} AGENT / {npcCount} NPC
             </span>
+            {archivedCount > 0 ? (
+              <span className={styles.archiveCount}>
+                · 사망 기록 {archivedCount}
+              </span>
+            ) : null}
             <span className={styles.summary}>{classifiedGroup.summary}</span>
           </>
         ) : (
@@ -106,6 +113,11 @@ export default function SubUnitAccordion({
             <span className={styles.subCount}>
               / {agentCount} AGENT · {npcCount} NPC
             </span>
+            {archivedCount > 0 ? (
+              <span className={styles.archiveCount}>
+                · 사망 기록 {archivedCount}
+              </span>
+            ) : null}
             <span className={styles.meta}>{metaParts.join(" · ")}</span>
           </>
         )}

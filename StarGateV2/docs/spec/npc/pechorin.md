@@ -15,13 +15,16 @@ factionCode: NOVUS_ORDO
 institutionCode: MANUS
 department: SECTOR_C
 agentLevel: H
+lifeStatus: DECEASED
+lifeStatusAt: 2026-07-12T00:00:00.000Z
+lifeStatusEventId: NOSB-S1E5-EVIL-PART2
 isPublic: true
 loreTags: [섹터C, 전방수호대, 노릴스크, 냉동격리, 광원화]
 appearsInEvents: [NOSB-S1E5-EVIL-PART1, NOSB-S1E5-EVIL-PART2]
 source: session-log
 previewImage: /assets/npcs/Pechorin-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-08-06T00:00:00.000Z
+updatedAt: 2026-08-07T00:00:00.000Z
 ---
 
 ## 대사

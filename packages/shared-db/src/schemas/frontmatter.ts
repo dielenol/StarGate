@@ -466,6 +466,11 @@ export function toDbNpc(
     department: emptyToUndefined(parsed.department),
     factionCode: emptyToUndefined(parsed.factionCode),
     institutionCode: emptyToUndefined(parsed.institutionCode),
+    lifeStatus: parsed.lifeStatus,
+    lifeStatusAt: parsed.lifeStatusAt
+      ? coerceDate(parsed.lifeStatusAt, n)
+      : undefined,
+    lifeStatusEventId: emptyToUndefined(parsed.lifeStatusEventId),
     previewImage: parsed.previewImage ?? "",
     pixelCharacterImage: emptyToUndefined(parsed.pixelCharacterImage),
     warningVideo: emptyToUndefined(parsed.warningVideo),

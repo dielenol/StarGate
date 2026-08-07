@@ -15,13 +15,16 @@ factionCode: NOVUS_ORDO
 institutionCode: MANUS
 department: SECTOR_C
 agentLevel: M
+lifeStatus: DECEASED
+lifeStatusAt: 2026-07-12T00:00:00.000Z
+lifeStatusEventId: NOSB-S1E5-EVIL-PART2
 isPublic: true
 loreTags: [섹터C, 감독관, 심부굴착, 변이, 냉동격리, 균체감염, грибы, 내부숙청]
 appearsInEvents: [NOSB-S1E5-EVIL-PART1, NOSB-S1E5-EVIL-PART2]
 source: manual
 previewImage: /assets/npcs/Rodion-profile.webp
 createdAt: 2026-06-28T00:00:00.000Z
-updatedAt: 2026-08-06T00:00:00.000Z
+updatedAt: 2026-08-07T00:00:00.000Z
 ---
 
 ## 대사

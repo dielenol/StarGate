@@ -15,13 +15,16 @@ weight: 미상
 factionCode: MILITARY
 institutionCode:
 department: NOGA
+lifeStatus: DECEASED
+lifeStatusAt: 2026-06-11T00:00:00.000Z
+lifeStatusEventId: NOSB-MINI-S1E1-NEW-DUBLIN
 isPublic: true
 loreTags: [군부, 뉴더블린, NOGA, NovusOrdoGreatAgain, 인류우월주의, 폭력단체, MAKEHUMANGREATAGAIN, NOSB-MINI-S1E1-NEW-DUBLIN, MINI-S1E1]
 appearsInEvents: [NOSB-MINI-S1E1-NEW-DUBLIN]
 source: manual
 previewImage: /assets/npcs/Puck-Asshole-profile.webp
 createdAt: 2026-06-11T00:00:00Z
-updatedAt: 2026-06-11T00:00:00Z
+updatedAt: 2026-08-07T00:00:00.000Z
 ---
 
 ## 대사

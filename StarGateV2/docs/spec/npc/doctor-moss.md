@@ -16,13 +16,16 @@ factionCode: NOVUS_ORDO
 institutionCode: SECRETARIAT
 department: RESEARCH
 agentLevel: V
+lifeStatus: DECEASED
+lifeStatusAt: 2026-06-15T00:00:00.000Z
+lifeStatusEventId: NOSB-S1E4-PRATO-PART2
 isPublic: true
 loreTags: [연구기구, 사무차장, 응용물리학, 예산, 비능력자, S1E1]
-appearsInEvents: [NOSB-S1E1-ORDER, NOSB-S1E1-MINI]
+appearsInEvents: [NOSB-S1E1-ORDER, NOSB-S1E1-MINI, NOSB-S1E4-PRATO-PART2]
 source: manual
 previewImage: /assets/npcs/Doctor-Moss-profile.webp
 createdAt: 2026-03-12T00:00:00Z
-updatedAt: 2026-06-02T00:00:00Z
+updatedAt: 2026-08-07T00:00:00.000Z
 ---
 
 ## 대사
@@ -47,6 +50,8 @@ S1E1 질서 작전 기록에서는 블랙 피라미드 모의 전투실 인근�
 
 S1E1 질서 미니 세션에서는 작전 성과 보고 후 마리아, 스타크, 오틸리아를 사무실로 불러 `사후 처리` 업무를 배정한다. 그는 해쉬 테거가 유럽 연구소 출장 중이라는 이유로 현장팀에게 검열된 비명과 전자화 눈물의 연구 방향 결정을 넘기며, 사무총장이 현장팀의 활약에 관심을 보였다는 상부 메시지도 전달했다.
 
+S1E4 프라토 2부에서는 행동교정물질과 특정 줄루를 이용한 광원화 파훼 가능성을 섹터 C의 성과로 보고하려 했다. 광원화 백신에 대한 해답을 언급한 직후 상부에 연락을 시도했으며, 그 과정에서 휴대전화와 함께 머리가 터져 사망했다.
+
 ## 역할 상세
 - **관리 범위**: 연구 기구 예산, 연구 승인 라인, 부처 간 협업 조율, 변칙 개체 연구 프로젝트의 행정적 통과
 - **소속**: 노부스 오르도 사무국 연구 기구
@@ -54,6 +59,7 @@ S1E1 질서 미니 세션에서는 작전 성과 보고 후 마리아, 스타크
 - **능력명**: 비능력자
 - **NPC 특성**: 전투 요원이 아니라 예산·승인·인맥으로 연구 현장을 움직이는 관료형 NPC
 - **등장 방식**: 연구 예산 회의, 부처 간 협상, 현장 연구진 호출, 불편한 행정 조건 통보, 가벼운 잡담 속 중요 정보 전달
+- **현재 상태**: 2026-06-15 프라토 2부 작전 중 사망
 
 ## 이름 설명
 - **모이세이 알렉산드로비치 코헨**: 공식 인명 표기. 노부스 오르도 내부 문서에서는 본명보다 통칭이 더 자주 쓰인다.
@@ -68,4 +74,4 @@ S1E1 질서 미니 세션에서는 작전 성과 보고 후 마리아, 스타크
 
 ## 데이터 연동 (참고)
 - Dossier 이미지: `/assets/npcs/Doctor-Moss-profile.webp`
-- 등장 이벤트: `NOSB-S1E1-ORDER`, `NOSB-S1E1-MINI`
+- 등장 이벤트: `NOSB-S1E1-ORDER`, `NOSB-S1E1-MINI`, `NOSB-S1E4-PRATO-PART2`

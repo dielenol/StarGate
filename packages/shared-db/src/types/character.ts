@@ -202,6 +202,15 @@ export interface Ability {
 export type CharacterType = "AGENT" | "NPC";
 
 /**
+ * 신원조회에서 명시적으로 보존하는 생사 상태.
+ *
+ * 기존 문서의 필드 부재는 생존 확정이 아니라 "구조화 상태 미기록"을 뜻한다.
+ * 따라서 로그로 사망이 확정된 경우만 `DECEASED`를 저장한다.
+ */
+export const CHARACTER_LIFE_STATUSES = ["DECEASED"] as const;
+export type CharacterLifeStatus = (typeof CHARACTER_LIFE_STATUSES)[number];
+
+/**
  * 운영 분류 — AGENT 캐릭터를 메인/미니로 구분 (한 명의 owner가 복수 캐릭터 보유 가능).
  * NPC 는 personnel 화면에서만 노출되며 tier 의미 없음 (사용해도 무시).
  *
@@ -340,6 +349,12 @@ interface CharacterBase {
   factionCode?: string;
   /** DB 승격 후 신규 코드를 수용하기 위해 string. */
   institutionCode?: string;
+  /** 로그/공식 기록으로 확정된 생사 상태. 필드 부재를 생존으로 추론하지 않는다. */
+  lifeStatus?: CharacterLifeStatus;
+  /** 생사 상태가 확정된 사건 일시. */
+  lifeStatusAt?: Date;
+  /** 상태 판정의 근거가 되는 session_reports.sessionId. */
+  lifeStatusEventId?: string;
   /** NPC 카드 썸네일 등에 쓰이는 미리보기 이미지. */
   previewImage: string;
   pixelCharacterImage?: string;

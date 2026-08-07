@@ -281,6 +281,13 @@
     var(--bg-1);
 }
 
+.portraitFrame {
+  position: relative;
+  width: 100%;
+  max-width: 238px;
+  margin: 0 auto;
+}
+
 .dossierPage[data-tone="hostile"] .portraitBox {
   border-color: var(--dossier-accent-dim);
   background:
@@ -305,6 +312,44 @@
   border-radius: var(--radius-sm);
   background: var(--bg-2);
   box-shadow: 0 0 0 1px var(--dossier-accent-bg-strong);
+}
+
+.dossierPage[data-status="deceased"] .portraitBox {
+  border-color: color-mix(in srgb, var(--ink-3) 52%, var(--line-strong));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ink-3) 8%, transparent), transparent 48%),
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ink-3) 3%, transparent) 0 1px,
+      transparent 1px 12px
+    ),
+    color-mix(in srgb, var(--bg-1) 88%, var(--ink-3) 12%);
+}
+
+.dossierPage[data-status="deceased"] .portraitImg {
+  border-color: color-mix(in srgb, var(--ink-3) 56%, var(--line-strong));
+  filter: grayscale(1) saturate(0) contrast(0.92) brightness(0.76);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink-3) 22%, transparent);
+}
+
+.portraitDeathStamp {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: -19px;
+  width: 128px;
+  padding: 6px 0;
+  border: 2px solid color-mix(in srgb, var(--ink-1) 66%, transparent);
+  background: color-mix(in srgb, var(--bg-0) 82%, transparent);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-align: center;
+  transform: rotate(28deg);
+  pointer-events: none;
 }
 
 .portraitPlaceholder {
@@ -369,6 +414,60 @@
   justify-content: center;
   width: 100%;
   margin-top: 12px;
+}
+
+.side > .statusRecord {
+  border-color: color-mix(in srgb, var(--ink-3) 48%, var(--line-strong));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ink-3) 8%, transparent), transparent 58%),
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ink-3) 3%, transparent) 0 1px,
+      transparent 1px 12px
+    ),
+    color-mix(in srgb, var(--bg-1) 88%, var(--ink-3) 12%);
+}
+
+.side > .statusRecord::before,
+.side > .statusRecord::after {
+  border-color: color-mix(in srgb, var(--ink-3) 54%, transparent);
+}
+
+.statusRecord__flag {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--ink-3) 48%, var(--line));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ink-3) 8%, transparent);
+}
+
+.statusRecord__code {
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.statusRecord__label {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.statusRecord__link {
+  color: var(--ink-1);
+  text-decoration-color: color-mix(in srgb, var(--ink-1) 52%, transparent);
+  text-underline-offset: 3px;
+}
+
+.statusRecord__link:hover,
+.statusRecord__link:focus-visible {
+  color: var(--ink-0);
+  text-decoration-color: currentColor;
 }
 
 /* KV list (side) */

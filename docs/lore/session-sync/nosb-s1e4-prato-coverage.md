@@ -2,7 +2,7 @@
 title: NOSB-S1E4-PRATO session sync coverage
 category: session-sync
 tags: [NOSB-S1E4-PRATO-PART1, NOSB-S1E4-PRATO-PART2, S1E4, stargate-lore]
-updated: 2026-08-05
+updated: 2026-08-07
 source: stargate-lore
 ---
 
@@ -242,7 +242,11 @@ source: stargate-lore
 
 ## NPC Approval Ledger
 
-- skipped: source unavailable — historical Dossier updates predate the exact approval-ledger contract; the current note does not authorize new identity, clearance, portrait, visibility, demographic, prose, or relation changes.
+이번 패스는 기존 `DOCTOR_MOSS` 레코드의 신원·소속·권한·초상·공개 여부·인적 정보와 기존 관계를 그대로 보존한다. 프라토 2부의 기존 session appearance가 확정한 사망 상태와 해당 사건 링크만 구조화하며, 다른 역사적 Dossier 필드는 변경하지 않는다.
+
+| codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `DOCTOR_MOSS` | 모이세이 알렉산드로비치 코헨(기존 spec/ERP 값 유지) | `Dr.모스`(기존 명시적 통칭 유지) | 노부스 오르도 연구 기구 사무차장(기존값 유지) | 기존 ERP 내부 식별자와 durable spec | `NOVUS_ORDO / SECRETARIAT / RESEARCH`(기존값 유지) | 없음(정규 배치 유지) | `V`(기존 승인값 유지) | `/assets/npcs/Doctor-Moss-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 61세; 158cm; 체중 미상(기존값 유지) | 기존 관계는 보존; `NOSB-S1E4-PRATO-PART2` session appearance의 상부 보고 시도 직후 사망을 `DECEASED` 상태로 구조화 | ready-for-apply |
 
 ## Visual Asset Ledger
 

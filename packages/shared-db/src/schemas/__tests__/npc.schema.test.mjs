@@ -377,6 +377,39 @@ test("toDbNpc: nameNative / nickname / weight frontmatter → lore 매핑", () =
   assert.equal(doc.lore.weight, "55kg");
 });
 
+test("toDbNpc: 확정 사망 상태와 근거 사건을 root 구조로 매핑", () => {
+  const doc = toDbNpc(
+    {
+      codename: "DECEASED_NPC",
+      type: "NPC",
+      role: "기록 보존 대상",
+      nameKo: "사망 확인 인원",
+      lifeStatus: "DECEASED",
+      lifeStatusAt: "2026-07-12T00:00:00.000Z",
+      lifeStatusEventId: "NOSB-S1E5-EVIL-PART2",
+      isPublic: true,
+    },
+    {},
+  );
+
+  assert.equal(doc.lifeStatus, "DECEASED");
+  assert.equal(doc.lifeStatusAt.toISOString(), "2026-07-12T00:00:00.000Z");
+  assert.equal(doc.lifeStatusEventId, "NOSB-S1E5-EVIL-PART2");
+});
+
+test("npcFrontmatterSchema: 미지원 생사 상태는 거부", () => {
+  assert.throws(() =>
+    npcFrontmatterSchema.parse({
+      codename: "UNKNOWN_STATUS_NPC",
+      type: "NPC",
+      role: "r",
+      nameKo: "이름",
+      lifeStatus: "PRESUMED_DEAD",
+      isPublic: true,
+    }),
+  );
+});
+
 test("toDbNpc: isPublic 누락 시 throw", () => {
   assert.throws(() =>
     toDbNpc(
