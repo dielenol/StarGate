@@ -221,9 +221,9 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
               code: "U2",
               name: "파쇄음절탄 사격",
               description:
-                "거치 상태에서 CENSOR-3 한 발을 장전해 기본 소총 피해와 고정 15 소리 피해를 함께 가한다.",
+                "거치 상태에서 CENSOR-3 한 발을 장전한다. 네베드의 소총 패시브가 반영된 총기 기본 물리 피해를 가하고 대상 SAN을 15 감소시킨다.",
               effect:
-                "액션 1과 실제 CENSOR-3 1발을 소모한다. 기본 소총 피해와 함께 방어를 무시하는 고정 15 소리 피해를 가해 대상의 SAN을 추가로 감소시킨다.",
+                "액션 1과 실제 CENSOR-3 1발을 소모한다. 총기 기본 물리 피해를 판정한 뒤, 방어 수단과 DEF를 무시하고 대상 SAN을 고정 15 감소시킨다. SAN 감소는 HP 추가 피해가 아니다.",
               kind: "CONSUMABLE",
               actionCost: 1,
               chargeCost: 0,

@@ -1562,6 +1562,9 @@ test("GM workshop turns loaded multiple actions into editable quote state", () =
   assert.match(adminClient, /action\.actionCost/);
   assert.match(adminClient, /action\.consumableCost/);
   assert.match(adminClient, /action\.additionalDamage/);
+  assert.match(adminClient, /SAN 감소량/);
+  assert.match(adminClient, /고정 추가 판정 사용/);
+  assert.match(adminClient, /방어 수단·DEF 무시/);
   assert.match(adminClient, /updateEquipmentAction/);
   assert.match(adminClient, /equipmentActionsError/);
   assert.match(adminClient, /액션 수정/);

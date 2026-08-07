@@ -221,6 +221,7 @@ function getEquipmentActionDamageLabel(
   damage: WorkshopEquipmentAction["damage"],
 ): string | null {
   if (!damage) return null;
+  const targetsSan = damage.type === "SOUND";
   const damageType = {
     PHYSICAL: "물리",
     FIRE: "화염",
@@ -228,9 +229,15 @@ function getEquipmentActionDamageLabel(
     SOUND: "소리",
   }[damage.type];
   return [
-    `${damage.amount.toLocaleString()} ${damageType}`,
-    damage.ignoresDefense ? "방어 무시" : null,
-    damage.scaling === "NONE" ? "고정 피해" : "표준 보정",
+    targetsSan
+      ? `SAN ${damage.amount.toLocaleString()} 감소 · ${damageType}`
+      : `${damage.amount.toLocaleString()} ${damageType}`,
+    damage.ignoresDefense
+      ? targetsSan
+        ? "방어 수단·DEF 무시"
+        : "방어 무시"
+      : null,
+    damage.scaling === "NONE" ? "고정 판정" : "표준 보정",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -305,7 +312,7 @@ function equipmentActionsError(
         action.additionalDamage.amount < 1 ||
         action.additionalDamage.amount > 999)
     ) {
-      return `${code}의 추가 피해와 기본 사격 사용 여부를 확인해 주세요.`;
+      return `${code}의 추가 판정과 기본 사격 사용 여부를 확인해 주세요.`;
     }
     if (
       action.damage &&
@@ -2831,7 +2838,12 @@ export default function EquipmentWorkshopAdminClient({
                                   ) : null}
                                   {additionalDamage ? (
                                     <div>
-                                      <dt>추가 피해</dt>
+                                      <dt>
+                                        {action.additionalDamage?.type ===
+                                        "SOUND"
+                                          ? "SAN 감소"
+                                          : "추가 피해"}
+                                      </dt>
                                       <dd>{additionalDamage}</dd>
                                     </div>
                                   ) : null}
@@ -2969,7 +2981,7 @@ export default function EquipmentWorkshopAdminClient({
                                           })
                                         }
                                       />
-                                      <span>고정 추가 피해 사용</span>
+                                      <span>고정 추가 판정 사용</span>
                                     </label>
                                   </div>
                                   {action.usesWeaponAttack ||
@@ -3116,9 +3128,9 @@ export default function EquipmentWorkshopAdminClient({
                                   ) : null}
                                   {action.additionalDamage ? (
                                     <div className={styles.actionDamageFields}>
-                                      <strong>추가 피해</strong>
+                                      <strong>추가 판정</strong>
                                       <DropdownSelect
-                                        ariaLabel={`${action.code} 추가 피해 유형`}
+                                        ariaLabel={`${action.code} 추가 판정 유형`}
                                         value={action.additionalDamage.type}
                                         onChange={(value) =>
                                           updateEquipmentAction(actionIndex, {
@@ -3141,7 +3153,12 @@ export default function EquipmentWorkshopAdminClient({
                                         ]}
                                       />
                                       <label>
-                                        <span>피해량</span>
+                                        <span>
+                                          {action.additionalDamage.type ===
+                                          "SOUND"
+                                            ? "SAN 감소량"
+                                            : "피해량"}
+                                        </span>
                                         <input
                                           type="number"
                                           min="1"

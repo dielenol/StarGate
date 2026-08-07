@@ -98,7 +98,10 @@ export interface EquipmentAction {
   damage?: EquipmentActionDamage;
   /** 무기의 구조화 기본 사격 프로필을 함께 사용한다. */
   usesWeaponAttack?: boolean;
-  /** 기본 사격과 별도 판정하는 고정 추가 피해. */
+  /**
+   * 기본 사격과 별도 판정하는 고정 추가 효과.
+   * SOUND는 HP 추가 피해가 아니라 SAN 감소로 처리한다.
+   */
   additionalDamage?: EquipmentActionDamage;
   /** 장비 충전 대신 실제 인벤토리 소모품을 차감하는 비용. */
   consumableCost?: EquipmentActionConsumableCost;

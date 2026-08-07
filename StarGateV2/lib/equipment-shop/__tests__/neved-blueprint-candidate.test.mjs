@@ -110,11 +110,16 @@ test("CENSOR-3 표결은 배치 제작 권한만 승인하고 발사에는 재�
   assert.equal(ammo.outputQuantity, 3);
   assert.equal(ammo.regularAmmoCost, 0);
   assert.equal(ammo.actionCode, "U2");
-  assert.equal(ammo.bonusDamage, 15);
+  assert.equal(ammo.sanDamage, 15);
   assert.equal(ammo.damageType, "SOUND");
   assert.equal(ammo.targetStat, "SAN");
+  assert.equal(ammo.dealsHitPointDamage, false);
   assert.equal(ammo.ignoreDefense, true);
   assert.equal(ammo.scaling, "NONE");
+  assert.equal(
+    ammo.attackResolution,
+    "BASE_WEAPON_PHYSICAL_PLUS_FIXED_SAN_DAMAGE",
+  );
   assert.equal(
     ammo.manufactureApproval.scope,
     "BATCH_MANUFACTURE_AUTHORIZATION",
@@ -182,7 +187,8 @@ test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존�
   assert.equal(censor.additionalDamage.type, "SOUND");
   assert.equal(censor.additionalDamage.amount, 15);
   assert.equal(censor.additionalDamage.ignoresDefense, true);
-  assert.match(censor.effect, /대상의 SAN을 추가로 감소/);
+  assert.match(censor.effect, /대상 SAN을 고정 15 감소/);
+  assert.match(censor.effect, /SAN 감소는 HP 추가 피해가 아니다/);
 });
 
 test("운영 DRAFT v1 갱신 후보는 액션 계약만 v2로 안전하게 올린다", () => {
@@ -218,8 +224,8 @@ test("운영 DRAFT v1 갱신 후보는 액션 계약만 v2로 안전하게 올�
       "version",
     ],
   );
-  assert.match(censorSeed.payload.effect, /고정 15 소리 피해/);
-  assert.match(censorSeed.payload.effect, /SAN을 추가 감소/);
+  assert.match(censorSeed.payload.effect, /SAN을 고정 15 감소/);
+  assert.match(censorSeed.payload.effect, /HP 추가 피해가 아니다/);
   assert.equal(
     postcondition["defaults.approvalGate.content"],
     defaults.approvalGate.content,
@@ -253,7 +259,7 @@ test("청사진과 CENSOR-3 seed는 공유 DB의 완전 문서 schema를 통과�
   );
 });
 
-test("CENSOR-3 비공개 로어 SSOT는 15 소리·방어 무시·SAN 감소 계약을 함께 보존한다", () => {
+test("CENSOR-3 비공개 로어 SSOT는 기본 물리 피해와 방어 무시 SAN 15 감소를 분리한다", () => {
   const sources = [
     censorSpec,
     bulwarkSpec,
@@ -263,10 +269,13 @@ test("CENSOR-3 비공개 로어 SSOT는 15 소리·방어 무시·SAN 감소 계
   ];
 
   for (const source of sources) {
-    assert.match(source, /15 소리 피해/);
-    assert.match(source, /방어(?:를)?\s*무시/);
+    assert.match(source, /(?:SAN을 고정 15 감소|SAN 15 감소)/);
+    assert.match(source, /방어/);
+    assert.match(source, /무시/);
     assert.match(source, /SAN/);
+    assert.match(source, /HP 추가 피해가 아니/);
     assert.doesNotMatch(source, /심령 피해/);
+    assert.doesNotMatch(source, /SAN(?:을)?\s*추가/);
   }
   assert.equal(censorSeed.payload.isPublic, false);
   assert.equal(censorSeed.payload.isAvailable, false);
