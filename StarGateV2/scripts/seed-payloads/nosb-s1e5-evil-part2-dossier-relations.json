@@ -71,5 +71,45 @@
         }
       }
     }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "WHITE_ROSE_R"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "INDEXER",
+          "targetName": "해쉬 테거",
+          "label": "지도부 교체 협상",
+          "summary": "섹터 C 지도부의 동시 실각과 화이트로즈 측 후임 파견을 제안했고, 해쉬의 후계 적임자·절차적 선례 질문에 답했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART2",
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "testimony"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "WHITE_ROSE_R",
+          "targetName": "R",
+          "label": "지도부 교체 제안 검토",
+          "summary": "화이트로즈 수장이라고 밝힌 R의 지도부 교체안을 검토하며 후계 적임자와 실각 절차의 위험을 반복 질의했다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART2",
+          "sourceLabel": "작전 보고서 S1E5: 악 2부",
+          "confidence": "testimony"
+        }
+      }
+    }
   }
 ]

@@ -36,7 +36,7 @@ source: stargate-lore
 - 작전지: 러시아 시베리아 노릴스크 인근 섹터 C와 주변 마을
 - 지도 좌표: 1부와 동일한 섹터 C 추정 좌표 `[74.5, 21.3]`, `estimated`
 - 보고서 기록자: 1부의 L. Moreau와 구분해 기존 기록자 정체성인 `NOVUS ORDO 사무국 기록통제실 연구원 N. Voss`를 사용한다.
-- 공개 기준: 사용자가 report mirror·entity wiki 3건·선정 장면 자산·게라쉬모프와 바부슈카 Dossier 초상의 공개를 승인했다. 신규 wiki 4건과 신규 NPC 2건은 `isPublic: true`로 준비하며, 기존 NPC의 공개 여부는 그대로 보존한다.
+- 공개 기준: 사용자가 report mirror·entity wiki 3건·선정 장면 자산·게라쉬모프와 바부슈카 Dossier 초상의 공개를 승인했다. 신규 wiki 4건과 신규 NPC 3건은 `isPublic: true`로 준비하며, R은 명시적 무이미지 상태로 공개한다. 기존 NPC의 공개 여부는 그대로 보존한다.
 
 ## Lorebook Coverage Matrix
 
@@ -48,7 +48,7 @@ source: stargate-lore
 | 로드리온 라스콜니코프 | p.58-p.70, p.88-p.99 | NPC spec + existing Dossier | 게라쉬모프와의 충돌, 포로의 광원화 샘플화, 실각 투표와 오브에 의한 사망 반영 | durable-ready · live pending |
 | 니콜라이 바자로프 | p.100, p.112 | NPC spec + existing Dossier | 레짐 체인지 프로토콜에 따른 섹터 C 감독관 취임과 후속 안정화 기록 | durable-ready · live pending |
 | 러시아 장군 게라쉬모프 | p.58-p.60, p.92-p.97 + 사용자 제공 초상 | 신규 NPC spec + Dossier, report 1·2부 | 성을 표시명으로 보존하고 `MILITARY` 외부 인물·등급 없음으로 등록, 오틸리아·로드리온 관계와 사망 반영 | durable-ready · live pending |
-| 화이트로즈 수장 R | p.61-p.65 | report, `wiki_pages.white-rose` | 자칭 수장, 로드리온·장군 동시 실각 제안과 인질 증언, 후속 레짐 체인지 연결을 증언/확인 사실로 분리 | durable-ready · Dossier candidate-only |
+| 화이트로즈 수장 R | p.61-p.65 | 신규 NPC spec + Dossier, report, `wiki_pages.white-rose` | `WHITE_ROSE_R` 공개 Dossier를 무이미지·등급 없음으로 등록하고, 자칭 수장·지도부 동시 실각 제안·인질 증언과 후속 레짐 체인지를 증언/확인 사실로 분리 | durable-ready · live pending |
 | 섹터 C 전기 오브 | p.14-p.19, p.71-p.99 | 신규 `wiki_pages.sector-c-electrical-orb` | 전자기기 추적, 전자 장비 무력화, 고열·전기 피해와 맘모스·로드리온 사망 연계 기록 | durable-ready · public · live pending |
 | 스트리고이와 노스페라투 | p.34-p.56 | 신규 `wiki_pages.sector-c-strigoi` | 빛·은 반응, 노스페라투의 포커 통행 거래, 섹터 C 이탈 기록 | durable-ready · public · live pending |
 | 맘모스 | p.70-p.88 | 신규 `wiki_pages.sector-c-mammoth` | 연구동 파괴, 오브 충돌과 사망을 정식 번호 미확정 개체 사건으로 등록 | durable-ready · public · live pending |
@@ -58,7 +58,7 @@ source: stargate-lore
 | 루빈 마을의 바부슈카 | p.111-p.112 + 사용자 제공 초상 | 신규 NPC spec + Dossier, report | `CIVIL` 외부 주민·등급 없음으로 등록하고 `Мама`, `내 아들` 발화는 보존하되 생물학적 가족관계는 확정하지 않음 | durable-ready · live pending |
 | 광명회 사보타주 | p.68-p.69, p.112 | `wiki_pages.illuminati`, report | 나치 문양 금괴와 종료 시점 GM 확정을 근거로 섹터 C 사보타주 귀속을 확정 기록 | durable-ready · live pending |
 | 데드핸드 프로젝트 | p.81-p.83 | report, PECHORIN·MARGARET Dossier | 명칭과 이번 실행만 보존하고 조직 전체 프로젝트 규격은 별도 문서로 확장하지 않음 | durable-ready · broader concept candidate-only |
-| 확인된 Dossier 참가자 | 전체 speaker set + 기존 codename 대조 | 신규 Dossier 2건 + existing Dossiers 21건 | 신규 외부 인물 등록, `appearsInEvents`, `sessionAppearances`와 확인된 관계를 멱등 추가 | durable-ready · live pending |
+| 확인된 Dossier 참가자 | 전체 speaker set + 기존 codename 대조 | 신규 Dossier 3건 + existing Dossiers 21건 | 신규 외부 인물 등록, `appearsInEvents`, `sessionAppearances`와 확인된 관계를 멱등 추가 | durable-ready · live pending |
 
 ## Dossier Event Link Pass
 
@@ -86,11 +86,12 @@ source: stargate-lore
 | 로드리온 라스콜니코프 | `RODION` | 사보타주 대응 실패, 포로 샘플화, 실각과 오브에 의한 사망 | durable-ready |
 | 니콜라이 바자로프 | `BAZAROV` | 레짐 체인지 프로토콜로 섹터 C 감독관 취임 | durable-ready |
 | 게라쉬모프 | `GERASIMOV` | 1부의 러시아 장군 정체 연결, 섹터 C 국영화 시도와 오틸리아의 처단 | durable-ready |
+| R | `WHITE_ROSE_R` | 화이트로즈 수장 자칭, 지도부 동시 실각·후임 파견 제안과 해쉬의 절차 검토 | durable-ready |
 | 바부슈카 | `RUBIN_BABUSHKA` | 초토화된 마을의 주민으로 등록하고 웬디고와의 발화는 testimony로 제한 | durable-ready |
 
 ## NPC Approval Ledger
 
-기존 세 NPC는 현재 spec의 승인값을 보존하면서 2부 상태만 갱신한다. 게라쉬모프와 바부슈카는 사용자 제공 초상·공개 결정과 외부 소속 분류를 반영해 신규 Dossier로 준비한다. R은 신원과 Dossier 여부가 미정이므로 후보로만 유지한다.
+기존 세 NPC는 현재 spec의 승인값을 보존하면서 2부 상태만 갱신한다. 게라쉬모프와 바부슈카는 사용자 제공 초상·공개 결정과 외부 소속 분류를 반영해 신규 Dossier로 준비한다. R은 화이트로즈 소속 공개 Dossier로 생성하되, 사용자 지시에 따라 초상 없이 등록하고 실명 미상 상태를 보존한다.
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -98,7 +99,7 @@ source: stargate-lore
 | `RODION` | 로드리온 로마노비치 라스콜니코프 | `грибы(버섯들)` | 전 섹터 C 감독관 / 심부 굴착 생존자 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `M`(기존 승인값 유지) | `/assets/npcs/Rodion-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 67세; 190cm; 체중 미상 | 실각 투표 뒤 마리아가 오브에 투척했고 화염·전기 피해로 사망 | ready-for-apply |
 | `BAZAROV` | 니콜라이 바자로프 | `богослов(신학자)` | 섹터 C 연구원장 → 섹터 C 감독관 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 연구원장→감독관 직책 변경 | `H`(기존 승인값 유지) | `/assets/npcs/Bazarov-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이 미상; 176cm; 체중 미상 | 레짐 체인지 프로토콜로 새 감독관이 되었고 섹터 C 사태가 후속 안정화됨 | ready-for-apply |
 | `GERASIMOV` | 게라쉬모프(성만 확인; 이름·부칭은 원문 미상) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 호명, 1·2부 역할 연속성, 사용자 제공 초상 매칭; 성 기반 기술 식별자 | `MILITARY` 외부 군부 | 러시아 측 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 남성; 나이·신장·체중은 원문 미상 | 로드리온과 지휘권 경쟁; 지도부 투표 뒤 오틸리아의 공격으로 사망; 양방향 Dossier 관계 | ready-for-apply |
-| `WHITE_ROSE_R_CANDIDATE` | R(실명 미확인) | 없음(기록 없음) | 화이트로즈 수장(자칭) | 통신에서 본인이 조직 수장 R이라고 발화 | `WHITE_ROSE` | 본부 긴급 통신망 개입 | 미확인(ERP 등급 변환 근거 없음) | 없음(공식 초상 미제공) | 결정 보류(신원 미완) | 성별·나이·신장·체중 미확인 | 지도부 동시 실각과 화이트로즈 인사 파견을 제안; 기관 문서만 갱신 | blocked |
+| `WHITE_ROSE_R` | R(교신 식별명; 실명·전체 이름은 원문 미상) | 없음(`R`은 현재 확인된 주 식별명) | 화이트로즈 수장(자칭) / 레짐 체인지 제안자 | 통신에서 본인이 조직 수장 R이라고 발화; 조직명과 식별명을 결합한 기술 식별자 | `CIVIL / WHITE_ROSE` 외부 시민사회 | 본부 긴급 통신망 개입 / 섹터 C 후임 파견 제안 | 없음(외부 조직 인물; `agentLevel` 미저장) | 빈 값(사용자 명시적 무이미지 결정; 교신 컷신 재사용 금지) | `true`(앞선 공개 결정 유지) | 성별·나이·신장·체중은 원문 미상 | 지도부 동시 실각과 화이트로즈 인사 파견을 제안; `INDEXER`와 양방향 testimony 관계 | ready-for-apply |
 | `RUBIN_BABUSHKA` | 바부슈카(실명은 원문 미상; speaker label을 표시명으로 보존) | 없음(바부슈카는 기록 표시명) | 루빈 인근 마을 주민 / 실명 미상 | 종료 장면 speaker label과 사용자 제공 초상; 사건 기반 기술 식별자 | `CIVIL` 외부 시민사회 | 루빈 인근 마을 주민 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Rubin-Babushka-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 여성 노인; 신장·체중은 원문 미상 | 웬디고와 `Мама`·`내 아들` 발화를 교환했다는 증언만 보존하고 실제 가족관계는 확정하지 않음 | ready-for-apply |
 
 ### NPC Decision Register
@@ -106,9 +107,9 @@ source: stargate-lore
 - 기존 `PECHORIN`, `RODION`, `BAZAROV`의 등급·초상·공개 여부·소속은 1부 승인값을 그대로 보존한다.
 - `PECHORIN`과 `RODION`의 사망은 GM 서술로 확정됐으므로 spec 및 기존 Dossier 상태 서술에 반영한다.
 - `BAZAROV`의 감독관 취임은 레짐 체인지 방송과 종료 시점 GM 서술이 함께 뒷받침한다.
-- `GERASIMOV`는 `MILITARY`, `RUBIN_BABUSHKA`는 `CIVIL` 외부 인물로 분류하고 내부 `agentLevel`은 저장하지 않는다. 러시아와 루빈 마을은 역할·태그·서사에 보존하며 단일 인물을 위해 새 조직 코드를 만들지 않는다.
-- 두 신규 NPC의 초상은 사용자 제공 원본을 크롭·생성 변형 없이 WebP로 변환했고, `isPublic: true` 결정을 반영한다.
-- `WHITE_ROSE_R_CANDIDATE`만 Dossier payload에서 제외한다. apply-ready 검사는 후보 전체 coverage와 별도로 payload 대상만 담은 `nosb-s1e5-evil-part2-npc-apply.md`를 사용한다.
+- `GERASIMOV`는 `MILITARY`, `RUBIN_BABUSHKA`는 `CIVIL`, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE` 외부 인물로 분류하고 내부 `agentLevel`은 저장하지 않는다. 러시아와 루빈 마을은 역할·태그·서사에 보존하며 단일 인물을 위해 새 조직 코드를 만들지 않는다.
+- 게라쉬모프와 바부슈카의 초상은 사용자 제공 원본을 크롭·생성 변형 없이 WebP로 변환했고, `isPublic: true` 결정을 반영한다.
+- R은 사용자 지시에 따라 `WHITE_ROSE_R` 공개 Dossier로 생성하되 `previewImage`와 `lore.mainImage`를 빈 값으로 둔다. 교신 컷신은 보고서 역할만 유지하고 Dossier 초상으로 재사용하지 않는다.
 - `R`의 2028년 전쟁 기획, 병력·주민의 우크라이나 파견과 가족 인질 주장은 발화자의 증언으로만 보존한다.
 
 ## Relationship Narrative Candidates
@@ -118,7 +119,8 @@ source: stargate-lore
 | `PECHORIN` | `MARGARET` | 자신의 사망 뒤 시체를 조종해 수동 냉각을 활성화하도록 임무를 맡김 | confirmed | 양측 Dossier relation | durable-ready |
 | `MARGARET` | `PECHORIN` | 모든 정신력을 소모해 페초린의 시체를 조종하고 비상 냉각 장치를 활성화 | confirmed | 양측 Dossier relation | durable-ready |
 | `MARIA` | `RODION` | 지도부 투표 뒤 제압된 로드리온을 오브에 던져 사망하게 함 | confirmed | `MARIA` Dossier relation | durable-ready |
-| `INDEXER` | `WHITE_ROSE_R_CANDIDATE` | R의 지도부 교체안을 검토했으나 후계 적임자와 절차적 위험을 반복 질의 | testimony | coverage/report only | candidate-only |
+| `INDEXER` | `WHITE_ROSE_R` | R의 지도부 교체안을 검토하며 후계 적임자와 절차적 위험을 반복 질의 | testimony | 양측 Dossier relation | durable-ready |
+| `WHITE_ROSE_R` | `INDEXER` | 지도부 동시 실각과 화이트로즈 측 후임 파견을 제안하고 해쉬의 질문에 응답 | testimony | 양측 Dossier relation | durable-ready |
 | `GERASIMOV` | `RODION` | 섹터 C 국영화와 지휘권을 두고 대립 | confirmed | 양측 Dossier relation | durable-ready |
 | `RODION` | `GERASIMOV` | 섹터 C 국영화와 지휘권을 두고 대립 | confirmed | 양측 Dossier relation | durable-ready |
 | `OTILIA` | `GERASIMOV` | 지도부 투표 결과에 따라 게라쉬모프 장군을 처단 | confirmed | 양측 Dossier relation | durable-ready |
@@ -169,14 +171,14 @@ source: stargate-lore
 ### Ordered Live Runbook (approval required)
 
 1. 이 변경의 정확한 revision을 먼저 배포한다. `/assets/npcs/Gerasimov-profile.webp`, `/assets/npcs/Rubin-Babushka-profile.webp`의 production 응답과 report/wiki 상세의 `agentLevel` 미지정 인물 메타가 `NPC`로만 렌더링되는 코드를 확인하기 전에는 이미지 경로를 포함한 DB payload를 실행하지 않는다.
-2. 사용자 공개 결정, 외부 NPC 소속·등급 없음, 두 초상 매칭을 payload와 coverage에 반영한 구조·apply-ready·schema·read-only DB dry-run 결과를 다시 확인한다.
+2. 사용자 공개 결정, 외부 NPC 소속·등급 없음, 게라쉬모프·바부슈카 초상 매칭과 R의 명시적 무이미지 결정을 payload와 coverage에 반영한 구조·apply-ready·schema·read-only DB dry-run 결과를 다시 확인한다.
 3. `nosb-s1e5-evil-part2-sync.json`을 먼저 실행하고 report 1건, 기존 wiki 5건, 공개 신규 wiki 4건을 DB에서 재조회한다. 하나라도 불일치하면 이후 파일을 실행하지 않는다.
-4. 최초 `personalityObservations` 배열로 보호한 생성 전용 `nosb-s1e5-evil-part2-new-npcs.json`을 실행하고 `GERASIMOV`, `RUBIN_BABUSHKA`의 외부 소속, `agentLevel` 부재, 공개 여부, 초상, 사건 역링크를 재조회한다. 기존 문서가 발견되면 runner가 덮어쓰지 않고 중단한다.
-5. `nosb-s1e5-evil-part2-dossier-relations.json`을 live 연결 dry-run한 뒤 실행해 `GERASIMOV`↔`RODION`, `GERASIMOV`↔`OTILIA` 네 관계를 한 트랜잭션으로 추가하고 세 Dossier를 재조회한다.
+4. 최초 `personalityObservations` 배열로 보호한 생성 전용 `nosb-s1e5-evil-part2-new-npcs.json`을 실행하고 `GERASIMOV`, `RUBIN_BABUSHKA`, `WHITE_ROSE_R`의 외부 소속, `agentLevel` 부재, 공개 여부, 초상 또는 명시적 무이미지, 사건 역링크를 재조회한다. 기존 문서가 발견되면 runner가 덮어쓰지 않고 중단한다.
+5. `nosb-s1e5-evil-part2-dossier-relations.json`을 live 연결 dry-run한 뒤 실행해 `GERASIMOV`↔`RODION`, `GERASIMOV`↔`OTILIA`, `WHITE_ROSE_R`↔`INDEXER` 여섯 관계를 한 트랜잭션으로 추가하고 다섯 Dossier를 재조회한다.
 6. `nosb-s1e5-evil-part2-dossiers.json`을 실행하고 21개 기존 대상의 event/session appearance 및 나머지 확인 관계를 재조회한다. 실패하면 personality 단계로 넘어가지 않는다.
 7. `nosb-s1e5-evil-part2-personality.json`을 실행하고 immutable observation ID 6개를 재조회한다.
-8. 신규 대상 존재를 재확인한 뒤 `nosb-s1e5-evil-part2-reference-followup.json`을 live 연결 dry-run하고 실행해 2부 보고서에 신규 wiki 3건·신규 NPC 2건의 구조화 참조만 합집합으로 추가한다. 1부 보고서 본문은 당시의 `이름이 확인되지 않은 러시아 장군` 기록을 유지하고, 1부 연결은 게라쉬모프 Dossier의 사건·세션 역링크로 제공한다.
-9. direct seed는 열린 클라이언트 Query cache를 무효화하지 않으므로 새 브라우저 세션 또는 강제 새로고침으로 personnel/report/wiki를 확인한다. `05`/`05.5` 카드 분리, 이미지 17개 geometry, 외부 인물의 권한등급 비노출, 상세 링크·역링크·통합 검색을 검증한다.
+8. 신규 대상 존재를 재확인한 뒤 `nosb-s1e5-evil-part2-reference-followup.json`을 live 연결 dry-run하고 실행해 2부 보고서에 신규 wiki 3건·신규 NPC 3건의 구조화 참조만 합집합으로 추가한다. 1부 보고서 본문은 당시의 `이름이 확인되지 않은 러시아 장군` 기록을 유지하고, 1부 연결은 게라쉬모프 Dossier의 사건·세션 역링크로 제공한다.
+9. direct seed는 열린 클라이언트 Query cache를 무효화하지 않으므로 새 브라우저 세션 또는 강제 새로고침으로 personnel/report/wiki를 확인한다. `05`/`05.5` 카드 분리, 이미지 17개 geometry, 외부 인물의 권한등급 비노출, R의 무이미지 카드·상세, 상세 링크·역링크·통합 검색을 검증한다.
 
 각 파일은 파일 내부에서만 원자적이며 파일 사이 자동 rollback은 없다. 중간 실패 시 이미 반영된 단계를 임의 보상 mutation으로 되돌리지 말고, DB 재조회로 마지막 성공 단계를 확정한 뒤 멱등 dry-run부터 재개한다.
 
@@ -205,7 +207,7 @@ source: stargate-lore
 | `/assets/session-reports/s1e5-sector-c-part2/nosferatu-poker.webp` | p.47 노스페라투 포커 제안 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (durable-ready) | included (durable-ready) | included (`sector-c-strigoi`) | not-applicable | excluded: report cutscene, not portrait | 노스페라투와 포커 사건 대표 도판 |
 | `p056-research-building-casualties-repeat` | p.56 피로 물든 연구동 반복 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: p.7 도판과 중복 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: report cutscene, not portrait | 반복 배경 제거 |
 | `/assets/session-reports/s1e5-sector-c-part2/rodion-gerasimov-confrontation.webp` | p.58 로드리온과 게라쉬모프 대치 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | not-applicable | not-applicable | excluded: multi-person scene, not portrait | 지도부 충돌의 직접 장면 |
-| `/assets/session-reports/s1e5-sector-c-part2/white-rose-r-transmission.webp` | p.61 화이트로즈 R 교신 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | excluded: existing-page image insertion not authorized | not-applicable | excluded: unapproved identity image, not portrait | R의 정식 초상으로 재사용 금지 |
+| `/assets/session-reports/s1e5-sector-c-part2/white-rose-r-transmission.webp` | p.61 화이트로즈 R 교신 | 1035×503 | yes — embedded VTT frame | report-cutscene | included (durable-ready) | included (durable-ready) | excluded: existing-page image insertion not authorized | not-applicable | excluded: user-approved no-image Dossier; session cutscene is not a portrait | 사용자 명시적 무이미지 결정에 따라 R의 정식 초상으로 재사용 금지 |
 | `p063-hostage-village-testimony` | p.63 마을 인질 증언 장면 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: 증언 장면의 자극적 반복을 줄임 | excluded: report와 동일 제외 | excluded: existing-page image insertion not authorized | not-applicable | excluded: report cutscene, not portrait | R의 증언을 객관 사실처럼 보이게 할 위험 |
 | `p065-research-group-transition` | p.65 연구 그룹 전환 | 1035×503 | yes — embedded VTT frame | report-cutscene | excluded: 사건 식별력이 낮은 전환 컷 | excluded: report와 동일 제외 | not-applicable | not-applicable | excluded: group scene, not portrait | 저정보 전환 프레임 |
 | `/assets/session-reports/s1e5-sector-c-part2/mammoth-breakout.webp` | p.71 맘모스 연구동 돌파 | 1035×503 | yes — embedded VTT frame | report-cutscene + entity-archive | included (durable-ready) | included (durable-ready) | included (`sector-c-mammoth`) | not-applicable | excluded: entity scene, not portrait | 맘모스의 대표 전투 도판 |
@@ -229,23 +231,23 @@ source: stargate-lore
 | 신규 wiki 공개 여부 | 사용자가 공개로 결정 | report mirror·오브·스트리고이·맘모스를 `isPublic: true`로 준비 | 없음 — live 적용·재조회만 남음 |
 | 시각 자산 직접 URL 공개 | 사용자가 공개로 결정 | 장면 자산 15개와 Dossier 초상 2개의 `public/` 경로 사용 | DB 적용 전 해당 revision 배포와 production URL 응답 확인 |
 | 게라쉬모프 신원 | 성·장군 직함·러시아 측 역할과 사용자 제공 초상 확인 | `GERASIMOV`, `MILITARY`, 등급 없음, 공개 Dossier; 이름·부칭은 미상으로 보존 | 전체 이름이 후속 소스에서 밝혀질 경우 갱신 |
-| R 신원 | 화이트로즈 수장이라고 자칭 | 기관 사건 기록만 반영 | 실명·Dossier 여부·등급·초상·공개 여부 |
+| R 신원 | 화이트로즈 수장이라고 자칭; 사용자가 Dossier 생성·무이미지를 명시 | `WHITE_ROSE_R`, `CIVIL / WHITE_ROSE`, 등급 없음, 빈 초상, 공개 Dossier; 실명 미상 보존 | 전체 이름·인적 정보·실제 조직 직책이 후속 소스에서 밝혀질 경우 갱신 |
 | 바부슈카 신원과 웬디고 | speaker label·여성 노인 묘사·사용자 제공 초상, 상호 `Mama`·`내 아들` 발화 | `RUBIN_BABUSHKA`, `CIVIL`, 등급 없음, 공개 Dossier; 관계는 testimony로 보존 | 실명과 실제 가족관계 확인 |
 | 오브 식별자 | 현장 임시 명칭 `오브`만 확인 | wiki title에 `섹터 C 전기 오브` 사용, 비공식 명칭 명시 | 정식 ZULU 번호·분류 |
 | 스트리고이·노스페라투 | 자칭·speaker label과 행동 확인 | 하나의 집단 사건 문서로 등록 | 정식 ZULU 번호·개체 수·현 위치 |
 | 광원화와 뇌 파괴 | 페초린 발화와 사망체 비표적화 관측 | 이번 사건의 관측으로만 기록 | 일반 법칙화 가능한 추가 실험·문서 |
 | 데드핸드 프로젝트 | 모스가 명칭만 발화 | 사건명과 실행만 기록 | 프로젝트 기원·권한·전체 범위 |
-| NPC apply-ready 계약 | coverage에는 payload에서 제외된 blocked R 후보가 함께 존재 | payload 대상만 담은 `nosb-s1e5-evil-part2-npc-apply.md`로 apply-ready 검사하고 본 coverage의 R blocked 판정은 보존 | 없음 — R을 생성하는 후속 작업에서는 별도 결정 필요 |
-| 신규 대상의 보고서 구조화 참조 | 신규 wiki 3건과 NPC 2건은 아직 live에 없음 | 최초 생성 뒤 `nosb-s1e5-evil-part2-reference-followup.json`이 2부 보고서의 구조화 배열만 합집합으로 보강; 1부는 Dossier 사건·세션 역링크로 연결 | live 적용 뒤 명시 배열·typed link 재조회 |
+| NPC apply-ready 계약 | 신규 NPC 3건과 기존 변경 NPC 3건의 결정이 모두 확인됨 | 본 coverage와 `nosb-s1e5-evil-part2-npc-apply.md`를 같은 apply-ready 대상으로 유지 | live 적용·DB 재조회·Dossier consumer 확인 |
+| 신규 대상의 보고서 구조화 참조 | 신규 wiki 3건과 NPC 3건은 아직 live에 없음 | 최초 생성 뒤 `nosb-s1e5-evil-part2-reference-followup.json`이 2부 보고서의 구조화 배열만 합집합으로 보강; 1부는 Dossier 사건·세션 역링크로 연결 | live 적용 뒤 명시 배열·typed link 재조회 |
 
 ## Verification Contract
 
 - 보고서 ID·번호: formatter preset과 title fallback 모두 `NOSB-S1E5-EVIL-PART2 → 05.5`를 반환해야 한다.
 - 지도 카드: 동일 좌표의 `05`와 `05.5`가 겹치지 않는 명시 레이아웃을 가져야 한다.
 - 보고서·wiki mirror: 15개 이미지 경로·순서·alt·caption이 완전히 같아야 한다.
-- 보고서 구조화 링크: 최초 sync에는 현재 live target만 저장하고, 신규 wiki 3건·NPC 2건 생성 뒤 follow-up이 2부 forward edge를 합집합으로 추가해야 한다. 1부 연결은 `GERASIMOV` Dossier의 `appearsInEvents`와 `sessionAppearances`로 제공한다.
+- 보고서 구조화 링크: 최초 sync에는 현재 live target만 저장하고, 신규 wiki 3건·NPC 3건 생성 뒤 follow-up이 2부 forward edge를 합집합으로 추가해야 한다. 1부 연결은 `GERASIMOV` Dossier의 `appearsInEvents`와 `sessionAppearances`로 제공한다.
 - 정적 자산: 보고서 WebP 15개는 모두 1035×503, Dossier 초상은 각각 876×1280·956×1280이며 payload·ledger 경로와 일치해야 한다.
-- NPC: 기존 세 NPC는 현재 등급·초상·공개 여부·소속을 보존한다. `GERASIMOV`와 `RUBIN_BABUSHKA`는 외부 소속·등급 없음·공개 초상으로 신규 생성하고, `WHITE_ROSE_R_CANDIDATE`에는 Dossier payload가 없어야 한다.
+- NPC: 기존 세 NPC는 현재 등급·초상·공개 여부·소속을 보존한다. `GERASIMOV`와 `RUBIN_BABUSHKA`는 외부 소속·등급 없음·공개 초상으로, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE`·등급 없음·빈 초상·공개 상태로 신규 생성해야 한다.
 - Dossier: 21개 기존 codename이 모두 dry-run에서 `예상 update` 또는 멱등 `예상 unchanged`여야 한다.
 - personality: 6개 observation은 immutable ID별 단일 `$addToSet` envelope이며 timestamp를 포함하지 않아야 한다.
 - 경제: payload 전체에 경제·인벤토리·상점·주식·`master_items` mutation이 없어야 한다.
@@ -254,12 +256,12 @@ source: stargate-lore
 ## Verification Evidence
 
 - 원본 113쪽에서 1,485개 기록과 31개 시각 프레임을 추출했고 빈 페이지·대체문자가 없음을 확인했다. 대표 시작·중간·종료 페이지와 선정 프레임을 시각 판독했다.
-- `PECHORIN`, `RODION`, `BAZAROV`, `GERASIMOV`, `RUBIN_BABUSHKA` spec은 `parseFrontmatter → npcFrontmatterSchema → toDbNpc → npcDocSchema` 계약을 통과했다. 신규 두 NPC는 각각 `MILITARY`·`CIVIL`, `agentLevel` field absence, `isPublic: true`, 승인된 초상 경로가 확인됐다.
-- 보고서·wiki mirror의 15개 이미지 path/order/alt/caption parity, 33개 visual ledger, main NPC ledger, payload 대상 전용 apply-ready ledger, personality ready ledger와 관찰 6개의 일치를 `check_lore_output.py`로 검증했다. `WHITE_ROSE_R_CANDIDATE`는 main coverage의 blocked 판정과 payload 제외가 함께 보존됐다.
+- `PECHORIN`, `RODION`, `BAZAROV`, `GERASIMOV`, `WHITE_ROSE_R`, `RUBIN_BABUSHKA` spec은 `parseFrontmatter → npcFrontmatterSchema → toDbNpc → npcDocSchema` 계약을 통과했다. 신규 세 NPC는 외부 소속, 직렬화 후 `agentLevel` field absence, `isPublic: true`가 확인됐고 R은 `CIVIL / WHITE_ROSE`, 빈 `previewImage`로 검증됐다.
+- 보고서·wiki mirror의 15개 이미지 path/order/alt/caption parity, 33개 visual ledger, main NPC ledger, payload 대상 전용 apply-ready ledger, personality ready ledger와 관찰 6개의 일치를 `check_lore_output.py`로 검증했다. `WHITE_ROSE_R`의 명시적 무이미지 결정과 NPC payload 포함도 apply-ready 검사를 통과했다.
 - repository 전체 coverage/static payload/category/link/asset 감사가 통과했고 coverage·NPC 적용 명세는 `docs/lore/README.md` 인덱스에 포함됐다. public payload 문자열의 내부 경로·parser·payload·raw page/line·candidate-only·경제 no-op 표현 검사도 통과했다.
-- live 연결 read-only seed dry-run에서 여섯 파일 43개 계획을 검증했다. sync 10건은 `session_reports` 신규 1건, `wiki_pages` 공개 신규 4건·기존 5건이었고, 생성 전용 Dossier 2건은 `GERASIMOV`, `RUBIN_BABUSHKA` 예상 insert, 기존 Dossier 21건과 personality observation 6건은 모두 예상 update였다.
-- 관계 파일은 현재 `GERASIMOV`가 없으므로 해당 대상 `예상 missing`, `RODION`·`OTILIA`는 예상 update로 확인됐다. 신규 Dossier 생성·재조회 뒤 세 대상이 모두 update 또는 unchanged인 live 연결 dry-run을 통과해야 관계 트랜잭션을 실행한다.
-- live preflight 재조회에서 2부 report·신규 wiki 4건·신규 NPC 2건은 아직 없고, 1부 report와 mirror에는 당시 기록인 `이름이 확인되지 않은 러시아 장군` 문구가 남아 있음을 확인했다. follow-up은 문자열 치환 없이 2부 report의 구조화 배열만 합집합으로 보강하며, 신규 target 생성·재조회 뒤 live 연결 dry-run을 통과해야 실행할 수 있다.
+- live 연결 read-only seed dry-run에서 여섯 파일 46개 계획을 검증했다. sync 10건은 `session_reports` 신규 1건, `wiki_pages` 공개 신규 4건·기존 5건이었고, 생성 전용 Dossier 3건은 `GERASIMOV`, `RUBIN_BABUSHKA`, `WHITE_ROSE_R` 예상 insert, 기존 Dossier 21건과 personality observation 6건은 모두 예상 update였다.
+- 관계 파일은 현재 `GERASIMOV`, `WHITE_ROSE_R`이 없으므로 두 대상 `예상 missing`, `RODION`·`OTILIA`·`INDEXER`는 예상 update로 확인됐다. 신규 Dossier 생성·재조회 뒤 다섯 대상이 모두 update 또는 unchanged인 live 연결 dry-run을 통과해야 관계 트랜잭션을 실행한다.
+- live preflight 재조회에서 2부 report·신규 wiki 4건·신규 NPC 3건은 아직 없고, 1부 report와 mirror에는 당시 기록인 `이름이 확인되지 않은 러시아 장군` 문구가 남아 있음을 확인했다. follow-up은 문자열 치환 없이 2부 report의 구조화 배열만 합집합으로 보강하며, 신규 target 생성·재조회 뒤 live 연결 dry-run을 통과해야 실행할 수 있다.
 - 연관 인물 링크 테스트 12건(외부 NPC의 미지정 등급 비노출 포함), 번호 formatter 테스트 2건, personality update/seed normalization 테스트 13건, frontmatter·NPC·seed payload corpus 테스트 46건이 모두 통과했다.
 - `pnpm --filter @stargate/shared-db build`, `pnpm typecheck`, `pnpm lint`, `git diff --check`가 통과했다.
 - live `--execute`, push/deploy, 경제·인벤토리·주식 mutation, 인증 브라우저 확인은 수행하지 않았다. 따라서 audit status는 `partial`이며 정확한 대상에 대한 최종 실행 확인, 실제 적용·단계별 DB 재조회·ERP 렌더가 남은 갭이다.
