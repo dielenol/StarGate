@@ -81,6 +81,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 - [`/erp/admin/catalog`](routes/erp/admin/catalog.md)
 - [`/erp/admin/bureaucrat-votes`](routes/erp/admin/bureaucrat-votes.md)
 - [`/erp/admin/equipment-workshop`](routes/erp/admin/equipment-workshop.md)
+- [`/erp/admin/dialogue-beep`](routes/erp/admin/dialogue-beep.md)
 - [`/erp/characters`](routes/erp/characters.md)
 - [`/erp/characters/[id]`](routes/erp/characters/_id.md)
 - [`/erp/equipment-shop`](routes/erp/equipment-shop.md)

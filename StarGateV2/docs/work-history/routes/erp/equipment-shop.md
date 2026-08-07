@@ -31,3 +31,10 @@
 - 검증: 집중 테스트 60건 중 58건 통과·Mongo 통합 2건 환경 부재로 skip, Registra 28건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, Nochichim 장비 판정 테스트, critical risk review
 - 관련 커밋: `44b83580`, `0ca9972c`, `cfb2df1`
 - 후속 작업: 라이브 seed·깨진 음절 3개 전환·공방 견적 및 Discord 투표 생성은 별도 운영 승인 뒤 실행한다.
+
+## 2026-08-07 · 대사·오디오 개선 · 병기부 NPC 말투 검수
+
+- 아메리의 서류·커피 농담, TEMPER의 장인 화법, RATCHET의 현장 정비사 화법을 보존하면서 반복되는 공문체와 종결어미를 줄였다.
+- `/erp/equipment-shop/acheron`과 `/erp/equipment-shop/strategic`을 포함한 병기부 진입 상태는 무음으로 유지하고, 사용자가 유발한 선택·거부·오류·상태 변경은 각 NPC 전용 비프로 응답하도록 정리했다.
+- 검증: 대사·오디오·세력 계약 테스트 54/54, `pnpm dialogue:lint` 518문장(동일 종결어미 3연속·종결어미 집중·중복 대사 0건), `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 브라우저 데스크톱 및 390×844 전 하위 route 확인(가로 넘침·콘솔 오류 없음)
+- 관련 커밋: `10f0a43f`
