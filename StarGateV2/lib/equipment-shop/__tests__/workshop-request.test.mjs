@@ -1526,6 +1526,7 @@ test("GM material picker supports name and category search", () => {
   );
   assert.match(adminClient, /preservedEquipmentActions/);
   assert.match(adminClient, /preservedCombatProfile/);
+  assert.match(adminClient, /formatEquipmentActionSummary/);
   assert.match(
     adminClient,
     /equipmentActions: draft\.preservedEquipmentActions/,
@@ -1615,6 +1616,7 @@ test("workshop ledger hides terminal requests while GM operations renders result
   assert.match(adminClient, /readOnlyQuote\.result\.previewImage/);
   assert.match(adminClient, /readOnlyQuote\.result\.description/);
   assert.match(adminClient, /readOnlyQuote\.result\.equipmentAction/);
+  assert.match(adminClient, /readOnlyQuote\.result\.equipmentActions\.map/);
   assert.match(adminClient, /readOnlyQuote\.result\.equipmentAbilityOverrides/);
   assert.match(
     adminClient,

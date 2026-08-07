@@ -190,6 +190,21 @@ function formatDuration(minutes: number): string {
     : hoursLabel;
 }
 
+function formatEquipmentActionSummary(
+  actions: WorkshopQuoteResult["equipmentActions"],
+  actionCode: string,
+  actionName: string,
+): string {
+  if (actions?.length) {
+    return actions
+      .map((action) => `${action.code} · ${action.name}`)
+      .join(" / ");
+  }
+  return actionCode
+    ? `${actionCode.toUpperCase()} · ${actionName || "이름 미입력"}`
+    : "없음";
+}
+
 function createDraft(
   request: AdminSerializedEquipmentWorkshopRequest,
   items: MaterialOption[],
@@ -762,9 +777,11 @@ export default function EquipmentWorkshopAdminClient({
     {
       label: "장비 액션",
       before: "없음 또는 원본 유지 안 함",
-      after: draft.actionCode
-        ? `${draft.actionCode.toUpperCase()} · ${draft.actionName || "이름 미입력"}`
-        : "없음",
+      after: formatEquipmentActionSummary(
+        draft.preservedEquipmentActions,
+        draft.actionCode,
+        draft.actionName,
+      ),
     },
     {
       label: "어빌리티 강화",
@@ -1612,7 +1629,28 @@ export default function EquipmentWorkshopAdminClient({
                 </section>
               ) : null}
 
-              {readOnlyQuote.result.equipmentAction ? (
+              {readOnlyQuote.result.equipmentActions?.length ? (
+                <section className={styles.resultArchive__feature}>
+                  <strong>복수 장비 액션</strong>
+                  <ul>
+                    {readOnlyQuote.result.equipmentActions.map((action) => (
+                      <li key={action.code}>
+                        <strong>
+                          {action.code} · {action.name}
+                        </strong>
+                        <p>{action.description}</p>
+                        <p>{action.effect}</p>
+                        <small>
+                          액션 {action.actionCost} · 충전 {action.maxCharges}
+                          {action.reloadable
+                            ? ` · 재장전 ${action.reloadCreditCost.toLocaleString()} CR`
+                            : " · 재장전 불가"}
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : readOnlyQuote.result.equipmentAction ? (
                 <section className={styles.resultArchive__feature}>
                   <strong>
                     {readOnlyQuote.result.equipmentAction.code} ·{" "}
