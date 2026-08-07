@@ -35,7 +35,16 @@
         }
       }
     ],
-    "upsert": true
+    "upsert": true,
+    "postcondition": {
+      "slug": "ultimate-ability",
+      "title": "궁극기",
+      "category": "규정",
+      "isPublic": true,
+      "content": {
+        "$regex": "^# 궁극기(?:\\n|$)"
+      }
+    }
   },
   {
     "collection": "wiki_pages",
@@ -80,6 +89,12 @@
           "updatedAt": "$$NOW"
         }
       }
-    ]
+    ],
+    "postcondition": {
+      "slug": "novus-ordo-rules",
+      "content": {
+        "$regex": "(^|\\n)## 궁극기(?:\\n|$)"
+      }
+    }
   }
 ]
