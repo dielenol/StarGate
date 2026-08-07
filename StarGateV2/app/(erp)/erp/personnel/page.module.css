@@ -600,7 +600,7 @@
   user-select: none;
 }
 
-@media (max-width: 600px) {
+@container personnel (max-width: 600px) {
   .archiveSection {
     padding: 12px;
   }

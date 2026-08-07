@@ -132,6 +132,79 @@ test("stored-document 검증은 다른 도메인 root를 보존하되 필수 누
   );
 });
 
+test("character stored-document는 생사 상태 증거 묶음의 일부 저장을 거부", () => {
+  const character = {
+    codename: "LIFE_STATUS_EVIDENCE",
+    type: "NPC",
+    role: "기록 보존 대상",
+    previewImage: "",
+    ownerId: null,
+    isPublic: true,
+    lore: {
+      name: "생사 상태 검증 인원",
+      mainImage: "",
+      quote: "",
+      gender: "",
+      age: "",
+      height: "",
+      weight: "",
+      appearance: "",
+      personality: "",
+      background: "",
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const evidence = {
+    lifeStatus: "DECEASED",
+    lifeStatusAt: new Date("2026-07-12T00:00:00.000Z"),
+    lifeStatusEventId: "NOSB-S1E5-EVIL-PART2",
+  };
+
+  assert.doesNotThrow(() =>
+    validateSeedStoredDocument("characters", character),
+  );
+  assert.doesNotThrow(() =>
+    validateSeedStoredDocument("characters", {
+      ...character,
+      ...evidence,
+    }),
+  );
+  assert.doesNotThrow(() =>
+    validateSeedInsertCandidate("characters", {
+      ...character,
+      ...evidence,
+    }),
+  );
+  assert.doesNotThrow(() =>
+    validateSeedPayloadPatch("characters", {
+      lifeStatus: evidence.lifeStatus,
+    }),
+  );
+  for (const incomplete of [
+    { lifeStatus: evidence.lifeStatus },
+    { lifeStatusAt: evidence.lifeStatusAt },
+    { lifeStatusEventId: evidence.lifeStatusEventId },
+  ]) {
+    assert.throws(
+      () =>
+        validateSeedStoredDocument("characters", {
+          ...character,
+          ...incomplete,
+        }),
+      /모두 함께 존재하거나 모두 없어야/,
+    );
+    assert.throws(
+      () =>
+        validateSeedInsertCandidate("characters", {
+          ...character,
+          ...incomplete,
+        }),
+      /모두 함께 존재하거나 모두 없어야/,
+    );
+  }
+});
+
 test("경제·공방 nested payload는 알 수 없는 필드를 fail-closed로 거부", () => {
   assert.throws(
     () =>

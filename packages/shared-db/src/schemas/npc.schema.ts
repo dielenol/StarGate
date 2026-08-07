@@ -210,6 +210,41 @@ const agentLevelSchema = z.enum(["V", "A", "M", "H", "G", "J", "U"]);
 /** types/character.ts CharacterLifeStatus 거울. 필드 부재는 생존 확정이 아니다. */
 export const characterLifeStatusSchema = z.enum(["DECEASED"]);
 
+type CharacterLifeStatusEvidence = {
+  lifeStatus?: unknown;
+  lifeStatusAt?: unknown;
+  lifeStatusEventId?: unknown;
+};
+
+/**
+ * 구조화 생사 상태는 판정·일시·근거 사건을 하나의 증거 묶음으로 저장한다.
+ * 세 필드가 모두 없으면 아직 구조화하지 않은 기록이며, 일부만 존재하는
+ * 고아 상태는 허용하지 않는다.
+ */
+export function hasCompleteCharacterLifeStatusEvidence(
+  value: CharacterLifeStatusEvidence,
+): boolean {
+  const presence = [
+    value.lifeStatus !== undefined,
+    value.lifeStatusAt !== undefined,
+    value.lifeStatusEventId !== undefined,
+  ];
+  return presence.every(Boolean) || presence.every((present) => !present);
+}
+
+function refineCharacterLifeStatusEvidence(
+  value: CharacterLifeStatusEvidence,
+  ctx: z.RefinementCtx,
+): void {
+  if (hasCompleteCharacterLifeStatusEvidence(value)) return;
+  ctx.addIssue({
+    code: "custom",
+    path: ["lifeStatus"],
+    message:
+      "lifeStatus, lifeStatusAt, lifeStatusEventId는 모두 함께 선언하거나 모두 생략해야 합니다.",
+  });
+}
+
 const npcBaseFields = {
   codename: codeSchema,
   type: z.literal("NPC"),
@@ -238,13 +273,15 @@ const npcBaseFields = {
 
 /* ── DB 문서 ── */
 
-export const npcDocSchema = z.object({
-  ...npcBaseFields,
-  createdAt: dateSchema,
-  updatedAt: dateSchema,
-  authorId: z.string().optional(),
-  authorName: z.string().optional(),
-});
+export const npcDocSchema = z
+  .object({
+    ...npcBaseFields,
+    createdAt: dateSchema,
+    updatedAt: dateSchema,
+    authorId: z.string().optional(),
+    authorName: z.string().optional(),
+  })
+  .superRefine(refineCharacterLifeStatusEvidence);
 
 /* ── MD frontmatter 전용 ──
    긴 서술 필드(appearance/personality/background/roleDetail/notes/quote)는
@@ -254,42 +291,44 @@ export const npcDocSchema = z.object({
 // DB 어댑터(toDbNpc)에서 빈 문자열을 undefined로 정규화한다.
 const optionalCodeOrEmpty = z.union([codeSchema, z.literal("")]).optional();
 
-export const npcFrontmatterSchema = z.object({
-  codename: codeSchema,
-  slug: z.string().optional(),
-  type: z.literal("NPC"),
-  role: z.string().min(1).max(100),
-  factionCode: optionalCodeOrEmpty,
-  institutionCode: optionalCodeOrEmpty,
-  department: z.string().optional(),
-  lifeStatus: characterLifeStatusSchema.optional(),
-  lifeStatusAt: isoDateStringSchema.optional(),
-  lifeStatusEventId: z.string().min(1).max(80).optional(),
-  nameKo: z.string(),
-  nameEn: z.string().optional(),
-  /** 원어 표기 (한자/일본어 등). LoreSheet.nameNative. */
-  nameNative: z.string().optional(),
-  /** 짧은 별칭/통칭. LoreSheet.nickname. */
-  nickname: z.string().optional(),
-  gender: z.string().optional(),
-  age: z.string().optional(),
-  height: z.string().optional(),
-  /** 체중 — LoreSheet.weight. */
-  weight: z.string().optional(),
-  isPublic: z.boolean(),
-  loreTags: z.array(z.string().max(40)).optional(),
-  appearsInEvents: z.array(z.string().max(80)).optional(),
-  source: loreSourceSchema.optional(),
-  previewImage: previewImageSchema.optional(),
-  posterImage: previewImageSchema.optional(),
-  pixelCharacterImage: z.string().optional(),
-  warningVideo: z.string().optional(),
-  agentLevel: agentLevelSchema.optional(),
-  createdAt: isoDateStringSchema.optional(),
-  updatedAt: isoDateStringSchema.optional(),
-  authorId: z.string().optional(),
-  authorName: z.string().optional(),
-});
+export const npcFrontmatterSchema = z
+  .object({
+    codename: codeSchema,
+    slug: z.string().optional(),
+    type: z.literal("NPC"),
+    role: z.string().min(1).max(100),
+    factionCode: optionalCodeOrEmpty,
+    institutionCode: optionalCodeOrEmpty,
+    department: z.string().optional(),
+    lifeStatus: characterLifeStatusSchema.optional(),
+    lifeStatusAt: isoDateStringSchema.optional(),
+    lifeStatusEventId: z.string().min(1).max(80).optional(),
+    nameKo: z.string(),
+    nameEn: z.string().optional(),
+    /** 원어 표기 (한자/일본어 등). LoreSheet.nameNative. */
+    nameNative: z.string().optional(),
+    /** 짧은 별칭/통칭. LoreSheet.nickname. */
+    nickname: z.string().optional(),
+    gender: z.string().optional(),
+    age: z.string().optional(),
+    height: z.string().optional(),
+    /** 체중 — LoreSheet.weight. */
+    weight: z.string().optional(),
+    isPublic: z.boolean(),
+    loreTags: z.array(z.string().max(40)).optional(),
+    appearsInEvents: z.array(z.string().max(80)).optional(),
+    source: loreSourceSchema.optional(),
+    previewImage: previewImageSchema.optional(),
+    posterImage: previewImageSchema.optional(),
+    pixelCharacterImage: z.string().optional(),
+    warningVideo: z.string().optional(),
+    agentLevel: agentLevelSchema.optional(),
+    createdAt: isoDateStringSchema.optional(),
+    updatedAt: isoDateStringSchema.optional(),
+    authorId: z.string().optional(),
+    authorName: z.string().optional(),
+  })
+  .superRefine(refineCharacterLifeStatusEvidence);
 
 export type NpcDoc = z.infer<typeof npcDocSchema>;
 export type NpcFrontmatter = z.infer<typeof npcFrontmatterSchema>;

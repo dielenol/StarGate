@@ -49,6 +49,11 @@ import OrgIcon, {
 import PersonnelCard from "./_components/PersonnelCard";
 import SearchJumpBanner from "./_components/SearchJumpBanner";
 import SubUnitAccordion from "./_components/SubUnitAccordion";
+import {
+  countStaffingPersonnel,
+  isDeceasedPersonnel,
+  isStaffingPersonnel,
+} from "./_lib/personnel-status";
 
 import {
   CIVIL_PERSONNEL_CATEGORIES,
@@ -139,10 +144,6 @@ function resolveSubUnitCode(c: CharacterListItemDto): string | null {
 
 function characterUsesAgentLevels(c: CharacterListItemDto): boolean {
   return isInternalOrgCode(resolveGroup(c));
-}
-
-function isDeceasedPersonnel(c: CharacterListItemDto): boolean {
-  return c.lifeStatus === "DECEASED";
 }
 
 function getExternalSubOrgUnits(groupCode: string): readonly SubUnitItem[] {
@@ -519,17 +520,28 @@ export default function PersonnelClient({
   // NOVUS_ORDO 본부 박스는 직속 캐릭터가 거의 없으므로 산하 SECRETARIAT+MANUS 합산을 노출.
   const canvasGroupCounts = useMemo<Record<string, number>>(() => {
     const counts: Record<string, number> = {};
-    for (const f of FACTIONS) counts[f.code] = groupIndex.get(f.code)?.length ?? 0;
-    for (const i of INSTITUTIONS) counts[i.code] = groupIndex.get(i.code)?.length ?? 0;
-    for (const org of EXTERNAL_SUB_ORGS) {
-      counts[org.code] = subUnitIndex.get(org.code)?.length ?? 0;
+    for (const f of FACTIONS) {
+      counts[f.code] = countStaffingPersonnel(groupIndex.get(f.code) ?? []);
     }
-    counts[UNASSIGNED_CODE] = groupIndex.get(UNASSIGNED_CODE)?.length ?? 0;
+    for (const i of INSTITUTIONS) {
+      counts[i.code] = countStaffingPersonnel(groupIndex.get(i.code) ?? []);
+    }
+    for (const org of EXTERNAL_SUB_ORGS) {
+      counts[org.code] = countStaffingPersonnel(
+        subUnitIndex.get(org.code) ?? [],
+      );
+    }
+    counts[UNASSIGNED_CODE] = countStaffingPersonnel(
+      groupIndex.get(UNASSIGNED_CODE) ?? [],
+    );
 
     // 본부 박스: 본부 직속 + 산하 SECRETARIAT + 산하 MANUS 의 합산.
-    const novusDirect = groupIndex.get(INTERNAL_FACTION_CODE)?.length ?? 0;
+    const novusDirect = countStaffingPersonnel(
+      groupIndex.get(INTERNAL_FACTION_CODE) ?? [],
+    );
     const institutionsSum = INSTITUTIONS.reduce(
-      (acc, inst) => acc + (groupIndex.get(inst.code)?.length ?? 0),
+      (acc, inst) =>
+        acc + countStaffingPersonnel(groupIndex.get(inst.code) ?? []),
       0,
     );
     counts[INTERNAL_FACTION_CODE] = novusDirect + institutionsSum;
@@ -553,6 +565,7 @@ export default function PersonnelClient({
       const bucket = groupIndex.get(code) ?? [];
       const dist: Partial<Record<AgentLevel, number>> = {};
       for (const c of bucket) {
+        if (!isStaffingPersonnel(c)) continue;
         if (c.agentLevel) {
           dist[c.agentLevel] = (dist[c.agentLevel] ?? 0) + 1;
         }
@@ -577,7 +590,10 @@ export default function PersonnelClient({
 
   const unassignedSamples = useMemo(() => {
     const list = groupIndex.get(UNASSIGNED_CODE) ?? [];
-    return list.slice(0, 3).map((c) => ({ codename: c.codename }));
+    return list
+      .filter(isStaffingPersonnel)
+      .slice(0, 3)
+      .map((c) => ({ codename: c.codename }));
   }, [groupIndex]);
 
   // 현재 선택 그룹 멤버 (정렬 포함).
@@ -850,10 +866,10 @@ export default function PersonnelClient({
 
   const renderSubUnitList = () => {
     const directAgentCount = selectedDirectMembers.filter(
-      (m) => m.type === "AGENT",
+      (m) => isStaffingPersonnel(m) && m.type === "AGENT",
     ).length;
     const directNpcCount = selectedDirectMembers.filter(
-      (m) => m.type === "NPC",
+      (m) => isStaffingPersonnel(m) && m.type === "NPC",
     ).length;
     const directArchivedCount = selectedDirectMembers.filter(
       isDeceasedPersonnel,
@@ -867,8 +883,12 @@ export default function PersonnelClient({
       : undefined;
     const renderUnitAccordion = (unit: SubUnitItem) => {
       const members = subUnitIndex.get(unit.code) ?? [];
-      const agentCount = members.filter((m) => m.type === "AGENT").length;
-      const npcCount = members.filter((m) => m.type === "NPC").length;
+      const agentCount = members.filter(
+        (m) => isStaffingPersonnel(m) && m.type === "AGENT",
+      ).length;
+      const npcCount = members.filter(
+        (m) => isStaffingPersonnel(m) && m.type === "NPC",
+      ).length;
       const leadCount = members.filter(
         (m) =>
           !isDeceasedPersonnel(m) &&
@@ -1011,7 +1031,7 @@ export default function PersonnelClient({
               code: u.code,
               label: u.label,
             }))}
-            memberCount={selectedGroupMembers.length}
+            memberCount={countStaffingPersonnel(selectedGroupMembers)}
             doctrine={
               selectedGroupKind === "faction"
                 ? getFactionDoctrine(selectedGroup)

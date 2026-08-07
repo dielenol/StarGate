@@ -397,6 +397,56 @@ test("toDbNpc: 확정 사망 상태와 근거 사건을 root 구조로 매핑", 
   assert.equal(doc.lifeStatusEventId, "NOSB-S1E5-EVIL-PART2");
 });
 
+test("NPC 생사 상태는 판정·일시·근거 사건을 모두 함께 선언", () => {
+  const frontmatter = {
+    codename: "LIFE_STATUS_EVIDENCE",
+    type: "NPC",
+    role: "기록 보존 대상",
+    nameKo: "생사 상태 검증 인원",
+    isPublic: true,
+  };
+  const evidence = {
+    lifeStatus: "DECEASED",
+    lifeStatusAt: "2026-07-12T00:00:00.000Z",
+    lifeStatusEventId: "NOSB-S1E5-EVIL-PART2",
+  };
+
+  assert.doesNotThrow(() =>
+    npcFrontmatterSchema.parse({ ...frontmatter, ...evidence }),
+  );
+  for (const incomplete of [
+    { lifeStatus: evidence.lifeStatus },
+    { lifeStatusAt: evidence.lifeStatusAt },
+    { lifeStatusEventId: evidence.lifeStatusEventId },
+    {
+      lifeStatus: evidence.lifeStatus,
+      lifeStatusAt: evidence.lifeStatusAt,
+    },
+  ]) {
+    assert.throws(
+      () => npcFrontmatterSchema.parse({ ...frontmatter, ...incomplete }),
+      /모두 함께 선언하거나 모두 생략/,
+    );
+  }
+
+  assert.throws(
+    () =>
+      npcDocSchema.parse({
+        codename: "ORPHANED_LIFE_STATUS",
+        type: "NPC",
+        role: "기록 보존 대상",
+        lifeStatus: "DECEASED",
+        previewImage: "",
+        isPublic: true,
+        lore: validLore,
+        ownerId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    /모두 함께 선언하거나 모두 생략/,
+  );
+});
+
 test("npcFrontmatterSchema: 미지원 생사 상태는 거부", () => {
   assert.throws(() =>
     npcFrontmatterSchema.parse({

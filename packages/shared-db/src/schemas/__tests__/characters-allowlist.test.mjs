@@ -47,3 +47,23 @@ test("ALLOWED_CHARACTER_FIELDS 에 중복 엔트리 없음", () => {
   const dedup = new Set(listed);
   assert.equal(dedup.size, listed.length, `중복 필드: ${listed.join(",")}`);
 });
+
+test("신원조회 목록 projection은 상태와 일시만 포함하고 근거 사건 ID는 제외", () => {
+  const src = readFileSync(CHARACTERS_SRC, "utf8");
+  const typeStart = src.indexOf("export type CharacterListItem");
+  const functionStart = src.indexOf(
+    "export async function listCharacterListItems",
+  );
+  assert.ok(typeStart >= 0 && functionStart > typeStart);
+
+  const typeSource = src.slice(typeStart, functionStart);
+  const functionEnd = src.indexOf("\n}\n", functionStart);
+  assert.ok(functionEnd > functionStart);
+  const functionSource = src.slice(functionStart, functionEnd);
+
+  for (const source of [typeSource, functionSource]) {
+    assert.match(source, /lifeStatus/);
+    assert.match(source, /lifeStatusAt/);
+    assert.doesNotMatch(source, /lifeStatusEventId/);
+  }
+});

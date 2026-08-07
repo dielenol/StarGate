@@ -349,7 +349,7 @@ interface CharacterBase {
   factionCode?: string;
   /** DB 승격 후 신규 코드를 수용하기 위해 string. */
   institutionCode?: string;
-  /** 로그/공식 기록으로 확정된 생사 상태. 필드 부재를 생존으로 추론하지 않는다. */
+  /** 로그/공식 기록으로 확정된 생사 상태. 선언 시 일시·근거 사건을 함께 저장하며, 필드 부재를 생존으로 추론하지 않는다. */
   lifeStatus?: CharacterLifeStatus;
   /** 생사 상태가 확정된 사건 일시. */
   lifeStatusAt?: Date;

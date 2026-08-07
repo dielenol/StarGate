@@ -363,7 +363,7 @@
   letter-spacing: 0.12em;
 }
 
-@media (max-width: 600px) {
+@container personnel (max-width: 600px) {
   .deceasedStamp {
     top: 7px;
     right: 5px;

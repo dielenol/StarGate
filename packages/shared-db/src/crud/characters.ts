@@ -82,7 +82,6 @@ export type CharacterListItem = Pick<
   | "institutionCode"
   | "lifeStatus"
   | "lifeStatusAt"
-  | "lifeStatusEventId"
   | "previewImage"
   | "isPublic"
   | "clearanceOverrides"
@@ -116,7 +115,6 @@ export async function listCharacterListItems(): Promise<CharacterListItem[]> {
       institutionCode: 1,
       lifeStatus: 1,
       lifeStatusAt: 1,
-      lifeStatusEventId: 1,
       previewImage: 1,
       isPublic: 1,
       clearanceOverrides: 1,

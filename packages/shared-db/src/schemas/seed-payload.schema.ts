@@ -5,6 +5,7 @@ import { institutionSubUnitSchema } from "./institution.schema.js";
 import { catalogSlugSchema, codeSchema, slugSchema } from "./common.js";
 import {
   characterLifeStatusSchema,
+  hasCompleteCharacterLifeStatusEvidence,
   loreSheetSchema,
   playSheetSchema,
 } from "./npc.schema.js";
@@ -691,6 +692,11 @@ function assertRequiredStoredFields(
     );
   }
   if (collection === "characters") {
+    if (!hasCompleteCharacterLifeStatusEvidence(parsed)) {
+      throw new Error(
+        "[seed-payload] characters 저장 문서의 lifeStatus, lifeStatusAt, lifeStatusEventId는 모두 함께 존재하거나 모두 없어야 합니다.",
+      );
+    }
     loreSheetSchema.parse(parsed.lore);
     if (parsed.type === "AGENT") playSheetSchema.parse(parsed.play);
   }
