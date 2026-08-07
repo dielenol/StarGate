@@ -46,8 +46,8 @@ const SUTURE_BLOCKED_LINES: Record<SutureBlockReason, readonly string[]> = {
   ],
   rush: [
     "여기서 더 줄이면 회복 시간을 빚지는 겁니다. 그 빚은 몸이 갚아요. 안 됩니다.",
-    "일정은 더 당기지 않겠습니다. 빨리 끝나는 것과 무사히 끝나는 건 다른 일이에요.",
-    "그만 줄이죠. 관찰할 시간이 사라지면 이상 반응은 없어지는 게 아니라 늦게 발견됩니다.",
+    "일정은 여기까지예요. 끝나는 시각보다 무사히 일어나는 쪽을 맞추겠습니다.",
+    "그만 줄이죠. 관찰 시간을 빼면 이상 반응을 놓쳐요.",
   ],
   complete: [
     "잠깐, 적용 기록이 잠겼어요. 같은 효과를 몸에 두 번 쓰는 실수는 안 합니다. 제가 먼저 풀어볼게요.",
@@ -88,7 +88,7 @@ export const SUTURE_DEBUG_LINES: Record<SutureMood, string> = {
   protocol:
     "좋아질 것만 말하면 설명이 아니죠. 잃을 수 있는 감각과 멈춰야 할 순간부터 짚겠습니다.",
   funding:
-    "재료는 살 수 있어요. 그렇다고 몸의 동의까지 산 건 아닙니다. 그 둘은 따로 보죠.",
+    "재료는 준비됐네요. 이제 몸이 이 시술을 받아들일지, 그리고 본인이 계속하길 원하는지 확인하죠.",
   procedure:
     "마지막으로 묻겠습니다. 계속할까요? 멈추고 싶다면 지금 말해도 되고, 도중에 말해도 됩니다.",
   recovery:
@@ -125,7 +125,7 @@ export const SUTURE_IDLE_LINES: readonly {
   },
   {
     mood: "funding",
-    text: "크레딧은 재료를 삽니다. 적합성과 동의까지 사는 건 아니에요. 가끔 그걸 헷갈리는 분이 있죠.",
+    text: "크레딧 확인은 끝났어요. 적합성 검사와 동의 확인은 지금부터 따로 진행할게요.",
   },
   {
     mood: "assessment",
@@ -142,29 +142,29 @@ const SUTURE_PROFILE_LINES: Record<
   readonly string[]
 > = {
   assault: [
-    "힘은 충분해 보여요. 더 올리기 전에, 그 힘을 멈출 때 손이 떨리는지부터 보죠.",
-    "앞으로 나가는 반응이 빠르네요. 관절보다 신경이 먼저 지치지 않는지 확인할게요.",
-    "출력 욕심은 이해해요. 다만 돌아온 뒤에도 컵을 놓치지 않는 손이어야 합니다.",
+    "출력을 더 보려는 거라면 멈추는 반응도 같이 확인할게요.",
+    "공격 보정을 원하시나요? 관절과 신경이 끝까지 따라오는지 먼저 보죠.",
+    "힘을 올려도 임무 뒤에 컵을 놓치지 않는 손이어야 해요. 그 선부터 정할게요.",
   ],
   guard: [
-    "잘 버티는 몸이네요. 그래서 손상을 늦게 알아차릴 수 있어요. 안쪽부터 볼게요.",
-    "충격을 참는 버릇이 보입니다. 견디는 것과 다치지 않는 건 다르니, 아프면 숨기지 마세요.",
-    "방호는 충분해 보여도 감각이 둔해지면 위험해요. 어디까지 느끼는지부터 맞춰보죠.",
+    "방호 보정을 원하시는군요. 겉으로 버티는 동안 안쪽 손상을 놓치지 않는지 볼게요.",
+    "충격을 받았을 때 아픈 곳을 숨기지 말아 주세요. 감각이 남는 범위부터 확인하죠.",
+    "방호를 올려도 감각이 둔해지면 위험해요. 어디까지 느껴지는지 맞춰볼게요.",
   ],
   endurance: [
-    "오래 버티는 편이군요. 이상 반응도 늦게 올 수 있으니 관찰 시간은 더 길게 잡겠습니다.",
-    "지구력이 좋다고 회복까지 빠른 건 아니에요. 피로가 쌓이는 순서부터 보죠.",
-    "오래 움직이는 몸일수록 작은 감각 지연이 크게 남습니다. 손끝부터 천천히 확인할게요.",
+    "장기 운용을 생각하신다면 이상 반응이 늦게 오는지도 보겠습니다. 관찰 시간은 길게 잡을게요.",
+    "지속 시간을 늘리기 전에 회복 속도부터 재볼게요. 피로가 쌓이는 순서도 알려주세요.",
+    "오래 움직일 때 손끝 감각이 늦어지는지 천천히 확인하죠.",
   ],
   focus: [
-    "새 감각을 받아들이기엔 유리해 보여요. 그래도 그 감각이 정말 자기 것처럼 느껴지는지는 따로 봐야 합니다.",
-    "침착하군요. 좋아요. 눈을 감아도 어느 손가락을 건드렸는지 맞힐 수 있는지부터 해보죠.",
-    "정신이 안정적이어도 낯선 감각은 기억을 흔들 수 있어요. 불쾌하면 바로 말해 주세요.",
+    "감각 보정을 원하시면 그 신호가 정말 자기 것처럼 느껴지는지부터 볼게요.",
+    "눈을 감아 보시겠어요? 어느 손가락을 건드렸는지 천천히 맞혀보죠.",
+    "낯선 감각이 기억을 건드릴 수도 있어요. 불쾌하면 바로 말해 주세요.",
   ],
   balanced: [
-    "크게 치우친 곳은 없네요. 무엇을 더할지보다, 지금 잘 되는 걸 무엇까지 지킬지 먼저 정하죠.",
-    "균형은 좋아요. 임무에서 자주 다치는 곳과 오래 쓰는 동작부터 들려주세요.",
-    "수치만 보면 무난하군요. 이제 기록에 안 남는 버릇을 볼 차례예요. 평소처럼 손을 움직여 보세요.",
+    "어느 쪽을 먼저 보강할까요? 지금 잘 되는 것 중 무엇을 지킬지도 같이 정하죠.",
+    "임무에서 자주 다치는 곳과 오래 쓰는 동작부터 들려주세요.",
+    "수치만으로는 정하기 어렵네요. 평소처럼 손을 움직여 보시겠어요?",
   ],
 };
 
@@ -192,7 +192,7 @@ function describeSutureConcern(effect: SutureResearchEffect | null): string {
       case "atk":
         return "힘을 올린 만큼 멈추는 신호도 또렷해야 합니다.";
       case "def":
-        return "충격을 못 느끼는 것과 충격을 견디는 건 다른 일이에요.";
+        return "충격 뒤에도 감각이 또렷한지 먼저 확인할게요.";
     }
   }
   if (
@@ -211,7 +211,7 @@ function describeSutureConcern(effect: SutureResearchEffect | null): string {
   if (effect.kind === "point") {
     return "가능성이 늘어난 만큼 무엇을 더하지 않을지도 같이 정해야 해요.";
   }
-  return "쓸 수 있다는 것과 안전하게 쓸 수 있다는 건 따로 확인하겠습니다.";
+  return "직접 써 본 뒤에도 통증과 감각이 정상인지 확인하겠습니다.";
 }
 
 export function buildSutureBlockedLine(
@@ -230,7 +230,7 @@ export function buildSutureWelcomeLine(args: {
     SUTURE_PROFILE_LINES[args.profile],
     `${args.codename}:${args.profile}:SUTURE`,
   );
-  return `${args.codename}, 왔군요. ${profileLine}`;
+  return `왔군요. ${profileLine}`;
 }
 
 export function buildSutureScopeLine(scope: SutureResearchScope): string {
@@ -247,15 +247,15 @@ export function buildSutureNodeLine(
     effectText: string;
   },
 ): string {
-  const scopeLine =
+  const scopeLead =
     args.scope === "personal"
-      ? "당신 몸에 맞춰 볼게요."
-      : "팀 전원에게 같은 결과가 나와야 해요.";
-  return `${args.nodeName}. ${args.effectText}가 목표네요. ${scopeLine} ${describeSutureConcern(args.effect)}`;
+      ? "당신 몸에 맞출 때는"
+      : "팀 전원에게 적용하려면";
+  return `${args.nodeName}, 목표는 ${args.effectText}. ${scopeLead} ${describeSutureConcern(args.effect)}`;
 }
 
 export function buildSutureResearchStartedLine(nodeName: string): string {
-  return `${nodeName}, 접수했어요. 오늘부터 '아픈 것'보다 '평소와 다른 것'을 적어 오세요. 작은 변화가 먼저 옵니다.`;
+  return `${nodeName}, 접수했어요. 오늘부터는 '아픈 것'보다 '평소와 다른 것'을 적어 오세요—작은 변화가 먼저 오니까요.`;
 }
 
 export function buildSutureContributionLine(args: {
@@ -264,14 +264,14 @@ export function buildSutureContributionLine(args: {
   started: boolean;
 }): string {
   return args.started
-    ? `${args.projectKey}, 필요한 재원은 모였네요. 좋아요. 이제 돈 얘기는 끝내고, 모두에게 같은 결과가 나오는지 보죠.`
-    : `${args.chargedAmount}, 기록했어요. 다만 돈이 빨리 모인다고 사람을 빨리 눕히진 않을 겁니다.`;
+    ? `${args.projectKey}, 필요한 재원은 모였네요. 이제 모두에게 같은 결과가 나오는지 보죠.`
+    : `${args.chargedAmount}, 기록했어요. 재원이 빨리 모여도 시술 순서는 당기지 않을게요.`;
 }
 
 export function buildSutureRushLine(duration: string): string {
-  return `${duration} 당겼습니다. 대신 관찰 간격은 좁힐게요. 이상하면 일정이 아니라 시술부터 멈춥니다.`;
+  return `${duration} 당겼습니다. 관찰 간격을 좁히고, 이상이 보이면 시술부터 멈출게요.`;
 }
 
 export function buildSutureRecoveryLine(projectKey: string): string {
-  return `${projectKey}, 적용됐어요. 바로 힘주지 말고 손끝부터 움직여 보세요. 낯선 감각이 들면 참지 말고 돌아오고요.`;
+  return `${projectKey}, 적용됐어요. 바로 힘주지 말고 손끝부터 움직여 보다가 낯선 감각이 들면 돌아오세요.`;
 }

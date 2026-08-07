@@ -105,14 +105,10 @@ export function useNpcDialogue<TMood extends string>(
   // (제네릭 인터페이스상 동적 값이 올 수 있는) 최신 config 를 stale 없이 사용.
   const entrySfxSrcRef = useRef(entrySfxSrc);
   const entrySfxVolumeRef = useRef(entrySfxVolume);
-  const welcomeMoodRef = useRef(welcomeMood);
-  const welcomeLineRef = useRef(welcomeLine);
   const beepPresetRef = useRef(beepPreset);
   const beepWaveRef = useRef(beepWave);
   entrySfxSrcRef.current = entrySfxSrc;
   entrySfxVolumeRef.current = entrySfxVolume;
-  welcomeMoodRef.current = welcomeMood;
-  welcomeLineRef.current = welcomeLine;
   beepPresetRef.current = beepPreset;
   beepWaveRef.current = beepWave;
 
@@ -271,7 +267,6 @@ export function useNpcDialogue<TMood extends string>(
       }
 
       entrySfxPendingRef.current = true;
-      const sequenceBeforePlay = lineSequenceRef.current;
       audio ??= new Audio(activeEntrySfxSrc);
       audio.volume = entrySfxVolumeRef.current;
       audio.currentTime = 0;
@@ -279,11 +274,6 @@ export function useNpcDialogue<TMood extends string>(
       try {
         await audio.play();
         markDialogueReady();
-        if (lineSequenceRef.current === sequenceBeforePlay) {
-          playLineRef.current(welcomeMoodRef.current, welcomeLineRef.current, {
-            sound: true,
-          });
-        }
         window.removeEventListener("pointerdown", playOnGesture);
         window.removeEventListener("keydown", playOnGesture);
       } catch {

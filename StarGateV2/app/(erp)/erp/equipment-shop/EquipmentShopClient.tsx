@@ -470,24 +470,24 @@ const TOWASKI_IDLE_LINES: readonly { mood: TowaskiMood; text: string }[] = [
 
 const TOWASKI_PROFILE_LINES: Record<MainCharacterProfile, readonly string[]> = {
   assault: [
-    "손부터 앞으로 나가는 타입이군. 반동 잡을 물건부터 봐.",
-    "화력 욕심은 죄가 아니야. 명중 못 하면 창고 낭비일 뿐이지.",
+    "화력을 먼저 볼 거면 반동 잡을 물건부터 골라.",
+    "강한 걸 원해? 화력 욕심은 죄가 아니야. 명중 못 하면 창고 낭비일 뿐이지.",
   ],
   guard: [
-    "맞고 버티는 쪽이면 방어구부터 봐. 영웅 흉내는 비싸게 먹혀.",
+    "맞고 버틸 계획이면 방어구부터 봐. 영웅 흉내는 비싸게 먹혀.",
     "방호구는 자존심보다 싸다. 그 계산은 현장에서 빨리 배우게 돼.",
   ],
   endurance: [
-    "오래 구르는 타입이면 소모품을 아끼지 마. 빈손으로 오래 버티는 놈은 없어.",
-    "체력 믿고 들어가도 탄과 장갑은 따로 챙겨. 몸은 보급 상자가 아니니까.",
+    "오래 굴릴 임무면 소모품을 아끼지 마. 빈손으로 오래 버티는 놈은 없어.",
+    "장기전이라도 탄과 장갑은 따로 챙겨. 몸은 보급 상자가 아니니까.",
   ],
   focus: [
-    "머리가 먼저 도는 타입이군. 반출 조건 끝까지 읽는 손님은 오래 살아.",
-    "침착한 놈일수록 안전장치를 확인하지. 그 버릇은 유지해.",
+    "정밀하게 쓸 거면 반출 조건도 끝까지 읽어. 그런 손님이 오래 살아.",
+    "안전장치부터 확인할 거지? 그 순서만은 바꾸지 마.",
   ],
   balanced: [
-    "스펙이 고르게 잡혔군. 그러면 임무 성격에 맞춰 고르면 돼.",
-    "특화가 없다는 건 핑계가 아니야. 오늘 필요한 물건만 골라.",
+    "어느 쪽부터 볼지 애매하면 임무 성격을 말해. 거기에 맞춰 고르면 돼.",
+    "한꺼번에 다 챙길 필요 없어. 오늘 필요한 물건만 골라.",
   ],
 };
 
@@ -1187,7 +1187,7 @@ function buildTowaskiTabLine(tab: EquipmentShopTabValue): string {
     case "WEAPON":
       return "화기 진열대다. 손맛보다 사거리, 탄종, 반동부터 봐.";
     case "ARMOR":
-      return "방호구 쪽이군. 방탄복은 한 번 피격되면 부서진다. 그래도 스타마트 회복품보다 성능은 낫다. 맞고 나서 고치는 것보다 맞기 전에 막아.";
+      return "방호구 쪽이군. 방탄복은 한 번 피격되면 끝이야. 맞고 나서 고치는 것보다, 맞기 전에 막아.";
     case "CONSUMABLE":
       return "소모품은 쓰고 사라진다. 그래서 필요할 때 없으면 제일 욕먹지.";
     case "LICENSE":
@@ -1578,6 +1578,7 @@ export default function EquipmentShopClient({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const purchaseLockRef = useRef(false);
   const towaskiQualificationPassedRef = useRef(false);
+  const towaskiPendingAudibleLineRef = useRef<string | null>(null);
   const towaskiDialogueRevisionRef = useRef(0);
   const sutureDialogueRevisionRef = useRef(0);
   const temperDialogueRevisionRef = useRef(0);
@@ -2217,6 +2218,7 @@ export default function EquipmentShopClient({
   }, [isResearchBonusMenuOpen]);
 
   useEffect(() => {
+    // Zone-entry and hydration states render silently. Interaction handlers own NPC beeps.
     if (activeZone !== "towaski") {
       clearTowaskiIdleTimer();
       stopTowaskiEngine();
@@ -2238,6 +2240,20 @@ export default function EquipmentShopClient({
         returnToIdle: false,
         sound: false,
       });
+      return;
+    }
+
+    const pendingAudibleLine = towaskiPendingAudibleLineRef.current;
+    if (pendingAudibleLine) {
+      towaskiPendingAudibleLineRef.current = null;
+      playTowaskiLine(
+        towaskiDialogueContext === "qualification" ? "range" : "welcome",
+        pendingAudibleLine,
+        {
+          returnToIdle: towaskiDialogueContext === "shop",
+          sound: true,
+        },
+      );
       return;
     }
 
@@ -2284,6 +2300,7 @@ export default function EquipmentShopClient({
       playSutureLine(
         sutureDebugMode,
         SUTURE_DEBUG_LINES[sutureDebugMode],
+        // Debug state changes are explicit GM button interactions, so the NPC responds audibly.
         { returnToIdle: false, sound: true },
       );
       return;
@@ -2298,7 +2315,7 @@ export default function EquipmentShopClient({
         ),
         {
           returnToIdle: false,
-          sound: true,
+          sound: false,
         },
       );
       return;
@@ -2752,6 +2769,7 @@ export default function EquipmentShopClient({
       return;
     }
     setSelectedKey(item.key);
+    towaskiPendingAudibleLineRef.current = `${item.name} 시험선 열었다. 기준부터 확인해.`;
     setSelectedTowaskiLicenseTestSlug(item.slug);
     setTowaskiLicenseTestOpen(true);
     setErrorMessage(null);
@@ -2759,10 +2777,6 @@ export default function EquipmentShopClient({
       tone: "info",
       title: `${program.tierLabel} 자격시험`,
       text: `${item.name} 시험 안내를 불러왔습니다.`,
-    });
-    playTowaskiLine("range", `${item.name} 시험선 열었다. 기준부터 확인해.`, {
-      returnToIdle: false,
-      sound: true,
     });
   }
 
@@ -3669,12 +3683,9 @@ export default function EquipmentShopClient({
                 type="button"
                 className={styles.primaryAction}
                 onClick={() => {
+                  towaskiPendingAudibleLineRef.current =
+                    TOWASKI_DIALOGUE_LINES.qualification;
                   setTowaskiLicenseTestOpen(true);
-                  playTowaskiLine(
-                    "range",
-                    TOWASKI_DIALOGUE_LINES.qualification,
-                    { returnToIdle: false, sound: true },
-                  );
                 }}
               >
                 기본 화기 라이센스 발급

@@ -42,7 +42,9 @@ export interface FactionDialogueLine {
   max: number;
   mood: string;
   line: string;
+  previewLine?: string;
   afterActionLine: string;
+  errorLine?: string;
   lineVariants?: readonly string[];
   afterActionLineVariants?: readonly string[];
 }
@@ -393,6 +395,133 @@ const HOSTILE_DIALOGUE: readonly FactionDialogueLine[] = [
   },
 ] as const;
 
+interface FactionDialogueVoice {
+  moods: readonly [string, string, string, string, string, string];
+  idleLines: readonly [string, string, string, string, string, string];
+  previewLine: string;
+  confirmedLine: string;
+  errorLine: string;
+}
+
+function buildFactionDialogue(
+  voice: FactionDialogueVoice,
+): readonly FactionDialogueLine[] {
+  return RELATION_TIERS.map((tier, index) => ({
+    min: tier.min,
+    max: tier.max,
+    mood: voice.moods[index],
+    line: voice.idleLines[index],
+    previewLine: voice.previewLine,
+    afterActionLine: voice.confirmedLine,
+    errorLine: voice.errorLine,
+  }));
+}
+
+const COUNCIL_DIALOGUE = buildFactionDialogue({
+  moods: ["냉정", "유보", "심의", "검토", "우선", "핵심 안건"],
+  idleLines: [
+    "회선 허용이 신뢰의 표시는 아닙니다. 이사회가 검토할 이유만 짧게 제시하시죠.",
+    "보고서는 읽었습니다. 다만 명분과 책임 주체가 아직 흐리군요.",
+    "안건은 봤습니다. 이사회가 보호할 이유를 한 줄로 정리해 주시죠.",
+    "최근 기록 덕분에 안건을 올릴 명분은 생겼습니다. 필요한 보호 범위를 말씀하시죠.",
+    "당신 쪽 안건은 우선 검토할 수 있습니다. 후원 비용과 공개 책임을 맞춰보죠.",
+    "안건은 최우선으로 다루겠습니다. 이사회의 이름을 쓰는 대가는 분명해야 합니다.",
+  ],
+  previewLine: "선택 내용은 확인했습니다. 아직 의결 기록에 올릴 단계는 아니군요.",
+  confirmedLine: "의결 검토선에 접수했습니다. 결과는 별도 승인 뒤 확정됩니다.",
+  errorLine: "접수선이 막혔습니다. 기록은 남기지 않았으니 조건부터 다시 보시죠.",
+});
+
+const MILITARY_DIALOGUE = buildFactionDialogue({
+  moods: ["차단", "경계", "대기", "협조", "작전", "우선 지원"],
+  idleLines: [
+    "지원은 없다. 현재 편성과 철수 계획만 보고해.",
+    "요청은 봤다. 보급보다 먼저 지휘선과 퇴로를 증명해.",
+    "지원 요청은 봤다. 돌아올 길부터 말해, 철수 계획 없는 작전엔 지원 없어.",
+    "현장 기록은 확인했다. 필요한 지원과 철수 시각을 짧게 말해.",
+    "작전 채널 열었다. 임무 목표와 중단 조건부터 맞춰.",
+    "우선 지원 대상으로 분류했다. 편성과 귀환 계획이 바뀌면 즉시 보고해.",
+  ],
+  previewLine: "지원안 확인. 아직 작전 기록에는 올리지 않았다.",
+  confirmedLine: "작전 검토선에 올렸다. 승인 전엔 편성을 움직이지 마.",
+  errorLine: "전송 실패. 편성은 움직이지 않았으니 조건부터 다시 확인해.",
+});
+
+const CIVIL_DIALOGUE = buildFactionDialogue({
+  moods: ["거리 둠", "조심", "경청", "연결", "신뢰", "공동 대응"],
+  idleLines: [
+    "지금은 연결할 수 있는 곳이 많지 않아요. 현장 피해부터 정확히 알려 주세요.",
+    "사람들이 아직 경계하고 있어요. 누가 다쳤고 무엇이 남았는지부터 들려주세요.",
+    "현장 사람들부터 얘기해 주세요. 피해가 어디에 남았는지 알아야 연결할 곳을 찾을 수 있어요.",
+    "도울 수 있는 지역 접점을 찾아볼게요. 당사자 동의가 있는지도 함께 확인해 주세요.",
+    "몇 곳에서 당신 쪽 기록을 믿기 시작했어요. 이번엔 피해자에게 필요한 것을 먼저 묻죠.",
+    "민간 접점들이 함께 움직일 수 있어요. 대신 당사자의 선택과 안전을 앞에 둬 주세요.",
+  ],
+  previewLine: "연결할 곳을 살펴보고 있어요. 아직 어느 지역망에도 요청하지 않았습니다.",
+  confirmedLine: "요청을 필요한 민간 접점에 전달했어요. 후속 결과는 다시 확인해야 합니다.",
+  errorLine: "연결이 끊겼어요. 전달된 요청은 없으니 내용을 다시 확인해 주세요.",
+});
+
+const WHITE_ROSE_DIALOGUE = buildFactionDialogue({
+  moods: ["차단", "경계", "검증", "보호", "공개 준비", "책임 요구"],
+  idleLines: [
+    "이 회선에 제보자 이름은 올리지 마세요. 안전을 확인하기 전엔 자료도 받지 않아요.",
+    "자료보다 출처 보호가 먼저예요. 누가 위험해지는지부터 말해 주세요.",
+    "자료는 받았습니다. 공개보다 먼저, 제보자부터 안전한지 확인하죠.",
+    "증언은 검증할 수 있어요. 당사자가 원하는 공개 범위부터 알려 주세요.",
+    "은폐를 밝힐 근거는 모였어요. 이제 공개 시점과 보호 방법을 함께 정하죠.",
+    "기록은 충분합니다. 피해자의 권리와 책임 소재가 가려지지 않게 공개하겠습니다.",
+  ],
+  previewLine: "보호와 검증 방법을 살펴보고 있어요. 아직 자료를 공개하거나 전달하지 않았습니다.",
+  confirmedLine: "안전 조건과 함께 요청을 기록했습니다. 공개 시점은 별도로 확인합니다.",
+  errorLine: "회선이 끊겼습니다. 제보자 정보는 전달되지 않았으니 다시 연결해 주세요.",
+});
+
+const SPACE_ZERO_DIALOGUE = buildFactionDialogue({
+  moods: ["거절", "재산정", "조건 검토", "협상", "우선 계약", "전략 계약"],
+  idleLines: [
+    "현재 조건으로는 책임 범위가 맞지 않습니다. 자산보다 회수 계획부터 다시 가져오시죠.",
+    "기술 제안은 흥미롭군요. 다만 손실 책임과 회수 조건이 비어 있습니다.",
+    "조건은 이해했습니다. 회수와 책임 범위만 맞으면 계약은 빨라집니다.",
+    "현장 검증 조건을 조율할 수 있습니다. 운용 기록을 어디까지 공유할지 정해 주세요.",
+    "당신 쪽 요청은 우선 검토 대상입니다. 납기보다 회수 기준을 먼저 확정하죠.",
+    "전략 계약으로 검토하겠습니다. 권리와 책임이 같은 문장에 들어가야 체결할 수 있습니다.",
+  ],
+  previewLine: "견적 조건을 계산 중입니다. 아직 계약이나 장비 할당은 발생하지 않았습니다.",
+  confirmedLine: "계약 후보에 기록했습니다. 체결과 자산 할당은 별도 검토 뒤 확정됩니다.",
+  errorLine: "조건 검증에 실패했습니다. 계약과 자산에는 변동이 없습니다.",
+});
+
+const GOLDEN_DAWN_DIALOGUE = buildFactionDialogue({
+  moods: ["회선 차단", "신호 경계", "관측", "패턴 대조", "추적", "결정 단서"],
+  idleLines: [
+    "신호가 역추적을 시도합니다. 상대 발언으로 단정하지 말고 회선을 끊죠.",
+    "의식 흔적은 잡혔지만 출처가 섞여 있습니다. 패턴만 남기고 거리를 둡니다.",
+    "신호는 잡혔지만 아직 상대 목소리라고 단정할 단계는 아닙니다. 패턴만 남기고 끊죠.",
+    "반복 상징이 보고서와 겹칩니다. 차단 지점은 검증 뒤 좁히겠습니다.",
+    "추적선은 안정적입니다. 다만 의식 주체와 목적은 아직 분리해서 보죠.",
+    "결정적인 반복이 확인됐습니다. 작전 전 마지막 교차 검증이 필요합니다.",
+  ],
+  previewLine: "분석 경로를 준비합니다. 아직 차단 기록에는 반영하지 않았습니다.",
+  confirmedLine: "관측 결과를 차단 기록에 반영했습니다. 다음 접근도 추가 검증이 필요합니다.",
+  errorLine: "분석을 중단했습니다. 원신호는 보존했지만 단서로 확정하진 않았습니다.",
+});
+
+const AHNENERBE_DIALOGUE = buildFactionDialogue({
+  moods: ["접근 차단", "오염 경계", "자료 대조", "시설 추적", "연구 연결", "핵심 증거"],
+  idleLines: [
+    "자료 오염 가능성이 큽니다. 적대 연구의 직접 기록이라고 단정하면 안 됩니다.",
+    "시설 흔적은 보이지만 연결 주체가 불분명합니다. 표본과 출처부터 다시 봅니다.",
+    "연구 흔적을 대조 중입니다. 아넨에르베 계열이라는 판단은 증거가 더 필요합니다.",
+    "시설 기록 두 곳이 겹칩니다. 이동 경로를 확인한 뒤 추적 범위를 좁히죠.",
+    "연구 방식의 반복은 확인됐습니다. 조직 연결성은 별도 증거로 남겨 두겠습니다.",
+    "핵심 증거 후보를 확보했습니다. 작전 자료로 쓰기 전 위·변조 검증을 한 번 더 거칩니다.",
+  ],
+  previewLine: "대조 범위를 설정했습니다. 연구 추적 파일 반영은 보류하죠.",
+  confirmedLine: "검증 결과를 연구 추적 파일에 반영했습니다. 조직 연결은 계속 교차 확인합니다.",
+  errorLine: "대조가 중단됐습니다. 자료는 보존했지만 연결성은 확정하지 않았습니다.",
+});
+
 const DEFAULT_RANK_DIALOGUES: readonly FactionRankDialogue[] = [
   {
     band: "command",
@@ -565,6 +694,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       openingLine: "의결 라인이 열렸습니다. 제출할 안건을 선택하십시오.",
       successLine: "의결 라인에 반영되었습니다. 후속 검토를 기다립니다.",
       sceneTone: "council",
+      dialogue: COUNCIL_DIALOGUE,
     }),
     actions: [
       {
@@ -603,6 +733,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       openingLine: "작전 채널이 연결되었습니다. 요청할 지원 유형을 지정하십시오.",
       successLine: "작전 라인에 전송되었습니다. 승인 여부를 대기합니다.",
       sceneTone: "military",
+      dialogue: MILITARY_DIALOGUE,
     }),
     actions: [
       {
@@ -641,6 +772,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       openingLine: "민간 네트워크가 응답했습니다. 조율할 접점을 고르십시오.",
       successLine: "민간 접점 기록이 갱신되었습니다.",
       sceneTone: "civil",
+      dialogue: CIVIL_DIALOGUE,
     }),
     actions: [
       {
@@ -679,6 +811,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       openingLine: "익명 회선이 연결되었습니다. 보호할 증언을 지정하십시오.",
       successLine: "민간 기록망에 반영되었습니다. 공개 시점을 검토합니다.",
       sceneTone: "civil",
+      dialogue: WHITE_ROSE_DIALOGUE,
     }),
     actions: [
       {
@@ -717,6 +850,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       openingLine: "계약 채널이 활성화되었습니다. 거래 조건을 선택하십시오.",
       successLine: "계약 후보가 갱신되었습니다. 장비 검토 라인을 확인하십시오.",
       sceneTone: "tech",
+      dialogue: SPACE_ZERO_DIALOGUE,
     }),
     actions: [
       {
@@ -756,7 +890,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       successLine: "차단 기록이 갱신되었습니다. 다음 의식 신호를 감시합니다.",
       lockedLine: "단서가 부족합니다. 기본 추적부터 진행하십시오.",
       sceneTone: "hostile",
-      dialogue: HOSTILE_DIALOGUE,
+      dialogue: GOLDEN_DAWN_DIALOGUE,
       rankDialogues: HOSTILE_RANK_DIALOGUES,
       storyChoices: HOSTILE_STORY_CHOICES,
     }),
@@ -798,7 +932,7 @@ const PROFILE_BY_CODE: Record<string, FactionGameProfile> = {
       successLine: "연구 추적 파일이 갱신되었습니다.",
       lockedLine: "검증된 단서가 부족합니다. 관측 기록부터 확보하십시오.",
       sceneTone: "hostile",
-      dialogue: HOSTILE_DIALOGUE,
+      dialogue: AHNENERBE_DIALOGUE,
       rankDialogues: HOSTILE_RANK_DIALOGUES,
       storyChoices: HOSTILE_STORY_CHOICES,
     }),

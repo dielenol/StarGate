@@ -18,6 +18,7 @@ import type {
   EquipmentShopCatalogEntry,
   EquipmentShopCatalogResponse,
 } from "@/hooks/queries/useEquipmentShopQuery";
+import { useReactiveDialogueBeep } from "@/hooks/useReactiveDialogueBeep";
 
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -118,6 +119,13 @@ type TrainingStep = {
   label: string;
   title: string;
   hint: string;
+};
+
+type InstructorBrief = {
+  id: string;
+  title: string;
+  speech: string;
+  instruction: string;
 };
 
 interface SimulatorDisplayItem {
@@ -1003,6 +1011,7 @@ export default function EquipmentSimulatorClient({
     if (!selectedRule) {
       return {
         reason: "장비 미선택",
+        speech: "시험 장비 미선택. 먼저 하나를 골라 주세요.",
         instruction: "왼쪽 장비 목록에서 시험할 장비를 선택하세요.",
       };
     }
@@ -1019,6 +1028,7 @@ export default function EquipmentSimulatorClient({
     if (actionResourceShortage || attackResourceEmpty) {
       return {
         reason: `${selectedRule.resource?.label ?? "자원"} 부족`,
+        speech: "운용 자원이 바닥났군요. 이번에는 재장전이 먼저입니다.",
         instruction: `‘${controlReloadLabel(selectedRule)}’ 버튼을 눌러 자원을 복구한 뒤 다시 실행하세요.`,
       };
     }
@@ -1026,6 +1036,7 @@ export default function EquipmentSimulatorClient({
     if (selectedRule.requiresSetup && !hmgInstalled) {
       return {
         reason: "중기관총 미설치",
+        speech: "중기관총은 아직 접혀 있습니다. 설치부터 진행하죠.",
         instruction:
           "‘중기관총 설치 (1턴)’ 버튼을 누르세요. 설치가 끝나면 다음 턴부터 공격할 수 있습니다.",
       };
@@ -1034,6 +1045,7 @@ export default function EquipmentSimulatorClient({
     if (selectedActionKind === "attack" && selectedRule.blast && !blastImpact) {
       return {
         reason: "착탄점 미선택",
+        speech: "착탄점이 비어 있네요. 전투판에서 한 지점을 찍어 주세요.",
         instruction:
           activeToken === "aim"
             ? "전투판의 붉은 공격 가능 셀을 착탄점으로 선택한 뒤 ‘공격 실행’ 버튼을 누르세요."
@@ -1044,6 +1056,7 @@ export default function EquipmentSimulatorClient({
     if (selectedActionKind === "incendiary-line" && !blastImpact) {
       return {
         reason: "소이선 지점 미선택",
+        speech: "소이선 방향이 정해지지 않았습니다. 전투판에서 기준점을 잡으면 됩니다.",
         instruction:
           activeToken === "aim"
             ? "전투판에서 소이선을 만들 셀 또는 방향을 선택한 뒤 ‘소이선 실행’ 버튼을 누르세요."
@@ -1058,6 +1071,7 @@ export default function EquipmentSimulatorClient({
     if (requiresDirectTarget && !selectedEnemy) {
       return {
         reason: "표적 미선택",
+        speech: "표적이 비어 있네요. 생존 표적 하나를 고르세요.",
         instruction: "전투판에서 공격할 생존 적 토큰을 선택하세요.",
       };
     }
@@ -1068,6 +1082,7 @@ export default function EquipmentSimulatorClient({
     ) {
       return {
         reason: "선택 표적 전투불능",
+        speech: "선택한 표적은 이미 전투 불능이군요. 다른 표적으로 바꿔야 합니다.",
         instruction: "전투판에서 다른 생존 적 토큰을 선택하세요.",
       };
     }
@@ -1079,6 +1094,7 @@ export default function EquipmentSimulatorClient({
     ) {
       return {
         reason: "공격 부위 미선택",
+        speech: "공격할 부위가 비어 있네요. 남은 부위를 선택해 주세요.",
         instruction:
           "전투 조작 패널의 ‘공격 부위 선택’에서 파괴되지 않은 부위를 선택하세요.",
       };
@@ -1088,11 +1104,13 @@ export default function EquipmentSimulatorClient({
       if (selectedResult.reason === "CADENCE_LOCKED") {
         return {
           reason: "이번 턴 사격 횟수 소진",
+          speech: "이번 턴의 사격은 끝났습니다. 다음 턴으로 넘어가죠.",
           instruction: `‘턴 종료 → ${turn + 1}턴’ 버튼을 눌러 다음 턴으로 진행하세요.`,
         };
       }
       return {
         reason: selectedResult.reasonLabel ?? "공격 조건 불충족",
+        speech: "공격 조건이 맞지 않네요. 배치부터 다시 잡아 보세요.",
         instruction:
           "내 토큰 또는 옮길 적 토큰을 눌러 이동 상태로 전환한 뒤 배치를 바꾸세요.",
       };
@@ -1101,25 +1119,36 @@ export default function EquipmentSimulatorClient({
     return null;
   })();
   const executionBlockedReason = executionBlocker?.reason ?? null;
-  const instructorBrief = (() => {
-    if (executionBlocker && trainingEvent !== "position") {
+  const instructorBrief: InstructorBrief = (() => {
+    if (
+      executionBlocker &&
+      (trainingEvent === "ready" ||
+        trainingEvent === "weapon" ||
+        trainingEvent === "blocked")
+    ) {
       return {
+        id: `blocked:${sequence}:${executionBlocker.reason}`,
         title: `다음 행동 · ${executionBlocker.reason}`,
-        text: executionBlocker.instruction,
+        speech: executionBlocker.speech,
+        instruction: executionBlocker.instruction,
       };
     }
     switch (trainingEvent) {
       case "weapon":
         return {
+          id: `weapon:${sequence}:${selectedSlug ?? "none"}`,
           title: `${selectedName} 선택 완료`,
-          text: selectedRule?.blast
+          speech: `${selectedName} 선택 확인. 이제 표적을 확인해 주세요.`,
+          instruction: selectedRule?.blast
             ? `${resultSentence} 전투판의 붉은 셀에서 착탄점을 선택하고 중심·주변 범위를 확인하십시오.`
             : `현재 ${SIMULATOR_RANGE_LABELS[range.band]}입니다. 예상 판정: ${resultSentence} 표적과 부위를 확인한 뒤 공격을 실행하십시오.`,
         };
       case "position":
         return {
+          id: `position:${sequence}:${formatSimulatorCoord(attackerPosition)}:${formatSimulatorCoord(targetPosition)}`,
           title: `${formatSimulatorCoord(attackerPosition)} → ${formatSimulatorCoord(targetPosition)} 배치 확인`,
-          text:
+          speech: "배치 확인. 이제 공격 조건을 살펴보세요.",
+          instruction:
             usesCardinalDirections && !isCardinallyAligned
               ? `나와 적이 대각선에 있습니다. 화기는 같은 가로줄 또는 세로줄에 놓아야 합니다. 예상 판정: ${resultSentence}`
               : meleeOutOfRange
@@ -1130,41 +1159,66 @@ export default function EquipmentSimulatorClient({
         };
       case "attack":
         return {
+          id: `attack:${sequence}`,
           title: "공격 결과 반영 완료",
-          text: `${resultSummary}. 표적별 로그와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
+          speech: "공격 결과 반영 완료. 전투 로그를 확인해 주세요.",
+          instruction: `${resultSummary}. 표적별 로그와 남은 자원을 확인한 뒤 다시 공격하거나 다음 턴으로 진행하십시오.`,
         };
       case "blocked":
         return {
+          id: `blocked:${sequence}:${resultSummary}`,
           title: "현재 조건에서는 공격할 수 없습니다",
-          text: `${resultSummary} 오른쪽 룰 카드와 조작 버튼에서 필요한 조건을 확인하십시오.`,
+          speech: "지금은 공격할 수 없네요. 빠진 조건부터 채워 보죠.",
+          instruction: `${resultSummary} 오른쪽 룰 카드와 조작 버튼에서 필요한 조건을 확인하십시오.`,
         };
       case "reload":
         return {
+          id: `reload:${sequence}:${selectedSlug ?? "none"}`,
           title: `${controlReloadLabel(selectedRule)} 완료`,
-          text: `${selectedName} 자원이 복구되었습니다. 현재 배치에서 공격을 다시 실행할 수 있습니다.`,
+          speech: `${selectedName} 자원 복구 완료. 공격 조건을 다시 확인해 보세요.`,
+          instruction: "현재 배치에서 공격을 다시 실행할 수 있습니다.",
         };
       case "install":
         return {
+          id: `install:${sequence}:${turn}`,
           title: "중기관총 설치 완료",
-          text: `설치에 1턴을 사용해 ${turn}턴이 시작되었습니다. 수평 전투의 대각선 사거리를 포함해 매 턴 2회 사격할 수 있습니다.`,
+          speech: "중기관총 설치 완료. 새 턴의 사격 조건을 확인해 주세요.",
+          instruction:
+            "설치에 1턴을 사용했습니다. 수평 전투의 대각선 사거리를 포함해 매 턴 2회 사격할 수 있습니다.",
         };
       case "uninstall":
         return {
+          id: `uninstall:${sequence}:${turn}`,
           title: "중기관총 해체 완료",
-          text: `해체에 1턴을 사용해 ${turn}턴이 시작되었습니다. 이제 내 토큰을 다시 이동할 수 있습니다.`,
+          speech: "중기관총 해체 완료. 이제 내 토큰을 옮기면 됩니다.",
+          instruction:
+            "해체에 1턴을 사용했습니다. 이제 내 토큰을 다시 이동할 수 있습니다.",
         };
       case "turn":
         return {
+          id: `turn:${sequence}:${turn}`,
           title: `${turn}턴 행동 대기`,
-          text: "일반 장비는 같은 턴에도 반복 시험할 수 있습니다. 턴 진행 시 중기관총의 2회 사격 한도와 상태이상 지속 라운드를 갱신합니다.",
+          speech: "새 턴입니다. 다음 행동을 고르세요.",
+          instruction:
+            "일반 장비는 같은 턴에도 반복 시험할 수 있습니다. 턴 진행 시 중기관총의 2회 사격 한도와 상태이상 지속 라운드를 갱신합니다.",
         };
       default:
         return {
+          id: `ready:${sequence}:${encounterMode}`,
           title: `${ENCOUNTER_MODE_META[encounterMode].label} 훈련 준비 완료`,
-          text: `현재 내 위치 ${formatSimulatorCoord(attackerPosition)}, ${selectedEnemy?.name ?? "표적"} 위치 ${formatSimulatorCoord(targetPosition)}입니다. 옮길 토큰을 누른 뒤 목적지를 선택하거나 드래그하십시오. 내 위치가 실제로 바뀐 때만 이동 선언을 소모합니다.`,
+          speech: selectedRule
+            ? "훈련 준비 완료. 표적과 공격 조건을 확인해 주세요."
+            : "훈련 준비 완료. 시험 장비 하나를 골라 주세요.",
+          instruction: `현재 내 위치 ${formatSimulatorCoord(attackerPosition)}, ${selectedEnemy?.name ?? "표적"} 위치 ${formatSimulatorCoord(targetPosition)}입니다. 옮길 토큰을 누른 뒤 목적지를 선택하거나 드래그하십시오. 내 위치가 실제로 바뀐 때만 이동 선언을 소모합니다.`,
         };
     }
   })();
+
+  useReactiveDialogueBeep({
+    messageId: instructorBrief.id,
+    text: instructorBrief.speech,
+    preset: "r05",
+  });
 
   function attackDamageDetails(
     result: SimulatorAttackResult,
@@ -1308,6 +1362,7 @@ export default function EquipmentSimulatorClient({
     detail: string,
     options: { sound?: boolean } = {},
   ) {
+    // trainingEvent callers mute this generic chirp so the R-05 line is the sole voice cue.
     const id = feedbackSequenceRef.current + 1;
     feedbackSequenceRef.current = id;
     setFeedback({ id, tone, title, detail });
@@ -1513,6 +1568,7 @@ export default function EquipmentSimulatorClient({
       "info",
       `${label} 위치 ${sameCoord(currentCoord, fittedCoord) ? "확인" : "이동 완료"}`,
       `${detail}${movementDetail}`,
+      { sound: false },
     );
     if (!sameCoord(currentCoord, fittedCoord)) {
       pushLog(`${label} 이동 · ${detail}${movementDetail}`, "info");
@@ -1545,6 +1601,7 @@ export default function EquipmentSimulatorClient({
       "info",
       `내 토큰 이동 선택 ${movementDeclarationsUsed + 1}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`,
       "전투판에서 이동할 칸을 선택하거나 내 토큰을 드래그하세요. 위치가 실제로 바뀐 때만 이동 선언이 소모됩니다.",
+      { sound: false },
     );
   }
 
@@ -1564,6 +1621,7 @@ export default function EquipmentSimulatorClient({
       "info",
       "장비 선택 완료",
       `${itemName}을 시험 장비로 설정했습니다.`,
+      { sound: false },
     );
   }
 
@@ -1596,6 +1654,7 @@ export default function EquipmentSimulatorClient({
       "info",
       `${enemy.name} 이동 선택`,
       "전투판에서 이동할 칸을 선택하거나 선택한 적 토큰을 드래그하세요. 이동 선언은 소모되지 않습니다.",
+      { sound: false },
     );
   }
 
@@ -1628,6 +1687,7 @@ export default function EquipmentSimulatorClient({
           ? "소이선 방향 선택"
           : "착탄점 선택",
         `${formatSimulatorCoord(coord)} 기준 예상 범위를 확인한 뒤 실행하세요.`,
+        { sound: false },
       );
       return;
     }
@@ -1846,6 +1906,7 @@ export default function EquipmentSimulatorClient({
       "success",
       `${controlReloadLabel(selectedRule)} 완료`,
       `${selectedRule.name} ${selectedRule.resource.label} ${selectedRule.resource.max}/${selectedRule.resource.max}`,
+      { sound: false },
     );
     pushLog(`${selectedRule.name} ${controlReloadLabel(selectedRule)} 완료`, "info");
   }
@@ -2414,6 +2475,7 @@ export default function EquipmentSimulatorClient({
         "error",
         "공격 실행 실패",
         selectedResult.reasonLabel ?? selectedResult.summary,
+        { sound: false },
       );
       pushLog(selectedResult.reasonLabel ?? selectedResult.summary, resultTone(selectedResult));
       return;
@@ -2429,6 +2491,7 @@ export default function EquipmentSimulatorClient({
         "error",
         "공격 부위 선택 필요",
         "대형몹 부위도에서 파괴되지 않은 부위를 선택하세요.",
+        { sound: false },
       );
       return;
     }
@@ -2472,6 +2535,7 @@ export default function EquipmentSimulatorClient({
       "success",
       "공격 실행 완료",
       `${selectedRule.name} · ${selectedEnemy.name}${attackBossPart ? ` ${attackBossPart.name}` : ""} · ${damageFormula}${statusText}${defeatText}`,
+      { sound: false },
     );
     pushLog(
       `${selectedRule.name} 기본 공격 · ${selectedEnemy.name}${attackBossPart ? ` / ${attackBossPart.name}` : ""}`,
@@ -2510,6 +2574,7 @@ export default function EquipmentSimulatorClient({
       needsCell
         ? `전투판에서 공격 지점을 선택한 뒤 ‘${executeLabel}’ 버튼을 누르세요.`
         : `대상과 예상 판정을 확인한 뒤 ‘${executeLabel}’ 버튼을 누르세요.`,
+      { sound: false },
     );
   }
 
@@ -2521,6 +2586,7 @@ export default function EquipmentSimulatorClient({
         "error",
         "착탄점 선택 필요",
         "전투판에서 붉은 공격 가능 셀을 착탄점으로 선택하세요.",
+        { sound: false },
       );
       return;
     }
@@ -2531,6 +2597,7 @@ export default function EquipmentSimulatorClient({
         "error",
         "공격 실행 실패",
         selectedResult.reasonLabel ?? selectedResult.summary,
+        { sound: false },
       );
       return;
     }
@@ -2612,6 +2679,7 @@ export default function EquipmentSimulatorClient({
       affectedCount > 0 ? "success" : "info",
       `${selectedRule.name} 폭발`,
       `${formatSimulatorCoord(blastImpact)} 착탄 · ${affectedCount}기 피해 · 자원 1회 소모${selectedDefeatedByBlast ? " · 선택 표적 전투불능. 다음 표적을 직접 선택하세요." : ""}`,
+      { sound: false },
     );
     pushLog(
       `${selectedRule.name} 폭발 · ${formatSimulatorCoord(blastImpact)} · ${affectedCount}기`,
@@ -2626,7 +2694,9 @@ export default function EquipmentSimulatorClient({
     const fail = (detail: string) => {
       setTrainingEvent("blocked");
       setActiveStep(4);
-      showFeedback("error", `${selectedAction.name} 실행 실패`, detail);
+      showFeedback("error", `${selectedAction.name} 실행 실패`, detail, {
+        sound: false,
+      });
       pushLog(`${selectedAction.name} 실패 · ${detail}`, "miss");
     };
     const actionResourceCost =
@@ -2737,6 +2807,7 @@ export default function EquipmentSimulatorClient({
         "success",
         "넉백 실행 완료",
         `${attackDamageFormula(selectedResult)} · ${selectedEnemy.name} ${formatSimulatorCoord(knockbackPosition)}로 1칸 후퇴`,
+        { sound: false },
       );
       pushLog(
         `${selectedRule.name} 넉백 · ${selectedEnemy.name}${attackBossPart ? ` / ${attackBossPart.name}` : ""}`,
@@ -2853,6 +2924,7 @@ export default function EquipmentSimulatorClient({
         hitCount > 0 ? "success" : "info",
         "광역 난사 완료",
         `${candidates.length}기 판정 · ${hitCount}기 명중 · 모든 탄환 소모${selectedDefeatedBySpray ? " · 선택 표적 전투불능. 다음 표적을 직접 선택하세요." : ""}`,
+        { sound: false },
       );
       pushLog(
         `${selectedRule.name} 광역 난사 · ${hitCount}/${candidates.length}기 명중`,
@@ -2910,6 +2982,7 @@ export default function EquipmentSimulatorClient({
       "success",
       "소이선 생성 완료",
       `${zoneCells.join(", ")} · 3라운드 · ${burnedNames.length}기 화상`,
+      { sound: false },
     );
     pushLog(
       `${selectedRule.name} 소이선 · ${zoneCells.join(", ")} · 3라운드`,
@@ -3194,7 +3267,7 @@ export default function EquipmentSimulatorClient({
           </div>
           <p className={styles.guideDialogue} aria-live="polite">
             <strong>{instructorBrief.title}</strong>
-            {instructorBrief.text}
+            {instructorBrief.speech} {instructorBrief.instruction}
           </p>
         </div>
       </section>

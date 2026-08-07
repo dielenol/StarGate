@@ -300,6 +300,98 @@ export const DIALOGUE_BEEP_PRESETS = {
     frequencyVariance: 10,
     wobble: 3,
   },
+  r05: {
+    label: "R-05 / Training Assistant",
+    pitch: 640,
+    speed: 34,
+    volume: 0.44,
+    wave: "square",
+    duration: 0.02,
+    attack: 0.002,
+    frequencyVariance: 4,
+    wobble: 1,
+    punctuationPauses: {
+      " ": 28,
+      ".": 90,
+      "。": 90,
+    },
+  },
+  council: {
+    label: "Council Liaison",
+    pitch: 540,
+    speed: 48,
+    volume: 0.44,
+    wave: "triangle",
+    duration: 0.026,
+    attack: 0.004,
+    frequencyVariance: 6,
+    wobble: 1,
+  },
+  military: {
+    label: "Military Desk",
+    pitch: 450,
+    speed: 38,
+    volume: 0.5,
+    wave: "square",
+    duration: 0.022,
+    attack: 0.002,
+    frequencyVariance: 5,
+    wobble: 1,
+    punctuationPauses: {
+      " ": 30,
+      ".": 100,
+      "。": 100,
+    },
+  },
+  civil: {
+    label: "Civil Contact",
+    pitch: 690,
+    speed: 50,
+    volume: 0.42,
+    wave: "soft",
+    duration: 0.03,
+    attack: 0.006,
+    frequencyVariance: 8,
+    wobble: 2,
+  },
+  rose: {
+    label: "White Rose Cell",
+    pitch: 720,
+    speed: 42,
+    volume: 0.43,
+    wave: "triangle",
+    duration: 0.026,
+    attack: 0.004,
+    frequencyVariance: 10,
+    wobble: 2,
+  },
+  tech: {
+    label: "Space Zero Broker",
+    pitch: 610,
+    speed: 36,
+    volume: 0.46,
+    wave: "sawtooth",
+    duration: 0.022,
+    attack: 0.002,
+    frequencyVariance: 7,
+    wobble: 2,
+  },
+  hostile: {
+    label: "Hostile Signal Analysis",
+    pitch: 470,
+    speed: 52,
+    volume: 0.4,
+    wave: "sine",
+    duration: 0.03,
+    attack: 0.006,
+    frequencyVariance: 3,
+    wobble: 1,
+    punctuationPauses: {
+      " ": 44,
+      ".": 150,
+      "。": 150,
+    },
+  },
 } as const satisfies Record<string, DialogueBeepPreset>;
 
 export type DialoguePresetName = keyof typeof DIALOGUE_BEEP_PRESETS;
@@ -334,6 +426,31 @@ function mergePauseMaps(
     }
   }
   return result;
+}
+
+export class ReactiveDialogueBeepGate {
+  private interactionReady = false;
+  private lastMessageId: string;
+
+  constructor(initialMessageId: string) {
+    this.lastMessageId = initialMessageId;
+  }
+
+  markInteractionReady() {
+    this.interactionReady = true;
+  }
+
+  consume(messageId: string, enabled = true) {
+    if (messageId === this.lastMessageId) {
+      return { changed: false, shouldPlay: false } as const;
+    }
+
+    this.lastMessageId = messageId;
+    return {
+      changed: true,
+      shouldPlay: this.interactionReady && enabled,
+    } as const;
+  }
 }
 
 export class DialogueBeepEngine {

@@ -33,7 +33,7 @@ test("welcome dialogue addresses the assigned AGENT and reflects profile", () =>
     profile: "focus",
   });
 
-  assert.match(line, /^TEST AGENT, 요청서 확인했습니다\./);
+  assert.match(line, /^TEST AGENT, 왔네요\./);
   assert.match(line, /센서|드론|전자전|데이터/);
   assert.equal(
     buildStrategicWelcomeLine({ codename: null, profile: "balanced" }),

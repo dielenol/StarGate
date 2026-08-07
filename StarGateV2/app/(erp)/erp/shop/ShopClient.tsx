@@ -46,6 +46,12 @@ import {
   retainIdempotencyOperation,
   type RetainedIdempotencyOperation,
 } from "@/lib/query/idempotency";
+import {
+  TIA_DIALOGUE_LINES,
+  TIA_IDLE_LINES,
+  TIA_MOOD_LABELS,
+  type TiaMood,
+} from "@/lib/shop/tia-dialogue";
 
 import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 
@@ -62,15 +68,6 @@ type NoticeState = { tone: "success" | "info"; text: string } | null;
 interface RetainedCheckoutOperation extends RetainedIdempotencyOperation {
   expectsLotteryTickets: boolean;
 }
-type TiaMood =
-  | "welcome"
-  | "tired"
-  | "soldout"
-  | "bag"
-  | "doodle"
-  | "purchase"
-  | "nap";
-
 const MAX_CART_QUANTITY_PER_ITEM = 9;
 const MRBEAST_SODA_POSTER_SRC =
   "/assets/shop/events/mrbeast-soda-lottery-poster.png";
@@ -83,8 +80,6 @@ const TIA_IDLE_DELAY_MS = 18000;
 const LOW_STOCK_THRESHOLD = 2;
 
 const TIA_PROFILE_SRC = "/assets/shop/hud/tia-profile.webp";
-const SHOP_CLOSED_MESSAGE =
-  "편의점이 문을 닫았다.\n편의점 알바생도 퇴근한 것 같다...";
 const SHOP_CLOSED_BEEP_OPTIONS = {
   preset: "system",
   pitch: 720,
@@ -106,62 +101,6 @@ const TIA_MOOD_ASSETS: Record<TiaMood, string> = {
   purchase: "/assets/shop/hud/tia-purchase-complete.webp",
   nap: "/assets/shop/hud/tia-nap.webp",
 };
-
-const TIA_MOOD_LABELS: Record<TiaMood, string> = {
-  welcome: "환영",
-  tired: "재고 확인",
-  soldout: "품절 안내",
-  bag: "봉투 확인",
-  doodle: "둘러보기",
-  purchase: "결제 완료",
-  nap: "휴식 중",
-};
-
-const TIA_DIALOGUE_LINES = {
-  welcome: "어서 오세요~! 스타마트입니다!",
-  newItems:
-    "오늘 새 상품이 잔뜩 들어왔어요! 관심 가는 거 있으면, 편하게 둘러봐 주세요~",
-  idleBrowse: "천천히 보셔도 괜찮아요. 저는 카운터에서 기다리고 있을게요~",
-  idleDoodle:
-    "음... 이 상품은 어디에 진열하는 게 제일 잘 보일까요?",
-  idleStockCheck:
-    "잠깐만요... 재고표랑 진열대 숫자가 맞는지 다시 확인하고 있었어요.",
-  idleBag:
-    "봉투는 카운터 아래에 준비해뒀어요. 필요하면 바로 챙겨드릴게요.",
-  idleSleepy:
-    "아... 아니에요. 안 졸았어요. 계산은 바로 해드릴 수 있어요.",
-  lowStock:
-    "앗... 그 상품은 오늘 너무 잘 팔려서요. 지금은 재고가 얼마 안 남았어요.",
-  soldOut:
-    "앗... 그 상품은 지금 품절이에요. 발주 요청 남겨두면, 입고되는 대로 알려드릴게요.",
-  reorderRequested:
-    "네, 발주 요청 접수했어요. 입고표에 표시해둘게요. 재고가 들어오면 꼭 확인해주세요.",
-  reorderAlready:
-    "그 상품은 오늘 이미 발주 요청이 들어와 있어요. 제가 장부에 표시해뒀습니다.",
-  reorderError:
-    "앗... 발주 요청 장부에 적는 중 문제가 생겼어요. 잠시 후 다시 부탁드릴게요.",
-  bag: "봉투도, 같이 챙겨드릴까요?",
-  goodbye: "감사합니다! 조심히 들어가시고, 다음에 또 들러주세요~",
-  closed: SHOP_CLOSED_MESSAGE,
-  noAgent: "앗... 먼저 메인 AGENT 확인이 필요해요. GM에게 문의해 주세요.",
-  checkoutError:
-    "잠깐만요... 결제 정보가 맞지 않는 것 같아요. 다시 한번 확인해 주세요.",
-  lotteryEnded:
-    "앗, 방금 복권 이벤트가 끝났어요. 소다 결제는 진행하지 않았으니 다시 확인해 주세요.",
-  sodaDailyLimit:
-    "미스터비스트 소다는 하루에 10개까지만 구매할 수 있어요. 내일 다시 확인해 주세요~",
-  cartAdjusted:
-    "재고가 방금 바뀌었어요. 장바구니 수량을 최신 재고에 맞춰 다시 정리해뒀습니다.",
-} as const;
-
-const TIA_IDLE_LINES: readonly { mood: TiaMood; text: string }[] = [
-  { mood: "doodle", text: TIA_DIALOGUE_LINES.newItems },
-  { mood: "welcome", text: TIA_DIALOGUE_LINES.idleBrowse },
-  { mood: "doodle", text: TIA_DIALOGUE_LINES.idleDoodle },
-  { mood: "tired", text: TIA_DIALOGUE_LINES.idleStockCheck },
-  { mood: "bag", text: TIA_DIALOGUE_LINES.idleBag },
-  { mood: "nap", text: TIA_DIALOGUE_LINES.idleSleepy },
-];
 
 const TAB_DEFS: { value: ShopTabValue; label: string; icon: IconComponent }[] = [
   { value: "ALL", label: "전체", icon: IconGridAll },
@@ -367,6 +306,7 @@ export default function ShopClient({
     .join(" ");
 
   useEffect(() => {
+    // Entry NPC copy stays silent; the closed narrator intentionally keeps the system preset.
     if (!catalog.isOpen) {
       clearTiaIdleTimer();
       stopTiaEngine();

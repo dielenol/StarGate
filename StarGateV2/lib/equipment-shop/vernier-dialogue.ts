@@ -9,17 +9,17 @@ export type VernierMood =
 
 export const VERNIER_DIALOGUE_LINES = {
   welcome:
-    "오셨군요. 공방장 버니어입니다. 원하는 모양은 잠시 뒤에 듣죠. 먼저, 이 장비가 어디서 실패하면 안 되는지부터 말씀해 주세요.",
+    "오셨군요. 공방장 버니어입니다. 이 장비가 어디서 실패하면 안 되는지부터 들려주시겠어요?",
   noAgent:
     "잠깐만요. 제작 대상이 비어 있네요. 누구 장비인지 모르면 치수도, 사용 습관도 잡을 수 없습니다. 주 AGENT부터 연결해 주세요.",
   closed:
     "오늘 접수선은 닫았습니다. 급한 요청이라도 도면보다 사용 기록을 먼저 가져오세요. 내일 제가 직접 확인하겠습니다.",
   upgradePrompt:
-    "강화라는 말부터 조금 위험합니다. 무엇을 더하고 싶은지, 그 대신 무엇을 포기할 수 있는지도 같이 적어 주세요.",
+    "무엇을 더하고 싶으신가요? 그 대신 포기해도 되는 건 무엇인지 같이 알려주세요.",
   customPrompt:
     "그림처럼 설명하셔도 괜찮습니다. 다만 어디에 쓰고, 어떤 순간에 망가지면 안 되는지는 꼭 남겨 주세요.",
   accepted:
-    "접수됐습니다. 바로 손대지는 않을게요. 먼저 기록하고, 측정하고, 필요한 사람들을 부르겠습니다.",
+    "접수됐습니다. 바로 손대진 않고, 사용 기록과 치수부터 확인한 뒤 필요한 사람을 부르죠.",
   rejected:
     "잠시만요. 요청서가 접수선에서 멈췄습니다. 같은 내용을 다시 보내기 전에, 빠진 조건부터 함께 확인하죠.",
 } as const;
@@ -40,7 +40,7 @@ export const VERNIER_IDLE_LINES: readonly {
 }[] = [
   {
     mood: "idle",
-    text: "음… 이 치수는 또 0.3이 남네요. 별것 아닌 것 같아도, 그 0.3이 사람 하나를 살릴 때가 있습니다.",
+    text: "음… 치수가 미세하게 남네요. 작아 보여도 그냥 넘기지는 않겠습니다.",
   },
   {
     mood: "clarify",
@@ -75,7 +75,7 @@ function stableLine(lines: readonly string[], seed: string): string {
 
 export function buildVernierWelcomeLine(codename: string | null): string {
   if (!codename) return VERNIER_DIALOGUE_LINES.welcome;
-  return `${codename}, 오셨군요. 공방장 버니어입니다. 원하는 모양은 잠시 뒤에 듣죠. 먼저, 이 장비가 어디서 실패하면 안 되는지부터 말씀해 주세요.`;
+  return `${codename}, 오셨군요. 공방장 버니어입니다. 이 장비가 어디서 실패하면 안 되는지부터 들려주시겠어요?`;
 }
 
 export function buildVernierEquipmentLine(args: {
@@ -83,9 +83,9 @@ export function buildVernierEquipmentLine(args: {
   codename: string | null;
 }): string {
   const lines = [
-    `${args.equipmentName}, 사용 기록부터 열어볼게요. 어디가 부족했는지보다 어느 순간에 부족했는지 말씀해 주세요.`,
-    `${args.equipmentName}을 강화하시는군요. 무게, 출력, 정비 주기 중 무엇을 지켜야 하는지 먼저 정하겠습니다.`,
-    `${args.equipmentName}의 닳은 자리는 그대로 두세요. 사용 습관까지 봐야 바뀐 장비가 다시 손에 맞습니다.`,
+    `${args.equipmentName}, 사용 기록부터 볼게요. 부족했던 순간이 언제였는지 기억나시나요?`,
+    `${args.equipmentName}을 강화하시는군요. 무게, 출력, 정비 주기 중 무엇을 꼭 지켜야 할까요?`,
+    `${args.equipmentName}의 닳은 자리는 그대로 두세요. 어느 동작에서 힘이 몰렸는지 확인해 보죠.`,
   ] as const;
   return stableLine(lines, `${args.codename ?? "VISITOR"}:${args.equipmentName}`);
 }

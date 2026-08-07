@@ -15,13 +15,14 @@ import {
   SUTURE_IDLE_LINES,
 } from "../suture-dialogue.ts";
 
-test("Suture welcomes the assigned AGENT as a patient rather than a record", () => {
+test("Suture welcomes the patient without reducing them to an AGENT codename", () => {
   const line = buildSutureWelcomeLine({
     codename: "TEST AGENT",
     profile: "assault",
   });
 
-  assert.match(line, /^TEST AGENT, 왔군요\./);
+  assert.match(line, /^왔군요\./);
+  assert.doesNotMatch(line, /TEST AGENT/);
   assert.match(line, /힘|신경|손|출력/);
   assert.doesNotMatch(line, /기록을 열었습니다|기준으로 검토/);
   assert.equal(

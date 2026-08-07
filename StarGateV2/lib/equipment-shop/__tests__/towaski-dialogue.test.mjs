@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -83,7 +84,8 @@ test("specialist modes rotate mode-specific coaching lines", () => {
 
   assert.ok(new Set(sonicLines).size > 1);
   for (const line of sonicLines) {
-    assert.match(line, /리듬|박자|적성|보호|퍼펙트|굿/);
+    assert.match(line, /리듬|박자|적성|보호|판정선|단계/);
+    assert.doesNotMatch(line, /90밀리초|170밀리초|TARGET|PROTECTED/);
   }
 });
 
@@ -102,7 +104,7 @@ test("mode-specific retry briefing repeats the actual controls", () => {
   });
 
   assert.match(sonicBriefing, /박자|적성|보호|단계/);
-  assert.match(flameBriefing, /경로|세 칸|가로|세로|직선/);
+  assert.match(flameBriefing, /경로|가로|세로|직선|대각선/);
 });
 
 test("sonic protected-hit failure stays in rhythm safety dialogue", () => {
@@ -114,7 +116,8 @@ test("sonic protected-hit failure stays in rhythm safety dialogue", () => {
     reasons: ["protected_hit"],
   });
 
-  assert.match(line, /보호 박자|TARGET|PROTECTED|파형/);
+  assert.match(line, /보호 박자|보호 신호|파형|적성 신호/);
+  assert.doesNotMatch(line, /TARGET|PROTECTED/);
   assert.doesNotMatch(line, /축소 표적|사분의 일|풍향|호흡/);
 });
 
@@ -127,6 +130,47 @@ test("sonic rhythm miss does not falsely report a protected-beat hit", () => {
     reasons: ["rhythm_stages"],
   });
 
-  assert.match(line, /TARGET|리듬|박자|적중/);
+  assert.match(line, /적성|리듬|박자|적중/);
   assert.doesNotMatch(line, /보호 박자 입력이 잡혔다/);
+});
+
+test("exact controls and safety thresholds stay in the adjacent rule UI", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../app/(erp)/erp/equipment-shop/TowaskiLicenseTest.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  for (const protectedRule of [
+    "1.125초",
+    "80ms 간격",
+    "X ±8% · Y ±10%",
+    "정확히 3칸",
+    "TARGET 6 · PROTECTED 2",
+    "±170ms",
+    "3 반출 · 1 정비 · 1 격리",
+  ]) {
+    assert.match(source, new RegExp(protectedRule.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+});
+
+test("user-opened qualification dialogue survives the state transition with sound", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /towaskiPendingAudibleLineRef\.current =[^;]+;[\s\S]*setTowaskiLicenseTestOpen\(true\)/,
+  );
+  assert.match(
+    source,
+    /const pendingAudibleLine = towaskiPendingAudibleLineRef\.current;[\s\S]*playTowaskiLine\([\s\S]*sound: true/,
+  );
 });

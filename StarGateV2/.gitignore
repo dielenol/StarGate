@@ -21,6 +21,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# local dialogue review reports
+.artifacts/dialogue-review/
+
 # os/editor
 .DS_Store
 .idea/

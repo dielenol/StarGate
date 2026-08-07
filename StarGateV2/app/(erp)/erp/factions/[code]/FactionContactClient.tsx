@@ -21,6 +21,8 @@ import {
   factionKeys,
   useFactionActivity,
 } from "@/hooks/queries/useFactionsQuery";
+import { useReactiveDialogueBeep } from "@/hooks/useReactiveDialogueBeep";
+import type { DialoguePresetName } from "@/lib/audio/dialogue-beep-engine";
 import type { AgentLevel } from "@/types/character";
 import type {
   FactionActivityResponse,
@@ -66,6 +68,8 @@ type FactionActivityKind =
   | "QUEST_ACCEPT"
   | "QUEST_COMPLETE";
 
+type DialoguePhase = "idle" | "preview" | "confirmed" | "error";
+
 interface ContactSelection {
   id: string;
   kind: "talk" | "action" | "support" | "quest";
@@ -86,6 +90,42 @@ interface ContactActor {
 
 const FAVORABILITY_MIN = -10;
 const FAVORABILITY_MAX = 10;
+
+function factionDialoguePreset(
+  code: string,
+  hostile: boolean,
+): DialoguePresetName {
+  switch (code) {
+    case "COUNCIL":
+      return "council";
+    case "MILITARY":
+      return "military";
+    case "CIVIL":
+      return "civil";
+    case "WHITE_ROSE":
+      return "rose";
+    case "SPACE_ZERO":
+      return "tech";
+    case "GOLDEN_DAWN":
+    case "AHNENERBE":
+      return "hostile";
+    default:
+      return hostile ? "hostile" : "operator";
+  }
+}
+
+function dialoguePhaseLabel(phase: DialoguePhase) {
+  switch (phase) {
+    case "idle":
+      return "대기";
+    case "preview":
+      return "미리보기";
+    case "confirmed":
+      return "반영 완료";
+    case "error":
+      return "오류";
+  }
+}
 
 function clampFavorability(value: number) {
   return Math.max(FAVORABILITY_MIN, Math.min(FAVORABILITY_MAX, value));
@@ -295,6 +335,7 @@ export default function FactionContactClient({
   );
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [dialoguePhase, setDialoguePhase] = useState<DialoguePhase>("idle");
 
   const questProgressById = useMemo(
     () =>
@@ -359,22 +400,28 @@ export default function FactionContactClient({
       ? `url(${JSON.stringify(profile.scene.sceneBackgroundUrl)})`
       : "none",
   } as CSSProperties;
-  const baseDialogueLine =
-    selected.kind === "talk"
-      ? pickDialogueText(
-          activeDialogue.line,
-          activeDialogue.lineVariants,
-          `${dialogueSeed}:idle`,
-        )
-      : pickDialogueText(
-          activeDialogue.afterActionLine,
-          activeDialogue.afterActionLineVariants,
-          `${dialogueSeed}:action`,
-        );
-  const rankDialogueLine =
-    selected.kind === "talk"
-      ? activeRankDialogue.line
-      : activeRankDialogue.afterActionLine;
+  const baseDialogueLine = (() => {
+    if (talkLocked || questLocked) return profile.scene.lockedLine;
+    if (selected.kind === "talk") {
+      return pickDialogueText(
+        activeDialogue.line,
+        activeDialogue.lineVariants,
+        `${dialogueSeed}:idle`,
+      );
+    }
+    if (dialoguePhase === "confirmed") {
+      return pickDialogueText(
+        activeDialogue.afterActionLine,
+        activeDialogue.afterActionLineVariants,
+        `${dialogueSeed}:confirmed`,
+      );
+    }
+    if (dialoguePhase === "error") {
+      return activeDialogue.errorLine ?? profile.scene.lockedLine;
+    }
+    return activeDialogue.previewLine ?? activeDialogue.line;
+  })();
+  const rankDialogueLine = activeRankDialogue.line;
   const dialogueLine = talkLocked || questLocked
     ? profile.scene.lockedLine
     : selected.kind === "quest" && selected.questStatus === "COMPLETED"
@@ -387,6 +434,18 @@ export default function FactionContactClient({
       : selected.kind !== "talk" && cappedDelta === 0
         ? "관계 변화 없음"
         : selected.effectLabel ?? formatDelta(cappedDelta);
+
+  useReactiveDialogueBeep({
+    messageId: [code, dialoguePhase, baseDialogueLine].join(":"),
+    text: baseDialogueLine,
+    preset: factionDialoguePreset(code, hostile),
+  });
+
+  function previewSelection(selection: ContactSelection) {
+    setSelected(selection);
+    setDialoguePhase("preview");
+    setMessage(null);
+  }
 
   function getActivityType(): FactionActivityKind {
     if (selected.kind === "talk") {
@@ -418,6 +477,7 @@ export default function FactionContactClient({
 
     setIsSaving(true);
     setMessage(null);
+    setDialoguePhase("preview");
 
     try {
       const activityType = getActivityType();
@@ -467,11 +527,13 @@ export default function FactionContactClient({
       }
 
       setMessage("세력 활동이 기록되었습니다.");
+      setDialoguePhase("confirmed");
       await queryClient.invalidateQueries({ queryKey: factionKeys.board });
     } catch (err) {
       setMessage(
         err instanceof Error ? err.message : "세력 활동 반영에 실패했습니다.",
       );
+      setDialoguePhase("error");
     } finally {
       setIsSaving(false);
     }
@@ -535,10 +597,15 @@ export default function FactionContactClient({
               </div>
             </div>
 
-            <div className={styles.sceneDialogue}>
+            <div
+              className={styles.sceneDialogue}
+              data-dialogue-phase={dialoguePhase}
+            >
               <div className={styles.sceneDialogue__top}>
                 <span>{profile.scene.operatorCodename}</span>
-                <b>{activeDialogue.mood}</b>
+                <b>
+                  {activeDialogue.mood} · {dialoguePhaseLabel(dialoguePhase)}
+                </b>
               </div>
               <div className={styles.affectionRail}>
                 <span>RELATION</span>
@@ -555,7 +622,12 @@ export default function FactionContactClient({
                 {profile.scene.operatorName}
               </strong>
               <p className={styles.sceneDialogue__line}>{baseDialogueLine}</p>
-              <p className={styles.sceneDialogue__rank}>{rankDialogueLine}</p>
+              <p
+                className={styles.sceneDialogue__rank}
+                aria-label="접근 권한 안내"
+              >
+                접근 권한 · {rankDialogueLine}
+              </p>
               <div className={styles.sceneDialogue__reply}>
                 <span>
                   {selectionKindLabel(selected.kind)} · {selected.channel}
@@ -610,7 +682,9 @@ export default function FactionContactClient({
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => setSelected(storyChoiceSelection(choice))}
+                      onClick={() =>
+                        previewSelection(storyChoiceSelection(choice))
+                      }
                       aria-pressed={active}
                     >
                       <span>{choice.tone}</span>
@@ -643,7 +717,7 @@ export default function FactionContactClient({
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => setSelected(actionSelection(action))}
+                      onClick={() => previewSelection(actionSelection(action))}
                       aria-pressed={active}
                     >
                       <span>{action.channel}</span>
@@ -683,7 +757,7 @@ export default function FactionContactClient({
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => setSelected(option)}
+                      onClick={() => previewSelection(option)}
                       aria-pressed={active}
                     >
                       <IconCredit aria-hidden />
@@ -776,7 +850,7 @@ export default function FactionContactClient({
                 ]
                   .filter(Boolean)
                   .join(" ")}
-                onClick={() => setSelected(selection)}
+                onClick={() => previewSelection(selection)}
                 aria-pressed={active}
               >
                 <div className={styles.questCard__head}>
