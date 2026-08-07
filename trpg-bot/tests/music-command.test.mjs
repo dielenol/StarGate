@@ -13,6 +13,11 @@ process.env.TRPG_WEB_BASE_URL ||= "https://example.test";
 const { handleMusicCommand } = await import("../dist/commands/music.js");
 const { MusicRepeatMode } = await import("../dist/music/types.js");
 
+function assertPrivateWithoutEmbeds(flags) {
+  assert.ok(flags & MessageFlags.Ephemeral);
+  assert.ok(flags & MessageFlags.SuppressEmbeds);
+}
+
 function queueInteraction(channelId) {
   const replies = [];
   return {
@@ -97,7 +102,7 @@ test("전용 채널의 대기열 응답은 명령 사용자에게만 표시한�
   await handleMusicCommand(interaction, { getSnapshot: () => null });
 
   assert.equal(replies.length, 1);
-  assert.equal(replies[0].flags, MessageFlags.Ephemeral);
+  assertPrivateWithoutEmbeds(replies[0].flags);
   assert.match(replies[0].content, /재생 중인 음악이 없습니다/);
 });
 
@@ -106,7 +111,7 @@ test("다른 채널의 음악 명령은 전용 채널 링크를 비공개로 안
   await handleMusicCommand(interaction, { getSnapshot: () => null });
 
   assert.equal(replies.length, 1);
-  assert.equal(replies[0].flags, MessageFlags.Ephemeral);
+  assertPrivateWithoutEmbeds(replies[0].flags);
   assert.match(replies[0].content, /<#music-channel-id>/);
 });
 
@@ -196,6 +201,7 @@ test("재생 요청도 처음부터 비공개로 defer한 뒤 같은 응답을 �
 
   assert.equal(deferred[0].flags, MessageFlags.Ephemeral);
   assert.equal(edited.length, 1);
+  assert.equal(edited[0].flags, MessageFlags.SuppressEmbeds);
   assert.match(edited[0].content, /재생을 준비합니다/);
 });
 
@@ -220,6 +226,7 @@ test("재생목록은 비공개로 처리하고 추가·제외 곡 수를 안내
 
   assert.equal(receivedQuery, "https://youtube.com/playlist?list=test-list");
   assert.equal(context.deferred[0].flags, MessageFlags.Ephemeral);
+  assert.equal(context.edited[0].flags, MessageFlags.SuppressEmbeds);
   assert.match(context.edited[0].content, /48곡/);
   assert.match(context.edited[0].content, /2곡은 제외/);
 });
@@ -234,7 +241,7 @@ test("반복 모드와 초기화 결과는 명령 사용자에게만 안내한�
     },
   });
   assert.equal(selectedMode, MusicRepeatMode.queue);
-  assert.equal(repeat.replies[0].flags, MessageFlags.Ephemeral);
+  assertPrivateWithoutEmbeds(repeat.replies[0].flags);
   assert.match(repeat.replies[0].content, /대기열 전체/);
 
   const reset = voiceInteraction("초기화");
@@ -244,6 +251,7 @@ test("반복 모드와 초기화 결과는 명령 사용자에게만 안내한�
     },
   });
   assert.equal(reset.deferred[0].flags, MessageFlags.Ephemeral);
+  assert.equal(reset.edited[0].flags, MessageFlags.SuppressEmbeds);
   assert.match(reset.edited[0].content, /12곡/);
   assert.match(reset.edited[0].content, /1건/);
 });

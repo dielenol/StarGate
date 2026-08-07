@@ -33,6 +33,9 @@ import {
 } from "../music/types.js";
 
 const MAX_QUEUE_LINES = 10;
+const PRIVATE_REPLY_FLAGS =
+  MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds;
+const EDIT_REPLY_FLAGS = MessageFlags.SuppressEmbeds;
 
 function escapeMarkdown(value: string): string {
   return value.replace(/([\\*_`~|\[\]()])/g, "\\$1");
@@ -125,6 +128,7 @@ async function handlePlaylist(
   }
   await interaction.editReply({
     content: lines.join("\n"),
+    flags: EDIT_REPLY_FLAGS,
     allowedMentions: { parse: [] },
   });
 }
@@ -134,12 +138,16 @@ async function replyError(
   message: string,
 ): Promise<void> {
   if (interaction.deferred || interaction.replied) {
-    await interaction.editReply({ content: message, allowedMentions: { parse: [] } });
+    await interaction.editReply({
+      content: message,
+      flags: EDIT_REPLY_FLAGS,
+      allowedMentions: { parse: [] },
+    });
     return;
   }
   await interaction.reply({
     content: message,
-    flags: MessageFlags.Ephemeral,
+    flags: PRIVATE_REPLY_FLAGS,
     allowedMentions: { parse: [] },
   });
 }
@@ -226,7 +234,11 @@ async function handlePlay(
   const content = result.startedImmediately
     ? `▶️ ${trackLink(result.track)} 재생을 준비합니다.`
     : `➕ ${trackLink(result.track)}을 대기열 ${result.queuePosition}번에 추가했습니다.`;
-  await interaction.editReply({ content, allowedMentions: { parse: [] } });
+  await interaction.editReply({
+    content,
+    flags: EDIT_REPLY_FLAGS,
+    allowedMentions: { parse: [] },
+  });
 }
 
 async function handleControl(
@@ -291,12 +303,13 @@ async function handleControl(
   if (interaction.deferred) {
     await interaction.editReply({
       content,
+      flags: EDIT_REPLY_FLAGS,
       allowedMentions: { parse: [] },
     });
   } else {
     await interaction.reply({
       content,
-      flags: MessageFlags.Ephemeral,
+      flags: PRIVATE_REPLY_FLAGS,
       allowedMentions: { parse: [] },
     });
   }
@@ -324,7 +337,7 @@ export async function handleMusicCommand(
       const snapshot = service.getSnapshot(guild.id);
       await interaction.reply({
         content: snapshot ? formatQueue(snapshot) : "현재 재생 중인 음악이 없습니다.",
-        flags: MessageFlags.Ephemeral,
+        flags: PRIVATE_REPLY_FLAGS,
         allowedMentions: { parse: [] },
       });
       return;
