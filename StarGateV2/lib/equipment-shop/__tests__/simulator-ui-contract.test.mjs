@@ -61,18 +61,25 @@ test("action controls wrap inside the board at desktop and mobile widths", async
   );
 });
 
-test("the standard 5x5 battlefield can switch to vertical 1x5 and horizontal 5x1 boards", async () => {
+test("the standard board can switch among 8x8 and the classic lane presets", async () => {
   const [client, styles] = await Promise.all([
     readFile(CLIENT_URL, "utf8"),
     readFile(STYLES_URL, "utf8"),
   ]);
 
-  assert.match(client, /type BattlefieldId = "5x5" \| "1x5" \| "5x1"/);
+  assert.match(
+    client,
+    /type BattlefieldId = "5x5" \| "8x8" \| "1x5" \| "5x1"/,
+  );
   assert.match(client, /const DEFAULT_BATTLEFIELD = BATTLEFIELDS\[0\]/);
   assert.match(client, /COMBAT_TRAINING_MAP_PRESETS\.map/);
   assert.match(client, /BATTLEFIELD_INITIAL_POSITIONS/);
   assert.match(client, /slice\(0, preset\.columns\)/);
   assert.match(client, /slice\(0, preset\.rows\)/);
+  assert.match(
+    client,
+    /"8x8": \{\s*attackerPosition: \{ col: "D", row: 1 \},\s*targetPosition: \{ col: "D", row: 5 \}/,
+  );
   assert.match(client, /aria-label="전장 규격 선택"/);
   assert.match(client, /handleBattlefieldChange\(candidate\.id\)/);
   assert.match(client, /boardRows\.map\(\(row\)/);
@@ -80,22 +87,27 @@ test("the standard 5x5 battlefield can switch to vertical 1x5 and horizontal 5x1
   assert.match(client, /resetTrainingState\(\s*nextBattlefield/);
   assert.match(
     client,
-    /boardColumnTemplate = `repeat\(\$\{boardColumns\.length\}, minmax\(46px, 1fr\)\)`/,
+    /boardColumnTemplate = `repeat\(\$\{boardColumns\.length\}, minmax\(\$\{isExpandedBattlefield \? 0 : 46\}px, 1fr\)\)`/,
   );
   assert.match(
     client,
-    /boardRowTemplate = `repeat\(\$\{boardRows\.length\}, minmax\(78px, 1fr\)\)`/,
+    /boardRowTemplate = `repeat\(\$\{boardRows\.length\}, minmax\(\$\{isExpandedBattlefield \? 52 : 78\}px, 1fr\)\)`/,
   );
   assert.doesNotMatch(client, /minmax\(160px, 240px\)|minmax\(96px, 120px\)/);
   assert.match(styles, /\.battlefieldSelector/);
   assert.match(styles, /\.battlefieldSelector__button--active/);
+  assert.match(styles, /\.boardFrame\[data-battlefield="8x8"\]/);
+  assert.match(
+    styles,
+    /@media \(max-width: 720px\)[\s\S]*data-battlefield="8x8"[\s\S]*repeat\(8, minmax\(0, 1fr\)\)/,
+  );
   assert.match(
     styles,
     /\.boardCell--attackable\s*\{[^}]*rgba\(255, 72, 72, 0\.88\)[^}]*repeating-linear-gradient/s,
   );
 });
 
-test("player movement requires a declaration and resets its two-use allowance each turn", async () => {
+test("token activation enters movement while actual player movement consumes the allowance", async () => {
   const [client, simulator] = await Promise.all([
     readFile(CLIENT_URL, "utf8"),
     readFile(SIMULATOR_URL, "utf8"),
@@ -105,16 +117,54 @@ test("player movement requires a declaration and resets its two-use allowance ea
   assert.match(simulator, /function canDeclareSimulatorMovement/);
   assert.match(simulator, /function consumeSimulatorMovementDeclaration/);
   assert.match(client, /function handleDeclareMovement/);
-  assert.match(client, /if \(!movementDeclarationPending\)/);
-  assert.match(client, /현재 적 위치 조정 중/);
-  assert.match(client, /현재 공격 지점 선택 중/);
+  assert.match(client, /function selectEnemyForMovement\(enemyId: string\)/);
   assert.match(
     client,
-    /상단의 ‘내 위치 이동 선언 \$\{movementDeclarationsUsed\}\/\$\{SIMULATOR_MOVEMENT_DECLARATION_LIMIT\}’ 버튼/,
+    /token\.kind === "attacker" && !movementDeclarationPending[\s\S]*handleDeclareMovement\(\);[\s\S]*suppressTokenClickRef\.current = "attacker"/,
   );
+  assert.match(
+    client,
+    /token\.kind === "enemy"[\s\S]*selectEnemyForMovement\(token\.enemyId\)/,
+  );
+  assert.match(
+    client,
+    /role="button"\s*tabIndex=\{0\}\s*aria-pressed=\{activeToken === "attacker"\}[\s\S]*activeToken === "aim"[\s\S]*handleCellActivate\(attackerPosition\)[\s\S]*handleDeclareMovement\(\)/,
+  );
+  assert.match(
+    client,
+    /activeToken === "aim"[\s\S]*handleCellActivate\(enemy\.position\)[\s\S]*selectEnemyForMovement\(enemy\.id\)/,
+  );
+  assert.match(client, /눌러 이동 상태로 전환/);
+  assert.match(client, /공격 지점 선택 중에는 토큰을 눌러도 해당 셀/);
+  assert.match(
+    client,
+    /if \(activeToken === "aim"\)[\s\S]*handleCellActivate\(aimCoord\)[\s\S]*captureSuppressedTokenClick\(event, key\)/,
+  );
+  assert.match(
+    client,
+    /token\.kind === "attacker" && hmgInstalled[\s\S]*captureSuppressedTokenClick\(event, "attacker"\)[\s\S]*중기관총 해체 필요/,
+  );
+  assert.match(
+    client,
+    /function captureSuppressedTokenClick[\s\S]*setPointerCapture\(event\.pointerId\)/,
+  );
+  assert.match(
+    client,
+    /function handleDeclareMovement\(\)[\s\S]*setBlastImpact\(null\)[\s\S]*setActiveToken\("attacker"\)/,
+  );
+  assert.match(
+    client,
+    /function selectEnemyForMovement[\s\S]*setBlastImpact\(null\)[\s\S]*setActiveToken\("target"\)/,
+  );
+  assert.match(
+    client,
+    /function coordFromPointer[\s\S]*SIMULATOR_BOARD_COLUMNS\.some[\s\S]*SIMULATOR_BOARD_ROWS\.some/,
+  );
+  assert.doesNotMatch(client, /showMovementDeclarationGuide/);
+  assert.doesNotMatch(client, /상단의 ‘내 위치 이동 선언/);
   assert.match(client, /내 위치 목적지 선택 중/);
-  assert.match(client, /필요할 때 선언 후 이동/);
-  assert.equal(client.match(/showMovementDeclarationGuide\(\);/g)?.length, 2);
+  assert.match(client, /토큰을 눌러 이동 선택/);
+  assert.match(client, /위치가 실제로 바뀐 때만 이동 선언/);
   assert.match(client, /setMovementDeclarationsUsed\(0\)/);
   assert.match(client, /이동 2회 또는 이동과 행동을 섞어 선언/);
   assert.match(client, /강제 이동은 각 스킬 효과를 따릅니다/);
@@ -289,9 +339,9 @@ test("encounter modes, editable targets, bosses, and blast previews are wired in
   assert.match(client, /setPointerCapture\(event\.pointerId\)/);
   assert.match(
     client,
-    /if \(activeToken === "aim"\) \{\s*handleCellActivate\(position\)/,
+    /if \(activeToken === "aim"\)[\s\S]*handleCellActivate\(enemy\.position\)/,
   );
-  assert.match(client, /적 토큰 배치는 이동 선언을 소모하지 않습니다/);
+  assert.match(client, /적 토큰 이동은 선언을 소모하지 않습니다/);
   assert.match(client, /<details className=\{styles\.targetControl\} open>/);
   assert.match(client, /selectedRule\?\.requiresSetup \?/);
   assert.doesNotMatch(

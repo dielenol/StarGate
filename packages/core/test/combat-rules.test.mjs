@@ -66,8 +66,20 @@ test("클래식 맵과 리뉴얼 맵의 최소 규격을 구분한다", () => {
     COMBAT_TRAINING_MAP_PRESETS.map(({ id, ruleKey }) => [id, ruleKey]),
     [
       ["5x5", "renewal"],
+      ["8x8", "renewal"],
       ["1x5", "classicVertical"],
       ["5x1", "classicHorizontal"],
     ],
+  );
+  assert.deepEqual(
+    COMBAT_TRAINING_MAP_PRESETS.find(({ id }) => id === "8x8"),
+    {
+      id: "8x8",
+      label: "8×8",
+      description: "리뉴얼 맵 · 확장",
+      ruleKey: "renewal",
+      columns: 8,
+      rows: 8,
+    },
   );
 });

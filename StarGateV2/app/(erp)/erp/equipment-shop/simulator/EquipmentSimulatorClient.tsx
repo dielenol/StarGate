@@ -135,7 +135,7 @@ interface Props {
   initialCatalog: EquipmentShopCatalogResponse;
 }
 
-type BattlefieldId = "5x5" | "1x5" | "5x1";
+type BattlefieldId = "5x5" | "8x8" | "1x5" | "5x1";
 type PendingTrainingReset =
   | { kind: "battlefield"; battlefieldId: BattlefieldId }
   | { kind: "encounter"; mode: SimulatorEncounterMode };
@@ -157,6 +157,10 @@ const BATTLEFIELD_INITIAL_POSITIONS: Record<
   "5x5": {
     attackerPosition: { col: "C", row: 1 },
     targetPosition: { col: "C", row: 3 },
+  },
+  "8x8": {
+    attackerPosition: { col: "D", row: 1 },
+    targetPosition: { col: "D", row: 5 },
   },
   "1x5": {
     attackerPosition: { col: "A", row: 1 },
@@ -236,7 +240,7 @@ const TRAINING_STEPS: TrainingStep[] = [
   {
     label: "STEP 03",
     title: "이동 (선택)",
-    hint: "필요할 때 선언 후 이동",
+    hint: "토큰을 눌러 이동 선택",
   },
   {
     label: "STEP 04",
@@ -805,8 +809,10 @@ export default function EquipmentSimulatorClient({
     : null;
   const boardColumns = battlefield.columns;
   const boardRows = battlefield.rows;
-  const boardColumnTemplate = `repeat(${boardColumns.length}, minmax(46px, 1fr))`;
-  const boardRowTemplate = `repeat(${boardRows.length}, minmax(78px, 1fr))`;
+  const isExpandedBattlefield =
+    boardColumns.length > 5 || boardRows.length > 5;
+  const boardColumnTemplate = `repeat(${boardColumns.length}, minmax(${isExpandedBattlefield ? 0 : 46}px, 1fr))`;
+  const boardRowTemplate = `repeat(${boardRows.length}, minmax(${isExpandedBattlefield ? 52 : 78}px, 1fr))`;
   const selectedItem =
     simulatorItems.find((item) => item.slug === selectedSlug) ??
     simulatorItems[0];
@@ -1029,7 +1035,9 @@ export default function EquipmentSimulatorClient({
       return {
         reason: "착탄점 미선택",
         instruction:
-          "전투판의 붉은 공격 가능 셀을 착탄점으로 선택한 뒤 ‘공격 실행’ 버튼을 누르세요.",
+          activeToken === "aim"
+            ? "전투판의 붉은 공격 가능 셀을 착탄점으로 선택한 뒤 ‘공격 실행’ 버튼을 누르세요."
+            : "‘착탄 공격’ 버튼을 누른 뒤 전투판 셀에서 공격 지점을 선택하세요.",
       };
     }
 
@@ -1037,7 +1045,9 @@ export default function EquipmentSimulatorClient({
       return {
         reason: "소이선 지점 미선택",
         instruction:
-          "전투판에서 소이선을 만들 셀 또는 방향을 선택한 뒤 ‘소이선 실행’ 버튼을 누르세요.",
+          activeToken === "aim"
+            ? "전투판에서 소이선을 만들 셀 또는 방향을 선택한 뒤 ‘소이선 실행’ 버튼을 누르세요."
+            : "‘소이선’ 버튼을 누른 뒤 전투판 셀에서 지점을 선택하세요.",
       };
     }
 
@@ -1083,7 +1093,8 @@ export default function EquipmentSimulatorClient({
       }
       return {
         reason: selectedResult.reasonLabel ?? "공격 조건 불충족",
-        instruction: `상단의 ‘내 위치 이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}’ 또는 ‘적 위치 조정’으로 배치를 바꾼 뒤 다시 확인하세요.`,
+        instruction:
+          "내 토큰 또는 옮길 적 토큰을 눌러 이동 상태로 전환한 뒤 배치를 바꾸세요.",
       };
     }
 
@@ -1150,7 +1161,7 @@ export default function EquipmentSimulatorClient({
       default:
         return {
           title: `${ENCOUNTER_MODE_META[encounterMode].label} 훈련 준비 완료`,
-          text: `현재 내 위치 ${formatSimulatorCoord(attackerPosition)}, ${selectedEnemy?.name ?? "표적"} 위치 ${formatSimulatorCoord(targetPosition)}입니다. 내 이동은 이동 선언 후 목적지를 선택하고, 적 위치는 배치 조정으로 변경하십시오.`,
+          text: `현재 내 위치 ${formatSimulatorCoord(attackerPosition)}, ${selectedEnemy?.name ?? "표적"} 위치 ${formatSimulatorCoord(targetPosition)}입니다. 옮길 토큰을 누른 뒤 목적지를 선택하거나 드래그하십시오. 내 위치가 실제로 바뀐 때만 이동 선언을 소모합니다.`,
         };
     }
   })();
@@ -1397,22 +1408,9 @@ export default function EquipmentSimulatorClient({
     );
   }
 
-  function showMovementDeclarationGuide() {
-    const title =
-      activeToken === "target"
-        ? "현재 적 위치 조정 중"
-        : activeToken === "aim"
-          ? "현재 공격 지점 선택 중"
-          : "이동 선언 필요";
-    showFeedback(
-      "error",
-      title,
-      `내 캐릭터를 옮기려면 상단의 ‘내 위치 이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}’ 버튼을 누른 뒤, 목적지 칸을 선택하거나 내 토큰을 드래그하세요.`,
-    );
-  }
-
   function moveToken(token: DraggedToken, coord: SimulatorBoardCoord) {
     if (token.kind === "attacker" && hmgInstalled) {
+      suppressTokenClickRef.current = "attacker";
       showFeedback(
         "error",
         "중기관총 해체 필요",
@@ -1458,10 +1456,6 @@ export default function EquipmentSimulatorClient({
           "현재 위치 확인",
           `${formatSimulatorCoord(coord)}에 머뭅니다. 이동 선언은 소모되지 않았습니다.`,
         );
-        return;
-      }
-      if (!movementDeclarationPending) {
-        showMovementDeclarationGuide();
         return;
       }
       if (!canDeclareSimulatorMovement(movementDeclarationsUsed)) {
@@ -1543,13 +1537,14 @@ export default function EquipmentSimulatorClient({
       return;
     }
     setMovementDeclarationPending(true);
+    setBlastImpact(null);
     setActiveToken("attacker");
     setTrainingEvent("position");
     setActiveStep(2);
     showFeedback(
       "info",
-      `이동 선언 ${movementDeclarationsUsed + 1}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`,
-      "전투판에서 이동할 칸을 선택하거나 내 토큰을 드래그하세요. 실제 이동 시 선언이 소모됩니다.",
+      `내 토큰 이동 선택 ${movementDeclarationsUsed + 1}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`,
+      "전투판에서 이동할 칸을 선택하거나 내 토큰을 드래그하세요. 위치가 실제로 바뀐 때만 이동 선언이 소모됩니다.",
     );
   }
 
@@ -1584,6 +1579,23 @@ export default function EquipmentSimulatorClient({
       "info",
       "적 위치 조정",
       `${selectedEnemy?.name ?? "적"}을 이동할 칸을 선택하거나 토큰을 직접 드래그하세요.`,
+    );
+  }
+
+  function selectEnemyForMovement(enemyId: string) {
+    const enemy = enemies.find((candidate) => candidate.id === enemyId);
+    if (!enemy) return;
+    setSelectedEnemyId(enemyId);
+    setSelectedBossPartId(null);
+    setMovementDeclarationPending(false);
+    setBlastImpact(null);
+    setActiveToken("target");
+    setTrainingEvent("position");
+    setActiveStep(3);
+    showFeedback(
+      "info",
+      `${enemy.name} 이동 선택`,
+      "전투판에서 이동할 칸을 선택하거나 선택한 적 토큰을 드래그하세요. 이동 선언은 소모되지 않습니다.",
     );
   }
 
@@ -1637,22 +1649,52 @@ export default function EquipmentSimulatorClient({
     handleCellActivate(coord);
   }
 
+  function captureSuppressedTokenClick(
+    event: PointerEvent<HTMLDivElement>,
+    key: string,
+  ) {
+    suppressTokenClickRef.current = key;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
   function handleTokenPointerDown(
     event: PointerEvent<HTMLDivElement>,
     token: DraggedToken,
   ) {
     if (!event.isPrimary || event.button !== 0) return;
+    const key = dragTokenKey(token);
+    if (activeToken === "aim") {
+      const aimCoord =
+        token.kind === "attacker"
+          ? attackerPosition
+          : enemies.find((enemy) => enemy.id === token.enemyId)?.position;
+      if (aimCoord) handleCellActivate(aimCoord);
+      captureSuppressedTokenClick(event, key);
+      return;
+    }
     if (token.kind === "attacker" && hmgInstalled) {
+      captureSuppressedTokenClick(event, "attacker");
       showFeedback(
         "error",
         "중기관총 해체 필요",
-        "설치 중에는 내 토큰을 드래그할 수 없습니다.",
+        "설치 중에는 내 토큰을 이동할 수 없습니다. 중기관총을 해체한 뒤 다시 선택하세요.",
       );
       return;
     }
     if (token.kind === "attacker" && !movementDeclarationPending) {
-      showMovementDeclarationGuide();
-      return;
+      if (!canDeclareSimulatorMovement(movementDeclarationsUsed)) {
+        captureSuppressedTokenClick(event, "attacker");
+        handleDeclareMovement();
+        return;
+      }
+      handleDeclareMovement();
+      suppressTokenClickRef.current = "attacker";
+    }
+    if (token.kind === "enemy") {
+      selectEnemyForMovement(token.enemyId);
+      suppressTokenClickRef.current = `enemy:${token.enemyId}`;
     }
     event.preventDefault();
     event.stopPropagation();
@@ -1708,7 +1750,7 @@ export default function EquipmentSimulatorClient({
     dragDestinationRef.current = null;
     dragOriginRef.current = null;
     const key = dragTokenKey(token);
-    suppressTokenClickRef.current = didDrag ? key : null;
+    if (didDrag) suppressTokenClickRef.current = key;
     if (didDrag) {
       window.setTimeout(() => {
         if (suppressTokenClickRef.current === key) {
@@ -1724,7 +1766,9 @@ export default function EquipmentSimulatorClient({
     setDraggedToken(null);
     setDragOverlay(null);
     setDragOverCell(null);
-    if (didDrag && coord) moveToken(token, coord);
+    if (didDrag && coord) {
+      moveToken(token, coord);
+    }
   }
 
   function handleAttackerTokenClick(
@@ -1745,7 +1789,6 @@ export default function EquipmentSimulatorClient({
   function handleEnemyTokenClick(
     event: MouseEvent<HTMLDivElement>,
     enemyId: string,
-    position: SimulatorBoardCoord,
   ) {
     event.stopPropagation();
     const key = `enemy:${enemyId}`;
@@ -1754,20 +1797,17 @@ export default function EquipmentSimulatorClient({
       return;
     }
     if (activeToken === "aim") {
-      handleCellActivate(position);
+      const enemy = enemies.find((candidate) => candidate.id === enemyId);
+      if (enemy) handleCellActivate(enemy.position);
       return;
     }
-    setSelectedEnemyId(enemyId);
-    setSelectedBossPartId(null);
-    setMovementDeclarationPending(false);
-    setActiveToken("target");
-    setTrainingEvent("position");
-    setActiveStep(3);
+    selectEnemyForMovement(enemyId);
   }
 
   function handleTokenPointerCancel(
     event: PointerEvent<HTMLDivElement>,
   ) {
+    suppressTokenClickRef.current = null;
     dragDestinationRef.current = null;
     dragOriginRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -1779,6 +1819,14 @@ export default function EquipmentSimulatorClient({
   }
 
   function handleTokenPointerCaptureLost() {
+    const suppressedKey = suppressTokenClickRef.current;
+    if (suppressedKey) {
+      window.setTimeout(() => {
+        if (suppressTokenClickRef.current === suppressedKey) {
+          suppressTokenClickRef.current = null;
+        }
+      }, 0);
+    }
     dragDestinationRef.current = null;
     dragOriginRef.current = null;
     setDraggedToken(null);
@@ -3312,7 +3360,7 @@ export default function EquipmentSimulatorClient({
                   >
                     {activeToken === "attacker"
                       ? "내 위치 목적지 선택 중"
-                      : `내 위치 이동 선언 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`}
+                      : `내 토큰 이동 ${movementDeclarationsUsed}/${SIMULATOR_MOVEMENT_DECLARATION_LIMIT}`}
                   </button>
                   <button
                     type="button"
@@ -3328,8 +3376,11 @@ export default function EquipmentSimulatorClient({
                   </button>
                 </div>
                 <p className={styles.placementHelp}>
-                  내 캐릭터는 이동 선언 후 전투판 클릭 또는 토큰 드래그로
-                  이동합니다. 적 토큰 배치는 이동 선언을 소모하지 않습니다.
+                  내 캐릭터 또는 특정 적 토큰을 누르면 해당 토큰의 이동
+                  상태로 전환됩니다. 내 캐릭터는 실제 위치 변경 시 이동
+                  선언을 소모하며, 적 토큰 이동은 선언을 소모하지 않습니다.
+                  공격 지점 선택 중에는 토큰을 눌러도 해당 셀을
+                  조준합니다.
                 </p>
               </div>
             </div>
@@ -3384,7 +3435,7 @@ export default function EquipmentSimulatorClient({
                   !canDeclareSimulatorMovement(movementDeclarationsUsed)
                 }
               >
-                이동 선언 {movementDeclarationsUsed}/
+                내 토큰 이동 {movementDeclarationsUsed}/
                 {SIMULATOR_MOVEMENT_DECLARATION_LIMIT}
               </button>
               <button
@@ -3620,6 +3671,7 @@ export default function EquipmentSimulatorClient({
 
           <div
             className={styles.boardFrame}
+            data-battlefield={battlefield.id}
             style={{
               gridTemplateColumns: `34px ${boardColumnTemplate}`,
               gridTemplateRows: `28px ${boardRowTemplate}`,
@@ -3767,8 +3819,25 @@ export default function EquipmentSimulatorClient({
                           }
                           onPointerCancel={handleTokenPointerCancel}
                           onLostPointerCapture={handleTokenPointerCaptureLost}
-                          role="img"
-                          aria-label={`나, ${attacker.codename} 위치 토큰. HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}, DEF ${attacker.def}`}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={activeToken === "attacker"}
+                          onKeyDown={(event) => {
+                            if (
+                              event.key !== "Enter" &&
+                              event.key !== " "
+                            ) {
+                              return;
+                            }
+                            event.preventDefault();
+                            event.stopPropagation();
+                            if (activeToken === "aim") {
+                              handleCellActivate(attackerPosition);
+                            } else {
+                              handleDeclareMovement();
+                            }
+                          }}
+                          aria-label={`나, ${attacker.codename} 위치 토큰. ${activeToken === "aim" ? "눌러 해당 셀을 공격 지점으로 선택" : "눌러 이동 상태로 전환"}. HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}, DEF ${attacker.def}`}
                         >
                           <span className={styles.token__inner} aria-hidden>
                             {attackerTokenUrl ? (
@@ -3888,7 +3957,6 @@ export default function EquipmentSimulatorClient({
                               handleEnemyTokenClick(
                                 event,
                                 enemy.id,
-                                enemy.position,
                               )
                             }
                             onPointerDown={(event) =>
@@ -3917,15 +3985,14 @@ export default function EquipmentSimulatorClient({
                                 return;
                               }
                               event.preventDefault();
+                              event.stopPropagation();
                               if (activeToken === "aim") {
                                 handleCellActivate(enemy.position);
                               } else {
-                                setSelectedEnemyId(enemy.id);
-                                setMovementDeclarationPending(false);
-                                setActiveToken("target");
+                                selectEnemyForMovement(enemy.id);
                               }
                             }}
-                            aria-label={`적, ${enemy.name} 위치 토큰${enemy.kind === "boss" ? `, ${enemyFootprint.columns}×${enemyFootprint.rows}칸 점유` : ""}. HP ${enemy.stats.hp}/${enemy.stats.maxHp}, 정신력 ${enemy.stats.san}/${enemy.stats.maxSan}, DEF ${enemyDef}, 상태 ${defeated ? "전투불능" : enemy.stats.statuses.map((status) => SIMULATOR_STATUS_LABELS[status]).join(", ") || "정상"}`}
+                            aria-label={`적, ${enemy.name} 위치 토큰. ${activeToken === "aim" ? "눌러 해당 셀을 공격 지점으로 선택" : "눌러 이동 상태로 전환"}${enemy.kind === "boss" ? `, ${enemyFootprint.columns}×${enemyFootprint.rows}칸 점유` : ""}. HP ${enemy.stats.hp}/${enemy.stats.maxHp}, 정신력 ${enemy.stats.san}/${enemy.stats.maxSan}, DEF ${enemyDef}, 상태 ${defeated ? "전투불능" : enemy.stats.statuses.map((status) => SIMULATOR_STATUS_LABELS[status]).join(", ") || "정상"}`}
                           >
                             <span className={styles.token__inner} aria-hidden>
                               {enemy.kind === "boss" ? (

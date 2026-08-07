@@ -3,8 +3,17 @@ import {
   roundCombatPercentageDamage,
 } from "@stargate/core/domain/combat-rules";
 
-export const SIMULATOR_BOARD_COLUMNS = ["A", "B", "C", "D", "E"] as const;
-export const SIMULATOR_BOARD_ROWS = [1, 2, 3, 4, 5] as const;
+export const SIMULATOR_BOARD_COLUMNS = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+] as const;
+export const SIMULATOR_BOARD_ROWS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export const SIMULATOR_MOVEMENT_DECLARATION_LIMIT =
   COMBAT_MOVEMENT_RULES.allyTurnMovement.declarationsPerTurn;
 

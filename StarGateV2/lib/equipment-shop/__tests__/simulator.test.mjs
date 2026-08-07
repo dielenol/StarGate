@@ -27,6 +27,8 @@ import {
   resolveSimulatorAreaSpray,
   resolveSimulatorAttack,
   resolveSimulatorDamageProfile,
+  SIMULATOR_BOARD_COLUMNS,
+  SIMULATOR_BOARD_ROWS,
   SIMULATOR_MOVEMENT_DECLARATION_LIMIT,
   SIMULATOR_STATUS_RULES,
 } from "../simulator.ts";
@@ -42,6 +44,70 @@ test("movement declarations are limited to two uses per ally turn", () => {
   assert.equal(consumeSimulatorMovementDeclaration(1), 2);
   assert.equal(canDeclareSimulatorMovement(2), false);
   assert.equal(consumeSimulatorMovementDeclaration(2), 2);
+});
+
+test("the expanded board keeps A-H and 1-8 valid across tactical calculations", () => {
+  assert.deepEqual(SIMULATOR_BOARD_COLUMNS, [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+  ]);
+  assert.deepEqual(SIMULATOR_BOARD_ROWS, [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(
+    getSimulatorRange({ col: "A", row: 1 }, { col: "H", row: 8 }),
+    { verticalDistance: 7, band: "far" },
+  );
+  assert.equal(
+    isSimulatorAttackableCell(
+      "rocket-launcher",
+      { col: "H", row: 4 },
+      { col: "H", row: 8 },
+    ),
+    true,
+  );
+  assert.deepEqual(
+    getSimulatorEnemyOccupiedCells(
+      {
+        position: { col: "H", row: 8 },
+        footprint: { columns: 2, rows: 2 },
+      },
+      SIMULATOR_BOARD_COLUMNS,
+      SIMULATOR_BOARD_ROWS,
+    ),
+    [
+      { col: "G", row: 7 },
+      { col: "H", row: 7 },
+      { col: "G", row: 8 },
+      { col: "H", row: 8 },
+    ],
+  );
+  assert.deepEqual(
+    getSimulatorKnockbackTarget(
+      { col: "A", row: 8 },
+      { col: "G", row: 8 },
+      SIMULATOR_BOARD_COLUMNS,
+      SIMULATOR_BOARD_ROWS,
+    ),
+    { col: "H", row: 8 },
+  );
+  assert.deepEqual(
+    getSimulatorBlastCells(
+      { col: "H", row: 8 },
+      SIMULATOR_BOARD_COLUMNS,
+      SIMULATOR_BOARD_ROWS,
+    ),
+    [
+      { col: "G", row: 7 },
+      { col: "H", row: 7 },
+      { col: "G", row: 8 },
+      { col: "H", row: 8 },
+    ],
+  );
 });
 
 test("equipped simulator weapons keep inventory art and expose unsupported weapons", () => {

@@ -115,6 +115,14 @@ export const COMBAT_TRAINING_MAP_PRESETS = [
     rows: 5,
   },
   {
+    id: "8x8",
+    label: "8×8",
+    description: "리뉴얼 맵 · 확장",
+    ruleKey: "renewal",
+    columns: 8,
+    rows: 8,
+  },
+  {
     id: "1x5",
     label: "1×5",
     description: "클래식 맵 · 세로",

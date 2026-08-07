@@ -1212,6 +1212,26 @@
   border-radius: var(--radius-sm);
 }
 
+.boardFrame[data-battlefield="8x8"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.boardFrame[data-battlefield="8x8"] .boardGrid,
+.boardFrame[data-battlefield="8x8"] .boardCell {
+  min-width: 0;
+}
+
+.boardFrame[data-battlefield="8x8"] .boardCell {
+  min-height: 52px;
+}
+
+.boardFrame[data-battlefield="8x8"] .token {
+  width: min(48px, calc(100% - 4px));
+  min-width: 28px;
+}
+
 .cornerLabel,
 .columnLabel,
 .rowLabel {
@@ -3004,6 +3024,42 @@
   .boardGrid {
     grid-template-columns: repeat(5, minmax(42px, 1fr));
     grid-template-rows: repeat(5, minmax(72px, 1fr));
+  }
+
+  .boardFrame[data-battlefield="8x8"] {
+    grid-template-columns: 28px repeat(8, minmax(0, 1fr));
+    grid-template-rows: 26px repeat(8, minmax(52px, 1fr));
+  }
+
+  .boardFrame[data-battlefield="8x8"] .boardGrid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(8, minmax(52px, 1fr));
+  }
+
+  .boardFrame[data-battlefield="8x8"] .token {
+    width: min(36px, calc(100% - 2px));
+    min-width: 24px;
+  }
+
+  .boardFrame[data-battlefield="8x8"] .cellCoord {
+    left: 2px;
+    top: 2px;
+    font-size: 10px;
+  }
+
+  .boardFrame[data-battlefield="8x8"] .token__label {
+    max-width: 34px;
+    min-height: 18px;
+    padding: 2px;
+  }
+
+  .boardFrame[data-battlefield="8x8"] .token__label b {
+    margin: 0;
+    font-size: 10px;
+  }
+
+  .boardFrame[data-battlefield="8x8"] .token__label span {
+    display: none;
   }
 
   .controlReadouts,
