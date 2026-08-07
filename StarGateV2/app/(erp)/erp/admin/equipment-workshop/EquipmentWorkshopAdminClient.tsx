@@ -113,7 +113,7 @@ interface QuoteDraft {
   actionEffect: string;
   actionMaxCharges: string;
   actionReloadCreditCost: string;
-  preservedEquipmentActions: WorkshopQuoteResult["equipmentActions"];
+  equipmentActions: WorkshopEquipmentAction[];
   preservedCombatProfile: WorkshopQuoteResult["combatProfile"];
   abilityOverrides: Array<{ targetCode: string; effect: string }>;
   internalNote: string;
@@ -218,7 +218,7 @@ function getEquipmentActionKindLabel(
 }
 
 function getEquipmentActionDamageLabel(
-  damage: WorkshopEquipmentAction["additionalDamage"],
+  damage: WorkshopEquipmentAction["damage"],
 ): string | null {
   if (!damage) return null;
   const damageType =
@@ -234,6 +234,108 @@ function getEquipmentActionDamageLabel(
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+function cloneEquipmentActions(
+  actions: WorkshopQuoteResult["equipmentActions"],
+): WorkshopEquipmentAction[] {
+  return (
+    actions?.map((action) => ({
+      ...action,
+      ...(action.damage ? { damage: { ...action.damage } } : {}),
+      ...(action.additionalDamage
+        ? { additionalDamage: { ...action.additionalDamage } }
+        : {}),
+      ...(action.consumableCost
+        ? { consumableCost: { ...action.consumableCost } }
+        : {}),
+    })) ?? []
+  );
+}
+
+function equipmentActionsError(
+  actions: readonly WorkshopEquipmentAction[],
+  combatProfile: WorkshopQuoteResult["combatProfile"],
+): string | null {
+  const seen = new Set<string>();
+  for (const [index, action] of actions.entries()) {
+    const code = action.code.trim().toUpperCase();
+    if (!/^U[1-9][0-9]?$/.test(code)) {
+      return `${index + 1}번째 액션 코드는 U1~U99 형식이어야 합니다.`;
+    }
+    if (seen.has(code)) return `액션 코드 ${code}가 중복되었습니다.`;
+    seen.add(code);
+    if (
+      !action.name.trim() ||
+      !action.description.trim() ||
+      !action.effect.trim()
+    ) {
+      return `${code}의 이름·설명·효과를 모두 입력해 주세요.`;
+    }
+    if (
+      action.usesWeaponAttack &&
+      (action.rangeMinCells === undefined || action.rangeMaxCells === undefined)
+    ) {
+      return `${code}의 기본 사격 사거리를 입력해 주세요.`;
+    }
+    const weaponAttack = combatProfile?.weaponAttack;
+    if (
+      action.usesWeaponAttack &&
+      (!weaponAttack ||
+        (action.rangeMinCells ?? 0) < weaponAttack.rangeMinCells ||
+        (action.rangeMaxCells ?? 0) > weaponAttack.rangeMaxCells)
+    ) {
+      return `${code}의 사거리는 무기 기본 사격 범위 안이어야 합니다.`;
+    }
+    if (
+      (action.rangeMinCells === undefined) !==
+        (action.rangeMaxCells === undefined) ||
+      (action.rangeMinCells !== undefined &&
+        action.rangeMaxCells !== undefined &&
+        (action.rangeMinCells < 0 ||
+          action.rangeMaxCells < action.rangeMinCells ||
+          action.rangeMaxCells > 99))
+    ) {
+      return `${code}의 최소·최대 사거리를 확인해 주세요.`;
+    }
+    if (
+      action.additionalDamage &&
+      (!action.usesWeaponAttack ||
+        !Number.isSafeInteger(action.additionalDamage.amount) ||
+        action.additionalDamage.amount < 1 ||
+        action.additionalDamage.amount > 999)
+    ) {
+      return `${code}의 추가 피해와 기본 사격 사용 여부를 확인해 주세요.`;
+    }
+    if (
+      action.damage &&
+      (!Number.isSafeInteger(action.damage.amount) ||
+        action.damage.amount < 1 ||
+        action.damage.amount > 999)
+    ) {
+      return `${code}의 직접 피해를 확인해 주세요.`;
+    }
+    if (
+      (action.kind ?? "CHARGED") === "CONSUMABLE" &&
+      (!action.consumableCost?.slug.trim() ||
+        !Number.isSafeInteger(action.consumableCost.quantity) ||
+        action.consumableCost.quantity < 1 ||
+        action.consumableCost.quantity > 99)
+    ) {
+      return `${code}의 전용 소모품과 수량을 확인해 주세요.`;
+    }
+    if (
+      (action.kind ?? "CHARGED") === "CHARGED" &&
+      (!Number.isSafeInteger(action.chargeCost) ||
+        !Number.isSafeInteger(action.maxCharges) ||
+        action.chargeCost < 1 ||
+        action.maxCharges < action.chargeCost ||
+        action.maxCharges > 99)
+    ) {
+      return `${code}의 충전 소모량과 최대 충전을 확인해 주세요.`;
+    }
+  }
+  return null;
 }
 
 function createDraft(
@@ -312,7 +414,9 @@ function createDraft(
     actionReloadCreditCost: String(
       request.quote?.result.equipmentAction?.reloadCreditCost ?? 200,
     ),
-    preservedEquipmentActions: request.quote?.result.equipmentActions,
+    equipmentActions: cloneEquipmentActions(
+      request.quote?.result.equipmentActions,
+    ),
     preservedCombatProfile: request.quote?.result.combatProfile,
     abilityOverrides:
       request.quote?.result.equipmentAbilityOverrides?.map((override) => ({
@@ -384,7 +488,7 @@ function draftFromBlueprint(
     actionReloadCreditCost: String(
       defaults.result.equipmentAction?.reloadCreditCost ?? 200,
     ),
-    preservedEquipmentActions: defaults.result.equipmentActions,
+    equipmentActions: cloneEquipmentActions(defaults.result.equipmentActions),
     preservedCombatProfile: defaults.result.combatProfile,
     abilityOverrides:
       defaults.result.equipmentAbilityOverrides?.map((override) => ({
@@ -632,6 +736,9 @@ export default function EquipmentWorkshopAdminClient({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [draft, setDraft] = useState<QuoteDraft | null>(initialDraft);
+  const [editingActionIndex, setEditingActionIndex] = useState<number | null>(
+    null,
+  );
   const [baseline, setBaseline] = useState(
     initialDraft ? JSON.stringify(initialDraft) : "",
   );
@@ -768,6 +875,10 @@ export default function EquipmentWorkshopAdminClient({
   const missingApprovedOutputs = approvedOutputRows.filter(
     (output) => !output.option || !output.slug,
   );
+  const actionError = equipmentActionsError(
+    draft.equipmentActions,
+    draft.preservedCombatProfile,
+  );
   const approvalGateError = !draft.approvalGate.enabled
     ? null
     : !draft.approvalGate.title.trim() || !draft.approvalGate.content.trim()
@@ -809,7 +920,7 @@ export default function EquipmentWorkshopAdminClient({
       label: "장비 액션",
       before: "없음 또는 원본 유지 안 함",
       after: formatEquipmentActionSummary(
-        draft.preservedEquipmentActions,
+        draft.equipmentActions,
         draft.actionCode,
         draft.actionName,
       ),
@@ -854,12 +965,14 @@ export default function EquipmentWorkshopAdminClient({
     setSelectedBlueprintId(matchedBlueprint?._id ?? "");
     setBlueprintSlug(matchedBlueprint?.slug ?? "");
     setBlueprintDisplayName(matchedBlueprint?.displayName ?? "");
+    setEditingActionIndex(null);
     setOperatorNote("");
     setFeedback(null);
   };
 
   const applyBlueprint = (blueprintId: string) => {
     setSelectedBlueprintId(blueprintId);
+    setEditingActionIndex(null);
     const preset = findEquipmentWorkshopPreset(blueprintId);
     if (preset) {
       setBlueprintSlug(preset.blueprint.slug);
@@ -869,7 +982,7 @@ export default function EquipmentWorkshopAdminClient({
       );
       setFeedback({
         tone: "success",
-        text: `${preset.displayName} 기본 제공 프리셋을 요청 편집본에 불러왔습니다. 아래 항목을 자유롭게 수정할 수 있으며 저장이나 견적 발행은 실행되지 않았습니다.`,
+        text: `${preset.displayName} 기본 제공 프리셋을 요청 편집본에 불러왔습니다. 액션·결과의 수정 가능한 항목을 바꿀 수 있으며 저장이나 견적 발행은 실행되지 않았습니다.`,
       });
       return;
     }
@@ -888,6 +1001,23 @@ export default function EquipmentWorkshopAdminClient({
       tone: "success",
       text: `${blueprint.displayName} v${blueprint.version} 기본값을 요청 편집본에 불러왔습니다. 공용 설계안은 변경되지 않았습니다.`,
     });
+  };
+
+  const updateEquipmentAction = (
+    index: number,
+    patch: Partial<WorkshopEquipmentAction>,
+  ) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            equipmentActions: current.equipmentActions.map(
+              (action, actionIndex) =>
+                actionIndex === index ? { ...action, ...patch } : action,
+            ),
+          }
+        : current,
+    );
   };
 
   const updateMaterial = (
@@ -1075,8 +1205,8 @@ export default function EquipmentWorkshopAdminClient({
               },
             }
           : {}),
-        ...(draft.preservedEquipmentActions?.length
-          ? { equipmentActions: draft.preservedEquipmentActions }
+        ...(draft.equipmentActions.length
+          ? { equipmentActions: draft.equipmentActions }
           : {}),
         ...(draft.preservedCombatProfile
           ? { combatProfile: draft.preservedCombatProfile }
@@ -1099,6 +1229,10 @@ export default function EquipmentWorkshopAdminClient({
     const workflowError = specialistWorkflowError(draft.specialistWorkflow);
     if (workflowError) {
       setFeedback({ tone: "error", text: workflowError });
+      return;
+    }
+    if (actionError) {
+      setFeedback({ tone: "error", text: actionError });
       return;
     }
     if (approvalGateError) {
@@ -1125,6 +1259,10 @@ export default function EquipmentWorkshopAdminClient({
     const workflowError = specialistWorkflowError(draft.specialistWorkflow);
     if (workflowError) {
       setFeedback({ tone: "error", text: workflowError });
+      return;
+    }
+    if (actionError) {
+      setFeedback({ tone: "error", text: actionError });
       return;
     }
     if (approvalGateError) {
@@ -1183,6 +1321,10 @@ export default function EquipmentWorkshopAdminClient({
     const workflowError = specialistWorkflowError(draft.specialistWorkflow);
     if (workflowError) {
       setFeedback({ tone: "error", text: workflowError });
+      return;
+    }
+    if (actionError) {
+      setFeedback({ tone: "error", text: actionError });
       return;
     }
     if (missingMaterials.length > 0) {
@@ -1261,8 +1403,8 @@ export default function EquipmentWorkshopAdminClient({
                   },
                 }
               : {}),
-            ...(draft.preservedEquipmentActions?.length
-              ? { equipmentActions: draft.preservedEquipmentActions }
+            ...(draft.equipmentActions.length
+              ? { equipmentActions: draft.equipmentActions }
               : {}),
             ...(draft.preservedCombatProfile
               ? { combatProfile: draft.preservedCombatProfile }
@@ -1289,6 +1431,7 @@ export default function EquipmentWorkshopAdminClient({
           setSelectedId(request._id);
           setDraft(nextDraft);
           setBaseline(JSON.stringify(nextDraft));
+          setEditingActionIndex(null);
           setFeedback({
             tone: "success",
             text: `견적 (QUOTE) v${request.quote?.version}을 발행했습니다. 아직 실제 장비는 생성되지 않았습니다.`,
@@ -1750,6 +1893,7 @@ export default function EquipmentWorkshopAdminClient({
                           setBlueprintDisplayName(
                             matchedBlueprint?.displayName ?? "",
                           );
+                          setEditingActionIndex(null);
                           setFeedback({
                             tone: "success",
                             text: "편집본을 현재 발행본 또는 요청 초기값으로 되돌렸습니다.",
@@ -1801,7 +1945,12 @@ export default function EquipmentWorkshopAdminClient({
                 </div>
                 {selectedPreset ? (
                   <p className={styles.blueprintMeta}>
-                    기본 제공 프리셋 · 선택 즉시 편집본 자동 입력 · 모든 항목 수정 가능 · {sourceCompatibilityUnknown ? "호환 미확정 — 견적 발행 시 장착 원본 재검증" : "현재 요청 기준 호환 여부 확인"} · {BLUEPRINT_SOURCE_LABEL} / {BLUEPRINT_BALANCE_LABEL}
+                    기본 제공 프리셋 · 선택 즉시 편집본 자동 입력 · 요청별
+                    결과·액션 편집 가능 (VTT 실행 계약 제외) ·{" "}
+                    {sourceCompatibilityUnknown
+                      ? "호환 미확정 — 견적 발행 시 장착 원본 재검증"
+                      : "현재 요청 기준 호환 여부 확인"}{" "}
+                    · {BLUEPRINT_SOURCE_LABEL} / {BLUEPRINT_BALANCE_LABEL}
                   </p>
                 ) : selectedBlueprint ? (
                   <p className={styles.blueprintMeta}>
@@ -2547,36 +2696,66 @@ export default function EquipmentWorkshopAdminClient({
                   className={styles.actionEditor}
                   open={Boolean(
                     draft.actionCode ||
-                      draft.preservedEquipmentActions?.length ||
+                      draft.equipmentActions.length ||
                       draft.preservedCombatProfile,
                   )}
                 >
                   <summary>장비 액션 (EQUIPMENT ACTION, 선택)</summary>
-                  {draft.preservedEquipmentActions?.length ? (
+                  {draft.equipmentActions.length ? (
                     <section
-                      aria-label="프리셋 장비 액션"
+                      aria-label="장비 액션 편집"
                       className={styles.presetActions}
                     >
                       <div className={styles.presetActions__heading}>
-                        <strong>프리셋 장비 액션</strong>
+                        <strong>불러온 U 액션</strong>
                         <span>
-                          U 액션 {draft.preservedEquipmentActions.length}개
+                          {draft.equipmentActions.length}개 · 개별 수정 가능
                         </span>
                       </div>
                       <div className={styles.presetActions__grid}>
-                        {draft.preservedEquipmentActions.map((action) => {
+                        {draft.equipmentActions.map((action, actionIndex) => {
+                          const directDamage = getEquipmentActionDamageLabel(
+                            action.damage,
+                          );
                           const additionalDamage =
                             getEquipmentActionDamageLabel(
                               action.additionalDamage,
                             );
+                          const consumableItem = action.consumableCost
+                            ? items.find(
+                                (item) =>
+                                  item.slug === action.consumableCost?.slug,
+                              )
+                            : undefined;
+                          const mountRules =
+                            (action.kind ?? "CHARGED") === "STANCE"
+                              ? draft.preservedCombatProfile?.mount
+                              : undefined;
+                          const editing = editingActionIndex === actionIndex;
                           return (
                             <article
                               className={styles.presetActionCard}
-                              key={action.code}
+                              data-editing={editing}
+                              key={`equipment-action-${actionIndex}`}
                             >
-                              <header>
-                                <span>{action.code}</span>
-                                <strong>{action.name}</strong>
+                              <header className={styles.presetActionCard__header}>
+                                <div className={styles.presetActionCard__title}>
+                                  <span>{action.code || `U${actionIndex + 1}`}</span>
+                                  <strong>{action.name || "이름 미입력"}</strong>
+                                </div>
+                                <button
+                                  type="button"
+                                  className={styles.presetActionCard__editButton}
+                                  aria-controls={`equipment-action-editor-${actionIndex}`}
+                                  aria-expanded={editing}
+                                  onClick={() =>
+                                    setEditingActionIndex(
+                                      editing ? null : actionIndex,
+                                    )
+                                  }
+                                >
+                                  {editing ? "편집 닫기" : "액션 수정"}
+                                </button>
                               </header>
                               <div className={styles.presetActionCard__badges}>
                                 <span>
@@ -2587,60 +2766,492 @@ export default function EquipmentWorkshopAdminClient({
                                   <span>거치 상태 필요</span>
                                 ) : null}
                               </div>
-                              <p>{action.description}</p>
-                              <p className={styles.presetActionCard__effect}>
-                                <strong>효과</strong>
-                                {action.effect}
-                              </p>
-                              <dl>
-                                {action.rangeMinCells !== undefined &&
-                                action.rangeMaxCells !== undefined ? (
-                                  <div>
-                                    <dt>사거리</dt>
-                                    <dd>
-                                      {action.rangeMinCells}–
-                                      {action.rangeMaxCells}칸
-                                    </dd>
+                              <div className={styles.presetActionCard__summary}>
+                                <div className={styles.presetActionCard__copy}>
+                                  <p>{action.description || "설명 미입력"}</p>
+                                  <p className={styles.presetActionCard__effect}>
+                                    <strong>효과</strong>
+                                    <span>{action.effect || "효과 미입력"}</span>
+                                  </p>
+                                </div>
+                                <dl>
+                                  {mountRules ? (
+                                    <>
+                                      <div>
+                                        <dt>거치 전환</dt>
+                                        <dd>
+                                          전개 {mountRules.mountActionCost} · 해제{" "}
+                                          {mountRules.unmountActionCost} 액션
+                                        </dd>
+                                      </div>
+                                      <div>
+                                        <dt>거치 규칙</dt>
+                                        <dd>
+                                          {mountRules.blocksMovement
+                                            ? "이동 불가"
+                                            : "이동 가능"}
+                                          {mountRules.allowsDiagonalFire
+                                            ? ` · 대각선 ${mountRules.mountedRangeShape === "DIAMOND" ? "다이아몬드" : "허용"}`
+                                            : " · 대각선 불가"}
+                                        </dd>
+                                      </div>
+                                    </>
+                                  ) : null}
+                                  {action.rangeMinCells !== undefined &&
+                                  action.rangeMaxCells !== undefined ? (
+                                    <div>
+                                      <dt>사거리</dt>
+                                      <dd>
+                                        {action.rangeMinCells}–
+                                        {action.rangeMaxCells}칸
+                                      </dd>
+                                    </div>
+                                  ) : null}
+                                  {action.usesWeaponAttack ? (
+                                    <div>
+                                      <dt>기본 사격</dt>
+                                      <dd>총기 표기 피해 함께 판정</dd>
+                                    </div>
+                                  ) : null}
+                                  {action.consumesRegularAmmo !== undefined ? (
+                                    <div>
+                                      <dt>일반 탄약</dt>
+                                      <dd>
+                                        {action.consumesRegularAmmo > 0
+                                          ? `${action.consumesRegularAmmo}발 소모`
+                                          : "소모하지 않음"}
+                                      </dd>
+                                    </div>
+                                  ) : null}
+                                  {directDamage ? (
+                                    <div>
+                                      <dt>직접 피해</dt>
+                                      <dd>{directDamage}</dd>
+                                    </div>
+                                  ) : null}
+                                  {additionalDamage ? (
+                                    <div>
+                                      <dt>추가 피해</dt>
+                                      <dd>{additionalDamage}</dd>
+                                    </div>
+                                  ) : null}
+                                  {action.consumableCost ? (
+                                    <div>
+                                      <dt>전용 소모품</dt>
+                                      <dd>
+                                        {consumableItem?.name ??
+                                          action.consumableCost.slug}{" "}
+                                        ×{action.consumableCost.quantity}
+                                      </dd>
+                                    </div>
+                                  ) : null}
+                                  {(action.kind ?? "CHARGED") === "CHARGED" ? (
+                                    <div>
+                                      <dt>충전</dt>
+                                      <dd>
+                                        회당 {action.chargeCost} · 최대{" "}
+                                        {action.maxCharges}
+                                      </dd>
+                                    </div>
+                                  ) : null}
+                                </dl>
+                              </div>
+                              {editing ? (
+                                <div
+                                  id={`equipment-action-editor-${actionIndex}`}
+                                  className={styles.presetActionCard__editor}
+                                >
+                                  <div className={styles.actionIdentityFields}>
+                                    <label>
+                                      <span>액션 코드</span>
+                                      <input
+                                        required
+                                        maxLength={3}
+                                        value={action.code}
+                                        onChange={(event) =>
+                                          updateEquipmentAction(actionIndex, {
+                                            code: event.target.value.toUpperCase(),
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                    <label>
+                                      <span>액션명</span>
+                                      <input
+                                        required
+                                        maxLength={80}
+                                        value={action.name}
+                                        onChange={(event) =>
+                                          updateEquipmentAction(actionIndex, {
+                                            name: event.target.value,
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                    <div className={styles.actionReadOnlyField}>
+                                      <span>액션 종류</span>
+                                      <strong>
+                                        {getEquipmentActionKindLabel(action.kind)}
+                                      </strong>
+                                    </div>
                                   </div>
-                                ) : null}
-                                {action.usesWeaponAttack ? (
-                                  <div>
-                                    <dt>기본 사격</dt>
-                                    <dd>총기 표기 피해 함께 판정</dd>
+                                  <label>
+                                    <span>액션 설명</span>
+                                    <textarea
+                                      required
+                                      maxLength={500}
+                                      rows={2}
+                                      value={action.description}
+                                      onChange={(event) =>
+                                        updateEquipmentAction(actionIndex, {
+                                          description: event.target.value,
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    <span>액션 효과</span>
+                                    <textarea
+                                      required
+                                      maxLength={1000}
+                                      rows={3}
+                                      value={action.effect}
+                                      onChange={(event) =>
+                                        updateEquipmentAction(actionIndex, {
+                                          effect: event.target.value,
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                  <div className={styles.actionToggleGrid}>
+                                    <label className={styles.actionToggle}>
+                                      <input
+                                        type="checkbox"
+                                        checked={action.damage !== undefined}
+                                        onChange={(event) =>
+                                          updateEquipmentAction(actionIndex, {
+                                            damage: event.target.checked
+                                              ? {
+                                                  type: "PHYSICAL",
+                                                  amount: 1,
+                                                  scaling: "NONE",
+                                                }
+                                              : undefined,
+                                          })
+                                        }
+                                      />
+                                      <span>직접 피해 사용</span>
+                                    </label>
+                                    <label className={styles.actionToggle}>
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          action.additionalDamage !== undefined
+                                        }
+                                        onChange={(event) =>
+                                          updateEquipmentAction(actionIndex, {
+                                            usesWeaponAttack: event.target.checked
+                                              ? true
+                                              : action.usesWeaponAttack,
+                                            rangeMinCells: event.target.checked
+                                              ? (action.rangeMinCells ?? 0)
+                                              : action.rangeMinCells,
+                                            rangeMaxCells: event.target.checked
+                                              ? (action.rangeMaxCells ?? 0)
+                                              : action.rangeMaxCells,
+                                            additionalDamage: event.target.checked
+                                              ? {
+                                                  type: "PSYCHIC",
+                                                  amount: 1,
+                                                  scaling: "NONE",
+                                                }
+                                              : undefined,
+                                          })
+                                        }
+                                      />
+                                      <span>고정 추가 피해 사용</span>
+                                    </label>
                                   </div>
-                                ) : null}
-                                {action.consumesRegularAmmo !== undefined ? (
-                                  <div>
-                                    <dt>일반 탄약</dt>
-                                    <dd>
-                                      {action.consumesRegularAmmo > 0
-                                        ? `${action.consumesRegularAmmo}발 소모`
-                                        : "소모하지 않음"}
-                                    </dd>
-                                  </div>
-                                ) : null}
-                                {additionalDamage ? (
-                                  <div>
-                                    <dt>추가 피해</dt>
-                                    <dd>{additionalDamage}</dd>
-                                  </div>
-                                ) : null}
-                                {action.consumableCost ? (
-                                  <div>
-                                    <dt>전용 소모품</dt>
-                                    <dd>
-                                      {action.consumableCost.slug} ×
-                                      {action.consumableCost.quantity}
-                                    </dd>
-                                  </div>
-                                ) : null}
-                              </dl>
+                                  {action.usesWeaponAttack ||
+                                  action.rangeMinCells !== undefined ? (
+                                    <div className={styles.actionRuleFields}>
+                                      <label>
+                                        <span>최소 사거리</span>
+                                        <input
+                                          type="number"
+                                          min={
+                                            action.usesWeaponAttack
+                                              ? (draft.preservedCombatProfile
+                                                  ?.weaponAttack
+                                                  ?.rangeMinCells ?? 0)
+                                              : 0
+                                          }
+                                          max={
+                                            action.usesWeaponAttack
+                                              ? (draft.preservedCombatProfile
+                                                  ?.weaponAttack
+                                                  ?.rangeMaxCells ?? 99)
+                                              : 99
+                                          }
+                                          step="1"
+                                          value={action.rangeMinCells ?? ""}
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              rangeMinCells:
+                                                event.target.value === ""
+                                                  ? undefined
+                                                  : Number(event.target.value),
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label>
+                                        <span>최대 사거리</span>
+                                        <input
+                                          type="number"
+                                          min={
+                                            action.usesWeaponAttack
+                                              ? (draft.preservedCombatProfile
+                                                  ?.weaponAttack
+                                                  ?.rangeMinCells ?? 0)
+                                              : 0
+                                          }
+                                          max={
+                                            action.usesWeaponAttack
+                                              ? (draft.preservedCombatProfile
+                                                  ?.weaponAttack
+                                                  ?.rangeMaxCells ?? 99)
+                                              : 99
+                                          }
+                                          step="1"
+                                          value={action.rangeMaxCells ?? ""}
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              rangeMaxCells:
+                                                event.target.value === ""
+                                                  ? undefined
+                                                  : Number(event.target.value),
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label>
+                                        <span>일반 탄약 소모</span>
+                                        <input
+                                          type="number"
+                                          value={action.consumesRegularAmmo ?? ""}
+                                          disabled
+                                        />
+                                      </label>
+                                    </div>
+                                  ) : null}
+                                  {action.damage ? (
+                                    <div className={styles.actionDamageFields}>
+                                      <strong>직접 피해</strong>
+                                      <DropdownSelect
+                                        ariaLabel={`${action.code} 직접 피해 유형`}
+                                        value={action.damage.type}
+                                        onChange={(value) =>
+                                          updateEquipmentAction(actionIndex, {
+                                            damage: action.damage
+                                              ? {
+                                                  ...action.damage,
+                                                  type: value as NonNullable<
+                                                    WorkshopEquipmentAction["damage"]
+                                                  >["type"],
+                                                }
+                                              : undefined,
+                                          })
+                                        }
+                                        options={[
+                                          { value: "PHYSICAL", label: "물리" },
+                                          { value: "FIRE", label: "화염" },
+                                          { value: "PSYCHIC", label: "심령" },
+                                        ]}
+                                      />
+                                      <label>
+                                        <span>피해량</span>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="999"
+                                          step="1"
+                                          value={action.damage.amount}
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              damage: action.damage
+                                                ? {
+                                                    ...action.damage,
+                                                    amount: Number(
+                                                      event.target.value,
+                                                    ),
+                                                  }
+                                                : undefined,
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label className={styles.actionToggle}>
+                                        <input
+                                          type="checkbox"
+                                          checked={
+                                            action.damage.ignoresDefense === true
+                                          }
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              damage: action.damage
+                                                ? {
+                                                    ...action.damage,
+                                                    ignoresDefense:
+                                                      event.target.checked,
+                                                  }
+                                                : undefined,
+                                            })
+                                          }
+                                        />
+                                        <span>방어 무시</span>
+                                      </label>
+                                    </div>
+                                  ) : null}
+                                  {action.additionalDamage ? (
+                                    <div className={styles.actionDamageFields}>
+                                      <strong>추가 피해</strong>
+                                      <DropdownSelect
+                                        ariaLabel={`${action.code} 추가 피해 유형`}
+                                        value={action.additionalDamage.type}
+                                        onChange={(value) =>
+                                          updateEquipmentAction(actionIndex, {
+                                            additionalDamage:
+                                              action.additionalDamage
+                                                ? {
+                                                    ...action.additionalDamage,
+                                                    type: value as NonNullable<
+                                                      WorkshopEquipmentAction["additionalDamage"]
+                                                    >["type"],
+                                                  }
+                                                : undefined,
+                                          })
+                                        }
+                                        options={[
+                                          { value: "PHYSICAL", label: "물리" },
+                                          { value: "FIRE", label: "화염" },
+                                          { value: "PSYCHIC", label: "심령" },
+                                        ]}
+                                      />
+                                      <label>
+                                        <span>피해량</span>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="999"
+                                          step="1"
+                                          value={action.additionalDamage.amount}
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              additionalDamage:
+                                                action.additionalDamage
+                                                  ? {
+                                                      ...action.additionalDamage,
+                                                      amount: Number(
+                                                        event.target.value,
+                                                      ),
+                                                    }
+                                                  : undefined,
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label className={styles.actionToggle}>
+                                        <input
+                                          type="checkbox"
+                                          checked={
+                                            action.additionalDamage
+                                              .ignoresDefense === true
+                                          }
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              additionalDamage:
+                                                action.additionalDamage
+                                                  ? {
+                                                      ...action.additionalDamage,
+                                                      ignoresDefense:
+                                                        event.target.checked,
+                                                    }
+                                                  : undefined,
+                                            })
+                                          }
+                                        />
+                                        <span>방어 무시</span>
+                                      </label>
+                                    </div>
+                                  ) : null}
+                                  {(action.kind ?? "CHARGED") ===
+                                  "CONSUMABLE" ? (
+                                    <div className={styles.actionRuntimeContract}>
+                                      <span>전용 소모품 연동</span>
+                                      <strong>
+                                        {consumableItem?.name ??
+                                          action.consumableCost?.slug ??
+                                          "미지정"}{" "}
+                                        ×{action.consumableCost?.quantity ?? 0}
+                                      </strong>
+                                    </div>
+                                  ) : null}
+                                  {(action.kind ?? "CHARGED") === "CHARGED" ? (
+                                    <div className={styles.actionRuleFields}>
+                                      <label>
+                                        <span>회당 충전 소모</span>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="99"
+                                          step="1"
+                                          value={action.chargeCost}
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              chargeCost: Number(
+                                                event.target.value,
+                                              ),
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label>
+                                        <span>최대 충전</span>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="99"
+                                          step="1"
+                                          value={action.maxCharges}
+                                          onChange={(event) =>
+                                            updateEquipmentAction(actionIndex, {
+                                              maxCharges: Number(
+                                                event.target.value,
+                                              ),
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                    </div>
+                                  ) : null}
+                                  <p className={styles.actionFixedRule}>
+                                    액션 종류·액션 1 소모·거치 조건·기본 사격·일반
+                                    탄약·소모품 연동은 VTT 실행 계약으로 고정됩니다.
+                                  </p>
+                                </div>
+                              ) : null}
                             </article>
                           );
                         })}
                       </div>
-                      <p className={styles.emptyHint}>
-                        이 프리셋의 복수 액션과 전투 프로필 구조화 계약은 현재 읽기 전용이며 견적·설계안 저장 시 그대로 보존됩니다.
+                      <p className={styles.actionContractNote}>
+                        <strong>액션 수정 가능</strong>
+                        <span>
+                          변경값은 견적·설계안·완성 장비에 반영됩니다. 무기의
+                          기본 사격 및 거치 전투 프로필은 읽기 전용으로
+                          보존됩니다.
+                        </span>
                       </p>
                     </section>
                   ) : (
@@ -3019,13 +3630,20 @@ export default function EquipmentWorkshopAdminClient({
           </Box>
 
           {feedback ? (
-            <p
+            <div
               className={styles.feedback}
               data-tone={feedback.tone}
               role="status"
             >
-              {feedback.text}
-            </p>
+              <button
+                type="button"
+                aria-label="운영 안내 닫기"
+                onClick={() => setFeedback(null)}
+              >
+                닫기
+              </button>
+              <span>{feedback.text}</span>
+            </div>
           ) : null}
         </main>
       </div>

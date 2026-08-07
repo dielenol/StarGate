@@ -454,27 +454,42 @@
 
 .presetActions__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
+  align-items: start;
   gap: 12px;
 }
 
 .presetActionCard {
   display: grid;
-  gap: 10px;
+  align-content: start;
+  gap: 9px;
   min-width: 0;
-  padding: 14px;
+  padding: 12px 14px;
   border: 1px solid #4b4534;
   border-radius: 8px;
   background: linear-gradient(145deg, #12130f, #0d0f12);
 }
 
-.presetActionCard header {
+.presetActionCard[data-editing="true"] {
+  border-color: #8c7540;
+  box-shadow: inset 3px 0 #d5b15b;
+}
+
+.presetActionCard__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 9px;
 }
 
-.presetActionCard header > span {
+.presetActionCard__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.presetActionCard__title > span {
   flex: 0 0 auto;
   padding: 3px 7px;
   border: 1px solid #8c7540;
@@ -485,11 +500,20 @@
   font-weight: 800;
 }
 
-.presetActionCard header > strong {
+.presetActionCard__title > strong {
   min-width: 0;
   color: #f2eee2;
   font-size: 16px;
   overflow-wrap: anywhere;
+}
+
+.presetActionCard__editButton {
+  min-height: 30px !important;
+  padding: 5px 9px !important;
+  border-color: #48443a !important;
+  background: #171713 !important;
+  color: #d8c891 !important;
+  font-size: 12px !important;
 }
 
 .presetActionCard__badges {
@@ -499,15 +523,30 @@
 }
 
 .presetActionCard__badges span {
-  padding: 3px 7px;
+  padding: 2px 6px;
   border: 1px solid #353a42;
-  border-radius: 999px;
+  border-radius: 4px;
   background: #15181c;
   color: #bfc5cc;
   font-size: 12px;
 }
 
-.presetActionCard p {
+.presetActionCard__summary {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(230px, 0.8fr);
+  gap: 18px;
+  padding-top: 9px;
+  border-top: 1px solid #2b2e31;
+}
+
+.presetActionCard__copy {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.presetActionCard__copy p {
   margin: 0;
   color: #c7c2b6;
   font-size: 14px;
@@ -517,8 +556,6 @@
 .presetActionCard__effect {
   display: grid;
   gap: 3px;
-  padding-top: 9px;
-  border-top: 1px solid #2b2e31;
 }
 
 .presetActionCard__effect strong {
@@ -526,29 +563,164 @@
   font-size: 12px;
 }
 
-.presetActionCard dl {
+.presetActionCard__summary dl {
   display: grid;
+  align-content: start;
   gap: 6px;
   margin: 0;
+  padding: 0;
 }
 
-.presetActionCard dl > div {
+.presetActionCard__summary dl > div {
   display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
   gap: 8px;
   font-size: 13px;
   line-height: 1.45;
 }
 
-.presetActionCard dt {
+.presetActionCard__summary dt {
   color: #8f8b82;
 }
 
-.presetActionCard dd {
+.presetActionCard__summary dd {
   min-width: 0;
   margin: 0;
   color: #d8d4ca;
   overflow-wrap: anywhere;
+}
+
+.presetActionCard__editor {
+  display: grid;
+  gap: 12px;
+  margin-top: 3px;
+  padding: 14px;
+  border: 1px solid #34383f;
+  border-radius: 7px;
+  background: #0a0c0f;
+}
+
+.actionIdentityFields,
+.actionRuleFields,
+.actionDamageFields {
+  display: grid;
+  gap: 10px;
+  align-items: end;
+}
+
+.actionIdentityFields {
+  grid-template-columns: 110px minmax(180px, 1fr) minmax(170px, 0.55fr);
+}
+
+.actionRuleFields {
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.actionDamageFields {
+  grid-template-columns: minmax(90px, 0.35fr) minmax(150px, 0.8fr) minmax(120px, 0.45fr) minmax(150px, 0.5fr);
+}
+
+.actionDamageFields > strong {
+  align-self: center;
+  color: #d9bd70;
+  font-size: 13px;
+}
+
+.actionToggleGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.actionToggle {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 7px !important;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid #34383f;
+  border-radius: 5px;
+  background: #121519;
+  color: #c9c5bb !important;
+  cursor: pointer;
+}
+
+.actionToggle input {
+  width: 16px !important;
+  min-height: 16px !important;
+  margin: 0;
+  padding: 0;
+  accent-color: #d5b15b;
+}
+
+.actionToggle span {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.actionReadOnlyField,
+.actionRuntimeContract {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.actionReadOnlyField > span,
+.actionRuntimeContract > span {
+  color: #bdb8ab;
+  font-size: 14px;
+}
+
+.actionReadOnlyField > strong,
+.actionRuntimeContract > strong {
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #2c3038;
+  border-radius: 7px;
+  background: #15171a;
+  color: #aaa69c;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.actionRuntimeContract {
+  padding: 10px 12px;
+  border: 1px solid #34383f;
+  border-radius: 7px;
+  background: #101318;
+}
+
+.actionRuntimeContract > strong {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #d8d4ca;
+}
+
+.actionFixedRule,
+.actionContractNote {
+  margin: 0;
+  color: #98958c;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.actionContractNote {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 9px 11px;
+  border-left: 2px solid #6b5b32;
+  background: #11120f;
+}
+
+.actionContractNote strong {
+  flex: 0 0 auto;
+  color: #d6bc75;
+  font-size: 12px;
 }
 
 .blueprintActions,
@@ -838,6 +1010,10 @@
   position: sticky;
   z-index: 30;
   bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   margin: 0;
   padding: 14px 16px;
   border: 1px solid #4f7c5b;
@@ -846,6 +1022,22 @@
   color: #c4f0ce;
   font-size: 15px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+}
+
+.feedback > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.feedback > button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 4px 9px;
+  border-color: currentColor;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
 }
 
 .feedback[data-tone="error"] {
@@ -921,6 +1113,23 @@
   }
 
   .presetActions__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .presetActionCard__header,
+  .actionContractNote {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .presetActionCard__editButton {
+    width: 100%;
+  }
+
+  .presetActionCard__summary,
+  .actionIdentityFields,
+  .actionRuleFields,
+  .actionDamageFields {
     grid-template-columns: 1fr;
   }
 

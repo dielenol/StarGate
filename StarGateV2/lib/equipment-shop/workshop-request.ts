@@ -851,6 +851,21 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
   if (equipmentAction === null) return { ok: false, error: "장비 액션은 U 코드, 설명, 효과, 액션·충전 비용, 최대 충전과 GM 재장전 비용을 확인해 주세요." };
   if (equipmentActions === null || (equipmentAction && equipmentActions)) return { ok: false, error: "복수 장비 액션은 재장전 불가 상태의 서로 다른 U 코드 1~5개이며 단일 액션과 함께 입력할 수 없습니다." };
   if (combatProfile === null) return { ok: false, error: "장비 탄창·거치 규칙을 확인해 주세요." };
+  const weaponAttack = combatProfile?.weaponAttack;
+  const resultActions = equipmentActions ?? (equipmentAction ? [equipmentAction] : []);
+  if (
+    resultActions.some(
+      (action) =>
+        action.usesWeaponAttack === true &&
+        (!weaponAttack ||
+          action.rangeMinCells === undefined ||
+          action.rangeMaxCells === undefined ||
+          action.rangeMinCells < weaponAttack.rangeMinCells ||
+          action.rangeMaxCells > weaponAttack.rangeMaxCells),
+    )
+  ) {
+    return { ok: false, error: "기본 사격을 사용하는 장비 액션의 사거리는 무기 전투 프로필 범위 안이어야 합니다." };
+  }
   if (equipmentAbilityOverrides === null) return { ok: false, error: "어빌리티 강화는 중복되지 않은 대상 코드와 1~1,000자의 효과를 최대 11개까지 입력해 주세요." };
   if (previewImage && !previewImage.startsWith("/assets/") && !/^https:\/\//i.test(previewImage)) return { ok: false, error: "이미지는 /assets 경로 또는 HTTPS URL이어야 합니다." };
   const rawTags = Array.isArray(result.tags) ? result.tags : [];

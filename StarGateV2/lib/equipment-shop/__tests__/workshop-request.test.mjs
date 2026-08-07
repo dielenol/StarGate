@@ -527,6 +527,20 @@ test("네베드 preset은 소모품 기반 U2와 구조화 돌격소총 피해 �
     ignoresDefense: true,
     scaling: "NONE",
   });
+  const outOfRangeResult = structuredClone(result);
+  outOfRangeResult.equipmentActions.find(
+    (action) => action.code === "U2",
+  ).rangeMaxCells = 5;
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      expectedVersion: 0,
+      ...preset.blueprint.defaults,
+      materials: preset.blueprint.defaults.materials,
+      result: { ...outOfRangeResult, category: "WEAPON" },
+    }).ok,
+    false,
+    "기본 사격 연동 액션은 무기 전투 프로필 밖의 사거리를 허용하지 않는다",
+  );
 });
 
 test("구조화 총기는 캐릭터 ATK 적용이나 무탄약 기본 사격을 허용하지 않는다", () => {
@@ -1519,25 +1533,41 @@ test("GM material picker supports name and category search", () => {
   assert.match(adminClient, /getEquipmentWorkshopUserTags/);
   assert.match(adminClient, /EQUIPMENT_WORKSHOP_PRESETS/);
   assert.match(adminClient, /기본 제공 프리셋/);
-  assert.match(adminClient, /모든 항목 수정 가능/);
+  assert.match(adminClient, /결과·액션 편집 가능/);
   assert.match(
     adminClient,
     /selectedBlueprint[\s\S]*blueprintRef:[\s\S]*id: selectedBlueprint\._id/,
   );
-  assert.match(adminClient, /preservedEquipmentActions/);
+});
+
+test("GM workshop turns loaded multiple actions into editable quote state", () => {
+  const adminClient = readFileSync(
+    new URL(
+      "../../../app/(erp)/erp/admin/equipment-workshop/EquipmentWorkshopAdminClient.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(adminClient, /equipmentActions: cloneEquipmentActions/);
   assert.match(adminClient, /preservedCombatProfile/);
   assert.match(adminClient, /formatEquipmentActionSummary/);
   assert.match(
     adminClient,
-    /equipmentActions: draft\.preservedEquipmentActions/,
+    /equipmentActions: draft\.equipmentActions/,
   );
   assert.match(adminClient, /combatProfile: draft\.preservedCombatProfile/);
   assert.match(adminClient, /구조화 계약은 현재 읽기 전용/);
-  assert.match(adminClient, /aria-label="프리셋 장비 액션"/);
-  assert.match(adminClient, /draft\.preservedEquipmentActions\.map/);
+  assert.match(adminClient, /aria-label="장비 액션 편집"/);
+  assert.match(adminClient, /draft\.equipmentActions\.map/);
   assert.match(adminClient, /action\.actionCost/);
   assert.match(adminClient, /action\.consumableCost/);
   assert.match(adminClient, /action\.additionalDamage/);
+  assert.match(adminClient, /updateEquipmentAction/);
+  assert.match(adminClient, /equipmentActionsError/);
+  assert.match(adminClient, /액션 수정/);
+  assert.match(adminClient, /VTT 실행 계약으로 고정/);
+  assert.match(adminClient, /변경값은 견적·설계안·완성 장비에 반영됩니다/);
+  assert.match(adminClient, /aria-label="운영 안내 닫기"/);
 });
 
 test("GM workshop uses the shared accessible dropdown instead of native selects", () => {
