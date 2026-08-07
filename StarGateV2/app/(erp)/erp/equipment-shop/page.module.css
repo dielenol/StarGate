@@ -3471,6 +3471,24 @@
   border-left-color: var(--success);
 }
 
+.workshopApprovalGate {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(201, 168, 90, 0.06);
+  border: 1px solid var(--gold-dim);
+}
+
+.workshopApprovalGate > span,
+.workshopApprovalGate > small {
+  color: var(--ink-3);
+}
+
+.workshopApprovalGate > p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .workshopCountdown {
   padding: 10px;
   color: var(--gold) !important;

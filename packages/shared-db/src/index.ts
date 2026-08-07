@@ -156,6 +156,7 @@ export type {
   BureaucratVotePublicationState,
   BureaucratVoteResolution,
   BureaucratVoteStatus,
+  BureaucratVoteWorkshopRef,
 } from "./types/index.js";
 
 export {

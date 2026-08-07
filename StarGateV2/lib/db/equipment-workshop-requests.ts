@@ -57,6 +57,9 @@ export interface EquipmentWorkshopRequestDoc {
   startedAt?: Date;
   readyAt?: Date;
   claimedAt?: Date;
+  approvalVoteId?: string;
+  approvalOutcome?: "APPROVED" | "REJECTED";
+  approvalResolvedAt?: Date;
   reloadedAt?: Date;
   discordDmOutbox?: EquipmentWorkshopDiscordDmOutboxEvent[];
   discordDmDelivery?: {
@@ -131,6 +134,7 @@ export function serializeEquipmentWorkshopRequest(
     startedAt,
     readyAt,
     claimedAt,
+    approvalResolvedAt,
     reloadedAt,
     discordDmOutbox: _discordDmOutbox,
     discordDmDelivery: _discordDmDelivery,
@@ -171,6 +175,9 @@ export function serializeEquipmentWorkshopRequest(
     ...(startedAt ? { startedAt: startedAt.toISOString() } : {}),
     ...(readyAt ? { readyAt: readyAt.toISOString() } : {}),
     ...(claimedAt ? { claimedAt: claimedAt.toISOString() } : {}),
+    ...(approvalResolvedAt
+      ? { approvalResolvedAt: approvalResolvedAt.toISOString() }
+      : {}),
     ...(reloadedAt ? { reloadedAt: reloadedAt.toISOString() } : {}),
   };
 }

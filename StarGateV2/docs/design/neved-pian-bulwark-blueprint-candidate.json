@@ -56,7 +56,7 @@
     }
   ],
   "creditCost": 1200,
-  "durationMinutes": 180,
+  "durationMinutes": 1440,
   "specialistCodename": "TOWASKI",
   "specialistWorkflow": [
     {
@@ -103,7 +103,10 @@
       "noVoteRule": "REJECTED",
       "resolution": "AUTOMATIC_AT_SIX_HOURS_OR_AUTHORIZED_MANUAL_CLOSE",
       "effect": "MANUFACTURE_AUTHORITY_ONLY",
-      "workshopExecution": "SEPARATE_OPERATIONAL_PROCESS",
+      "workshopExecution": "LINKED_CLAIM_TIME_CONDITIONAL_EXECUTION",
+      "materialReservation": "NONE",
+      "approvedClaimBehavior": "RECHECK_AND_ATOMICALLY_CONSUME_AT_CLAIM",
+      "rejectedClaimBehavior": "DELIVER_BASE_RESULT_WITHOUT_CONDITIONAL_MUTATION",
       "consumableUseApproval": "NOT_REQUIRED"
     }
   },

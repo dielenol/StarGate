@@ -39,7 +39,7 @@ test("네베드 청사진은 공임·시간·복합 담당과 재료 계약을 �
   assert.equal(candidate.readyForWorkshopQuote, true);
   assert.equal(candidate.source.slug, "cmmg-mk47-mutant-nosb-mod");
   assert.equal(candidate.creditCost, 1_200);
-  assert.equal(candidate.durationMinutes, 180);
+  assert.equal(candidate.durationMinutes, 1_440);
   assert.equal(candidate.specialistCodename, "TOWASKI");
   assert.deepEqual(
     candidate.specialistWorkflow.map((step) => step.specialistCodename),
@@ -103,7 +103,12 @@ test("CENSOR-3 표결은 배치 제작 권한만 승인하고 발사에는 재�
   );
   assert.equal(
     ammo.manufactureApproval.workshopExecution,
-    "SEPARATE_OPERATIONAL_PROCESS",
+    "LINKED_CLAIM_TIME_CONDITIONAL_EXECUTION",
+  );
+  assert.equal(ammo.manufactureApproval.materialReservation, "NONE");
+  assert.equal(
+    ammo.manufactureApproval.approvedClaimBehavior,
+    "RECHECK_AND_ATOMICALLY_CONSUME_AT_CLAIM",
   );
   assert.equal(ammo.manufactureApproval.consumableUseApproval, "NOT_REQUIRED");
 });
@@ -111,7 +116,13 @@ test("CENSOR-3 표결은 배치 제작 권한만 승인하고 발사에는 재�
 test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존한다", () => {
   const defaults = blueprintSeed.update.$setOnInsert.defaults;
   assert.equal(defaults.creditCost, 1_200);
-  assert.equal(defaults.durationMinutes, 180);
+  assert.equal(defaults.durationMinutes, 1_440);
+  assert.deepEqual(defaults.approvalGate.conditionalMaterials, [
+    { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
+  ]);
+  assert.deepEqual(defaults.approvalGate.approvedOutputs, [
+    { slug: "zulu-0028-censor-3", quantity: 3 },
+  ]);
   assert.equal(defaults.result.combatProfile.weaponAttack.usesCharacterAttack, false);
   assert.deepEqual(
     defaults.result.combatProfile.weaponAttack.damageByRange.map(

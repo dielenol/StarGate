@@ -47,7 +47,7 @@ function readyState(overrides = {}) {
   };
 }
 
-test("CENSOR-3 migration은 기본 dry-run이고 쓰기는 이중 확인을 요구한다", () => {
+test("CENSOR-3 레거시 migration은 진단 전용이며 직접 쓰기를 거부한다", () => {
   assert.deepEqual(parseMigrationMode([]), { execute: false, dryRun: true });
   assert.deepEqual(parseMigrationMode(["--yes"]), {
     execute: false,
@@ -55,12 +55,12 @@ test("CENSOR-3 migration은 기본 dry-run이고 쓰기는 이중 확인을 요�
   });
   assert.throws(
     () => parseMigrationMode(["--execute"]),
-    /--execute는 --yes와 함께/,
+    /직접 변환은 폐쇄/,
   );
-  assert.deepEqual(parseMigrationMode(["--execute", "--yes"]), {
-    execute: true,
-    dryRun: false,
-  });
+  assert.throws(
+    () => parseMigrationMode(["--execute", "--yes"]),
+    /완료품 수령 절차/,
+  );
 });
 
 test("깨진 음절 3개는 네베드 CENSOR-3 3발로만 계획된다", () => {

@@ -6,7 +6,9 @@ import {
   addCredit,
   characterInventoryCol,
   charactersCol,
+  createBureaucratVote,
   equipCharacterInventoryItem,
+  findBureaucratVoteById,
   lockCharacterInventoryItems,
   masterItemsCol,
   prepareCharacterInventoryItemLocks,
@@ -24,6 +26,10 @@ import {
 } from "@/lib/db/equipment-workshop-requests";
 import { childIdempotencyKey } from "@/lib/api/idempotency";
 import { buildWorkshopResultMasterItem } from "@/lib/equipment-shop/workshop-result-master-item";
+import type {
+  EquipmentWorkshopConditionalOutput,
+  EquipmentWorkshopMaterial,
+} from "@/lib/equipment-shop/workshop-request";
 
 const slotLockId = (slot: string) => `@equipment-slot:${slot}`;
 
@@ -36,7 +42,9 @@ export class WorkshopOperationError extends Error {
       | "QUOTE_CHANGED"
       | "TARGET_CHANGED"
       | "MATERIAL_SHORTAGE"
-      | "NOT_READY",
+      | "NOT_READY"
+      | "APPROVAL_PENDING"
+      | "APPROVAL_INVALID",
     message: string,
   ) {
     super(message);
@@ -202,6 +210,12 @@ export async function prepareWorkshopOperationLocks(
     ...request.quote.materials
       .filter((material) => material.scope !== "SHARED")
       .map((material) => material.itemId),
+    ...(request.quote.approvalGate?.conditionalMaterials
+      .filter((material) => material.scope !== "SHARED")
+      .map((material) => material.itemId) ?? []),
+    ...(request.quote.approvalGate?.approvedOutputs
+      .filter((output) => output.scope !== "SHARED")
+      .map((output) => output.itemId) ?? []),
   ]);
 }
 
@@ -282,11 +296,12 @@ async function consumeMaterials(
   request: EquipmentWorkshopRequestDoc & {
     quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>;
   },
+  materials: readonly EquipmentWorkshopMaterial[],
   session: ClientSession,
 ): Promise<void> {
   const inventory = await characterInventoryCol();
   const sharedInventory = await sharedInventoryCol();
-  for (const material of request.quote.materials) {
+  for (const material of materials) {
     if (material.scope === "SHARED") {
       const sharedEntry = await sharedInventory.findOneAndUpdate(
         {
@@ -357,6 +372,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
   expectedQuoteVersion: number;
   actorId: string;
   actorName: string;
+  guildId?: string;
   session: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc> {
   const request = await findEquipmentWorkshopRequestById(input.requestId, { session: input.session });
@@ -383,6 +399,53 @@ export async function acceptWorkshopQuoteInTransaction(input: {
     input.session,
   );
   await requireQuotedAbilityTargets(request, input.session);
+  let approvalVoteId: string | undefined;
+  if (request.quote.approvalGate) {
+    const guildId = input.guildId?.trim();
+    if (!guildId) {
+      throw new WorkshopOperationError(
+        "APPROVAL_INVALID",
+        "관료 표결 길드 설정이 없어 이 견적을 시작할 수 없습니다.",
+      );
+    }
+    const gate = request.quote.approvalGate;
+    const voteResult = await createBureaucratVote({
+      requestKey: `workshop:${request._id}:quote:${request.quote.version}:approval`,
+      source: "WORKSHOP",
+      ...(gate.presetKey ? { presetKey: gate.presetKey } : {}),
+      workshopRef: {
+        requestId: request._id,
+        quoteVersion: request.quote.version,
+      },
+      guildId,
+      title: gate.title,
+      content: gate.content,
+      createdBy: {
+        kind: "ERP_USER",
+        id: input.actorId,
+        displayName: input.actorName,
+      },
+      session: input.session,
+    });
+    const vote = voteResult.vote;
+    if (
+      !vote._id ||
+      voteResult.conflict === "ACTIVE_PRESET" ||
+      vote.source !== "WORKSHOP" ||
+      vote.guildId !== guildId ||
+      vote.workshopRef?.requestId !== request._id ||
+      vote.workshopRef.quoteVersion !== request.quote.version ||
+      vote.presetKey !== gate.presetKey ||
+      vote.title !== gate.title ||
+      vote.content !== gate.content
+    ) {
+      throw new WorkshopOperationError(
+        "APPROVAL_INVALID",
+        "이 공방 견적과 일치하는 관료 표결 원장을 만들지 못했습니다.",
+      );
+    }
+    approvalVoteId = vote._id.toHexString();
+  }
   let sourceSnapshot: {
     sourceEquipmentCharge?: EquipmentChargeState;
     sourceEquipmentCharges?: Record<string, EquipmentChargeState>;
@@ -400,7 +463,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
     }
     sourceSnapshot = await escrowEquippedSource(request, input.session);
   }
-  await consumeMaterials(request, input.session);
+  await consumeMaterials(request, request.quote.materials, input.session);
   if (request.quote.creditCost > 0) {
     await addCredit({
       characterId: request.characterId,
@@ -428,6 +491,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
     set: {
       startedAt,
       readyAt,
+      ...(approvalVoteId ? { approvalVoteId } : {}),
       escrow: {
         ...(request.kind === "upgrade"
           ? {
@@ -445,6 +509,125 @@ export async function acceptWorkshopQuoteInTransaction(input: {
   });
   if (!updated) throw new WorkshopOperationError("INVALID_STATE", "다른 요청이 먼저 견적 상태를 변경했습니다.");
   return updated;
+}
+
+async function requireClosedWorkshopApproval(
+  request: EquipmentWorkshopRequestDoc & {
+    quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>;
+  },
+  session: ClientSession,
+): Promise<
+  | { outcome: "APPROVED" | "REJECTED"; resolvedAt: Date }
+  | undefined
+> {
+  const gate = request.quote.approvalGate;
+  if (!gate) return undefined;
+  if (!request.approvalVoteId) {
+    throw new WorkshopOperationError(
+      "APPROVAL_INVALID",
+      "연결된 관료 표결 원장이 없습니다.",
+    );
+  }
+  const vote = await findBureaucratVoteById(request.approvalVoteId, { session });
+  if (
+    !vote ||
+    vote.source !== "WORKSHOP" ||
+    vote.workshopRef?.requestId !== request._id ||
+    vote.workshopRef.quoteVersion !== request.quote.version ||
+    vote.presetKey !== gate.presetKey ||
+    vote.title !== gate.title ||
+    vote.content !== gate.content
+  ) {
+    throw new WorkshopOperationError(
+      "APPROVAL_INVALID",
+      "관료 표결 원장이 현재 공방 견적과 일치하지 않습니다.",
+    );
+  }
+  if (vote.status === "OPEN") {
+    throw new WorkshopOperationError(
+      "APPROVAL_PENDING",
+      "관료 표결이 아직 종료되지 않았습니다.",
+    );
+  }
+  if (!vote.resolution) {
+    throw new WorkshopOperationError(
+      "APPROVAL_INVALID",
+      "종료된 관료 표결의 결의 결과를 확인할 수 없습니다.",
+    );
+  }
+  return {
+    outcome: vote.resolution.outcome,
+    resolvedAt: vote.resolution.closedAt,
+  };
+}
+
+async function validateAndGrantApprovedOutputs(input: {
+  request: EquipmentWorkshopRequestDoc & {
+    quote: NonNullable<EquipmentWorkshopRequestDoc["quote"]>;
+  };
+  outputs: readonly EquipmentWorkshopConditionalOutput[];
+  acquiredAt: Date;
+  session: ClientSession;
+}): Promise<void> {
+  if (input.outputs.length === 0) return;
+  if (input.outputs.some((output) => !ObjectId.isValid(output.itemId))) {
+    throw new WorkshopOperationError(
+      "TARGET_CHANGED",
+      "가결 산출물 식별자가 올바르지 않습니다.",
+    );
+  }
+  const items = await masterItemsCol();
+  const masters = await items
+    .find(
+      {
+        _id: {
+          $in: input.outputs.map((output) => new ObjectId(output.itemId)),
+        },
+      },
+      { session: input.session },
+    )
+    .toArray();
+  const byId = new Map(masters.map((item) => [String(item._id), item]));
+  for (const output of input.outputs) {
+    const item = byId.get(output.itemId);
+    if (
+      !item ||
+      item.slug !== output.slug ||
+      item.name !== output.itemName ||
+      item.category !== output.category
+    ) {
+      throw new WorkshopOperationError(
+        "TARGET_CHANGED",
+        `${output.itemName} 가결 산출물 정의가 견적 발행 이후 변경되었습니다.`,
+      );
+    }
+    if (output.scope === "SHARED") {
+      await addToSharedInventory(
+        {
+          scope: "GLOBAL",
+          itemId: output.itemId,
+          itemName: output.itemName,
+          quantity: output.quantity,
+          acquiredAt: input.acquiredAt,
+          note: `공방 조건부 가결 산출물 · ${input.request._id}`,
+        },
+        { session: input.session },
+      );
+      continue;
+    }
+    await addToInventory(
+      {
+        characterId: input.request.characterId,
+        characterCodename: input.request.characterCodename,
+        itemId: output.itemId,
+        itemName: output.itemName,
+        quantity: output.quantity,
+        acquiredAt: input.acquiredAt,
+        note: `공방 조건부 가결 산출물 · ${input.request._id}`,
+      },
+      { session: input.session },
+    );
+  }
 }
 
 async function restoreInventory(
@@ -640,9 +823,27 @@ export async function claimWorkshopResultInTransaction(input: {
   const now = input.now ?? new Date();
   if (request.readyAt.getTime() > now.getTime()) throw new WorkshopOperationError("NOT_READY", "아직 제작이 완료되지 않았습니다.");
   const resultSlot = request.quote.result.category;
+  const approval = await requireClosedWorkshopApproval(
+    request,
+    input.session,
+  );
+  const approvalOutcome = approval?.outcome;
   await lockCharacterInventoryItems(
     request.characterId,
-    [request.quote.result.itemId, slotLockId(resultSlot)],
+    [
+      request.quote.result.itemId,
+      slotLockId(resultSlot),
+      ...(approvalOutcome === "APPROVED"
+        ? [
+            ...(request.quote.approvalGate?.conditionalMaterials
+              .filter((material) => material.scope !== "SHARED")
+              .map((material) => material.itemId) ?? []),
+            ...(request.quote.approvalGate?.approvedOutputs
+              .filter((output) => output.scope !== "SHARED")
+              .map((output) => output.itemId) ?? []),
+          ]
+        : []),
+    ],
     input.session,
   );
   await requireWorkshopCharacterOwnership(
@@ -662,6 +863,13 @@ export async function claimWorkshopResultInTransaction(input: {
     throw new WorkshopOperationError(
       "TARGET_CHANGED",
       "결과 장비가 이미 인벤토리에 있어 안전하게 수령할 수 없습니다.",
+    );
+  }
+  if (approvalOutcome === "APPROVED" && request.quote.approvalGate) {
+    await consumeMaterials(
+      request,
+      request.quote.approvalGate.conditionalMaterials,
+      input.session,
     );
   }
   await ensureResultMasterItem(request, input.session);
@@ -712,13 +920,29 @@ export async function claimWorkshopResultInTransaction(input: {
     { session: input.session },
   );
   if (!equipped.ok) throw new WorkshopOperationError("INVALID_STATE", "결과 장비 지급 후 장착에 실패했습니다.");
+  if (approvalOutcome === "APPROVED" && request.quote.approvalGate) {
+    await validateAndGrantApprovedOutputs({
+      request,
+      outputs: request.quote.approvalGate.approvedOutputs,
+      acquiredAt: now,
+      session: input.session,
+    });
+  }
   const updated = await transitionEquipmentWorkshopRequest({
     requestId: request._id,
     currentStatus: "IN_PROGRESS",
     status: "COMPLETED",
     actorId: input.actorId,
     actorName: input.actorName,
-    set: { claimedAt: now },
+    set: {
+      claimedAt: now,
+      ...(approval
+        ? {
+            approvalOutcome: approval.outcome,
+            approvalResolvedAt: approval.resolvedAt,
+          }
+        : {}),
+    },
     session: input.session,
   });
   if (!updated) throw new WorkshopOperationError("INVALID_STATE", "다른 요청이 먼저 수령 상태를 변경했습니다.");

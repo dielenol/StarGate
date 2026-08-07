@@ -18,7 +18,7 @@
       },
       "defaults": {
         "creditCost": 1200,
-        "durationMinutes": 180,
+        "durationMinutes": 1440,
         "specialistCodename": "TOWASKI",
         "specialistWorkflow": [
           {
@@ -36,6 +36,25 @@
           { "slug": "force_core", "quantity": 1 },
           { "slug": "extended-magazine-mod", "quantity": 1 }
         ],
+        "approvalGate": {
+          "mode": "BUREAUCRAT_VOTE",
+          "presetKey": "zulu-0028-censor-3-manufacture-v1",
+          "title": "ZULU-0028 파쇄음절탄 「CENSOR-3」 제작 승인",
+          "content": "**안건 분류** · 특수 자산 가공 승인\n\n**심의 대상**\nZULU-0028 「검열된 비명」 교전 전리품 — 깨진 음절 ×3\n\n**승인 요청**\nZULU-0028 파쇄음절탄 「CENSOR-3」 ×3 제작\n전용 운용자 · 네베드\n\n**운용 효과**\n「피안의 보루」의 기본 소총 피해에 고정 30의 방어 무시 심령 피해를 추가합니다.\n\n**운용 조건**\n- 「피안의 보루」 장착 및 거치 상태\n- U2 「파쇄음절탄 사격」으로만 사용\n- 사격 시 액션 1과 CENSOR-3 1발 소모\n- 일반 탄약은 소모하지 않음\n- 총기 기본 피해와 추가 심령 피해를 함께 판정\n\n**결재 범위**\n본 안건은 회수된 깨진 음절 3개를 가공하여 CENSOR-3 3발을 제작할 권한의 승인 여부만 확정합니다.\n\n가결은 제작 권한 부여를 의미합니다. 재료 차감·제작 착수·완성품 지급은 본 표결의 집행 범위에 포함하지 않으며, 공방 운영 절차에서 별도로 처리합니다.",
+          "conditionalMaterials": [
+            {
+              "slug": "broken-syllable",
+              "scope": "SHARED",
+              "quantity": 3
+            }
+          ],
+          "approvedOutputs": [
+            {
+              "slug": "zulu-0028-censor-3",
+              "quantity": 3
+            }
+          ]
+        },
         "result": {
           "name": "CMMG Mk.47 Mutant 「피안의 보루」",
           "description": "네베드의 Mk.47에 강화 12발 탄창과 접이식 일체형 거치대, 가공 포스코어 안정화 계통을 통합한 전용 개조 돌격소총.",
@@ -84,8 +103,8 @@
                 "slug": "zulu-0028-censor-3",
                 "quantity": 1
               }
-            }
-          ],
+          }
+        ],
           "combatProfile": {
             "ammoCapacity": 12,
             "mount": {

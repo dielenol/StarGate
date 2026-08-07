@@ -782,6 +782,10 @@ const ERROR_MESSAGE: Record<EquipmentShopErrorCode, string> = {
   SOURCE_ITEM_CHANGED: "강화 대상 장비의 장착 상태가 변경되었습니다.",
   REQUEST_STATE_CHANGED: "공방 요청 상태가 변경되었습니다. 다시 확인해 주세요.",
   WORKSHOP_NOT_READY: "아직 제작이 완료되지 않았습니다.",
+  WORKSHOP_APPROVAL_PENDING:
+    "연결된 관료 표결이 아직 종료되지 않아 수령할 수 없습니다.",
+  WORKSHOP_APPROVAL_INVALID:
+    "공방 견적과 연결된 관료 표결을 확인할 수 없습니다. 운영자에게 문의해 주세요.",
   BLOB_NOT_CONFIGURED: "이미지 업로드 저장소가 설정되지 않았습니다.",
   BLUEPRINT_CHANGED: "선택한 공방 설계안이 수정되었거나 보관되었습니다.",
   BLUEPRINT_INCOMPATIBLE: "선택한 설계안은 이 요청 또는 원본 장비와 호환되지 않습니다.",
@@ -5443,6 +5447,74 @@ export default function EquipmentShopClient({
                             })}
                           </ul>
                         ) : null}
+                        {quote.approvalGate ? (
+                          <section className={styles.workshopApprovalGate}>
+                            <span>CONDITIONAL APPROVAL</span>
+                            <strong>{quote.approvalGate.title}</strong>
+                            <p>{quote.approvalGate.content}</p>
+                            <small>
+                              {request.approvalOutcome === "APPROVED"
+                                ? "가결 · 수령 처리에서 조건부 재료 차감 및 산출물 지급"
+                                : request.approvalOutcome === "REJECTED"
+                                  ? "부결 · 조건부 재료와 산출물 없이 기본 장비만 지급"
+                                  : request.approvalVoteId
+                                    ? `관료 표결 연결 완료 · ${request.approvalVoteId}`
+                                    : "견적 수락과 동시에 관료 채널에 표결이 자동 접수됩니다."}
+                            </small>
+                            {quote.approvalGate.conditionalMaterials.length > 0 ? (
+                              <>
+                                <b>가결 시 수령 단계에서 확인·차감</b>
+                                <ul className={styles.workshopMaterials}>
+                                  {quote.approvalGate.conditionalMaterials.map(
+                                    (material) => {
+                                      const available =
+                                        availableMaterialQuantity(material);
+                                      return (
+                                        <li
+                                          key={`conditional:${material.scope ?? "CHARACTER"}:${material.itemId}`}
+                                          data-ready={available >= material.quantity}
+                                        >
+                                          <span>
+                                            {material.itemName} × {material.quantity} ·{" "}
+                                            {material.scope === "SHARED"
+                                              ? "공용 인벤토리"
+                                              : "캐릭터 인벤토리"}
+                                          </span>
+                                          <strong>
+                                            현재 {available} / 필요 {material.quantity}
+                                          </strong>
+                                        </li>
+                                      );
+                                    },
+                                  )}
+                                </ul>
+                              </>
+                            ) : null}
+                            <b>가결 산출물</b>
+                            <ul className={styles.workshopMaterials}>
+                              {quote.approvalGate.approvedOutputs.map((output) => (
+                                <li
+                                  key={`output:${output.scope}:${output.itemId}`}
+                                  data-ready="true"
+                                >
+                                  <span>
+                                    {output.itemName} × {output.quantity}
+                                  </span>
+                                  <strong>
+                                    {output.scope === "SHARED"
+                                      ? "공용 인벤토리 지급"
+                                      : "캐릭터 인벤토리 지급"}
+                                  </strong>
+                                </li>
+                              ))}
+                            </ul>
+                            <small>
+                              조건부 재료는 견적 수락 시 예약·차감되지 않습니다. 가결된
+                              경우에만 완료품 수령 시점의 실제 재고를 다시 확인하며,
+                              부족하면 장비와 산출물 모두 지급하지 않고 수령을 보류합니다.
+                            </small>
+                          </section>
+                        ) : null}
                         {request.readyAt && ["IN_PROGRESS", "READY"].includes(request.computedStatus) ? (
                           <p className={styles.workshopCountdown}>
                             <WorkshopCountdown readyAt={request.readyAt} /> · 완료 예정 {formatDateTime(request.readyAt)}
@@ -5487,7 +5559,16 @@ export default function EquipmentShopClient({
                             onClick={() => claimWorkshopResultMutation.mutate(
                               { requestId: request._id },
                               {
-                                onSuccess: () => showFeedback("success", "개조 장비 수령 완료", "결과 장비를 지급하고 해당 슬롯에 장착했습니다."),
+                                onSuccess: ({ request: claimedRequest }) =>
+                                  showFeedback(
+                                    "success",
+                                    "개조 장비 수령 완료",
+                                    claimedRequest.approvalOutcome === "APPROVED"
+                                      ? "결과 장비를 장착하고 가결 산출물을 함께 지급했습니다."
+                                      : claimedRequest.approvalOutcome === "REJECTED"
+                                        ? "표결 부결에 따라 조건부 재료를 차감하지 않고 기본 결과 장비만 장착했습니다."
+                                        : "결과 장비를 지급하고 해당 슬롯에 장착했습니다.",
+                                  ),
                                 onError: (error) => showFeedback("error", "장비 수령 실패", describeEquipmentShopError(error)),
                               },
                             )}

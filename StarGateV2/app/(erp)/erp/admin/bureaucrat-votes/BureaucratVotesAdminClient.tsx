@@ -185,6 +185,9 @@ export default function BureaucratVotesAdminClient({ initialData }: Props) {
                     </p>
                     <small>
                       {vote.createdBy.displayName} · {formatDateTime(vote.createdAt)} · 원장 {vote.id}
+                      {vote.workshopRef
+                        ? ` · 공방 ${vote.workshopRef.requestId} / 견적 v${vote.workshopRef.quoteVersion}`
+                        : ""}
                     </small>
                   </div>
                   {discordHref ? (

@@ -21,6 +21,7 @@ export const EQUIPMENT_WORKSHOP_REQUEST_STATUSES = [
 
 export const WORKSHOP_REQUEST_DETAIL_MIN_LENGTH = 10;
 export const WORKSHOP_REQUEST_DETAIL_MAX_LENGTH = 1000;
+export const WORKSHOP_QUOTE_MIN_DURATION_MINUTES = 1_440;
 export const WORKSHOP_QUOTE_MAX_DURATION_MINUTES = 43_200;
 export const WORKSHOP_QUOTE_MAX_MATERIAL_QUANTITY = 999;
 export const WORKSHOP_RELOAD_REQUEST_DETAILS = "장착 장비 액션 재장전 승인 요청";
@@ -86,6 +87,24 @@ export interface EquipmentWorkshopMaterial {
   subtotal: number;
 }
 
+export interface EquipmentWorkshopConditionalOutput {
+  itemId: string;
+  slug: string;
+  itemName: string;
+  category: ItemCategory;
+  scope: EquipmentWorkshopMaterialScope;
+  quantity: number;
+}
+
+export interface EquipmentWorkshopApprovalGate {
+  mode: "BUREAUCRAT_VOTE";
+  presetKey?: string;
+  title: string;
+  content: string;
+  conditionalMaterials: EquipmentWorkshopMaterial[];
+  approvedOutputs: EquipmentWorkshopConditionalOutput[];
+}
+
 export interface EquipmentWorkshopResultBlueprint {
   itemId: string;
   slug: string;
@@ -112,6 +131,7 @@ export interface EquipmentWorkshopQuote {
   specialistNote?: string;
   modificationDomain: EquipmentWorkshopModificationDomain;
   materials: EquipmentWorkshopMaterial[];
+  approvalGate?: EquipmentWorkshopApprovalGate;
   materialCost: number;
   totalCost: number;
   blueprintRef?: EquipmentWorkshopBlueprintRef;
@@ -167,6 +187,9 @@ export interface SerializedEquipmentWorkshopRequest {
   startedAt?: string;
   readyAt?: string;
   claimedAt?: string;
+  approvalVoteId?: string;
+  approvalOutcome?: "APPROVED" | "REJECTED";
+  approvalResolvedAt?: string;
   reloadedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -217,6 +240,23 @@ export interface EquipmentWorkshopQuoteInput {
     scope?: EquipmentWorkshopMaterialScope;
     quantity: number;
   }>;
+  approvalGate?: {
+    mode: "BUREAUCRAT_VOTE";
+    presetKey?: string;
+    title: string;
+    content: string;
+    conditionalMaterials: Array<{
+      slug?: string;
+      itemId?: string;
+      scope?: EquipmentWorkshopMaterialScope;
+      quantity: number;
+    }>;
+    approvedOutputs: Array<{
+      slug: string;
+      scope?: EquipmentWorkshopMaterialScope;
+      quantity: number;
+    }>;
+  };
   result: {
     category?: "WEAPON" | "ARMOR";
     name: string;
@@ -783,7 +823,7 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
   const modificationDomain = source.modificationDomain ?? "GENERAL";
   if (!Number.isInteger(expectedVersion) || Number(expectedVersion) < 0) return { ok: false, error: "견적 버전이 올바르지 않습니다." };
   if (typeof creditCost !== "number" || !Number.isFinite(creditCost) || creditCost < 0 || Number(creditCost.toFixed(2)) !== creditCost) return { ok: false, error: "크레딧은 0 이상, 소수점 둘째 자리까지 입력해 주세요." };
-  if (!Number.isInteger(durationMinutes) || Number(durationMinutes) < 1 || Number(durationMinutes) > WORKSHOP_QUOTE_MAX_DURATION_MINUTES) return { ok: false, error: "제작 시간은 1~43,200분이어야 합니다." };
+  if (!Number.isInteger(durationMinutes) || Number(durationMinutes) < WORKSHOP_QUOTE_MIN_DURATION_MINUTES || Number(durationMinutes) > WORKSHOP_QUOTE_MAX_DURATION_MINUTES) return { ok: false, error: "제작 시간은 1,440~43,200분(1~30일)이어야 합니다." };
   if (specialistCodename !== undefined && !isEquipmentWorkshopSpecialist(specialistCodename)) return { ok: false, error: "주 담당 specialist가 올바르지 않습니다." };
   if (specialistWorkflow === null) return { ok: false, error: "담당 공정은 서로 다른 담당자 1~5명과 각 담당 업무를 입력해 주세요." };
   if (
@@ -863,6 +903,108 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
       quantity: Number(quantity),
     });
   }
+  let approvalGate: EquipmentWorkshopQuoteInput["approvalGate"];
+  if (source.approvalGate !== undefined) {
+    if (
+      !source.approvalGate ||
+      typeof source.approvalGate !== "object" ||
+      Array.isArray(source.approvalGate)
+    ) {
+      return { ok: false, error: "조건부 표결 설정이 올바르지 않습니다." };
+    }
+    const gate = source.approvalGate as Record<string, unknown>;
+    const presetKey = optionalText(gate.presetKey, 120);
+    const title = optionalText(gate.title, 100);
+    const content = optionalText(gate.content, 3_500);
+    if (
+      gate.mode !== "BUREAUCRAT_VOTE" ||
+      presetKey === null ||
+      title === null ||
+      content === null ||
+      !title ||
+      !content ||
+      (presetKey && !/^[a-z0-9][a-z0-9_-]{1,119}$/.test(presetKey)) ||
+      !Array.isArray(gate.conditionalMaterials) ||
+      !Array.isArray(gate.approvedOutputs) ||
+      gate.conditionalMaterials.length > 200 ||
+      gate.approvedOutputs.length < 1 ||
+      gate.approvedOutputs.length > 50
+    ) {
+      return { ok: false, error: "조건부 표결의 제목·내용·재료·가결 산출물을 확인해 주세요." };
+    }
+    const conditionalMaterials: NonNullable<
+      EquipmentWorkshopQuoteInput["approvalGate"]
+    >["conditionalMaterials"] = [];
+    const conditionalSeen = new Set<string>();
+    for (const raw of gate.conditionalMaterials) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        return { ok: false, error: "조건부 재료 항목이 올바르지 않습니다." };
+      }
+      const material = raw as Record<string, unknown>;
+      const itemId = typeof material.itemId === "string" ? material.itemId.trim() : "";
+      const slug = typeof material.slug === "string" ? material.slug.trim() : "";
+      const quantity = material.quantity;
+      const scope = material.scope ?? "CHARACTER";
+      const key = `${scope}:${slug ? `slug:${slug}` : `id:${itemId}`}`;
+      if (
+        (scope !== "CHARACTER" && scope !== "SHARED") ||
+        (Boolean(itemId) === Boolean(slug)) ||
+        (itemId && !/^[a-f0-9]{24}$/i.test(itemId)) ||
+        (slug && !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(slug)) ||
+        !Number.isInteger(quantity) ||
+        Number(quantity) < 1 ||
+        Number(quantity) > WORKSHOP_QUOTE_MAX_MATERIAL_QUANTITY ||
+        seen.has(key) ||
+        conditionalSeen.has(key)
+      ) {
+        return { ok: false, error: "조건부 재료 slug·ID·수량 또는 중복 항목을 확인해 주세요." };
+      }
+      conditionalSeen.add(key);
+      conditionalMaterials.push({
+        ...(slug ? { slug } : { itemId }),
+        ...(scope === "SHARED" ? { scope } : {}),
+        quantity: Number(quantity),
+      });
+    }
+    const approvedOutputs: NonNullable<
+      EquipmentWorkshopQuoteInput["approvalGate"]
+    >["approvedOutputs"] = [];
+    const outputSeen = new Set<string>();
+    for (const raw of gate.approvedOutputs) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        return { ok: false, error: "가결 산출물 항목이 올바르지 않습니다." };
+      }
+      const output = raw as Record<string, unknown>;
+      const slug = typeof output.slug === "string" ? output.slug.trim() : "";
+      const scope = output.scope ?? "CHARACTER";
+      const quantity = output.quantity;
+      const key = `${scope}:${slug}`;
+      if (
+        !/^[a-z0-9][a-z0-9_-]{1,79}$/.test(slug) ||
+        (scope !== "CHARACTER" && scope !== "SHARED") ||
+        !Number.isInteger(quantity) ||
+        Number(quantity) < 1 ||
+        Number(quantity) > 999 ||
+        outputSeen.has(key)
+      ) {
+        return { ok: false, error: "가결 산출물 slug·지급 범위·수량 또는 중복 항목을 확인해 주세요." };
+      }
+      outputSeen.add(key);
+      approvedOutputs.push({
+        slug,
+        ...(scope === "SHARED" ? { scope } : {}),
+        quantity: Number(quantity),
+      });
+    }
+    approvalGate = {
+      mode: "BUREAUCRAT_VOTE",
+      ...(presetKey ? { presetKey } : {}),
+      title,
+      content,
+      conditionalMaterials,
+      approvedOutputs,
+    };
+  }
   return {
     ok: true,
     input: {
@@ -874,6 +1016,7 @@ export function parseEquipmentWorkshopQuote(body: unknown): EquipmentWorkshopQuo
       ...(specialistNote ? { specialistNote } : {}),
       modificationDomain,
       materials,
+      ...(approvalGate ? { approvalGate } : {}),
       ...(blueprintRef ? { blueprintRef } : {}),
       result: {
         ...(category ? { category } : {}),

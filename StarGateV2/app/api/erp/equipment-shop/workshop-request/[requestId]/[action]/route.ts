@@ -31,6 +31,8 @@ function operationError(error: unknown): NextResponse | null {
     TARGET_CHANGED: "SOURCE_ITEM_CHANGED",
     MATERIAL_SHORTAGE: "INSUFFICIENT_MATERIALS",
     NOT_READY: "WORKSHOP_NOT_READY",
+    APPROVAL_PENDING: "WORKSHOP_APPROVAL_PENDING",
+    APPROVAL_INVALID: "WORKSHOP_APPROVAL_INVALID",
   }[error.code];
   return NextResponse.json({ error: error.message, code }, { status });
 }
@@ -48,6 +50,16 @@ export async function POST(request: Request, context: RouteContext) {
   const current = await findEquipmentWorkshopRequestById(requestId);
   if (!current) return NextResponse.json({ error: "공방 요청을 찾을 수 없습니다." }, { status: 404 });
   if (current.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const guildId = process.env.GUILD_ID?.trim();
+  if (action === "accept" && current.quote?.approvalGate && !guildId) {
+    return NextResponse.json(
+      {
+        error: "관료 표결 길드 설정이 없어 이 견적을 시작할 수 없습니다.",
+        code: "WORKSHOP_APPROVAL_INVALID",
+      },
+      { status: 503 },
+    );
+  }
 
   const body = (await request.json().catch(() => null)) as { expectedQuoteVersion?: unknown } | null;
   const expectedQuoteVersion = body?.expectedQuoteVersion;
@@ -87,6 +99,7 @@ export async function POST(request: Request, context: RouteContext) {
               expectedQuoteVersion: Number(expectedQuoteVersion),
               actorId: session.user.id,
               actorName,
+              guildId,
               session: mongoSession,
             })
           : await claimWorkshopResultInTransaction({

@@ -38,6 +38,7 @@ import {
   getEquipmentWorkshopUserTags,
   isActiveEquipmentWorkshopRequestStatus,
   WORKSHOP_COST_POLICY,
+  WORKSHOP_QUOTE_MIN_DURATION_MINUTES,
   type AdminSerializedEquipmentWorkshopRequest,
   type EquipmentWorkshopModificationDomain,
   type EquipmentWorkshopRequestStatus,
@@ -79,6 +80,22 @@ interface QuoteDraft {
     scope: "CHARACTER" | "SHARED";
     quantity: string;
   }>;
+  approvalGate: {
+    enabled: boolean;
+    presetKey: string;
+    title: string;
+    content: string;
+    conditionalMaterials: Array<{
+      slug: string;
+      scope: "CHARACTER" | "SHARED";
+      quantity: string;
+    }>;
+    approvedOutputs: Array<{
+      slug: string;
+      scope: "CHARACTER" | "SHARED";
+      quantity: string;
+    }>;
+  };
   resultName: string;
   resultDescription: string;
   resultCategory: "WEAPON" | "ARMOR";
@@ -153,7 +170,6 @@ const QUOTE_PUBLISHABLE_STATUSES = new Set<EquipmentWorkshopRequestStatus>([
 ]);
 
 const DURATION_PRESETS = [
-  { minutes: 60, label: "1시간" },
   { minutes: 1440, label: "24시간 · 1일" },
   { minutes: 4320, label: "72시간 · 3일" },
   { minutes: 10080, label: "168시간 · 7일" },
@@ -181,7 +197,9 @@ function createDraft(
   return {
     expectedVersion: request.quote?.version ?? 0,
     creditCost: String(request.quote?.creditCost ?? 0),
-    durationMinutes: String(request.quote?.durationMinutes ?? 60),
+    durationMinutes: String(
+      request.quote?.durationMinutes ?? WORKSHOP_QUOTE_MIN_DURATION_MINUTES,
+    ),
     specialistWorkflow: request.quote?.specialistWorkflow?.map((step) => ({
       ...step,
     })) ?? [
@@ -201,6 +219,27 @@ function createDraft(
         scope: material.scope ?? "CHARACTER",
         quantity: String(material.quantity),
       })) ?? [],
+    approvalGate: {
+      enabled: Boolean(request.quote?.approvalGate),
+      presetKey: request.quote?.approvalGate?.presetKey ?? "",
+      title: request.quote?.approvalGate?.title ?? "",
+      content: request.quote?.approvalGate?.content ?? "",
+      conditionalMaterials:
+        request.quote?.approvalGate?.conditionalMaterials.map((material) => ({
+          slug:
+            material.slug ??
+            items.find((item) => item.id === material.itemId)?.slug ??
+            "",
+          scope: material.scope ?? "CHARACTER",
+          quantity: String(material.quantity),
+        })) ?? [],
+      approvedOutputs:
+        request.quote?.approvalGate?.approvedOutputs.map((output) => ({
+          slug: output.slug,
+          scope: output.scope,
+          quantity: String(output.quantity),
+        })) ?? [],
+    },
     resultName:
       request.quote?.result.name ?? `${request.equipmentName ?? "신규 장비"} · 제작형`,
     resultDescription: request.quote?.result.description ?? request.details,
@@ -264,6 +303,24 @@ function draftFromBlueprint(
       scope: material.scope ?? "CHARACTER",
       quantity: String(material.quantity),
     })),
+    approvalGate: {
+      enabled: Boolean(defaults.approvalGate),
+      presetKey: defaults.approvalGate?.presetKey ?? "",
+      title: defaults.approvalGate?.title ?? "",
+      content: defaults.approvalGate?.content ?? "",
+      conditionalMaterials:
+        defaults.approvalGate?.conditionalMaterials.map((material) => ({
+          slug: material.slug,
+          scope: material.scope ?? "CHARACTER",
+          quantity: String(material.quantity),
+        })) ?? [],
+      approvedOutputs:
+        defaults.approvalGate?.approvedOutputs.map((output) => ({
+          slug: output.slug,
+          scope: output.scope ?? "CHARACTER",
+          quantity: String(output.quantity),
+        })) ?? [],
+    },
     resultName: defaults.result.name,
     resultDescription: defaults.result.description,
     resultCategory: blueprint.applicability.resultCategory,
@@ -314,15 +371,47 @@ function specialistWorkflowError(
   return null;
 }
 
+function buildApprovalGateInput(
+  draft: QuoteDraft,
+): EquipmentWorkshopBlueprintInput["defaults"]["approvalGate"] | undefined {
+  if (!draft.approvalGate.enabled) return undefined;
+  return {
+    mode: "BUREAUCRAT_VOTE",
+    ...(draft.approvalGate.presetKey.trim()
+      ? { presetKey: draft.approvalGate.presetKey.trim() }
+      : {}),
+    title: draft.approvalGate.title.trim(),
+    content: draft.approvalGate.content.trim(),
+    conditionalMaterials: draft.approvalGate.conditionalMaterials.map(
+      (material) => ({
+        slug: material.slug,
+        ...(material.scope === "SHARED" ? { scope: material.scope } : {}),
+        quantity: Number(material.quantity),
+      }),
+    ),
+    approvedOutputs: draft.approvalGate.approvedOutputs.map((output) => ({
+      slug: output.slug,
+      ...(output.scope === "SHARED" ? { scope: output.scope } : {}),
+      quantity: Number(output.quantity),
+    })),
+  };
+}
+
 function SearchableMaterialSelect({
+  allowPrivate = false,
+  ariaLabel = "재료 검색 및 선택",
   excludedItemId,
   items,
   onChange,
+  placeholder = "재료 이름·slug·분류 검색",
   value,
 }: {
+  allowPrivate?: boolean;
+  ariaLabel?: string;
   excludedItemId?: string;
   items: MaterialOption[];
   onChange: (slug: string) => void;
+  placeholder?: string;
   value: string;
 }) {
   const listboxId = useId();
@@ -335,7 +424,9 @@ function SearchableMaterialSelect({
     return items
       .filter(
         (item) =>
-          item.id !== excludedItemId && item.slug && item.isPublic,
+          item.id !== excludedItemId &&
+          item.slug &&
+          (allowPrivate || item.isPublic),
       )
       .filter(
         (item) =>
@@ -344,7 +435,7 @@ function SearchableMaterialSelect({
           item.slug.toLowerCase().includes(normalized) ||
           item.category.toLowerCase().includes(normalized),
       );
-  }, [excludedItemId, items, query]);
+  }, [allowPrivate, excludedItemId, items, query]);
 
   const close = () => {
     setOpen(false);
@@ -374,10 +465,10 @@ function SearchableMaterialSelect({
             : undefined
         }
         aria-expanded={open}
-        aria-label="재료 검색 및 선택"
+        aria-label={ariaLabel}
         aria-autocomplete="list"
         autoComplete="off"
-        placeholder="재료 이름·slug·분류 검색"
+        placeholder={placeholder}
         value={
           open
             ? query
@@ -424,7 +515,7 @@ function SearchableMaterialSelect({
           id={listboxId}
           className={styles.materialPicker__menu}
           role="listbox"
-          aria-label="재료 검색 결과"
+          aria-label={`${ariaLabel} 결과`}
         >
           {filteredItems.length > 0 ? (
             filteredItems.map((item, index) => (
@@ -613,6 +704,34 @@ export default function EquipmentWorkshopAdminClient({
     (material) =>
       !material.option || !material.option.isPublic || !material.slug,
   );
+  const conditionalMaterialRows =
+    draft.approvalGate.conditionalMaterials.map((material) => ({
+      ...material,
+      option: items.find((item) => item.slug === material.slug),
+    }));
+  const approvedOutputRows = draft.approvalGate.approvedOutputs.map(
+    (output) => ({
+      ...output,
+      option: items.find((item) => item.slug === output.slug),
+    }),
+  );
+  const missingConditionalMaterials = conditionalMaterialRows.filter(
+    (material) =>
+      !material.option || !material.option.isPublic || !material.slug,
+  );
+  const missingApprovedOutputs = approvedOutputRows.filter(
+    (output) => !output.option || !output.slug,
+  );
+  const approvalGateError = !draft.approvalGate.enabled
+    ? null
+    : !draft.approvalGate.title.trim() || !draft.approvalGate.content.trim()
+      ? "조건부 표결 제목과 안건 내용을 입력해 주세요."
+      : draft.approvalGate.approvedOutputs.length === 0
+        ? "가결 시 지급할 산출물을 하나 이상 지정해 주세요."
+        : missingConditionalMaterials.length > 0 ||
+            missingApprovedOutputs.length > 0
+          ? "조건부 재료와 가결 산출물의 마스터 품목을 확인해 주세요."
+          : null;
   const draftDirty =
     JSON.stringify(draft) !== baseline ||
     blueprintSlug !== (selectedTemplate?.slug ?? "") ||
@@ -741,6 +860,51 @@ export default function EquipmentWorkshopAdminClient({
     );
   };
 
+  const updateConditionalMaterial = (
+    index: number,
+    patch: Partial<
+      QuoteDraft["approvalGate"]["conditionalMaterials"][number]
+    >,
+  ) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            approvalGate: {
+              ...current.approvalGate,
+              conditionalMaterials:
+                current.approvalGate.conditionalMaterials.map(
+                  (material, materialIndex) =>
+                    materialIndex === index
+                      ? { ...material, ...patch }
+                      : material,
+                ),
+            },
+          }
+        : current,
+    );
+  };
+
+  const updateApprovedOutput = (
+    index: number,
+    patch: Partial<QuoteDraft["approvalGate"]["approvedOutputs"][number]>,
+  ) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            approvalGate: {
+              ...current.approvalGate,
+              approvedOutputs: current.approvalGate.approvedOutputs.map(
+                (output, outputIndex) =>
+                  outputIndex === index ? { ...output, ...patch } : output,
+              ),
+            },
+          }
+        : current,
+    );
+  };
+
   const updateSpecialistStep = (
     index: number,
     patch: Partial<EquipmentWorkshopSpecialistStep>,
@@ -829,6 +993,9 @@ export default function EquipmentWorkshopAdminClient({
         ...(material.scope === "SHARED" ? { scope: material.scope } : {}),
         quantity: Number(material.quantity),
       })),
+      ...(buildApprovalGateInput(draft)
+        ? { approvalGate: buildApprovalGateInput(draft) }
+        : {}),
       result: {
         name: draft.resultName,
         description: draft.resultDescription,
@@ -886,6 +1053,10 @@ export default function EquipmentWorkshopAdminClient({
       setFeedback({ tone: "error", text: workflowError });
       return;
     }
+    if (approvalGateError) {
+      setFeedback({ tone: "error", text: approvalGateError });
+      return;
+    }
     createBlueprintMutation.mutate(buildBlueprintInput(), {
       onSuccess: ({ blueprint }) => {
         setSelectedBlueprintId(blueprint._id);
@@ -906,6 +1077,10 @@ export default function EquipmentWorkshopAdminClient({
     const workflowError = specialistWorkflowError(draft.specialistWorkflow);
     if (workflowError) {
       setFeedback({ tone: "error", text: workflowError });
+      return;
+    }
+    if (approvalGateError) {
+      setFeedback({ tone: "error", text: approvalGateError });
       return;
     }
     updateBlueprintMutation.mutate(
@@ -969,6 +1144,10 @@ export default function EquipmentWorkshopAdminClient({
       });
       return;
     }
+    if (approvalGateError) {
+      setFeedback({ tone: "error", text: approvalGateError });
+      return;
+    }
     quoteMutation.mutate(
       {
         requestId: selected._id,
@@ -997,6 +1176,9 @@ export default function EquipmentWorkshopAdminClient({
             ...(material.scope === "SHARED" ? { scope: material.scope } : {}),
             quantity: Number(material.quantity),
           })),
+          ...(buildApprovalGateInput(draft)
+            ? { approvalGate: buildApprovalGateInput(draft) }
+            : {}),
           result: {
             name: draft.resultName,
             description: draft.resultDescription,
@@ -1373,6 +1555,63 @@ export default function EquipmentWorkshopAdminClient({
                 </section>
               </div>
 
+              {readOnlyQuote.approvalGate ? (
+                <section className={styles.resultArchive__feature}>
+                  <strong>
+                    조건부 관료 표결 · {readOnlyQuote.approvalGate.title}
+                  </strong>
+                  <p>{readOnlyQuote.approvalGate.content}</p>
+                  <small>
+                    {selected.approvalOutcome === "APPROVED"
+                      ? "가결 · 조건부 집행 완료"
+                      : selected.approvalOutcome === "REJECTED"
+                        ? "부결 · 조건부 집행 없음"
+                        : selected.approvalVoteId
+                          ? `연결 표결 ${selected.approvalVoteId}`
+                          : "견적 수락 시 표결 자동 생성"}
+                  </small>
+                  <div className={styles.resultArchive__columns}>
+                    <section>
+                      <strong>가결 시 수령 단계 차감</strong>
+                      {readOnlyQuote.approvalGate.conditionalMaterials.length >
+                      0 ? (
+                        <ul>
+                          {readOnlyQuote.approvalGate.conditionalMaterials.map(
+                            (material) => (
+                              <li
+                                key={`conditional:${material.scope ?? "CHARACTER"}:${material.itemId}`}
+                              >
+                                {material.itemName} × {material.quantity} ·{" "}
+                                {material.scope === "SHARED"
+                                  ? "공용 인벤토리"
+                                  : "캐릭터 인벤토리"}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      ) : (
+                        <p>조건부 재료 없음</p>
+                      )}
+                    </section>
+                    <section>
+                      <strong>가결 산출물</strong>
+                      <ul>
+                        {readOnlyQuote.approvalGate.approvedOutputs.map(
+                          (output) => (
+                            <li key={`output:${output.scope}:${output.itemId}`}>
+                              {output.itemName} × {output.quantity} ·{" "}
+                              {output.scope === "SHARED"
+                                ? "공용 인벤토리"
+                                : "캐릭터 인벤토리"}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    </section>
+                  </div>
+                </section>
+              ) : null}
+
               {readOnlyQuote.result.equipmentAction ? (
                 <section className={styles.resultArchive__feature}>
                   <strong>
@@ -1619,7 +1858,7 @@ export default function EquipmentWorkshopAdminClient({
                     <span>직접 입력 (분)</span>
                     <input
                       type="number"
-                      min="1"
+                      min={WORKSHOP_QUOTE_MIN_DURATION_MINUTES}
                       max="43200"
                       step="1"
                       required
@@ -1631,6 +1870,7 @@ export default function EquipmentWorkshopAdminClient({
                         })
                       }
                     />
+                    <small>최소 1일(1,440분), 최대 30일 범위에서 직접 설정합니다.</small>
                   </label>
                 </details>
                 <div className={styles.specialistHeading}>
@@ -1828,6 +2068,281 @@ export default function EquipmentWorkshopAdminClient({
                   <p className={styles.warning} role="alert">
                     재료 {missingMaterials.length}개가 없거나 비공개 상태입니다. 견적 발행이 차단됩니다.
                   </p>
+                ) : null}
+              </Box>
+
+              <Box className={styles.section}>
+                <Eyebrow>4B · 조건부 관료 표결</Eyebrow>
+                <label className={styles.approvalToggle}>
+                  <input
+                    type="checkbox"
+                    checked={draft.approvalGate.enabled}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        approvalGate: {
+                          ...draft.approvalGate,
+                          enabled: event.target.checked,
+                        },
+                      })
+                    }
+                  />
+                  <span>견적 수락 시 REGISTRAR 관료 표결 자동 생성</span>
+                </label>
+                <p className={styles.emptyHint}>
+                  조건부 재료는 수락 시 예약하거나 차감하지 않습니다. 표결이 가결된
+                  경우에만 완료품 수령 시점에 재고를 다시 확인해 차감하고 산출물을
+                  지급합니다. 부결이면 기본 결과 장비만 지급합니다.
+                </p>
+                {draft.approvalGate.enabled ? (
+                  <div className={styles.approvalGateEditor}>
+                    <div className={styles.twoColumns}>
+                      <label>
+                        <span>안건 제목</span>
+                        <input
+                          required
+                          maxLength={100}
+                          value={draft.approvalGate.title}
+                          onChange={(event) =>
+                            setDraft({
+                              ...draft,
+                              approvalGate: {
+                                ...draft.approvalGate,
+                                title: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span>프리셋 키 (선택)</span>
+                        <input
+                          maxLength={120}
+                          pattern="[a-z0-9][a-z0-9_-]{1,119}"
+                          value={draft.approvalGate.presetKey}
+                          onChange={(event) =>
+                            setDraft({
+                              ...draft,
+                              approvalGate: {
+                                ...draft.approvalGate,
+                                presetKey: event.target.value,
+                              },
+                            })
+                          }
+                          placeholder="approval-preset-key"
+                        />
+                      </label>
+                    </div>
+                    <label>
+                      <span>관료 채널 안건 내용</span>
+                      <textarea
+                        required
+                        maxLength={3500}
+                        rows={10}
+                        value={draft.approvalGate.content}
+                        onChange={(event) =>
+                          setDraft({
+                            ...draft,
+                            approvalGate: {
+                              ...draft.approvalGate,
+                              content: event.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </label>
+
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <strong>가결 시 차감 재료</strong>
+                        <p className={styles.emptyHint}>
+                          수령 전까지 보유량이 바뀔 수 있으며 별도 예약하지 않습니다.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            approvalGate: {
+                              ...draft.approvalGate,
+                              conditionalMaterials: [
+                                ...draft.approvalGate.conditionalMaterials,
+                                {
+                                  slug: "",
+                                  scope: "CHARACTER",
+                                  quantity: "1",
+                                },
+                              ],
+                            },
+                          })
+                        }
+                      >
+                        조건부 재료 추가
+                      </button>
+                    </div>
+                    <div className={styles.materialRows}>
+                      {draft.approvalGate.conditionalMaterials.length === 0 ? (
+                        <p className={styles.emptyHint}>조건부 재료 없음</p>
+                      ) : null}
+                      {draft.approvalGate.conditionalMaterials.map(
+                        (material, index) => (
+                          <div
+                            className={styles.materialRow}
+                            key={`conditional:${index}:${material.scope}:${material.slug}`}
+                          >
+                            <SearchableMaterialSelect
+                              ariaLabel="조건부 재료 검색 및 선택"
+                              excludedItemId={selected.sourceItemId}
+                              items={items}
+                              value={material.slug}
+                              onChange={(slug) =>
+                                updateConditionalMaterial(index, { slug })
+                              }
+                            />
+                            <DropdownSelect
+                              ariaLabel="조건부 재료 보관 범위"
+                              value={material.scope}
+                              onChange={(scope) =>
+                                updateConditionalMaterial(index, { scope })
+                              }
+                              options={[
+                                { value: "CHARACTER", label: "개인 인벤토리" },
+                                { value: "SHARED", label: "공용 인벤토리" },
+                              ]}
+                            />
+                            <input
+                              aria-label="조건부 재료 수량"
+                              type="number"
+                              min="1"
+                              max="999"
+                              step="1"
+                              required
+                              value={material.quantity}
+                              onChange={(event) =>
+                                updateConditionalMaterial(index, {
+                                  quantity: event.target.value,
+                                })
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDraft({
+                                  ...draft,
+                                  approvalGate: {
+                                    ...draft.approvalGate,
+                                    conditionalMaterials:
+                                      draft.approvalGate.conditionalMaterials.filter(
+                                        (_, rowIndex) => rowIndex !== index,
+                                      ),
+                                  },
+                                })
+                              }
+                            >
+                              제거
+                            </button>
+                          </div>
+                        ),
+                      )}
+                    </div>
+
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <strong>가결 산출물</strong>
+                        <p className={styles.emptyHint}>
+                          내부 비공개 마스터 품목도 지정할 수 있습니다.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            approvalGate: {
+                              ...draft.approvalGate,
+                              approvedOutputs: [
+                                ...draft.approvalGate.approvedOutputs,
+                                {
+                                  slug: "",
+                                  scope: "CHARACTER",
+                                  quantity: "1",
+                                },
+                              ],
+                            },
+                          })
+                        }
+                      >
+                        산출물 추가
+                      </button>
+                    </div>
+                    <div className={styles.materialRows}>
+                      {draft.approvalGate.approvedOutputs.map((output, index) => (
+                        <div
+                          className={styles.materialRow}
+                          key={`output:${index}:${output.scope}:${output.slug}`}
+                        >
+                          <SearchableMaterialSelect
+                            allowPrivate
+                            ariaLabel="가결 산출물 검색 및 선택"
+                            items={items}
+                            placeholder="산출물 이름·slug·분류 검색"
+                            value={output.slug}
+                            onChange={(slug) =>
+                              updateApprovedOutput(index, { slug })
+                            }
+                          />
+                          <DropdownSelect
+                            ariaLabel="가결 산출물 지급 범위"
+                            value={output.scope}
+                            onChange={(scope) =>
+                              updateApprovedOutput(index, { scope })
+                            }
+                            options={[
+                              { value: "CHARACTER", label: "개인 인벤토리" },
+                              { value: "SHARED", label: "공용 인벤토리" },
+                            ]}
+                          />
+                          <input
+                            aria-label="가결 산출물 수량"
+                            type="number"
+                            min="1"
+                            max="999"
+                            step="1"
+                            required
+                            value={output.quantity}
+                            onChange={(event) =>
+                              updateApprovedOutput(index, {
+                                quantity: event.target.value,
+                              })
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDraft({
+                                ...draft,
+                                approvalGate: {
+                                  ...draft.approvalGate,
+                                  approvedOutputs:
+                                    draft.approvalGate.approvedOutputs.filter(
+                                      (_, rowIndex) => rowIndex !== index,
+                                    ),
+                                },
+                              })
+                            }
+                          >
+                            제거
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {approvalGateError ? (
+                      <p className={styles.warning} role="alert">
+                        {approvalGateError}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </Box>
 
@@ -2190,6 +2705,14 @@ export default function EquipmentWorkshopAdminClient({
                     <span>제작 시간</span>
                     <strong>{formatDuration(Number(draft.durationMinutes))}</strong>
                   </div>
+                  <div>
+                    <span>조건부 표결</span>
+                    <strong>
+                      {draft.approvalGate.enabled
+                        ? `사용 · 산출물 ${draft.approvalGate.approvedOutputs.length}종`
+                        : "사용 안 함"}
+                    </strong>
+                  </div>
                 </div>
                 <div className={styles.diffGrid}>
                   {sourceResultDiff.map((row) => (
@@ -2210,6 +2733,7 @@ export default function EquipmentWorkshopAdminClient({
                     quoteMutation.isPending ||
                     uploading ||
                     missingMaterials.length > 0 ||
+                    Boolean(approvalGateError) ||
                     !selectedTemplateCompatible ||
                     !QUOTE_PUBLISHABLE_STATUSES.has(selected.status)
                   }

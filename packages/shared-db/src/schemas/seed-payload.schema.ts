@@ -287,10 +287,48 @@ const workshopApplicabilitySchema = z
   })
   .strict();
 
+const workshopMaterialReferenceSchema = z
+  .object({
+    slug: catalogSlugSchema,
+    scope: z.enum(["CHARACTER", "SHARED"]).optional(),
+    quantity: z.number().int().min(1).max(999),
+  })
+  .strict();
+
+const workshopApprovalGateSchema = z
+  .object({
+    mode: z.literal("BUREAUCRAT_VOTE"),
+    presetKey: z.string().regex(/^[a-z0-9][a-z0-9_-]{1,119}$/).optional(),
+    title: z.string().trim().min(1).max(100),
+    content: z.string().trim().min(1).max(3_500),
+    conditionalMaterials: z
+      .array(workshopMaterialReferenceSchema)
+      .max(200)
+      .refine(
+        (values) =>
+          new Set(
+            values.map((value) => `${value.scope ?? "CHARACTER"}:${value.slug}`),
+          ).size === values.length,
+        { message: "동일 scope/conditional material은 중복될 수 없습니다." },
+      ),
+    approvedOutputs: z
+      .array(workshopMaterialReferenceSchema)
+      .min(1)
+      .max(50)
+      .refine(
+        (values) =>
+          new Set(
+            values.map((value) => `${value.scope ?? "CHARACTER"}:${value.slug}`),
+          ).size === values.length,
+        { message: "동일 scope/approved output은 중복될 수 없습니다." },
+      ),
+  })
+  .strict();
+
 const workshopDefaultsSchema = z
   .object({
     creditCost: finiteMoneySchema,
-    durationMinutes: z.number().int().min(1).max(43_200),
+    durationMinutes: z.number().int().min(1_440).max(43_200),
     specialistCodename: workshopSpecialistSchema,
     specialistWorkflow: z
       .array(
@@ -311,15 +349,7 @@ const workshopDefaultsSchema = z
     specialistNote: z.string().trim().min(1).max(200).optional(),
     modificationDomain: workshopModificationDomainSchema,
     materials: z
-      .array(
-        z
-          .object({
-            slug: catalogSlugSchema,
-            scope: z.enum(["CHARACTER", "SHARED"]).optional(),
-            quantity: z.number().int().min(1).max(999),
-          })
-          .strict(),
-      )
+      .array(workshopMaterialReferenceSchema)
       .max(200)
       .refine(
         (values) =>
@@ -327,6 +357,7 @@ const workshopDefaultsSchema = z
           values.length,
         { message: "동일 scope/material은 중복될 수 없습니다." },
       ),
+    approvalGate: workshopApprovalGateSchema.optional(),
     result: workshopResultSchema,
   })
   .strict()
@@ -335,6 +366,24 @@ const workshopDefaultsSchema = z
       !value.specialistWorkflow ||
       value.specialistWorkflow[0]?.specialistCodename === value.specialistCodename,
     { path: ["specialistWorkflow"], message: "주 담당자는 workflow 첫 담당자와 같아야 합니다." },
+  )
+  .refine(
+    (value) => {
+      if (!value.approvalGate) return true;
+      const base = new Set(
+        value.materials.map(
+          (material) => `${material.scope ?? "CHARACTER"}:${material.slug}`,
+        ),
+      );
+      return value.approvalGate.conditionalMaterials.every(
+        (material) =>
+          !base.has(`${material.scope ?? "CHARACTER"}:${material.slug}`),
+      );
+    },
+    {
+      path: ["approvalGate", "conditionalMaterials"],
+      message: "기본 재료와 조건부 재료는 중복될 수 없습니다.",
+    },
   );
 
 /**

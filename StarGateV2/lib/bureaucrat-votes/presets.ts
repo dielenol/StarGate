@@ -11,7 +11,8 @@ export interface BureaucratVotePreset {
 
 /**
  * REGISTRAR의 관료 공지 문체로 확정된 고정 안건.
- * 표결은 제작 권한만 승인하며 공방의 재료·제작·지급 mutation과 결합하지 않는다.
+ * 표결 자체는 제작 권한만 확정한다. 연결된 공방 요청이 완료품 수령 시
+ * 가결 결과를 확인한 뒤 조건부 재료 차감과 산출물 지급을 집행한다.
  */
 export const CENSOR3_MANUFACTURE_VOTE_PRESET: BureaucratVotePreset = {
   key: CENSOR3_MANUFACTURE_VOTE_PRESET_KEY,

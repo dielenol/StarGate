@@ -111,9 +111,22 @@ export async function PUT(request: Request, context: RouteContext) {
   const materialSlugs = validation.input.materials
     .map((material) => material.slug)
     .filter((slug): slug is string => Boolean(slug));
+  const conditionalMaterialIds =
+    validation.input.approvalGate?.conditionalMaterials
+      .map((material) => material.itemId)
+      .filter((id): id is string => Boolean(id)) ?? [];
+  const conditionalMaterialSlugs =
+    validation.input.approvalGate?.conditionalMaterials
+      .map((material) => material.slug)
+      .filter((slug): slug is string => Boolean(slug)) ?? [];
+  const approvedOutputSlugs =
+    validation.input.approvalGate?.approvedOutputs.map(
+      (output) => output.slug,
+    ) ?? [];
   const ids = [
     ...(sourceItemId ? [sourceItemId] : []),
     ...materialIds,
+    ...conditionalMaterialIds,
   ];
   if (ids.some((id) => !ObjectId.isValid(id))) {
     return NextResponse.json(
@@ -128,6 +141,12 @@ export async function PUT(request: Request, context: RouteContext) {
         : []),
       ...(materialSlugs.length > 0
         ? [{ slug: { $in: materialSlugs } }]
+        : []),
+      ...(conditionalMaterialSlugs.length > 0
+        ? [{ slug: { $in: conditionalMaterialSlugs } }]
+        : []),
+      ...(approvedOutputSlugs.length > 0
+        ? [{ slug: { $in: approvedOutputSlugs } }]
         : []),
     ];
   const masters = lookupClauses.length > 0
@@ -245,6 +264,102 @@ export async function PUT(request: Request, context: RouteContext) {
     );
   }
 
+  const resolvedConditionalMaterials =
+    validation.input.approvalGate?.conditionalMaterials.map((material) => ({
+      input: material,
+      item: material.slug
+        ? bySlug.get(material.slug)
+        : byId.get(material.itemId ?? ""),
+    })) ?? [];
+  if (
+    resolvedConditionalMaterials.some(
+      ({ item }) => !item || item.isPublic === false || !item.slug,
+    )
+  ) {
+    return NextResponse.json(
+      { error: "등록되지 않았거나 비공개인 조건부 재료가 포함되어 있습니다." },
+      { status: 400 },
+    );
+  }
+  if (
+    sourceItemId &&
+    resolvedConditionalMaterials.some(
+      ({ item }) => String(item?._id) === sourceItemId,
+    )
+  ) {
+    return NextResponse.json(
+      { error: "강화 대상 장비를 조건부 재료로 지정할 수 없습니다." },
+      { status: 400 },
+    );
+  }
+  const baseMaterialKeys = new Set(
+    materials
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .map(
+        (material) =>
+          `${material.scope ?? "CHARACTER"}:${material.itemId}`,
+      ),
+  );
+  const conditionalMaterials = resolvedConditionalMaterials.map(
+    ({ input: material, item }) => {
+      if (!item) return null;
+      const unitPrice = procurementUnitPrice(item);
+      if (unitPrice === null) return null;
+      return {
+        itemId: String(item._id),
+        slug: item.slug,
+        itemName: item.name,
+        category: item.category,
+        ...(material.scope === "SHARED"
+          ? { scope: "SHARED" as const }
+          : {}),
+        quantity: material.quantity,
+        unitPrice,
+        subtotal: Number((unitPrice * material.quantity).toFixed(2)),
+      };
+    },
+  );
+  if (conditionalMaterials.some((item) => item === null)) {
+    return NextResponse.json(
+      { error: "조건부 재료의 현재 조달가가 올바르지 않습니다." },
+      { status: 409 },
+    );
+  }
+  if (
+    conditionalMaterials.some(
+      (material) =>
+        material !== null &&
+        baseMaterialKeys.has(
+          `${material.scope ?? "CHARACTER"}:${material.itemId}`,
+        ),
+    )
+  ) {
+    return NextResponse.json(
+      { error: "동일 품목을 기본 재료와 조건부 재료에 중복 지정할 수 없습니다." },
+      { status: 400 },
+    );
+  }
+
+  const approvedOutputs =
+    validation.input.approvalGate?.approvedOutputs.map((output) => {
+      const item = bySlug.get(output.slug);
+      if (!item?.slug) return null;
+      return {
+        itemId: String(item._id),
+        slug: item.slug,
+        itemName: item.name,
+        category: item.category,
+        scope: output.scope ?? ("CHARACTER" as const),
+        quantity: output.quantity,
+      };
+    }) ?? [];
+  if (approvedOutputs.some((item) => item === null)) {
+    return NextResponse.json(
+      { error: "등록되지 않은 가결 산출물이 포함되어 있습니다." },
+      { status: 400 },
+    );
+  }
+
   const specialistCodename = validation.input.specialistWorkflow?.[0]?.specialistCodename
     ?? validation.input.specialistCodename
     ?? resolveEquipmentWorkshopSpecialist({
@@ -275,6 +390,24 @@ export async function PUT(request: Request, context: RouteContext) {
       : {}),
     modificationDomain: validation.input.modificationDomain,
     materials: materials.filter((item): item is NonNullable<typeof item> => item !== null),
+    ...(validation.input.approvalGate
+      ? {
+          approvalGate: {
+            mode: "BUREAUCRAT_VOTE" as const,
+            ...(validation.input.approvalGate.presetKey
+              ? { presetKey: validation.input.approvalGate.presetKey }
+              : {}),
+            title: validation.input.approvalGate.title,
+            content: validation.input.approvalGate.content,
+            conditionalMaterials: conditionalMaterials.filter(
+              (item): item is NonNullable<typeof item> => item !== null,
+            ),
+            approvedOutputs: approvedOutputs.filter(
+              (item): item is NonNullable<typeof item> => item !== null,
+            ),
+          },
+        }
+      : {}),
     materialCost,
     totalCost,
     ...(validation.input.blueprintRef

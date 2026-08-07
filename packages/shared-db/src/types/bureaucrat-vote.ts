@@ -50,10 +50,15 @@ export interface BureaucratVoteResolution {
   closedAt: Date;
 }
 
+export interface BureaucratVoteWorkshopRef {
+  requestId: string;
+  quoteVersion: number;
+}
+
 /**
  * 사무국 관료 표결 원장.
  *
- * - Discord 명령과 ERP 고정 안건이 같은 원장을 사용한다.
+ * - Discord 명령, ERP 고정 안건, 공방 연결 안건이 같은 원장을 사용한다.
  * - 표결 결과는 권한 승인만 기록하며, 크레딧·재료·인벤토리는 변경하지 않는다.
  * - ballots는 Discord user snowflake별 현재 표 한 건만 보존한다.
  */
@@ -62,8 +67,9 @@ export interface BureaucratVote {
   schemaVersion: 1;
   revision: number;
   requestKey: string;
-  source: "DISCORD_COMMAND" | "ERP_PRESET";
+  source: "DISCORD_COMMAND" | "ERP_PRESET" | "WORKSHOP";
   presetKey?: string;
+  workshopRef?: BureaucratVoteWorkshopRef;
   /** OPEN 상태인 ERP preset의 동시 중복 생성을 막는 partial unique key. */
   activePresetKey?: string;
   guildId: string;

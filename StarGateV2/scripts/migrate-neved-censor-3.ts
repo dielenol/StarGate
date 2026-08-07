@@ -1,12 +1,10 @@
 /**
- * 공용 인벤토리의 깨진 음절 3개를 네베드 전용 CENSOR-3 3발로 전환한다.
+ * 공용 인벤토리와 CENSOR-3 상태를 읽기 전용으로 점검하는 레거시 진단기다.
  *
- * 기본은 읽기 전용 dry-run이다. 실제 쓰기는 두 플래그를 모두 요구한다.
- * CENSOR-3 master item seed가 먼저 적용되어 있어야 하며, 작업 원장을 통해
- * 동일 변환의 재실행을 막는다.
+ * 직접 변환 실행은 폐쇄했다. CENSOR-3 재료 차감과 지급은 연결된 공방 요청이
+ * 가결된 표결을 확인한 뒤 완료품 수령 트랜잭션에서만 수행한다.
  *
  *   pnpm migrate:neved-censor-3
- *   pnpm migrate:neved-censor-3 -- --execute --yes
  */
 
 import { createHash } from "node:crypto";
@@ -153,11 +151,12 @@ function assertCondition(
 
 export function parseMigrationMode(args: readonly string[]): MigrationMode {
   const execute = args.includes("--execute");
-  const confirmed = args.includes("--yes");
-  if (execute && !confirmed) {
-    throw new Error("--execute는 --yes와 함께 사용해야 합니다.");
+  if (execute) {
+    throw new Error(
+      "CENSOR-3 직접 변환은 폐쇄되었습니다. 연결된 공방 요청의 완료품 수령 절차를 사용하십시오.",
+    );
   }
-  return { execute: execute && confirmed, dryRun: !(execute && confirmed) };
+  return { execute: false, dryRun: true };
 }
 
 export function planNevedCensorMigration(

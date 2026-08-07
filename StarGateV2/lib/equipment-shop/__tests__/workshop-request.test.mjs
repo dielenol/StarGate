@@ -28,6 +28,12 @@ registerHooks({
     if (specifier === "@/lib/equipment-shop/workshop-blueprint") {
       return nextResolve(new URL("../workshop-blueprint.ts", import.meta.url).href, context);
     }
+    if (specifier === "@/lib/bureaucrat-votes/presets") {
+      return nextResolve(
+        new URL("../../bureaucrat-votes/presets.ts", import.meta.url).href,
+        context,
+      );
+    }
     return nextResolve(specifier, context);
   },
 });
@@ -196,7 +202,7 @@ test("quote validation enforces cost precision, material quantities, duration an
   const valid = {
     expectedVersion: 0,
     creditCost: 125.5,
-    durationMinutes: 60,
+    durationMinutes: 1_440,
     materials: [{ itemId: "64b64c1f4b13a06f4d0f0001", quantity: 2 }],
     result: {
       name: "개조형 장검",
@@ -208,6 +214,7 @@ test("quote validation enforces cost precision, material quantities, duration an
   assert.equal(parseEquipmentWorkshopQuote(valid).ok, true);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, creditCost: 0.29 }).ok, true);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, creditCost: 1.001 }).ok, false);
+  assert.equal(parseEquipmentWorkshopQuote({ ...valid, durationMinutes: 1_439 }).ok, false);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, durationMinutes: 43_201 }).ok, false);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, materials: [{ ...valid.materials[0], quantity: 1000 }] }).ok, false);
   assert.equal(parseEquipmentWorkshopQuote({ ...valid, result: { ...valid.result, previewImage: "http://unsafe.test/item.png" } }).ok, false);
@@ -217,7 +224,7 @@ test("modification domains and selected materials validate independently", () =>
   const baseQuote = {
     expectedVersion: 0,
     creditCost: 1800,
-    durationMinutes: 60,
+    durationMinutes: 1_440,
     result: {
       name: "재료 독립 검증 장비",
       description: "개조 계통과 투입 재료를 독립적으로 검증하는 장비입니다.",
@@ -246,7 +253,7 @@ test("quote materials keep personal and shared inventory scopes distinct", () =>
   const base = {
     expectedVersion: 0,
     creditCost: 0,
-    durationMinutes: 60,
+    durationMinutes: 1_440,
     modificationDomain: "GENERAL",
     result: {
       name: "재료 범위 검증 장비",
@@ -272,6 +279,51 @@ test("quote materials keep personal and shared inventory scopes distinct", () =>
         { slug: "broken-syllable", scope: "SHARED", quantity: 1 },
         { slug: "broken-syllable", scope: "SHARED", quantity: 2 },
       ],
+    }).ok,
+    false,
+  );
+});
+
+test("conditional vote materials and approved outputs remain separate from acceptance materials", () => {
+  const base = {
+    expectedVersion: 0,
+    creditCost: 0,
+    durationMinutes: 1_440,
+    modificationDomain: "GENERAL",
+    materials: [{ slug: "force_core", quantity: 1 }],
+    approvalGate: {
+      mode: "BUREAUCRAT_VOTE",
+      title: "특수 산출물 제작 승인",
+      content: "가결된 경우에만 완료품 수령 단계에서 재료를 차감합니다.",
+      conditionalMaterials: [
+        { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
+      ],
+      approvedOutputs: [{ slug: "zulu-0028-censor-3", quantity: 3 }],
+    },
+    result: {
+      name: "조건부 제작 검증 장비",
+      description: "기본 제작과 조건부 표결 산출물을 함께 검증합니다.",
+    },
+  };
+
+  const parsed = parseEquipmentWorkshopQuote(base);
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.input.materials, [
+    { slug: "force_core", quantity: 1 },
+  ]);
+  assert.deepEqual(parsed.input.approvalGate.conditionalMaterials, [
+    { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
+  ]);
+  assert.deepEqual(parsed.input.approvalGate.approvedOutputs, [
+    { slug: "zulu-0028-censor-3", quantity: 3 },
+  ]);
+  assert.equal(
+    parseEquipmentWorkshopQuote({
+      ...base,
+      approvalGate: {
+        ...base.approvalGate,
+        conditionalMaterials: [{ slug: "force_core", quantity: 1 }],
+      },
     }).ok,
     false,
   );
@@ -332,7 +384,7 @@ test("quote validation preserves multiple actions, mount rules and non-reloadabl
   const parsed = parseEquipmentWorkshopQuote({
     expectedVersion: 0,
     creditCost: 0,
-    durationMinutes: 60,
+    durationMinutes: 1_440,
     modificationDomain: "GENERAL",
     materials: [],
     result,
@@ -352,7 +404,7 @@ test("quote validation preserves multiple actions, mount rules and non-reloadabl
     parseEquipmentWorkshopQuote({
       expectedVersion: 0,
       creditCost: 0,
-      durationMinutes: 60,
+      durationMinutes: 1_440,
       modificationDomain: "GENERAL",
       materials: [],
       result: {
@@ -371,7 +423,7 @@ test("quote validation preserves multiple actions, mount rules and non-reloadabl
     parseEquipmentWorkshopQuote({
       expectedVersion: 0,
       creditCost: 0,
-      durationMinutes: 60,
+      durationMinutes: 1_440,
       modificationDomain: "GENERAL",
       materials: [],
       result: {
@@ -388,7 +440,7 @@ test("quote validation preserves multiple actions, mount rules and non-reloadabl
     parseEquipmentWorkshopQuote({
       expectedVersion: 0,
       creditCost: 0,
-      durationMinutes: 60,
+      durationMinutes: 1_440,
       modificationDomain: "GENERAL",
       materials: [],
       result: {
@@ -406,7 +458,7 @@ test("quote validation preserves multiple actions, mount rules and non-reloadabl
     parseEquipmentWorkshopQuote({
       expectedVersion: 0,
       creditCost: 0,
-      durationMinutes: 60,
+      durationMinutes: 1_440,
       modificationDomain: "GENERAL",
       materials: [],
       result: {
@@ -424,7 +476,7 @@ test("네베드 preset은 소모품 기반 U2와 구조화 돌격소총 피해 �
   );
   assert.ok(preset);
   assert.equal(preset.blueprint.defaults.creditCost, 1_200);
-  assert.equal(preset.blueprint.defaults.durationMinutes, 180);
+  assert.equal(preset.blueprint.defaults.durationMinutes, 1_440);
   assert.equal(parseEquipmentWorkshopBlueprint(preset.blueprint).ok, true);
 
   const result = preset.blueprint.defaults.result;
@@ -450,6 +502,16 @@ test("네베드 preset은 소모품 기반 U2와 구조화 돌격소총 피해 �
     ],
   );
   assert.equal(parsed.input.result.combatProfile.mount.mountedRangeShape, "DIAMOND");
+  assert.equal(
+    parsed.input.approvalGate.presetKey,
+    "zulu-0028-censor-3-manufacture-v1",
+  );
+  assert.deepEqual(parsed.input.approvalGate.conditionalMaterials, [
+    { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
+  ]);
+  assert.deepEqual(parsed.input.approvalGate.approvedOutputs, [
+    { slug: "zulu-0028-censor-3", quantity: 3 },
+  ]);
   const censor = parsed.input.result.equipmentActions.find(
     (action) => action.code === "U2",
   );
@@ -1149,7 +1211,7 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
   assert.match(playerRoute, /executeEconomicOperation\([\s\S]*acceptWorkshopQuoteInTransaction/);
   assert.match(playerRoute, /executeEconomicOperation\([\s\S]*claimWorkshopResultInTransaction/);
   assert.match(adminRoute, /executeEconomicOperation\([\s\S]*cancelWorkshopInTransaction/);
-  assert.match(operations, /request\.kind === "upgrade"[\s\S]*escrowEquippedSource\(request, input\.session\)[\s\S]*consumeMaterials\(request, input\.session\)[\s\S]*addCredit\([\s\S]*session: input\.session/);
+  assert.match(operations, /request\.kind === "upgrade"[\s\S]*escrowEquippedSource\(request, input\.session\)[\s\S]*consumeMaterials\(request, request\.quote\.materials, input\.session\)[\s\S]*addCredit\([\s\S]*session: input\.session/);
   assert.match(
     operations,
     /amount: -request\.quote\.creditCost[\s\S]*type: "PURCHASE"[\s\S]*requestId: childIdempotencyKey\(input\.requestId, "credit"\)[\s\S]*session: input\.session/,
@@ -1181,6 +1243,57 @@ test("accept, claim and cancel keep every economy mutation inside the supplied t
     operations,
     /type: \{ \$in: \["AGENT", "NPC"\] \}[\s\S]*role: "GM"[\s\S]*status: "ACTIVE"/,
   );
+});
+
+test("linked workshop vote is created at acceptance and executed atomically only at approved claim", () => {
+  const operations = readFileSync(
+    new URL("../workshop-operations.ts", import.meta.url),
+    "utf8",
+  );
+  const playerRoute = readFileSync(
+    new URL(
+      "../../../app/api/erp/equipment-shop/workshop-request/[requestId]/[action]/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const acceptOperation = operations.slice(
+    operations.indexOf("export async function acceptWorkshopQuoteInTransaction"),
+    operations.indexOf("async function requireClosedWorkshopApproval"),
+  );
+  const claimOperation = operations.slice(
+    operations.indexOf("export async function claimWorkshopResultInTransaction"),
+    operations.indexOf("export async function approveWorkshopReloadInTransaction"),
+  );
+
+  assert.match(
+    acceptOperation,
+    /createBureaucratVote\([\s\S]*source: "WORKSHOP"[\s\S]*workshopRef:[\s\S]*quoteVersion: request\.quote\.version[\s\S]*session: input\.session/,
+  );
+  assert.match(acceptOperation, /approvalVoteId = vote\._id\.toHexString\(\)/);
+  assert.match(
+    acceptOperation,
+    /consumeMaterials\(request, request\.quote\.materials, input\.session\)/,
+  );
+  assert.doesNotMatch(
+    acceptOperation,
+    /consumeMaterials\([\s\S]{0,100}conditionalMaterials/,
+  );
+  assert.match(
+    claimOperation,
+    /requireClosedWorkshopApproval\([\s\S]*approvalOutcome === "APPROVED"[\s\S]*consumeMaterials\([\s\S]*request\.quote\.approvalGate\.conditionalMaterials[\s\S]*ensureResultMasterItem/,
+  );
+  assert.match(
+    claimOperation,
+    /approvalOutcome === "APPROVED"[\s\S]*validateAndGrantApprovedOutputs\([\s\S]*session: input\.session/,
+  );
+  assert.match(
+    claimOperation,
+    /approvalOutcome[\s\S]*approvalResolvedAt: approval\.resolvedAt/,
+  );
+  assert.match(playerRoute, /const guildId = process\.env\.GUILD_ID\?\.trim\(\)/);
+  assert.match(playerRoute, /acceptWorkshopQuoteInTransaction\([\s\S]*guildId,/);
+  assert.match(playerRoute, /APPROVAL_PENDING: "WORKSHOP_APPROVAL_PENDING"/);
 });
 
 test("workshop quote acceptance blocks insufficient credit while still requiring materials", () => {

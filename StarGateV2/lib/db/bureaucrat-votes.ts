@@ -18,6 +18,7 @@ export function serializeBureaucratVote(
     revision: vote.revision,
     source: vote.source,
     ...(vote.presetKey ? { presetKey: vote.presetKey } : {}),
+    ...(vote.workshopRef ? { workshopRef: vote.workshopRef } : {}),
     title: vote.title,
     content: vote.content,
     status: vote.status,

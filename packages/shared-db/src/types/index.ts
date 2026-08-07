@@ -210,6 +210,7 @@ export type {
   BureaucratVotePublicationState,
   BureaucratVoteResolution,
   BureaucratVoteStatus,
+  BureaucratVoteWorkshopRef,
 } from "./bureaucrat-vote.js";
 export {
   SCHEDULED_JOB_RUN_STATUSES,

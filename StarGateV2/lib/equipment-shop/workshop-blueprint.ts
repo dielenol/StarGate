@@ -35,6 +35,22 @@ export interface EquipmentWorkshopBlueprintDefaults {
     scope?: "CHARACTER" | "SHARED";
     quantity: number;
   }>;
+  approvalGate?: {
+    mode: "BUREAUCRAT_VOTE";
+    presetKey?: string;
+    title: string;
+    content: string;
+    conditionalMaterials: Array<{
+      slug: string;
+      scope?: "CHARACTER" | "SHARED";
+      quantity: number;
+    }>;
+    approvedOutputs: Array<{
+      slug: string;
+      scope?: "CHARACTER" | "SHARED";
+      quantity: number;
+    }>;
+  };
   result: Omit<EquipmentWorkshopQuoteInput["result"], "category">;
 }
 
@@ -178,6 +194,7 @@ export function parseEquipmentWorkshopBlueprint(
     specialistNote: defaults.specialistNote,
     modificationDomain: defaults.modificationDomain,
     materials,
+    approvalGate: defaults.approvalGate,
     result: {
       ...((defaults.result as Record<string, unknown> | undefined) ?? {}),
       category: resultCategory,
@@ -186,6 +203,13 @@ export function parseEquipmentWorkshopBlueprint(
   if (!quoteValidation.ok) return quoteValidation;
   if (!quoteValidation.input.specialistCodename) {
     return { ok: false, error: "설계안 주 담당자를 지정해 주세요." };
+  }
+
+  const approvalGate = quoteValidation.input.approvalGate;
+  if (
+    approvalGate?.conditionalMaterials.some((material) => !material.slug)
+  ) {
+    return { ok: false, error: "설계안 조건부 재료는 slug로 지정해 주세요." };
   }
 
   const { category: _category, ...result } = quoteValidation.input.result;
@@ -213,6 +237,22 @@ export function parseEquipmentWorkshopBlueprint(
           : {}),
         modificationDomain: quoteValidation.input.modificationDomain,
         materials,
+        ...(approvalGate
+          ? {
+              approvalGate: {
+                ...approvalGate,
+                conditionalMaterials: approvalGate.conditionalMaterials.map(
+                  (material) => ({
+                    slug: material.slug!,
+                    ...(material.scope === "SHARED"
+                      ? { scope: material.scope }
+                      : {}),
+                    quantity: material.quantity,
+                  }),
+                ),
+              },
+            }
+          : {}),
         result,
       },
     },

@@ -13,6 +13,10 @@ export interface SerializedBureaucratVote {
   revision: number;
   source: BureaucratVote["source"];
   presetKey?: string;
+  workshopRef?: {
+    requestId: string;
+    quoteVersion: number;
+  };
   title: string;
   content: string;
   status: BureaucratVoteStatus;

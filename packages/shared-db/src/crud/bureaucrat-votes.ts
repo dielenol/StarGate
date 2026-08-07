@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import {
   MongoServerError,
   ObjectId,
+  type ClientSession,
   type Filter,
   type UpdateFilter,
 } from "mongodb";
@@ -24,13 +25,18 @@ const MAX_PUBLICATION_ERROR_LENGTH = 1_000;
 
 export interface CreateBureaucratVoteInput {
   requestKey: string;
-  source: "DISCORD_COMMAND" | "ERP_PRESET";
+  source: "DISCORD_COMMAND" | "ERP_PRESET" | "WORKSHOP";
   presetKey?: string;
+  workshopRef?: {
+    requestId: string;
+    quoteVersion: number;
+  };
   guildId: string;
   title: string;
   content: string;
   createdBy: BureaucratVoteActor;
   createdAt?: Date;
+  session?: ClientSession;
 }
 
 export interface CreateBureaucratVoteResult {
@@ -128,8 +134,25 @@ export async function createBureaucratVote(
   if (input.source === "ERP_PRESET" && !presetKey) {
     throw new Error("ERP 고정 안건에는 presetKey가 필요합니다.");
   }
-  if (input.source === "DISCORD_COMMAND" && presetKey) {
-    throw new Error("Discord 직접 안건에는 presetKey를 지정할 수 없습니다.");
+  if (
+    input.source === "DISCORD_COMMAND" &&
+    (presetKey || input.workshopRef)
+  ) {
+    throw new Error("Discord 직접 안건에는 presetKey나 공방 참조를 지정할 수 없습니다.");
+  }
+  if (input.source !== "WORKSHOP" && input.workshopRef) {
+    throw new Error("공방 참조는 WORKSHOP 표결에만 지정할 수 있습니다.");
+  }
+  const workshopRef = input.workshopRef;
+  if (
+    input.source === "WORKSHOP" &&
+    (!workshopRef ||
+      !workshopRef.requestId.trim() ||
+      workshopRef.requestId.length > 200 ||
+      !Number.isSafeInteger(workshopRef.quoteVersion) ||
+      workshopRef.quoteVersion < 1)
+  ) {
+    throw new Error("공방 표결에는 유효한 요청·견적 버전 참조가 필요합니다.");
   }
 
   const col = await bureaucratVotesCol();
@@ -140,7 +163,18 @@ export async function createBureaucratVote(
     revision: 0,
     requestKey,
     source: input.source,
-    ...(presetKey ? { presetKey, activePresetKey: presetKey } : {}),
+    ...(presetKey ? { presetKey } : {}),
+    ...(input.source === "ERP_PRESET" && presetKey
+      ? { activePresetKey: presetKey }
+      : {}),
+    ...(workshopRef
+      ? {
+          workshopRef: {
+            requestId: workshopRef.requestId.trim(),
+            quoteVersion: workshopRef.quoteVersion,
+          },
+        }
+      : {}),
     guildId,
     channelId: BUREAUCRAT_VOTE_CHANNEL_ID,
     title,
@@ -155,13 +189,16 @@ export async function createBureaucratVote(
   };
 
   try {
-    await col.insertOne(doc);
+    await col.insertOne(doc, { session: input.session });
     return { vote: doc, created: true, conflict: "NONE" };
   } catch (error) {
     if (!isDuplicateKeyError(error)) throw error;
   }
 
-  const sameRequest = await col.findOne({ _id: doc._id, schemaVersion: 1 });
+  const sameRequest = await col.findOne(
+    { _id: doc._id, schemaVersion: 1 },
+    { session: input.session },
+  );
   if (sameRequest) {
     return {
       vote: sameRequest,
@@ -169,12 +206,15 @@ export async function createBureaucratVote(
       conflict: "REQUEST_KEY",
     };
   }
-  if (presetKey) {
-    const activePreset = await col.findOne({
-      schemaVersion: 1,
-      status: "OPEN",
-      activePresetKey: presetKey,
-    });
+  if (input.source === "ERP_PRESET" && presetKey) {
+    const activePreset = await col.findOne(
+      {
+        schemaVersion: 1,
+        status: "OPEN",
+        activePresetKey: presetKey,
+      },
+      { session: input.session },
+    );
     if (activePreset) {
       return {
         vote: activePreset,
@@ -188,10 +228,13 @@ export async function createBureaucratVote(
 
 export async function findBureaucratVoteById(
   voteId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<BureaucratVote | null> {
   const filter = objectIdFilter(voteId);
   if (!filter) return null;
-  return (await bureaucratVotesCol()).findOne(filter);
+  return (await bureaucratVotesCol()).findOne(filter, {
+    session: options.session,
+  });
 }
 
 export async function listBureaucratVotes(input: {

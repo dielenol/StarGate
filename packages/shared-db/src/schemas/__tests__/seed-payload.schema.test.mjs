@@ -177,7 +177,7 @@ test("경제·공방 cross-field invariant와 보고서 reference 중복을 거�
       validateSeedPayloadPatch("equipment_workshop_blueprints", {
         defaults: {
           creditCost: 10,
-          durationMinutes: 30,
+          durationMinutes: 1_440,
           specialistCodename: "VERNIER",
           modificationDomain: "GENERAL",
           materials: [],

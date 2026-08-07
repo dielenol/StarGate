@@ -1,4 +1,8 @@
 import type { EquipmentWorkshopBlueprintInput } from "@/lib/equipment-shop/workshop-blueprint";
+import {
+  CENSOR3_MANUFACTURE_VOTE_PRESET,
+  CENSOR3_MANUFACTURE_VOTE_PRESET_KEY,
+} from "@/lib/bureaucrat-votes/presets";
 
 export interface EquipmentWorkshopPreset {
   key: string;
@@ -143,7 +147,7 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
       },
       defaults: {
         creditCost: 1_200,
-        durationMinutes: 180,
+        durationMinutes: 1_440,
         specialistCodename: "TOWASKI",
         specialistWorkflow: [
           {
@@ -162,6 +166,18 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
           { slug: "force_core", quantity: 1 },
           { slug: "extended-magazine-mod", quantity: 1 },
         ],
+        approvalGate: {
+          mode: "BUREAUCRAT_VOTE",
+          presetKey: CENSOR3_MANUFACTURE_VOTE_PRESET_KEY,
+          title: CENSOR3_MANUFACTURE_VOTE_PRESET.title,
+          content: CENSOR3_MANUFACTURE_VOTE_PRESET.content,
+          conditionalMaterials: [
+            { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
+          ],
+          approvedOutputs: [
+            { slug: "zulu-0028-censor-3", quantity: 3 },
+          ],
+        },
         result: {
           name: "CMMG Mk.47 Mutant 「피안의 보루」",
           description:
