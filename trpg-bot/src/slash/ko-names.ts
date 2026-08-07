@@ -9,9 +9,49 @@
 /** Phase 2 신규 슬래시 — `/세션확인`. 이번 달 TRPG 세션 캘린더 + 웹 링크 응답. */
 export const SESSION_CHECK_NAME = "세션확인";
 
+/** 활성 명령 전체와 주제별 사용법을 보여주는 `/도움말`. */
+export const HELP_NAME = "도움말";
+export const HELP_TOPIC_OPTION = "기능";
+
+export const HelpTopic = {
+  all: "all",
+  session: "session",
+  dice: "dice",
+  music: "music",
+} as const;
+
+export type HelpTopicValue = (typeof HelpTopic)[keyof typeof HelpTopic];
+
+export function isHelpTopic(value: string): value is HelpTopicValue {
+  return Object.values(HelpTopic).includes(value as HelpTopicValue);
+}
+
 /** Dice Maiden 계열 주사위 슬래시 — `/roll`, `/r`. */
 export const ROLL_NAME = "roll";
 export const ROLL_SHORT_NAME = "r";
+
+/** YouTube 음악 재생과 제어를 한곳에 묶는 `/음악` 루트. */
+export const MUSIC_ROOT = "음악";
+
+/** `/음악` 아래에 노출되는 한글 서브커맨드. */
+export const MusicSubcommand = {
+  play: "재생",
+  pause: "일시정지",
+  resume: "재개",
+  skip: "건너뛰기",
+  stop: "정지",
+  queue: "대기열",
+  leave: "퇴장",
+} as const;
+
+export type MusicSubcommandName =
+  (typeof MusicSubcommand)[keyof typeof MusicSubcommand];
+
+export const MUSIC_QUERY_OPTION = "검색어";
+
+export function isMusicCommandName(value: string): value is typeof MUSIC_ROOT {
+  return value === MUSIC_ROOT;
+}
 
 export const SCHEDULE_ROOT = "일정";
 

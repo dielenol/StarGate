@@ -3,9 +3,9 @@
  *
  * Discord REST API 로 슬래시 커맨드를 등록합니다.
  *
- * Phase 2 부터 `/일정` 루트와 `/참여확인` 단독 커맨드 등록은 해제되었습니다.
- * 신규 `/세션확인` 1 개만 등록합니다 — 기존 핸들러 코드는 비활성 상태로
- * 코드만 보존되어 있습니다 (호출처 없음).
+ * Phase 2부터 `/일정` 루트와 `/참여확인` 단독 커맨드 등록은 해제되었습니다.
+ * 현재는 도움말, 세션 확인, 주사위, YouTube 음악 명령만 등록합니다. 기존
+ * 일정 관리 핸들러 코드는 비활성 상태로 보존되어 있습니다 (호출처 없음).
  *
  * @module commands/register
  */
@@ -14,6 +14,12 @@ import { REST, Routes } from "discord.js";
 
 import { config } from "../config.js";
 import {
+  HELP_NAME,
+  HELP_TOPIC_OPTION,
+  HelpTopic,
+  MUSIC_QUERY_OPTION,
+  MUSIC_ROOT,
+  MusicSubcommand,
   ROLL_NAME,
   ROLL_SHORT_NAME,
   SESSION_CHECK_NAME,
@@ -21,18 +27,17 @@ import {
 
 const CURRENT_YEAR = 2026;
 
-/** `/세션확인` — 이번 달 TRPG 세션 일정을 PNG + 웹 링크로 응답 */
+/** `/세션확인` — 선택한 달의 TRPG 세션 일정과 캘린더를 응답 */
 const SESSION_CHECK_CMD = {
   type: 1 as const,
   name: SESSION_CHECK_NAME,
-  description:
-    "이번 달 TRPG 세션 일정을 PNG로 보여주고 웹 캘린더 링크를 첨부합니다",
+  description: "선택한 달의 TRPG 세션 일정·월간 캘린더·웹 링크를 확인합니다",
   default_member_permissions: null,
   options: [
     {
       type: 4,
       name: "연도",
-      description: "조회할 연도",
+      description: "조회할 연도 (미입력 시 현재 연도)",
       min_value: CURRENT_YEAR,
       max_value: 2100,
       required: false,
@@ -40,7 +45,7 @@ const SESSION_CHECK_CMD = {
     {
       type: 4,
       name: "월",
-      description: "조회할 월",
+      description: "조회할 월 (미입력 시 현재 월)",
       min_value: 1,
       max_value: 12,
       required: false,
@@ -48,17 +53,17 @@ const SESSION_CHECK_CMD = {
     {
       type: 3,
       name: "모드",
-      description: "출력 상세도",
+      description: "세션별 상세 목록을 표시할지 선택합니다",
       required: false,
       choices: [
-        { name: "상세", value: "detail" },
-        { name: "간단", value: "summary" },
+        { name: "상세 보기", value: "detail" },
+        { name: "요약만 보기", value: "summary" },
       ],
     },
     {
       type: 5,
       name: "비공개",
-      description: "나에게만 보이도록 응답합니다",
+      description: "명령 결과를 나에게만 표시합니다",
       required: false,
     },
   ],
@@ -68,14 +73,14 @@ const DICE_ROLL_OPTIONS = [
   {
     type: 3,
     name: "식",
-    description: "주사위 식. 예: 2d6+3, 4d6 k3, 6d10 t7",
+    description: "굴릴 주사위 식 (예: 2d6+3, 4d6 k3, help)",
     max_length: 500,
     required: true,
   },
   {
     type: 5,
     name: "비공개",
-    description: "나에게만 보이도록 응답합니다",
+    description: "주사위 결과를 나에게만 표시합니다",
     required: false,
   },
 ];
@@ -84,7 +89,7 @@ const DICE_ROLL_OPTIONS = [
 const ROLL_CMD = {
   type: 1 as const,
   name: ROLL_NAME,
-  description: "TRPG 주사위를 굴립니다",
+  description: "Dice Maiden 문법으로 TRPG 주사위 식을 굴립니다",
   default_member_permissions: null,
   options: DICE_ROLL_OPTIONS,
 };
@@ -93,10 +98,94 @@ const ROLL_CMD = {
 const ROLL_SHORT_CMD = {
   type: 1 as const,
   name: ROLL_SHORT_NAME,
-  description: "TRPG 주사위를 굴립니다",
+  description: "빠르게 TRPG 주사위를 굴립니다 (/roll 단축 명령)",
   default_member_permissions: null,
   options: DICE_ROLL_OPTIONS,
 };
+
+const HELP_CMD = {
+  type: 1 as const,
+  name: HELP_NAME,
+  description: "다채봇의 세션·주사위·음악 명령 사용법과 실행 예시를 확인합니다",
+  default_member_permissions: null,
+  options: [
+    {
+      type: 3 as const,
+      name: HELP_TOPIC_OPTION,
+      description: "자세히 확인할 기능을 선택합니다 (미입력 시 전체)",
+      required: false,
+      choices: [
+        { name: "전체 명령", value: HelpTopic.all },
+        { name: "세션 확인", value: HelpTopic.session },
+        { name: "주사위", value: HelpTopic.dice },
+        { name: "YouTube 음악", value: HelpTopic.music },
+      ],
+    },
+  ],
+} as const;
+
+const MUSIC_COMMAND = {
+  type: 1 as const,
+  name: MUSIC_ROOT,
+  description: "YouTube 음악을 재생하고 대기열과 음성 연결을 제어합니다",
+  default_member_permissions: null,
+  options: [
+    {
+      type: 1 as const,
+      name: MusicSubcommand.play,
+      description: "YouTube 링크나 검색어를 재생하거나 대기열에 추가합니다",
+      options: [
+        {
+          type: 3 as const,
+          name: MUSIC_QUERY_OPTION,
+          description: "YouTube 영상 링크 또는 제목·검색어 (재생목록은 첫 영상만)",
+          min_length: 1,
+          max_length: 200,
+          required: true,
+        },
+      ],
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.pause,
+      description: "현재 재생 중인 음악을 잠시 멈춥니다",
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.resume,
+      description: "일시정지한 음악을 이어서 재생합니다",
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.skip,
+      description: "현재 곡을 건너뛰고 다음 곡을 재생합니다",
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.stop,
+      description: "현재 재생을 멈추고 대기열을 비웁니다",
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.queue,
+      description: "현재 곡과 다음 재생 목록 및 음질 경로를 확인합니다",
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.leave,
+      description: "재생과 대기열을 정리하고 음성 채널에서 나갑니다",
+    },
+  ],
+} as const;
+
+/** Discord에 현재 등록하는 전체 명령 payload. */
+export const ACTIVE_COMMANDS = [
+  SESSION_CHECK_CMD,
+  ROLL_CMD,
+  ROLL_SHORT_CMD,
+  HELP_CMD,
+  MUSIC_COMMAND,
+] as const;
 
 /**
  * 슬래시 커맨드를 Discord 에 등록합니다.
@@ -106,16 +195,14 @@ const ROLL_SHORT_CMD = {
  */
 export async function registerCommands(): Promise<void> {
   const rest = new REST().setToken(config.discordToken);
-  const body = [SESSION_CHECK_CMD, ROLL_CMD, ROLL_SHORT_CMD];
-
   if (config.guildId) {
     await rest.put(
       Routes.applicationGuildCommands(config.discordClientId, config.guildId),
-      { body },
+      { body: ACTIVE_COMMANDS },
     );
   } else {
     await rest.put(Routes.applicationCommands(config.discordClientId), {
-      body,
+      body: ACTIVE_COMMANDS,
     });
   }
 }

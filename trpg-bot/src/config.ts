@@ -3,8 +3,8 @@
  *
  * 봇 실행에 필요한 DISCORD_TOKEN, DISCORD_CLIENT_ID, MONGODB_URI 및
  * Phase 2 신규 추가 변수 (TRPG_GUILD_ID, TRPG_FALLBACK_CHANNEL_ID,
- * TRPG_WEB_BASE_URL, polling/reminder interval) 를 process.env 에서 읽어
- * 검증 후 반환합니다.
+ * TRPG_MUSIC_CHANNEL_ID, TRPG_WEB_BASE_URL, polling/reminder interval) 를
+ * process.env 에서 읽어 검증 후 반환합니다.
  *
  * @module config
  */
@@ -84,6 +84,11 @@ function getTrpgFallbackChannelId(): string {
   return id;
 }
 
+/** YouTube 음악 기능 사용 시 단일 상태판을 표시할 전용 텍스트 채널 ID. */
+function getTrpgMusicChannelId(): string | undefined {
+  return process.env.TRPG_MUSIC_CHANNEL_ID?.trim() || undefined;
+}
+
 /**
  * trpg-web 베이스 URL (Phase 2 필수).
  *
@@ -133,6 +138,7 @@ export const config = {
   guildId: getGuildId(),
   trpgGuildId: getTrpgGuildId(),
   trpgFallbackChannelId: getTrpgFallbackChannelId(),
+  trpgMusicChannelId: getTrpgMusicChannelId(),
   trpgWebBaseUrl: getTrpgWebBaseUrl(),
   trpgPollingIntervalMs: getTrpgPollingIntervalMs(),
   trpgReminderIntervalMs: getTrpgReminderIntervalMs(),

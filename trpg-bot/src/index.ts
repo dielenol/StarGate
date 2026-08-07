@@ -4,8 +4,10 @@
  * Phase 2 에서는 일정 슬래시 (`/일정`, `/참여확인`) 와 버튼 응답 흐름 / 마감·
  * 리마인드 스케줄러 호출을 모두 제거하고, 다음 책임만 유지한다:
  *   1. `/세션확인` 슬래시 처리
- *   2. 길드 멤버 동기화 (ClientReady + GuildMember* 이벤트 + 24h 재동기화)
- *   3. trpg_sessions 생성/수정/취소 알림 폴링 + 24h 리마인드 폴링
+ *   2. `/도움말`, `/roll`, `/r` 슬래시 처리
+ *   3. 길드 멤버 동기화 (ClientReady + GuildMember* 이벤트 + 24h 재동기화)
+ *   4. trpg_sessions 생성/수정/취소 알림 폴링 + 24h 리마인드 폴링
+ *   5. YouTube 오디오 검색·재생과 길드별 음성 대기열
  *
  * 비활성 파일 (`commands/session-*`, `scheduler/close-checker`, `scheduler/reminder-checker`,
  * `handlers/button-handler`, `utils/result-card-image`) 은 코드만 보존되어 있으며
@@ -20,8 +22,11 @@ import { config } from "./config.js";
 import { closeDb, connectDb } from "./db/client.js";
 
 import { handleDiceRoll, isDiceRollCommandName } from "./commands/dice-roll.js";
+import { handleHelpCommand } from "./commands/help.js";
+import { handleMusicCommand } from "./commands/music.js";
 import { registerCommands } from "./commands/register.js";
 import { handleTrpgSessionCheck } from "./commands/trpg-session-check.js";
+import { MusicService } from "./music/music-service.js";
 import { startTrpgCancellationNotificationChecker } from "./scheduler/trpg-cancellation-notification-checker.js";
 import { startTrpgNotificationChecker } from "./scheduler/trpg-notification-checker.js";
 import { startTrpgReminderChecker } from "./scheduler/trpg-reminder-checker.js";
@@ -32,16 +37,30 @@ import {
   syncAllGuildMembers,
   upsertGuildMemberFromDiscord,
 } from "./services/member-sync.js";
-import { SESSION_CHECK_NAME } from "./slash/ko-names.js";
+import {
+  HELP_NAME,
+  isMusicCommandName,
+  SESSION_CHECK_NAME,
+} from "./slash/ko-names.js";
 import { closeTrpgCalendarBrowser } from "./utils/trpg-calendar-image.js";
 
 // Guilds: 기본 길드 정보 / GuildMembers: 멤버 fetch + add/remove/update 이벤트
 // Partials: GuildMemberRemove 가 cleanup 으로 partial 객체를 전달할 수 있으므로
 //   GuildMember/User 를 등록해 이벤트 자체가 누락되지 않도록 한다.
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
   partials: [Partials.GuildMember, Partials.User],
 });
+
+const musicService = new MusicService(
+  client,
+  config.trpgGuildId,
+  config.trpgMusicChannelId,
+);
 
 /** 폴링 스케줄러 cleanup 핸들 — shutdown 에서 호출 */
 let stopNotificationChecker: (() => void) | null = null;
@@ -96,9 +115,21 @@ client.once(Events.ClientReady, async (readyClient) => {
 
   try {
     await registerCommands();
-    console.log("[TRPG Bot] 슬래시 커맨드 등록 완료 (/세션확인, /roll, /r)");
+    console.log(
+      "[TRPG Bot] 슬래시 커맨드 등록 완료 (/세션확인, /roll, /r, /도움말, /음악)",
+    );
   } catch (err) {
     console.error("[TRPG Bot] 커맨드 등록 실패:", err);
+  }
+
+  try {
+    const runtime = await musicService.initialize();
+    console.log(
+      `[TRPG Bot] 음악 런타임 준비 완료 — yt-dlp=${runtime.ytDlpVersion}, ${runtime.ffmpegVersion}`,
+    );
+  } catch (err) {
+    // 음악 기능만 비활성화하고 기존 세션 조회·알림 책임은 계속 수행한다.
+    console.error("[TRPG Bot] 음악 런타임 준비 실패:", err);
   }
 
   // 폴백 채널 사전 검증 (잘못된 설정 조기 알림)
@@ -135,7 +166,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
   if (isDiceRollCommandName(interaction.commandName)) {
     await handleDiceRoll(interaction);
+    return;
   }
+  if (interaction.commandName === HELP_NAME) {
+    await handleHelpCommand(interaction);
+    return;
+  }
+  if (isMusicCommandName(interaction.commandName)) {
+    await handleMusicCommand(interaction, musicService);
+  }
+});
+
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+  musicService.handleVoiceStateUpdate(oldState, newState);
 });
 
 client.on(Events.GuildMemberAdd, async (member) => {
@@ -175,9 +218,10 @@ client.on(Events.GuildMemberRemove, async (member) => {
  *
  * 순서:
  *   1. 인터벌(폴링/일일동기화) 정리 — 새 작업 흘러들지 않도록 차단.
- *   2. Discord client.destroy() — 게이트웨이 cut-off, 이후 이벤트 차단.
- *   3. 짧은 대기 — 진행 중인 마이크로태스크가 정리될 시간.
- *   4. 외부 자원 정리 (Puppeteer browser, MongoDB connection).
+ *   2. 음악 스트림·FFmpeg·음성 연결 정리.
+ *   3. Discord client.destroy() — 게이트웨이 cut-off, 이후 이벤트 차단.
+ *   4. 짧은 대기 — 진행 중인 마이크로태스크가 정리될 시간.
+ *   5. 외부 자원 정리 (Puppeteer browser, MongoDB connection).
  */
 async function shutdown(signal: string): Promise<void> {
   console.log(`[TRPG Bot] 종료 중... (${signal})`);
@@ -189,17 +233,20 @@ async function shutdown(signal: string): Promise<void> {
   if (stopReminderChecker) stopReminderChecker();
   if (stopDailyMemberSync) stopDailyMemberSync();
 
-  // 2) Discord 클라이언트 종료 (게이트웨이 cut-off)
+  // 2) 음악 스트림과 음성 연결 종료
+  await musicService.destroyAll();
+
+  // 3) Discord 클라이언트 종료 (게이트웨이 cut-off)
   try {
     await client.destroy();
   } catch {
     /* ignore */
   }
 
-  // 3) 잔여 마이크로태스크 처리 대기 (best-effort)
+  // 4) 잔여 마이크로태스크 처리 대기 (best-effort)
   await new Promise((r) => setTimeout(r, 1000));
 
-  // 4) 외부 자원 정리
+  // 5) 외부 자원 정리
   await closeTrpgCalendarBrowser();
   await closeDb();
   process.exit(0);
