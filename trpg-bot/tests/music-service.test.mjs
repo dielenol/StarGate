@@ -23,16 +23,18 @@ class FakePlayer extends EventEmitter {
   played = [];
   stopCalls = 0;
 
-  transition(status) {
+  transition(status, resource = this.state.resource) {
     const oldState = this.state;
-    const newState = { status };
+    const newState =
+      status === AudioPlayerStatus.Idle ? { status } : { status, resource };
     this.state = newState;
     this.emit("stateChange", oldState, newState);
   }
 
   play(resource) {
+    resource.playbackDuration = 0;
     this.played.push(resource);
-    this.transition(AudioPlayerStatus.Playing);
+    this.transition(AudioPlayerStatus.Playing, resource);
   }
 
   stop() {
@@ -59,7 +61,12 @@ class FakePlayer extends EventEmitter {
     return true;
   }
 
-  finish() {
+  finish(playbackDurationMs) {
+    if (this.state.resource) {
+      this.state.resource.playbackDuration =
+        playbackDurationMs ??
+        (this.state.resource.metadata?.durationSeconds ?? 0) * 1_000;
+    }
     this.transition(AudioPlayerStatus.Idle);
   }
 }
@@ -290,7 +297,11 @@ test("재생 오류가 난 곡은 반복 대기열에 다시 넣지 않는다", 
   await waitFor(() => player.played.length === 1, "첫 트랙이 재생되지 않았습니다.");
 
   player.emit("error", new Error("stream failed"));
-  await waitFor(() => player.played.length === 2, "오류 뒤 다음 곡으로 넘어가지 않았습니다.");
+  await waitFor(() => player.played.length === 2, "오류 뒤 안정 모드로 재시도되지 않았습니다.");
+  assert.equal(session.snapshot().current?.videoId, "video-1");
+
+  player.emit("error", new Error("stable stream failed"));
+  await waitFor(() => player.played.length === 3, "안정 모드 오류 뒤 다음 곡으로 넘어가지 않았습니다.");
   assert.equal(session.snapshot().current?.videoId, "video-2");
   assert.equal(session.snapshot().upcoming.length, 0);
   session.disconnect();
@@ -332,6 +343,69 @@ test("재생 성공은 시작 직후가 아니라 곡이 정상 종료된 뒤 �
   player.finish();
   await waitFor(() => successes.length === 1, "정상 종료가 보고되지 않았습니다.");
   assert.equal(successes[0].track.videoId, "video-1");
+  session.disconnect();
+});
+
+test("직접 Opus 스트림이 조기 종료되면 FFmpeg 안정 모드로 한 번 재시도한다", async () => {
+  const resourceOptions = [];
+  const failures = [];
+  const successes = [];
+  const { session, player } = createSession({
+    createAudioResource: async (item, options) => {
+      resourceOptions.push(options);
+      return {
+        ...managedResource(item),
+        qualityMode: options?.forceTranscode
+          ? "opus-transcode"
+          : "opus-passthrough",
+      };
+    },
+    onPlaybackFailure: (event) => failures.push(event),
+    onPlaybackSucceeded: (event) => successes.push(event),
+  });
+  session.enqueue(track(1));
+  await waitFor(() => player.played.length === 1, "첫 재생이 시작되지 않았습니다.");
+
+  player.finish(1_000);
+  await waitFor(
+    () => player.played.length === 2,
+    "조기 종료 뒤 안정 모드 재시도가 시작되지 않았습니다.",
+  );
+  assert.equal(resourceOptions[0]?.forceTranscode, false);
+  assert.equal(resourceOptions[1]?.forceTranscode, true);
+  assert.equal(session.snapshot().currentQualityMode, "opus-transcode");
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].stage, "stream");
+  assert.equal(successes.length, 0);
+
+  player.finish();
+  await waitFor(() => successes.length === 1, "안정 모드 정상 종료가 보고되지 않았습니다.");
+  session.disconnect();
+});
+
+test("FFmpeg 안정 모드도 조기 종료되면 같은 곡을 반복 재시도하지 않는다", async () => {
+  const failures = [];
+  const { session, player } = createSession({
+    createAudioResource: async (item, options) => ({
+      ...managedResource(item),
+      qualityMode: options?.forceTranscode
+        ? "opus-transcode"
+        : "opus-passthrough",
+    }),
+    onPlaybackFailure: (event) => failures.push(event),
+  });
+  session.enqueue(track(1));
+  await waitFor(() => player.played.length === 1, "첫 재생이 시작되지 않았습니다.");
+  player.finish(1_000);
+  await waitFor(() => player.played.length === 2, "안정 모드 재시도가 없습니다.");
+
+  player.finish(1_000);
+  await waitFor(
+    () => session.snapshot().current === null,
+    "두 번째 조기 종료 뒤 트랙이 정리되지 않았습니다.",
+  );
+  assert.equal(player.played.length, 2);
+  assert.equal(failures.length, 2);
   session.disconnect();
 });
 

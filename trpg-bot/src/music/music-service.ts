@@ -62,6 +62,8 @@ const VOICE_READY_TIMEOUT_MS = 30_000;
 const MAX_CONCURRENT_RESOLUTIONS_PER_GUILD = 2;
 const PLAYBACK_FAILURE_ALERT_THRESHOLD = 3;
 const PLAYBACK_FAILURE_WINDOW_MS = 5 * 60_000;
+const PREMATURE_PLAYBACK_MAX_MS = 30_000;
+const PREMATURE_PLAYBACK_MIN_REMAINING_MS = 30_000;
 
 export interface QueueSnapshot {
   current: MusicTrack | null;
@@ -208,6 +210,8 @@ export class GuildMusicSession {
   private playbackToken = 0;
   private recentError: string | null = null;
   private repeatMode: MusicRepeatModeValue = MusicRepeatMode.off;
+  private forceTranscodeTrack: MusicTrack | null = null;
+  private currentUsesForcedTranscode = false;
   private destroyed = false;
 
   constructor(
@@ -229,12 +233,21 @@ export class GuildMusicSession {
     this.connection.subscribe(this.player);
 
     this.player.on("stateChange", (oldState, newState) => {
+      const playbackDurationMs =
+        oldState.status === AudioPlayerStatus.Idle
+          ? 0
+          : oldState.resource.playbackDuration;
+      console.info(
+        `[music] 플레이어 상태 guild=${this.guildId} track=${this.current?.videoId ?? "none"} ` +
+          `${oldState.status}->${newState.status} playbackMs=${playbackDurationMs} ` +
+          `quality=${this.currentQualityMode ?? "preparing"}`,
+      );
       if (
         oldState.status !== AudioPlayerStatus.Idle &&
         newState.status === AudioPlayerStatus.Idle &&
         this.current
       ) {
-        this.finishCurrent();
+        this.handlePlaybackEnded(playbackDurationMs);
       } else if (this.current && oldState.status !== newState.status) {
         this.syncPanel();
       }
@@ -247,11 +260,34 @@ export class GuildMusicSession {
       );
       if (failedTrack) {
         this.reportPlaybackFailure(failedTrack, "stream", error);
+        if (
+          this.currentQualityMode === "opus-passthrough" &&
+          !this.currentUsesForcedTranscode
+        ) {
+          this.retryCurrentWithForcedTranscode(
+            failedTrack,
+            "원본 Opus 스트림 오류로 FFmpeg 안정 모드에서 한 번 다시 재생합니다.",
+          );
+          return;
+        }
         this.recentError = "오디오 스트림이 중단되어 다음 곡으로 넘어갔습니다.";
         this.finishCurrent(false, false);
       }
     });
-    this.connection.on("stateChange", (_oldState, newState) => {
+    this.connection.on("stateChange", (oldState, newState) => {
+      const closeCode =
+        newState.status === VoiceConnectionStatus.Disconnected &&
+        newState.reason === VoiceConnectionDisconnectReason.WebSocketClose
+          ? newState.closeCode
+          : "none";
+      const disconnectDetail =
+        newState.status === VoiceConnectionStatus.Disconnected
+          ? ` reason=${newState.reason} closeCode=${closeCode}`
+          : "";
+      console.info(
+        `[music] 음성 연결 상태 guild=${this.guildId} channel=${this.voiceChannelId} ` +
+          `${oldState.status}->${newState.status}${disconnectDetail}`,
+      );
       if (newState.status === VoiceConnectionStatus.Disconnected) {
         void this.recoverConnection();
       } else if (newState.status === VoiceConnectionStatus.Destroyed) {
@@ -305,6 +341,9 @@ export class GuildMusicSession {
         { cause: error },
       );
     }
+    console.info(
+      `[music] 음성 연결 준비 완료 guild=${channel.guild.id} channel=${channel.id}`,
+    );
 
     return new GuildMusicSession(
       channel.guild.id,
@@ -396,6 +435,7 @@ export class GuildMusicSession {
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
+    this.currentUsesForcedTranscode = false;
     this.recentError = null;
     this.disposeActiveResource();
     this.player.stop(true);
@@ -410,6 +450,8 @@ export class GuildMusicSession {
     this.queue.length = 0;
     this.current = null;
     this.currentQualityMode = null;
+    this.currentUsesForcedTranscode = false;
+    this.forceTranscodeTrack = null;
     this.recentError = null;
     this.repeatMode = MusicRepeatMode.off;
     this.disposeActiveResource();
@@ -427,6 +469,10 @@ export class GuildMusicSession {
 
   handleVoiceMembershipChanged(channel: VoiceBasedChannel): void {
     const listenerCount = channel.members.filter((member) => !member.user.bot).size;
+    console.info(
+      `[music] 청취자 상태 guild=${this.guildId} channel=${this.voiceChannelId} ` +
+        `listeners=${listenerCount}`,
+    );
     if (listenerCount > 0) {
       this.clearEmptyChannelTimer();
       return;
@@ -465,8 +511,11 @@ export class GuildMusicSession {
     }
 
     const token = ++this.playbackToken;
+    const forceTranscode = this.forceTranscodeTrack === next;
+    if (forceTranscode) this.forceTranscodeTrack = null;
     this.current = next;
     this.currentQualityMode = null;
+    this.currentUsesForcedTranscode = forceTranscode;
     this.clearIdleTimer();
     this.syncPanel();
 
@@ -475,6 +524,7 @@ export class GuildMusicSession {
     try {
       const managed = await this.dependencies.createAudioResource(next, {
         signal: resourceController.signal,
+        forceTranscode,
       });
       if (
         this.destroyed ||
@@ -517,6 +567,7 @@ export class GuildMusicSession {
       if (this.playbackToken === token && this.current === next) {
         this.current = null;
         this.currentQualityMode = null;
+        this.currentUsesForcedTranscode = false;
         this.recentError =
           error instanceof YoutubeSourceError
             ? error.message
@@ -537,6 +588,7 @@ export class GuildMusicSession {
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
+    this.currentUsesForcedTranscode = false;
     if (clearRecentError) this.recentError = null;
     if (allowRepeat && this.repeatMode === MusicRepeatMode.track) {
       this.queue.unshift(finished);
@@ -544,6 +596,70 @@ export class GuildMusicSession {
       this.queue.push(finished);
     }
     this.disposeActiveResource();
+    this.player.stop(true);
+    this.syncPanel();
+    this.queueStart();
+  }
+
+  private handlePlaybackEnded(playbackDurationMs: number): void {
+    const track = this.current;
+    if (!track) return;
+    const expectedDurationMs =
+      track.durationSeconds === null ? null : track.durationSeconds * 1_000;
+    const endedPrematurely =
+      !track.isLive &&
+      expectedDurationMs !== null &&
+      playbackDurationMs < PREMATURE_PLAYBACK_MAX_MS &&
+      expectedDurationMs - playbackDurationMs >
+        PREMATURE_PLAYBACK_MIN_REMAINING_MS;
+    if (!endedPrematurely) {
+      this.finishCurrent();
+      return;
+    }
+
+    const error = new YoutubeSourceError(
+      `YouTube 오디오 스트림이 ${playbackDurationMs}ms 만에 조기 종료되었습니다 ` +
+        `(expected=${expectedDurationMs}ms).`,
+    );
+    console.warn(
+      `[music] 스트림 조기 종료 guild=${this.guildId} track=${track.videoId} ` +
+        `playbackMs=${playbackDurationMs} expectedMs=${expectedDurationMs} ` +
+        `quality=${this.currentQualityMode ?? "unknown"}`,
+    );
+    this.reportPlaybackFailure(track, "stream", error);
+
+    if (
+      this.currentQualityMode === "opus-passthrough" &&
+      !this.currentUsesForcedTranscode
+    ) {
+      this.retryCurrentWithForcedTranscode(
+        track,
+        "원본 Opus 스트림이 조기 종료되어 FFmpeg 안정 모드로 한 번 다시 재생합니다.",
+      );
+      return;
+    }
+
+    this.recentError =
+      "안정 모드에서도 오디오 스트림이 조기 종료되어 다음 곡으로 넘어갔습니다.";
+    this.finishCurrent(false, false);
+  }
+
+  private retryCurrentWithForcedTranscode(
+    track: MusicTrack,
+    recentError: string,
+  ): void {
+    if (this.current !== track || this.destroyed) return;
+    this.playbackToken += 1;
+    this.current = null;
+    this.currentQualityMode = null;
+    this.currentUsesForcedTranscode = false;
+    this.recentError = recentError;
+    this.disposeActiveResource();
+    // 오류 이벤트 직후 늦게 도착하는 이전 resource의 Idle 전환이 재시도 곡을
+    // 종료한 것으로 오인되지 않게, 새 곡을 예약하기 전에 player를 확실히 비운다.
+    this.player.stop(true);
+    this.forceTranscodeTrack = track;
+    this.queue.unshift(track);
     this.syncPanel();
     this.queueStart();
   }
@@ -640,11 +756,18 @@ export class GuildMusicSession {
 
   private dispose(destroyConnection: boolean, notice: string): void {
     if (this.destroyed) return;
+    console.info(
+      `[music] 세션 정리 guild=${this.guildId} channel=${this.voiceChannelId} ` +
+        `destroyConnection=${destroyConnection} track=${this.current?.videoId ?? "none"} ` +
+        `queued=${this.queue.length} reason=${notice}`,
+    );
     this.destroyed = true;
     this.playbackToken += 1;
     this.queue.length = 0;
     this.current = null;
     this.currentQualityMode = null;
+    this.currentUsesForcedTranscode = false;
+    this.forceTranscodeTrack = null;
     this.repeatMode = MusicRepeatMode.off;
     this.clearIdleTimer();
     this.clearEmptyChannelTimer();

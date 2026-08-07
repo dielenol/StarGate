@@ -33,6 +33,8 @@ export interface AudioResourceRequestOptions {
   signal?: AbortSignal;
   responseTimeoutMs?: number;
   firstByteTimeoutMs?: number;
+  /** 직접 Opus 전달이 조기 종료됐을 때 FFmpeg 재연결 경로를 강제한다. */
+  forceTranscode?: boolean;
 }
 
 export interface ManagedAudioResource {
@@ -431,7 +433,10 @@ export async function createAudioResourceFromMedia(
   media: YoutubeMediaSource,
   options: AudioResourceRequestOptions = {},
 ): Promise<ManagedAudioResource> {
-  if (media.qualityMode === "opus-passthrough") {
+  if (
+    media.qualityMode === "opus-passthrough" &&
+    options.forceTranscode !== true
+  ) {
     return createPassthroughResource(track, media.url, media.headers, options);
   }
   return createTranscodedResource(track, media.url, media.headers, options);
