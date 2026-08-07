@@ -51,3 +51,11 @@
 - 보고서가 참조 중인 인물의 코드네임 변경·비공개 전환·삭제는 원자적 참조 잠금과 `409`로 차단해 끊어진 링크를 방지한다.
 - 검증: shared-db 참조 무결성 테스트, API 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 상세 화면 확인
 - 관련 커밋: `a57ecd94`
+
+## 2026-08-07 · 기능 변경 · 사망 인원 기록 아카이브
+
+- 확정 사망만 `lifeStatus: DECEASED`로 구조화하고, 필드가 없는 기존 인원은 생존으로 추론하지 않는 계약을 추가했다.
+- 목록에서는 현역 인원 아래 회색 `ARCHIVED PERSONNEL` 영역으로 분리하고, 상세 Dossier에는 흑백 초상·사망 확정일·근거 작전 보고서를 표시한다. 사망 인원은 COMMANDER와 현직 책임자 집계에서 제외한다.
+- 세션 로그로 확정된 5명(로드리온, 페초린, 게라쉬모프, 퍼크슈타인 에스홀, 닥터 모스)의 spec과 멱등 payload를 작성했다. 라이브 DB write는 실행하지 않았다.
+- 검증: shared-db schema 159건, lore 전체 감사와 NPC 승인 게이트, payload live read-only dry-run, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 데스크톱·모바일 목록/상세 브라우저 확인, critical risk review
+- 관련 커밋: `daa34eb8`
