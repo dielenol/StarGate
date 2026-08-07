@@ -1,13 +1,11 @@
 /**
  * characters.play.skillTraining의 레거시 철학 표기를 문학으로 통합한다.
  *
- * 기본은 읽기 전용 dry-run이다. 실제 쓰기는 두 플래그를 모두 요구한다.
+ * 2026-08-07 운영 이관을 완료했다. 현재 스크립트는 잔여 레거시 표기 진단만
+ * 허용하며, 새로 발견된 대상은 별도 검토·승인된 migration으로 처리한다.
  *
  *   node --env-file-if-exists=.env.local --experimental-strip-types \
  *     scripts/migrate-character-skill-training.ts
- *   node --env-file-if-exists=.env.local --experimental-strip-types \
- *     scripts/migrate-character-skill-training.ts --execute --yes
- *
  * `문학`과 `철학`은 같은 기술 훈련 항목이므로 둘이 함께 존재하더라도
  * `문학` 하나만 남기고 중복을 제거한다.
  */
@@ -28,8 +26,8 @@ export type SkillTrainingMigrationPlan =
     };
 
 export interface MigrationMode {
-  execute: boolean;
-  dryRun: boolean;
+  execute: false;
+  dryRun: true;
 }
 
 interface CharacterSkillTrainingDocument {
@@ -49,14 +47,13 @@ function arraysEqual(left: readonly string[], right: readonly string[]): boolean
 }
 
 export function parseMigrationMode(args: readonly string[]): MigrationMode {
-  const execute = args.includes("--execute");
-  const confirmed = args.includes("--yes");
-
-  if (execute && !confirmed) {
-    throw new Error("--execute는 --yes와 함께 사용해야 합니다.");
+  if (args.includes("--execute")) {
+    throw new Error(
+      "운영 문학·철학 migration은 완료되어 직접 실행 경로가 폐쇄되었습니다.",
+    );
   }
 
-  return { execute: execute && confirmed, dryRun: !(execute && confirmed) };
+  return { execute: false, dryRun: true };
 }
 
 export function planSkillTrainingMigration(
@@ -76,7 +73,7 @@ export function planSkillTrainingMigration(
 }
 
 async function main(): Promise<void> {
-  const mode = parseMigrationMode(process.argv.slice(2));
+  parseMigrationMode(process.argv.slice(2));
   const uri = process.env.MONGODB_URI;
   if (!uri) {
     throw new Error("MONGODB_URI 환경변수가 필요합니다.");
@@ -104,7 +101,7 @@ async function main(): Promise<void> {
     };
 
     console.log(
-      `[skill-training] mode=${mode.dryRun ? "DRY-RUN" : "EXECUTE"} candidates=${documents.length}`,
+      `[skill-training] mode=DRY-RUN candidates=${documents.length}`,
     );
 
     for (const document of documents) {
@@ -121,47 +118,14 @@ async function main(): Promise<void> {
       if (plan.status === "unchanged") continue;
 
       console.log(
-        `[skill-training] ${mode.dryRun ? "would-update" : "update"} target=${target} from=${JSON.stringify(plan.original)} to=${JSON.stringify(plan.normalized)}`,
+        `[skill-training] would-update target=${target} from=${JSON.stringify(plan.original)} to=${JSON.stringify(plan.normalized)}`,
       );
-      if (mode.dryRun) continue;
-
-      const result = await characters.updateOne(
-        {
-          _id: document._id,
-          "play.skillTraining": plan.original,
-        },
-        {
-          $set: {
-            "play.skillTraining": plan.normalized,
-            updatedAt: new Date(),
-          },
-        },
-      );
-      if (result.matchedCount !== 1 || result.modifiedCount !== 1) {
-        throw new Error(
-          `동시 변경 또는 쓰기 실패로 중단: ${target} matched=${result.matchedCount} modified=${result.modifiedCount}`,
-        );
-      }
-
-      const written = await characters.findOne(
-        { _id: document._id },
-        { projection: { "play.skillTraining": 1 } },
-      );
-      const verified = planSkillTrainingMigration(written?.play?.skillTraining);
-      if (
-        verified.status !== "unchanged" ||
-        !arraysEqual(verified.original, plan.normalized)
-      ) {
-        throw new Error(`쓰기 후 재조회 검증 실패: ${target}`);
-      }
     }
 
     console.log(`[skill-training] summary=${JSON.stringify(counts)}`);
-    if (mode.dryRun) {
-      console.log(
-        "[skill-training] dry-run 완료. 실제 적용에는 --execute --yes가 모두 필요합니다.",
-      );
-    }
+    console.log(
+      "[skill-training] 진단 완료. 운영 이관 완료 후 직접 실행 경로는 폐쇄되었습니다.",
+    );
   } finally {
     await client.close();
   }

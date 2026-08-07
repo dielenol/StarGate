@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -6,7 +7,7 @@ import {
   planSkillTrainingMigration,
 } from "../migrate-character-skill-training.ts";
 
-test("migration은 기본 dry-run이며 execute는 이중 가드를 요구한다", () => {
+test("완료된 migration은 dry-run 진단만 허용한다", () => {
   assert.deepEqual(parseMigrationMode([]), { execute: false, dryRun: true });
   assert.deepEqual(parseMigrationMode(["--yes"]), {
     execute: false,
@@ -14,12 +15,23 @@ test("migration은 기본 dry-run이며 execute는 이중 가드를 요구한다
   });
   assert.throws(
     () => parseMigrationMode(["--execute"]),
-    /--execute는 --yes와 함께/,
+    /직접 실행 경로가 폐쇄/,
   );
-  assert.deepEqual(parseMigrationMode(["--execute", "--yes"]), {
-    execute: true,
-    dryRun: false,
-  });
+  assert.throws(
+    () => parseMigrationMode(["--execute", "--yes"]),
+    /직접 실행 경로가 폐쇄/,
+  );
+});
+
+test("진단 스크립트에 MongoDB mutation 호출이 남아 있지 않다", () => {
+  const source = readFileSync(
+    new URL("../migrate-character-skill-training.ts", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    source,
+    /\.(?:bulkWrite|insert(?:One|Many)?|replaceOne|update(?:One|Many)?|delete(?:One|Many)?|remove|save|findAndModify|findAndRemove|findOneAnd(?:Delete|Replace|Update)|initialize(?:Ordered|Unordered)BulkOp|create(?:Index|Indexes|SearchIndex|SearchIndexes)|updateSearchIndex|drop(?:Index|Indexes|SearchIndex|SearchIndexes)?|rename|mapReduce)\s*\(/u,
+  );
 });
 
 test("철학 단독 및 결합 토큰은 안전하게 문학으로 변환한다", () => {
