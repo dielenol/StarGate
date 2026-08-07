@@ -8,7 +8,7 @@
     "$setOnInsert": {
       "slug": "cmmg-mk47-mutant-pian-bulwark",
       "displayName": "CMMG Mk.47 Mutant 「피안의 보루」",
-      "version": 1,
+      "version": 2,
       "status": "DRAFT",
       "applicability": {
         "kinds": ["upgrade"],
@@ -38,9 +38,9 @@
         ],
         "approvalGate": {
           "mode": "BUREAUCRAT_VOTE",
-          "presetKey": "zulu-0028-censor-3-manufacture-v1",
+          "presetKey": "zulu-0028-censor-3-manufacture-v2",
           "title": "ZULU-0028 파쇄음절탄 「CENSOR-3」 제작 승인",
-          "content": "**안건 분류** · 특수 자산 가공 승인\n\n**심의 대상**\nZULU-0028 「검열된 비명」 교전 전리품 — 깨진 음절 ×3\n\n**승인 요청**\nZULU-0028 파쇄음절탄 「CENSOR-3」 ×3 제작\n전용 운용자 · 네베드\n\n**운용 효과**\n「피안의 보루」의 기본 소총 피해에 고정 30의 방어 무시 심령 피해를 추가합니다.\n\n**운용 조건**\n- 「피안의 보루」 장착 및 거치 상태\n- U2 「파쇄음절탄 사격」으로만 사용\n- 사격 시 액션 1과 CENSOR-3 1발 소모\n- 일반 탄약은 소모하지 않음\n- 총기 기본 피해와 추가 심령 피해를 함께 판정\n\n**결재 범위**\n본 안건은 회수된 깨진 음절 3개를 가공하여 CENSOR-3 3발을 제작할 권한의 승인 여부만 확정합니다.\n\n가결은 제작 권한 부여를 의미합니다. 재료 차감·제작 착수·완성품 지급은 본 표결의 집행 범위에 포함하지 않으며, 공방 운영 절차에서 별도로 처리합니다.",
+          "content": "**안건 분류** · 특수 자산 가공 승인\n\n**심의 대상**\nZULU-0028 「검열된 비명」 교전 전리품 — 깨진 음절 ×3\n\n**승인 요청**\nZULU-0028 파쇄음절탄 「CENSOR-3」 ×3 제작\n전용 운용자 · 네베드\n\n**운용 효과**\n「피안의 보루」의 기본 소총 피해와 함께 방어를 무시하는 고정 15 소리 피해를 가해 대상의 SAN을 추가로 감소시킵니다.\n\n**운용 조건**\n- 「피안의 보루」 장착 및 거치 상태\n- U2 「파쇄음절탄 사격」으로만 사용\n- 사격 시 액션 1과 CENSOR-3 1발 소모\n- 일반 탄약은 소모하지 않음\n- 총기 기본 피해와 SAN을 감소시키는 추가 소리 피해를 함께 판정\n\n**결재 범위**\n본 안건은 회수된 깨진 음절 3개를 가공하여 CENSOR-3 3발을 제작할 권한의 승인 여부만 확정합니다.\n\n가결은 제작 권한 부여를 의미합니다. 재료 차감·제작 착수·완성품 지급은 본 표결의 집행 범위에 포함하지 않으며, 공방 운영 절차에서 별도로 처리합니다.",
           "conditionalMaterials": [
             {
               "slug": "broken-syllable",
@@ -59,7 +59,7 @@
           "name": "CMMG Mk.47 Mutant 「피안의 보루」",
           "description": "네베드의 Mk.47에 강화 12발 탄창과 접이식 일체형 거치대, 가공 포스코어 안정화 계통을 통합한 전용 개조 돌격소총.",
           "damage": "근거리 7 물리 / 중거리 12 물리 / 장거리 12 물리",
-          "effect": "액션을 소모해 거치·해제한다. 거치 중 이동 불가, 대각선 사격은 다이아몬드 범위를 사용한다.",
+          "effect": "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없지만, 대각선 사격이 가능해진다. 대각선 사격은 다이아몬드 범위로 판정하며, 자세한 범위는 훈련장을 참조한다.",
           "previewImage": "/assets/catalog/equipment/cmmg-mk47-mutant-pian-bulwark.webp",
           "tags": ["공방개조", "전용장비", "원거리무기", "화기", "돌격소총", "네베드", "피안의보루", "거치무기", "TOWASKI", "VERNIER", "U1", "U2"],
           "equipmentActions": [
@@ -67,7 +67,7 @@
               "code": "U1",
               "name": "총기 거치 전환",
               "description": "접이식 거치대를 전개하거나 회수해 총기의 거치 상태를 전환한다.",
-              "effect": "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없고, 대각선 사격을 다이아몬드 범위로 판정한다.",
+              "effect": "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없지만, 대각선 사격이 가능해진다. 대각선 사격은 다이아몬드 범위로 판정하며, 자세한 범위는 훈련장을 참조한다.",
               "kind": "STANCE",
               "actionCost": 1,
               "chargeCost": 0,
@@ -79,8 +79,8 @@
             {
               "code": "U2",
               "name": "파쇄음절탄 사격",
-              "description": "거치 상태에서 CENSOR-3 한 발을 장전해 기본 소총 피해와 고정 심령 피해를 함께 가한다.",
-              "effect": "액션 1과 실제 CENSOR-3 1발을 소모한다. 기본 소총 피해에 방어를 무시하는 30 심령 피해를 추가한다.",
+              "description": "거치 상태에서 CENSOR-3 한 발을 장전해 기본 소총 피해와 고정 15 소리 피해를 함께 가한다.",
+              "effect": "액션 1과 실제 CENSOR-3 1발을 소모한다. 기본 소총 피해와 함께 방어를 무시하는 고정 15 소리 피해를 가해 대상의 SAN을 추가로 감소시킨다.",
               "kind": "CONSUMABLE",
               "actionCost": 1,
               "chargeCost": 0,
@@ -94,8 +94,8 @@
               "rangeMaxCells": 4,
               "usesWeaponAttack": true,
               "additionalDamage": {
-                "type": "PSYCHIC",
-                "amount": 30,
+                "type": "SOUND",
+                "amount": 15,
                 "ignoresDefense": true,
                 "scaling": "NONE"
               },
@@ -150,7 +150,7 @@
       "updatedById": "system:seed",
       "updatedByName": "공방 설계안 seed",
       "createdAt": "2026-08-06T00:00:00.000Z",
-      "updatedAt": "2026-08-06T00:00:00.000Z"
+      "updatedAt": "2026-08-07T00:00:00.000Z"
     }
   },
   "upsert": true

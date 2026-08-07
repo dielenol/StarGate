@@ -221,12 +221,12 @@ function getEquipmentActionDamageLabel(
   damage: WorkshopEquipmentAction["damage"],
 ): string | null {
   if (!damage) return null;
-  const damageType =
-    damage.type === "PSYCHIC"
-      ? "심령"
-      : damage.type === "FIRE"
-        ? "화염"
-        : "물리";
+  const damageType = {
+    PHYSICAL: "물리",
+    FIRE: "화염",
+    PSYCHIC: "심령",
+    SOUND: "소리",
+  }[damage.type];
   return [
     `${damage.amount.toLocaleString()} ${damageType}`,
     damage.ignoresDefense ? "방어 무시" : null,
@@ -3067,6 +3067,7 @@ export default function EquipmentWorkshopAdminClient({
                                           { value: "PHYSICAL", label: "물리" },
                                           { value: "FIRE", label: "화염" },
                                           { value: "PSYCHIC", label: "심령" },
+                                          { value: "SOUND", label: "소리" },
                                         ]}
                                       />
                                       <label>
@@ -3136,6 +3137,7 @@ export default function EquipmentWorkshopAdminClient({
                                           { value: "PHYSICAL", label: "물리" },
                                           { value: "FIRE", label: "화염" },
                                           { value: "PSYCHIC", label: "심령" },
+                                          { value: "SOUND", label: "소리" },
                                         ]}
                                       />
                                       <label>

@@ -481,7 +481,7 @@ function parseEquipmentActionDamage(
   const ignoresDefense = source.ignoresDefense;
   const scaling = source.scaling;
   if (
-    !["PHYSICAL", "FIRE", "PSYCHIC"].includes(String(damageType)) ||
+    !["PHYSICAL", "FIRE", "PSYCHIC", "SOUND"].includes(String(damageType)) ||
     !Number.isSafeInteger(amount) ||
     Number(amount) < 1 ||
     Number(amount) > 999 ||

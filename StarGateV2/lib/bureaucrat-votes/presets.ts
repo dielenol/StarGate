@@ -1,5 +1,5 @@
 export const CENSOR3_MANUFACTURE_VOTE_PRESET_KEY =
-  "zulu-0028-censor-3-manufacture-v1";
+  "zulu-0028-censor-3-manufacture-v2";
 
 export interface BureaucratVotePreset {
   key: string;
@@ -31,14 +31,14 @@ export const CENSOR3_MANUFACTURE_VOTE_PRESET: BureaucratVotePreset = {
     "전용 운용자 · 네베드",
     "",
     "**운용 효과**",
-    "「피안의 보루」의 기본 소총 피해에 고정 30의 방어 무시 심령 피해를 추가합니다.",
+    "「피안의 보루」의 기본 소총 피해와 함께 방어를 무시하는 고정 15 소리 피해를 가해 대상의 SAN을 추가로 감소시킵니다.",
     "",
     "**운용 조건**",
     "- 「피안의 보루」 장착 및 거치 상태",
     "- U2 「파쇄음절탄 사격」으로만 사용",
     "- 사격 시 액션 1과 CENSOR-3 1발 소모",
     "- 일반 탄약은 소모하지 않음",
-    "- 총기 기본 피해와 추가 심령 피해를 함께 판정",
+    "- 총기 기본 피해와 SAN을 감소시키는 추가 소리 피해를 함께 판정",
     "",
     "**결재 범위**",
     "본 안건은 회수된 깨진 음절 3개를 가공하여 CENSOR-3 3발을 제작할 권한의 승인 여부만 확정합니다.",

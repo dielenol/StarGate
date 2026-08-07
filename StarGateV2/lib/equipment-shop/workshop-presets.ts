@@ -184,7 +184,7 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
             "네베드의 Mk.47에 강화 12발 탄창과 접이식 일체형 거치대, 가공 포스코어 안정화 계통을 통합한 전용 개조 돌격소총.",
           damage: "근거리 7 물리 / 중거리 12 물리 / 장거리 12 물리",
           effect:
-            "액션을 소모해 거치·해제한다. 거치 중 이동 불가, 대각선 사격은 다이아몬드 범위를 사용한다.",
+            "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없지만, 대각선 사격이 가능해진다. 대각선 사격은 다이아몬드 범위로 판정하며, 자세한 범위는 훈련장을 참조한다.",
           previewImage:
             "/assets/catalog/equipment/cmmg-mk47-mutant-pian-bulwark.webp",
           tags: [
@@ -208,7 +208,7 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
               description:
                 "접이식 거치대를 전개하거나 회수해 총기의 거치 상태를 전환한다.",
               effect:
-                "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없고, 대각선 사격을 다이아몬드 범위로 판정한다.",
+                "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없지만, 대각선 사격이 가능해진다. 대각선 사격은 다이아몬드 범위로 판정하며, 자세한 범위는 훈련장을 참조한다.",
               kind: "STANCE",
               actionCost: 1,
               chargeCost: 0,
@@ -221,9 +221,9 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
               code: "U2",
               name: "파쇄음절탄 사격",
               description:
-                "거치 상태에서 CENSOR-3 한 발을 장전해 기본 소총 피해와 고정 심령 피해를 함께 가한다.",
+                "거치 상태에서 CENSOR-3 한 발을 장전해 기본 소총 피해와 고정 15 소리 피해를 함께 가한다.",
               effect:
-                "액션 1과 실제 CENSOR-3 1발을 소모한다. 기본 소총 피해에 방어를 무시하는 30 심령 피해를 추가한다.",
+                "액션 1과 실제 CENSOR-3 1발을 소모한다. 기본 소총 피해와 함께 방어를 무시하는 고정 15 소리 피해를 가해 대상의 SAN을 추가로 감소시킨다.",
               kind: "CONSUMABLE",
               actionCost: 1,
               chargeCost: 0,
@@ -237,8 +237,8 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
               rangeMaxCells: 4,
               usesWeaponAttack: true,
               additionalDamage: {
-                type: "PSYCHIC",
-                amount: 30,
+                type: "SOUND",
+                amount: 15,
                 ignoresDefense: true,
                 scaling: "NONE",
               },

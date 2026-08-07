@@ -504,7 +504,7 @@ test("네베드 preset은 소모품 기반 U2와 구조화 돌격소총 피해 �
   assert.equal(parsed.input.result.combatProfile.mount.mountedRangeShape, "DIAMOND");
   assert.equal(
     parsed.input.approvalGate.presetKey,
-    "zulu-0028-censor-3-manufacture-v1",
+    "zulu-0028-censor-3-manufacture-v2",
   );
   assert.deepEqual(parsed.input.approvalGate.conditionalMaterials, [
     { slug: "broken-syllable", scope: "SHARED", quantity: 3 },
@@ -522,8 +522,8 @@ test("네베드 preset은 소모품 기반 U2와 구조화 돌격소총 피해 �
     quantity: 1,
   });
   assert.deepEqual(censor.additionalDamage, {
-    type: "PSYCHIC",
-    amount: 30,
+    type: "SOUND",
+    amount: 15,
     ignoresDefense: true,
     scaling: "NONE",
   });

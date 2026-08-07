@@ -47,7 +47,8 @@ export interface ShopMeta {
 export type EquipmentActionKind = "CHARGED" | "STANCE" | "CONSUMABLE";
 
 export interface EquipmentActionDamage {
-  type: "PHYSICAL" | "FIRE" | "PSYCHIC";
+  /** SOUND 피해는 훈련장 전투 규칙에 따라 HP가 아닌 SAN에 적용한다. */
+  type: "PHYSICAL" | "FIRE" | "PSYCHIC" | "SOUND";
   amount: number;
   ignoresDefense?: boolean;
   scaling: "NONE" | "STANDARD";

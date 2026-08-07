@@ -84,7 +84,7 @@ const workshopModificationDomainSchema = z.enum([
 ]);
 const workshopEquipmentDamageSchema = z
   .object({
-    type: z.enum(["PHYSICAL", "FIRE", "PSYCHIC"]),
+    type: z.enum(["PHYSICAL", "FIRE", "PSYCHIC", "SOUND"]),
     amount: z.number().int().min(1).max(999),
     ignoresDefense: z.boolean().optional(),
     scaling: z.literal("NONE"),

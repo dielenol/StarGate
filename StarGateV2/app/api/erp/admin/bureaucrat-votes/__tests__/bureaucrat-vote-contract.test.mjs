@@ -19,7 +19,8 @@ test("CENSOR-3 고정 안건은 제작 권한과 공방 집행 경계를 REGISTR
   assert.match(preset, /깨진 음절 ×3/);
   assert.match(preset, /「CENSOR-3」 ×3 제작/);
   assert.match(preset, /전용 운용자 · 네베드/);
-  assert.match(preset, /고정 30의 방어 무시 심령 피해/);
+  assert.match(preset, /방어를 무시하는 고정 15 소리 피해/);
+  assert.match(preset, /대상의 SAN을 추가로 감소/);
   assert.match(preset, /가결은 제작 권한 부여를 의미합니다/);
   assert.match(preset, /재료 차감·제작 착수·완성품 지급/);
   assert.match(preset, /공방 운영 절차에서 별도로 처리/);

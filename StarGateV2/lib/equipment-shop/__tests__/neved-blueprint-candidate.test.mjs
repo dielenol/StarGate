@@ -24,6 +24,16 @@ const blueprintSeed = JSON.parse(
   ),
 );
 
+const blueprintV2Update = JSON.parse(
+  readFileSync(
+    new URL(
+      "../../../scripts/seed-payloads/equipment-workshop-blueprint-neved-pian-bulwark-v2.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+
 const censorSeed = JSON.parse(
   readFileSync(
     new URL(
@@ -79,7 +89,9 @@ test("CENSOR-3 표결은 배치 제작 권한만 승인하고 발사에는 재�
   assert.equal(ammo.outputQuantity, 3);
   assert.equal(ammo.regularAmmoCost, 0);
   assert.equal(ammo.actionCode, "U2");
-  assert.equal(ammo.bonusDamage, 30);
+  assert.equal(ammo.bonusDamage, 15);
+  assert.equal(ammo.damageType, "SOUND");
+  assert.equal(ammo.targetStat, "SAN");
   assert.equal(ammo.ignoreDefense, true);
   assert.equal(ammo.scaling, "NONE");
   assert.equal(
@@ -88,7 +100,7 @@ test("CENSOR-3 표결은 배치 제작 권한만 승인하고 발사에는 재�
   );
   assert.equal(
     ammo.manufactureApproval.presetKey,
-    "zulu-0028-censor-3-manufacture-v1",
+    "zulu-0028-censor-3-manufacture-v2",
   );
   assert.equal(ammo.manufactureApproval.durationHours, 6);
   assert.equal(
@@ -114,6 +126,7 @@ test("CENSOR-3 표결은 배치 제작 권한만 승인하고 발사에는 재�
 });
 
 test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존한다", () => {
+  assert.equal(blueprintSeed.update.$setOnInsert.version, 2);
   const defaults = blueprintSeed.update.$setOnInsert.defaults;
   assert.equal(defaults.creditCost, 1_200);
   assert.equal(defaults.durationMinutes, 1_440);
@@ -136,6 +149,8 @@ test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존�
   assert.equal(mount.name, "총기 거치 전환");
   assert.equal(mount.kind, "STANCE");
   assert.equal(mount.actionCost, 1);
+  assert.match(mount.effect, /거치와 해제는 각각 액션 1/);
+  assert.match(mount.effect, /자세한 범위는 훈련장을 참조/);
   const censor = defaults.result.equipmentActions.find(
     (action) => action.code === "U2",
   );
@@ -143,7 +158,66 @@ test("실행 청사진 seed는 후보 계약과 같은 전투 수치를 보존�
   assert.equal(censor.kind, "CONSUMABLE");
   assert.equal(censor.consumableCost.quantity, 1);
   assert.equal("approval" in censor.consumableCost, false);
-  assert.equal(censor.additionalDamage.amount, 30);
+  assert.equal(censor.additionalDamage.type, "SOUND");
+  assert.equal(censor.additionalDamage.amount, 15);
+  assert.equal(censor.additionalDamage.ignoresDefense, true);
+  assert.match(censor.effect, /대상의 SAN을 추가로 감소/);
+});
+
+test("운영 DRAFT v1 갱신 후보는 액션 계약만 v2로 안전하게 올린다", () => {
+  const defaults = blueprintSeed.update.$setOnInsert.defaults;
+  const update = blueprintV2Update.update.$set;
+  const postcondition = blueprintV2Update.postcondition;
+  assert.equal(blueprintV2Update.filter.version, 1);
+  assert.equal(blueprintV2Update.filter.status, "DRAFT");
+  assert.equal(update.version, 2);
+  assert.deepEqual(
+    update["defaults.result.equipmentActions"],
+    defaults.result.equipmentActions,
+  );
+  assert.equal(
+    update["defaults.approvalGate.content"],
+    defaults.approvalGate.content,
+  );
+  assert.equal(
+    update["defaults.approvalGate.presetKey"],
+    defaults.approvalGate.presetKey,
+  );
+  assert.equal(
+    update["defaults.result.effect"],
+    defaults.result.effect,
+  );
+  assert.deepEqual(
+    Object.keys(update).sort(),
+    [
+      "defaults.approvalGate.content",
+      "defaults.approvalGate.presetKey",
+      "defaults.result.effect",
+      "defaults.result.equipmentActions",
+      "version",
+    ],
+  );
+  assert.match(censorSeed.payload.effect, /고정 15 소리 피해/);
+  assert.match(censorSeed.payload.effect, /SAN을 추가 감소/);
+  assert.equal(
+    postcondition["defaults.approvalGate.content"],
+    defaults.approvalGate.content,
+  );
+  assert.equal(postcondition["defaults.result.effect"], defaults.result.effect);
+  assert.equal(
+    postcondition["defaults.result.equipmentActions.0.effect"],
+    defaults.result.equipmentActions[0].effect,
+  );
+  assert.equal(
+    postcondition["defaults.result.equipmentActions.1.effect"],
+    defaults.result.equipmentActions[1].effect,
+  );
+  assert.equal(
+    postcondition[
+      "defaults.result.equipmentActions.1.additionalDamage.ignoresDefense"
+    ],
+    true,
+  );
 });
 
 test("청사진과 CENSOR-3 seed는 공유 DB의 완전 문서 schema를 통과한다", () => {
