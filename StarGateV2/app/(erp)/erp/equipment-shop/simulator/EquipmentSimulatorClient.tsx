@@ -3787,6 +3787,8 @@ export default function EquipmentSimulatorClient({
                   const anchoredEnemies = enemies.filter((enemy) =>
                     sameCoord(coord, enemy.position),
                   );
+                  const hasAnchoredToken =
+                    hasAttacker || anchoredEnemies.length > 0;
                   const cellEnemies = enemies.filter((enemy) =>
                     getSimulatorEnemyOccupiedCells(
                       enemy,
@@ -3813,11 +3815,36 @@ export default function EquipmentSimulatorClient({
                   const isBlastCenter = Boolean(
                     blastImpact && sameCoord(blastImpact, coord),
                   );
+                  const cellAriaLabel = hasAnchoredToken
+                    ? undefined
+                    : `${
+                        activeToken === "attacker"
+                          ? `나를 ${cellKey(coord)} 칸으로 이동`
+                          : activeToken === "aim"
+                            ? `${cellKey(coord)} 칸을 공격 지점으로 선택`
+                            : `${selectedEnemy?.name ?? "적"}을 ${cellKey(coord)} 칸에 배치`
+                      }${
+                        isAttackable
+                          ? `; ${selectedName} 공격 가능 범위`
+                          : ""
+                      }${
+                        isFireZone
+                          ? `; 소이선 화염 지대 ${Math.max(...activeFireZones.map((zone) => zone.rounds))}라운드`
+                          : ""
+                      }${
+                        hasAttacker
+                          ? `; 나 ${attacker.codename}, HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}, DEF ${attacker.def}`
+                          : ""
+                      }${
+                        hasTarget
+                          ? `; ${cellEnemies.map((enemy) => `${enemy.name} HP ${enemy.stats.hp}/${enemy.stats.maxHp}`).join(", ")}`
+                          : ""
+                      }`;
                   return (
                     <div
                       key={cellKey(coord)}
-                      role="button"
-                      tabIndex={0}
+                      role={hasAnchoredToken ? undefined : "button"}
+                      tabIndex={hasAnchoredToken ? undefined : 0}
                       data-simulator-cell
                       data-simulator-col={col}
                       data-simulator-row={row}
@@ -3839,31 +3866,7 @@ export default function EquipmentSimulatorClient({
                         .join(" ")}
                       onClick={() => handleCellActivate(coord)}
                       onKeyDown={(event) => handleCellKeyDown(event, coord)}
-                      aria-label={
-                        `${
-                          activeToken === "attacker"
-                            ? `나를 ${cellKey(coord)} 칸으로 이동`
-                            : activeToken === "aim"
-                              ? `${cellKey(coord)} 칸을 공격 지점으로 선택`
-                              : `${selectedEnemy?.name ?? "적"}을 ${cellKey(coord)} 칸에 배치`
-                        }${
-                          isAttackable
-                            ? `; ${selectedName} 공격 가능 범위`
-                            : ""
-                        }${
-                          isFireZone
-                            ? `; 소이선 화염 지대 ${Math.max(...activeFireZones.map((zone) => zone.rounds))}라운드`
-                            : ""
-                        }${
-                          hasAttacker
-                            ? `; 나 ${attacker.codename}, HP ${attacker.hp}/${attacker.hp}, 정신력 ${attacker.san}/${attacker.san}, ATK ${attacker.atk}, DEF ${attacker.def}`
-                            : ""
-                        }${
-                          hasTarget
-                            ? `; ${cellEnemies.map((enemy) => `${enemy.name} HP ${enemy.stats.hp}/${enemy.stats.maxHp}`).join(", ")}`
-                            : ""
-                        }`
-                      }
+                      aria-label={cellAriaLabel}
                     >
                       <span className={styles.cellCoord}>{cellKey(coord)}</span>
                       {hasAttacker ? (

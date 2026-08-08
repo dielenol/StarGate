@@ -170,6 +170,28 @@ test("token activation enters movement while actual player movement consumes the
   assert.match(client, /강제 이동은 각 스킬 효과를 따릅니다/);
 });
 
+test("occupied cells delegate keyboard focus and button semantics to their token", async () => {
+  const client = await readFile(CLIENT_URL, "utf8");
+
+  assert.match(
+    client,
+    /const hasAnchoredToken =\s*hasAttacker \|\| anchoredEnemies\.length > 0/,
+  );
+  assert.match(
+    client,
+    /role=\{hasAnchoredToken \? undefined : "button"\}/,
+  );
+  assert.match(
+    client,
+    /tabIndex=\{hasAnchoredToken \? undefined : 0\}/,
+  );
+  assert.match(
+    client,
+    /const cellAriaLabel = hasAnchoredToken\s*\? undefined\s*:/,
+  );
+  assert.match(client, /aria-label=\{cellAriaLabel\}/);
+});
+
 test("blocked actions identify the exact recovery control and special action button", async () => {
   const [client, styles] = await Promise.all([
     readFile(CLIENT_URL, "utf8"),
