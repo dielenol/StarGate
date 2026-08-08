@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  analyzeDialogueEntries,
-} from "../lint.ts";
+import { dialogueLintExitCode } from "../cli.ts";
+import { analyzeDialogueEntries } from "../lint.ts";
 import {
   extractDialogueEntriesFromText,
   extractProtectedTokens,
@@ -86,15 +85,32 @@ test("manifest variableNames와 propertyNames를 함께 적용한다", () => {
   ]);
 });
 
-test("현재 faction 상수와 R-05 speech만 manifest corpus에 포함한다", async () => {
+test("세력별 상수와 R-05 speech만 manifest corpus에 포함한다", async () => {
   const { entries, diagnostics } = await loadDialogueEntries();
   assert.deepEqual(diagnostics, []);
+  const factionSpeakerIds = [
+    "council",
+    "military",
+    "civil",
+    "white-rose",
+    "space-zero",
+    "golden-dawn",
+    "ahnenerbe",
+  ];
   const factionTexts = entries
-    .filter(({ speakerId }) => speakerId === "faction")
+    .filter(({ speakerId }) => factionSpeakerIds.includes(speakerId))
     .map(({ text }) => text);
   const r05Texts = entries
     .filter(({ speakerId }) => speakerId === "r05")
     .map(({ text }) => text);
+
+  for (const speakerId of factionSpeakerIds) {
+    assert.equal(
+      entries.filter((entry) => entry.speakerId === speakerId).length,
+      9,
+      `${speakerId} 대사가 독립된 9문장 묶음이어야 합니다.`,
+    );
+  }
 
   assert.ok(
     factionTexts.includes(
@@ -174,4 +190,29 @@ test("동일 종결어미가 소스 순서에서 세 문장 연속되면 직접 
 
   assert.equal(runs.length, 1);
   assert.deepEqual(runs[0].entryIds, ["line-1", "line-2", "line-3"]);
+});
+
+test("린트 종료 코드는 후보 경고는 허용하고 고위험 규칙과 소스 오류를 차단한다", () => {
+  const candidateOnly = analyzeDialogueEntries([
+    entry("line-1", "첫 문장입니다. 둘째를 확인해요. 셋째로 마칩니다."),
+  ]);
+  const duplicated = analyzeDialogueEntries([
+    entry("line-1", "같은 안내를 확인해 주세요."),
+    entry("line-2", "같은 안내를 확인해 주세요."),
+  ]);
+  const sourceError = {
+    ...candidateOnly,
+    diagnostics: [
+      {
+        speakerId: "test",
+        sourcePath: "fixture/dialogue.ts",
+        kind: "missing-source",
+        message: "소스 없음",
+      },
+    ],
+  };
+
+  assert.equal(dialogueLintExitCode(candidateOnly), 0);
+  assert.equal(dialogueLintExitCode(duplicated), 1);
+  assert.equal(dialogueLintExitCode(sourceError), 1);
 });

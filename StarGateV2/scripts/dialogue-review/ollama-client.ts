@@ -1,9 +1,11 @@
+import { extractProtectedTokens } from "./source-loader.ts";
 import type {
   CriticLineReview,
   CriticReviewResult,
   DialogueEntry,
   DialogueLintIssue,
   DialogueReviewBatch,
+  ProtectedToken,
   WriterAlternativeReview,
   WriterReviewResult,
 } from "./types.ts";
@@ -11,6 +13,8 @@ import type {
 export const OLLAMA_API_BASE_URL = "https://ollama.com";
 export const DIALOGUE_WRITER_MODEL = "qwen3.5:397b";
 export const DIALOGUE_CRITIC_MODEL = "gpt-oss:120b";
+export const OLLAMA_PREFLIGHT_TIMEOUT_MS = 30_000;
+export const OLLAMA_CHAT_TIMEOUT_MS = 10 * 60 * 1_000;
 
 type FetchImplementation = typeof fetch;
 type ChatRole = "system" | "user" | "assistant";
@@ -93,20 +97,41 @@ async function fetchJson(
   fetchImpl: FetchImplementation,
   url: string,
   init: RequestInit,
+  requestTimeoutMs: number,
 ): Promise<unknown> {
+  const abortController = new AbortController();
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    abortController.abort();
+  }, Math.max(1, requestTimeoutMs));
   let response: Response;
   try {
-    response = await fetchImpl(url, init);
-  } catch {
-    throw new Error("Ollama Cloud 요청에 실패했습니다.");
-  }
-  if (!response.ok) {
-    throw new Error(`Ollama Cloud 요청이 HTTP ${response.status}로 실패했습니다.`);
-  }
-  try {
-    return (await response.json()) as unknown;
-  } catch {
-    throw new Error("Ollama Cloud 응답이 JSON이 아닙니다.");
+    try {
+      response = await fetchImpl(url, {
+        ...init,
+        signal: abortController.signal,
+      });
+    } catch {
+      if (timedOut) {
+        throw new Error(
+          `Ollama Cloud 요청이 ${requestTimeoutMs}ms 안에 완료되지 않았습니다.`,
+        );
+      }
+      throw new Error("Ollama Cloud 요청에 실패했습니다.");
+    }
+    if (!response.ok) {
+      throw new Error(
+        `Ollama Cloud 요청이 HTTP ${response.status}로 실패했습니다.`,
+      );
+    }
+    try {
+      return (await response.json()) as unknown;
+    } catch {
+      throw new Error("Ollama Cloud 응답이 JSON이 아닙니다.");
+    }
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -120,6 +145,7 @@ function authorizationHeaders(apiKey: string): HeadersInit {
 export async function preflightOllamaCloud(options: {
   apiKey: string;
   fetchImpl?: FetchImplementation;
+  requestTimeoutMs?: number;
 }): Promise<void> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const payload = await fetchJson(
@@ -129,6 +155,7 @@ export async function preflightOllamaCloud(options: {
       method: "GET",
       headers: authorizationHeaders(options.apiKey),
     },
+    options.requestTimeoutMs ?? OLLAMA_PREFLIGHT_TIMEOUT_MS,
   );
   if (!isRecord(payload) || !Array.isArray(payload.models)) {
     throw new Error("Ollama Cloud 모델 목록 응답 형식이 올바르지 않습니다.");
@@ -153,6 +180,7 @@ async function chat(options: {
   model: string;
   messages: readonly ChatMessage[];
   fetchImpl: FetchImplementation;
+  requestTimeoutMs?: number;
 }): Promise<string> {
   const payload = await fetchJson(
     options.fetchImpl,
@@ -166,6 +194,7 @@ async function chat(options: {
         stream: false,
       }),
     },
+    options.requestTimeoutMs ?? OLLAMA_CHAT_TIMEOUT_MS,
   );
   if (
     !isRecord(payload) ||
@@ -183,6 +212,7 @@ async function chatWithOneRepair<T>(options: {
   messages: readonly ChatMessage[];
   validate: (value: unknown) => T;
   fetchImpl: FetchImplementation;
+  requestTimeoutMs?: number;
 }): Promise<ValidatedChatResult<T>> {
   const firstContent = await chat(options);
   try {
@@ -232,6 +262,83 @@ function assertExactLineIds(
   }
 }
 
+const TOKEN_BOUNDARY_CHARACTER = /[A-Za-z0-9_]/u;
+
+function protectedTokenKey(token: ProtectedToken): string {
+  return `${token.kind}\u0000${token.value}`;
+}
+
+function countExactTokenOccurrences(text: string, value: string): number {
+  if (!value) return 0;
+  const requireLeadingBoundary = TOKEN_BOUNDARY_CHARACTER.test(value[0] ?? "");
+  const requireTrailingBoundary = TOKEN_BOUNDARY_CHARACTER.test(
+    value[value.length - 1] ?? "",
+  );
+  let count = 0;
+  let offset = 0;
+
+  while (offset <= text.length - value.length) {
+    const index = text.indexOf(value, offset);
+    if (index < 0) break;
+    const precedingCharacter = index > 0 ? text[index - 1] ?? "" : "";
+    const followingCharacter = text[index + value.length] ?? "";
+    const leadingBoundaryValid =
+      !requireLeadingBoundary ||
+      !precedingCharacter ||
+      !TOKEN_BOUNDARY_CHARACTER.test(precedingCharacter);
+    const trailingBoundaryValid =
+      !requireTrailingBoundary ||
+      !followingCharacter ||
+      !TOKEN_BOUNDARY_CHARACTER.test(followingCharacter);
+    if (leadingBoundaryValid && trailingBoundaryValid) count += 1;
+    offset = index + Math.max(1, value.length);
+  }
+
+  return count;
+}
+
+function protectedTokensForEntry(entry: DialogueEntry): ProtectedToken[] {
+  const tokens = [
+    ...entry.protectedTokens,
+    ...extractProtectedTokens(entry.text, entry.allowedProperNouns),
+  ];
+  return [
+    ...new Map(tokens.map((token) => [protectedTokenKey(token), token])).values(),
+  ];
+}
+
+function validateProtectedTokens(
+  entry: DialogueEntry,
+  alternative: string,
+): void {
+  const expectedTokens = protectedTokensForEntry(entry);
+  for (const token of expectedTokens) {
+    const originalCount = countExactTokenOccurrences(entry.text, token.value);
+    const alternativeCount = countExactTokenOccurrences(
+      alternative,
+      token.value,
+    );
+    if (alternativeCount !== originalCount) {
+      throw new Error(
+        "writer 대안에서 보호 토큰의 정확한 값 또는 출현 횟수가 바뀌었습니다.",
+      );
+    }
+  }
+
+  const expectedTokenKeys = new Set(expectedTokens.map(protectedTokenKey));
+  const unexpectedToken = extractProtectedTokens(
+    alternative,
+    entry.allowedProperNouns,
+  ).find(
+    (token) =>
+      token.kind !== "proper-noun" &&
+      !expectedTokenKeys.has(protectedTokenKey(token)),
+  );
+  if (unexpectedToken) {
+    throw new Error("writer 대안에 원문에 없던 수치·버튼명·placeholder가 추가되었습니다.");
+  }
+}
+
 function validateWriterResult(
   value: unknown,
   entries: readonly DialogueEntry[],
@@ -258,12 +365,7 @@ function validateWriterResult(
       throw new Error("writer 대안 3개가 서로 달라야 합니다.");
     }
     for (const alternative of alternatives) {
-      const missingToken = entry.protectedTokens.find(
-        (token) => !alternative.includes(token.value),
-      );
-      if (missingToken) {
-        throw new Error("writer 대안에서 보호 토큰이 누락되었습니다.");
-      }
+      validateProtectedTokens(entry, alternative);
       const originalUppercaseTerms = new Set(
         entry.text.match(/\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*\b/gu) ?? [],
       );
@@ -479,6 +581,7 @@ export async function reviewDialogueBatch(options: {
   contextEntries: readonly DialogueEntry[];
   issues: readonly DialogueLintIssue[];
   fetchImpl?: FetchImplementation;
+  requestTimeoutMs?: number;
 }): Promise<DialogueReviewBatch> {
   if (options.entries.length === 0) {
     throw new Error("빈 대사 묶음은 Ollama 리뷰에 보낼 수 없습니다.");
@@ -507,6 +610,7 @@ export async function reviewDialogueBatch(options: {
     ),
     validate: (value) => validateWriterResult(value, options.entries),
     fetchImpl,
+    requestTimeoutMs: options.requestTimeoutMs,
   });
   const critic = await chatWithOneRepair({
     apiKey: options.apiKey,
@@ -518,6 +622,7 @@ export async function reviewDialogueBatch(options: {
     ),
     validate: (value) => validateCriticResult(value, options.entries),
     fetchImpl,
+    requestTimeoutMs: options.requestTimeoutMs,
   });
 
   return {

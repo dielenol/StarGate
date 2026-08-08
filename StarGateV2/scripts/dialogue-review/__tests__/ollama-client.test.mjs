@@ -8,7 +8,7 @@ import {
   parsePlainJson,
   reviewDialogueBatch,
 } from "../ollama-client.ts";
-import { runDialogueReview } from "../review.ts";
+import { runDialogueReview, selectReviewEntries } from "../review.ts";
 
 const API_KEY = "mock-api-key";
 const ENTRY = {
@@ -38,37 +38,33 @@ const CONTEXT_ENTRIES = [
   })),
 ];
 
-function writerPayload() {
+function writerPayload(entries = [ENTRY]) {
   return {
-    reviews: [
-      {
-        lineId: ENTRY.id,
-        alternatives: [
-          "R-05는 3초 안에 “승인”을 누르라고 지시합니다.",
-          "R-05 지시입니다. 3초 안에 “승인”을 누르십시오.",
-          "3초가 지나기 전 “승인”을 누르십시오. R-05 지시입니다.",
-        ],
-        rationale: "호흡을 달리한 대안입니다.",
-      },
-    ],
+    reviews: entries.map((entry) => ({
+      lineId: entry.id ?? entry.lineId,
+      alternatives: [
+        entry.text ?? entry.original,
+        `확인했습니다. ${entry.text ?? entry.original}`,
+        `${entry.text ?? entry.original} 다시 확인해 주세요.`,
+      ],
+      rationale: "호흡을 달리한 대안입니다.",
+    })),
   };
 }
 
-function criticPayload() {
+function criticPayload(entries = [ENTRY]) {
   return {
-    reviews: [
-      {
-        lineId: ENTRY.id,
-        recommendedAlternative: 2,
-        verdict: "accept",
-        notes: "보호 토큰과 의미를 유지했습니다.",
-        protectedTokensPreserved: true,
-        naturalness: 5,
-        characterFit: 5,
-        loreGrounding: 4,
-        protectedFacts: 5,
-      },
-    ],
+    reviews: entries.map((entry) => ({
+      lineId: entry.id ?? entry.lineId,
+      recommendedAlternative: 2,
+      verdict: "accept",
+      notes: "보호 토큰과 의미를 유지했습니다.",
+      protectedTokensPreserved: true,
+      naturalness: 5,
+      characterFit: 5,
+      loreGrounding: 4,
+      protectedFacts: 5,
+    })),
   };
 }
 
@@ -98,12 +94,13 @@ test("tags 프리플라이트 뒤 writer와 critic을 순차 호출하고 format
       });
     }
     const body = JSON.parse(String(init?.body));
+    const request = JSON.parse(body.messages[1].content);
     return jsonResponse({
       message: {
         content: JSON.stringify(
           body.model === DIALOGUE_WRITER_MODEL
-            ? writerPayload()
-            : criticPayload(),
+            ? writerPayload(request.lines)
+            : criticPayload(request.lines),
         ),
       },
     });
@@ -172,7 +169,38 @@ test("tags 프리플라이트 뒤 writer와 critic을 순차 호출하고 format
   );
   assert.equal(result.batches[0].writerRepairUsed, false);
   assert.equal(result.batches[0].criticRepairUsed, false);
+  assert.equal(result.reviewedEntryCount, CONTEXT_ENTRIES.length);
   assert.doesNotMatch(JSON.stringify(result), new RegExp(API_KEY, "u"));
+});
+
+test("--all과 --speaker는 린트 경고가 없는 문장도 리뷰 대상으로 포함한다", () => {
+  const r05Entry = {
+    ...ENTRY,
+    id: "r05:fixture.ts:2:1",
+    speakerId: "r05",
+    speakerName: "R-05",
+  };
+  const lintReport = {
+    generatedAt: "2026-08-08T00:00:00.000Z",
+    sourceCount: 2,
+    entryCount: 2,
+    protectedTokenCount: 3,
+    entries: [ENTRY, r05Entry],
+    issues: [],
+    diagnostics: [],
+  };
+
+  assert.deepEqual(
+    selectReviewEntries(lintReport, { mode: "all" }).map(({ id }) => id),
+    [ENTRY.id, r05Entry.id],
+  );
+  assert.deepEqual(
+    selectReviewEntries(lintReport, {
+      mode: "speaker",
+      speakerId: "r05",
+    }).map(({ id }) => id),
+    [r05Entry.id],
+  );
 });
 
 test("형식이 잘못된 writer 응답은 같은 모델로 정확히 한 번 repair한다", async () => {
@@ -228,6 +256,58 @@ test("repair 뒤에도 보호 토큰이 빠지면 실패하고 추가 호출하�
     /1회 repair/u,
   );
   assert.equal(callCount, 2);
+});
+
+test("보호 수치의 부분 문자열이 남아 있어도 값이 바뀌면 거부한다", async () => {
+  const invalidWriter = writerPayload();
+  invalidWriter.reviews[0].alternatives = invalidWriter.reviews[0].alternatives.map(
+    (alternative) => alternative.replace("3초", "13초"),
+  );
+  let callCount = 0;
+  const fetchImpl = async () => {
+    callCount += 1;
+    return jsonResponse({
+      message: { content: JSON.stringify(invalidWriter) },
+    });
+  };
+
+  await assert.rejects(
+    reviewDialogueBatch({
+      apiKey: API_KEY,
+      speakerId: "test",
+      entries: [ENTRY],
+      contextEntries: CONTEXT_ENTRIES,
+      issues: [],
+      fetchImpl,
+    }),
+    /1회 repair/u,
+  );
+  assert.equal(callCount, 2);
+});
+
+test("보호 수치 뒤에 한국어 조사가 붙는 자연스러운 대안은 허용한다", async () => {
+  const validWriter = writerPayload();
+  validWriter.reviews[0].alternatives = [
+    "R-05는 3초 안에 “승인”을 누르라고 지시합니다.",
+    "R-05 지시입니다. 3초 안에 “승인”을 누르십시오.",
+    "3초가 지나기 전 “승인”을 누르십시오. R-05 지시입니다.",
+  ];
+  const responses = [
+    { message: { content: JSON.stringify(validWriter) } },
+    { message: { content: JSON.stringify(criticPayload()) } },
+  ];
+  const fetchImpl = async () => jsonResponse(responses.shift());
+
+  const result = await reviewDialogueBatch({
+    apiKey: API_KEY,
+    speakerId: "test",
+    entries: [ENTRY],
+    contextEntries: CONTEXT_ENTRIES,
+    issues: [],
+    fetchImpl,
+  });
+
+  assert.equal(result.writerRepairUsed, false);
 });
 
 test("허용 목록 밖의 새 영문 고유명사는 repair 뒤에도 거부한다", async () => {
@@ -287,4 +367,28 @@ test("critic 4개 점수가 빠지면 같은 모델로 한 번 repair한다", as
   ]);
   assert.equal(result.criticRepairUsed, true);
   assert.equal(result.critic.reviews[0].protectedFacts, 5);
+});
+
+test("Ollama 요청이 시간 제한을 넘으면 중단한다", async () => {
+  const fetchImpl = async (_url, init) =>
+    await new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener(
+        "abort",
+        () => reject(new Error("aborted")),
+        { once: true },
+      );
+    });
+
+  await assert.rejects(
+    reviewDialogueBatch({
+      apiKey: API_KEY,
+      speakerId: "test",
+      entries: [ENTRY],
+      contextEntries: CONTEXT_ENTRIES,
+      issues: [],
+      fetchImpl,
+      requestTimeoutMs: 5,
+    }),
+    /5ms 안에 완료되지 않았습니다/u,
+  );
 });

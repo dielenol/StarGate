@@ -19,72 +19,84 @@ const SAMPLE_LINES = [
   {
     id: "greeting",
     label: "입장 인사",
+    portrait: "TIA",
     preset: "tia",
     text: "어서 오세요~! 스타마트입니다!",
   },
   {
     id: "new-items",
     label: "새 상품",
+    portrait: "TIA",
     preset: "tia",
     text: "오늘 새 상품이 잔뜩 들어왔어요! 관심 가는 거 있으면, 편하게 둘러봐 주세요~",
   },
   {
     id: "low-stock",
     label: "재고 부족",
+    portrait: "TIA",
     preset: "tia",
     text: "앗... 그 상품은 오늘 너무 잘 팔려서요. 지금은 재고가 얼마 안 남았어요.",
   },
   {
     id: "ordo",
     label: "ORDO HUD",
+    portrait: "ORDO",
     preset: "operator",
     text: "대원님, 신규 작전 보고서가 도착했습니다. 확인 후 응답을 남겨주세요.",
   },
   {
     id: "amalia",
     label: "아말리아",
+    portrait: "AMA",
     preset: "amalia",
     text: "질서의 문제는 언제나 사람의 문제입니다. 그러니, 먼저 사람을 보아야 합니다.",
   },
   {
     id: "r05",
     label: "R-05",
+    portrait: "R-05",
     preset: "r05",
     text: "훈련 준비 완료. 표적과 공격 조건을 확인해 주세요.",
   },
   {
     id: "council",
     label: "이사회",
+    portrait: "COU",
     preset: "council",
     text: "안건은 봤습니다. 이사회가 보호할 이유를 한 줄로 정리해 주시죠.",
   },
   {
     id: "military",
     label: "군부",
+    portrait: "MIL",
     preset: "military",
     text: "지원 요청은 봤다. 이제 철수 계획을 말해. 돌아올 길 없는 작전에 병력은 안 붙인다.",
   },
   {
     id: "civil",
     label: "민간",
+    portrait: "CIV",
     preset: "civil",
     text: "현장 사람들부터 얘기해 주세요. 피해가 어디에 남았는지 알아야 연결할 곳을 찾을 수 있어요.",
   },
   {
     id: "rose",
     label: "백장미단",
+    portrait: "ROSE",
     preset: "rose",
     text: "자료는 받았습니다. 공개보다 먼저, 제보자부터 안전한지 확인하죠.",
   },
   {
     id: "tech",
     label: "스페이스 제로",
+    portrait: "S-0",
     preset: "tech",
     text: "조건은 이해했습니다. 성능보다 회수와 책임 범위부터 맞추죠.",
   },
   {
     id: "hostile",
     label: "적대 분석관",
+    portrait: "ANL",
     preset: "hostile",
     text: "신호는 잡혔지만 아직 상대 목소리라고 단정할 단계는 아닙니다. 패턴만 남기고 끊죠.",
   },
@@ -99,6 +111,25 @@ const WAVE_OPTIONS: DialogueWaveform[] = [
 ];
 
 const INITIAL_PRESET: DialoguePresetName = "tia";
+
+const PORTRAIT_LABELS = {
+  tia: "TIA",
+  towaski: "TOW",
+  suture: "SUT",
+  temper: "TMP",
+  ratchet: "RAT",
+  amalia: "AMA",
+  operator: "ORDO",
+  system: "SYS",
+  gm: "GM",
+  r05: "R-05",
+  council: "COU",
+  military: "MIL",
+  civil: "CIV",
+  rose: "ROSE",
+  tech: "S-0",
+  hostile: "ANL",
+} as const satisfies Record<DialoguePresetName, string>;
 
 function ensureEngine(ref: React.MutableRefObject<DialogueBeepEngine | null>) {
   if (!ref.current) {
@@ -123,6 +154,9 @@ export default function DialogueBeepLabClient() {
   const [tildePause, setTildePause] = useState(170);
   const [linePause, setLinePause] = useState(260);
   const [text, setText] = useState<string>(SAMPLE_LINES[0].text);
+  const [portraitLabel, setPortraitLabel] = useState<string>(
+    SAMPLE_LINES[0].portrait,
+  );
   const [visible, setVisible] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [lastEvent, setLastEvent] = useState<DialogueTypewriterEvent | null>(
@@ -182,6 +216,7 @@ export default function DialogueBeepLabClient() {
     setSpeed(next.speed);
     setPitch(next.pitch);
     setVolume(next.volume);
+    setPortraitLabel(PORTRAIT_LABELS[nextPreset]);
     setStatus(`${next.label} 프리셋 적용`);
   }
 
@@ -189,6 +224,7 @@ export default function DialogueBeepLabClient() {
     ensureEngine(engineRef).stop();
     applyPreset(sample.preset);
     setText(sample.text);
+    setPortraitLabel(sample.portrait);
     setVisible("");
     setLastEvent(null);
     setIsPlaying(false);
@@ -268,7 +304,7 @@ export default function DialogueBeepLabClient() {
         <section className={`${styles.panel} ${styles.stage}`}>
           <div className={styles.hud}>
             <div className={styles.hud__portrait} aria-hidden="true">
-              TIA
+              {portraitLabel}
             </div>
             <div className={styles.hud__copy}>
               <span>NPC HUD PREVIEW</span>

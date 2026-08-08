@@ -6,54 +6,21 @@ import {
 } from "./ollama-client.ts";
 import type {
   DialogueEntry,
-  DialogueLintIssue,
   DialogueLintReport,
   DialogueReviewReport,
 } from "./types.ts";
 
 const REVIEW_BATCH_SIZE = 12;
-const ENDING_CONCENTRATION_SAMPLE_SIZE = 12;
 
 type FetchImplementation = typeof fetch;
-
-function selectIssueEntryIds(issues: readonly DialogueLintIssue[]): Set<string> {
-  const selected = new Set<string>();
-  for (const issue of issues) {
-    if (issue.rule === "duplicate") {
-      for (const entryId of issue.entryIds.slice(1)) selected.add(entryId);
-      continue;
-    }
-    if (issue.rule === "same-start") {
-      for (const entryId of issue.entryIds.slice(2)) selected.add(entryId);
-      continue;
-    }
-    if (issue.rule === "ending-concentration") {
-      for (const entryId of issue.entryIds.slice(
-        0,
-        ENDING_CONCENTRATION_SAMPLE_SIZE,
-      )) {
-        selected.add(entryId);
-      }
-      continue;
-    }
-    for (const entryId of issue.entryIds) selected.add(entryId);
-  }
-  return selected;
-}
 
 export function selectReviewEntries(
   lintReport: DialogueLintReport,
   selection: DialogueReviewReport["selection"],
 ): DialogueEntry[] {
-  const relevantIssues = lintReport.issues.filter(
-    (issue) =>
-      selection.mode === "all" || issue.speakerId === selection.speakerId,
-  );
-  const selectedIds = selectIssueEntryIds(relevantIssues);
   return lintReport.entries.filter(
     (entry) =>
-      selectedIds.has(entry.id) &&
-      (selection.mode === "all" || entry.speakerId === selection.speakerId),
+      selection.mode === "all" || entry.speakerId === selection.speakerId,
   );
 }
 
@@ -85,9 +52,14 @@ export async function runDialogueReview(options: {
   lintReport: DialogueLintReport;
   selection: DialogueReviewReport["selection"];
   fetchImpl?: FetchImplementation;
+  requestTimeoutMs?: number;
 }): Promise<DialogueReviewReport> {
   const fetchImpl = options.fetchImpl ?? fetch;
-  await preflightOllamaCloud({ apiKey: options.apiKey, fetchImpl });
+  await preflightOllamaCloud({
+    apiKey: options.apiKey,
+    fetchImpl,
+    requestTimeoutMs: options.requestTimeoutMs,
+  });
 
   const selectedEntries = selectReviewEntries(
     options.lintReport,
@@ -116,6 +88,7 @@ export async function runDialogueReview(options: {
           contextEntries,
           issues: options.lintReport.issues,
           fetchImpl,
+          requestTimeoutMs: options.requestTimeoutMs,
         }),
       );
     }

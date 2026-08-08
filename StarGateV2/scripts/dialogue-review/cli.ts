@@ -8,6 +8,7 @@ import { writeDialogueReviewReport } from "./report.ts";
 import { runDialogueReview } from "./review.ts";
 import { loadDialogueEntries } from "./source-loader.ts";
 import type {
+  DialogueLintRule,
   DialogueLintReport,
   DialogueReviewReport,
 } from "./types.ts";
@@ -17,6 +18,11 @@ const PROJECT_ROOT = resolve(
   "../..",
 );
 const DIALOGUE_SPEAKER_ID_SET = new Set<string>(DIALOGUE_SPEAKER_IDS);
+const BLOCKING_DIALOGUE_LINT_RULES = new Set<DialogueLintRule>([
+  "duplicate",
+  "ending-concentration",
+  "same-ending-run",
+]);
 
 function usage(): string {
   return [
@@ -67,6 +73,15 @@ function printLintReport(lintReport: DialogueLintReport): void {
       `[protected-tokens] ${entry.speakerId} ${entry.sourcePath}:${entry.line} ${tokens}`,
     );
   }
+}
+
+export function dialogueLintExitCode(
+  lintReport: DialogueLintReport,
+): 0 | 1 {
+  const hasBlockingIssue = lintReport.issues.some((issue) =>
+    BLOCKING_DIALOGUE_LINT_RULES.has(issue.rule),
+  );
+  return lintReport.diagnostics.length === 0 && !hasBlockingIssue ? 0 : 1;
 }
 
 function parseReviewSelection(
@@ -128,7 +143,13 @@ export async function main(
   if (command === "lint") {
     if (args.length > 1) throw new Error("dialogue:lint는 추가 인자를 받지 않습니다.");
     printLintReport(lintReport);
-    return lintReport.diagnostics.length === 0 ? 0 : 1;
+    const exitCode = dialogueLintExitCode(lintReport);
+    if (exitCode !== 0) {
+      console.error(
+        "[dialogue:lint] 중복·종결어미 집중·동일 종결어미 3연속 또는 소스 오류를 먼저 해결하세요.",
+      );
+    }
+    return exitCode;
   }
 
   const selection = parseReviewSelection(args.slice(1));

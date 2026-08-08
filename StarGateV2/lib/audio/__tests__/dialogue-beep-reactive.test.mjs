@@ -268,5 +268,12 @@ test("admin beep lab samples select the matching character preset", async () => 
     );
   }
   assert.match(source, /applyPreset\(sample\.preset\)/);
+  assert.match(source, /setPortraitLabel\(sample\.portrait\)/);
+  assert.match(source, /setPortraitLabel\(PORTRAIT_LABELS\[nextPreset\]\)/);
+  assert.match(source, /\{portraitLabel\}/);
+  assert.doesNotMatch(
+    source,
+    /className=\{styles\.hud__portrait\}[^>]*>\s*TIA\s*</u,
+  );
   assert.match(source, /onClick=\{\(\) => selectSample\(line\)\}/);
 });

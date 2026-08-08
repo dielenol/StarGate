@@ -1,5 +1,20 @@
 import type { DialogueSourceDefinition } from "./types.ts";
 
+const FACTION_ALLOWED_PROPER_NOUNS = [
+  "이사회",
+  "백장미",
+  "스페이스 제로",
+  "NOVUS ORDO",
+  "WHITE ROSE",
+  "SPACE ZERO",
+  "GOLDEN DAWN",
+  "AHNENERBE",
+  "황금여명회",
+  "아넨에르베",
+] as const;
+
+const FACTION_DIALOGUE_PATH = "app/(erp)/erp/factions/_game.ts";
+
 /**
  * 대사 품질 도구의 유일한 소스 등록부입니다.
  *
@@ -104,38 +119,79 @@ export const DIALOGUE_SOURCE_MANIFEST = [
     variableNames: ["executionBlocker", "instructorBrief"],
   },
   {
-    speakerId: "faction",
-    displayName: "세력 연락관",
+    speakerId: "council",
+    displayName: "이사회 연락관",
     voiceCard:
-      "세력별 연락관 어조를 유지한다. 이사회는 심의체, 군부는 단문 명령체, 민간·백장미는 보호 중심 존댓말, 스페이스 제로는 계약 실무체, 적대 추적선은 검증 중심 보고체다.",
-    allowedProperNouns: [
-      "이사회",
-      "백장미",
-      "스페이스 제로",
-      "NOVUS ORDO",
-      "WHITE ROSE",
-      "SPACE ZERO",
-      "GOLDEN DAWN",
-      "AHNENERBE",
-      "황금여명회",
-      "아넨에르베",
-    ],
-    relativePath: "app/(erp)/erp/factions/_game.ts",
+      "차분한 심의체 존댓말. 보호할 이유와 책임 소재를 짧게 묻고, 의결·승인 전후를 정확히 구분한다.",
+    allowedProperNouns: FACTION_ALLOWED_PROPER_NOUNS,
+    relativePath: FACTION_DIALOGUE_PATH,
     propertyNames: [
       "idleLines",
       "previewLine",
       "confirmedLine",
       "errorLine",
     ],
-    variableNames: [
-      "COUNCIL_DIALOGUE",
-      "MILITARY_DIALOGUE",
-      "CIVIL_DIALOGUE",
-      "WHITE_ROSE_DIALOGUE",
-      "SPACE_ZERO_DIALOGUE",
-      "GOLDEN_DAWN_DIALOGUE",
-      "AHNENERBE_DIALOGUE",
-    ],
+    variableNames: ["COUNCIL_DIALOGUE"],
+  },
+  {
+    speakerId: "military",
+    displayName: "군부 연락관",
+    voiceCard:
+      "짧고 단호한 반말. 병력·철수·지원 조건을 먼저 확인하며, 실행 전후를 군더더기 없이 보고한다.",
+    allowedProperNouns: FACTION_ALLOWED_PROPER_NOUNS,
+    relativePath: FACTION_DIALOGUE_PATH,
+    propertyNames: ["idleLines", "previewLine", "confirmedLine", "errorLine"],
+    variableNames: ["MILITARY_DIALOGUE"],
+  },
+  {
+    speakerId: "civil",
+    displayName: "민간 연락관",
+    voiceCard:
+      "생활감 있는 부드러운 존댓말. 현장 사람과 피해, 연결 가능한 지원망을 먼저 살피고 단정적인 공문체를 피한다.",
+    allowedProperNouns: FACTION_ALLOWED_PROPER_NOUNS,
+    relativePath: FACTION_DIALOGUE_PATH,
+    propertyNames: ["idleLines", "previewLine", "confirmedLine", "errorLine"],
+    variableNames: ["CIVIL_DIALOGUE"],
+  },
+  {
+    speakerId: "white-rose",
+    displayName: "백장미단 연락관",
+    voiceCard:
+      "절제된 보호 중심 존댓말. 제보자 안전과 검증 순서를 공개보다 앞세우며 조용하고 신중하게 말한다.",
+    allowedProperNouns: FACTION_ALLOWED_PROPER_NOUNS,
+    relativePath: FACTION_DIALOGUE_PATH,
+    propertyNames: ["idleLines", "previewLine", "confirmedLine", "errorLine"],
+    variableNames: ["WHITE_ROSE_DIALOGUE"],
+  },
+  {
+    speakerId: "space-zero",
+    displayName: "스페이스 제로 연락관",
+    voiceCard:
+      "냉정한 계약 실무 존댓말. 성능보다 견적·회수·자산 할당·책임 범위를 먼저 맞추고 확정되지 않은 거래를 단정하지 않는다.",
+    allowedProperNouns: FACTION_ALLOWED_PROPER_NOUNS,
+    relativePath: FACTION_DIALOGUE_PATH,
+    propertyNames: ["idleLines", "previewLine", "confirmedLine", "errorLine"],
+    variableNames: ["SPACE_ZERO_DIALOGUE"],
+  },
+  {
+    speakerId: "golden-dawn",
+    displayName: "황금여명회 분석관",
+    voiceCard:
+      "경계심 강한 관측 분석체. 신호·패턴·차단 기록을 구분하고, 검증 전에는 상대나 의도를 확정하지 않는다.",
+    allowedProperNouns: FACTION_ALLOWED_PROPER_NOUNS,
+    relativePath: FACTION_DIALOGUE_PATH,
+    propertyNames: ["idleLines", "previewLine", "confirmedLine", "errorLine"],
+    variableNames: ["GOLDEN_DAWN_DIALOGUE"],
+  },
+  {
+    speakerId: "ahnenerbe",
+    displayName: "아넨에르베 분석관",
+    voiceCard:
+      "건조한 연구 분석체. 자료 보존·대조 범위·조직 연결성을 분리하고, 교차 검증 전에는 결론을 보류한다.",
+    allowedProperNouns: FACTION_ALLOWED_PROPER_NOUNS,
+    relativePath: FACTION_DIALOGUE_PATH,
+    propertyNames: ["idleLines", "previewLine", "confirmedLine", "errorLine"],
+    variableNames: ["AHNENERBE_DIALOGUE"],
   },
 ] as const satisfies readonly DialogueSourceDefinition[];
 
