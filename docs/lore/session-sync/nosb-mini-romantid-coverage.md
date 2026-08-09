@@ -2,7 +2,7 @@
 title: NOSB-MINI-ROMANTID session sync coverage
 category: session-sync
 tags: [NOSB-MINI-ROMANTID, MINI05, 로맨티드, stargate-lore]
-updated: 2026-08-09
+updated: 2026-08-10
 source: stargate-lore
 ---
 
@@ -217,7 +217,7 @@ source: stargate-lore
 - report/wiki ↔ personnel: 12개 `relatedPersonnelCodenames`와 각 Dossier `appearsInEvents`.
 - personnel → report: `lore.appearsInEvents = NOSB-MINI-ROMANTID`와 세션 appearance.
 - 관계: `INDEXER ↔ OTILIA`, `INDEXER → MARGARET`를 세션 근거와 함께 누적.
-- 정적 검사: coverage/static payload audit, NPC/personality/visual ready checks, report-mirror visual parity, schema adapter 검증.
+- 정적 검사: coverage/static payload audit, NPC/personality/visual ready checks, report-mirror visual parity, schema adapter 검증. 공개 faction/catalog payload는 `toDbFaction`·`toDbCatalogItem` 결과와 일치시키고 제작 메타 문구는 이 비공개 Visual Asset Ledger에만 보존한다.
 - 런타임 검사: reference target 5건은 seed runner read-only dry-run에서 모두 insert 계획을 통과했다. report/mirror 2건은 live reference target 미적용 때문에 보고서가 구조화 링크 4건(`under-the-bridge`, `book-810`, 카탈로그 2건)에서 차단되고 mirror만 insert 계획이 산출되는 예상 순서를 확인했다. Dossier/NPC·성격 ready checker와 전체 coverage/static/visual parity checker는 모두 통과했다.
 - 경제 재조회: 별도 프로세스에서 `TIME`·`soda`·inventory가 각각 단일 행이고 수량 66·비장착임을 확인했다. 감사 operation의 domain·actor·payload hash·`completed` 상태·응답 본문(68 → 66)과 lock anchor identity도 독립 확인했다.
 - live 순서: `TIME` 소다 차감은 완료했다. 남은 lore 대상은 reference target 적용·재조회 → report/mirror dry-run → exact publication audience와 연결 target 가시성 재확인 → 승인된 report/mirror 적용·재조회 → Dossier/관계/성격 적용·재조회 → ERP graph/link/image consumer 확인 순서이며, 이번 단계에서는 이 lore live write를 수행하지 않는다.

@@ -11,7 +11,7 @@ notableMembers: []
 isPublic: true
 source: session-log
 createdAt: 2026-07-19T00:00:00Z
-updatedAt: 2026-08-09T00:00:00Z
+updatedAt: 2026-08-10T00:00:00Z
 ---
 
 ## 이념/가치관
