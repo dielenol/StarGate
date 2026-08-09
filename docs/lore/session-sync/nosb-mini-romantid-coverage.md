@@ -14,7 +14,7 @@ source: stargate-lore
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-MINI-ROMANTID` | `StarGateV2/scripts/seed-payloads/nosb-mini-romantid-sync.json` | available | partial |
+| `NOSB-MINI-ROMANTID` | `StarGateV2/scripts/seed-payloads/nosb-mini-romantid-sync.json` | available | complete |
 
 ## Source Profile
 
@@ -34,14 +34,14 @@ source: stargate-lore
 - Session ID: `NOSB-MINI-ROMANTID`
 - Report number: `MINI05`
 - Report title: `작전 보고서 MINI05: 로맨티드`
-- Report minimum role: `U` (live publication target; staging 기본값은 `V`)
+- Report minimum role: `U` (live publication 적용 완료; staging 기본값은 `V`)
 - Wiki slug: `mini05-romantid`
 - 진행일: `2026-07-19` ~ `2026-07-20`
 - 작전지: 독일 다름슈타트 공과대학 도서관과 810번 도서 내부 공간
 - 지도 좌표: 유럽 내 기존 표적을 기준으로 `[51.7, 34.1]`, `estimated`
 - 주요 대상: 해쉬 테거, 810번 도서, 열쇠형 책갈피, 컨텐처/테이블 오프 컨텐처
 - 보고서 기록자: `NOVUS ORDO 사무국 기록통제실 연구원 E. Adler`
-- 신규 공개 기준: live publication에서 operation-report wiki mirror, 언더 더 브릿지 faction/wiki, 810번 도서 wiki, 카탈로그 2건을 `isPublic: true`로 맞춘다. 카탈로그 2건은 공개되더라도 `isAvailable: false`, `price: 0`의 비판매 기록이다.
+- 신규 공개 기준: live publication에서 operation-report wiki mirror, 언더 더 브릿지 faction/wiki, 810번 도서 wiki, 카탈로그 2건을 `isPublic: true`로 맞췄다. 카탈로그 2건은 `isAvailable: false`, `price: 0`의 비판매 기록으로 적용했다.
 
 ## Structured Digest
 
@@ -63,15 +63,15 @@ source: stargate-lore
 
 | subject | source evidence | target surface | action | status |
 |---|---|---|---|---|
-| 로맨티드 전체 기록 | 전 페이지와 종료 표기 | `session_reports.NOSB-MINI-ROMANTID`, `wiki_pages.mini05-romantid` | staging 검수 뒤 live publication payload에서 MINI05 보고서를 `minRole: U`, mirror를 공개로 전환하고 동일한 8개 시각 자료 순서로 등록 | ready-for-apply |
-| 보고서 번호·지도 카드 | 사용자 지정 미니세션, 기존 MINI04 다음 순서, 다름슈타트 작전지 | `lib/format/session-report.ts`, report map | `MINI05` preset·제목 fallback·근접 유럽 표적 카드 배치 추가 | ready-for-draft |
-| 810번 도서 | 도서관 괴담, 거대 입구 발현, 현실 귀환 뒤 잔존 | `wiki_pages.book-810`, `master_items.book-810` | 공개 물품 wiki와 공개·비판매 `SPECIAL` 카탈로그 등록 | ready-for-draft |
-| 열쇠형 책갈피 | 해쉬 소지 열쇠형 줄루, 도서 입구·탈출 핵 작동, 현실 회수 | `master_items.key-shaped-bookmark`, 810번 도서 wiki | 공개·비판매 `SPECIAL` 카탈로그 및 도서 문서의 구성 물품으로 등록 | ready-for-draft |
-| 언더 더 브릿지 | MINI05 보존 기록과 사용자 정사 판정 | `factions.UNDER_THE_BRIDGE`, `wiki_pages.under-the-bridge`, report, 810번 도서 wiki | 공개 외부 세력 레코드와 전용 위키를 생성하고 보고서·도서 문서에서 구조화 링크 | ready-for-apply |
-| 컨텐처와 대응체 | 장면·대화에서 관측, 현실 잔존 미확인 | report, 810번 도서 wiki, 언더 더 브릿지 wiki | 도서 내부 인격/현상으로 병합하고 신규 Dossier·기관은 생성하지 않음 | ready-for-draft |
-| 해쉬와 오틸리아 | 기억 장벽과 최종 대화 | 양측 Dossier relation, personality observations | 사랑·상실 약속·자기혐오 직시를 세션 근거와 함께 누적 | ready-for-draft |
-| 해쉬와 마가렛 | 프로젝트 데드핸즈 메리골드 기억 | `INDEXER` Dossier relation/observation, report | 초기 수단화 반성과 개인으로서의 애착을 해쉬 측 관계로 누적 | ready-for-draft |
-| 현장 참가자 | briefing과 전체 화자 집합 | 12개 기존 Dossier | `appearsInEvents`, `sessionAppearances`, 세션 태그를 멱등 추가 | ready-for-draft |
+| 로맨티드 전체 기록 | 전 페이지와 종료 표기 | `session_reports.NOSB-MINI-ROMANTID`, `wiki_pages.mini05-romantid` | staging 검수 뒤 live publication payload에서 MINI05 보고서를 `minRole: U`, mirror를 공개로 전환하고 동일한 8개 시각 자료 순서로 등록 | applied |
+| 보고서 번호·지도 카드 | 사용자 지정 미니세션, 기존 MINI04 다음 순서, 다름슈타트 작전지 | `lib/format/session-report.ts`, report map | `MINI05` preset·제목 fallback·근접 유럽 표적 카드 배치 추가 | applied |
+| 810번 도서 | 도서관 괴담, 거대 입구 발현, 현실 귀환 뒤 잔존 | `wiki_pages.book-810`, `master_items.book-810` | 공개 물품 wiki와 공개·비판매 `SPECIAL` 카탈로그 등록 | applied |
+| 열쇠형 책갈피 | 해쉬 소지 열쇠형 줄루, 도서 입구·탈출 핵 작동, 현실 회수 | `master_items.key-shaped-bookmark`, 810번 도서 wiki | 공개·비판매 `SPECIAL` 카탈로그 및 도서 문서의 구성 물품으로 등록 | applied |
+| 언더 더 브릿지 | MINI05 보존 기록과 사용자 정사 판정 | `factions.UNDER_THE_BRIDGE`, `wiki_pages.under-the-bridge`, report, 810번 도서 wiki | 공개 외부 세력 레코드와 전용 위키를 생성하고 보고서·도서 문서에서 구조화 링크 | applied |
+| 컨텐처와 대응체 | 장면·대화에서 관측, 현실 잔존 미확인 | report, 810번 도서 wiki, 언더 더 브릿지 wiki | 도서 내부 인격/현상으로 병합하고 신규 Dossier·기관은 생성하지 않음 | applied |
+| 해쉬와 오틸리아 | 기억 장벽과 최종 대화 | 양측 Dossier relation, personality observations | 사랑·상실 약속·자기혐오 직시를 세션 근거와 함께 누적 | applied |
+| 해쉬와 마가렛 | 프로젝트 데드핸즈 메리골드 기억 | `INDEXER` Dossier relation/observation, report | 초기 수단화 반성과 개인으로서의 애착을 해쉬 측 관계로 누적 | applied |
+| 현장 참가자 | briefing과 전체 화자 집합 | 12개 기존 Dossier | `appearsInEvents`, `sessionAppearances`, 세션 태그를 멱등 추가 | applied |
 | 한스·마르타 테거 | 해쉬의 어린 시절 기억 | report prose | 부모 이름과 기억 장면만 보존; 현재 신원·초상·공개 분류가 없어 Dossier 미생성 | candidate-only |
 | 필립과 다름슈타트 교수 | 강연 종료 전 대화 | report prose | 강연 맥락만 보존; 필립의 성·교수 신원이 없어 Dossier 미생성 | candidate-only |
 | 크로노스의 소다 사용 2회 | 시스템 사용 기록 2건과 사용자 실행 확인 | `character_inventory`, `economic_operations` | `TIME`의 `soda`를 원자 트랜잭션으로 68개 → 66개 차감하고 `session-consumable:NOSB-MINI-ROMANTID:TIME:soda:2` 완료 및 독립 재조회 확인 | applied |
@@ -81,18 +81,18 @@ source: stargate-lore
 
 | source name | canonical target | action | status |
 |---|---|---|---|
-| Mr. 오드 | `MR_ODD` | 독일 긴급 차출과 해쉬 회수 임무 브리핑 | ready-for-apply |
-| 해쉬 테거 | `INDEXER` | 810번 도서 진입, 내면 장벽과 컨텐처 대면, 현실 귀환 | ready-for-apply |
-| 오틸리아 발트만 | `OTILIA` | 해쉬 회수, 대체 거부, 최종 애정·상실 약속 | ready-for-apply |
-| 츠키시로 쿠즈하 / 유회 | `YUHOE` | 대응체 관측, 우월주의 거부, 귀환 뒤 해쉬에게 자기 감정 수용 조언 | ready-for-apply |
-| 이동식 | `LEE DONGSIK` | 도서 내부 진입·전투·기억 장벽 통과와 귀환 | ready-for-apply |
-| 키아나 오 캘러핸 / 네베드 | `네베드` | 인간 식용과 위계 거부, 전투·기억 장벽 통과와 귀환 | ready-for-apply |
-| 마가렛 / 메리골드 | `MARGARET` | 실버레이스 대응체 조우, 프로젝트 데드핸즈 기억 노출 | ready-for-apply |
-| 시유 / 타이거 | `TIGER298` | 라이언 대응체 조우, 자유에 대한 동요, 전투·기억 장벽 통과 | ready-for-apply |
-| 발레리아 아젠트 | `AEGIS` | 엔시스 대응체 조우, 줄루 우월주의 반박, 전투 참여 | ready-for-apply |
-| 마리아 | `MARIA` | 내부 공간 분석, 넥타이핀 역전 효과 활용, 도서·책갈피 회수 | ready-for-apply |
-| 크로노스 | `TIME` | 오케아노스 대응체 조우, 전투·기억 장벽 통과와 귀환 | ready-for-apply |
-| 닥터 모스 | `DOCTOR_MOSS` | 해쉬의 기억에서 프로젝트 데드핸즈와 메리골드 담당 배정 | ready-for-apply |
+| Mr. 오드 | `MR_ODD` | 독일 긴급 차출과 해쉬 회수 임무 브리핑 | applied |
+| 해쉬 테거 | `INDEXER` | 810번 도서 진입, 내면 장벽과 컨텐처 대면, 현실 귀환 | applied |
+| 오틸리아 발트만 | `OTILIA` | 해쉬 회수, 대체 거부, 최종 애정·상실 약속 | applied |
+| 츠키시로 쿠즈하 / 유회 | `YUHOE` | 대응체 관측, 우월주의 거부, 귀환 뒤 해쉬에게 자기 감정 수용 조언 | applied |
+| 이동식 | `LEE DONGSIK` | 도서 내부 진입·전투·기억 장벽 통과와 귀환 | applied |
+| 키아나 오 캘러핸 / 네베드 | `네베드` | 인간 식용과 위계 거부, 전투·기억 장벽 통과와 귀환 | applied |
+| 마가렛 / 메리골드 | `MARGARET` | 실버레이스 대응체 조우, 프로젝트 데드핸즈 기억 노출 | applied |
+| 시유 / 타이거 | `TIGER298` | 라이언 대응체 조우, 자유에 대한 동요, 전투·기억 장벽 통과 | applied |
+| 발레리아 아젠트 | `AEGIS` | 엔시스 대응체 조우, 줄루 우월주의 반박, 전투 참여 | applied |
+| 마리아 | `MARIA` | 내부 공간 분석, 넥타이핀 역전 효과 활용, 도서·책갈피 회수 | applied |
+| 크로노스 | `TIME` | 오케아노스 대응체 조우, 전투·기억 장벽 통과와 귀환 | applied |
+| 닥터 모스 | `DOCTOR_MOSS` | 해쉬의 기억에서 프로젝트 데드핸즈와 메리골드 담당 배정 | applied |
 
 ## NPC Approval Ledger
 
@@ -100,20 +100,20 @@ source: stargate-lore
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `INDEXER` | 해쉬 테거(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 810번 도서 실종·회수 대상 | 기존 codename과 세션 화자 `해쉬 테거` 일치 | 기존 ERP 소속 보존 | 다름슈타트 개인 휴가 중 사건; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존; 컷신 재사용 없음 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | `OTILIA`, `MARGARET` 관계와 자기인식 성격 관찰 누적 | ready-for-apply |
-| `OTILIA` | 오틸리아 발트만(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 해쉬 회수 현장요원 | 기존 codename과 세션 화자 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존; 컷신 재사용 없음 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | `INDEXER` 관계와 지속적 애착 관찰 누적 | ready-for-apply |
-| `YUHOE` | 츠키시로 쿠즈하(기존 ERP 신원 보존) | 유회(기존 확인 별칭) | 기존 직책 유지; 회수 작전 참가자 | alias map·기존 Dossier와 세션 표기 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 우위보다 다름을 택한 발화의 성격 관찰 누적 | ready-for-apply |
-| `AEGIS` | 발레리아 아젠트(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 회수 작전 참가자 | 기존 Dossier와 세션 화자 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 위계적 폭력과 본능 지배를 거부한 관찰 누적 | ready-for-apply |
-| `네베드` | 키아나 오 캘러핸(기존 ERP 신원 보존) | 네베드(기존 확인 별칭) | 기존 직책 유지; 회수 작전 참가자 | alias map·기존 Dossier와 세션 표기 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 인간·줄루의 우열보다 역할과 차이를 강조한 관찰 누적 | ready-for-apply |
-| `TIME` | 크로노스(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 회수 작전 참가자 | 기존 Dossier와 세션 화자 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 차별을 감수하더라도 세계 보호를 우선한 관찰 누적 | ready-for-apply |
+| `INDEXER` | 해쉬 테거(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 810번 도서 실종·회수 대상 | 기존 codename과 세션 화자 `해쉬 테거` 일치 | 기존 ERP 소속 보존 | 다름슈타트 개인 휴가 중 사건; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존; 컷신 재사용 없음 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | `OTILIA`, `MARGARET` 관계와 자기인식 성격 관찰 누적 | applied |
+| `OTILIA` | 오틸리아 발트만(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 해쉬 회수 현장요원 | 기존 codename과 세션 화자 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존; 컷신 재사용 없음 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | `INDEXER` 관계와 지속적 애착 관찰 누적 | applied |
+| `YUHOE` | 츠키시로 쿠즈하(기존 ERP 신원 보존) | 유회(기존 확인 별칭) | 기존 직책 유지; 회수 작전 참가자 | alias map·기존 Dossier와 세션 표기 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 우위보다 다름을 택한 발화의 성격 관찰 누적 | applied |
+| `AEGIS` | 발레리아 아젠트(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 회수 작전 참가자 | 기존 Dossier와 세션 화자 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 위계적 폭력과 본능 지배를 거부한 관찰 누적 | applied |
+| `네베드` | 키아나 오 캘러핸(기존 ERP 신원 보존) | 네베드(기존 확인 별칭) | 기존 직책 유지; 회수 작전 참가자 | alias map·기존 Dossier와 세션 표기 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 인간·줄루의 우열보다 역할과 차이를 강조한 관찰 누적 | applied |
+| `TIME` | 크로노스(기존 ERP 신원 보존) | 기존 ERP 별칭 보존 | 기존 직책 유지; 회수 작전 참가자 | 기존 Dossier와 세션 화자 일치 | 기존 ERP 소속 보존 | 다름슈타트 회수 작전 일시 파견; 정규 소속 불변 | 기존 승인값 유지(직책 변화 없음; 지휘·접근 범위 불변) | 기존 Dossier 초상 보존 | 기존 `isPublic` 보존 | 기존 신상 보존; 세션에서 신규 수치 없음 | 차별을 감수하더라도 세계 보호를 우선한 관찰 누적 | applied |
 
 ## Relationship Narrative Candidates
 
 | from | to | beat | confidence | persistence target | status |
 |---|---|---|---|---|---|
-| `INDEXER` | `OTILIA` | 자기혐오와 죽음 뒤 망각에 대한 두려움을 드러냈고, 오틸리아의 사랑과 지속 기억 약속을 받아들임 | confirmed | `INDEXER` Dossier relation | ready-for-apply |
-| `OTILIA` | `INDEXER` | 해쉬가 자신을 바꾸었고 그의 죽음 뒤에도 기억을 안고 살아가겠다고 명시 | confirmed | `OTILIA` Dossier relation | ready-for-apply |
-| `INDEXER` | `MARGARET` | 메리골드를 줄루 인정의 수단으로 보았던 과거를 반성하고, 실뜨기와 꽃향기를 좋아하는 마가렛 개인을 필요로 한다고 인정 | confirmed | `INDEXER` Dossier relation | ready-for-apply |
+| `INDEXER` | `OTILIA` | 자기혐오와 죽음 뒤 망각에 대한 두려움을 드러냈고, 오틸리아의 사랑과 지속 기억 약속을 받아들임 | confirmed | `INDEXER` Dossier relation | applied |
+| `OTILIA` | `INDEXER` | 해쉬가 자신을 바꾸었고 그의 죽음 뒤에도 기억을 안고 살아가겠다고 명시 | confirmed | `OTILIA` Dossier relation | applied |
+| `INDEXER` | `MARGARET` | 메리골드를 줄루 인정의 수단으로 보았던 과거를 반성하고, 실뜨기와 꽃향기를 좋아하는 마가렛 개인을 필요로 한다고 인정 | confirmed | `INDEXER` Dossier relation | applied |
 | `INDEXER` | 한스·마르타 테거 | 부모의 기대와 어린 시절 기억이 비범함 강박의 배경으로 나타남 | confirmed memory | report prose | candidate-only — 부모 Dossier 없음 |
 | `컨텐처` | `INDEXER` | 해쉬의 자기혐오와 인정욕구를 인격화해 공격하고 끝내 자기수용을 촉발 | confirmed within anomaly | report와 810번 도서 wiki | no Dossier — 내부 인격 현상 |
 
@@ -121,14 +121,14 @@ source: stargate-lore
 
 | observation id | codename | sessionId | trait | evidence kind | evidence | source label | confidence | persistence |
 |---|---|---|---|---|---|---|---|---|
-| `NOSB-MINI-ROMANTID:INDEXER:self-acceptance` | `INDEXER` | `NOSB-MINI-ROMANTID` | 자기혐오 직시와 생존 선택 | dialogue+action | `그저 있자. 살아가자.`<br>팔뚝 크기로 커진 열쇠를 검은 핵에 꽂아 현실 귀환을 선택함 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
-| `NOSB-MINI-ROMANTID:INDEXER:individual-attachment` | `INDEXER` | `NOSB-MINI-ROMANTID` | 추상적 이념보다 개별 관계 인정 | dialogue+description | `난 줄루를 좋아하는 게 아냐.`<br>동료 각자에 대한 존경, 질투와 열등감이 기억 장벽으로 나타남 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
-| `NOSB-MINI-ROMANTID:INDEXER:instrumentality-remorse` | `INDEXER` | `NOSB-MINI-ROMANTID` | 수단화 반성과 개인 존중 | description | 초기에는 메리골드를 줄루의 가치를 인정받기 위한 수단으로 관측함<br>이후 실뜨기와 꽃향기와 웃음을 좋아하는 마가렛 개인을 필요로 했다고 회고함 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
-| `NOSB-MINI-ROMANTID:OTILIA:enduring-attachment` | `OTILIA` | `NOSB-MINI-ROMANTID` | 지속적 애착과 상실 수용 | dialogue+action | 당신이 죽은 뒤에도 안고 살아가겠다고 해쉬에게 약속함<br>현실 귀환 뒤 해쉬에게 손을 내밀고 함께 도서관을 떠남 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
-| `NOSB-MINI-ROMANTID:YUHOE:non-dominance` | `YUHOE` | `NOSB-MINI-ROMANTID` | 우위보다 다름과 중용 | dialogue | 인간보다 우위에 서고 싶지 않으며 모든 것은 중용이 중요하다고 대응체에게 말함<br>귀환 뒤 해쉬에게 드러난 감정도 모두 자신의 것이므로 사랑하라고 조언함 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
-| `NOSB-MINI-ROMANTID:AEGIS:anti-domination` | `AEGIS` | `NOSB-MINI-ROMANTID` | 지배의 반복 거부 | dialogue+action | 같은 폭력을 반복한다면 무엇이 나아졌는지 엔시스에게 반문함<br>강제 전입을 거부하고 현장팀의 귀환 전투에 참여함 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
-| `NOSB-MINI-ROMANTID:NEVED:role-equality` | `네베드` | `NOSB-MINI-ROMANTID` | 인간·줄루 비위계 인식 | dialogue+action | 인간은 줄루보다 나약하지 않고 줄루도 인간보다 악하지 않으며 각자 역할을 할 뿐이라고 말함<br>라이언의 인간 식용과 강제 전입을 거부함 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
-| `NOSB-MINI-ROMANTID:TIME:world-duty` | `TIME` | `NOSB-MINI-ROMANTID` | 차별보다 세계 보호 우선 | dialogue+action | 무시와 차별을 받더라도 세계를 지켜야 한다고 오케아노스에게 말함<br>오케아노스의 조력을 받으며 현장팀의 해쉬 회수에 참여함 | 작전 보고서 MINI05: 로맨티드 | confirmed | ready-for-apply |
+| `NOSB-MINI-ROMANTID:INDEXER:self-acceptance` | `INDEXER` | `NOSB-MINI-ROMANTID` | 자기혐오 직시와 생존 선택 | dialogue+action | `그저 있자. 살아가자.`<br>팔뚝 크기로 커진 열쇠를 검은 핵에 꽂아 현실 귀환을 선택함 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
+| `NOSB-MINI-ROMANTID:INDEXER:individual-attachment` | `INDEXER` | `NOSB-MINI-ROMANTID` | 추상적 이념보다 개별 관계 인정 | dialogue+description | `난 줄루를 좋아하는 게 아냐.`<br>동료 각자에 대한 존경, 질투와 열등감이 기억 장벽으로 나타남 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
+| `NOSB-MINI-ROMANTID:INDEXER:instrumentality-remorse` | `INDEXER` | `NOSB-MINI-ROMANTID` | 수단화 반성과 개인 존중 | description | 초기에는 메리골드를 줄루의 가치를 인정받기 위한 수단으로 관측함<br>이후 실뜨기와 꽃향기와 웃음을 좋아하는 마가렛 개인을 필요로 했다고 회고함 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
+| `NOSB-MINI-ROMANTID:OTILIA:enduring-attachment` | `OTILIA` | `NOSB-MINI-ROMANTID` | 지속적 애착과 상실 수용 | dialogue+action | 당신이 죽은 뒤에도 안고 살아가겠다고 해쉬에게 약속함<br>현실 귀환 뒤 해쉬에게 손을 내밀고 함께 도서관을 떠남 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
+| `NOSB-MINI-ROMANTID:YUHOE:non-dominance` | `YUHOE` | `NOSB-MINI-ROMANTID` | 우위보다 다름과 중용 | dialogue | 인간보다 우위에 서고 싶지 않으며 모든 것은 중용이 중요하다고 대응체에게 말함<br>귀환 뒤 해쉬에게 드러난 감정도 모두 자신의 것이므로 사랑하라고 조언함 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
+| `NOSB-MINI-ROMANTID:AEGIS:anti-domination` | `AEGIS` | `NOSB-MINI-ROMANTID` | 지배의 반복 거부 | dialogue+action | 같은 폭력을 반복한다면 무엇이 나아졌는지 엔시스에게 반문함<br>강제 전입을 거부하고 현장팀의 귀환 전투에 참여함 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
+| `NOSB-MINI-ROMANTID:NEVED:role-equality` | `네베드` | `NOSB-MINI-ROMANTID` | 인간·줄루 비위계 인식 | dialogue+action | 인간은 줄루보다 나약하지 않고 줄루도 인간보다 악하지 않으며 각자 역할을 할 뿐이라고 말함<br>라이언의 인간 식용과 강제 전입을 거부함 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
+| `NOSB-MINI-ROMANTID:TIME:world-duty` | `TIME` | `NOSB-MINI-ROMANTID` | 차별보다 세계 보호 우선 | dialogue+action | 무시와 차별을 받더라도 세계를 지켜야 한다고 오케아노스에게 말함<br>오케아노스의 조력을 받으며 현장팀의 해쉬 회수에 참여함 | 작전 보고서 MINI05: 로맨티드 | confirmed | applied |
 
 후보 메모: `TIGER298`가 라이언과 헤어지며 자유를 가진 적이 없다는 내면 독백을 남겼다. 단일 내면 서술이므로 별도 성격 관찰 payload에는 포함하지 않고 후속 세션에서 반복 근거를 확인한다.
 
@@ -194,19 +194,20 @@ source: stargate-lore
 
 | target | classification | durable action | live/economy side effect | status |
 |---|---|---|---|---|
-| `book-810` | `SPECIAL`, 공개·비판매 | spec·master_items payload·전용 아이콘과 `book-810` wiki 대표 장면 연결 | 인벤토리 지급 없음; 마리아의 현장 회수는 소유권 확정이 아님 | ready-for-apply |
-| `key-shaped-bookmark` | `SPECIAL`, 공개·비판매 | spec·master_items payload·전용 아이콘과 `book-810` wiki 연결 | 인벤토리 지급 없음; 최종 보관 위치 미확인 | ready-for-apply |
+| `book-810` | `SPECIAL`, 공개·비판매 | spec·master_items payload·전용 아이콘과 `book-810` wiki 대표 장면 연결 | 인벤토리 지급 없음; 마리아의 현장 회수는 소유권 확정이 아님 | applied |
+| `key-shaped-bookmark` | `SPECIAL`, 공개·비판매 | spec·master_items payload·전용 아이콘과 `book-810` wiki 연결 | 인벤토리 지급 없음; 최종 보관 위치 미확인 | applied |
 | `TIME`의 `soda` | 기존 consumable 사용 기록 | 보고서에는 세션 사용 사실만 기록 | live `character_inventory` 68개 → 66개 원자 차감; `economic_operations` 감사 완료 및 독립 재조회 확인 | applied |
 | stocks | 관련 상장사 없음 | 별도 문서·event 없음 | 가격·history·wire 변경 대상 없음 | no-action |
 
 ## Access Control Decision
 
 - 원본의 `TIER-3 · EYES ONLY`는 세계관상 기록 등급으로 보존한다. staging 단계는 보고서 `minRole: V`, 연결 target 비공개로 검수했다.
-- 사용자 운영 결정에 따라 live publication payload는 보고서 `minRole: U`, operation-report mirror·언더 더 브릿지 faction/wiki·810번 도서 wiki·카탈로그 2건 `isPublic: true`로 전환한다. 미설정 legacy 보고서는 기존 계약대로 `U`로 해석한다.
+- 사용자 운영 결정에 따라 live publication payload의 보고서 `minRole: U`, operation-report mirror·언더 더 브릿지 faction/wiki·810번 도서 wiki·카탈로그 2건 `isPublic: true`를 적용했다. 미설정 legacy 보고서는 기존 계약대로 `U`로 해석한다.
 - 서버 목록·직접 상세·GET API·통합 검색의 index live-check/fallback·wiki/catalog 역링크·Dossier 이벤트 링크가 동일한 역할 필터를 사용한다. 권한 미달 직접 상세/API는 존재를 숨기는 `404` 계약이다.
-- `U` 보고서의 구조화 링크가 소비자에서 제거되지 않도록 연결 wiki/catalog를 공개로 맞추고, 12개 관련 personnel도 모두 공개 해석 가능함을 live dry-run에서 확인한다.
+- `U` 보고서의 구조화 링크가 소비자에서 제거되지 않도록 연결 wiki/catalog를 공개로 맞췄고, 12개 관련 personnel도 모두 공개 해석 가능함을 live 재조회에서 확인했다.
 - 향후 신규 세션 보고서도 staging payload에서는 `V`를 기본값으로 둔다. exact live publication 시 `U`로 완화하면서 연결된 wiki/catalog/personnel을 같은 독자에게 맞추고, 불일치하면 publication을 중단한다.
-- live 쓰기는 `TIME`의 `soda` 2개 차감에만 수행했다. `character_inventory`는 68개 → 66개, `economic_operations`의 `session-consumable:NOSB-MINI-ROMANTID:TIME:soda:2`는 `completed`이며 기존 inventory lock anchor만 갱신됐다. 알림·SAN·효과·그 외 lore/economy DB write는 수행하지 않았다.
+- live lore 쓰기는 공개 faction 1건·wiki 3건·비판매 `SPECIAL` item 2건·`U` 보고서 1건, Dossier 세션 링크 12건·관계 3건·immutable 성격 관찰 8건에 한정했다. `lore_sources` 5건과 성공한 `lore_ingestion_runs` 5건이 감사 기록으로 남았다.
+- 경제 쓰기는 `TIME`의 `soda` 2개 차감만 수행했다. `character_inventory`는 68개 → 66개, `economic_operations`의 `session-consumable:NOSB-MINI-ROMANTID:TIME:soda:2`는 `completed`이며 기존 inventory lock anchor만 갱신됐다. 신규 아이템의 inventory row·상점 재고·크레딧·주식·알림·SAN·효과는 변경하지 않았다.
 
 ## Graph And Verification Plan
 
@@ -218,6 +219,12 @@ source: stargate-lore
 - personnel → report: `lore.appearsInEvents = NOSB-MINI-ROMANTID`와 세션 appearance.
 - 관계: `INDEXER ↔ OTILIA`, `INDEXER → MARGARET`를 세션 근거와 함께 누적.
 - 정적 검사: coverage/static payload audit, NPC/personality/visual ready checks, report-mirror visual parity, schema adapter 검증. 공개 faction/catalog payload는 `toDbFaction`·`toDbCatalogItem` 결과와 일치시키고 제작 메타 문구는 이 비공개 Visual Asset Ledger에만 보존한다.
-- 런타임 검사: reference target 5건은 seed runner read-only dry-run에서 모두 insert 계획을 통과했다. report/mirror 2건은 live reference target 미적용 때문에 보고서가 구조화 링크 4건(`under-the-bridge`, `book-810`, 카탈로그 2건)에서 차단되고 mirror만 insert 계획이 산출되는 예상 순서를 확인했다. Dossier/NPC·성격 ready checker와 전체 coverage/static/visual parity checker는 모두 통과했다.
+- 런타임 검사: 검증·커밋된 5개 payload를 reference target → report/mirror → Dossier → 관계 → 성격 관찰 순서로 적용하고 각 단계 직후 독립 재조회했다. run ID는 `seed-payload:c6fa1cc7-d3b5-4d7a-927c-17057ba0a0ba`, `seed-payload:2289035e-464f-416f-8377-eeafbf204f96`, `seed-payload:865456b8-ab0d-4c49-9971-5eac14e0343d`, `seed-payload:8a7dcca1-0117-4e9e-9358-dbf99390a293`, `seed-payload:45f057bc-c2e2-4ba2-8c03-fe60f9fe3460`이며 모두 `succeeded`다.
+- DB 재조회: faction/wiki/catalog/report는 payload와 deep-equal이고, Dossier 12건은 MINI05 event·session appearance가 각각 1건, 관계 3건과 immutable 관찰 8건도 각각 정확히 1건이다. 보고서 구조화 참조 검사는 issue 0건이고, 5개 payload의 사후 dry-run은 차단 없이 멱등 상태를 확인했다.
+- ERP 소비자 검사: J 역할에서 보고서 목록·상세, 8개 보고서 이미지, wiki mirror와 dedicated wiki, 카탈로그 2건의 아이콘·역링크, 언더 더 브릿지 faction을 확인했다. G 역할에서 INDEXER Dossier의 MINI05 세션 출현, 신규 관계 2건과 성격 관찰 3건을 확인했다. 캡처 시 page error와 console error는 0건이었다.
+- 통합 로어 검색: J 역할로 `q=로맨티드`를 조회해 HTTP 200, `sourceMode: fallback`, `degradedSources: []`를 확인했다. 공개 결과의 canonical href는 report `NOSB-MINI-ROMANTID` → `/erp/sessions/report/6a789d877c80e35d939e148f`, wiki `mini05-romantid` → `/erp/wiki/6a789d887c80e35d939e1490`, wiki `book-810` → `/erp/wiki/6a789d627c80e35d939e148b`, catalog `book-810` → `/erp/wiki/catalog/item/book-810`, catalog `key-shaped-bookmark` → `/erp/wiki/catalog/item/key-shaped-bookmark`, faction `UNDER_THE_BRIDGE` → `/erp/factions/under_the_bridge`이며 모두 동일 공개 독자에게 노출됐다.
+- 공개 경계: live report API는 J 역할에서 HTTP 200·`minRole: U`를 반환했고 J 브라우저 상세도 열렸다. `isSessionReportVisibleToRole({ minRole: "U" }, "U") === true`와 U용 Mongo filter의 허용 등급이 `['U']`뿐임을 독립 테스트했으며, 비인증 통합 검색·report API는 각각 HTTP 401, report 상세는 `/login?callbackUrl=...`로 HTTP 307 redirect됐다. 테스트 계정 SSOT에는 exact U 계정이 없어 U 브라우저 로그인 자체는 재현하지 않았고, 대신 live `minRole`·U 서버 predicate/filter·허용 J 브라우저·비인증 차단을 결합해 최저 공개 경계를 검증했다.
+- 보고서 이미지 렌더링: 1280×720, DPR 2에서 8개 figure 모두 source/browser natural 1035×503, rendered 661.98×321.72, natural/rendered ratio 2.0577/2.0576, `object-fit: contain`이었다. 각 figure backdrop은 동일 source의 `cover`, `blur(18px) saturate(0.86) brightness(0.62)`, opacity 0.58이고, caption은 `다름슈타트 도서관의 810번 도서 입구` → `언더 더 브릿지에서 일행을 맞는 컨텐처` → `식당에서 마주한 실버레이스` → `테이블 오프 컨텐처의 정체 공개` → `프로젝트 데드핸즈 시절 해쉬와 마가렛의 기억` → `해쉬의 내면을 공격하는 컨텐처` → `도서 내부 공간의 검은 근원` → `현실 귀환 뒤 손을 내민 오틸리아와 해쉬` 순서다. incomplete 0건, broken 0건, console error 0건이다.
+- wiki mirror 이미지 렌더링: 같은 viewport에서 본문 figure 7개는 source/browser natural 1035×503, rendered 731.99×355.74, ratio 2.0577/2.0576, `object-fit: contain`과 보고서와 동일한 backdrop/filter/opacity를 사용하며 caption도 보고서 2~8번과 정확히 일치했다. 보고서 1번 이미지는 mirror infobox 대표 이미지로 승격되어 원본 1035×503, Next 최적화 응답 natural 299×145, 4:3 frame 397.81×298.36, `object-fit: contain`, caption `다름슈타트 도서관의 810번 도서 입구`, backdrop 없음으로 표시됐다. 전체 incomplete 0건, broken 0건, console error 0건이다.
 - 경제 재조회: 별도 프로세스에서 `TIME`·`soda`·inventory가 각각 단일 행이고 수량 66·비장착임을 확인했다. 감사 operation의 domain·actor·payload hash·`completed` 상태·응답 본문(68 → 66)과 lock anchor identity도 독립 확인했다.
-- live 순서: `TIME` 소다 차감은 완료했다. 남은 lore 대상은 reference target 적용·재조회 → report/mirror dry-run → exact publication audience와 연결 target 가시성 재확인 → 승인된 report/mirror 적용·재조회 → Dossier/관계/성격 적용·재조회 → ERP graph/link/image consumer 확인 순서이며, 이번 단계에서는 이 lore live write를 수행하지 않는다.
+- live 순서: `TIME` 소다 차감과 reference target 적용·재조회 → report/mirror 재검증·적용·재조회 → Dossier/관계/성격 적용·재조회 → ERP graph/link/image consumer 확인을 모두 완료했다. 후보-only 항목 외에 이번 세션 동기화의 미적용 lore 대상은 없다.
