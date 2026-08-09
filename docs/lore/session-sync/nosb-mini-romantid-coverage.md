@@ -2,7 +2,7 @@
 title: NOSB-MINI-ROMANTID session sync coverage
 category: session-sync
 tags: [NOSB-MINI-ROMANTID, MINI05, 로맨티드, stargate-lore]
-updated: 2026-08-07
+updated: 2026-08-09
 source: stargate-lore
 ---
 
@@ -74,7 +74,7 @@ source: stargate-lore
 | 현장 참가자 | briefing과 전체 화자 집합 | 12개 기존 Dossier | `appearsInEvents`, `sessionAppearances`, 세션 태그를 멱등 추가 | ready-for-draft |
 | 한스·마르타 테거 | 해쉬의 어린 시절 기억 | report prose | 부모 이름과 기억 장면만 보존; 현재 신원·초상·공개 분류가 없어 Dossier 미생성 | candidate-only |
 | 필립과 다름슈타트 교수 | 강연 종료 전 대화 | report prose | 강연 맥락만 보존; 필립의 성·교수 신원이 없어 Dossier 미생성 | candidate-only |
-| 크로노스의 소다 사용 2회 | 시스템 사용 기록 2건과 사용자 차감 승인 | inventory side-effect plan | live 재조회 68개 → 2개 차감 후 66개; 실제 mutation 직전 별도 확인 대기 | approved-for-apply |
+| 크로노스의 소다 사용 2회 | 시스템 사용 기록 2건과 사용자 실행 확인 | `character_inventory`, `economic_operations` | `TIME`의 `soda`를 원자 트랜잭션으로 68개 → 66개 차감하고 `session-consumable:NOSB-MINI-ROMANTID:TIME:soda:2` 완료 및 독립 재조회 확인 | applied |
 | 주식 영향 | 상장사·시장 공개 사건 없음 | stock pass | 비밀 작전과 개인 관계 사건이므로 `no-action` | reviewed |
 
 ## Dossier Event Link Pass
@@ -196,7 +196,7 @@ source: stargate-lore
 |---|---|---|---|---|
 | `book-810` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload·전용 아이콘과 `book-810` wiki 대표 장면 연결 | 인벤토리 지급 없음; 마리아의 현장 회수는 소유권 확정이 아님 | ready-for-apply |
 | `key-shaped-bookmark` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload·전용 아이콘과 `book-810` wiki 연결 | 인벤토리 지급 없음; 최종 보관 위치 미확인 | ready-for-apply |
-| `TIME`의 `soda` | 기존 consumable 사용 기록 | 보고서에는 세션 사용 사실만 기록 | live 재조회 68개 → 2개 차감 후 66개; 실제 mutation 직전 별도 확인 대기 | approved-for-apply |
+| `TIME`의 `soda` | 기존 consumable 사용 기록 | 보고서에는 세션 사용 사실만 기록 | live `character_inventory` 68개 → 66개 원자 차감; `economic_operations` 감사 완료 및 독립 재조회 확인 | applied |
 | stocks | 관련 상장사 없음 | 별도 문서·event 없음 | 가격·history·wire 변경 대상 없음 | no-action |
 
 ## Access Control Decision
@@ -206,7 +206,7 @@ source: stargate-lore
 - 서버 목록·직접 상세·GET API·통합 검색의 index live-check/fallback·wiki/catalog 역링크·Dossier 이벤트 링크가 동일한 역할 필터를 사용한다. 권한 미달 직접 상세/API는 존재를 숨기는 `404` 계약이다.
 - `V` 제한 보고서는 V 이상이 볼 수 있는 비공개 wiki/catalog 구조화 참조를 유지할 수 있다. 비공개 personnel은 GM 제한 보고서에서만 참조 가능하다.
 - 향후 신규 세션 보고서도 staging payload에서는 `V`를 기본값으로 둔다. exact live publication 시 `U`로 완화하려면 연결된 wiki/catalog/personnel도 같은 독자에게 열려 있어야 하며, 불일치하면 보고서 제한을 유지한다.
-- live 쓰기는 어느 대상에도 수행하지 않았다. 실제 적용은 exact 대상·변경 전후·가시성 부수 효과 확인 뒤 별도로 진행한다.
+- live 쓰기는 `TIME`의 `soda` 2개 차감에만 수행했다. `character_inventory`는 68개 → 66개, `economic_operations`의 `session-consumable:NOSB-MINI-ROMANTID:TIME:soda:2`는 `completed`이며 기존 inventory lock anchor만 갱신됐다. 알림·SAN·효과·그 외 lore/economy DB write는 수행하지 않았다.
 
 ## Graph And Verification Plan
 
@@ -219,4 +219,5 @@ source: stargate-lore
 - 관계: `INDEXER ↔ OTILIA`, `INDEXER → MARGARET`를 세션 근거와 함께 누적.
 - 정적 검사: coverage/static payload audit, NPC/personality/visual ready checks, report-mirror visual parity, schema adapter 검증.
 - 런타임 검사: reference target 5건은 seed runner read-only dry-run에서 모두 insert 계획을 통과했다. report/mirror 2건은 live reference target 미적용 때문에 보고서가 구조화 링크 4건(`under-the-bridge`, `book-810`, 카탈로그 2건)에서 차단되고 mirror만 insert 계획이 산출되는 예상 순서를 확인했다. Dossier/NPC·성격 ready checker와 전체 coverage/static/visual parity checker는 모두 통과했다.
-- live 순서: reference target 적용·재조회 → report/mirror dry-run → exact publication audience와 연결 target 가시성 재확인 → 승인된 report/mirror 적용·재조회 → Dossier/관계/성격 적용·재조회 → ERP graph/link/image consumer 확인. 이번 단계에서는 TIME 소다 차감 외 lore live write를 수행하지 않는다.
+- 경제 재조회: 별도 프로세스에서 `TIME`·`soda`·inventory가 각각 단일 행이고 수량 66·비장착임을 확인했다. 감사 operation의 domain·actor·payload hash·`completed` 상태·응답 본문(68 → 66)과 lock anchor identity도 독립 확인했다.
+- live 순서: `TIME` 소다 차감은 완료했다. 남은 lore 대상은 reference target 적용·재조회 → report/mirror dry-run → exact publication audience와 연결 target 가시성 재확인 → 승인된 report/mirror 적용·재조회 → Dossier/관계/성격 적용·재조회 → ERP graph/link/image consumer 확인 순서이며, 이번 단계에서는 이 lore live write를 수행하지 않는다.
