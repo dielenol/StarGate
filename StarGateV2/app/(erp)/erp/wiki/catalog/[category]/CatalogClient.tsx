@@ -28,7 +28,7 @@ import {
   categoryTone,
   normalizeCatalogScope,
 } from "@/lib/catalog/categories";
-import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import { getCatalogItemImageSrc } from "@/lib/shop/item-images";
 
 import styles from "./CatalogClient.module.css";
 
@@ -92,9 +92,9 @@ function assetImageSrc(value?: string): string | null {
 
 function itemImageSrc(item: CatalogItem): string | null {
   const src =
-    getConsumableItemImageSrc(item.slug ?? "") ??
+    getCatalogItemImageSrc(item.slug ?? "") ??
     assetImageSrc(item.previewImage);
-  // canonical 맵/DB 값은 png 기준 — 소비 지점에서 webp 사이드카로 rewrite.
+  // PNG/JPG 경로는 WebP 사이드카로 rewrite하고 기존 WebP 경로는 유지한다.
   return src ? preferOptimizedPublicImagePath(src) : null;
 }
 

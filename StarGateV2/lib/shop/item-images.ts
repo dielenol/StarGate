@@ -24,6 +24,14 @@ export const CONSUMABLE_ITEM_IMAGE_BY_SLUG = {
   stimpack: "/assets/catalog/consumables/stimpack.png",
 } as const satisfies Record<string, string>;
 
+export const CATALOG_ITEM_IMAGE_BY_SLUG = {
+  ...CONSUMABLE_ITEM_IMAGE_BY_SLUG,
+  "aurora-virus-black-smoke-sample":
+    "/assets/catalog/samples/aurora-virus-black-smoke-sample.webp",
+  "cold-emitter": "/assets/catalog/special/cold-emitter.webp",
+  kimite: "/assets/catalog/special/kimite.webp",
+} as const satisfies Record<string, string>;
+
 export function getShopItemImageSrc(slug: string): string | undefined {
   return SHOP_ITEM_IMAGE_BY_SLUG[
     slug as keyof typeof SHOP_ITEM_IMAGE_BY_SLUG
@@ -35,5 +43,11 @@ export function getConsumableItemImageSrc(slug: string): string | undefined {
   // DB previewImage still points at a retired WebP path.
   return CONSUMABLE_ITEM_IMAGE_BY_SLUG[
     slug as keyof typeof CONSUMABLE_ITEM_IMAGE_BY_SLUG
+  ];
+}
+
+export function getCatalogItemImageSrc(slug: string): string | undefined {
+  return CATALOG_ITEM_IMAGE_BY_SLUG[
+    slug as keyof typeof CATALOG_ITEM_IMAGE_BY_SLUG
   ];
 }

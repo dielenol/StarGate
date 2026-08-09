@@ -20,7 +20,7 @@ import { findVisibleMasterItemBySlugOrId } from "@/lib/db/inventory";
 import { listVisibleSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
-import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import { getCatalogItemImageSrc } from "@/lib/shop/item-images";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
@@ -63,8 +63,8 @@ function itemMarkdown(item: MasterItem): string {
 }
 
 function previewImage(item: MasterItem): string | null {
-  // canonical 맵/DB 값은 png 기준 — 소비 지점에서 webp 사이드카로 rewrite.
-  const catalogSrc = getConsumableItemImageSrc(item.slug ?? "");
+  // PNG/JPG 경로는 WebP 사이드카로 rewrite하고 기존 WebP 경로는 유지한다.
+  const catalogSrc = getCatalogItemImageSrc(item.slug ?? "");
   if (catalogSrc) return preferOptimizedPublicImagePath(catalogSrc);
   const src = item.previewImage?.trim();
   if (src && src.startsWith("/assets/")) {
