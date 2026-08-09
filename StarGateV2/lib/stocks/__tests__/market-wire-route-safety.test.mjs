@@ -23,25 +23,25 @@ const MARKET_WIRE_DISCORD = new URL(
   "../../notifications/stock-market-wire-discord.ts",
   import.meta.url,
 );
-const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
+const WORKER_JOBS = new URL(
+  "../../../../stargate-worker/src/jobs/default-handlers.ts",
+  import.meta.url,
+);
 
-test("the scheduled tick applies prices before requesting the canonical wire batch", async () => {
-  const source = await readFile(TICK_ROUTE, "utf8");
+test("the worker scheduled tick applies prices before requesting the canonical wire batch", async () => {
+  const source = await readFile(WORKER_JOBS, "utf8");
   assert.match(
     source,
-    /applyScheduledStockTick\(\)[\s\S]*notifyScheduledStockMarketWire\(summary\)/,
+    /jobName: "stocks\.tick"[\s\S]*applyScheduledStockTick\(\{[\s\S]*requestStockMarketWireState\(/,
   );
-  assert.match(source, /marketWire\.status === "failed"/);
-  assert.match(source, /throw new Error\(marketWire\.error/);
 });
 
-test("the stock wire is refreshed only by the daily stock cron", async () => {
-  const config = await readFile(VERCEL_CONFIG, "utf8");
-  assert.match(
-    config,
-    /"path": "\/api\/cron\/stocks\/tick"[\s\S]*"schedule": "0 3 \* \* \*"/,
-  );
-  assert.doesNotMatch(config, /\/api\/cron\/stocks\/discord-wire/);
+test("the web tick route is an explicit manual recovery endpoint", async () => {
+  const source = await readFile(TICK_ROUTE, "utf8");
+  assert.match(source, /searchParams\.get\("job"\)/);
+  assert.match(source, /requestedJob !== "stocks"/);
+  assert.match(source, /owner: "manual-recovery"/);
+  assert.doesNotMatch(source, /LEGACY_CRON_|owner.*vercel/);
 });
 
 test("the scheduled wire singleton persists desired payloads and message ids", async () => {

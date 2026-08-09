@@ -57,8 +57,11 @@ async function reorderRequestsCol() {
 
 export async function insertShopReorderRequest(
   doc: ShopReorderRequestDoc,
+  options: { session?: ClientSession } = {},
 ): Promise<void> {
-  await (await reorderRequestsCol()).insertOne(doc);
+  await (await reorderRequestsCol()).insertOne(doc, {
+    session: options.session,
+  });
 }
 
 export async function listPendingShopReorderRequests(): Promise<

@@ -265,8 +265,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "관리 · GM 전용",
     minRole: "GM",
     items: [
-      /* 관리자 대시보드 — 콘텐츠 준비중. 계정 메뉴(IconSystem)와 시각 충돌 회피 위해 IconCrown 사용. */
-      { label: "관리자", keywords: "admin", icon: IconCrown, href: null, gmHref: "/erp/admin" },
+      { label: "관리자", keywords: "admin discord worker outbox 연동 상태", icon: IconCrown, href: "/erp/admin" },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
       { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconCredit, href: "/erp/admin/credits" },
       { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },

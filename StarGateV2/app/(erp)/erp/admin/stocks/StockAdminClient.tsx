@@ -329,7 +329,7 @@ export default function StockAdminClient({
           <div className={styles.scheduleNote}>
             <span>정기 크론</span>
             <strong>매일 12:00 KST</strong>
-            <span>현재 Vercel cron은 하루 1회만 실행됩니다.</span>
+            <span>Dokploy worker가 정기 실행을 단독 소유합니다.</span>
           </div>
           {selected ? (
             <form className={styles.form} onSubmit={handleSubmit}>

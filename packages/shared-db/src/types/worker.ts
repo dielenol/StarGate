@@ -46,6 +46,7 @@ export const INTEGRATION_OUTBOX_KINDS = [
   "MRBEAST_LOTTERY_WINNER_WEBHOOK",
   "STOCK_MANUAL_INTERVENTION_WEBHOOK",
   "PLAYER_TRADE_DM",
+  "WORKFLOW_STATUS_WEBHOOK",
 ] as const;
 
 export type IntegrationOutboxKind =
@@ -55,6 +56,10 @@ export interface IntegrationOutboxEvent {
   _id?: ObjectId;
   kind: IntegrationOutboxKind;
   dedupeKey: string;
+  /** 같은 업무 원장의 이벤트를 순서대로 전달하기 위한 파티션 키. */
+  partitionKey?: string;
+  /** 파티션 내부의 논리 발생 시각. createdAt/_id가 동률을 해소한다. */
+  partitionOrderAt?: Date;
   version: number;
   payload: Record<string, unknown>;
   status: IntegrationOutboxStatus;

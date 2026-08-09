@@ -21,6 +21,7 @@ import {
 } from "@/lib/auth/rbac";
 import { checkEditCooldown } from "@/lib/character/cooldown";
 import { computeCharacterDiff } from "@/lib/character/diff";
+import { ROOT_ALLOWED_FIELDS_ADMIN } from "@/lib/character/allowed-fields";
 import { parseEditedSkillTrainingInput } from "@/lib/character/skill-training";
 import {
   isExpectedUpdatedAtCurrent,
@@ -31,6 +32,7 @@ import {
   updateCharacter,
   deleteCharacter,
 } from "@/lib/db/characters";
+import { getClient } from "@/lib/db/client";
 import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { enqueueCharacterEditWebhook } from "@/lib/outbox/integration";
@@ -91,22 +93,6 @@ export async function GET(_request: Request, context: RouteContext) {
  * 권한 없는 sub-document 가 body 에 있어도 silent drop (화이트리스트 가드). 단,
  * 어떤 patch 도 적용되지 않으면 404 ("변경 사항이 없습니다") — TOCTTOU 결과 정합성 유지.
  */
-const ROOT_ALLOWED_FIELDS_ADMIN = new Set<string>([
-  "codename",
-  "tier",
-  "role",
-  "agentLevel",
-  "department",
-  "previewImage",
-  "pixelCharacterImage",
-  "warningVideo",
-  "ownerId",
-  "isPublic",
-  "factionCode",
-  "institutionCode",
-  "clearanceOverrides",
-]);
-
 /**
  * `clearanceOverrides` 객체 sanitize.
  *
@@ -307,11 +293,60 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const updated = await updateCharacter(id, body, {
-      allowedFields,
-      expectedUpdatedAt: expectedUpdatedAt.value,
-    });
-    if (!updated) {
+    const client = await getClient();
+    const dbSession = client.startSession();
+    let current: Awaited<ReturnType<typeof findCharacterById>> = null;
+    try {
+      current = await dbSession.withTransaction(async () => {
+        const updated = await updateCharacter(id, body, {
+          allowedFields,
+          expectedUpdatedAt: expectedUpdatedAt.value,
+          session: dbSession,
+        });
+        if (!updated) return null;
+        const next = await findCharacterById(id, { session: dbSession });
+        if (!next) {
+          throw new Error("수정된 캐릭터를 트랜잭션 안에서 확인하지 못했습니다.");
+        }
+        const changes = computeCharacterDiff(before, next, allowedFields);
+        if (changes.length === 0) return next;
+        await insertChangeLog({
+          characterId: new ObjectId(id),
+          actorId: session.user.id,
+          actorRole: session.user.role,
+          actorIsOwner,
+          source: isAdmin ? "admin" : "player",
+          changes,
+          ...(reason ? { reason } : {}),
+        }, { session: dbSession });
+
+        const displayName =
+          session.user.displayName ||
+          session.user.username ||
+          `user-${session.user.id.slice(0, 6)}`;
+        await enqueueCharacterEditWebhook({
+          character: {
+            id,
+            codename: before.codename,
+            name: before.lore.name,
+          },
+          actor: {
+            id: session.user.id,
+            displayName,
+            role: session.user.role,
+          },
+          source: isAdmin ? "admin" : "player",
+          actorIsOwner,
+          changes,
+          reason,
+          timestamp: new Date(),
+        }, undefined, { session: dbSession });
+        return next;
+      });
+    } finally {
+      await dbSession.endSession();
+    }
+    if (!current) {
       const latest = await findCharacterById(id);
       if (
         latest &&
@@ -335,59 +370,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    /**
-     * Audit 기록 (P6) — update 가 성공한 후 best-effort 로 changes log 를 남긴다.
-     */
-    try {
-      const updatedDoc = await findCharacterById(id);
-      if (updatedDoc) {
-        const changes = computeCharacterDiff(before, updatedDoc, allowedFields);
-        if (changes.length > 0) {
-          await insertChangeLog({
-            characterId: new ObjectId(id),
-            actorId: session.user.id,
-            actorRole: session.user.role,
-            actorIsOwner,
-            source: isAdmin ? "admin" : "player",
-            changes,
-            ...(reason ? { reason } : {}),
-          });
-
-          const displayName =
-            session.user.displayName ||
-            session.user.username ||
-            `user-${session.user.id.slice(0, 6)}`;
-
-          await enqueueCharacterEditWebhook({
-            character: {
-              id,
-              codename: before.codename,
-              name: before.lore.name,
-            },
-            actor: {
-              id: session.user.id,
-              displayName,
-              role: session.user.role,
-            },
-            source: isAdmin ? "admin" : "player",
-            actorIsOwner,
-            changes,
-            reason,
-            timestamp: new Date(),
-          });
-        }
-      }
-    } catch (auditErr) {
-      console.warn(
-        `[characters PATCH] audit insert failed user=${session.user.id} character=${id}:`,
-        auditErr,
-      );
-    }
-
-    const current = await findCharacterById(id);
     return NextResponse.json({
       success: true,
-      updatedAt: current?.updatedAt?.toISOString() ?? null,
+      updatedAt: current.updatedAt.toISOString(),
     });
   } catch (err) {
     if (err instanceof SessionReportInboundReferenceError) {
@@ -423,24 +408,34 @@ export async function DELETE(_request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
-    const deleted = await deleteCharacter(id);
+    const client = await getClient();
+    const dbSession = client.startSession();
+    let deleted = false;
+    try {
+      await dbSession.withTransaction(async () => {
+        deleted = await deleteCharacter(id, { session: dbSession });
+        if (!deleted) return;
+        await scheduleGmAdminAudit({
+          action: "캐릭터 삭제",
+          actor: {
+            id: session.user.id,
+            displayName: session.user.displayName,
+            role: session.user.role,
+          },
+          summary: `${target.type} 캐릭터 영구 삭제`,
+          target: `${target.codename} · ${target.lore.name}`,
+          timestamp: new Date(),
+        }, { session: dbSession });
+      });
+    } finally {
+      await dbSession.endSession();
+    }
     if (!deleted) {
       return NextResponse.json(
         { error: "캐릭터를 찾을 수 없습니다." },
         { status: 404 },
       );
     }
-    await scheduleGmAdminAudit({
-      action: "캐릭터 삭제",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `${target.type} 캐릭터 영구 삭제`,
-      target: `${target.codename} · ${target.lore.name}`,
-      timestamp: new Date(),
-    });
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof SessionReportInboundReferenceError) {

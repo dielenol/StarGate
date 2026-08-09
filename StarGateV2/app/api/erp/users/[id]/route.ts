@@ -4,11 +4,16 @@ import { clearCharacterOwnerByUserId } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { getClient } from "@/lib/db/client";
 import {
-  countUsersByRole,
   deleteUser,
   findUserById,
 } from "@/lib/db/users";
+import {
+  assertCanRemoveActiveGm,
+  lockAndReadUserAdminMutation,
+  UserAdminInvariantError,
+} from "@/lib/db/user-admin-invariant";
 import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
@@ -51,23 +56,37 @@ export async function DELETE(_request: Request, context: RouteContext) {
     );
   }
 
-  // 마지막 GM 삭제 방지
-  if (target.role === "GM") {
-    const superAdminCount = await countUsersByRole("GM");
-    if (superAdminCount <= 1) {
-      return NextResponse.json(
-        { error: "마지막 GM은 삭제할 수 없습니다." },
-        { status: 400 },
-      );
-    }
-  }
-
   try {
-    // characters의 ownerId를 먼저 null로 해제 → user 삭제 순서.
-    // 원자성은 없지만 idempotent: 1단계 실패 시 2단계 안 돎, 재시도 안전.
-    await clearCharacterOwnerByUserId(id);
-
-    const { deletedCount } = await deleteUser(id);
+    const client = await getClient();
+    const mongoSession = client.startSession();
+    let deletedCount = 0;
+    try {
+      await mongoSession.withTransaction(async () => {
+        const currentTarget = await lockAndReadUserAdminMutation({
+          actorId: session.user.id,
+          targetId: id,
+          session: mongoSession,
+        });
+        await assertCanRemoveActiveGm(currentTarget, mongoSession);
+        await clearCharacterOwnerByUserId(id, { session: mongoSession });
+        const deleted = await deleteUser(id, { session: mongoSession });
+        deletedCount = deleted.deletedCount;
+        if (deletedCount === 0) return;
+        await scheduleGmAdminAudit({
+          action: "사용자 계정 삭제",
+          actor: {
+            id: session.user.id,
+            displayName: session.user.displayName,
+            role: session.user.role,
+          },
+          summary: "계정 삭제 및 캐릭터 소유자 연결 해제",
+          target: `${currentTarget.displayName} (${currentTarget.username})`,
+          timestamp: new Date(),
+        }, { session: mongoSession });
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
     if (deletedCount === 0) {
       return NextResponse.json(
         { error: "사용자를 찾을 수 없습니다." },
@@ -82,20 +101,16 @@ export async function DELETE(_request: Request, context: RouteContext) {
       targetUsername: target.username,
       at: new Date().toISOString(),
     });
-    await scheduleGmAdminAudit({
-      action: "사용자 계정 삭제",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: "계정 삭제 및 캐릭터 소유자 연결 해제",
-      target: `${target.displayName} (${target.username})`,
-      timestamp: new Date(),
-    });
-
     return NextResponse.json({ deletedCount });
   } catch (err) {
+    if (err instanceof UserAdminInvariantError) {
+      const response = {
+        ACTOR_CHANGED: [403, "현재 GM 권한을 다시 확인해 주세요."],
+        TARGET_NOT_FOUND: [404, "사용자를 찾을 수 없습니다."],
+        LAST_ACTIVE_GM: [400, "마지막 active GM은 삭제할 수 없습니다."],
+      }[err.code] as [number, string];
+      return NextResponse.json({ error: response[1] }, { status: response[0] });
+    }
     const message = err instanceof Error ? err.message : "사용자 삭제 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

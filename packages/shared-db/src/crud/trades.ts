@@ -665,7 +665,7 @@ export async function confirmPlayerTrade(
   expectedRevision: number,
   actor: { id: string; name: string },
   session: ClientSession,
-): Promise<{ trade: PlayerTrade; completed: boolean }> {
+): Promise<{ trade: PlayerTrade; completed: boolean; confirmed: boolean }> {
   const trade = await findPlayerTradeById(id, { session });
   assertOpenTrade(trade, userId, expectedRevision);
   if (trade.kind !== "EXCHANGE") {
@@ -677,7 +677,7 @@ export async function confirmPlayerTrade(
       ? trade.initiatorConfirmedRevision
       : trade.counterpartyConfirmedRevision;
   if (ownConfirmation === expectedRevision) {
-    return { trade, completed: false };
+    return { trade, completed: false, confirmed: false };
   }
   const otherConfirmed =
     (side === "initiator"
@@ -706,7 +706,7 @@ export async function confirmPlayerTrade(
         "거래 구성이 변경되었습니다. 최신 상태를 확인해주세요.",
       );
     }
-    return { trade: updated, completed: false };
+    return { trade: updated, completed: false, confirmed: true };
   }
 
   const settled = await settleTrade(trade, actor, session);
@@ -731,7 +731,7 @@ export async function confirmPlayerTrade(
       "거래 구성이 변경되었습니다. 최신 상태를 확인해주세요.",
     );
   }
-  return { trade: completed, completed: true };
+  return { trade: completed, completed: true, confirmed: true };
 }
 
 export async function cancelPlayerTrade(

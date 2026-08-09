@@ -71,18 +71,74 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   if (action === "decline") {
-    if (current.status !== "QUOTED") return NextResponse.json({ error: "거절 가능한 견적 상태가 아닙니다." }, { status: 409 });
-    if (current.quote?.version !== expectedQuoteVersion) return NextResponse.json({ error: "견적이 변경되었습니다. 최신 내용을 다시 확인해 주세요.", code: "QUOTE_CHANGED" }, { status: 409 });
-    const updated = await transitionEquipmentWorkshopRequest({
-      requestId,
-      currentStatus: "QUOTED",
-      status: "DECLINED",
-      actorId: session.user.id,
-      actorName,
-      expectedQuoteVersion: Number(expectedQuoteVersion),
-    });
-    if (!updated) return NextResponse.json({ error: "다른 요청이 먼저 견적 상태를 변경했습니다." }, { status: 409 });
-    return NextResponse.json({ request: serializeEquipmentWorkshopRequest(updated) });
+    try {
+      return await executeEconomicOperation({
+        requestId: operationId,
+        domain: "equipment-workshop-decline",
+        actorId: session.user.id,
+        payload: {
+          workshopRequestId: requestId,
+          expectedQuoteVersion: Number(expectedQuoteVersion),
+        },
+        run: async (mongoSession) => {
+          const latest = await findEquipmentWorkshopRequestById(requestId, {
+            session: mongoSession,
+          });
+          if (!latest) {
+            throw new WorkshopOperationError(
+              "REQUEST_NOT_FOUND",
+              "공방 요청을 찾을 수 없습니다.",
+            );
+          }
+          if (latest.userId !== session.user.id) {
+            throw new WorkshopOperationError(
+              "FORBIDDEN",
+              "본인의 공방 요청만 거절할 수 있습니다.",
+            );
+          }
+          if (latest.status !== "QUOTED") {
+            throw new WorkshopOperationError(
+              "INVALID_STATE",
+              "거절 가능한 견적 상태가 아닙니다.",
+            );
+          }
+          if (latest.quote?.version !== expectedQuoteVersion) {
+            throw new WorkshopOperationError(
+              "QUOTE_CHANGED",
+              "견적이 변경되었습니다. 최신 내용을 다시 확인해 주세요.",
+            );
+          }
+          const updated = await transitionEquipmentWorkshopRequest({
+            requestId,
+            currentStatus: "QUOTED",
+            status: "DECLINED",
+            actorId: session.user.id,
+            actorName,
+            actorKind: "PLAYER",
+            expectedQuoteVersion: Number(expectedQuoteVersion),
+            session: mongoSession,
+          });
+          if (!updated) {
+            throw new WorkshopOperationError(
+              "INVALID_STATE",
+              "다른 요청이 먼저 견적 상태를 변경했습니다.",
+            );
+          }
+          return {
+            status: 200,
+            body: { request: serializeEquipmentWorkshopRequest(updated) },
+          };
+        },
+      });
+    } catch (error) {
+      const mapped = operationError(error);
+      if (mapped) return mapped;
+      console.error("[equipment-workshop] decline failed", error);
+      return NextResponse.json(
+        { error: "견적 거절을 처리하지 못했습니다." },
+        { status: 500 },
+      );
+    }
   }
 
   try {
@@ -99,6 +155,7 @@ export async function POST(request: Request, context: RouteContext) {
               expectedQuoteVersion: Number(expectedQuoteVersion),
               actorId: session.user.id,
               actorName,
+              actorRole: session.user.role,
               guildId,
               session: mongoSession,
             })

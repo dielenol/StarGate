@@ -7,6 +7,7 @@ import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
+import { getClient } from "@/lib/db/client";
 import {
   findEquipmentWorkshopBlueprintById,
 } from "@/lib/db/equipment-workshop-blueprints";
@@ -449,34 +450,47 @@ export async function PUT(request: Request, context: RouteContext) {
     issuedById: auth.session.id,
     issuedByName: auth.session.displayName,
   };
-  const updated = await updateEquipmentWorkshopQuote({
-    requestId,
-    currentStatus: current.status,
-    expectedVersion: validation.input.expectedVersion,
-    quote,
-    internalNote: validation.input.internalNote,
-    ...(current.kind === "upgrade" && source && sourceItemId && sourceSlot
-      ? {
-          sourceSnapshot: {
-            sourceItemId,
-            sourceCategory: source.category,
-            sourceSlot,
-            ...(source.damage ? { sourceDamage: source.damage } : {}),
-            ...(source.previewImage ? { sourcePreviewImage: source.previewImage } : {}),
-          },
-        }
-      : {}),
-    actorId: auth.session.id,
-    actorName: auth.session.displayName,
-  });
+  const client = await getClient();
+  const dbSession = client.startSession();
+  let updated: Awaited<ReturnType<typeof updateEquipmentWorkshopQuote>> = null;
+  try {
+    updated = await dbSession.withTransaction(async () => {
+      const next = await updateEquipmentWorkshopQuote({
+        requestId,
+        currentStatus: current.status,
+        expectedVersion: validation.input.expectedVersion,
+        quote,
+        internalNote: validation.input.internalNote,
+        ...(current.kind === "upgrade" && source && sourceItemId && sourceSlot
+          ? {
+              sourceSnapshot: {
+                sourceItemId,
+                sourceCategory: source.category,
+                sourceSlot,
+                ...(source.damage ? { sourceDamage: source.damage } : {}),
+                ...(source.previewImage ? { sourcePreviewImage: source.previewImage } : {}),
+              },
+            }
+          : {}),
+        actorId: auth.session.id,
+        actorName: auth.session.displayName,
+        actorKind: "GM",
+        session: dbSession,
+      });
+      if (!next) return null;
+      await scheduleGmAdminAudit({
+        action: `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"} 견적 발행`,
+        actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role },
+        summary: `총 ${quote.totalCost.toLocaleString()} CR · 공임 ${quote.creditCost.toLocaleString()} CR · ${quote.durationMinutes}분 · v${quote.version}`,
+        target: `${next.characterCodename} · ${next.equipmentName ?? quote.result.name}`,
+        timestamp: now,
+      }, { session: dbSession });
+      return next;
+    });
+  } finally {
+    await dbSession.endSession();
+  }
   if (!updated) return NextResponse.json({ error: "다른 운영자가 요청 또는 견적 상태를 변경했습니다." }, { status: 409 });
-  await scheduleGmAdminAudit({
-    action: `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"} 견적 발행`,
-    actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role },
-    summary: `총 ${quote.totalCost.toLocaleString()} CR · 공임 ${quote.creditCost.toLocaleString()} CR · ${quote.durationMinutes}분 · v${quote.version}`,
-    target: `${updated.characterCodename} · ${updated.equipmentName ?? quote.result.name}`,
-    timestamp: now,
-  });
   await notifyUser({ userId: updated.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"} 견적이 도착했습니다`, message: `${updated.characterCodename} · ${quote.result.name} · 총부담 ${quote.totalCost.toLocaleString()} CR · ${specialistWorkflow.map((step) => step.specialistCodename).join(" → ")}`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] quote notification failed", error));
   return NextResponse.json({ request: serializeAdminEquipmentWorkshopRequest(updated) });
 }
@@ -511,6 +525,17 @@ export async function POST(request: Request, context: RouteContext) {
             actorName: auth.session.displayName,
             session: mongoSession,
           });
+          await scheduleGmAdminAudit({
+            action: "공방 재장전 관료 결재 승인",
+            actor: {
+              id: auth.session.id,
+              displayName: auth.session.displayName,
+              role: auth.session.role,
+            },
+            summary: `${current.reload?.creditCost.toLocaleString() ?? "0"} CR · ${current.reload?.actionCode ?? "장비 액션"}`,
+            target: `${current.characterCodename} · ${current.equipmentName ?? "장비"}`,
+            timestamp: new Date(),
+          }, { session: mongoSession });
           return {
             status: 200,
             body: { request: serializeAdminEquipmentWorkshopRequest(updated) },
@@ -518,17 +543,6 @@ export async function POST(request: Request, context: RouteContext) {
         },
       });
       if (response.ok && response.headers.get("X-Idempotency-Replayed") !== "true") {
-        await scheduleGmAdminAudit({
-          action: "공방 재장전 관료 결재 승인",
-          actor: {
-            id: auth.session.id,
-            displayName: auth.session.displayName,
-            role: auth.session.role,
-          },
-          summary: `${current.reload?.creditCost.toLocaleString() ?? "0"} CR · ${current.reload?.actionCode ?? "장비 액션"}`,
-          target: `${current.characterCodename} · ${current.equipmentName ?? "장비"}`,
-          timestamp: new Date(),
-        });
         await notifyUser({
           userId: current.userId,
           type: "SYSTEM",
@@ -568,11 +582,11 @@ export async function POST(request: Request, context: RouteContext) {
       payload: { workshopRequestId: requestId, note },
       run: async (mongoSession) => {
         const updated = await cancelWorkshopInTransaction({ requestId, actorId: auth.session.id, actorName: auth.session.displayName, note, session: mongoSession });
+        await scheduleGmAdminAudit({ action: `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"} 취소`, actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role }, summary: note, target: `${current.characterCodename} · ${current.equipmentName ?? current.kind}`, timestamp: new Date() }, { session: mongoSession });
         return { status: 200, body: { request: serializeAdminEquipmentWorkshopRequest(updated) } };
       },
     });
     if (response.ok && response.headers.get("X-Idempotency-Replayed") !== "true") {
-      await scheduleGmAdminAudit({ action: `공방 ${current.kind === "upgrade" ? "강화" : "신규 제작"} 취소`, actor: { id: auth.session.id, displayName: auth.session.displayName, role: auth.session.role }, summary: note, target: `${current.characterCodename} · ${current.equipmentName ?? current.kind}`, timestamp: new Date() });
       await notifyUser({ userId: current.userId, type: "SYSTEM", title: `공방 ${current.kind === "upgrade" ? "강화" : "제작"}이 취소되었습니다`, message: `${current.characterCodename} · ${note} · 비용과 물품 반환`, link: "/erp/equipment-shop/custom" }).catch((error) => console.error("[equipment-workshop] cancel notification failed", error));
     }
     return response;

@@ -25,6 +25,8 @@ import {
   createEquipmentWorkshopStatusDmOutboxEvents,
   type EquipmentWorkshopDiscordDmOutboxEvent,
 } from "@/lib/equipment-shop/workshop-discord-dm-outbox";
+import { enqueueWorkflowStatusWebhook } from "@/lib/outbox/integration";
+import type { WorkflowStatusWebhookPayload } from "@/lib/outbox/contracts";
 
 export interface EquipmentWorkshopRequestDoc {
   _id: string;
@@ -79,6 +81,102 @@ interface EquipmentWorkshopRequestHistoryEntry {
   actorName: string;
   note?: string;
   quoteVersion?: number;
+}
+
+type WorkshopWorkflowActorKind = WorkflowStatusWebhookPayload["actor"]["kind"];
+
+const WORKSHOP_STAGE_SUMMARY: Record<
+  EquipmentWorkshopRequestStatus,
+  string
+> = {
+  REQUESTED: "공방 요청이 접수되었습니다.",
+  IN_REVIEW: "운영자가 요청 검토를 시작했습니다.",
+  APPROVED: "기존 승인 상태로 전환되었습니다.",
+  QUOTED: "공방 견적이 발행되었습니다.",
+  IN_PROGRESS: "견적이 수락되어 담당 공방 작업자에게 위임되었습니다.",
+  DECLINED: "의뢰인이 견적을 거절했습니다.",
+  REJECTED: "운영자가 공방 요청을 반려했습니다.",
+  CANCELLED: "진행 중인 공방 작업이 취소되었습니다.",
+  COMPLETED: "공방 작업이 완료되어 결과 처리가 끝났습니다.",
+};
+
+export async function enqueueEquipmentWorkshopWorkflowStages(input: {
+  request: EquipmentWorkshopRequestDoc;
+  stage: EquipmentWorkshopRequestStatus;
+  actorName: string;
+  actorKind: WorkshopWorkflowActorKind;
+  occurredAt: Date;
+  session?: ClientSession;
+}): Promise<void> {
+  // 최초 접수 이벤트는 이후 견적·표결 상태와 무관한 불변 v0 원장이다.
+  // 응답 유실 뒤 POST가 재시도돼도 현재 request의 후속 상태를 섞지 않는다.
+  const workflowQuote =
+    input.stage === "REQUESTED" ? undefined : input.request.quote;
+  const workflowApprovalVoteId =
+    input.stage === "REQUESTED" ? undefined : input.request.approvalVoteId;
+  const workflowOperatorNote =
+    input.stage === "REQUESTED" ? undefined : input.request.operatorNote;
+  const revision = workflowQuote?.version ?? 0;
+  const delegatedTo = [
+    ...(workflowQuote?.specialistWorkflow?.map(
+      (step) => step.specialistCodename,
+    ) ?? []),
+    ...(workflowApprovalVoteId ? ["REGISTRAR"] : []),
+  ];
+  const target = [
+    input.request.characterCodename,
+    workflowQuote?.result.name ?? input.request.equipmentName,
+  ].filter(Boolean).join(" · ");
+  const details = [
+    workflowQuote
+      ? {
+          name: "견적",
+          value: `v${workflowQuote.version} · ${workflowQuote.totalCost.toLocaleString("ko-KR")} CR · ${workflowQuote.durationMinutes}분`,
+        }
+      : null,
+    workflowOperatorNote
+      ? { name: "메모", value: workflowOperatorNote }
+      : null,
+  ].filter((value): value is { name: string; value: string } => Boolean(value));
+  const common = {
+    workflow: "EQUIPMENT_WORKSHOP" as const,
+    workflowId: input.request._id,
+    revision,
+    actor: {
+      kind: input.actorKind,
+      displayName: input.actorName,
+    },
+    target: target || undefined,
+    ...(delegatedTo.length > 0 ? { delegatedTo } : {}),
+    ...(details.length > 0 ? { details } : {}),
+    urlPath: "/erp/admin/equipment-workshop",
+  };
+  await enqueueWorkflowStatusWebhook(
+    {
+      ...common,
+      stage: input.stage,
+      summary: WORKSHOP_STAGE_SUMMARY[input.stage],
+      occurredAt: input.occurredAt,
+    },
+    `workflow:equipment-workshop:${input.request._id}:${input.stage}:${revision}`,
+    { session: input.session },
+  );
+
+  if (input.stage === "IN_PROGRESS" && input.request.readyAt) {
+    await enqueueWorkflowStatusWebhook(
+      {
+        ...common,
+        stage: "READY",
+        actor: { kind: "SYSTEM", displayName: "AMERI" },
+        summary: "예정 작업 시간이 지나 결과 수령이 가능한지 확인할 단계입니다.",
+        occurredAt: input.request.readyAt,
+        availableAt: input.request.readyAt,
+      },
+      `workflow:equipment-workshop:${input.request._id}:READY:${revision}`,
+      { session: input.session },
+    );
+  }
+
 }
 
 export async function equipmentWorkshopRequestsCol() {
@@ -289,126 +387,6 @@ export async function listEquipmentWorkshopOperationsRequests(
   return mergeEquipmentWorkshopRequestLists(activeRequests, recentRequests);
 }
 
-export async function claimDueEquipmentWorkshopDiscordDmDelivery(input: {
-  requestId?: string;
-  leaseToken: string;
-  now: Date;
-  leaseUntil: Date;
-}): Promise<EquipmentWorkshopRequestDoc | null> {
-  return (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
-    {
-      ...(input.requestId ? { _id: input.requestId } : {}),
-      discordDmOutbox: {
-        $elemMatch: {
-          availableAt: { $lte: input.now },
-          sentAt: { $exists: false },
-          skippedAt: { $exists: false },
-        },
-      },
-      $or: [
-        { "discordDmDelivery.leaseUntil": { $exists: false } },
-        { "discordDmDelivery.leaseUntil": { $lte: input.now } },
-      ],
-      $and: [
-        {
-          $or: [
-            { "discordDmDelivery.nextAttemptAt": { $exists: false } },
-            { "discordDmDelivery.nextAttemptAt": { $lte: input.now } },
-          ],
-        },
-      ],
-    },
-    {
-      $set: {
-        "discordDmDelivery.leaseToken": input.leaseToken,
-        "discordDmDelivery.leaseUntil": input.leaseUntil,
-      },
-    },
-    {
-      sort: { updatedAt: 1 },
-      returnDocument: "after",
-    },
-  );
-}
-
-export async function completeEquipmentWorkshopDiscordDmEvent(input: {
-  requestId: string;
-  leaseToken: string;
-  eventId: string;
-  completedAt: Date;
-  result:
-    | "sent"
-    | "skipped_unlinked"
-    | "skipped_inactive"
-    | "skipped_unreachable"
-    | "no_longer_ready";
-}): Promise<boolean> {
-  const completion =
-    input.result === "sent"
-      ? { "discordDmOutbox.$[event].sentAt": input.completedAt }
-      : {
-          "discordDmOutbox.$[event].skippedAt": input.completedAt,
-          "discordDmOutbox.$[event].skippedReason": input.result,
-        };
-  const result = await (await equipmentWorkshopRequestsCol()).updateOne(
-    {
-      _id: input.requestId,
-      "discordDmDelivery.leaseToken": input.leaseToken,
-    },
-    {
-      $set: completion,
-    },
-    {
-      arrayFilters: [
-        {
-          "event.id": input.eventId,
-          "event.sentAt": { $exists: false },
-          "event.skippedAt": { $exists: false },
-        },
-      ],
-    },
-  );
-  return result.modifiedCount === 1;
-}
-
-export async function releaseEquipmentWorkshopDiscordDmDelivery(input: {
-  requestId: string;
-  leaseToken: string;
-  failedAt?: Date;
-  nextAttemptAt?: Date;
-  error?: string;
-}): Promise<boolean> {
-  const result = await (await equipmentWorkshopRequestsCol()).updateOne(
-    {
-      _id: input.requestId,
-      "discordDmDelivery.leaseToken": input.leaseToken,
-    },
-    {
-      ...(input.failedAt && input.nextAttemptAt && input.error
-        ? {
-            $set: {
-              "discordDmDelivery.failedAt": input.failedAt,
-              "discordDmDelivery.nextAttemptAt": input.nextAttemptAt,
-              "discordDmDelivery.lastError": input.error.slice(0, 300),
-            },
-          }
-        : {}),
-      $unset: {
-        "discordDmDelivery.leaseToken": "",
-        "discordDmDelivery.leaseUntil": "",
-        ...(!input.failedAt
-          ? {
-              "discordDmDelivery.nextAttemptAt": "",
-              "discordDmDelivery.failedAt": "",
-              "discordDmDelivery.lastError": "",
-            }
-          : {}),
-      },
-    },
-  );
-  return result.modifiedCount === 1;
-}
-
 export async function updateEquipmentWorkshopRequestStatus(input: {
   requestId: string;
   currentStatus: EquipmentWorkshopRequestStatus;
@@ -416,12 +394,14 @@ export async function updateEquipmentWorkshopRequestStatus(input: {
   operatorNote?: string;
   reviewedById: string;
   reviewedByName: string;
+  actorKind?: WorkshopWorkflowActorKind;
+  session?: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc | null> {
   const now = new Date();
   const closesOperation = ["DECLINED", "REJECTED", "CANCELLED", "COMPLETED"].includes(
     input.status,
   );
-  return (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
+  const updated = await (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
     { _id: input.requestId, status: input.currentStatus },
     {
       $set: {
@@ -452,8 +432,19 @@ export async function updateEquipmentWorkshopRequestStatus(input: {
       },
       ...(closesOperation ? { $unset: { activeOperationKey: "" } } : {}),
     },
-    { returnDocument: "after" },
+    { returnDocument: "after", session: input.session },
   );
+  if (updated) {
+    await enqueueEquipmentWorkshopWorkflowStages({
+      request: updated,
+      stage: input.status,
+      actorName: input.reviewedByName,
+      actorKind: input.actorKind ?? "GM",
+      occurredAt: now,
+      session: input.session,
+    });
+  }
+  return updated;
 }
 
 export async function updateEquipmentWorkshopQuote(input: {
@@ -472,9 +463,11 @@ export async function updateEquipmentWorkshopQuote(input: {
   >;
   actorId: string;
   actorName: string;
+  actorKind?: WorkshopWorkflowActorKind;
+  session?: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc | null> {
   const now = new Date();
-  return (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
+  const updated = await (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
     {
       _id: input.requestId,
       status: input.currentStatus,
@@ -517,8 +510,19 @@ export async function updateEquipmentWorkshopQuote(input: {
         }),
       },
     },
-    { returnDocument: "after" },
+    { returnDocument: "after", session: input.session },
   );
+  if (updated) {
+    await enqueueEquipmentWorkshopWorkflowStages({
+      request: updated,
+      stage: "QUOTED",
+      actorName: input.actorName,
+      actorKind: input.actorKind ?? "GM",
+      occurredAt: now,
+      session: input.session,
+    });
+  }
+  return updated;
 }
 
 export async function transitionEquipmentWorkshopRequest(input: {
@@ -527,6 +531,7 @@ export async function transitionEquipmentWorkshopRequest(input: {
   status: EquipmentWorkshopRequestStatus;
   actorId: string;
   actorName: string;
+  actorKind?: WorkshopWorkflowActorKind;
   note?: string;
   set?: Record<string, unknown>;
   expectedQuoteVersion?: number;
@@ -543,7 +548,7 @@ export async function transitionEquipmentWorkshopRequest(input: {
     ...(input.unset ?? {}),
     ...(closesOperation ? { activeOperationKey: "" as const } : {}),
   };
-  return (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
+  const updated = await (await equipmentWorkshopRequestsCol()).findOneAndUpdate(
     {
       _id: input.requestId,
       status: input.currentStatus,
@@ -592,4 +597,15 @@ export async function transitionEquipmentWorkshopRequest(input: {
     },
     { returnDocument: "after", session: input.session },
   );
+  if (updated) {
+    await enqueueEquipmentWorkshopWorkflowStages({
+      request: updated,
+      stage: input.status,
+      actorName: input.actorName,
+      actorKind: input.actorKind ?? "SYSTEM",
+      occurredAt: now,
+      session: input.session,
+    });
+  }
+  return updated;
 }

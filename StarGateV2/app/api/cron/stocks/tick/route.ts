@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbeast-soda-stock-impact";
 
 import { grantDailyCreditAllowances } from "@/lib/credits/daily-allowance";
-import { isLegacyCronJobEnabled } from "@/lib/runtime/legacy-cron";
 import { notifyScheduledStockMarketWire } from "@/lib/stocks/market-wire";
 import { applyScheduledStockTick } from "@/lib/stocks/scheduled-tick";
 
@@ -35,16 +34,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const stocksEnabled = isLegacyCronJobEnabled(
-    process.env.LEGACY_CRON_STOCKS_ENABLED,
-  );
-  const dailyAllowanceEnabled = isLegacyCronJobEnabled(
-    process.env.LEGACY_CRON_DAILY_ALLOWANCE_ENABLED,
-  );
+  const requestedJob = new URL(request.url).searchParams.get("job");
+  if (
+    requestedJob !== "stocks" &&
+    requestedJob !== "daily-allowance" &&
+    requestedJob !== "all"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "수동 복구 작업을 job=stocks|daily-allowance|all 중 하나로 지정해 주세요.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const runStocks = requestedJob === "stocks" || requestedJob === "all";
+  const runDailyAllowance =
+    requestedJob === "daily-allowance" || requestedJob === "all";
 
   const [stocks, dailyCredits] = await Promise.allSettled([
-    stocksEnabled ? runScheduledStockTick() : Promise.resolve(null),
-    dailyAllowanceEnabled
+    runStocks ? runScheduledStockTick() : Promise.resolve(null),
+    runDailyAllowance
       ? grantDailyCreditAllowances()
       : Promise.resolve(null),
   ]);
@@ -63,10 +74,8 @@ export async function GET(request: Request) {
   return NextResponse.json(
     {
       ok: errors.length === 0,
-      owners: {
-        stocks: stocksEnabled ? "vercel" : "disabled",
-        dailyAllowance: dailyAllowanceEnabled ? "vercel" : "disabled",
-      },
+      owner: "manual-recovery",
+      requestedJob,
       stocks: stocks.status === "fulfilled" ? stocks.value : null,
       dailyCredits:
         dailyCredits.status === "fulfilled" ? dailyCredits.value : null,

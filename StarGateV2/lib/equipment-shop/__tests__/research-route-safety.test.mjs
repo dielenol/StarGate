@@ -39,7 +39,10 @@ const RESEARCH_DISCORD_SYNC = new URL(
   "../../notifications/equipment-research-discord.ts",
   import.meta.url,
 );
-const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
+const WORKER_CONFIG = new URL(
+  "../../../../stargate-worker/src/config.ts",
+  import.meta.url,
+);
 
 test("research GET is lock-gated and read-only", async () => {
   const source = await readFile(RESEARCH_ROUTE, "utf8");
@@ -160,14 +163,58 @@ test("team research mutations queue one durable Discord card revision in their t
   }
 });
 
+test("research lifecycle queues workflow tracking and GM audit in its mutation transaction", async () => {
+  const [start, contribute, rush, apply] = await Promise.all([
+    readFile(
+      new URL(
+        "../../../app/api/erp/equipment-shop/research/start/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../../../app/api/erp/equipment-shop/research/contribute/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../../../app/api/erp/equipment-shop/research/rush/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(RESEARCH_APPLICATION, "utf8"),
+  ]);
+
+  assert.match(
+    start,
+    /withTransaction[\s\S]*enqueueEquipmentResearchWorkflowStatus\([\s\S]*stage: "STARTED"[\s\S]*scheduleGmAdminAudit\([\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    contribute,
+    /withTransaction[\s\S]*enqueueEquipmentResearchWorkflowStatus\([\s\S]*stage: "STARTED"[\s\S]*scheduleGmAdminAudit\([\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    rush,
+    /withTransaction[\s\S]*enqueueEquipmentResearchWorkflowStatus\([\s\S]*stage: "RUSHED"[\s\S]*scheduleGmAdminAudit\([\s\S]*session: mongoSession/,
+  );
+  assert.match(
+    apply,
+    /markEquipmentResearchProjectApplied\([\s\S]*enqueueEquipmentResearchWorkflowStatus\([\s\S]*stage: "APPLIED"[\s\S]*scheduleGmAdminAudit\([\s\S]*\{ session \}/,
+  );
+});
+
 test("research Discord card delivery is left to the long-running worker", async () => {
-  const [syncSource, vercelConfig] = await Promise.all([
+  const [syncSource, workerConfig] = await Promise.all([
     readFile(RESEARCH_DISCORD_SYNC, "utf8"),
-    readFile(VERCEL_CONFIG, "utf8"),
+    readFile(WORKER_CONFIG, "utf8"),
   ]);
 
   assert.doesNotMatch(syncSource, /syncPendingEquipmentResearchDiscordCards/);
-  assert.doesNotMatch(vercelConfig, /\/api\/cron\/research\/discord-cards/);
+  assert.match(workerConfig, /"research-card"/);
 });
 
 test("legacy team projects without funding pools use project cost fallback", async () => {

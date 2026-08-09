@@ -1,5 +1,6 @@
 import type { WorkerMode } from "../config.js";
 import type { WorkerLogger } from "../logger.js";
+import type { OperationalAlertReporter } from "../outbox/operational-alerts.js";
 import type { DueWorkConsumerPort } from "./port.js";
 
 export class ConsumerManager {
@@ -15,6 +16,7 @@ export class ConsumerManager {
     private readonly consumers: DueWorkConsumerPort[],
     private readonly logger: WorkerLogger,
     private readonly onReadinessChange?: (ready: boolean) => void,
+    private readonly operationalAlerts?: OperationalAlertReporter,
   ) {}
 
   async start(): Promise<void> {
@@ -40,6 +42,15 @@ export class ConsumerManager {
     return this.#ready;
   }
 
+  isReadyExcluding(consumerName: string): boolean {
+    return (
+      this.#started &&
+      this.consumers
+        .filter((consumer) => consumer.name !== consumerName)
+        .every((consumer) => this.#healthy.get(consumer.name) === true)
+    );
+  }
+
   async #loop(consumer: DueWorkConsumerPort): Promise<void> {
     while (!this.#controller.signal.aborted) {
       await new Promise<void>((resolve) => {
@@ -60,6 +71,7 @@ export class ConsumerManager {
 
   async #tick(consumer: DueWorkConsumerPort): Promise<void> {
     try {
+      const wasHealthy = this.#healthy.get(consumer.name) === true;
       const result = await consumer.tick({
         mode: this.mode,
         signal: this.#controller.signal,
@@ -71,11 +83,32 @@ export class ConsumerManager {
         consumer: consumer.name,
         ...result,
       });
+      const observedResult = wasHealthy
+        ? result
+        : { ...result, operationalRecovery: true };
+      await this.operationalAlerts?.observe(consumer.name, observedResult).catch((error) => {
+        this.logger.error("operational_alert_failed", error, {
+          consumer: consumer.name,
+        });
+      });
     } catch (error) {
       this.#healthy.set(consumer.name, false);
       this.#refreshReadiness();
       this.logger.error("consumer_probe_failed", error, {
         consumer: consumer.name,
+      });
+      await this.operationalAlerts?.observe(consumer.name, {
+        observedDue: 0,
+        failed: 1,
+        operationalAlert: {
+          fingerprint: "consumer-probe-failed",
+          severity: "WARNING",
+          summary: "consumer poll 실행이 실패했습니다.",
+        },
+      }).catch((alertError) => {
+        this.logger.error("operational_alert_failed", alertError, {
+          consumer: consumer.name,
+        });
       });
     }
   }

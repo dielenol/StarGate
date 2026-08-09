@@ -10,8 +10,12 @@ import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { notifyUsers } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
-import { enqueueShopReorderFulfilledWebhook } from "@/lib/outbox/integration";
+import {
+  enqueueShopReorderFulfilledWebhook,
+  enqueueWorkflowStatusWebhook,
+} from "@/lib/outbox/integration";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
+import { enqueueShopReorderRequestedWorkflow } from "@/lib/shop/reorder-workflow";
 import {
   fulfillShopReorderRequestsAndIncrementStock,
   ShopReorderRequestNotPendingError,
@@ -99,73 +103,97 @@ export async function POST(request: Request) {
           stock: persistedStock,
           session: dbSession,
         }) => {
-          await Promise.all([
-            scheduleGmAdminAudit(
+          await scheduleGmAdminAudit(
+            {
+              action: "편의점 발주 묶음 처리",
+              actor: {
+                id: session.user.id,
+                displayName: session.user.displayName,
+                role: session.user.role,
+              },
+              summary: `${persistedRequests.length}건 완료 · +${quantity.toLocaleString()} EA · 현재 ${persistedStock.stock.toLocaleString()} EA`,
+              target: item.name,
+              timestamp: fulfilledAt,
+            },
+            { session: dbSession },
+          );
+          await enqueueShopReorderFulfilledWebhook(
+            {
+              today,
+              item: {
+                slug: item.slug,
+                name: item.name,
+                icon: item.icon,
+                price: item.price,
+                pageGroup: item.pageGroup,
+              },
+              quantity,
+              stock: persistedStock.stock,
+              fulfilledAt,
+            },
+            `shop-reorder-batch:${requestIds.slice().sort().join(",")}:fulfilled`,
+            { session: dbSession },
+          );
+          for (const persistedRequest of persistedRequests) {
+            await enqueueShopReorderRequestedWorkflow(persistedRequest, {
+              session: dbSession,
+            });
+            await enqueueWorkflowStatusWebhook(
               {
-                action: "편의점 발주 묶음 처리",
-                actor: {
-                  id: session.user.id,
-                  displayName: session.user.displayName,
-                  role: session.user.role,
-                },
-                summary: `${persistedRequests.length}건 완료 · +${quantity.toLocaleString()} EA · 현재 ${persistedStock.stock.toLocaleString()} EA`,
+                workflow: "SHOP_REORDER",
+                workflowId: persistedRequest._id,
+                stage: "FULFILLED",
+                revision: 2,
+                actor: { kind: "GM", displayName: session.user.displayName },
+                summary: `묶음 발주 처리로 ${quantity.toLocaleString("ko-KR")}개가 추가 입고되었습니다.`,
                 target: item.name,
-                timestamp: fulfilledAt,
+                urlPath: "/erp/shop",
+                occurredAt: fulfilledAt,
               },
+              `workflow:shop-reorder:${persistedRequest._id}:FULFILLED:2`,
               { session: dbSession },
-            ),
-            enqueueShopReorderFulfilledWebhook(
-              {
-                today,
-                item: {
-                  slug: item.slug,
-                  name: item.name,
-                  icon: item.icon,
-                  price: item.price,
-                  pageGroup: item.pageGroup,
-                },
-                quantity,
-                stock: persistedStock.stock,
-                fulfilledAt,
-              },
-              `shop-reorder-batch:${requestIds.slice().sort().join(",")}:fulfilled`,
-              { session: dbSession },
-            ),
-          ]);
+            );
+          }
         },
       });
 
-    await recordShopStockAuditLog({
-      action: "REORDER_FULFILL",
-      itemSlug: item.slug,
-      itemName: item.name,
-      delta: quantity,
-      stockAfter: stock.stock,
-      actorId: session.user.id,
-      actorName: session.user.displayName,
-      actorType: "GM",
-      source: "shop_reorder_fulfill_batch",
-      metadata: {
-        requestCount: requests.length,
-        requestIds,
-      },
-    });
-
-    await notifyUsers(
-      requests.map((fulfilled) => ({
-        userId: fulfilled.userId,
-        type: "SYSTEM",
-        title: "편의점 추가 발주가 완료되었습니다",
-        message: [
-          fulfilled.characterCodename
-            ? `${fulfilled.characterCodename} · ${item.name}`
-            : item.name,
-          `+${quantity.toLocaleString("ko-KR")} EA 입고`,
-          "편의점에서 확인하세요",
-        ].join(" · "),
-        link: "/erp/shop",
-      })),
-    );
+    const followUps = await Promise.allSettled([
+      recordShopStockAuditLog({
+        action: "REORDER_FULFILL",
+        itemSlug: item.slug,
+        itemName: item.name,
+        delta: quantity,
+        stockAfter: stock.stock,
+        actorId: session.user.id,
+        actorName: session.user.displayName,
+        actorType: "GM",
+        source: "shop_reorder_fulfill_batch",
+        metadata: {
+          requestCount: requests.length,
+          requestIds,
+        },
+      }),
+      notifyUsers(
+        requests.map((fulfilled) => ({
+          userId: fulfilled.userId,
+          type: "SYSTEM",
+          title: "편의점 추가 발주가 완료되었습니다",
+          message: [
+            fulfilled.characterCodename
+              ? `${fulfilled.characterCodename} · ${item.name}`
+              : item.name,
+            `+${quantity.toLocaleString("ko-KR")} EA 입고`,
+            "편의점에서 확인하세요",
+          ].join(" · "),
+          link: "/erp/shop",
+        })),
+      ),
+    ]);
+    for (const result of followUps) {
+      if (result.status === "rejected") {
+        console.error("[shop reorder fulfill batch] post-commit follow-up failed", result.reason);
+      }
+    }
     return NextResponse.json({
       ok: true,
       status: "fulfilled",

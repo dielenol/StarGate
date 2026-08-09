@@ -22,6 +22,8 @@ import {
   reserveEquipmentResearchProjectForApply,
   type EquipmentResearchProject,
 } from "@/lib/db/equipment-research";
+import { enqueueEquipmentResearchWorkflowStatus } from "@/lib/equipment-shop/research-workflow";
+import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 export interface EquipmentResearchActor {
   id: string;
@@ -96,7 +98,7 @@ async function applyReservedProject(
 
   if (project.effect.kind === "stat") {
     for (const targetId of project.targetCharacterIds) {
-      const character = await findCharacterById(targetId);
+      const character = await findCharacterById(targetId, { session });
       if (!character || character.type !== "AGENT" || !character._id) {
         skipped.push({ id: targetId, reason: "AGENT 캐릭터 없음" });
         continue;
@@ -104,6 +106,7 @@ async function applyReservedProject(
       const capCheck = await canApplyEquipmentResearchEffect({
         characterId: targetId,
         effect: project.effect,
+        session,
       });
       if (!capCheck.ok) {
         skipped.push({ id: targetId, reason: capCheck.reason });
@@ -137,7 +140,7 @@ async function applyReservedProject(
     }
   } else if (project.effect.kind === "point") {
     for (const targetId of project.targetCharacterIds) {
-      const character = await findCharacterById(targetId);
+      const character = await findCharacterById(targetId, { session });
       if (!character || character.type !== "AGENT" || !character._id) {
         skipped.push({ id: targetId, reason: "AGENT 캐릭터 없음" });
         continue;
@@ -145,6 +148,7 @@ async function applyReservedProject(
       const capCheck = await canApplyEquipmentResearchEffect({
         characterId: targetId,
         effect: project.effect,
+        session,
       });
       if (!capCheck.ok) {
         skipped.push({ id: targetId, reason: capCheck.reason });
@@ -184,7 +188,11 @@ async function applyReservedProject(
     throw new Error("NO_AGENT_TARGETS");
   }
 
+  if (!project.applyLeaseToken) {
+    throw new Error("RESEARCH_APPLY_LEASE_TOKEN_MISSING");
+  }
   const marked = await markEquipmentResearchProjectApplied(projectId, {
+    applyLeaseToken: project.applyLeaseToken,
     session,
   });
   if (!marked) {
@@ -206,6 +214,31 @@ async function applyReservedProject(
     await requestEquipmentResearchDiscordCardSync(project.key, { session });
   }
 
+  await enqueueEquipmentResearchWorkflowStatus({
+    project,
+    stage: "APPLIED",
+    revision: project.rushUsed + 1,
+    actor: {
+      kind: actor.role === "GM" ? "GM" : "PLAYER",
+      displayName: actor.displayName,
+    },
+    summary: `연구 효과 적용이 완료되었습니다. 적용 ${targets.length}건 · 생략 ${skipped.length}건`,
+    occurredAt: new Date(),
+    dedupeToken: "applied",
+    session,
+  });
+  await scheduleGmAdminAudit({
+    action: "장비 연구 효과 적용",
+    actor: {
+      id: actor.id,
+      displayName: actor.displayName,
+      role: actor.role,
+    },
+    summary: `적용 ${targets.length}명 · 스킵 ${skipped.length}명`,
+    target: project.key,
+    timestamp: new Date(),
+  }, { session });
+
   return {
     projectId,
     key: project.key,
@@ -223,6 +256,9 @@ export async function applyEquipmentResearchProjectNow(args: {
 }): Promise<ApplyEquipmentResearchProjectResult | null> {
   const project = await reserveEquipmentResearchProjectForApply(args.projectId);
   if (!project) return null;
+  if (!project.applyLeaseToken) {
+    throw new Error("RESEARCH_APPLY_LEASE_TOKEN_MISSING");
+  }
 
   const client = await getClient();
   const session = client.startSession();
@@ -234,7 +270,10 @@ export async function applyEquipmentResearchProjectNow(args: {
     if (!result) throw new Error("RESEARCH_APPLY_TRANSACTION_EMPTY");
     return result;
   } catch (err) {
-    await releaseEquipmentResearchProjectApplyReservation(args.projectId);
+    await releaseEquipmentResearchProjectApplyReservation(
+      args.projectId,
+      project.applyLeaseToken,
+    );
     throw err;
   } finally {
     await session.endSession();

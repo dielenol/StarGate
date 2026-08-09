@@ -8,6 +8,7 @@ import {
   type UpdateFilter,
 } from "mongodb";
 
+import { getClient } from "../client.js";
 import { bureaucratVotesCol } from "../collections.js";
 import {
   BUREAUCRAT_VOTE_CHANNEL_ID,
@@ -19,9 +20,74 @@ import {
   type BureaucratVoteChoice,
   type BureaucratVoteOutcome,
 } from "../types/bureaucrat-vote.js";
+import { enqueueIntegrationOutbox } from "./worker.js";
 
 const DEFAULT_PUBLICATION_LEASE_MS = 2 * 60 * 1_000;
 const MAX_PUBLICATION_ERROR_LENGTH = 1_000;
+
+async function enqueueBureaucratVoteWorkflowStatus(
+  vote: BureaucratVote,
+  stage: "OPENED" | "CLOSED_APPROVED" | "CLOSED_REJECTED",
+  options: { session?: ClientSession } = {},
+): Promise<void> {
+  if (!vote._id) throw new Error("관료 표결 workflow에 원장 ID가 필요합니다.");
+  const voteId = vote._id.toHexString();
+  const closed = stage.startsWith("CLOSED_");
+  const occurredAt = closed
+    ? vote.resolution?.closedAt ?? vote.updatedAt
+    : vote.createdAt;
+  const actor = closed
+    ? vote.resolution?.closedBy ?? vote.createdBy
+    : vote.createdBy;
+  const actorKind =
+    actor.kind === "SYSTEM"
+      ? "SYSTEM"
+      : actor.kind === "ERP_USER"
+        ? actor.role
+          ? actor.role === "GM"
+            ? "GM"
+            : "PLAYER"
+          : vote.source === "ERP_PRESET"
+            ? "GM"
+            : "PLAYER"
+        : "PLAYER";
+  const details = [
+    { name: "원본", value: vote.source },
+    ...(vote.workshopRef
+      ? [
+          {
+            name: "연결 공방",
+            value: `${vote.workshopRef.requestId} · 견적 v${vote.workshopRef.quoteVersion}`,
+          },
+        ]
+      : []),
+  ];
+  await enqueueIntegrationOutbox(
+    {
+      kind: "WORKFLOW_STATUS_WEBHOOK",
+      dedupeKey: `workflow_status_webhook:workflow:bureaucrat-vote:${voteId}:${stage}`,
+      partitionKey: `workflow:BUREAUCRAT_VOTE:${voteId}`,
+      partitionOrderAt: occurredAt,
+      version: 1,
+      payload: {
+        workflow: "BUREAUCRAT_VOTE",
+        workflowId: voteId,
+        stage,
+        revision: closed ? vote.revision : 0,
+        actor: { kind: actorKind, displayName: actor.displayName },
+        summary: closed
+          ? `관료 표결이 ${stage === "CLOSED_APPROVED" ? "가결" : "부결"}로 마감되었습니다.`
+          : "관료 표결이 열리고 REGISTRAR가 게시·집계를 담당합니다.",
+        target: vote.title,
+        ...(!closed ? { delegatedTo: ["REGISTRAR"] } : {}),
+        details,
+        urlPath: "/erp/admin/bureaucrat-votes",
+        occurredAt: occurredAt.toISOString(),
+      },
+    },
+    options,
+  );
+}
 
 export interface CreateBureaucratVoteInput {
   requestKey: string;
@@ -188,26 +254,33 @@ export async function createBureaucratVote(
     updatedAt: createdAt,
   };
 
-  try {
-    await col.insertOne(doc, { session: input.session });
-    return { vote: doc, created: true, conflict: "NONE" };
-  } catch (error) {
-    if (!isDuplicateKeyError(error)) throw error;
+  if (!input.session) {
+    const session = (await getClient()).startSession();
+    try {
+      return await session.withTransaction(() =>
+        createBureaucratVote({ ...input, createdAt, session }),
+      );
+    } finally {
+      await session.endSession();
+    }
   }
 
-  const sameRequest = await col.findOne(
+  const existingRequest = await col.findOne(
     { _id: doc._id, schemaVersion: 1 },
     { session: input.session },
   );
-  if (sameRequest) {
+  if (existingRequest) {
+    await enqueueBureaucratVoteWorkflowStatus(existingRequest, "OPENED", {
+      session: input.session,
+    });
     return {
-      vote: sameRequest,
+      vote: existingRequest,
       created: false,
       conflict: "REQUEST_KEY",
     };
   }
   if (input.source === "ERP_PRESET" && presetKey) {
-    const activePreset = await col.findOne(
+    const existingActivePreset = await col.findOne(
       {
         schemaVersion: 1,
         status: "OPEN",
@@ -215,15 +288,30 @@ export async function createBureaucratVote(
       },
       { session: input.session },
     );
-    if (activePreset) {
+    if (existingActivePreset) {
       return {
-        vote: activePreset,
+        vote: existingActivePreset,
         created: false,
         conflict: "ACTIVE_PRESET",
       };
     }
   }
-  throw new Error("투표 중복 충돌 후 기존 원장을 확인하지 못했습니다.");
+
+  try {
+    await col.insertOne(doc, { session: input.session });
+    await enqueueBureaucratVoteWorkflowStatus(doc, "OPENED", {
+      session: input.session,
+    });
+    return { vote: doc, created: true, conflict: "NONE" };
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error;
+    // transaction 내 unique race는 현 session을 abort한다. 이 상태에서
+    // 재조회하지 말고 callback 전체를 새 snapshot에서 재시도한다.
+    if (error instanceof MongoServerError) {
+      error.addErrorLabel("TransientTransactionError");
+    }
+    throw error;
+  }
 }
 
 export async function findBureaucratVoteById(
@@ -451,6 +539,7 @@ export async function closeBureaucratVote(input: {
   trigger: "MANUAL" | "AUTO_EXPIRED";
   closedBy: BureaucratVoteActor;
   closedAt?: Date;
+  session?: ClientSession;
 }): Promise<BureaucratVote | null> {
   const closedAt = input.closedAt ?? new Date();
   const filter = objectIdFilter(input.voteId, {
@@ -462,29 +551,50 @@ export async function closeBureaucratVote(input: {
       : {}),
   });
   if (!filter) return null;
-  return (await bureaucratVotesCol()).findOneAndUpdate(
-    filter,
-    {
-      $set: {
-        status: "CLOSED",
-        resolution: {
-          outcome: input.outcome,
-          reason: input.reason,
-          rule: "CAST_BALLOT_MAJORITY",
-          trigger: input.trigger,
-          tally: input.tally,
-          closedBy: input.closedBy,
-          closedAt,
+  const closeWithSession = async (
+    session: ClientSession,
+  ): Promise<BureaucratVote | null> => {
+    const closed = await (await bureaucratVotesCol()).findOneAndUpdate(
+      filter,
+      {
+        $set: {
+          status: "CLOSED",
+          resolution: {
+            outcome: input.outcome,
+            reason: input.reason,
+            rule: "CAST_BALLOT_MAJORITY",
+            trigger: input.trigger,
+            tally: input.tally,
+            closedBy: input.closedBy,
+            closedAt,
+          },
+          updatedAt: closedAt,
         },
-        updatedAt: closedAt,
+        $unset: {
+          activePresetKey: "",
+        },
+        $inc: { revision: 1 },
       },
-      $unset: {
-        activePresetKey: "",
-      },
-      $inc: { revision: 1 },
-    },
-    { returnDocument: "after" },
-  );
+      { returnDocument: "after", session },
+    );
+    if (!closed) return null;
+    await enqueueBureaucratVoteWorkflowStatus(
+      closed,
+      closed.resolution?.outcome === "APPROVED"
+        ? "CLOSED_APPROVED"
+        : "CLOSED_REJECTED",
+      { session },
+    );
+    return closed;
+  };
+
+  if (input.session) return closeWithSession(input.session);
+  const session = (await getClient()).startSession();
+  try {
+    return await session.withTransaction(() => closeWithSession(session));
+  } finally {
+    await session.endSession();
+  }
 }
 
 export async function listDueBureaucratVotes(input: {

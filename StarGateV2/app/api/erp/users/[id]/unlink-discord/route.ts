@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
+import { getClient } from "@/lib/db/client";
 import { findUserById, unlinkDiscord } from "@/lib/db/users";
+import {
+  lockAndReadUserAdminMutation,
+  UserAdminInvariantError,
+} from "@/lib/db/user-admin-invariant";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
@@ -65,24 +70,45 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   try {
-    await unlinkDiscord(id);
-    await scheduleGmAdminAudit({
-      action: "사용자 Discord 연동 해제",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: "Discord 계정 연결 해제",
-      target: `${target.displayName} (${target.username})`,
-      timestamp: new Date(),
-    });
+    const client = await getClient();
+    const mongoSession = client.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        const currentTarget = await lockAndReadUserAdminMutation({
+          actorId: session.user.id,
+          targetId: id,
+          session: mongoSession,
+        });
+        if (currentTarget.hashedPassword == null) {
+          throw new Error(
+            "비밀번호가 없는 계정은 먼저 비밀번호를 리셋하세요.",
+          );
+        }
+        const unlinked = await unlinkDiscord(id, { session: mongoSession });
+        if (!unlinked) throw new Error("사용자를 찾을 수 없습니다.");
+        await scheduleGmAdminAudit({
+          action: "사용자 Discord 연동 해제",
+          actor: {
+            id: session.user.id,
+            displayName: session.user.displayName,
+            role: session.user.role,
+          },
+          summary: "Discord 계정 연결 해제",
+          target: `${currentTarget.displayName} (${currentTarget.username})`,
+          timestamp: new Date(),
+        }, { session: mongoSession });
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
     await notifyUser({
       userId: id,
       type: "SYSTEM",
       title: "Discord 연동이 해제되었습니다",
       message: "운영자가 계정의 Discord 연동을 해제했습니다.",
       link: "/erp/account",
+    }).catch((error) => {
+      console.error("[users] Discord-unlink notification failed", error);
     });
     console.info("[admin-audit]", {
       action: "USER_DISCORD_UNLINK",
@@ -92,6 +118,14 @@ export async function POST(_request: Request, context: RouteContext) {
     });
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof UserAdminInvariantError) {
+      const response = {
+        ACTOR_CHANGED: [403, "현재 GM 권한을 다시 확인해 주세요."],
+        TARGET_NOT_FOUND: [404, "사용자를 찾을 수 없습니다."],
+        LAST_ACTIVE_GM: [400, "마지막 active GM은 변경할 수 없습니다."],
+      }[err.code] as [number, string];
+      return NextResponse.json({ error: response[1] }, { status: response[0] });
+    }
     const message = err instanceof Error ? err.message : "Discord 연동 해제 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

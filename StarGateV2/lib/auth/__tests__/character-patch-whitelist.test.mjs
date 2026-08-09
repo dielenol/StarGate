@@ -25,6 +25,7 @@ import assert from "node:assert/strict";
 import { ObjectId } from "mongodb";
 
 import { canEditLore, canEditPlay } from "../rbac.ts";
+import { ROOT_ALLOWED_FIELDS_ADMIN } from "../../character/allowed-fields.ts";
 
 const testApi = await import("node:test");
 const HAS_MODULE_MOCK =
@@ -60,21 +61,6 @@ if (!HAS_MODULE_MOCK) {
     ALLOWED_PLAY_FIELDS_ADMIN,
     ALLOWED_PLAY_FIELDS_PLAYER,
   } = await import(new URL("crud/characters.js", sharedDbRoot).href);
-
-  const ROOT_ALLOWED_FIELDS_ADMIN = new Set([
-    "codename",
-    "tier",
-    "role",
-    "agentLevel",
-    "department",
-    "previewImage",
-    "pixelCharacterImage",
-    "warningVideo",
-    "ownerId",
-    "isPublic",
-    "factionCode",
-    "institutionCode",
-  ]);
 
   /**
    * 라우트 합성 로직 미러 (route.ts PATCH 의 핵심 분기).

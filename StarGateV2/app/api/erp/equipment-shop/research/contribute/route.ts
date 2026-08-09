@@ -28,6 +28,7 @@ import {
   getEquipmentResearchNode,
   isEquipmentResearchEffectOperational,
 } from "@/lib/equipment-shop/research";
+import { enqueueEquipmentResearchWorkflowStatus } from "@/lib/equipment-shop/research-workflow";
 
 import {
   chargeResearchCredits,
@@ -287,10 +288,34 @@ export async function POST(request: Request) {
             requestId: childIdempotencyKey(requestId, "start"),
             session: mongoSession,
           });
+          await enqueueEquipmentResearchWorkflowStatus({
+            project,
+            stage: "STARTED",
+            revision: 0,
+            actor: {
+              kind: authResult.session.role === "GM" ? "GM" : "PLAYER",
+              displayName: authResult.session.displayName,
+            },
+            summary: "팀 연구 기여금이 충족되어 연구가 시작되었습니다.",
+            occurredAt: startedAt,
+            dedupeToken: childIdempotencyKey(requestId, "start"),
+            session: mongoSession,
+          });
         }
         await requestEquipmentResearchDiscordCardSync(node.key, {
           session: mongoSession,
         });
+        await scheduleGmAdminAudit({
+          action: project ? "팀 장비 연구 기여 및 시작" : "팀 장비 연구 기여",
+          actor: {
+            id: authResult.session.id,
+            displayName: authResult.session.displayName,
+            role: authResult.session.role,
+          },
+          summary: `${chargeAmount.toLocaleString()} CR · ${updatedPool.fundedAmount.toLocaleString()} / ${updatedPool.targetCost.toLocaleString()} CR`,
+          target: node.key,
+          timestamp: new Date(),
+        }, { session: mongoSession });
         transactionResult = { balance: chargeResult.balance, updatedPool, contribution, project };
       });
     } finally {
@@ -308,17 +333,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "연구 트랜잭션이 완료되지 않았습니다.", code: "RESEARCH_START_FAILED" }, { status: 500 });
   }
   const { balance, updatedPool, contribution, project } = transactionResult;
-  await scheduleGmAdminAudit({
-    action: project ? "팀 장비 연구 기여 및 시작" : "팀 장비 연구 기여",
-    actor: {
-      id: authResult.session.id,
-      displayName: authResult.session.displayName,
-      role: authResult.session.role,
-    },
-    summary: `${chargeAmount.toLocaleString()} CR · ${updatedPool.fundedAmount.toLocaleString()} / ${updatedPool.targetCost.toLocaleString()} CR`,
-    target: node.key,
-    timestamp: new Date(),
-  });
 
   return NextResponse.json(
     {

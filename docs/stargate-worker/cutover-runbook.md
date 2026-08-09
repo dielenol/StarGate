@@ -9,7 +9,7 @@
 - [ ] `scheduled_job_runs`, `integration_outbox`, `worker_checkpoints` 타입/CRUD/index가 구현됐다.
 - [ ] 대상 환경에서 `cd StarGateV2 && pnpm db:preflight-worker-indexes`를 실행해 중복 그룹 0건과 필수 index의 이름·key 순서·unique·partial·TTL 옵션을 확인했다.
 - [ ] staging due query `explain("executionStats")`의 사용 index와 문서/키 검사량을 기록했다.
-- [ ] 기존 Vercel cron과 worker가 같은 job을 동시에 소유하지 않도록 owner 표를 작성했다.
+- [ ] Dokploy schedule과 웹 수동 복구 실행이 겹치지 않도록 owner 표를 작성했다.
 - [ ] rollback 담당자와 관찰 시간을 정했다.
 - [ ] secret 값이 저장소, 로그, 스크린샷에 노출되지 않았음을 확인했다.
 
@@ -20,12 +20,14 @@
 1. read-only preflight를 실행해 중복과 현재 index spec을 기록한다.
 2. 누락·불일치 index가 있으면 대상 DB, 생성할 정확한 spec, 예상 lock/부하를 제시해 별도 승인을 받는다. 기존 동명 index의 spec이 다르면 one-shot은 교체하거나 drop하지 않고 mutation 전에 실패한다.
 3. preflight의 `ttlImpacts`에서 30일 초과 `stock_price_history` 건수와 `wouldBeginDeletion`을 확인한다. TTL index가 누락됐고 삭제 대상이 있으면 예상 삭제량을 별도로 승인받고 `WORKER_INDEX_TTL_PURGE_CONFIRM`에 그 건수를 정확히 지정한다.
-4. 승인된 경우에만 대상 DB 이름을 `MONGODB_DB_NAME` 또는 `DB_NAME`에 명시하고 같은 값을 `WORKER_INDEX_TARGET_DB`에 지정한 뒤 `pnpm db:ensure-worker-indexes` one-shot을 실행한다. 두 DB 변수가 충돌하거나 확인값이 없으면 실행은 mutation 전에 실패한다. 이 명령은 preflight와 같은 18개 worker 필수 index만 생성하며 다른 index를 생성·삭제·교체하지 않는다. TTL index는 마지막에 생성한다.
+4. 승인된 경우에만 대상 DB 이름을 `MONGODB_DB_NAME` 또는 `DB_NAME`에 명시하고 같은 값을 `WORKER_INDEX_TARGET_DB`에 지정한 뒤 `pnpm db:ensure-worker-indexes` one-shot을 실행한다. 두 DB 변수가 충돌하거나 확인값이 없으면 실행은 mutation 전에 실패한다. 이 명령은 preflight와 같은 20개 worker 필수 index만 생성하며 다른 index를 생성·삭제·교체하지 않는다. TTL index는 마지막에 생성한다.
 5. 여러 컬렉션의 index 생성은 원자적이지 않다. 중간 실패 시 추가 mutation을 중단하고 read-only preflight를 다시 실행해 생성된 항목과 남은 blocker를 확인한 뒤 재시도 승인을 받는다.
 6. read-only preflight를 다시 실행해 blocker 0건과 exact spec 일치를 확인한다.
 7. 그 뒤에만 `integration_outbox` writer가 포함된 StarGateV2와 worker 코드를 배포한다.
 
 운영 index 적용 전에 main merge나 Vercel production 배포를 진행하지 않는다. 코드 구현 승인은 index 생성 승인이 아니며, 이 단계에서 Codex가 live 명령을 자동 실행하지 않는다.
+
+Nochichim 작전 크레딧의 `set` producer는 배포 전에 새 계약으로 함께 전환한다. 먼저 GET에서 받은 단조 증가 `revision`을 POST의 `expectedRevision`으로 보내고, 동일한 유효 `requestId`를 `Idempotency-Key` 헤더와 본문에 넣어 staging 왕복을 검증한다. 기존 `mode/value`만 보내는 set 요청은 동시 조정을 덮어쓸 수 있어 호환 fallback 없이 400으로 거부한다. `adjust`의 기존 domain/payload hash는 배포 경계 replay를 위해 유지한다.
 
 ## 1. Dokploy application 준비
 
@@ -74,9 +76,9 @@ shadow는 `worker_checkpoints`에 resume token을 기록한다. 이는 passive �
 2. `WORKER_CONSUMERS=ameri-dm,research-card`
 3. `shop-restock` 추가
 4. `stock-market-wire` 추가
-5. 범용 `integration_outbox` kind를 한 종류씩 추가
+5. staging에서 범용 `integration_outbox` kind를 한 종류씩 검증한 뒤 production은 전체 kind로 전환
 
-도메인 consumer와 범용 outbox는 서로 다른 opt-in이다. `WORKER_CONSUMERS`에는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`만 넣는다. 범용 outbox는 전환할 kind만 `WORKER_OUTBOX_KINDS`에 추가한다. 지원 kind는 GM 감사, 캐릭터 변경, 공방, 발주 요청/완료, 편의점 신제품 출시, 미스터비스트 복권 고액 당첨, 수동 주가 공시, 거래 DM이다. 한 번에 하나만 추가하고 필요한 `DISCORD_WEBHOOK_*`, `AMERI_DISCORD_BOT_TOKEN`, `REGISTRAR_DISCORD_BOT_TOKEN`을 claim 전에 주입한다.
+도메인 consumer와 범용 outbox는 서로 다른 설정이다. `WORKER_CONSUMERS`에는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`만 넣는다. 범용 outbox의 제한된 staging 검증은 `WORKER_OUTBOX_ALLOW_PARTIAL=true`와 검사할 kind 목록을 함께 사용하고, production active는 반드시 `WORKER_OUTBOX_KINDS=all`, `WORKER_OUTBOX_ALLOW_PARTIAL=false`를 사용한다. 지원 kind는 GM 감사, 캐릭터 변경, 공방, 발주 요청/완료, 편의점 신제품 출시, 미스터비스트 복권 고액 당첨, 수동 주가 공시, 중앙 workflow 상태, 거래 DM이다. typed destination별 `DISCORD_WEBHOOK_*`, `AMERI_DISCORD_BOT_TOKEN`, `REGISTRAR_DISCORD_BOT_TOKEN`을 claim 전에 주입한다.
 
 각 consumer 공통 기준:
 
@@ -93,6 +95,83 @@ shadow는 `worker_checkpoints`에 resume token을 기록한다. 이는 passive �
 - [ ] 최대 8회 후 `DEAD`가 남고 자동 삭제되지 않는다.
 - [ ] 마지막 claim 직후 crash한 문서도 lease 만료 뒤 sweeper가 `DEAD`로 전환한다.
 - [ ] DM은 Discord `nonce`/`enforce_nonce` 재시도에서도 한 메시지로 수렴한다.
+
+### DEAD workflow 단계 복구
+
+파티션 안의 앞 단계가 `DEAD`가 되면 뒤 단계 전달은 의도적으로 정지한다. 자동 skip이나 일괄 재시도는 하지 않는다.
+
+후보와 blocked count를 확인하는 read-only 조회는 다음 projection을 기준으로 한다. payload와 오류 원문은 출력하지 않는다.
+
+```javascript
+db.integration_outbox.aggregate([
+  { $match: { status: "DEAD", partitionKey: { $exists: true } } },
+  {
+    $lookup: {
+      from: "integration_outbox",
+      let: {
+        partition: "$partitionKey",
+        orderAt: "$partitionOrderAt",
+        createdAt: "$createdAt",
+        eventId: "$_id",
+      },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$partitionKey", "$$partition"] },
+                { $in: ["$status", ["PENDING", "PROCESSING", "DEAD"]] },
+                {
+                  $or: [
+                    { $gt: ["$partitionOrderAt", "$$orderAt"] },
+                    {
+                      $and: [
+                        { $eq: ["$partitionOrderAt", "$$orderAt"] },
+                        { $gt: ["$createdAt", "$$createdAt"] },
+                      ],
+                    },
+                    {
+                      $and: [
+                        { $eq: ["$partitionOrderAt", "$$orderAt"] },
+                        { $eq: ["$createdAt", "$$createdAt"] },
+                        { $gt: ["$_id", "$$eventId"] },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        { $count: "count" },
+      ],
+      as: "blocked",
+    },
+  },
+  {
+    $project: {
+      kind: 1,
+      partitionKey: 1,
+      partitionOrderAt: 1,
+      createdAt: 1,
+      attempts: 1,
+      deadAt: 1,
+      blockedCount: {
+        $ifNull: [{ $arrayElemAt: ["$blocked.count", 0] }, 0],
+      },
+    },
+  },
+  { $sort: { deadAt: 1, _id: 1 } },
+]);
+```
+
+1. 관리자 연동 현황은 kind별 이상 유무와 건수 확인에만 사용한다. 승인된 read-only DB query 또는 전용 preflight로 정확한 outbox `_id`, `partitionKey`, `partitionOrderAt`, `attempts`, `deadAt`과 뒤에 막힌 단계 수를 확인한다. 운영 화면의 aggregate만 보고 대상을 추정하지 않는다.
+2. 선택한 `_id`의 `lastError`는 운영자 로컬에서만 확인해 `CONFIG/AUTH/RATE_LIMIT/NETWORK/PAYLOAD/LEASE/UNKNOWN`으로 분류하고 원문을 로그·스크린샷·대화에 복사하지 않는다. webhook 권한·payload·rate limit 같은 원인을 먼저 고치고, 이미 Discord에 전달됐는지는 채널 이력과 대조한다. 전달 여부가 불명확하면 재발송하지 않는다.
+3. 재시도가 안전한 정확한 한 문서에 대해서만 별도 live mutation 승인을 받는다. 승인 문장에는 `_id`, workflow/partition, `DEAD → PENDING`, 예상 재발송 1건과 뒤 단계 해제를 명시한다.
+4. 승인 뒤 `_id + status: DEAD` 조건으로 guarded update하여 `status=PENDING`, `attempts=0`, `availableAt=현재 시각`, `updatedAt=현재 시각`으로 바꾸고 `deadAt`, `lastError`, `leaseToken`, `leaseUntil`을 제거한다. 조건 불일치 시 아무것도 수정하지 않는다.
+5. 같은 `_id`의 재시도 결과와 partition의 다음 단계가 순서대로 처리됐는지 재조회한다. 실패하면 추가 mutation을 중단하고 새 상태를 보고한다.
+
+정책상 전달하지 않기로 결정한 이벤트도 DB에서 임의로 `DELIVERED` 처리하지 않는다. 감사 가능한 `SKIPPED` 결과와 reconciliation API가 별도로 구현되기 전에는 운영자 수동 skip을 금지한다.
 
 아메리/desired-state 전용 기준:
 
@@ -124,16 +203,9 @@ Dokploy timezone을 `Asia/Seoul`로 확인하고 다음 schedule을 등록한다
 | credits.daily-allowance | `0 12 * * *` |
 | sessions.erp-reminders | `0 21 * * *` |
 
-기존 `/api/cron/stocks/tick` route는 Vercel Hobby cron 개수를 늘리지 않기 위해 유지하되 두 old owner를 독립 flag로 제어한다.
+기존 `/api/cron/*` route에는 Vercel schedule owner가 없다. 인증된 수동 복구 진입점으로만 유지하며 `/api/cron/stocks/tick`은 `job=stocks`, `job=daily-allowance`, `job=all` 중 하나를 명시하지 않으면 mutation하지 않는다. legacy owner flag와 기본 활성화 helper는 제거했다.
 
-| Job | Vercel old-owner flag | worker 전환 시 |
-|---|---|---|
-| stocks.tick | `LEGACY_CRON_STOCKS_ENABLED` | `false` |
-| credits.daily-allowance | `LEGACY_CRON_DAILY_ALLOWANCE_ENABLED` | `false` |
-
-flag가 없으면 기존 동작 보존을 위해 활성으로 간주한다. 두 flag를 한꺼번에 끄지 않는다. 각 job은 replica set 기반 staging에서 동일 `(jobName, slotKey)` 동시 호출 100개 중 실행권 1건, 실제 mutation 1회임을 먼저 확인한다. 마지막 old 실행이 끝난 quiet window에 해당 flag 하나만 `false`로 배포하고, route 응답의 `owners`가 그 job만 `disabled`인지 확인한 뒤 다음 KST slot부터 worker schedule 하나를 활성화한다. 다른 결합 job의 Vercel owner는 계속 유지된다.
-
-worker 성공 이력을 확인한 뒤에도 보호된 Vercel route와 flag는 한 릴리스 동안 수동 rollback 용도로 유지한다. 어떤 시점에도 같은 job의 schedule owner는 하나만 둔다.
+각 job은 replica set 기반 staging에서 동일 `(jobName, slotKey)` 동시 호출 100개 중 실행권 1건, 실제 mutation 1회임을 먼저 확인한다. 수동 복구를 사용할 때도 실행 대상과 현재 slot 완료 여부를 읽기 전용으로 확인하고 별도 운영 승인을 받은 뒤 호출한다. 어떤 시점에도 같은 job의 schedule owner는 하나만 둔다.
 
 ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다음 KST 일자부터 새 dedupeKey를 적용한다. Registra/TRPG Discord reminder 필드는 수정하거나 소비하지 않는다.
 
@@ -143,7 +215,7 @@ ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다�
 
 - Dokploy schedule 생성/활성화
 - `WORKER_MODE=active` 설정
-- 대응 legacy owner flag 변경 또는 Vercel cron 제거
+- 수동 복구 route 호출 또는 Dokploy schedule owner 변경
 - 운영 크레딧/재고/주식/알림 mutation
 
 ## 5. WebSocket 활성화
@@ -185,6 +257,8 @@ ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다�
 5. 위 두 격리 상태는 Discord와 세션 로그를 직접 대조하는 운영 reconciliation 절차가 준비되기 전 자동 해제하지 않는다.
 
 ## 7. 관찰 지표
+
+Production은 workflow webhook과 다른 전용 `DISCORD_WEBHOOK_OPS_URL`을 필수로 둔다. workflow destination 자체가 실패할 때 같은 URL로 장애 알림을 보내는 순환 fallback을 허용하지 않는다. 현재 operational incident/cooldown 상태는 worker 메모리에만 있으므로 재시작 뒤 지속 장애가 한 번 더 알림될 수 있고, 재시작 사이 해소된 장애의 복구 메시지는 보장되지 않는다. 이 제한을 수용할 수 없다면 active 컷오버 전에 incident 상태를 MongoDB에 영속화한다.
 
 - queue depth, oldest available age
 - claim conflict, lease expiry/reclaim

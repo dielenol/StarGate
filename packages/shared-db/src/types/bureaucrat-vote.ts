@@ -1,5 +1,7 @@
 import type { ObjectId } from "mongodb";
 
+import type { RoleLevel } from "./character.js";
+
 export const BUREAUCRAT_VOTE_CHANNEL_ID = "1534753076399833249";
 export const BUREAUCRAT_VOTE_DURATION_MS = 6 * 60 * 60 * 1_000;
 export const BUREAUCRAT_VOTE_TITLE_MAX_LENGTH = 100;
@@ -18,6 +20,8 @@ export interface BureaucratVoteActor {
   kind: "DISCORD_USER" | "ERP_USER" | "SYSTEM";
   id: string;
   displayName: string;
+  /** ERP actor의 실제 역할. 과거 원장은 이 필드가 없을 수 있다. */
+  role?: RoleLevel;
 }
 
 export interface BureaucratVoteBallot {

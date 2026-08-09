@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { ClientSession } from "mongodb";
 
 import type { PlayerTradeOffer, TradeAction } from "@/types/trade";
 
@@ -20,13 +21,41 @@ import {
 } from "@/lib/db/trades";
 import { notifyUser } from "@/lib/notifications/events";
 import { isValidObjectId } from "@/lib/db/utils";
-import { enqueuePlayerTradeDiscordDm } from "@/lib/outbox/integration";
+import {
+  enqueuePlayerTradeDiscordDm,
+  enqueueWorkflowStatusWebhook,
+} from "@/lib/outbox/integration";
 
 interface TradeActionBody {
   trade?: ReturnType<typeof serializePlayerTrade>;
   completed?: boolean;
   error?: string;
   code?: string;
+}
+
+async function enqueueTradeWorkflow(input: {
+  trade: ReturnType<typeof serializePlayerTrade>;
+  stage: string;
+  actorName: string;
+  summary: string;
+  session: ClientSession;
+}) {
+  await enqueueWorkflowStatusWebhook(
+    {
+      workflow: "PLAYER_TRADE",
+      workflowId: input.trade.id,
+      stage: input.stage,
+      revision: input.trade.revision,
+      actor: { kind: "PLAYER", displayName: input.actorName },
+      summary: input.summary,
+      target: `${input.trade.initiator.characterCodename} ↔ ${input.trade.counterparty.characterCodename}`,
+      delegatedTo: ["REGISTRAR"],
+      urlPath: "/erp/trades",
+      occurredAt: new Date(),
+    },
+    `workflow:player-trade:${input.trade.id}:${input.stage}:${input.trade.revision}`,
+    { session: input.session },
+  );
 }
 
 function tradeErrorResult(error: unknown): {
@@ -151,7 +180,15 @@ export async function PATCH(
               action.offer,
               dbSession,
             );
-            return { status: 200, body: { trade: serializePlayerTrade(trade) } };
+            const serialized = serializePlayerTrade(trade);
+            await enqueueTradeWorkflow({
+              trade: serialized,
+              stage: "OFFER_UPDATED",
+              actorName: session.user.displayName,
+              summary: "거래 제안 구성이 변경되어 양측 확인이 초기화되었습니다.",
+              session: dbSession,
+            });
+            return { status: 200, body: { trade: serialized } };
           }
           if (action.action === "CANCEL") {
             const trade = await cancelPlayerTrade(
@@ -160,7 +197,30 @@ export async function PATCH(
               action.expectedRevision,
               dbSession,
             );
-            return { status: 200, body: { trade: serializePlayerTrade(trade) } };
+            const serialized = serializePlayerTrade(trade);
+            const other =
+              serialized.initiator.userId === session.user.id
+                ? serialized.counterparty
+                : serialized.initiator;
+            const actor =
+              serialized.initiator.userId === session.user.id
+                ? serialized.initiator
+                : serialized.counterparty;
+            await enqueuePlayerTradeDiscordDm({
+              tradeId: serialized.id,
+              event: "EXCHANGE_CANCELLED",
+              userId: other.userId,
+              recipientCodename: other.characterCodename,
+              otherCharacterCodename: actor.characterCodename,
+            }, { session: dbSession });
+            await enqueueTradeWorkflow({
+              trade: serialized,
+              stage: "CANCELLED",
+              actorName: session.user.displayName,
+              summary: "진행 중인 교환 요청이 취소되었습니다.",
+              session: dbSession,
+            });
+            return { status: 200, body: { trade: serialized } };
           }
           const result = await confirmPlayerTrade(
             tradeId,
@@ -169,10 +229,42 @@ export async function PATCH(
             { id: session.user.id, name: session.user.displayName },
             dbSession,
           );
+          const serialized = serializePlayerTrade(result.trade);
+          if (result.completed) {
+            await enqueuePlayerTradeDiscordDm({
+              tradeId: serialized.id,
+              event: "EXCHANGE_COMPLETED",
+              userId: serialized.initiator.userId,
+              recipientCodename: serialized.initiator.characterCodename,
+              otherCharacterCodename: serialized.counterparty.characterCodename,
+            }, { session: dbSession });
+            await enqueuePlayerTradeDiscordDm({
+              tradeId: serialized.id,
+              event: "EXCHANGE_COMPLETED",
+              userId: serialized.counterparty.userId,
+              recipientCodename: serialized.counterparty.characterCodename,
+              otherCharacterCodename: serialized.initiator.characterCodename,
+            }, { session: dbSession });
+            await enqueueTradeWorkflow({
+              trade: serialized,
+              stage: "COMPLETED",
+              actorName: session.user.displayName,
+              summary: "양측 확인이 끝나 자산 교환이 최종 체결되었습니다.",
+              session: dbSession,
+            });
+          } else if (result.confirmed) {
+            await enqueueTradeWorkflow({
+              trade: serialized,
+              stage: "PARTICIPANT_CONFIRMED",
+              actorName: session.user.displayName,
+              summary: "거래 참여자 한 명이 현재 제안을 확인했습니다.",
+              session: dbSession,
+            });
+          }
           return {
             status: 200,
             body: {
-              trade: serializePlayerTrade(result.trade),
+              trade: serialized,
               completed: result.completed,
             },
           };
@@ -182,23 +274,7 @@ export async function PATCH(
     if (operation.status === 200 && operation.body.trade) {
       const trade = operation.body.trade;
       if (operation.body.completed) {
-        const followUps: Promise<unknown>[] = [
-          enqueuePlayerTradeDiscordDm({
-            tradeId: trade.id,
-            event: "EXCHANGE_COMPLETED",
-            userId: trade.initiator.userId,
-            recipientCodename: trade.initiator.characterCodename,
-            otherCharacterCodename:
-              trade.counterparty.characterCodename,
-          }),
-          enqueuePlayerTradeDiscordDm({
-            tradeId: trade.id,
-            event: "EXCHANGE_COMPLETED",
-            userId: trade.counterparty.userId,
-            recipientCodename: trade.counterparty.characterCodename,
-            otherCharacterCodename: trade.initiator.characterCodename,
-          }),
-        ];
+        const followUps: Promise<unknown>[] = [];
         if (!operation.replayed) {
           followUps.push(
             notifyUser({
@@ -217,25 +293,18 @@ export async function PATCH(
             }),
           );
         }
-        await Promise.all(followUps);
+        const followUpResults = await Promise.allSettled(followUps);
+        for (const result of followUpResults) {
+          if (result.status === "rejected") {
+            console.error("[trades] ERP notification failed", result.reason);
+          }
+        }
       } else if (action.action === "CANCEL") {
         const other =
           trade.initiator.userId === session.user.id
             ? trade.counterparty
             : trade.initiator;
-        const actor =
-          trade.initiator.userId === session.user.id
-            ? trade.initiator
-            : trade.counterparty;
-        const followUps: Promise<unknown>[] = [
-          enqueuePlayerTradeDiscordDm({
-            tradeId: trade.id,
-            event: "EXCHANGE_CANCELLED",
-            userId: other.userId,
-            recipientCodename: other.characterCodename,
-            otherCharacterCodename: actor.characterCodename,
-          }),
-        ];
+        const followUps: Promise<unknown>[] = [];
         if (!operation.replayed) {
           followUps.push(
             notifyUser({
@@ -247,7 +316,12 @@ export async function PATCH(
             }),
           );
         }
-        await Promise.all(followUps);
+        const followUpResults = await Promise.allSettled(followUps);
+        for (const result of followUpResults) {
+          if (result.status === "rejected") {
+            console.error("[trades] ERP notification failed", result.reason);
+          }
+        }
       }
     }
     return NextResponse.json(operation.body, {

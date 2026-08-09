@@ -13,7 +13,6 @@ import {
   buildStockMarketIndexSnapshot,
   formatIndexValue,
 } from "@/lib/stocks/market-index";
-import { kstDateTag, kstNowTag } from "@/lib/stocks/time";
 import type { DiscordMessageBatchSyncResult } from "@/lib/discord/message-batch-sync";
 
 type DiscordEmbedField = {
@@ -62,18 +61,6 @@ interface MarketWireOfficer {
   weekday: string;
   noticeLine: string;
   linkLine: string;
-}
-
-export interface StockManualInterventionNotice {
-  ticker: string;
-  previousPrice: number;
-  price: number;
-  eventText: string;
-  actor: {
-    displayName: string;
-    role: string;
-  };
-  occurredAt?: Date;
 }
 
 const DISCORD_FIELD_VALUE_MAX = 1000;
@@ -149,17 +136,14 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
 };
 
 function getWebhookUrl(): string | undefined {
-  return (
-    process.env.DISCORD_WEBHOOK_STOCK_URL ||
-    process.env.DISCORD_STOCK_WEBHOOK_URL
-  );
+  return process.env.DISCORD_WEBHOOK_STOCK_URL;
 }
 
 function requireWebhookUrl(): string {
   const webhookUrl = getWebhookUrl();
   if (!webhookUrl) {
     throw new Error(
-      "DISCORD_WEBHOOK_STOCK_URL/DISCORD_STOCK_WEBHOOK_URL 환경변수가 설정되지 않았습니다.",
+      "DISCORD_WEBHOOK_STOCK_URL 환경변수가 설정되지 않았습니다.",
     );
   }
   return webhookUrl;
@@ -200,10 +184,6 @@ function getOfficerForDate(dateTag: string): MarketWireOfficer {
   return MARKET_WIRE_OFFICERS[weekdayIndexFromKstDate(dateTag)];
 }
 
-function getOfficerForDateTime(date: Date): MarketWireOfficer {
-  return getOfficerForDate(kstDateTag(date));
-}
-
 function formatPrice(price: number): string {
   return `${formatStockValue(price)}C`;
 }
@@ -226,12 +206,6 @@ function directionIcon(result: ScheduledStockTickResult): string {
 function directionLabel(result: ScheduledStockTickResult): string {
   if (result.price > result.previousPrice) return "상승";
   if (result.price < result.previousPrice) return "하락";
-  return "보합";
-}
-
-function manualDirectionLabel(delta: number): string {
-  if (delta > 0) return "상승";
-  if (delta < 0) return "하락";
   return "보합";
 }
 
@@ -519,98 +493,6 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
   };
 }
 
-function buildManualPayload(
-  notice: StockManualInterventionNotice,
-): DiscordPayload {
-  const occurredAt = notice.occurredAt ?? new Date();
-  const officer = getOfficerForDateTime(occurredAt);
-  const percent =
-    notice.previousPrice > 0
-      ? ((notice.price - notice.previousPrice) / notice.previousPrice) * 100
-      : 0;
-  const delta = notice.price - notice.previousPrice;
-  const color =
-    delta > 0
-      ? MARKET_WIRE_POSITIVE
-      : delta < 0
-        ? MARKET_WIRE_NEGATIVE
-        : MARKET_WIRE_COLOR;
-
-  return {
-    content: stockMarketContent(),
-    username: "재무기구 시장감시실",
-    avatar_url: process.env.DISCORD_WEBHOOK_STOCK_AVATAR_URL || undefined,
-    allowed_mentions: { parse: [] },
-    embeds: [
-      {
-        title: "재무기구 특별 시세 공시",
-        description: [
-          "ORDO-NET MARKET WIRE",
-          `${officer.weekday} 당직: ${officer.name} (${officer.romanizedName}) / ${officer.code}`,
-          "시장감시실장 승인에 따라 수동 조정 내역을 공시합니다.",
-        ].join("\n"),
-        color,
-        url: STOCK_WEB_URL,
-        fields: [
-          {
-            name: "대상 종목",
-            value: stockName(notice.ticker),
-            inline: true,
-          },
-          {
-            name: "조정 가격",
-            value: `${formatPrice(notice.previousPrice)} → ${formatPrice(
-              notice.price,
-            )}\n${manualDirectionLabel(delta)} · ${formatSignedNumber(
-              delta,
-              "C",
-            )} / ${formatPercent(percent)}`,
-            inline: true,
-          },
-          {
-            name: "조정 사유",
-            value: truncateField(sanitizeForDiscord(notice.eventText)),
-          },
-          {
-            name: "승인 기록",
-            value: sanitizeForDiscord(`${notice.actor.displayName} · ${notice.actor.role}`),
-          },
-        ],
-        footer: {
-          text: `${officer.code} · ${kstNowTag(occurredAt)} KST · 특별 공시`,
-        },
-        timestamp: occurredAt.toISOString(),
-      },
-    ],
-  };
-}
-
-async function postDiscordPayload(
-  webhookUrl: string,
-  payload: DiscordPayload,
-): Promise<MarketWireResult> {
-  try {
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return {
-        status: "failed",
-        error: `Discord Webhook 전송 실패 (${response.status}): ${errorText}`,
-      };
-    }
-
-    return { status: "sent" };
-  } catch (error) {
-    return { status: "failed", error: getErrorMessage(error) };
-  }
-}
-
 export async function createScheduledStockMarketWireMessage(
   payload: DiscordPayload,
 ): Promise<string> {
@@ -652,24 +534,6 @@ export async function deleteScheduledStockMarketWireMessage(
   throw new Error(
     `Discord 주식 공시 삭제 실패 (${response.status}): ${errorText}`,
   );
-}
-
-async function sendDiscordPayload(payload: DiscordPayload): Promise<MarketWireResult> {
-  const webhookUrl = getWebhookUrl();
-  if (!webhookUrl) {
-    console.warn(
-      "[stock-market-wire] DISCORD_WEBHOOK_STOCK_URL 미설정 — silent skip",
-    );
-    return { status: "skipped-no-webhook" };
-  }
-
-  const result = await postDiscordPayload(webhookUrl, payload);
-  if (result.status !== "sent") return result;
-  return {
-    status: "sent",
-    embedCount: payload.embeds.length,
-    messageCount: 1,
-  };
 }
 
 export async function syncScheduledStockMarketWireMessages(): Promise<DiscordMessageBatchSyncResult> {
@@ -767,14 +631,4 @@ export async function notifyScheduledStockMarketWire(
     console.warn("[stock-market-wire] 정기 공시 상태 요청 실패:", message);
     return { status: "failed", error: message };
   }
-}
-
-export async function notifyStockManualIntervention(
-  notice: StockManualInterventionNotice,
-): Promise<MarketWireResult> {
-  const result = await sendDiscordPayload(buildManualPayload(notice));
-  if (result.status === "failed") {
-    console.warn("[stock-market-wire] 특별 공시 전송 실패:", result.error);
-  }
-  return result;
 }

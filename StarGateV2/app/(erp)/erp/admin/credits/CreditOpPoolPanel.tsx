@@ -116,7 +116,7 @@ export default function CreditOpPoolPanel({
         action: "adjust",
         amount: signed,
         allowNegative: mode === "debit" ? allowNegative : false,
-        // 서버는 description 을 현재 단계에서 무시(향후 audit 컬렉션 도입 대비 입력 위치 보존).
+        // 서버가 durable GM 감사 outbox에 조정 사유로 보존한다.
         description: description || undefined,
       },
       {
@@ -265,7 +265,7 @@ export default function CreditOpPoolPanel({
             </label>
           </div>
           <div className={styles.opPool__hint}>
-            메모 — 현재 단계에서는 보존되지 않음
+            메모는 Discord 감사 기록에 조정 사유로 보존됩니다.
           </div>
 
           {mode === "debit" ? (

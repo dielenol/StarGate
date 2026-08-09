@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   MongoServerError,
   ObjectId,
@@ -48,6 +50,7 @@ export interface EquipmentResearchProject {
   identityKey: string;
   requestId: string;
   appliedAt?: Date;
+  applyLeaseToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -866,6 +869,7 @@ export async function reserveEquipmentResearchProjectForApply(
   const staleBefore = new Date(
     now.getTime() - EQUIPMENT_RESEARCH_APPLY_LEASE_MS,
   );
+  const applyLeaseToken = randomUUID();
   return col.findOneAndUpdate(
     {
       _id: objectId,
@@ -878,29 +882,35 @@ export async function reserveEquipmentResearchProjectForApply(
     {
       $set: {
         status: "applying",
+        applyLeaseToken,
         updatedAt: now,
       },
     },
-    { returnDocument: "before" },
+    { returnDocument: "after" },
   );
 }
 
 export async function markEquipmentResearchProjectApplied(
   id: string,
-  options: { session?: ClientSession } = {},
+  options: { applyLeaseToken: string; session?: ClientSession },
 ): Promise<boolean> {
   const objectId = toObjectId(id);
   if (!objectId) return false;
   const now = new Date();
   const col = await equipmentResearchProjectsCol();
   const result = await col.updateOne(
-    { _id: objectId, status: "applying" },
+    {
+      _id: objectId,
+      status: "applying",
+      applyLeaseToken: options.applyLeaseToken,
+    },
     {
       $set: {
         status: "applied",
         appliedAt: now,
         updatedAt: now,
       },
+      $unset: { applyLeaseToken: "" },
     },
     { session: options.session },
   );
@@ -909,39 +919,47 @@ export async function markEquipmentResearchProjectApplied(
 
 export async function releaseEquipmentResearchProjectApplyReservation(
   id: string,
+  applyLeaseToken: string,
 ): Promise<void> {
   const objectId = toObjectId(id);
   if (!objectId) return;
   const col = await equipmentResearchProjectsCol();
   await col.updateOne(
-    { _id: objectId, status: "applying" },
+    { _id: objectId, status: "applying", applyLeaseToken },
     {
       $set: {
         status: "in_progress",
         updatedAt: new Date(),
       },
+      $unset: { applyLeaseToken: "" },
     },
   );
 }
 
 export async function listAppliedEquipmentResearchProjectsForTarget(
   characterId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<Array<WithId<EquipmentResearchProject>>> {
   const col = await equipmentResearchProjectsCol();
   return col
-    .find({
-      status: "applied",
-      targetCharacterIds: characterId,
-    })
+    .find(
+      {
+        status: "applied",
+        targetCharacterIds: characterId,
+      },
+      { session: options.session },
+    )
     .toArray();
 }
 
 export async function sumAppliedEquipmentResearchStat(
   characterId: string,
   stat: EquipmentResearchStat,
+  options: { session?: ClientSession } = {},
 ): Promise<number> {
   const projects = await listAppliedEquipmentResearchProjectsForTarget(
     characterId,
+    options,
   );
   return projects.reduce((sum, project) => {
     if (project.effect.kind !== "stat" || project.effect.stat !== stat) {
@@ -953,9 +971,11 @@ export async function sumAppliedEquipmentResearchStat(
 
 export async function sumAppliedEquipmentResearchPoints(
   characterId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<number> {
   const projects = await listAppliedEquipmentResearchProjectsForTarget(
     characterId,
+    options,
   );
   return projects.reduce((sum, project) => {
     if (project.effect.kind !== "point") return sum;
@@ -966,11 +986,13 @@ export async function sumAppliedEquipmentResearchPoints(
 export async function canApplyEquipmentResearchEffect(args: {
   characterId: string;
   effect: EquipmentResearchEffect;
+  session?: ClientSession;
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
   if (args.effect.kind === "stat") {
     const applied = await sumAppliedEquipmentResearchStat(
       args.characterId,
       args.effect.stat,
+      { session: args.session },
     );
     const cap = EQUIPMENT_RESEARCH_CAPS[args.effect.stat];
     if (applied + args.effect.amount > cap) {
@@ -981,7 +1003,10 @@ export async function canApplyEquipmentResearchEffect(args: {
     }
   }
   if (args.effect.kind === "point") {
-    const applied = await sumAppliedEquipmentResearchPoints(args.characterId);
+    const applied = await sumAppliedEquipmentResearchPoints(
+      args.characterId,
+      { session: args.session },
+    );
     if (applied + args.effect.amount > EQUIPMENT_RESEARCH_CAPS.points) {
       return {
         ok: false,

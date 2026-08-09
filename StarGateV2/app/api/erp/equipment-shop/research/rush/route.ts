@@ -18,6 +18,7 @@ import {
   isEquipmentResearchEffectOperational,
   quoteEquipmentResearchRush,
 } from "@/lib/equipment-shop/research";
+import { enqueueEquipmentResearchWorkflowStatus } from "@/lib/equipment-shop/research-workflow";
 
 import {
   chargeResearchCredits,
@@ -153,6 +154,19 @@ export async function POST(request: Request) {
           requestId,
         });
         if (!updated) throw new ResearchMutationError("RUSH_UPDATE_FAILED", 409, "연구 시간 단축 상태가 충돌했습니다.");
+        await enqueueEquipmentResearchWorkflowStatus({
+          project,
+          stage: "RUSHED",
+          revision: project.rushUsed + 1,
+          actor: {
+            kind: authResult.session.role === "GM" ? "GM" : "PLAYER",
+            displayName: authResult.session.displayName,
+          },
+          summary: `${quote.hours}시간 단축되어 완료 예정 시각이 갱신되었습니다.`,
+          occurredAt: new Date(),
+          dedupeToken: requestId,
+          session: mongoSession,
+        });
         if (project.scope === "team") {
           await insertEquipmentResearchContribution({
             scope: "team",
@@ -170,6 +184,17 @@ export async function POST(request: Request) {
             session: mongoSession,
           });
         }
+        await scheduleGmAdminAudit({
+          action: "장비 연구 가속",
+          actor: {
+            id: authResult.session.id,
+            displayName: authResult.session.displayName,
+            role: authResult.session.role,
+          },
+          summary: `${quote.cost.toLocaleString()} CR · ${quote.hours}시간 단축`,
+          target: project.key,
+          timestamp: new Date(),
+        }, { session: mongoSession });
         balance = chargeResult.balance;
       });
     } finally {
@@ -184,17 +209,6 @@ export async function POST(request: Request) {
   }
 
   const nextProject = await findEquipmentResearchProjectById(projectId);
-  await scheduleGmAdminAudit({
-    action: "장비 연구 가속",
-    actor: {
-      id: authResult.session.id,
-      displayName: authResult.session.displayName,
-      role: authResult.session.role,
-    },
-    summary: `${quote.cost.toLocaleString()} CR · ${quote.hours}시간 단축`,
-    target: project.key,
-    timestamp: new Date(),
-  });
   return NextResponse.json(
     {
       project: nextProject

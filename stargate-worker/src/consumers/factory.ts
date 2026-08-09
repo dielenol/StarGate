@@ -88,7 +88,7 @@ export function createDefaultDomainConsumers(
           stateId: "scheduled",
           webhookUrl: webhook(
             env,
-            ["DISCORD_WEBHOOK_STOCK_URL", "DISCORD_STOCK_WEBHOOK_URL"],
+            ["DISCORD_WEBHOOK_STOCK_URL"],
             name,
           ),
         });

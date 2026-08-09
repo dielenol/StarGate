@@ -65,12 +65,13 @@ export async function insertChangeLog(
 /* ── 조회 ── */
 
 export async function getChangeLogById(
-  logId: ObjectId | string
+  logId: ObjectId | string,
+  options: { session?: ClientSession } = {},
 ): Promise<CharacterChangeLog | null> {
   const oid = toObjectId(logId);
   if (!oid) return null;
   const col = await characterChangeLogsCol();
-  return col.findOne({ _id: oid });
+  return col.findOne({ _id: oid }, { session: options.session });
 }
 
 export async function listChangeLogsByCharacter(
@@ -126,7 +127,8 @@ export async function countRecentChangesByActor(
  */
 export async function markChangeLogReverted(
   logId: ObjectId | string,
-  revertedBy: string
+  revertedBy: string,
+  options: { session?: ClientSession } = {},
 ): Promise<CharacterChangeLog | null> {
   const oid = toObjectId(logId);
   if (!oid) return null;
@@ -135,7 +137,7 @@ export async function markChangeLogReverted(
   return col.findOneAndUpdate(
     { _id: oid, revertedAt: null },
     { $set: { revertedAt: new Date(), revertedBy } },
-    { returnDocument: "after" }
+    { returnDocument: "after", session: options.session }
   );
 }
 

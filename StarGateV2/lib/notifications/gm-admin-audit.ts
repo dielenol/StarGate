@@ -1,4 +1,4 @@
-import type { GmAdminAuditWebhookPayload } from "@/lib/discord";
+import type { GmAdminAuditWebhookPayload } from "@/lib/outbox/contracts";
 import type { ClientSession } from "mongodb";
 
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";

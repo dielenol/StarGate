@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
+import { getClient } from "@/lib/db/client";
 import { findUserById, updateUserStatus } from "@/lib/db/users";
+import {
+  assertCanRemoveActiveGm,
+  lockAndReadUserAdminMutation,
+  UserAdminInvariantError,
+} from "@/lib/db/user-admin-invariant";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
@@ -76,24 +82,47 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    await updateUserStatus(id, status as UserStatus);
-    await scheduleGmAdminAudit({
-      action: "사용자 상태 변경",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `${target.status} → ${status}`,
-      target: `${target.displayName} (${target.username})`,
-      timestamp: new Date(),
-    });
+    const client = await getClient();
+    const mongoSession = client.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        const currentTarget = await lockAndReadUserAdminMutation({
+          actorId: session.user.id,
+          targetId: id,
+          session: mongoSession,
+        });
+        if (status !== "ACTIVE") {
+          await assertCanRemoveActiveGm(currentTarget, mongoSession);
+        }
+        const updated = await updateUserStatus(id, status as UserStatus, {
+          session: mongoSession,
+        });
+        if (!updated) {
+          throw new UserAdminInvariantError("TARGET_NOT_FOUND");
+        }
+        await scheduleGmAdminAudit({
+          action: "사용자 상태 변경",
+          actor: {
+            id: session.user.id,
+            displayName: session.user.displayName,
+            role: session.user.role,
+          },
+          summary: `${currentTarget.status} → ${status}`,
+          target: `${currentTarget.displayName} (${currentTarget.username})`,
+          timestamp: new Date(),
+        }, { session: mongoSession });
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
     await notifyUser({
       userId: id,
       type: "SYSTEM",
       title: "계정 상태가 변경되었습니다",
       message: `${target.status} → ${status} 상태로 변경되었습니다.`,
       link: "/erp/account",
+    }).catch((error) => {
+      console.error("[users] status-change notification failed", error);
     });
     console.info("[admin-audit]", {
       action: "USER_STATUS_CHANGE",
@@ -104,6 +133,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof UserAdminInvariantError) {
+      const response = {
+        ACTOR_CHANGED: [403, "현재 GM 권한을 다시 확인해 주세요."],
+        TARGET_NOT_FOUND: [404, "사용자를 찾을 수 없습니다."],
+        LAST_ACTIVE_GM: [400, "마지막 active GM은 비활성화할 수 없습니다."],
+      }[err.code] as [number, string];
+      return NextResponse.json({ error: response[1] }, { status: response[0] });
+    }
     const message = err instanceof Error ? err.message : "상태 변경 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

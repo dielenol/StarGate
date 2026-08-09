@@ -287,10 +287,16 @@ export async function listPublicCharactersByType(
   );
 }
 
-export async function findCharacterById(id: string): Promise<Character | null> {
+export async function findCharacterById(
+  id: string,
+  options: { session?: ClientSession } = {},
+): Promise<Character | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await charactersCol();
-  const character = await col.findOne({ _id: new ObjectId(id) });
+  const character = await col.findOne(
+    { _id: new ObjectId(id) },
+    { session: options.session },
+  );
   return character
     ? withoutSessionReportReferenceStorageFields(character)
     : null;
@@ -981,21 +987,63 @@ export async function updateCharacter(
     session?: ClientSession;
   }
 ): Promise<boolean> {
+  const allowedFields = options?.allowedFields ?? ADMIN_ALLOWED_CHARACTER_FIELDS;
+  const sanitized = buildUpdatePatch(update, allowedFields);
+  return applyCharacterFieldPatch(
+    id,
+    { set: sanitized },
+    { ...options, allowedFields },
+  );
+}
+
+/**
+ * 감사 로그 되돌림처럼 `필드 부재`까지 복원해야 하는 경로용 flat patch.
+ * 일반 폼 update는 undefined를 무시하지만 이 함수의 unset은 허용 경로만
+ * Mongo `$unset`으로 적용한다.
+ */
+export async function applyCharacterFieldPatch(
+  id: string,
+  patch: {
+    set?: Record<string, unknown>;
+    unset?: readonly string[];
+  },
+  options?: {
+    allowedFields?: Set<string>;
+    expectedUpdatedAt?: Date | null;
+    session?: ClientSession;
+  },
+): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
 
   const allowedFields = options?.allowedFields ?? ADMIN_ALLOWED_CHARACTER_FIELDS;
-  const sanitized = buildUpdatePatch(update, allowedFields);
-  if (Object.keys(sanitized).length === 0) return false;
+  const sanitizedSet = Object.fromEntries(
+    Object.entries(patch.set ?? {}).filter(
+      ([field, value]) => allowedFields.has(field) && value !== undefined,
+    ),
+  );
+  const sanitizedUnset = [...new Set(patch.unset ?? [])].filter(
+    (field) => allowedFields.has(field) && !Object.hasOwn(sanitizedSet, field),
+  );
+  if (
+    Object.keys(sanitizedSet).length === 0 &&
+    sanitizedUnset.length === 0
+  ) {
+    return false;
+  }
 
   const mutatesReferenceIdentity =
-    Object.hasOwn(sanitized, "codename") || sanitized.isPublic === false;
+    Object.hasOwn(sanitizedSet, "codename") ||
+    sanitizedSet.isPublic === false ||
+    sanitizedUnset.includes("codename") ||
+    sanitizedUnset.includes("isPublic");
   if (mutatesReferenceIdentity && !options?.session) {
     const session = (await getClient()).startSession();
     let updated = false;
     try {
       await session.withTransaction(async () => {
-        updated = await updateCharacter(id, update, {
+        updated = await applyCharacterFieldPatch(id, patch, {
           ...options,
+          allowedFields,
           session,
         });
       });
@@ -1013,10 +1061,12 @@ export async function updateCharacter(
     );
     if (!existing) return false;
     const changesCodename =
-      Object.hasOwn(sanitized, "codename") &&
-      sanitized.codename !== existing.codename;
+      sanitizedUnset.includes("codename") ||
+      (Object.hasOwn(sanitizedSet, "codename") &&
+        sanitizedSet.codename !== existing.codename);
     const makesPrivate =
-      sanitized.isPublic === false && existing.isPublic !== false;
+      (sanitizedSet.isPublic === false && existing.isPublic !== false) ||
+      (sanitizedUnset.includes("isPublic") && existing.isPublic === true);
     if (changesCodename || makesPrivate) {
       await lockAndAssertNoSessionReportInboundReference(
         "relatedPersonnelCodenames",
@@ -1031,7 +1081,19 @@ export async function updateCharacter(
   }
   const result = await col.updateOne(
     filter,
-    { $set: { ...sanitized, updatedAt: new Date() } as Record<string, unknown> },
+    {
+      $set: {
+        ...sanitizedSet,
+        updatedAt: new Date(),
+      } as Record<string, unknown>,
+      ...(sanitizedUnset.length > 0
+        ? {
+            $unset: Object.fromEntries(
+              sanitizedUnset.map((field) => [field, ""]),
+            ),
+          }
+        : {}),
+    },
     { session: options?.session },
   );
   return result.modifiedCount > 0;
@@ -1044,12 +1106,14 @@ export async function updateCharacter(
  * @returns matchedCount — ownerId === userId에 해당하는 도큐먼트 수
  */
 export async function clearCharacterOwnerByUserId(
-  userId: string
+  userId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<{ matchedCount: number }> {
   const col = await charactersCol();
   const result = await col.updateMany(
     { ownerId: userId },
-    { $set: { ownerId: null, updatedAt: new Date() } }
+    { $set: { ownerId: null, updatedAt: new Date() } },
+    { session: options.session },
   );
   return { matchedCount: result.matchedCount };
 }

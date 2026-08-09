@@ -17,6 +17,7 @@ import {
   type EquipmentChargeState,
   type MasterItem,
 } from "@stargate/shared-db";
+import type { RoleLevel } from "@stargate/shared-db";
 import { ObjectId, type ClientSession } from "mongodb";
 
 import {
@@ -372,6 +373,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
   expectedQuoteVersion: number;
   actorId: string;
   actorName: string;
+  actorRole: RoleLevel;
   guildId?: string;
   session: ClientSession;
 }): Promise<EquipmentWorkshopRequestDoc> {
@@ -424,6 +426,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
         kind: "ERP_USER",
         id: input.actorId,
         displayName: input.actorName,
+        role: input.actorRole,
       },
       session: input.session,
     });
@@ -488,6 +491,7 @@ export async function acceptWorkshopQuoteInTransaction(input: {
     status: "IN_PROGRESS",
     actorId: input.actorId,
     actorName: input.actorName,
+    actorKind: "PLAYER",
     set: {
       startedAt,
       readyAt,
@@ -766,6 +770,7 @@ export async function cancelWorkshopInTransaction(input: {
     status: "CANCELLED",
     actorId: input.actorId,
     actorName: input.actorName,
+    actorKind: "GM",
     note: input.note,
     session: input.session,
   });
@@ -934,6 +939,7 @@ export async function claimWorkshopResultInTransaction(input: {
     status: "COMPLETED",
     actorId: input.actorId,
     actorName: input.actorName,
+    actorKind: "PLAYER",
     set: {
       claimedAt: now,
       ...(approval
@@ -1049,6 +1055,7 @@ export async function approveWorkshopReloadInTransaction(input: {
     status: "COMPLETED",
     actorId: input.actorId,
     actorName: input.actorName,
+    actorKind: "GM",
     note: `관료 결재 승인 · ${action.code} ${action.maxCharges}/${action.maxCharges}`,
     set: { reloadedAt },
     session: input.session,

@@ -11,6 +11,8 @@ import { ConsumerManager } from "./consumers/manager.js";
 import type { DueWorkConsumerPort } from "./consumers/port.js";
 import { createDefaultDomainConsumers } from "./consumers/factory.js";
 import { WorkerLeaseSweeper } from "./consumers/lease-sweeper.js";
+import { IntegrationHealthProbeConsumer } from "./consumers/integration-health.js";
+import { WorkerRuntimeHeartbeatConsumer } from "./consumers/runtime-heartbeat.js";
 import { ScheduledJobRetryConsumer } from "./consumers/scheduled-job-retry.js";
 import { createShadowDomainConsumers } from "./consumers/shadow-consumers.js";
 import { WorkerHttpServer } from "./health/http-server.js";
@@ -22,6 +24,8 @@ import { SharedDbIntegrationOutboxConsumer } from "./outbox/active-consumer.js";
 import { createDefaultIntegrationOutboxHandlers } from "./outbox/default-handlers.js";
 import type { IntegrationOutboxHandlerRegistry } from "./outbox/handler-registry.js";
 import type { IntegrationOutboxPort } from "./outbox/port.js";
+import { DiscordOperationalAlertReporter } from "./outbox/operational-alerts.js";
+import { resolveDiscordWebhookDestination } from "./outbox/discord-routing.js";
 import {
   SharedDbCheckpointAdapter,
   type ChangeStreamCheckpointPort,
@@ -70,13 +74,30 @@ export class WorkerRuntime {
       config.mode === "active"
         ? createDefaultScheduledJobHandlers()
         : null;
+    let consumerManager: ConsumerManager | undefined;
+    const heartbeat = new WorkerRuntimeHeartbeatConsumer({
+      mode: config.mode,
+      enabledConsumers: config.enabledConsumers,
+      enabledOutboxKinds: integrationOutboxHandlers?.kinds ?? [],
+      isReady: () => {
+        const readiness = this.#health.readiness();
+        return Boolean(
+          readiness.state === "RUNNING" &&
+          readiness.components.mongo &&
+          readiness.components.changeStream &&
+          consumerManager?.isReadyExcluding("worker-runtime-heartbeat"),
+        );
+      },
+    });
     const defaultConsumers =
       config.mode === "shadow"
         ? [
             ...createShadowDomainConsumers(),
             createShadowOutboxConsumer(),
+            heartbeat,
           ]
         : [
+            new IntegrationHealthProbeConsumer(),
             new WorkerLeaseSweeper(),
             ...(scheduledJobHandlers
               ? [
@@ -100,14 +121,22 @@ export class WorkerRuntime {
                   ),
                 ]
               : []),
+            heartbeat,
           ];
-    this.#consumers = new ConsumerManager(
+    consumerManager = new ConsumerManager(
       config.mode,
       config.pollIntervalMs,
       dependencies.consumers ?? defaultConsumers,
       this.#logger,
       (ready) => this.#health.setComponent("consumers", ready),
+      config.mode === "active"
+        ? new DiscordOperationalAlertReporter(
+            resolveDiscordWebhookDestination("OPERATIONS"),
+            this.#logger,
+          )
+        : undefined,
     );
+    this.#consumers = consumerManager;
     this.#http = new WorkerHttpServer(
       this.#health,
       config.realtime,

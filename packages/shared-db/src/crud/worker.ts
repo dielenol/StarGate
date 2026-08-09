@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 
 import {
   MongoServerError,
@@ -23,6 +24,31 @@ const DEFAULT_LEASE_MS = 10 * 60 * 1000;
 const DEFAULT_MAX_ATTEMPTS = 8;
 const DEFAULT_BACKOFF_MS = 30_000;
 const MAX_ERROR_LENGTH = 2_000;
+
+export class IntegrationOutboxConflictError extends Error {
+  constructor(readonly dedupeKey: string) {
+    super(
+      `integration_outbox dedupeKey가 서로 다른 이벤트에 재사용되었습니다: ${dedupeKey}`,
+    );
+    this.name = "IntegrationOutboxConflictError";
+  }
+}
+
+function assertMatchingIntegrationOutbox(
+  existing: IntegrationOutboxEvent,
+  input: EnqueueIntegrationOutboxInput,
+): IntegrationOutboxEvent {
+  if (
+    existing.kind !== input.kind ||
+    existing.version !== (input.version ?? 1) ||
+    existing.partitionKey !== input.partitionKey ||
+    existing.partitionOrderAt?.getTime() !== input.partitionOrderAt?.getTime() ||
+    !isDeepStrictEqual(existing.payload, input.payload)
+  ) {
+    throw new IntegrationOutboxConflictError(input.dedupeKey);
+  }
+  return existing;
+}
 
 export interface ClaimScheduledJobRunInput {
   jobName: string;
@@ -50,6 +76,8 @@ export interface ExpireStaleScheduledJobRunsInput {
 export interface EnqueueIntegrationOutboxInput {
   kind: IntegrationOutboxKind;
   dedupeKey: string;
+  partitionKey?: string;
+  partitionOrderAt?: Date;
   payload: Record<string, unknown>;
   version?: number;
   availableAt?: Date;
@@ -372,6 +400,10 @@ export async function enqueueIntegrationOutbox(
   const doc: IntegrationOutboxEvent = {
     kind: input.kind,
     dedupeKey: input.dedupeKey,
+    ...(input.partitionKey ? { partitionKey: input.partitionKey } : {}),
+    ...(input.partitionOrderAt
+      ? { partitionOrderAt: input.partitionOrderAt }
+      : {}),
     version: input.version ?? 1,
     payload: input.payload,
     status: "PENDING",
@@ -381,6 +413,17 @@ export async function enqueueIntegrationOutbox(
     updatedAt: now,
   };
 
+  // Mongo transaction 안에서 E11000을 잡은 뒤 같은 session으로 조회하면 이미
+  // transaction이 abort된 상태다. 일반 재실행과 같은 transaction 내 중복은
+  // insert 전에 확인해 payload 계약을 검증한다.
+  const existingBeforeInsert = await col.findOne(
+    { dedupeKey: input.dedupeKey },
+    { session: options.session },
+  );
+  if (existingBeforeInsert) {
+    return assertMatchingIntegrationOutbox(existingBeforeInsert, input);
+  }
+
   try {
     const result = await col.insertOne(doc, {
       session: options.session,
@@ -388,11 +431,19 @@ export async function enqueueIntegrationOutbox(
     return { ...doc, _id: result.insertedId };
   } catch (error) {
     if (!isDuplicateKeyError(error)) throw error;
+    if (options.session && error instanceof MongoServerError) {
+      // 선조회 이후의 동시 insert 경합은 callback 전체를 새 snapshot에서
+      // 재시도해야 기존 문서를 안전하게 비교할 수 있다.
+      error.addErrorLabel("TransientTransactionError");
+      throw error;
+    }
     const existing = await col.findOne(
       { dedupeKey: input.dedupeKey },
       { session: options.session },
     );
-    if (existing) return existing;
+    if (existing) {
+      return assertMatchingIntegrationOutbox(existing, input);
+    }
     throw error;
   }
 }
@@ -420,27 +471,74 @@ export async function claimIntegrationOutbox(
     kinds: input.kinds,
   });
 
-  return col.findOneAndUpdate(
-    {
-      ...kindFilter,
-      attempts: { $lt: maxAttempts },
-      $or: [
-        { status: "PENDING", availableAt: { $lte: now } },
-        { status: "PROCESSING", leaseUntil: { $lte: now } },
-      ],
-    },
-    {
-      $set: {
-        status: "PROCESSING",
-        leaseToken,
-        leaseUntil,
-        updatedAt: now,
-      },
-      $inc: { attempts: 1 },
-      $unset: { lastError: "" },
-    },
-    { sort: { createdAt: 1, _id: 1 }, returnDocument: "after" },
-  );
+  const dueFilter = {
+    ...kindFilter,
+    attempts: { $lt: maxAttempts },
+    $or: [
+      { status: "PENDING" as const, availableAt: { $lte: now } },
+      { status: "PROCESSING" as const, leaseUntil: { $lte: now } },
+    ],
+  };
+  // 파티션의 앞 이벤트가 backoff 중이어도 다른 파티션까지 굶지 않도록
+  // 메모리에 전부 적재하지 않는 정렬 cursor로 claim 가능한 항목을 찾는다.
+  const candidates = col.find(dueFilter).sort({ createdAt: 1, _id: 1 });
+  try {
+    for await (const candidate of candidates) {
+      if (
+        candidate.partitionKey &&
+        candidate.partitionOrderAt &&
+        candidate._id
+      ) {
+        const earlierIncomplete = await col.findOne(
+          {
+            partitionKey: candidate.partitionKey,
+            status: { $in: ["PENDING", "PROCESSING", "DEAD"] },
+            $or: [
+              { partitionOrderAt: { $lt: candidate.partitionOrderAt } },
+              {
+                partitionOrderAt: candidate.partitionOrderAt,
+                createdAt: { $lt: candidate.createdAt },
+              },
+              {
+                partitionOrderAt: candidate.partitionOrderAt,
+                createdAt: candidate.createdAt,
+                _id: { $lt: candidate._id },
+              },
+            ],
+          },
+          { projection: { _id: 1 } },
+        );
+        if (earlierIncomplete) continue;
+      }
+
+      const claimed = await col.findOneAndUpdate(
+        {
+          _id: candidate._id,
+          attempts: { $lt: maxAttempts },
+          $or: [
+            { status: "PENDING", availableAt: { $lte: now } },
+            { status: "PROCESSING", leaseUntil: { $lte: now } },
+          ],
+        },
+        {
+          $set: {
+            status: "PROCESSING",
+            leaseToken,
+            leaseUntil,
+            updatedAt: now,
+          },
+          $inc: { attempts: 1 },
+          $unset: { lastError: "" },
+        },
+        { returnDocument: "after" },
+      );
+      if (claimed) return claimed;
+    }
+  } finally {
+    await candidates.close();
+  }
+
+  return null;
 }
 
 export async function completeIntegrationOutbox(input: {

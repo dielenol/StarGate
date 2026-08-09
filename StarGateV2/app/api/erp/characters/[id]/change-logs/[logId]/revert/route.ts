@@ -11,14 +11,10 @@
  *   5. log.characterId 와 path id 불일치 — 400 (path mismatch)
  *   6. log.revertedAt 이미 있음 — 409 (멱등 가드)
  *   7. log.changes 의 (field, before) 쌍을 부분 객체 revertBody 로 변환
- *   8. updateCharacter(id, revertBody, ADMIN 화이트리스트) — 성공 시 새 audit log 기록
- *      (revert 의 결과로 다시 변경이 일어나므로 revert 자체도 변경 이력에 남김)
- *   9. markChangeLogReverted(logId, GM) — 멱등성으로 race 시 null 반환 가능 (silent OK)
- *  10. P7 character edit webhook durable outbox enqueue
- *  11. 200
- *
- * 트랜잭션 정책: 미사용 (전체 P 시리즈 정책). updateCharacter 성공 후 audit insert /
- *   markChangeLogReverted 가 실패해도 사용자 응답에는 영향 X — try/catch 로 격리.
+ *   8. 하나의 Mongo transaction 안에서 캐릭터 복원, 새 audit log,
+ *      원본 log의 reverted 표식, character webhook outbox를 함께 commit
+ *   9. race로 원본 log를 먼저 되돌린 요청은 409
+ *  10. 200
  */
 
 import { ObjectId } from "mongodb";
@@ -34,15 +30,26 @@ import {
 
 import { auth } from "@/lib/auth/config";
 import { isCharacterOwner, requireRole } from "@/lib/auth/rbac";
+import { ROOT_ALLOWED_FIELDS_ADMIN } from "@/lib/character/allowed-fields";
 import { computeCharacterDiff } from "@/lib/character/diff";
-import { changesToRevertBody } from "@/lib/character/revert";
-import { findCharacterById, updateCharacter } from "@/lib/db/characters";
+import {
+  areChangeLogAfterValuesCurrent,
+  changesToRevertFieldPatch,
+} from "@/lib/character/revert";
+import {
+  applyCharacterFieldPatch,
+  findCharacterById,
+} from "@/lib/db/characters";
+import { getClient } from "@/lib/db/client";
 import { isValidObjectId } from "@/lib/db/utils";
 import { enqueueCharacterEditWebhook } from "@/lib/outbox/integration";
 
 interface RouteContext {
   params: Promise<{ id: string; logId: string }>;
 }
+
+class ChangeLogAlreadyRevertedError extends Error {}
+class StaleChangeLogRevertError extends Error {}
 
 export async function POST(_request: Request, context: RouteContext) {
   const session = await auth();
@@ -87,9 +94,6 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 
-  // 4. revert body 빌드 — dot path 를 부분 객체로 풀고 ADMIN 화이트리스트로 가드
-  const revertBody = changesToRevertBody(log.changes);
-
   const before = await findCharacterById(id);
   if (!before) {
     // 캐릭터 자체가 삭제된 경우 — revert 불가
@@ -98,129 +102,134 @@ export async function POST(_request: Request, context: RouteContext) {
       { status: 404 },
     );
   }
-  const actorIsOwner = isCharacterOwner(session.user.id, before);
-
   /**
    * revert 화이트리스트 — admin 권한자(GM)이 수행하는 복원이므로 root 메타 + lore + play
    * 모두 허용. PATCH 라우트와 동일하게 root 필드를 명시적으로 추가.
    */
-  const ROOT_ALLOWED_FIELDS_ADMIN = new Set<string>([
-    "codename",
-    "tier",
-    "role",
-    "agentLevel",
-    "department",
-    "previewImage",
-    "pixelCharacterImage",
-    "warningVideo",
-    "ownerId",
-    "isPublic",
-    "factionCode",
-    "institutionCode",
-  ]);
   const revertAllowedFields = new Set<string>();
   for (const f of ROOT_ALLOWED_FIELDS_ADMIN) revertAllowedFields.add(f);
   for (const f of ALLOWED_LORE_FIELDS_ADMIN) revertAllowedFields.add(f);
   for (const f of ALLOWED_PLAY_FIELDS_ADMIN) revertAllowedFields.add(f);
 
   try {
-    const updated = await updateCharacter(id, revertBody, {
-      allowedFields: revertAllowedFields,
-    });
-    if (!updated) {
-      // 이미 before 값과 동일 (no-op revert) — DB 변경 없이 mark 만 처리해
-      // 동일 로그를 두 번 시도하는 무한 409 회피. GM 의 의사 결정은 확정된 것.
-      try {
-        await markChangeLogReverted(logId, session.user.id);
-      } catch (markErr) {
-        console.warn(
-          `[revert POST] noop mark failed user=${session.user.id} log=${logId}:`,
-          markErr,
-        );
-      }
-      return NextResponse.json({ success: true, noop: true });
-    }
-
-    /**
-     * revert 자체를 새 audit log 로 기록.
-     * 트랜잭션 미사용이라 update 성공 후 best-effort 로 별도 insert. 실패해도 사용자
-     * 응답에는 영향 주지 않고 console.warn 만 남김.
-     */
     let revertChanges: ReturnType<typeof computeCharacterDiff> = [];
+    const client = await getClient();
+    const dbSession = client.startSession();
     try {
-      const updatedDoc = await findCharacterById(id);
-      if (updatedDoc) {
+      await dbSession.withTransaction(async () => {
+        const currentLog = await getChangeLogById(logId, {
+          session: dbSession,
+        });
+        if (!currentLog || currentLog.revertedAt) {
+          throw new ChangeLogAlreadyRevertedError();
+        }
+        const transactionalBefore = await findCharacterById(id, {
+          session: dbSession,
+        });
+        if (!transactionalBefore) {
+          throw new Error("캐릭터를 찾을 수 없습니다.");
+        }
+        if (
+          !areChangeLogAfterValuesCurrent(
+            transactionalBefore,
+            currentLog.changes,
+          )
+        ) {
+          throw new StaleChangeLogRevertError();
+        }
+        const transactionalActorIsOwner = isCharacterOwner(
+          session.user.id,
+          transactionalBefore,
+        );
+        const updated = await applyCharacterFieldPatch(
+          id,
+          changesToRevertFieldPatch(currentLog.changes),
+          {
+            allowedFields: revertAllowedFields,
+            session: dbSession,
+          },
+        );
+        if (!updated) {
+          throw new Error("되돌릴 수 있는 변경 필드가 없습니다.");
+        }
+        const updatedDoc = await findCharacterById(id, {
+          session: dbSession,
+        });
+        if (!updatedDoc) {
+          throw new Error("되돌린 캐릭터를 확인하지 못했습니다.");
+        }
         revertChanges = computeCharacterDiff(
-          before,
+          transactionalBefore,
           updatedDoc,
           revertAllowedFields,
         );
-        if (revertChanges.length > 0) {
-          await insertChangeLog({
-            characterId: new ObjectId(id),
-            actorId: session.user.id,
-            actorRole: session.user.role,
-            actorIsOwner,
-            source: "admin",
-            changes: revertChanges,
-            reason: `revert:${logId}`,
-          });
+        if (revertChanges.length === 0) {
+          throw new Error("되돌릴 실제 변경이 없습니다.");
         }
-      }
-    } catch (auditErr) {
-      console.warn(
-        `[revert POST] audit insert failed user=${session.user.id} character=${id} log=${logId}:`,
-        auditErr,
-      );
-    }
-
-    /**
-     * 원본 로그를 revert 상태로 마킹. shared-db 의 markChangeLogReverted 는 멱등 —
-     * 이미 revertedAt 가 있으면 null 반환 (race 케이스). null 반환은 silent OK.
-     */
-    try {
-      await markChangeLogReverted(logId, session.user.id);
-    } catch (markErr) {
-      console.warn(
-        `[revert POST] mark revert failed user=${session.user.id} log=${logId}:`,
-        markErr,
-      );
-    }
-
-    /**
-     * P7 디스코드 GM 채널 알림 — fire-and-forget. 응답 시간/UX 영향 0.
-     * revert 도 admin 편집의 일종으로 간주 (source: 'admin', reason: 'revert:{logId}').
-     */
-    if (revertChanges.length > 0) {
-      const displayName =
-        session.user.displayName ||
-        session.user.username ||
-        `user-${session.user.id.slice(0, 6)}`;
-
-      await enqueueCharacterEditWebhook(
-        {
-          character: {
-            id,
-            codename: before.codename,
-            name: before.lore.name,
-          },
-          actor: {
-            id: session.user.id,
-            displayName,
-            role: session.user.role,
-          },
+        await insertChangeLog({
+          characterId: new ObjectId(id),
+          actorId: session.user.id,
+          actorRole: session.user.role,
+          actorIsOwner: transactionalActorIsOwner,
           source: "admin",
-          actorIsOwner,
           changes: revertChanges,
           reason: `revert:${logId}`,
-          timestamp: new Date(),
-        },
-        `revert:${logId}`,
-      );
+        }, { session: dbSession });
+
+        const marked = await markChangeLogReverted(logId, session.user.id, {
+          session: dbSession,
+        });
+        if (!marked) throw new ChangeLogAlreadyRevertedError();
+
+        if (revertChanges.length > 0) {
+          const displayName =
+            session.user.displayName ||
+            session.user.username ||
+            `user-${session.user.id.slice(0, 6)}`;
+          await enqueueCharacterEditWebhook(
+            {
+              character: {
+                id,
+                codename: transactionalBefore.codename,
+                name: transactionalBefore.lore.name,
+              },
+              actor: {
+                id: session.user.id,
+                displayName,
+                role: session.user.role,
+              },
+              source: "admin",
+              actorIsOwner: transactionalActorIsOwner,
+              changes: revertChanges,
+              reason: `revert:${logId}`,
+              timestamp: new Date(),
+            },
+            `revert:${logId}`,
+            { session: dbSession },
+          );
+        }
+      });
+    } finally {
+      await dbSession.endSession();
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof ChangeLogAlreadyRevertedError) {
+      return NextResponse.json(
+        { error: "이미 되돌려진 로그입니다." },
+        { status: 409 },
+      );
+    }
+    if (err instanceof StaleChangeLogRevertError) {
+      return NextResponse.json(
+        {
+          error: "이 로그 이후 같은 필드가 변경되어 되돌릴 수 없습니다.",
+          code: "STALE_REVERT",
+        },
+        { status: 409 },
+      );
+    }
     const message = err instanceof Error ? err.message : "되돌리기 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

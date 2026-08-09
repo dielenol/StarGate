@@ -9,11 +9,15 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
+import { getClient } from "@/lib/db/client";
 import { listUsers } from "@/lib/db/users";
 import { getStock } from "@/lib/db/shop";
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
-import { enqueueShopReorderRequestWebhook } from "@/lib/outbox/integration";
+import {
+  enqueueShopReorderRequestWebhook,
+} from "@/lib/outbox/integration";
 import { getTodayKst } from "@/lib/shop/refresh-stock";
+import { enqueueShopReorderRequestedWorkflow } from "@/lib/shop/reorder-workflow";
 import {
   buildShopReorderRequestId,
   countShopReorderRequestsForUserItem,
@@ -147,9 +151,48 @@ export async function POST(request: Request) {
       status: "REQUESTED",
       createdAt: new Date(),
     };
+    const webhookPayload = {
+      today,
+      item: {
+        slug: item.slug,
+        name: item.name,
+        icon: item.icon,
+        price: item.price,
+        pageGroup: item.pageGroup,
+      },
+      requester: {
+        id: session.user.id,
+        displayName: session.user.displayName,
+      },
+      ...(nextDoc.characterId && nextDoc.characterCodename
+        ? {
+            character: {
+              id: nextDoc.characterId,
+              codename: nextDoc.characterCodename,
+            },
+          }
+        : {}),
+      requestedAt: nextDoc.createdAt,
+    };
 
     try {
-      await insertShopReorderRequest(nextDoc);
+      const client = await getClient();
+      const dbSession = client.startSession();
+      try {
+        await dbSession.withTransaction(async () => {
+          await insertShopReorderRequest(nextDoc, { session: dbSession });
+          await enqueueShopReorderRequestWebhook(
+            webhookPayload,
+            `shop-reorder:${nextDoc._id}:requested`,
+            { session: dbSession },
+          );
+          await enqueueShopReorderRequestedWorkflow(nextDoc, {
+            session: dbSession,
+          });
+        });
+      } finally {
+        await dbSession.endSession();
+      }
       doc = nextDoc;
       created = true;
     } catch (error) {
@@ -160,6 +203,21 @@ export async function POST(request: Request) {
         slug,
       });
       if (!doc) throw error;
+    }
+  }
+
+  if (!created && doc) {
+    const pendingDoc = doc;
+    const client = await getClient();
+    const dbSession = client.startSession();
+    try {
+      await dbSession.withTransaction(() =>
+        enqueueShopReorderRequestedWorkflow(pendingDoc, {
+          session: dbSession,
+        }),
+      );
+    } finally {
+      await dbSession.endSession();
     }
   }
 
@@ -181,33 +239,6 @@ export async function POST(request: Request) {
       notifyShopReorderOperators(doc),
     ]);
   }
-
-  await enqueueShopReorderRequestWebhook(
-    {
-      today,
-      item: {
-        slug: item.slug,
-        name: item.name,
-        icon: item.icon,
-        price: item.price,
-        pageGroup: item.pageGroup,
-      },
-      requester: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-      },
-      ...(doc.characterId && doc.characterCodename
-        ? {
-            character: {
-              id: doc.characterId,
-              codename: doc.characterCodename,
-            },
-          }
-        : {}),
-      requestedAt: doc.createdAt,
-    },
-    `shop-reorder:${doc._id}:requested`,
-  );
 
   return NextResponse.json(
     {

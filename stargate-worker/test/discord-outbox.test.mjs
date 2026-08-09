@@ -45,7 +45,8 @@ test("활성화한 webhook과 거래 DM kind는 실제 Discord REST payload를 �
   const registry = createDiscordIntegrationOutboxHandlers(
     {
       WORKER_OUTBOX_KINDS: "GM_ADMIN_AUDIT,PLAYER_TRADE_DM",
-      DISCORD_WEBHOOK_CHAR_EDIT_URL:
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      DISCORD_WEBHOOK_AUDIT_URL:
         "https://discord.com/api/webhooks/example/token",
       REGISTRAR_DISCORD_BOT_TOKEN: "test-token",
       NEXT_PUBLIC_SITE_URL: "https://www.ordonet.co.kr",
@@ -109,9 +110,108 @@ test("활성화한 kind의 secret이 없으면 claim 전에 설정 오류를 낸
     () =>
       createDiscordIntegrationOutboxHandlers({
         WORKER_OUTBOX_KINDS: "PLAYER_TRADE_DM",
+        WORKER_OUTBOX_ALLOW_PARTIAL: "true",
       }),
     IntegrationOutboxConfigurationError,
   );
+});
+
+test("감사·워크플로·편의점 kind는 typed channel registry대로 분리된다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: [
+        "CHARACTER_EDIT_WEBHOOK",
+        "EQUIPMENT_WORKSHOP_WEBHOOK",
+        "SHOP_REORDER_REQUEST_WEBHOOK",
+        "SHOP_REORDER_FULFILLED_WEBHOOK",
+        "WORKFLOW_STATUS_WEBHOOK",
+      ].join(","),
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      DISCORD_WEBHOOK_AUDIT_URL:
+        "https://discord.com/api/webhooks/audit/token",
+      DISCORD_WEBHOOK_WORKFLOW_URL:
+        "https://discord.com/api/webhooks/workflow/token",
+      DISCORD_WEBHOOK_SHOP_URL:
+        "https://discord.com/api/webhooks/shop/token",
+      NEXT_PUBLIC_SITE_URL: "https://www.ordonet.co.kr",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({
+          url: String(url),
+          body: init?.body ? JSON.parse(String(init.body)) : null,
+        });
+        return new Response(null, { status: 204 });
+      },
+      async isWorkflowEventCurrent() {
+        return true;
+      },
+    },
+  );
+  const now = new Date().toISOString();
+
+  await registry.get("CHARACTER_EDIT_WEBHOOK").deliver(
+    outboxEvent("CHARACTER_EDIT_WEBHOOK", {
+      character: { id: "character-1", codename: "JTEST", name: "테스트" },
+      actor: { id: "user-1", displayName: "사용자", role: "J" },
+      source: "player",
+      actorIsOwner: true,
+      changes: [{ field: "lore.quote", before: "전", after: "후" }],
+      timestamp: now,
+    }),
+  );
+  await registry.get("EQUIPMENT_WORKSHOP_WEBHOOK").deliver(
+    outboxEvent("EQUIPMENT_WORKSHOP_WEBHOOK", {
+      kind: "upgrade",
+      character: { id: "character-1", codename: "JTEST", name: "테스트" },
+      requester: { id: "user-1", displayName: "사용자" },
+      details: "강화 요청 세부 내용입니다.",
+      timestamp: now,
+    }),
+  );
+  await registry.get("SHOP_REORDER_REQUEST_WEBHOOK").deliver(
+    outboxEvent("SHOP_REORDER_REQUEST_WEBHOOK", {
+      today: "2026-08-09",
+      item: { slug: "snack", name: "간식", icon: "◇", price: 10 },
+      requester: { id: "user-1", displayName: "사용자" },
+      requestedAt: now,
+    }),
+  );
+  await registry.get("SHOP_REORDER_FULFILLED_WEBHOOK").deliver(
+    outboxEvent("SHOP_REORDER_FULFILLED_WEBHOOK", {
+      today: "2026-08-09",
+      item: { slug: "snack", name: "간식", icon: "◇", price: 10 },
+      quantity: 3,
+      stock: 3,
+      fulfilledAt: now,
+    }),
+  );
+  await registry.get("WORKFLOW_STATUS_WEBHOOK").deliver(
+    outboxEvent("WORKFLOW_STATUS_WEBHOOK", {
+      workflow: "EQUIPMENT_WORKSHOP",
+      workflowId: "workshop-1",
+      stage: "IN_PROGRESS",
+      revision: 1,
+      actor: { kind: "PLAYER", displayName: "사용자" },
+      summary: "담당자에게 위임되었습니다.",
+      delegatedTo: ["VERNIER", "REGISTRAR"],
+      urlPath: "/erp/admin/equipment-workshop",
+      occurredAt: now,
+    }),
+  );
+
+  assert.deepEqual(
+    requests.map((request) => request.url),
+    [
+      "https://discord.com/api/webhooks/audit/token?wait=true",
+      "https://discord.com/api/webhooks/workflow/token?wait=true",
+      "https://discord.com/api/webhooks/workflow/token?wait=true",
+      "https://discord.com/api/webhooks/shop/token?wait=true",
+      "https://discord.com/api/webhooks/workflow/token?wait=true",
+    ],
+  );
+  assert.match(requests[4].body.embeds[0].fields[3].value, /VERNIER → REGISTRAR/);
 });
 
 test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", async () => {
@@ -119,6 +219,7 @@ test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", as
   const registry = createDiscordIntegrationOutboxHandlers(
     {
       WORKER_OUTBOX_KINDS: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
       DISCORD_WEBHOOK_STOCK_URL:
         "https://discord.com/api/webhooks/stock/token",
     },
@@ -161,6 +262,7 @@ test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노�
   const registry = createDiscordIntegrationOutboxHandlers(
     {
       WORKER_OUTBOX_KINDS: "MRBEAST_LOTTERY_WINNER_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
       DISCORD_WEBHOOK_SHOP_URL:
         "https://discord.com/api/webhooks/shop/token",
     },
@@ -195,6 +297,7 @@ test("편의점 신제품 출시는 띠아 대사와 전용 편의점 webhook으
   const registry = createDiscordIntegrationOutboxHandlers(
     {
       WORKER_OUTBOX_KINDS: "SHOP_PRODUCT_LAUNCH_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
       DISCORD_WEBHOOK_SHOP_URL:
         "https://discord.com/api/webhooks/shop/token",
       DISCORD_WEBHOOK_SHOP_AVATAR_URL:
@@ -259,6 +362,7 @@ test("신제품 이미지가 없거나 안전하지 않으면 이미지 없이 �
   const registry = createDiscordIntegrationOutboxHandlers(
     {
       WORKER_OUTBOX_KINDS: "SHOP_PRODUCT_LAUNCH_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
       DISCORD_WEBHOOK_SHOP_URL:
         "https://discord.com/api/webhooks/shop/token",
       NEXT_PUBLIC_SITE_URL: "https://staging.ordonet.co.kr",
@@ -298,6 +402,7 @@ test("미스터비스트 복권 2등 이상은 편의점 채널에 고액 당첨
   const registry = createDiscordIntegrationOutboxHandlers(
     {
       WORKER_OUTBOX_KINDS: "MRBEAST_LOTTERY_WINNER_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
       DISCORD_WEBHOOK_SHOP_URL:
         "https://discord.com/api/webhooks/shop/token",
       DISCORD_WEBHOOK_SHOP_AVATAR_URL:

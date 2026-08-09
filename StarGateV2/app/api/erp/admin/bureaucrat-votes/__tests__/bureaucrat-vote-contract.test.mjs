@@ -55,6 +55,23 @@ test("진행 중 같은 preset은 partial unique 계약으로 중복 등재를 �
   assert.match(crud, /activePresetKey: presetKey/);
 });
 
+test("관료 표결은 열림·마감 workflow를 원장과 같은 transaction에 기록하고 공방 링크를 표시한다", async () => {
+  const [crud, view] = await Promise.all([
+    readRepo("packages/shared-db/src/crud/bureaucrat-votes.ts"),
+    readRepo("registra-bot/src/utils/bureaucrat-vote-view.ts"),
+  ]);
+  assert.match(crud, /kind: "WORKFLOW_STATUS_WEBHOOK"/);
+  assert.match(crud, /stage: "OPENED"/);
+  assert.match(crud, /"CLOSED_APPROVED"[\s\S]*"CLOSED_REJECTED"/);
+  assert.match(
+    crud,
+    /findOneAndUpdate\([\s\S]*returnDocument: "after", session[\s\S]*enqueueBureaucratVoteWorkflowStatus\([\s\S]*\{ session \}/,
+  );
+  assert.match(view, /원본 업무/);
+  assert.match(view, /연결된 공방 요청/);
+  assert.match(view, /\/erp\/admin\/equipment-workshop/);
+});
+
 test("투표 운영 query는 진행 원장을 polling하고 mutation은 같은 query key를 무효화한다", async () => {
   const [query, mutation] = await Promise.all([
     readWeb("hooks/queries/useBureaucratVotesQuery.ts"),

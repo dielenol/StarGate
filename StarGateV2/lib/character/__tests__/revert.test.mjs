@@ -19,7 +19,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { changesToRevertBody } from "../revert.ts";
+import {
+  areChangeLogAfterValuesCurrent,
+  changesToRevertBody,
+  changesToRevertFieldPatch,
+} from "../revert.ts";
 
 test("R1: 단순 키 변환", () => {
   const body = changesToRevertBody([
@@ -116,4 +120,40 @@ test("R10: 동일 field 중복 entry — 마지막 값이 최종 (덮어쓰기)"
     { field: "sheet.quote", before: "SECOND", after: "Y" },
   ]);
   assert.equal(body.sheet.quote, "SECOND");
+});
+
+test("R11: 로그 after 값과 현재 dot path가 모두 같아야 revert 가능", () => {
+  const character = {
+    codename: "AFTER",
+    lore: { profile: { quote: "latest" } },
+    clearanceOverrides: { identity: "V" },
+  };
+  assert.equal(
+    areChangeLogAfterValuesCurrent(character, [
+      { field: "codename", after: "AFTER" },
+      { field: "lore.profile.quote", after: "latest" },
+      { field: "clearanceOverrides", after: { identity: "V" } },
+    ]),
+    true,
+  );
+  assert.equal(
+    areChangeLogAfterValuesCurrent(character, [
+      { field: "codename", after: "OLDER" },
+    ]),
+    false,
+  );
+});
+
+test("R12: 원래 없던 optional 필드는 flat unset patch로 복원한다", () => {
+  assert.deepEqual(
+    changesToRevertFieldPatch([
+      { field: "previewImage", before: undefined, after: "/new.webp" },
+      { field: "lore.posterImage", before: undefined, after: "/poster.webp" },
+      { field: "lore.quote", before: "이전", after: "이후" },
+    ]),
+    {
+      set: { "lore.quote": "이전" },
+      unset: ["previewImage", "lore.posterImage"],
+    },
+  );
 });

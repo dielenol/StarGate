@@ -6,12 +6,15 @@ import {
   claimScheduledJobRun,
   clearWorkerCheckpoint,
   close,
+  completeIntegrationOutbox,
   completeScheduledJobRun,
   connect,
   enqueueIntegrationOutbox,
   expireStaleScheduledJobRuns,
+  failIntegrationOutbox,
   findDueScheduledJobRuns,
   getDb,
+  IntegrationOutboxConflictError,
   refreshStockIfStale,
   renewScheduledJobRunLease,
 } from "../../../dist/index.js";
@@ -112,6 +115,29 @@ test(
         .collection("integration_outbox")
         .countDocuments({ dedupeKey: "test:audit:1" }),
       1,
+    );
+  },
+);
+
+test(
+  "동일 dedupeKey를 다른 outbox payload에 재사용하면 충돌로 거부한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    await enqueueIntegrationOutbox({
+      kind: "GM_ADMIN_AUDIT",
+      dedupeKey: "test:audit:conflict",
+      payload: { action: "first" },
+      availableAt: new Date("2199-01-01T00:00:00.000Z"),
+    });
+
+    await assert.rejects(
+      enqueueIntegrationOutbox({
+        kind: "GM_ADMIN_AUDIT",
+        dedupeKey: "test:audit:conflict",
+        payload: { action: "different" },
+        availableAt: new Date("2199-01-02T00:00:00.000Z"),
+      }),
+      IntegrationOutboxConflictError,
     );
   },
 );
@@ -292,6 +318,91 @@ test(
     assert.equal(stored?.attempts, 1);
     assert.equal(stored?.leaseToken, undefined);
     assert.ok(stored?.deadAt instanceof Date);
+  },
+);
+
+test(
+  "workflow outbox는 앞 단계 backoff 중 다음 단계를 건너뛰고 다른 파티션은 계속 처리한다",
+  { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
+  async () => {
+    const now = new Date("2099-01-07T00:00:00.000Z");
+    const partitionKey = "workflow:EQUIPMENT_WORKSHOP:test-order";
+    const first = await enqueueIntegrationOutbox({
+      kind: "WORKFLOW_STATUS_WEBHOOK",
+      dedupeKey: "test:workflow:order:first",
+      partitionKey,
+      partitionOrderAt: now,
+      payload: { stage: "REQUESTED" },
+      availableAt: now,
+    });
+    const second = await enqueueIntegrationOutbox({
+      kind: "WORKFLOW_STATUS_WEBHOOK",
+      dedupeKey: "test:workflow:order:second",
+      partitionKey,
+      partitionOrderAt: new Date(now.getTime() + 1),
+      payload: { stage: "IN_REVIEW" },
+      availableAt: now,
+    });
+    const independent = await enqueueIntegrationOutbox({
+      kind: "WORKFLOW_STATUS_WEBHOOK",
+      dedupeKey: "test:workflow:order:independent",
+      partitionKey: "workflow:SHOP_REORDER:test-independent",
+      partitionOrderAt: now,
+      payload: { stage: "REQUESTED" },
+      availableAt: now,
+    });
+
+    const firstClaim = await claimIntegrationOutbox({ now, leaseMs: 5_000 });
+    assert.equal(String(firstClaim?._id), String(first._id));
+    assert.equal(
+      await failIntegrationOutbox({
+        id: firstClaim._id,
+        leaseToken: firstClaim.leaseToken,
+        attempts: firstClaim.attempts,
+        error: new Error("retry"),
+        backoffBaseMs: 1_000,
+        now,
+      }),
+      "PENDING",
+    );
+
+    const independentClaim = await claimIntegrationOutbox({
+      now: new Date(now.getTime() + 1),
+      leaseMs: 5_000,
+    });
+    assert.equal(String(independentClaim?._id), String(independent._id));
+    assert.equal(
+      await completeIntegrationOutbox({
+        id: independentClaim._id,
+        leaseToken: independentClaim.leaseToken,
+        now: new Date(now.getTime() + 2),
+      }),
+      true,
+    );
+    assert.equal(
+      await claimIntegrationOutbox({ now: new Date(now.getTime() + 3) }),
+      null,
+    );
+
+    const retryClaim = await claimIntegrationOutbox({
+      now: new Date(now.getTime() + 1_000),
+      leaseMs: 5_000,
+    });
+    assert.equal(String(retryClaim?._id), String(first._id));
+    assert.equal(
+      await completeIntegrationOutbox({
+        id: retryClaim._id,
+        leaseToken: retryClaim.leaseToken,
+        now: new Date(now.getTime() + 1_001),
+      }),
+      true,
+    );
+
+    const secondClaim = await claimIntegrationOutbox({
+      now: new Date(now.getTime() + 1_002),
+      leaseMs: 5_000,
+    });
+    assert.equal(String(secondClaim?._id), String(second._id));
   },
 );
 

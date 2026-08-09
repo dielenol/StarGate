@@ -38,6 +38,7 @@ export {
   ADMIN_ALLOWED_CHARACTER_FIELDS,
   createCharacter,
   updateCharacter,
+  applyCharacterFieldPatch,
   deleteCharacter,
 } from "@stargate/shared-db";
 

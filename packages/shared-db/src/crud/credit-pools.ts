@@ -18,26 +18,38 @@ export async function ensureCreditPool(
   poolId: string,
   name: string,
   initialBalance = 0,
+  options: { session?: ClientSession } = {},
 ): Promise<CreditPool> {
   const col = await creditPoolsCol();
-  const existing = await col.findOne({ poolId });
-  if (existing) return existing;
-
   const now = new Date();
-  const doc: CreditPool = {
-    poolId,
-    name,
-    balance: initialBalance,
-    createdAt: now,
-    updatedAt: now,
-  };
-  const result = await col.insertOne(doc);
-  return { ...doc, _id: result.insertedId };
+  const result = await col.findOneAndUpdate(
+    { poolId },
+    {
+      $setOnInsert: {
+        poolId,
+        name,
+        balance: initialBalance,
+        revision: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+    },
+    {
+      upsert: true,
+      returnDocument: "after",
+      session: options.session,
+    },
+  );
+  if (!result) throw new Error(`Credit pool ensure failed: ${poolId}`);
+  return result;
 }
 
-export async function getCreditPool(poolId: string): Promise<CreditPool | null> {
+export async function getCreditPool(
+  poolId: string,
+  options: { session?: ClientSession } = {},
+): Promise<CreditPool | null> {
   const col = await creditPoolsCol();
-  return col.findOne({ poolId });
+  return col.findOne({ poolId }, { session: options.session });
 }
 
 export async function getAllCreditPools(): Promise<CreditPool[]> {
@@ -78,7 +90,7 @@ export async function addCreditPoolBalance(
   const result = await col.findOneAndUpdate(
     filter,
     {
-      $inc: { balance: delta },
+      $inc: { balance: delta, revision: 1 },
       $set: { updatedAt: new Date() },
     },
     { returnDocument: "after", session: options?.session },
@@ -117,22 +129,39 @@ export async function addCreditPoolBalance(
 export async function setCreditPoolBalance(
   poolId: string,
   balance: number,
-  options?: { session?: ClientSession },
+  options: { expectedRevision: number; session?: ClientSession },
 ): Promise<CreditPool> {
   const col = await creditPoolsCol();
+  const revisionFilter =
+    options.expectedRevision === 0
+      ? { $or: [{ revision: 0 }, { revision: { $exists: false } }] }
+      : { revision: options.expectedRevision };
   const result = await col.findOneAndUpdate(
-    { poolId },
+    { poolId, ...revisionFilter },
     {
       $set: {
         balance,
         updatedAt: new Date(),
       },
+      $inc: { revision: 1 },
     },
-    { returnDocument: "after", session: options?.session },
+    { returnDocument: "after", session: options.session },
   );
 
   if (!result) {
-    throw new Error(`Credit pool not found: ${poolId}`);
+    const current = await col.findOne(
+      { poolId },
+      { projection: { _id: 1 }, session: options.session },
+    );
+    if (!current) throw new Error(`Credit pool not found: ${poolId}`);
+    throw new CreditPoolVersionConflictError(poolId);
   }
   return result;
+}
+
+export class CreditPoolVersionConflictError extends Error {
+  constructor(readonly poolId: string) {
+    super(`Credit pool changed since it was read: ${poolId}`);
+    this.name = "CreditPoolVersionConflictError";
+  }
 }

@@ -1155,6 +1155,38 @@ test("workshop route derives ownership and equipped gear on the server", () => {
   assert.match(route, /장비 강화·신규 제작은 견적·수락·수령 또는 제작 취소 전용 API/);
 });
 
+test("duplicate workshop create repairs only the immutable REQUESTED v0 workflow", () => {
+  const route = readFileSync(
+    new URL(
+      "../../../app/api/erp/equipment-shop/workshop-request/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const workshopDb = readFileSync(
+    new URL("../../db/equipment-workshop-requests.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    route,
+    /enqueueEquipmentWorkshopWorkflowStages\(\{[\s\S]*request: existing,[\s\S]*stage: "REQUESTED",[\s\S]*occurredAt: existing\.createdAt/,
+  );
+  assert.match(
+    workshopDb,
+    /input\.stage === "REQUESTED" \? undefined : input\.request\.quote/,
+  );
+  assert.match(
+    workshopDb,
+    /input\.stage === "REQUESTED" \? undefined : input\.request\.approvalVoteId/,
+  );
+  assert.match(
+    workshopDb,
+    /input\.stage === "REQUESTED" \? undefined : input\.request\.operatorNote/,
+  );
+  assert.match(workshopDb, /const revision = workflowQuote\?\.version \?\? 0/);
+});
+
 test("operations request query leaves the active request list uncapped", () => {
   const db = readFileSync(
     new URL("../../db/equipment-workshop-requests.ts", import.meta.url),
@@ -1499,8 +1531,12 @@ test("quote issuance persists its outbox event without web-process Discord drain
     ),
     "utf8",
   );
+  const workshopDb = readFileSync(
+    new URL("../../db/equipment-workshop-requests.ts", import.meta.url),
+    "utf8",
+  );
   const persistenceIndex = adminRoute.indexOf(
-    "const updated = await updateEquipmentWorkshopQuote",
+    "updated = await dbSession.withTransaction",
   );
   const erpNotificationIndex = adminRoute.indexOf(
     "await notifyUser",
@@ -1514,6 +1550,10 @@ test("quote issuance persists its outbox event without web-process Discord drain
   assert.ok(persistenceIndex >= 0);
   assert.ok(erpNotificationIndex > persistenceIndex);
   assert.ok(responseIndex > erpNotificationIndex);
+  assert.match(
+    workshopDb,
+    /updateEquipmentWorkshopQuote[\s\S]*discordDmOutbox: createEquipmentWorkshopDiscordDmOutboxEvent[\s\S]*enqueueEquipmentWorkshopWorkflowStages\([\s\S]*session: input\.session/,
+  );
   assert.doesNotMatch(adminRoute, /drainEquipmentWorkshopDiscordDms/);
   assert.doesNotMatch(adminRoute, /\bafter\(/);
 });

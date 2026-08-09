@@ -7,7 +7,7 @@
 
 import "./init";
 
-import { ObjectId } from "mongodb";
+import { ObjectId, type ClientSession } from "mongodb";
 import { hash, compare } from "bcryptjs";
 
 import type { User, CreateUserInput } from "@stargate/shared-db";
@@ -29,6 +29,8 @@ export {
   deleteUser,
   countUsers,
   countUsersByRole,
+  countActiveUsersByRole,
+  lockGmMembershipInvariant,
   listUsers,
   upsertDiscordUser,
 } from "@stargate/shared-db";
@@ -62,10 +64,14 @@ function generateRandomPassword(): string {
  */
 export async function createUser(
   input: CreateUserInput,
+  options: { session?: ClientSession } = {},
 ): Promise<{ userId: string; plainPassword: string }> {
   const col = await usersCol();
 
-  const existing = await col.findOne({ username: input.username });
+  const existing = await col.findOne(
+    { username: input.username },
+    { session: options.session },
+  );
   if (existing) {
     throw new Error(`이미 존재하는 username: ${input.username}`);
   }
@@ -94,7 +100,7 @@ export async function createUser(
     updatedAt: now,
   };
 
-  const result = await col.insertOne(doc);
+  const result = await col.insertOne(doc, { session: options.session });
   return { userId: result.insertedId.toString(), plainPassword };
 }
 
@@ -110,14 +116,19 @@ export async function verifyPassword(
 export async function updatePassword(
   userId: string,
   newPassword: string,
+  options: { session?: ClientSession } = {},
 ): Promise<void> {
   const col = await usersCol();
   const hashedPassword = await hash(newPassword, BCRYPT_ROUNDS);
 
-  await col.updateOne(
+  const result = await col.updateOne(
     { _id: new ObjectId(userId) },
     { $set: { hashedPassword, passwordChangedAt: new Date(), updatedAt: new Date() } },
+    { session: options.session },
   );
+  if (result.matchedCount !== 1) {
+    throw new Error("사용자를 찾을 수 없습니다.");
+  }
 }
 
 /**
@@ -126,9 +137,9 @@ export async function updatePassword(
  */
 export async function resetUserPassword(
   userId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<{ plainPassword: string }> {
   const plainPassword = generateRandomPassword();
-  await updatePassword(userId, plainPassword);
+  await updatePassword(userId, plainPassword, options);
   return { plainPassword };
 }
-

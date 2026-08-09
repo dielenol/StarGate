@@ -20,37 +20,38 @@
 | 위키, 진영, 보고서, VTT | StarGateV2 | StarGateV2 | KEEP | 변경 시 invalidate 신호만 worker가 전달 |
 | 공개 문의/지원 | StarGateV2 | StarGateV2 | KEEP | 현재 닫힘; 재개장 전 영속 접수함 별도 설계 |
 
-## Vercel 예약 작업
+## 예약 작업과 웹 수동 복구
 
 | 기존 진입점 | 기능 | 목표 | 상태 | 컷오버 증거 |
 |---|---|---|---|---|
-| `/api/cron/shop/refresh` | 편의점 일일 재고 | `shop.refresh` | CODE_READY | 품목·일자당 갱신 1회 |
-| `/api/cron/stocks/tick` + `LEGACY_CRON_STOCKS_ENABLED` | 주식 일일 변동 | `stocks.tick` | CODE_READY | 날짜·ticker당 가격/history 1회, old owner 독립 차단 |
-| 같은 route + `LEGACY_CRON_DAILY_ALLOWANCE_ENABLED` | 일일 직급 수당 | `credits.daily-allowance` | CODE_READY | 캐릭터·일자당 ledger 1건, 알림 실패·old owner 독립 |
-| `/api/cron/sessions/reminders` | ERP 세션 알림 | `sessions.erp-reminders` | CODE_READY | ERP/Discord가 각자 dedupe되어 1회 |
-| 공방 DM cron route | 아메리 DM drain | 상시 consumer | CODE_READY | 403/429/timeout/lease/restart/nonce 검증 |
+| `/api/cron/shop/refresh` | 편의점 일일 재고 | `shop.refresh` | CUTOVER | Dokploy job이 정기 owner, 웹 route는 인증된 수동 복구 |
+| `/api/cron/stocks/tick?job=stocks` | 주식 일일 변동 | `stocks.tick` | CUTOVER | 날짜·ticker당 가격/history 1회, 웹 route는 명시 job 수동 복구 |
+| `/api/cron/stocks/tick?job=daily-allowance` | 일일 직급 수당 | `credits.daily-allowance` | CUTOVER | 캐릭터·일자당 ledger 1건, 웹 route는 명시 job 수동 복구 |
+| `/api/cron/sessions/reminders` | ERP 세션 알림 | `sessions.erp-reminders` | CUTOVER | Dokploy job이 정기 owner, 웹 route는 인증된 수동 복구 |
+| 삭제된 공방 DM cron route | 아메리 DM drain | 상시 consumer | RETIRED | worker consumer만 lease/재시도/nonce를 소유 |
 
-네 CLI 이름과 KST slot 계약, `scheduled_job_runs` coordinator, 도메인 operation 연결까지 구현되어 있다. 결합돼 있던 Vercel 주식/수당 route는 job별 flag로 owner만 독립 전환하며 cron 항목을 늘리지 않는다. 실제 active 실행과 기존 Vercel owner 비활성화는 운영 승인 전까지 하지 않는다.
+네 CLI 이름과 KST slot 계약, `scheduled_job_runs` coordinator, 도메인 operation 연결까지 구현되어 있다. 정기 owner는 Dokploy worker 하나이며 남은 `/api/cron/*` route는 Vercel schedule이 아닌 인증된 수동 복구 진입점이다. 주식/수당 복구 route는 `job`을 지정하지 않으면 mutation하지 않는다.
 
 ## 비대화형 외부 전달
 
 | 전달 | 현재 방식 | 목표 | 상태 | 비고 |
 |---|---|---|---|---|
-| 아메리 공방 DM | 공방 요청 내 embedded outbox | worker 전용 consumer | CODE_READY | 기존 10분 lease, 5분 backoff, nonce 유지 |
+| 아메리 공방 DM | 공방 요청 내 embedded outbox | worker 전용 consumer | CODE_READY | 10분 lease, 5분 backoff, nonce 유지; 웹 drain 제거 |
 | 연구 Discord 카드 | desired-state | worker consumer | CODE_READY | revision/lease와 `nextAttemptAt` 5분 retry 유지 |
-| 편의점 입고 공지 | desired-state | worker consumer | CODE_READY | 기존 revision/lease/backoff 유지 |
-| 주식 공시 | desired-state | worker consumer | CODE_READY | 기존 revision/lease/backoff 유지 |
-| GM admin audit | route enqueue | `integration_outbox` | CODE_READY | 한 문서가 한 queue 전달 |
-| 플레이어 거래 DM | route enqueue | `integration_outbox` | CODE_READY | 발송 직전 사용자/Discord 재조회 + nonce |
-| 공방 상태 webhook/DM | route enqueue/embedded outbox | worker consumer | CODE_READY | 웹 mutation과 외부 실패 분리 |
-| 편의점 발주/입고 webhook | transaction 내 enqueue | `integration_outbox` | CODE_READY | 재고/요청 변경과 enqueue 원자적 커밋 |
-| 편의점 신제품 출시 webhook | 상품 생성 transaction 내 enqueue | `integration_outbox` | CODE_READY | 공개·판매 가능 신제품 생성과 enqueue 원자적 커밋 |
-| 캐릭터 변경 감사 | route enqueue | `integration_outbox` | CODE_READY | 변경 이력은 웹 transaction 유지 |
-| 수동 주가 조정 공시 | route enqueue | `integration_outbox` | CODE_READY | 직접 webhook 제거, 전용 stock webhook 사용 |
+| 편의점 입고 공지 | desired-state | worker consumer | CODE_READY | singleton revision/lease/backoff 유지 |
+| 주식 공시 | desired-state | worker consumer | CODE_READY | singleton revision/lease/backoff 유지 |
+| GM admin audit | transaction enqueue | `integration_outbox` | CODE_READY | mutation과 감사 enqueue를 같은 session에 기록 |
+| 플레이어 거래 DM | transaction enqueue | `integration_outbox` | CODE_READY | 자산 mutation과 enqueue 원자적 커밋, 발송 직전 사용자 재조회 + nonce |
+| 공방 상태 webhook/DM | transaction enqueue/embedded outbox | worker consumer | CODE_READY | 접수부터 수령까지 workflow와 위임 단계를 함께 기록 |
+| 중앙 workflow 상태 | transaction enqueue | `integration_outbox` | CODE_READY | 공방·거래·발주·연구·관료 표결 단계와 위임 담당 추적 |
+| 편의점 발주/입고 webhook | transaction enqueue | `integration_outbox` | CODE_READY | 요청/재고 변경과 enqueue 원자적 커밋 |
+| 편의점 신제품 출시 webhook | 상품 생성 transaction enqueue | `integration_outbox` | CODE_READY | 공개·판매 가능 신제품 생성과 enqueue 원자적 커밋 |
+| 캐릭터 변경 감사 | transaction enqueue | `integration_outbox` | CODE_READY | 변경·변경 이력·감사 enqueue 원자적 커밋 |
+| 수동 주가 조정 공시 | transaction enqueue | `integration_outbox` | CODE_READY | 직접 webhook 제거, 전용 stock webhook 사용 |
 
 production 코드의 `after()` 직접 외부 전송은 제거했다. 내부 ERP 알림 생성은 외부 전달과 분리하고, 편의점 입고처럼 경제 transaction과 강하게 결합된 enqueue는 같은 Mongo session에 포함했다.
 
-`integration_outbox`의 생성/claim/complete/fail, 지수 backoff, 최대 8회 후 DEAD persistence와 handler registry가 구현되어 있다. webhook 8종과 거래 DM handler가 있으며 `WORKER_OUTBOX_KINDS`에 명시한 kind만 claim한다. 거래 DM은 발송 직전 사용자의 ACTIVE 상태와 Discord 연결을 재조회하고 nonce를 강제한다. 활성 kind가 0개이거나 필요한 secret이 없으면 어떤 문서도 claim하기 전에 기동을 거부한다.
+`integration_outbox`의 생성/claim/complete/fail, 지수 backoff, 최대 8회 후 DEAD persistence와 typed handler/channel registry가 구현되어 있다. webhook 9종과 거래 DM handler가 있으며 active worker는 `WORKER_OUTBOX_KINDS=all`이 아니거나 필요한 destination secret이 없으면 어떤 문서도 claim하기 전에 기동을 거부한다. 제한된 staging 검증만 `WORKER_OUTBOX_ALLOW_PARTIAL=true`를 명시해 부분 kind를 허용한다. 거래 DM은 발송 직전 사용자의 ACTIVE 상태와 Discord 연결을 재조회하고 nonce를 강제한다.
 
 `integration_outbox`의 dedupe는 queue enqueue/claim 중복을 막지만 Discord webhook API에는 bot message의 `enforce_nonce`와 같은 계약이 없다. 따라서 webhook은 네트워크 응답과 완료 기록 사이 장애 구간에서 외부 at-least-once 가능성이 남는다. 아메리·연구·입고·공시 desired-state는 첫 이관에서 범용 outbox로 재작성하지 않았고, 기존 5분 retry를 계속 사용하므로 8회 DEAD 정책 대상이 아니다.
 
@@ -62,9 +63,9 @@ production 코드의 `after()` 직접 외부 전송은 제거했다. 내부 ERP 
 | 길드 멤버 조회/캐시 | registra-bot | KEEP | Gateway 권한과 캐시 필요 |
 | 자동 마감/결과 메시지/PNG | registra-bot | KEEP | 메시지 수정과 Puppeteer 필요. 불확실 전달·legacy pending은 격리 후 수동 reconciliation |
 | Registra Discord 리마인드 | registra-bot | KEEP | 기존 reminder sent/lease를 Discord 전용으로 사용 |
-| ERP Registra 세션 알림 | worker | CODE_READY | Discord sent/lease를 소비하지 않고 notification dedupeKey 사용 |
+| ERP Registra 세션 알림 | worker | CUTOVER | Discord sent/lease를 소비하지 않고 notification dedupeKey 사용 |
 | TRPG bot/web | 기존 앱 | KEEP | 이관 범위 밖, shared-db 호환만 보장 |
-| ERP TRPG 세션 알림 | worker | CODE_READY | TRPG `reminderSentAt`과 독립 dedupeKey 사용 |
+| ERP TRPG 세션 알림 | worker | CUTOVER | TRPG `reminderSentAt`과 독립 dedupeKey 사용 |
 
 ## 실시간 resource
 

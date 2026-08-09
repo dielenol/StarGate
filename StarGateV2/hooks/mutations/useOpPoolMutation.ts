@@ -1,6 +1,12 @@
+import { useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
+import {
+  clearRetainedIdempotencyOperation,
+  retainIdempotencyOperation,
+  type RetainedIdempotencyOperation,
+} from "@/lib/query/idempotency";
 
 /**
  * 작전 크레딧 풀 (OP POOL) 운영 mutation.
@@ -12,7 +18,7 @@ import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
  * action="adjust" — amount(0 아닌 number, 음수 = 감액) 가산. 풀 부재 → "POOL_NOT_FOUND".
  *                   감액 시 잔액 부족 + allowNegative=false → "POOL_INSUFFICIENT".
  *
- * description 은 받기만 하고 현 단계 서버에서 미보존(향후 op_pool_audits 컬렉션 도입 대비).
+ * description 은 서버의 durable GM 감사 outbox에 기록된다.
  *
  * onSuccess: opPool / kpi 캐시 무효화 (KPI 카드의 OP 풀 잔액 동기화).
  */
@@ -44,12 +50,25 @@ export class OpPoolMutationError extends Error {
 
 export function useOpPoolMutation() {
   const queryClient = useQueryClient();
+  const retainedOperation = useRef<RetainedIdempotencyOperation | null>(null);
+
+  function fingerprint(input: OpPoolInput): string {
+    return JSON.stringify(input);
+  }
 
   return useMutation({
     mutationFn: async (input: OpPoolInput) => {
+      retainedOperation.current = retainIdempotencyOperation(
+        retainedOperation.current,
+        "op-pool",
+        fingerprint(input),
+      );
       const res = await fetch("/api/erp/admin/credits/op-pool", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": retainedOperation.current.key,
+        },
         body: JSON.stringify(input),
       });
       if (!res.ok) {
@@ -65,10 +84,33 @@ export function useOpPoolMutation() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, input) => {
+      const current = retainedOperation.current;
+      if (current?.fingerprint === fingerprint(input)) {
+        retainedOperation.current = clearRetainedIdempotencyOperation(
+          current,
+          current.key,
+        );
+      }
       queryClient.invalidateQueries({ queryKey: creditsAdminKeys.opPool() });
       // KPI 카드의 OP 풀 잔액도 동기화.
       queryClient.invalidateQueries({ queryKey: creditsAdminKeys.kpi() });
+    },
+    onError: (error, input) => {
+      // HTTP 응답을 받은 실패는 commit 응답 유실이 아니므로 다음
+      // 제출에서 새 key를 쓴다. 처리 중 충돌은 기존 key로 재조회한다.
+      if (
+        error instanceof OpPoolMutationError &&
+        error.code !== "DUPLICATE_REQUEST"
+      ) {
+        const current = retainedOperation.current;
+        if (current?.fingerprint === fingerprint(input)) {
+          retainedOperation.current = clearRetainedIdempotencyOperation(
+            current,
+            current.key,
+          );
+        }
+      }
     },
   });
 }

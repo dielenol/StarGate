@@ -4,10 +4,11 @@
  * 비밀번호 해싱/검증 함수는 StarGateV2에 유지됩니다 (bcryptjs 의존).
  */
 
-import { MongoServerError, ObjectId } from "mongodb";
+import { MongoServerError, ObjectId, type ClientSession } from "mongodb";
 
 import type { User, UserRole, UserStatus, UserPublic } from "../types/index.js";
 import { usersCol } from "../collections.js";
+import { getDb } from "../client.js";
 
 function toPublic(user: User): UserPublic {
   return {
@@ -51,10 +52,16 @@ export async function findUsersByDiscordIds(
   return col.find({ discordId: { $in: discordIds } }).toArray();
 }
 
-export async function findUserById(id: string): Promise<User | null> {
+export async function findUserById(
+  id: string,
+  options: { session?: ClientSession } = {},
+): Promise<User | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await usersCol();
-  return col.findOne({ _id: new ObjectId(id) });
+  return col.findOne(
+    { _id: new ObjectId(id) },
+    { session: options.session },
+  );
 }
 
 /**
@@ -76,29 +83,38 @@ export async function findUsersByIds(ids: string[]): Promise<User[]> {
 
 export async function updateUserRole(
   userId: string,
-  role: UserRole
-): Promise<void> {
+  role: UserRole,
+  options: { session?: ClientSession } = {},
+): Promise<boolean> {
   const col = await usersCol();
-  await col.updateOne(
+  const result = await col.updateOne(
     { _id: new ObjectId(userId) },
-    { $set: { role, updatedAt: new Date() } }
+    { $set: { role, updatedAt: new Date() } },
+    { session: options.session },
   );
+  return result.matchedCount === 1;
 }
 
 export async function updateUserStatus(
   userId: string,
-  status: UserStatus
-): Promise<void> {
+  status: UserStatus,
+  options: { session?: ClientSession } = {},
+): Promise<boolean> {
   const col = await usersCol();
-  await col.updateOne(
+  const result = await col.updateOne(
     { _id: new ObjectId(userId) },
-    { $set: { status, updatedAt: new Date() } }
+    { $set: { status, updatedAt: new Date() } },
+    { session: options.session },
   );
+  return result.matchedCount === 1;
 }
 
-export async function unlinkDiscord(userId: string): Promise<void> {
+export async function unlinkDiscord(
+  userId: string,
+  options: { session?: ClientSession } = {},
+): Promise<boolean> {
   const col = await usersCol();
-  await col.updateOne(
+  const result = await col.updateOne(
     { _id: new ObjectId(userId) },
     {
       $set: {
@@ -108,15 +124,21 @@ export async function unlinkDiscord(userId: string): Promise<void> {
         discordAvatar: null,
         updatedAt: new Date(),
       },
-    }
+    },
+    { session: options.session },
   );
+  return result.matchedCount === 1;
 }
 
 export async function deleteUser(
-  userId: string
+  userId: string,
+  options: { session?: ClientSession } = {},
 ): Promise<{ deletedCount: number }> {
   const col = await usersCol();
-  const result = await col.deleteOne({ _id: new ObjectId(userId) });
+  const result = await col.deleteOne(
+    { _id: new ObjectId(userId) },
+    { session: options.session },
+  );
   return { deletedCount: result.deletedCount };
 }
 
@@ -155,9 +177,56 @@ export async function countUsers(): Promise<number> {
   return col.countDocuments();
 }
 
-export async function countUsersByRole(role: UserRole): Promise<number> {
+export async function countUsersByRole(
+  role: UserRole,
+  options: { session?: ClientSession } = {},
+): Promise<number> {
   const col = await usersCol();
-  return col.countDocuments({ role });
+  return col.countDocuments({ role }, { session: options.session });
+}
+
+export async function countActiveUsersByRole(
+  role: UserRole,
+  options: { session?: ClientSession } = {},
+): Promise<number> {
+  const col = await usersCol();
+  return col.countDocuments(
+    { role, status: "ACTIVE" },
+    { session: options.session },
+  );
+}
+
+/**
+ * active GM 감소 경로를 하나의 write conflict 경계로 직렬화한다.
+ * `_id` 기본 unique 제약을 쓰므로 별도 index는 필요 없다.
+ */
+export async function lockGmMembershipInvariant(
+  session: ClientSession,
+): Promise<void> {
+  const now = new Date();
+  try {
+    await (await getDb())
+      .collection<{
+        _id: "gm-membership";
+        revision: number;
+        createdAt: Date;
+        updatedAt: Date;
+      }>("system_invariants")
+      .updateOne(
+        { _id: "gm-membership" },
+        {
+          $inc: { revision: 1 },
+          $set: { updatedAt: now },
+          $setOnInsert: { createdAt: now },
+        },
+        { upsert: true, session },
+      );
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) {
+      error.addErrorLabel("TransientTransactionError");
+    }
+    throw error;
+  }
 }
 
 export async function listUsers(): Promise<UserPublic[]> {

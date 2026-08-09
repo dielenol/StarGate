@@ -1,0 +1,15 @@
+export const ROOT_ALLOWED_FIELDS_ADMIN = new Set<string>([
+  "codename",
+  "tier",
+  "role",
+  "agentLevel",
+  "department",
+  "previewImage",
+  "pixelCharacterImage",
+  "warningVideo",
+  "ownerId",
+  "isPublic",
+  "factionCode",
+  "institutionCode",
+  "clearanceOverrides",
+]);

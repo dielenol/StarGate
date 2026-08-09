@@ -9,7 +9,7 @@ import {
   type MasterItem,
 } from "@stargate/shared-db";
 
-import type { GmAdminAuditWebhookPayload } from "@/lib/discord";
+import type { GmAdminAuditWebhookPayload } from "@/lib/outbox/contracts";
 
 import {
   getMrBeastLotteryReadiness,

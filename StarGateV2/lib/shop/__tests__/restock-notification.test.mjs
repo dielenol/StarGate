@@ -7,8 +7,11 @@ const REFRESH_ROUTE = new URL(
   import.meta.url,
 );
 const NOTIFICATION = new URL("../restock-notification.ts", import.meta.url);
-const DISCORD = new URL("../../discord.ts", import.meta.url);
-const VERCEL_CONFIG = new URL("../../../vercel.json", import.meta.url);
+const OUTBOX = new URL("../../outbox/integration.ts", import.meta.url);
+const WORKER_JOBS = new URL(
+  "../../../../stargate-worker/src/jobs/default-handlers.ts",
+  import.meta.url,
+);
 
 test("shop refresh applies daily stock before requesting the canonical notice", async () => {
   const source = await readFile(REFRESH_ROUTE, "utf8");
@@ -42,21 +45,17 @@ test("daily shop restock uses one singleton revision and lease state", async () 
   assert.doesNotMatch(source, /DISCORD_BOT_TOKEN|webhook-message-pruner/);
 });
 
-test("shop restock is refreshed only by the daily shop cron", async () => {
-  const config = await readFile(VERCEL_CONFIG, "utf8");
+test("shop restock scheduled ownership belongs to the worker", async () => {
+  const source = await readFile(WORKER_JOBS, "utf8");
   assert.match(
-    config,
-    /"path": "\/api\/cron\/shop\/refresh"[\s\S]*"schedule": "0 2 \* \* \*"/,
+    source,
+    /jobName: "shop\.refresh"[\s\S]*ensureDailyStockRefresh\([\s\S]*requestDailyShopRestockState\(/,
   );
-  assert.doesNotMatch(config, /\/api\/cron\/shop\/discord-restock/);
 });
 
-test("manual reorder and fulfillment messages remain outside canonical replacement", async () => {
-  const source = await readFile(DISCORD, "utf8");
-  assert.match(source, /notifyShopReorderRequest/);
-  assert.match(source, /notifyShopReorderFulfilled/);
-  assert.doesNotMatch(
-    source.slice(source.indexOf("notifyShopReorderRequest")),
-    /deleteDailyShopRestockDiscordMessage/,
-  );
+test("manual reorder and fulfillment messages use durable outbox kinds", async () => {
+  const source = await readFile(OUTBOX, "utf8");
+  assert.match(source, /kind: "SHOP_REORDER_REQUEST_WEBHOOK"/);
+  assert.match(source, /kind: "SHOP_REORDER_FULFILLED_WEBHOOK"/);
+  assert.doesNotMatch(source, /notifyShopReorderRequest|notifyShopReorderFulfilled/);
 });

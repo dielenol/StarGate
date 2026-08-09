@@ -41,14 +41,15 @@ flowchart LR
 | Change Stream checkpoint | 구현 | `worker_checkpoints` persistent adapter가 기본, 손상 token은 폐기 후 전체 invalidate |
 | shadow consumer | 구현 | due 수만 읽고 claim·외부 전송·경제 mutation은 하지 않음 |
 | active 예약 job | 구현 | 네 CLI, slot lease heartbeat/token fencing, 최종 시도 crash DEAD 회수 |
-| active 범용 outbox | 구현 | opt-in kind만 claim, 지수 backoff, 최대 8회 및 만료 lease DEAD 회수 |
+| active 범용 outbox | 구현 | 전체 kind fail-fast 등록, 지수 backoff, 최대 8회 및 만료 lease DEAD 회수 |
 | active desired-state/아메리 | 구현 | 기존 embedded/desired-state lease와 5분 retry를 유지한 opt-in consumer |
+| 운영 heartbeat/연동 경보 | 구현 | secret 없는 활성 kind 요약을 Mongo singleton에 기록하고 지연·DEAD·lease·봇 위임 오류를 운영 webhook으로 경보 |
 | ERP realtime client | 구현 | `off/observe/primary`, 연결 상태별 polling fallback, 100ms Query batch, 알림 toast |
 | Registra finalization | 구현 | 불변 trigger/operation key, lease/token/nonce, `DELIVERY_UNKNOWN`·legacy 격리로 자동 중복 발송 차단 |
 | legacy `tia_bot` | 제거 | 코드·이미지만 삭제, 과거 문서 archive, Mongo 데이터 유지 |
 | Dokploy webhook workflow | 구현 | `main`의 worker 영향 경로는 자동 배포, 초기 shadow 배포는 수동 확인 뒤 호출 |
 
-코드 기본값은 `WORKER_MODE=shadow`다. shadow도 Change Stream 재시작을 위해 `worker_checkpoints`만 기록하며 경제 상태, queue 상태, 외부 전달은 변경하지 않는다. 실제 배포 모드는 Dokploy 환경 설정을 따르고, active 상시 consumer는 `WORKER_CONSUMERS`, 범용 outbox kind는 `WORKER_OUTBOX_KINDS`에 각각 명시한 값만 claim한다.
+코드 기본값은 `WORKER_MODE=shadow`다. shadow도 Change Stream 재시작을 위해 `worker_checkpoints`와 secret 없는 `worker_runtime_status` heartbeat만 기록하며 경제 상태, queue 상태, 외부 전달은 변경하지 않는다. 실제 배포 모드는 Dokploy 환경 설정을 따른다. active 상시 consumer는 `WORKER_CONSUMERS`로 선택하고, 범용 outbox는 누락 drift를 막기 위해 `WORKER_OUTBOX_KINDS=all`을 요구한다.
 
 초기 shadow 검증을 마친 뒤에는 `main`에 `stargate-worker/**`, `packages/core/**`, `packages/shared-db/**` 또는 관련 workspace·workflow 파일이 변경되면 GitHub Actions가 Dokploy worker webhook을 자동 호출한다. 배포 모드는 저장소가 아니라 Dokploy의 `WORKER_MODE` 설정을 그대로 따른다.
 
@@ -124,17 +125,19 @@ StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
 
 실제 값은 저장소에 기록하지 않는다. 전체 목록은 [`stargate-worker/.env.example`](../../stargate-worker/.env.example)을 따른다.
 
-- worker: `WORKER_MODE`, `WORKER_REPLICA_COUNT=1`, `WORKER_HOST`, `WORKER_PORT`, `WORKER_POLL_INTERVAL_MS`, `WORKER_CONSUMERS`, `WORKER_OUTBOX_KINDS`
+- worker: `WORKER_MODE`, `WORKER_REPLICA_COUNT=1`, `WORKER_HOST`, `WORKER_PORT`, `WORKER_POLL_INTERVAL_MS`, `WORKER_CONSUMERS`, `WORKER_OUTBOX_KINDS=all`
 - MongoDB: `MONGODB_URI`, `MONGODB_DB_NAME`, `MONGODB_MAX_POOL_SIZE`
 - realtime: `REALTIME_TICKET_SECRET`, `REALTIME_TICKET_ISSUER`, `REALTIME_TICKET_AUDIENCE`, `REALTIME_ALLOWED_ORIGINS`, `REALTIME_MAX_PAYLOAD_BYTES`, `REALTIME_MAX_CONNECTIONS`, `REALTIME_MAX_CONNECTIONS_PER_USER`
 - web realtime client: `REALTIME_CLIENT_MODE=off|observe|primary`
-- delivery: `DISCORD_WEBHOOK_*`, `REGISTRAR_DISCORD_BOT_TOKEN`, `NEXT_PUBLIC_SITE_URL`
+- delivery: `DISCORD_WEBHOOK_AUDIT_URL`, `DISCORD_WEBHOOK_WORKFLOW_URL`, `DISCORD_WEBHOOK_OPS_URL`, `DISCORD_WEBHOOK_SHOP_URL`, `DISCORD_WEBHOOK_STOCK_URL`, `REGISTRAR_DISCORD_BOT_TOKEN`, `NEXT_PUBLIC_SITE_URL`
 
 `REALTIME_TICKET_SECRET`은 StarGateV2의 ticket 발급 환경과 동일한 최소 32바이트 secret이어야 한다. 값을 로그, CI 출력, 문서에 남기지 않는다.
 
 `WORKER_CONSUMERS`는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`의 쉼표 구분 opt-in 목록이다. 필요한 Discord secret이 없으면 claim 전에 기동을 거부한다.
 
-`WORKER_OUTBOX_KINDS`는 별도의 opt-in 목록이다. 지원 값은 `GM_ADMIN_AUDIT`, `CHARACTER_EDIT_WEBHOOK`, `EQUIPMENT_WORKSHOP_WEBHOOK`, `SHOP_REORDER_REQUEST_WEBHOOK`, `SHOP_REORDER_FULFILLED_WEBHOOK`, `SHOP_PRODUCT_LAUNCH_WEBHOOK`, `MRBEAST_LOTTERY_WINNER_WEBHOOK`, `STOCK_MANUAL_INTERVENTION_WEBHOOK`, `PLAYER_TRADE_DM`이다. 활성화한 kind에 필요한 webhook/bot token이 없으면 worker는 outbox를 claim하기 전에 기동을 거부한다.
+`WORKER_OUTBOX_KINDS`는 active에서 `all`을 사용한다. 지원 값은 `GM_ADMIN_AUDIT`, `CHARACTER_EDIT_WEBHOOK`, `EQUIPMENT_WORKSHOP_WEBHOOK`, `SHOP_REORDER_REQUEST_WEBHOOK`, `SHOP_REORDER_FULFILLED_WEBHOOK`, `SHOP_PRODUCT_LAUNCH_WEBHOOK`, `MRBEAST_LOTTERY_WINNER_WEBHOOK`, `STOCK_MANUAL_INTERVENTION_WEBHOOK`, `WORKFLOW_STATUS_WEBHOOK`, `PLAYER_TRADE_DM`이다. 제한된 staging 검증만 `WORKER_OUTBOX_ALLOW_PARTIAL=true`와 명시 목록을 함께 사용할 수 있다. 활성 kind에 필요한 webhook/bot token이 없으면 worker는 outbox를 claim하기 전에 기동을 거부한다.
+
+채널 라우팅은 worker의 typed registry 한 곳에서 관리한다. 감사는 `AUDIT`, 공방 접수·발주 요청·단계 원장은 `WORKFLOW`, 편의점 입고·신제품·복권은 `SHOP`, 주가 개입은 `STOCK`, worker 자체 장애는 `OPERATIONS` destination으로 보낸다. `WORKFLOW`는 전용 URL이 없을 때 `AUDIT`으로, `OPERATIONS`는 전용 URL이 없을 때 `WORKFLOW` 또는 `AUDIT`으로만 폴백한다. 공개 접수 webhook과 예전 캐릭터별 alias는 라우팅 후보가 아니다.
 
 `integration_outbox.dedupeKey`는 queue 문서 중복을 막는다. Bot Create Message 기반 DM은 `nonce`와 `enforce_nonce`도 사용한다. 반면 Discord Execute Webhook에는 같은 nonce 계약이 없으므로, 2xx 응답 직후 프로세스가 종료되는 매우 짧은 구간까지 외부 webhook 정확히 한 번을 보장하지는 못한다. 이 전달은 queue 수준 멱등 + 외부 at-least-once로 분류한다. 엄격한 외부 exactly-once가 필요하면 bot channel 전송 또는 수신측 idempotency/reconciliation을 별도 설계한다.
 
@@ -159,7 +162,7 @@ pnpm db:preflight-worker-indexes
 - GitHub Dokploy webhook 실제 호출
 - `WORKER_MODE=active` 전환
 - Discord DM/webhook 발송
-- Vercel cron 제거 또는 owner 전환
+- Dokploy schedule owner 변경 또는 웹 수동 복구 route 호출
 - 운영 DB의 크레딧, 인벤토리, 재고, 주식, 알림 변경
 
 세부 순서는 [컷오버 runbook](./cutover-runbook.md), 기능별 소유권은 [이관 매트릭스](./migration-matrix.md)를 따른다.

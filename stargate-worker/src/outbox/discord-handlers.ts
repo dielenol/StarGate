@@ -9,6 +9,7 @@ import {
   INTEGRATION_OUTBOX_KINDS,
   findCharacterById,
   findUserById,
+  getDb,
   type IntegrationOutboxEvent,
   type IntegrationOutboxKind,
   type User,
@@ -20,6 +21,10 @@ import {
   sendDiscordWebhook,
   type DiscordWebhookPayload,
 } from "./discord-client.js";
+import {
+  DiscordRouteConfigurationError,
+  resolveIntegrationWebhookUrl,
+} from "./discord-routing.js";
 import { IntegrationOutboxHandlerRegistry } from "./handler-registry.js";
 import type { IntegrationOutboxDeliveryHandler } from "./port.js";
 
@@ -41,9 +46,12 @@ interface DiscordHandlerDependencies {
   fetchImpl?: typeof fetch;
   findCharacter?: typeof findCharacterById;
   findUser?: (id: string) => Promise<User | null>;
+  isWorkflowEventCurrent?: (
+    payload: Record<string, unknown>,
+  ) => Promise<boolean>;
 }
 
-export class IntegrationOutboxConfigurationError extends Error {
+export class IntegrationOutboxConfigurationError extends DiscordRouteConfigurationError {
   constructor(message: string) {
     super(message);
     this.name = "IntegrationOutboxConfigurationError";
@@ -137,50 +145,25 @@ function localAssetUrl(value: unknown, env: Environment): string | null {
   return new URL(value, `${siteBaseUrl(env)}/`).toString();
 }
 
-function commonWebhookUrl(env: Environment): string | undefined {
-  return (
-    env.DISCORD_WEBHOOK_CHAR_EDIT_URL?.trim() ||
-    env.DISCORD_WEBHOOK_URL?.trim()
-  );
-}
-
-function selfEditWebhookUrl(env: Environment): string | undefined {
-  return (
-    env.DISCORD_WEBHOOK_CHAR_EDIT_URL?.trim() ||
-    env.DISCORD_WEBHOOK_CHAR_SELF_EDIT_URL?.trim() ||
-    env.DISCORD_WEBHOOK_CHARACTER_SELF_EDIT_URL?.trim() ||
-    env.DISCORD_WEBHOOK_URL?.trim()
-  );
-}
-
 function webhookUrlFor(
   kind: IntegrationOutboxKind,
   env: Environment,
 ): string {
-  const value =
-    kind === "STOCK_MANUAL_INTERVENTION_WEBHOOK"
-      ? env.DISCORD_WEBHOOK_STOCK_URL?.trim() ||
-        env.DISCORD_STOCK_WEBHOOK_URL?.trim()
-      : kind === "SHOP_REORDER_FULFILLED_WEBHOOK" ||
-          kind === "SHOP_PRODUCT_LAUNCH_WEBHOOK" ||
-          kind === "MRBEAST_LOTTERY_WINNER_WEBHOOK"
-      ? env.DISCORD_WEBHOOK_SHOP_URL?.trim()
-      : kind === "SHOP_REORDER_REQUEST_WEBHOOK" ||
-          kind === "EQUIPMENT_WORKSHOP_WEBHOOK"
-        ? selfEditWebhookUrl(env)
-        : commonWebhookUrl(env);
-  if (!value) {
+  if (kind === "PLAYER_TRADE_DM") {
     throw new IntegrationOutboxConfigurationError(
-      `${kind} Discord webhook 환경변수가 설정되지 않았습니다.`,
+      "PLAYER_TRADE_DM은 Discord webhook route가 아닙니다.",
     );
   }
-  const url = new URL(value);
-  if (url.protocol !== "https:" && url.protocol !== "http:") {
+  try {
+    return resolveIntegrationWebhookUrl(kind, env);
+  } catch (error) {
+    if (error instanceof DiscordRouteConfigurationError) {
+      throw new IntegrationOutboxConfigurationError(error.message);
+    }
     throw new IntegrationOutboxConfigurationError(
-      `${kind} Discord webhook URL protocol이 올바르지 않습니다.`,
+      `${kind} Discord webhook route를 해석하지 못했습니다.`,
     );
   }
-  return value;
 }
 
 function basePayload(
@@ -560,6 +543,89 @@ function buildStockManualIntervention(
   );
 }
 
+function buildWorkflowStatus(
+  payload: Record<string, unknown>,
+  env: Environment,
+): DiscordWebhookPayload {
+  const actor = record(payload.actor, "actor");
+  const workflow = text(payload.workflow, "workflow", 50);
+  const labels: Record<string, string> = {
+    EQUIPMENT_WORKSHOP: "공방",
+    PLAYER_TRADE: "플레이어 거래",
+    SHOP_REORDER: "편의점 발주",
+    BUREAUCRAT_VOTE: "관료 표결",
+    EQUIPMENT_RESEARCH: "장비 연구",
+    OPERATION_CREDIT: "작전 크레딧",
+  };
+  const workflowLabel = labels[workflow];
+  if (!workflowLabel) {
+    throw new Error(`지원하지 않는 workflow입니다: ${workflow}`);
+  }
+  const stage = text(payload.stage, "stage", 80);
+  const fields: DiscordWebhookPayload["embeds"][number]["fields"] = [
+    { name: "단계", value: stage, inline: true },
+    {
+      name: "처리 주체",
+      value: `${text(actor.displayName, "actor.displayName", 100)} · ${text(actor.kind, "actor.kind", 20)}`,
+      inline: true,
+    },
+    { name: "진행 내용", value: text(payload.summary, "summary") },
+  ];
+  const target = optionalText(payload.target);
+  if (target) fields.push({ name: "대상", value: target });
+  if (Array.isArray(payload.delegatedTo) && payload.delegatedTo.length > 0) {
+    fields.push({
+      name: "위임 흐름",
+      value: payload.delegatedTo
+        .slice(0, 10)
+        .map((value) => text(value, "delegatedTo", 100))
+        .join(" → "),
+    });
+  }
+  if (Array.isArray(payload.details)) {
+    for (const item of payload.details.slice(0, 8)) {
+      const detail = record(item, "details");
+      fields.push({
+        name: text(detail.name, "details.name", FIELD_NAME_MAX),
+        value: text(detail.value, "details.value"),
+        ...(typeof detail.inline === "boolean"
+          ? { inline: detail.inline }
+          : {}),
+      });
+    }
+  }
+  const urlPath = optionalText(payload.urlPath, 500);
+  const url = urlPath?.startsWith("/")
+    ? `${siteBaseUrl(env)}${urlPath}`
+    : undefined;
+  const revision =
+    typeof payload.revision === "number" && Number.isSafeInteger(payload.revision)
+      ? ` · revision ${payload.revision}`
+      : "";
+  return basePayload(
+    "StarGate Workflow Watch",
+    `${workflowLabel} 진행: ${stage}`,
+    isoTimestamp(payload.occurredAt),
+    {
+      ...(url ? { url } : {}),
+      color:
+        stage === "CANCELLED" ||
+        stage === "REJECTED" ||
+        stage === "DECLINED" ||
+        stage.endsWith("_REJECTED")
+        ? 0xd95f5f
+        : stage === "COMPLETED" ||
+            stage === "FULFILLED" ||
+            stage === "APPROVED" ||
+            stage.endsWith("_APPROVED")
+          ? 0x2fbf71
+          : 0x5ea3c5,
+      fields,
+      footer: `${text(payload.workflowId, "workflowId", 200)}${revision}`,
+    },
+  );
+}
+
 function buildWebhookPayload(
   event: IntegrationOutboxEvent,
   env: Environment,
@@ -581,9 +647,30 @@ function buildWebhookPayload(
       return buildMrBeastLotteryWinner(event.payload, env);
     case "STOCK_MANUAL_INTERVENTION_WEBHOOK":
       return buildStockManualIntervention(event.payload);
+    case "WORKFLOW_STATUS_WEBHOOK":
+      return buildWorkflowStatus(event.payload, env);
     case "PLAYER_TRADE_DM":
       throw new Error("PLAYER_TRADE_DM은 webhook payload가 아닙니다.");
   }
+}
+
+async function isWorkflowEventCurrent(
+  payload: Record<string, unknown>,
+): Promise<boolean> {
+  if (
+    payload.workflow !== "EQUIPMENT_WORKSHOP" ||
+    payload.stage !== "READY"
+  ) {
+    return true;
+  }
+  const workflowId = text(payload.workflowId, "workflowId", 200);
+  const db = await getDb();
+  const request = await db
+    .collection<{ _id: string; status: string }>(
+      "equipment_workshop_requests",
+    )
+    .findOne({ _id: workflowId }, { projection: { status: 1 } });
+  return request?.status === "IN_PROGRESS";
 }
 
 function tradeDmEvent(value: unknown): RegistrarTradeDmEvent {
@@ -621,9 +708,18 @@ function tradeDmContent(
 
 function enabledKinds(env: Environment): IntegrationOutboxKind[] {
   const raw = env.WORKER_OUTBOX_KINDS?.trim();
-  if (!raw) return [];
+  if (!raw) {
+    throw new IntegrationOutboxConfigurationError(
+      "active worker에는 WORKER_OUTBOX_KINDS=all 설정이 필요합니다.",
+    );
+  }
+  if (raw.toLowerCase() === "all") {
+    return [...INTEGRATION_OUTBOX_KINDS];
+  }
   const allowed = new Set<string>(INTEGRATION_OUTBOX_KINDS);
-  return [...new Set(raw.split(",").map((value) => value.trim()))].map(
+  const values = [...new Set(raw.split(",").map((value) => value.trim()))]
+    .filter(Boolean)
+    .map(
     (value) => {
       if (!allowed.has(value)) {
         throw new IntegrationOutboxConfigurationError(
@@ -633,6 +729,19 @@ function enabledKinds(env: Environment): IntegrationOutboxKind[] {
       return value as IntegrationOutboxKind;
     },
   );
+  if (
+    env.WORKER_OUTBOX_ALLOW_PARTIAL?.trim().toLowerCase() !== "true" &&
+    values.length !== INTEGRATION_OUTBOX_KINDS.length
+  ) {
+    const configured = new Set(values);
+    const missing = INTEGRATION_OUTBOX_KINDS.filter(
+      (kind) => !configured.has(kind),
+    );
+    throw new IntegrationOutboxConfigurationError(
+      `WORKER_OUTBOX_KINDS가 전체 delivery kind를 포함해야 합니다. 누락: ${missing.join(", ")}. 전체 활성화는 all을 사용하세요.`,
+    );
+  }
+  return values;
 }
 
 export function createDiscordIntegrationOutboxHandlers(
@@ -642,6 +751,8 @@ export function createDiscordIntegrationOutboxHandlers(
   const fetchImpl = dependencies.fetchImpl ?? fetch;
   const findCharacter = dependencies.findCharacter ?? findCharacterById;
   const findUser = dependencies.findUser ?? findUserById;
+  const workflowEventIsCurrent =
+    dependencies.isWorkflowEventCurrent ?? isWorkflowEventCurrent;
   const handlers: IntegrationOutboxDeliveryHandler[] = [];
 
   for (const kind of enabledKinds(env)) {
@@ -715,6 +826,27 @@ export function createDiscordIntegrationOutboxHandlers(
           await sendDiscordWebhook(
             webhookUrl,
             buildMrBeastLotteryWinner(event.payload, env),
+            fetchImpl,
+          );
+        },
+      });
+      continue;
+    }
+
+    if (kind === "WORKFLOW_STATUS_WEBHOOK") {
+      const webhookUrl = webhookUrlFor(kind, env);
+      handlers.push({
+        kind,
+        async deliver(event) {
+          if (event.version !== 1) {
+            throw new Error(
+              `지원하지 않는 ${kind} payload version입니다: ${event.version}`,
+            );
+          }
+          if (!(await workflowEventIsCurrent(event.payload))) return;
+          await sendDiscordWebhook(
+            webhookUrl,
+            buildWorkflowStatus(event.payload, env),
             fetchImpl,
           );
         },

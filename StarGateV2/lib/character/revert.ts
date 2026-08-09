@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util";
+
 /**
  * 캐릭터 변경 로그 되돌림(revert) 유틸 (P8)
  *
@@ -23,14 +25,49 @@
  *   - 화이트리스트(`buildUpdatePatch` 의 `allowedFields`) 가 추가 가드를 적용하므로
  *     이 함수는 화이트리스트를 의식하지 않고 모든 변경을 그대로 풀어 둔다.
  *     호출자(route handler)가 ADMIN_ALLOWED_CHARACTER_FIELDS 를 같이 넘긴다.
- *   - `before` 가 `undefined` 인 항목은 그대로 undefined 로 셋팅 — `buildUpdatePatch`
- *     가 undefined 를 자동 drop 한다 (P5/P6 화이트리스트 동작과 일치).
- *     즉, "원래 필드 자체가 없었음" 케이스는 본 revert 에서 자동으로 noop 처리.
+ *   - `changesToRevertFieldPatch`는 `before === undefined`를 Mongo `$unset`으로
+ *     분리해 "원래 필드 자체가 없었음"까지 복원한다.
  */
 
 interface ChangeEntry {
   field: string;
   before: unknown;
+}
+
+export interface CharacterRevertFieldPatch {
+  set: Record<string, unknown>;
+  unset: string[];
+}
+
+interface CurrentValueChangeEntry {
+  field: string;
+  after: unknown;
+}
+
+function valueAtPath(document: unknown, path: string): unknown {
+  let current = document;
+  for (const segment of path.split(".")) {
+    if (
+      !segment ||
+      current === null ||
+      typeof current !== "object" ||
+      !(segment in current)
+    ) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return current;
+}
+
+/** 로그 이후 같은 필드가 다시 변경되지 않았는지 확인한다. */
+export function areChangeLogAfterValuesCurrent(
+  document: unknown,
+  changes: ReadonlyArray<CurrentValueChangeEntry>,
+): boolean {
+  return changes.every(({ field, after }) =>
+    Boolean(field) && isDeepStrictEqual(valueAtPath(document, field), after),
+  );
 }
 
 /**
@@ -61,4 +98,24 @@ export function changesToRevertBody(
     cursor[segments[segments.length - 1]] = before;
   }
   return body;
+}
+
+/** 원래 없던 필드는 `$unset`, 값이 있던 필드는 flat `$set`으로 복원한다. */
+export function changesToRevertFieldPatch(
+  changes: ReadonlyArray<ChangeEntry>,
+): CharacterRevertFieldPatch {
+  const set: Record<string, unknown> = {};
+  const unset: string[] = [];
+  for (const { field, before } of changes) {
+    if (!field || typeof field !== "string") continue;
+    if (before === undefined) {
+      unset.push(field);
+      delete set[field];
+    } else {
+      set[field] = before;
+      const index = unset.indexOf(field);
+      if (index >= 0) unset.splice(index, 1);
+    }
+  }
+  return { set, unset };
 }

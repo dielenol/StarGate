@@ -26,6 +26,7 @@ import {
   quoteEquipmentResearchStart,
   type EquipmentResearchEffect,
 } from "@/lib/equipment-shop/research";
+import { enqueueEquipmentResearchWorkflowStatus } from "@/lib/equipment-shop/research-workflow";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 import {
@@ -295,6 +296,30 @@ export async function POST(request: Request) {
           },
           { session: mongoSession },
         );
+        await enqueueEquipmentResearchWorkflowStatus({
+          project,
+          stage: "STARTED",
+          revision: 0,
+          actor: {
+            kind: authResult.session.role === "GM" ? "GM" : "PLAYER",
+            displayName: authResult.session.displayName,
+          },
+          summary: `장비 연구가 시작되어 완료 예정 시각까지 진행 상태를 추적합니다.`,
+          occurredAt: startedAt,
+          dedupeToken: requestId,
+          session: mongoSession,
+        });
+        await scheduleGmAdminAudit({
+          action: "개인 장비 연구 시작",
+          actor: {
+            id: authResult.session.id,
+            displayName: authResult.session.displayName,
+            role: authResult.session.role,
+          },
+          summary: `${startQuote.cost.toLocaleString()} CR · ${startQuote.durationHours}시간`,
+          target: `${node.key} · ${targetResult.targets.map((target) => target.codename).join(", ")}`,
+          timestamp: startedAt,
+        }, { session: mongoSession });
         result = { project, balance: chargeResult.balance };
       });
     } finally {
@@ -330,18 +355,6 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-
-  await scheduleGmAdminAudit({
-    action: "개인 장비 연구 시작",
-    actor: {
-      id: authResult.session.id,
-      displayName: authResult.session.displayName,
-      role: authResult.session.role,
-    },
-    summary: `${startQuote.cost.toLocaleString()} CR · ${startQuote.durationHours}시간`,
-    target: `${node.key} · ${targetResult.targets.map((target) => target.codename).join(", ")}`,
-    timestamp: new Date(),
-  });
 
   return NextResponse.json(
     {

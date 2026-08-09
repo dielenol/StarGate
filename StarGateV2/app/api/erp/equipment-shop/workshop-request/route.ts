@@ -8,6 +8,7 @@ import { getClient } from "@/lib/db/client";
 import {
   findEquipmentWorkshopRequestById,
   findEquipmentWorkshopRequestByActiveOperationKey,
+  enqueueEquipmentWorkshopWorkflowStages,
   insertEquipmentWorkshopRequest,
   listActiveEquipmentWorkshopRequests,
   listEquipmentWorkshopOperationsRequests,
@@ -253,6 +254,14 @@ export async function POST(request: Request) {
         await insertEquipmentWorkshopRequest(requestDoc, {
           session: dbSession,
         });
+        await enqueueEquipmentWorkshopWorkflowStages({
+          request: requestDoc,
+          stage: "REQUESTED",
+          actorName: requesterName,
+          actorKind: "PLAYER",
+          occurredAt: now,
+          session: dbSession,
+        });
         await enqueueEquipmentWorkshopWebhook(
           createWebhookPayload(requestDoc),
           webhookDedupeKey,
@@ -293,6 +302,13 @@ export async function POST(request: Request) {
       createWebhookPayload(existing),
       webhookDedupeKey,
     );
+    await enqueueEquipmentWorkshopWorkflowStages({
+      request: existing,
+      stage: "REQUESTED",
+      actorName: existing.userName,
+      actorKind: "PLAYER",
+      occurredAt: existing.createdAt,
+    });
     const response: EquipmentWorkshopRequestResponse = {
       ok: true,
       kind: existing.kind,
@@ -351,11 +367,12 @@ export async function PATCH(request: Request) {
     | null;
   const requestId =
     typeof body?.requestId === "string" ? body.requestId.trim() : "";
+  const status = body?.status;
   const operatorNote =
     typeof body?.operatorNote === "string" ? body.operatorNote.trim() : "";
   if (
     !requestId ||
-    !isEquipmentWorkshopRequestStatus(body?.status) ||
+    !isEquipmentWorkshopRequestStatus(status) ||
     operatorNote.length > 1000
   ) {
     return NextResponse.json(
@@ -363,7 +380,7 @@ export async function PATCH(request: Request) {
       { status: 400 },
     );
   }
-  if (requiresEquipmentWorkshopOperatorNote(body.status) && !operatorNote) {
+  if (requiresEquipmentWorkshopOperatorNote(status) && !operatorNote) {
     return NextResponse.json(
       { error: "반려 또는 완료 처리에는 운영자 메모가 필요합니다." },
       { status: 400 },
@@ -379,10 +396,10 @@ export async function PATCH(request: Request) {
   }
   const canManuallyTransition = existing.kind === "reload"
       ? (["REQUESTED", "IN_REVIEW", "APPROVED"].includes(existing.status) &&
-          (body.status === "IN_REVIEW" || body.status === "REJECTED"))
-      : (existing.status === "REQUESTED" && body.status === "IN_REVIEW") ||
+          (status === "IN_REVIEW" || status === "REJECTED"))
+      : (existing.status === "REQUESTED" && status === "IN_REVIEW") ||
         (["REQUESTED", "IN_REVIEW", "APPROVED", "QUOTED"].includes(existing.status) &&
-          body.status === "REJECTED");
+          status === "REJECTED");
   if (!canManuallyTransition) {
     return NextResponse.json(
       {
@@ -393,21 +410,48 @@ export async function PATCH(request: Request) {
       { status: 409 },
     );
   }
-  if (!canTransitionEquipmentWorkshopRequestStatus(existing.status, body.status)) {
+  if (!canTransitionEquipmentWorkshopRequestStatus(existing.status, status)) {
     return NextResponse.json(
       { error: "현재 상태에서 요청한 상태로 변경할 수 없습니다." },
       { status: 409 },
     );
   }
 
-  const updated = await updateEquipmentWorkshopRequestStatus({
-    requestId,
-    currentStatus: existing.status,
-    status: body.status,
-    ...(operatorNote ? { operatorNote } : {}),
-    reviewedById: session.user.id,
-    reviewedByName: session.user.displayName,
-  });
+  const client = await getClient();
+  const dbSession = client.startSession();
+  let updated: EquipmentWorkshopRequestDoc | null = null;
+  try {
+    updated = await dbSession.withTransaction(async () => {
+      const next = await updateEquipmentWorkshopRequestStatus({
+        requestId,
+        currentStatus: existing.status,
+        status,
+        ...(operatorNote ? { operatorNote } : {}),
+        reviewedById: session.user.id,
+        reviewedByName: session.user.displayName,
+        actorKind: "GM",
+        session: dbSession,
+      });
+      if (!next) return null;
+      await scheduleGmAdminAudit({
+        action: "공방 요청 상태 변경",
+        actor: {
+          id: session.user.id,
+          displayName: session.user.displayName,
+          role: session.user.role,
+        },
+        summary: `${existing.status} → ${next.status}`,
+        target: `${next.characterCodename} · ${next.equipmentName ?? next.kind}`,
+        details: next.operatorNote
+          ? [{ name: "운영자 메모", value: next.operatorNote }]
+          : undefined,
+        timestamp: new Date(),
+      }, { session: dbSession });
+      return next;
+    });
+  } finally {
+    await dbSession.endSession();
+  }
   if (!updated) {
     return NextResponse.json(
       { error: "다른 운영자가 먼저 요청 상태를 변경했습니다." },
@@ -431,21 +475,6 @@ export async function PATCH(request: Request) {
   }).catch((error) => {
     console.error("[equipment-workshop] status notification failed", error);
   });
-  await scheduleGmAdminAudit({
-    action: "공방 요청 상태 변경",
-    actor: {
-      id: session.user.id,
-      displayName: session.user.displayName,
-      role: session.user.role,
-    },
-    summary: `${existing.status} → ${updated.status}`,
-    target: `${updated.characterCodename} · ${updated.equipmentName ?? updated.kind}`,
-    details: updated.operatorNote
-      ? [{ name: "운영자 메모", value: updated.operatorNote }]
-      : undefined,
-    timestamp: new Date(),
-  });
-
   return NextResponse.json({
     request: serializeEquipmentWorkshopRequest(updated),
   });

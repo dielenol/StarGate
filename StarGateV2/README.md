@@ -57,13 +57,13 @@ Stargate TRPG 운영을 위한 공식 웹앱 + ERP 시스템. 공개 홍보 사�
 | `MONGODB_URI` | MongoDB Atlas 연결 문자열 |
 | `GUILD_ID` | 운영 Discord 길드 ID (세션 API가 서버에서 강제 사용) |
 | `DISCORD_WEBHOOK_URL` | `/apply`, `/contact` 제출 알림 채널 |
-| `DISCORD_WEBHOOK_CHAR_EDIT_URL` | 캐릭터 편집 감사 알림 Discord Webhook |
 | `DISCORD_WEBHOOK_SHOP_URL` | 편의점 일일 입고 알림 Discord Webhook |
 
 선택:
 - `NEXT_PUBLIC_APP_BASE_PATH` — 서브패스 배포 시 이미지 경로 보정
 - `NEXT_PUBLIC_SITE_URL` — 메타 절대 URL 고정
 - `DISCORD_WEBHOOK_SHOP_AVATAR_URL` — 편의점 입고 알림용 웹훅 아바타 오버라이드
+- 감사·워크플로·운영 알림 채널의 webhook은 장기 실행 worker 환경에서 관리
 
 ## 개발
 

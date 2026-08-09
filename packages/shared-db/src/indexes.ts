@@ -1099,6 +1099,20 @@ export async function ensureAllIndexes(): Promise<void> {
         },
         name: "integration_outbox_kind_status_leaseUntil_createdAt",
       },
+      {
+        key: { status: 1, kind: 1, deliveredAt: -1 },
+        name: "integration_outbox_status_kind_deliveredAt",
+      },
+      {
+        key: {
+          partitionKey: 1,
+          status: 1,
+          partitionOrderAt: 1,
+          createdAt: 1,
+          _id: 1,
+        },
+        name: "integration_outbox_partition_status_order",
+      },
     ]),
     db.collection("worker_checkpoints").createIndex(
       { name: 1 },

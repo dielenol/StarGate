@@ -39,7 +39,6 @@ const { notifyScheduledStockMarketWire } = await import("../market-wire.ts");
 
 const ENV_KEYS = [
   "DISCORD_WEBHOOK_STOCK_URL",
-  "DISCORD_STOCK_WEBHOOK_URL",
   "DISCORD_WEBHOOK_STOCK_AVATAR_URL",
 ];
 
@@ -76,7 +75,6 @@ test("scheduled stock market wire requests one durable four-message batch", asyn
   const requests = [];
 
   process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
-  delete process.env.DISCORD_STOCK_WEBHOOK_URL;
 
   t.after(() => {
     restoreEnv(envSnapshot);

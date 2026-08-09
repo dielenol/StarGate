@@ -6,6 +6,13 @@ export interface ConsumerTickResult {
   delivered?: number;
   failed?: number;
   dead?: number;
+  /** 직전 장애가 실제로 사라졌음을 확인한 poll. */
+  operationalRecovery?: boolean;
+  operationalAlert?: {
+    fingerprint: string;
+    severity: "WARNING" | "CRITICAL";
+    summary: string;
+  };
 }
 
 /**

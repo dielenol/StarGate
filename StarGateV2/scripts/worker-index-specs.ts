@@ -96,6 +96,22 @@ export const WORKER_REQUIRED_INDEXES: readonly RequiredIndexSpec[] = [
     },
   },
   {
+    collection: "integration_outbox",
+    name: "integration_outbox_status_kind_deliveredAt",
+    key: { status: 1, kind: 1, deliveredAt: -1 },
+  },
+  {
+    collection: "integration_outbox",
+    name: "integration_outbox_partition_status_order",
+    key: {
+      partitionKey: 1,
+      status: 1,
+      partitionOrderAt: 1,
+      createdAt: 1,
+      _id: 1,
+    },
+  },
+  {
     collection: "worker_checkpoints",
     name: "worker_checkpoints_name_unique",
     key: { name: 1 },

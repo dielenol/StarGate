@@ -2,11 +2,16 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
+import { getClient } from "@/lib/db/client";
 import {
-  countUsersByRole,
   findUserById,
   updateUserRole,
 } from "@/lib/db/users";
+import {
+  assertCanRemoveActiveGm,
+  lockAndReadUserAdminMutation,
+  UserAdminInvariantError,
+} from "@/lib/db/user-admin-invariant";
 import { isValidObjectId } from "@/lib/db/utils";
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
@@ -69,36 +74,48 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  // 마지막 GM 강등 방지 — 남은 GM 이 본인 뿐이면 운영 공백 발생
-  if (target.role === "GM" && role !== "GM") {
-    const superAdminCount = await countUsersByRole("GM");
-    if (superAdminCount <= 1) {
-      return NextResponse.json(
-        { error: "마지막 GM은 강등할 수 없습니다." },
-        { status: 400 },
-      );
-    }
-  }
-
   try {
-    await updateUserRole(id, role as UserRole);
-    await scheduleGmAdminAudit({
-      action: "사용자 역할 변경",
-      actor: {
-        id: session.user.id,
-        displayName: session.user.displayName,
-        role: session.user.role,
-      },
-      summary: `${target.role} → ${role}`,
-      target: `${target.displayName} (${target.username})`,
-      timestamp: new Date(),
-    });
+    const client = await getClient();
+    const mongoSession = client.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        const currentTarget = await lockAndReadUserAdminMutation({
+          actorId: session.user.id,
+          targetId: id,
+          session: mongoSession,
+        });
+        if (role !== "GM") {
+          await assertCanRemoveActiveGm(currentTarget, mongoSession);
+        }
+        const updated = await updateUserRole(id, role as UserRole, {
+          session: mongoSession,
+        });
+        if (!updated) {
+          throw new UserAdminInvariantError("TARGET_NOT_FOUND");
+        }
+        await scheduleGmAdminAudit({
+          action: "사용자 역할 변경",
+          actor: {
+            id: session.user.id,
+            displayName: session.user.displayName,
+            role: session.user.role,
+          },
+          summary: `${currentTarget.role} → ${role}`,
+          target: `${currentTarget.displayName} (${currentTarget.username})`,
+          timestamp: new Date(),
+        }, { session: mongoSession });
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
     await notifyUser({
       userId: id,
       type: "ROLE_CHANGE",
       title: "권한 등급이 변경되었습니다",
       message: `${target.role} → ${role} 등급으로 변경되었습니다.`,
       link: "/erp/account",
+    }).catch((error) => {
+      console.error("[users] role-change notification failed", error);
     });
     console.info("[admin-audit]", {
       action: "USER_ROLE_CHANGE",
@@ -109,6 +126,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof UserAdminInvariantError) {
+      const response = {
+        ACTOR_CHANGED: [403, "현재 GM 권한을 다시 확인해 주세요."],
+        TARGET_NOT_FOUND: [404, "사용자를 찾을 수 없습니다."],
+        LAST_ACTIVE_GM: [400, "마지막 active GM은 강등할 수 없습니다."],
+      }[err.code] as [number, string];
+      return NextResponse.json({ error: response[1] }, { status: response[0] });
+    }
     const message = err instanceof Error ? err.message : "역할 변경 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

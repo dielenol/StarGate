@@ -12,6 +12,8 @@ export interface CreditPool {
   poolId: string;
   name: string;
   balance: number;
+  /** 동시 writer fencing용 단조 증가 버전. legacy 문서는 0으로 해석한다. */
+  revision?: number;
   createdAt: Date;
   updatedAt: Date;
 }

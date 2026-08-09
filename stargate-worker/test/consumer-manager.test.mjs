@@ -50,3 +50,37 @@ test("consumer 일시 오류는 readiness를 내리고 다음 poll 성공 때 �
   assert.equal(manager.isReady(), false);
   assert.deepEqual(readiness, [true, false]);
 });
+
+test("consumer throw도 운영 알림에 실패와 복구로 전달한다", async () => {
+  let attempts = 0;
+  const observations = [];
+  const manager = new ConsumerManager(
+    "active",
+    5,
+    [
+      {
+        name: "alerted-consumer",
+        async tick() {
+          attempts += 1;
+          if (attempts === 1) throw new Error("temporary");
+          return { observedDue: 0 };
+        },
+      },
+    ],
+    { info() {}, warn() {}, error() {} },
+    undefined,
+    {
+      async observe(consumer, result) {
+        observations.push({ consumer, result });
+      },
+    },
+  );
+
+  await manager.start();
+  await waitFor(() => observations.length >= 2);
+  assert.equal(observations[0].consumer, "alerted-consumer");
+  assert.equal(observations[0].result.failed, 1);
+  assert.equal(observations[1].result.observedDue, 0);
+  assert.equal(observations[1].result.operationalRecovery, true);
+  await manager.stop();
+});

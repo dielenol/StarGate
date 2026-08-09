@@ -6,6 +6,7 @@ import {
   OPERATION_POOL_DEFAULT_NAME,
   OPERATION_POOL_ID,
   OPERATION_POOL_INITIAL_BALANCE,
+  CreditPoolVersionConflictError,
   addCreditPoolBalance,
   ensureCreditPool,
   setCreditPoolBalance,
@@ -16,6 +17,7 @@ import {
   EconomicOperationConflictError,
   executeEconomicOperationResult,
 } from "@/lib/db/execute-economic-operation";
+import { enqueueWorkflowStatusWebhook } from "@/lib/outbox/integration";
 
 import { requireNochichimSyncAuth } from "../_lib/auth";
 
@@ -26,8 +28,19 @@ function serializePool(pool: Awaited<ReturnType<typeof ensureCreditPool>>) {
     poolId: pool.poolId,
     name: pool.name,
     value: pool.balance,
+    revision: pool.revision ?? 0,
     updatedAt: pool.updatedAt.toISOString(),
   };
+}
+
+interface OperationCreditMutationResponse {
+  operationCredit?: ReturnType<typeof serializePool>;
+  requestId?: string;
+  mode?: "adjust" | "set";
+  delta?: number;
+  value?: number;
+  error?: string;
+  code?: string;
 }
 
 async function ensureOperationPool() {
@@ -39,21 +52,27 @@ async function ensureOperationPool() {
 }
 
 function normalizeCreditValue(value: unknown): number | null {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  return Math.max(0, Math.min(9999999, Math.trunc(parsed)));
-}
-
-function normalizeCreditDelta(value: unknown): number | null {
-  const parsed = Number(value);
   if (
-    !Number.isSafeInteger(parsed) ||
-    parsed < -9999999 ||
-    parsed > 9999999
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < 0 ||
+    value > 9999999
   ) {
     return null;
   }
-  return parsed;
+  return value;
+}
+
+function normalizeCreditDelta(value: unknown): number | null {
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < -9999999 ||
+    value > 9999999
+  ) {
+    return null;
+  }
+  return value;
 }
 
 export async function GET(request: Request) {
@@ -69,39 +88,25 @@ export async function POST(request: Request) {
   if (authError) return authError;
 
   const body = (await request.json().catch(() => null)) as
-    | { mode?: string; value?: unknown; delta?: unknown; requestId?: unknown }
+    | {
+        mode?: unknown;
+        value?: unknown;
+        delta?: unknown;
+        requestId?: unknown;
+        expectedRevision?: unknown;
+      }
     | null;
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const mode = body.mode === "adjust" ? "adjust" : "set";
-
-  if (mode === "set") {
-    const value = normalizeCreditValue(body.value);
-    if (value === null) {
-      return NextResponse.json({ error: "Invalid value" }, { status: 400 });
-    }
-    try {
-      await ensureOperationPool();
-      const nextPool = await setCreditPoolBalance(OPERATION_POOL_ID, value);
-      return NextResponse.json({ operationCredit: serializePool(nextPool) });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to set operation credit";
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-  }
-
-  const delta = normalizeCreditDelta(body.delta);
-  if (delta === null) {
+  if (body.mode !== "adjust" && body.mode !== "set") {
     return NextResponse.json(
-      { error: "Invalid delta" },
+      { error: "mode must be 'adjust' or 'set'" },
       { status: 400 },
     );
   }
+  const mode = body.mode;
 
   const requestId = readIdempotencyKey(request);
   if (!requestId || body.requestId !== requestId) {
@@ -114,25 +119,129 @@ export async function POST(request: Request) {
     );
   }
 
+  const value = mode === "set" ? normalizeCreditValue(body.value) : null;
+  if (mode === "set" && value === null) {
+    return NextResponse.json({ error: "Invalid value" }, { status: 400 });
+  }
+  const expectedRevision =
+    mode === "set" &&
+    typeof body.expectedRevision === "number" &&
+    Number.isSafeInteger(body.expectedRevision) &&
+    body.expectedRevision >= 0
+      ? body.expectedRevision
+      : null;
+  if (
+    mode === "set" &&
+    expectedRevision === null
+  ) {
+    return NextResponse.json(
+      {
+        error: "set에는 GET에서 받은 expectedRevision이 필요합니다.",
+        code: "INVALID_EXPECTED_REVISION",
+      },
+      { status: 400 },
+    );
+  }
+
+  const delta = mode === "adjust" ? normalizeCreditDelta(body.delta) : null;
+  if (mode === "adjust" && delta === null) {
+    return NextResponse.json(
+      { error: "Invalid delta" },
+      { status: 400 },
+    );
+  }
+  const mutationValue = value as number;
+  const mutationDelta = delta as number;
+
   try {
     await ensureOperationPool();
-    const result = await executeEconomicOperationResult({
+    const result =
+      await executeEconomicOperationResult<OperationCreditMutationResponse>({
       requestId,
-      domain: "nochichim-operation-credit-adjust",
+      domain:
+        mode === "adjust"
+          ? "nochichim-operation-credit-adjust"
+          : "nochichim-operation-credit-set",
       actorId: "vtt:nochichim",
-      payload: { poolId: OPERATION_POOL_ID, delta },
+      // 기존 adjust replay의 payload hash를 배포 경계에서도 그대로 보존한다.
+      payload:
+        mode === "adjust"
+          ? { poolId: OPERATION_POOL_ID, delta: mutationDelta }
+          : {
+              poolId: OPERATION_POOL_ID,
+              value: mutationValue,
+              expectedRevision,
+            },
       run: async (mongoSession) => {
-        const nextPool = await addCreditPoolBalance(OPERATION_POOL_ID, delta, {
-          allowNegative: false,
-          maxBalance: 9999999,
-          session: mongoSession,
-        });
+        const before = await ensureCreditPool(
+          OPERATION_POOL_ID,
+          OPERATION_POOL_DEFAULT_NAME,
+          OPERATION_POOL_INITIAL_BALANCE,
+          { session: mongoSession },
+        );
+        let nextPool;
+        try {
+          nextPool =
+            mode === "set"
+              ? await setCreditPoolBalance(OPERATION_POOL_ID, mutationValue, {
+                  expectedRevision: expectedRevision as number,
+                  session: mongoSession,
+                })
+              : await addCreditPoolBalance(OPERATION_POOL_ID, mutationDelta, {
+                  allowNegative: false,
+                  maxBalance: 9999999,
+                  session: mongoSession,
+                });
+        } catch (error) {
+          if (error instanceof CreditPoolVersionConflictError) {
+            return {
+              status: 409,
+              body: {
+                error: "다른 조정이 먼저 반영되었습니다. 최신 잔액을 다시 조회하세요.",
+                code: "STALE_OPERATION_CREDIT",
+              },
+            };
+          }
+          throw error;
+        }
+        await enqueueWorkflowStatusWebhook(
+          {
+            workflow: "OPERATION_CREDIT",
+            workflowId: requestId,
+            stage: mode === "set" ? "SET" : "ADJUSTED",
+            actor: { kind: "BOT", displayName: "NOCHICHIM" },
+            summary:
+              mode === "set"
+                ? `잔액을 ${nextPool.balance.toLocaleString("ko-KR")} CR로 동기화했습니다.`
+                : `${mutationDelta > 0 ? "+" : ""}${mutationDelta.toLocaleString("ko-KR")} CR을 반영했습니다.`,
+            target: OPERATION_POOL_DEFAULT_NAME,
+            details: [
+              {
+                name: "변경 전",
+                value: `${before.balance.toLocaleString("ko-KR")} CR`,
+                inline: true,
+              },
+              {
+                name: "변경 후",
+                value: `${nextPool.balance.toLocaleString("ko-KR")} CR`,
+                inline: true,
+              },
+            ],
+            urlPath: "/erp/admin/credits",
+            occurredAt: nextPool.updatedAt,
+          },
+          `operation-credit:${requestId}:${mode}`,
+          { session: mongoSession },
+        );
         return {
           status: 200,
           body: {
             operationCredit: serializePool(nextPool),
             requestId,
-            delta,
+            mode,
+            ...(mode === "adjust"
+              ? { delta: mutationDelta }
+              : { value: mutationValue }),
           },
         };
       },
@@ -149,14 +258,17 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof EconomicOperationConflictError) {
       return NextResponse.json(
-        { error: "같은 requestId 요청을 처리 중이거나 payload가 다릅니다.", code: "DUPLICATE_REQUEST" },
+        {
+          error: "같은 requestId 요청을 처리 중이거나 payload가 다릅니다.",
+          code: "DUPLICATE_REQUEST",
+        },
         { status: 409 },
       );
     }
     const message =
       error instanceof Error
         ? error.message
-        : "Failed to adjust operation credit";
+        : "Failed to update operation credit";
     if (message.includes("insufficient")) {
       return NextResponse.json(
         { error: message, code: "INSUFFICIENT_OPERATION_CREDIT" },

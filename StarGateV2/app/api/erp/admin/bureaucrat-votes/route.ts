@@ -90,6 +90,7 @@ export async function POST(request: Request) {
       kind: "ERP_USER",
       id: auth.user.id,
       displayName: auth.user.displayName,
+      role: auth.user.role,
     },
   });
   if (

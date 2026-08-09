@@ -13,12 +13,13 @@ import type {
   EquipmentWorkshopRequestWebhookPayload,
   GmAdminAuditWebhookPayload,
   MrBeastLotteryWinnerWebhookPayload,
+  PlayerTradeDiscordDmInput,
   ShopProductLaunchWebhookPayload,
   ShopReorderFulfilledWebhookPayload,
   ShopReorderWebhookPayload,
-} from "@/lib/discord";
-import type { PlayerTradeDiscordDmInput } from "@/lib/notifications/player-trade-discord-dm";
-import type { StockManualInterventionNotice } from "@/lib/stocks/market-wire";
+  StockManualInterventionNotice,
+  WorkflowStatusWebhookPayload,
+} from "@/lib/outbox/contracts";
 
 type TimestampedPayload =
   | CharacterEditWebhookPayload
@@ -47,6 +48,9 @@ async function enqueueDelivery(input: {
   kind: IntegrationOutboxKind;
   payload: Record<string, unknown>;
   dedupeKey?: string;
+  partitionKey?: string;
+  partitionOrderAt?: Date;
+  availableAt?: Date;
 }, options: { session?: ClientSession } = {}): Promise<void> {
   const digest =
     input.dedupeKey ?? hashDedupePayload(input.kind, input.payload);
@@ -54,8 +58,37 @@ async function enqueueDelivery(input: {
     {
       kind: input.kind,
       dedupeKey: `${input.kind.toLowerCase()}:${digest}`,
+      ...(input.partitionKey ? { partitionKey: input.partitionKey } : {}),
+      ...(input.partitionOrderAt
+        ? { partitionOrderAt: input.partitionOrderAt }
+        : {}),
       version: 1,
       payload: input.payload,
+      ...(input.availableAt ? { availableAt: input.availableAt } : {}),
+    },
+    options,
+  );
+}
+
+export async function enqueueWorkflowStatusWebhook(
+  payload: WorkflowStatusWebhookPayload,
+  dedupeKey: string,
+  options: { session?: ClientSession } = {},
+): Promise<void> {
+  await enqueueDelivery(
+    {
+      kind: "WORKFLOW_STATUS_WEBHOOK",
+      dedupeKey,
+      partitionKey: `workflow:${payload.workflow}:${payload.workflowId}`,
+      partitionOrderAt: payload.occurredAt,
+      availableAt: payload.availableAt,
+      payload: {
+        ...payload,
+        occurredAt: payload.occurredAt.toISOString(),
+        ...(payload.availableAt
+          ? { availableAt: payload.availableAt.toISOString() }
+          : {}),
+      },
     },
     options,
   );
@@ -180,10 +213,14 @@ export async function enqueueStockManualInterventionWebhook(
 
 export async function enqueuePlayerTradeDiscordDm(
   payload: PlayerTradeDiscordDmInput,
+  options: { session?: ClientSession } = {},
 ): Promise<void> {
-  await enqueueDelivery({
-    kind: "PLAYER_TRADE_DM",
-    dedupeKey: `${payload.tradeId}:${payload.event}:${payload.userId}`,
-    payload: { ...payload },
-  });
+  await enqueueDelivery(
+    {
+      kind: "PLAYER_TRADE_DM",
+      dedupeKey: `${payload.tradeId}:${payload.event}:${payload.userId}`,
+      payload: { ...payload },
+    },
+    options,
+  );
 }

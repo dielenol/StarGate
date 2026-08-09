@@ -1,5 +1,6 @@
 import { isPlayerTradeItemSlugTransferable } from "@stargate/shared-db";
 import { NextResponse } from "next/server";
+import type { ClientSession } from "mongodb";
 
 import type {
   PlayerTradeOffer,
@@ -32,7 +33,10 @@ import {
   serializePlayerTrade,
 } from "@/lib/db/trades";
 import { notifyUser } from "@/lib/notifications/events";
-import { enqueuePlayerTradeDiscordDm } from "@/lib/outbox/integration";
+import {
+  enqueuePlayerTradeDiscordDm,
+  enqueueWorkflowStatusWebhook,
+} from "@/lib/outbox/integration";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 
 interface CreateTradeBody {
@@ -45,6 +49,31 @@ interface TradeOperationBody {
   trade?: ReturnType<typeof serializePlayerTrade>;
   error?: string;
   code?: string;
+}
+
+async function enqueueTradeWorkflow(input: {
+  trade: ReturnType<typeof serializePlayerTrade>;
+  stage: string;
+  actorName: string;
+  summary: string;
+  session: ClientSession;
+}) {
+  await enqueueWorkflowStatusWebhook(
+    {
+      workflow: "PLAYER_TRADE",
+      workflowId: input.trade.id,
+      stage: input.stage,
+      revision: input.trade.revision,
+      actor: { kind: "PLAYER", displayName: input.actorName },
+      summary: input.summary,
+      target: `${input.trade.initiator.characterCodename} ↔ ${input.trade.counterparty.characterCodename}`,
+      delegatedTo: ["REGISTRAR"],
+      urlPath: "/erp/trades",
+      occurredAt: new Date(),
+    },
+    `workflow:player-trade:${input.trade.id}:${input.stage}:${input.trade.revision}`,
+    { session: input.session },
+  );
 }
 
 function isAgentMain(
@@ -252,26 +281,34 @@ export async function POST(request: Request) {
                   offer,
                   dbSession,
                 );
+          const serialized = serializePlayerTrade(trade);
+          await enqueuePlayerTradeDiscordDm({
+            tradeId: serialized.id,
+            event: body.kind === "GIFT" ? "GIFT_RECEIVED" : "EXCHANGE_OPENED",
+            userId: counterparty.userId,
+            recipientCodename: counterparty.characterCodename,
+            otherCharacterCodename: me.characterCodename,
+            offer: serialized.initiatorOffer,
+          }, { session: dbSession });
+          await enqueueTradeWorkflow({
+            trade: serialized,
+            stage: body.kind === "GIFT" ? "COMPLETED" : "OPENED",
+            actorName: session.user.displayName,
+            summary: body.kind === "GIFT"
+              ? "자산 전달이 완료되고 REGISTRAR가 수령자 DM을 처리합니다."
+              : "교환 요청이 열리고 REGISTRAR가 상대방 DM을 처리합니다.",
+            session: dbSession,
+          });
           return {
             status: 201,
-            body: { trade: serializePlayerTrade(trade) },
+            body: { trade: serialized },
           };
         },
       });
 
     if (operation.status === 201 && operation.body.trade) {
       const isGift = body.kind === "GIFT";
-      const trade = operation.body.trade;
-      const followUps: Promise<unknown>[] = [
-        enqueuePlayerTradeDiscordDm({
-          tradeId: trade.id,
-          event: isGift ? "GIFT_RECEIVED" : "EXCHANGE_OPENED",
-          userId: counterparty.userId,
-          recipientCodename: counterparty.characterCodename,
-          otherCharacterCodename: me.characterCodename,
-          offer: trade.initiatorOffer,
-        }),
-      ];
+      const followUps: Promise<unknown>[] = [];
       if (!operation.replayed) {
         followUps.push(
           notifyUser({
@@ -294,7 +331,12 @@ export async function POST(request: Request) {
           );
         }
       }
-      await Promise.all(followUps);
+      const followUpResults = await Promise.allSettled(followUps);
+      for (const result of followUpResults) {
+        if (result.status === "rejected") {
+          console.error("[trades] ERP notification failed", result.reason);
+        }
+      }
     }
     return NextResponse.json(operation.body, {
       status: operation.status,

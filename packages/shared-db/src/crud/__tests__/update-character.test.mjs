@@ -33,10 +33,13 @@ if (!HAS_MODULE_MOCK) {
   // CommonJS와 달리 import.meta 시점에 결정되므로, 테스트 파일 최상단에서
   // 호출해야 후속 import가 mock된 모듈을 받는다.
   let capturedSetPayload = null;
+  let capturedUpdateDocument = null;
   let capturedFilter = null;
+  let referenceLockCount = 0;
 
   const fakeUpdateOne = async (filter, doc) => {
     capturedFilter = filter;
+    capturedUpdateDocument = doc;
     // doc의 형태: { $set: { ...sanitized, updatedAt: Date } }
     capturedSetPayload = doc.$set;
     return { modifiedCount: 1, matchedCount: 1, acknowledged: true };
@@ -72,6 +75,7 @@ if (!HAS_MODULE_MOCK) {
             if (name === "characters") {
               return {
                 async updateOne() {
+                  referenceLockCount += 1;
                   return { matchedCount: 1 };
                 },
               };
@@ -99,6 +103,7 @@ if (!HAS_MODULE_MOCK) {
   const charactersModule = await import("../../../dist/crud/characters.js");
   const {
     updateCharacter,
+    applyCharacterFieldPatch,
     PLAYER_ALLOWED_CHARACTER_FIELDS,
     ADMIN_ALLOWED_CHARACTER_FIELDS,
     ALLOWED_CHARACTER_FIELDS,
@@ -571,6 +576,50 @@ if (!HAS_MODULE_MOCK) {
       "undefined 값은 $set 패치에서 제외"
     );
     assert.ok(!("agentLevel" in capturedSetPayload));
+  });
+
+  test("revert patch: 허용된 optional field 부재를 실제 $unset으로 전달한다", async () => {
+    capturedSetPayload = null;
+    capturedUpdateDocument = null;
+
+    const result = await applyCharacterFieldPatch(
+      VALID_ID,
+      {
+        set: { "lore.quote": "이전", forbidden: "DROP" },
+        unset: ["previewImage", "lore.posterImage", "forbidden"],
+      },
+      {
+        allowedFields: new Set([
+          "lore.quote",
+          "previewImage",
+          "lore.posterImage",
+        ]),
+      },
+    );
+
+    assert.equal(result, true);
+    assert.equal(capturedUpdateDocument.$set["lore.quote"], "이전");
+    assert.deepEqual(capturedUpdateDocument.$unset, {
+      previewImage: "",
+      "lore.posterImage": "",
+    });
+    assert.ok(!("forbidden" in capturedUpdateDocument.$set));
+    assert.ok(!("forbidden" in capturedUpdateDocument.$unset));
+  });
+
+  test("revert patch: 공개 상태 unset은 세션 보고서 참조 잠금을 거친다", async () => {
+    capturedUpdateDocument = null;
+    referenceLockCount = 0;
+
+    const result = await applyCharacterFieldPatch(
+      VALID_ID,
+      { unset: ["isPublic"] },
+      { allowedFields: new Set(["isPublic"]) },
+    );
+
+    assert.equal(result, true);
+    assert.equal(referenceLockCount, 1);
+    assert.deepEqual(capturedUpdateDocument.$unset, { isPublic: "" });
   });
 
   /* ── 보안 — 프로토타입 오염 방어 ── */
