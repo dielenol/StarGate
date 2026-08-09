@@ -122,3 +122,12 @@
 - 검증: 띠아 계약 테스트 포함 집중 테스트 54/54, `pnpm dialogue:lint`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 브라우저 데스크톱 재고 부족 선택 및 390×844 가로 넘침·콘솔 오류 없음 확인
 - 관련 커밋: `10f0a43f`
 - 운영 경계: 구매·재주문·복권·재고 mutation은 실행하지 않았다.
+
+## 2026-08-09 · 안정성 개선 · 발주 접수·입고 원장
+
+- 발주 `REQUESTED → FULFILLED` 단계를 중앙 workflow 채널에 연결하고, 요청 저장·입고 재고 변경·각 webhook outbox를 해당 transaction에서 함께 확정한다.
+- 개선 전 생성된 pending 발주는 입고 transaction에서 deterministic REQUESTED 이벤트를 먼저 보강한 뒤 FULFILLED를 기록해 대량 startup backfill 없이 원장을 복구한다.
+- 편의점·주식 자동 전달의 소유자를 장기 실행 worker로 정리하고 웹 경로는 인증된 수동 복구로만 남겼다.
+- 검증: 거래·발주 계약 16건, restock·stock 집중 테스트, worker 62건, 웹 `typecheck`·`lint`·production build, critical risk review
+- 관련 커밋: `45944a0c`
+- 운영 경계: 라이브 발주·입고·재고·복권 outbox 발송은 실행하지 않았다.

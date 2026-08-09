@@ -33,3 +33,11 @@
 - 운영 `DRAFT` 청사진을 v2 안건 키와 정정 본문으로 갱신했으며, 표결 원장 생성이나 Discord 게시는 실행하지 않았다. 재조회 시 해당 v2 표결은 0건이다.
 - 검증: 관료 표결·공방 관련 계약 테스트 63건, `npm run typecheck`, `npm run lint`, 운영 DB 청사진 원문 재조회, critical risk review
 - 관련 커밋: `a698e662`
+
+## 2026-08-09 · 기능 확장 · 공방 표결 상호 추적
+
+- REGISTRAR 표결 카드에 출처, 공방 요청 ID, 견적 버전과 ERP 이동 링크를 표시해 위임된 표결을 원본 공방 요청과 왕복 추적할 수 있게 했다.
+- 표결 OPEN·CLOSED 결과를 중앙 workflow 채널에 같은 transaction으로 기록하고, 같은 표결의 앞 단계가 재시도 중이면 뒤 단계가 먼저 전달되지 않도록 파티션 순서를 보장한다.
+- 검증: 관료 표결 웹 계약, Registra build·23건, worker 62건, 웹 `typecheck`·`lint`·production build, critical risk review
+- 관련 커밋: `45944a0c`
+- 운영 경계: 라이브 표결 생성·게시·투표·마감과 Discord 발송은 실행하지 않았다.

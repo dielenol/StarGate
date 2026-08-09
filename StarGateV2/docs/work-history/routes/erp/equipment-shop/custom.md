@@ -59,3 +59,11 @@
 - 검증: 버니어 포함 집중 테스트 54/54, `pnpm dialogue:lint`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 브라우저 데스크톱·390×844 입력 포커스 및 가로 넘침·콘솔 오류 없음 확인
 - 관련 커밋: `10f0a43f`
 - 운영 경계: 견적 요청·수락·수령 mutation은 실행하지 않았다.
+
+## 2026-08-09 · 기능 변경 · 공방 진행 원장 연결
+
+- 플레이어 요청의 접수부터 견적, 전문 작업자 위임, READY, 수령 완료와 예외 종료까지 중앙 운영 알림에 같은 요청 ID로 남도록 연결했다.
+- 견적 수락·거절·취소·수령의 경제 변경과 AMERI DM·workflow outbox를 같은 transaction에 넣어 화면 성공과 알림 원장이 어긋나지 않도록 했다.
+- 검증: 공방 집중 테스트 48건, 웹 `typecheck`·`lint`·production build, worker 62건, critical risk review
+- 관련 커밋: `45944a0c`
+- 운영 경계: 라이브 공방 요청·수락·취소·수령과 Discord 발송은 실행하지 않았다.

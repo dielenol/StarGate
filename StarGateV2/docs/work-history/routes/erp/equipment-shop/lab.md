@@ -14,3 +14,11 @@
 - 검증: SUTURE 계약 테스트 포함 집중 테스트 54/54, `pnpm dialogue:lint`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 브라우저 데스크톱·390×844 연구 항목 선택 및 콘솔 오류·가로 넘침 없음 확인
 - 관련 커밋: `10f0a43f`
 - 운영 경계: 연구 시작·기여·적용 mutation은 실행하지 않았다.
+
+## 2026-08-09 · 기능 확장 · 연구 단계 운영 알림
+
+- 공동 연구 상태 카드는 유지하면서 연구 시작·모금 달성·러시·적용 시작·적용 완료를 중앙 workflow 이력으로 추가했다. 매 기여는 기존 누적 카드만 갱신해 채널 과다 알림을 피한다.
+- 연구 효과 상한 판정과 캐릭터 변경을 같은 transaction snapshot에서 수행하고, 적용 reservation에 lease token fencing을 넣어 오래된 실행이 새 예약을 해제하지 못하게 했다.
+- 검증: 연구 포함 웹 집중 테스트, 웹 `typecheck`·`lint`·production build, worker 62건, critical risk review
+- 관련 커밋: `45944a0c`
+- 운영 경계: 라이브 연구 시작·기여·러시·적용과 Discord 발송은 실행하지 않았다.

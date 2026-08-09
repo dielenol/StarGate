@@ -44,3 +44,11 @@
 - 보정값 표기는 유지하고 SAN 위험 색상과 HP/SAN 진행 바도 최종 수치를 기준으로 계산한다.
 - 검증: 캐릭터 능력치 집중 테스트 4건, `pnpm typecheck`, `pnpm lint`, 인증된 로컬 데스크톱에서 우디 목록·상세 비교 및 브라우저 오류 0건 확인
 - 관련 커밋: `76c962d9`
+
+## 2026-08-09 · 버그 수정 · 변경 감사와 안전한 되돌리기
+
+- 캐릭터 변경·change log·Discord 감사 outbox를 같은 transaction에 넣어 변경 성공 뒤 감사만 빠지거나 false 500이 발생하지 않게 했다.
+- 되돌리기는 로그의 `after`와 현재 필드가 모두 같을 때만 허용하고, 원래 없던 optional 필드는 `$unset`으로 복원한다. `clearanceOverrides`와 공개 상태 해제도 공용 허용 필드·세션 보고서 참조 잠금을 따른다.
+- 검증: character revert 12건, shared-db character mock 25건, 웹 `typecheck`·`lint`·production build, critical risk review
+- 관련 커밋: `45944a0c`
+- 운영 경계: 라이브 캐릭터 변경·되돌리기는 실행하지 않았다.

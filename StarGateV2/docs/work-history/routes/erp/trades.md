@@ -22,3 +22,11 @@
 - 거래 목록 GET에 ETag/304 재검증 도입 — 데이터 불변 시 응답 바디 0B. 거래 목록/상대 목록 정렬에 보조 키를 추가해 동점 순서 플립(ETag 플랩 + 목록 재정렬) 차단.
 - 검증: realtime/http-cache 계약 테스트, `pnpm lint`, `pnpm typecheck`, `pnpm build`
 - 관련 커밋: `1b3bf56`, `0390f80`
+
+## 2026-08-09 · 기능 확장 · 거래 진행 알림과 원자적 DM
+
+- 거래 생성·제안 revision·당사자 확인·완료·취소를 중앙 workflow 채널에서 거래 ID별로 추적하고, 기존 상대방 DM도 유지한다.
+- 자산 정산 transaction 안에서 DM과 workflow outbox를 함께 기록해 거래가 완료됐는데 알림 enqueue 실패로 API가 실패하는 경계를 제거했다.
+- 검증: 거래·발주 계약 테스트 16건, worker 62건, 웹 `typecheck`·`lint`·production build, critical risk review
+- 관련 커밋: `45944a0c`
+- 운영 경계: 라이브 거래 생성·수정·확정·취소와 Discord DM은 실행하지 않았다.

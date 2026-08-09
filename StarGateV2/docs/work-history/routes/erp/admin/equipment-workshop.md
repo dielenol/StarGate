@@ -99,3 +99,12 @@
 - 검증: StarGate 관련 계약 테스트 63건, `npm run typecheck`, `npm run lint`, Nochichim 관련 회귀 테스트 3종, 운영 DB 쓰기 후 원문 재조회 및 연결 공방 요청·v2 표결·캐릭터/공용 CENSOR-3 재고 각 0건 확인, critical risk review
 - 관련 커밋: `a698e662`, Nochichim `5c02fca`
 - 운영 경계: 마스터 품목과 `DRAFT` 청사진만 갱신했다. 견적 발행·수락·표결 생성·재료/크레딧 차감·제작·납품·수령은 실행하지 않았다.
+
+## 2026-08-09 · 기능 확장 · 공방 위임 단계 알림 추적
+
+- 접수·검토·견적·수락과 전문 작업자 위임 순서·예정 READY·수령 완료·거절·반려·취소를 중앙 workflow 채널에서 요청별 순서대로 추적하도록 연결했다.
+- 공방 상태·견적·경제 mutation과 workflow/감사 outbox를 같은 transaction에 기록하며, 예약 READY는 발송 직전 요청이 여전히 진행 중인지 재확인한다.
+- 응답 유실 뒤 최초 접수 POST가 재시도돼도 후속 견적을 섞지 않고 불변 `REQUESTED:v0` 이벤트에 수렴한다.
+- 검증: 공방 집중 테스트 48건, worker 62건, Registra 23건, 웹 `typecheck`·`lint`·production build, critical risk review
+- 관련 커밋: `45944a0c`
+- 운영 경계: 라이브 접수·견적·수락·위임·수령과 Discord 발송은 실행하지 않았다.
