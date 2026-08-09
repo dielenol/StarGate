@@ -1,4 +1,4 @@
-<!-- MINI05 로맨티드 보존 기록 기반 비공개 격리 물품 catalog spec. -->
+<!-- MINI05 로맨티드 보존 기록 기반 공개·비판매 격리 물품 catalog spec. -->
 ---
 code: KEY_SHAPED_BOOKMARK
 slug: key-shaped-bookmark
@@ -10,11 +10,11 @@ effect: 810번 도서의 입구와 내부 탈출 핵을 작동시킨 열쇠형 �
 description: MINI05 로맨티드 사건에서 810번 도서의 입구를 열고 내부 검은 핵을 해제하는 데 사용된 열쇠형 물품.
 previewImage: /assets/catalog/special/key-shaped-bookmark.webp
 isAvailable: false
-isPublic: false
+isPublic: true
 tags: [NOSB-MINI-ROMANTID, MINI05, 로맨티드, 810번도서, 열쇠형책갈피, 격리물품]
 source: session-log
 createdAt: 2026-07-19T00:00:00Z
-updatedAt: 2026-08-07T00:00:00Z
+updatedAt: 2026-08-09T00:00:00Z
 ---
 
 ## 설명

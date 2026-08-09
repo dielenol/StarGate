@@ -27,21 +27,21 @@ source: stargate-lore
 - SHA-256: `ad82116a0d13874b31f53c8516074b7d6096a0c64794e7fc01ba2990393783c0`.
 - 텍스트 무결성: 145쪽 전부 추출, 빈 페이지 0, 대체문자 0. 페이지 머리말·꼬리말은 사건 기록에서 제외했다.
 - 시각 자료: 1035×503 장면 프레임 47개와 58×57/58×58 대화 아바타 540개를 분리 판독했다.
-- 보안 분류: 원본 표지의 `CLASSIFICATION · TIER-3 · EYES ONLY`를 신규 wiki/catalog의 비공개 근거로 사용한다.
+- 보안 분류: 원본 표지의 `CLASSIFICATION · TIER-3 · EYES ONLY`는 문서 내 기록 등급으로 보존한다. staging은 V/비공개로 검수하되 사용자 운영 규칙에 따라 live publication 시 U/공개로 전환한다.
 
 ## Canonical Anchor
 
 - Session ID: `NOSB-MINI-ROMANTID`
 - Report number: `MINI05`
 - Report title: `작전 보고서 MINI05: 로맨티드`
-- Report minimum role: `V` (live publication 전 staging 기본값)
+- Report minimum role: `U` (live publication target; staging 기본값은 `V`)
 - Wiki slug: `mini05-romantid`
 - 진행일: `2026-07-19` ~ `2026-07-20`
 - 작전지: 독일 다름슈타트 공과대학 도서관과 810번 도서 내부 공간
 - 지도 좌표: 유럽 내 기존 표적을 기준으로 `[51.7, 34.1]`, `estimated`
 - 주요 대상: 해쉬 테거, 810번 도서, 열쇠형 책갈피, 컨텐처/테이블 오프 컨텐처
 - 보고서 기록자: `NOVUS ORDO 사무국 기록통제실 연구원 E. Adler`
-- 신규 공개 기준: 원본 TIER-3 분류에 따라 operation-report wiki mirror, 810번 도서 wiki, 카탈로그 2건은 `isPublic: false`.
+- 신규 공개 기준: live publication에서 operation-report wiki mirror, 언더 더 브릿지 faction/wiki, 810번 도서 wiki, 카탈로그 2건을 `isPublic: true`로 맞춘다. 카탈로그 2건은 공개되더라도 `isAvailable: false`, `price: 0`의 비판매 기록이다.
 
 ## Structured Digest
 
@@ -63,11 +63,11 @@ source: stargate-lore
 
 | subject | source evidence | target surface | action | status |
 |---|---|---|---|---|
-| 로맨티드 전체 기록 | 전 페이지와 종료 표기 | `session_reports.NOSB-MINI-ROMANTID`, `wiki_pages.mini05-romantid` | MINI05 보고서는 `minRole: V`, mirror는 비공개로 두고 동일한 8개 시각 자료 순서로 등록 | ready-for-apply |
+| 로맨티드 전체 기록 | 전 페이지와 종료 표기 | `session_reports.NOSB-MINI-ROMANTID`, `wiki_pages.mini05-romantid` | staging 검수 뒤 live publication payload에서 MINI05 보고서를 `minRole: U`, mirror를 공개로 전환하고 동일한 8개 시각 자료 순서로 등록 | ready-for-apply |
 | 보고서 번호·지도 카드 | 사용자 지정 미니세션, 기존 MINI04 다음 순서, 다름슈타트 작전지 | `lib/format/session-report.ts`, report map | `MINI05` preset·제목 fallback·근접 유럽 표적 카드 배치 추가 | ready-for-draft |
-| 810번 도서 | 도서관 괴담, 거대 입구 발현, 현실 귀환 뒤 잔존 | `wiki_pages.book-810`, `master_items.book-810` | 비공개 물품 wiki와 비판매 `SPECIAL` 카탈로그 등록 | ready-for-draft |
-| 열쇠형 책갈피 | 해쉬 소지 열쇠형 줄루, 도서 입구·탈출 핵 작동, 현실 회수 | `master_items.key-shaped-bookmark`, 810번 도서 wiki | 비공개 비판매 `SPECIAL` 카탈로그 및 도서 문서의 구성 물품으로 등록 | ready-for-draft |
-| 언더 더 브릿지 | MINI05 보존 기록과 사용자 정사 판정 | `factions.UNDER_THE_BRIDGE`, `wiki_pages.under-the-bridge`, report, 810번 도서 wiki | 비공개 외부 세력과 전용 위키를 생성하고 보고서·도서 문서에서 구조화 링크 | ready-for-apply |
+| 810번 도서 | 도서관 괴담, 거대 입구 발현, 현실 귀환 뒤 잔존 | `wiki_pages.book-810`, `master_items.book-810` | 공개 물품 wiki와 공개·비판매 `SPECIAL` 카탈로그 등록 | ready-for-draft |
+| 열쇠형 책갈피 | 해쉬 소지 열쇠형 줄루, 도서 입구·탈출 핵 작동, 현실 회수 | `master_items.key-shaped-bookmark`, 810번 도서 wiki | 공개·비판매 `SPECIAL` 카탈로그 및 도서 문서의 구성 물품으로 등록 | ready-for-draft |
+| 언더 더 브릿지 | MINI05 보존 기록과 사용자 정사 판정 | `factions.UNDER_THE_BRIDGE`, `wiki_pages.under-the-bridge`, report, 810번 도서 wiki | 공개 외부 세력 레코드와 전용 위키를 생성하고 보고서·도서 문서에서 구조화 링크 | ready-for-apply |
 | 컨텐처와 대응체 | 장면·대화에서 관측, 현실 잔존 미확인 | report, 810번 도서 wiki, 언더 더 브릿지 wiki | 도서 내부 인격/현상으로 병합하고 신규 Dossier·기관은 생성하지 않음 | ready-for-draft |
 | 해쉬와 오틸리아 | 기억 장벽과 최종 대화 | 양측 Dossier relation, personality observations | 사랑·상실 약속·자기혐오 직시를 세션 근거와 함께 누적 | ready-for-draft |
 | 해쉬와 마가렛 | 프로젝트 데드핸즈 메리골드 기억 | `INDEXER` Dossier relation/observation, report | 초기 수단화 반성과 개인으로서의 애착을 해쉬 측 관계로 누적 | ready-for-draft |
@@ -194,18 +194,18 @@ source: stargate-lore
 
 | target | classification | durable action | live/economy side effect | status |
 |---|---|---|---|---|
-| `book-810` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload·전용 아이콘과 `book-810` wiki 대표 장면 연결 | 인벤토리 지급 없음; 마리아의 현장 회수는 소유권 확정이 아님 | ready-for-apply |
-| `key-shaped-bookmark` | `SPECIAL`, 비판매, 비공개 | spec·master_items payload·전용 아이콘과 `book-810` wiki 연결 | 인벤토리 지급 없음; 최종 보관 위치 미확인 | ready-for-apply |
+| `book-810` | `SPECIAL`, 공개·비판매 | spec·master_items payload·전용 아이콘과 `book-810` wiki 대표 장면 연결 | 인벤토리 지급 없음; 마리아의 현장 회수는 소유권 확정이 아님 | ready-for-apply |
+| `key-shaped-bookmark` | `SPECIAL`, 공개·비판매 | spec·master_items payload·전용 아이콘과 `book-810` wiki 연결 | 인벤토리 지급 없음; 최종 보관 위치 미확인 | ready-for-apply |
 | `TIME`의 `soda` | 기존 consumable 사용 기록 | 보고서에는 세션 사용 사실만 기록 | live `character_inventory` 68개 → 66개 원자 차감; `economic_operations` 감사 완료 및 독립 재조회 확인 | applied |
 | stocks | 관련 상장사 없음 | 별도 문서·event 없음 | 가격·history·wire 변경 대상 없음 | no-action |
 
 ## Access Control Decision
 
-- 원본 분류는 `TIER-3 · EYES ONLY`이며 operation-report wiki mirror, 언더 더 브릿지 faction/wiki, 810번 도서 wiki, 카탈로그 2건은 `isPublic: false`로 준비했다.
-- 사용자 결정에 따라 live publication 전 보고서는 `minRole: V`로 준비한다. 미설정 legacy 보고서는 기존 계약대로 `U`로 해석한다.
+- 원본의 `TIER-3 · EYES ONLY`는 세계관상 기록 등급으로 보존한다. staging 단계는 보고서 `minRole: V`, 연결 target 비공개로 검수했다.
+- 사용자 운영 결정에 따라 live publication payload는 보고서 `minRole: U`, operation-report mirror·언더 더 브릿지 faction/wiki·810번 도서 wiki·카탈로그 2건 `isPublic: true`로 전환한다. 미설정 legacy 보고서는 기존 계약대로 `U`로 해석한다.
 - 서버 목록·직접 상세·GET API·통합 검색의 index live-check/fallback·wiki/catalog 역링크·Dossier 이벤트 링크가 동일한 역할 필터를 사용한다. 권한 미달 직접 상세/API는 존재를 숨기는 `404` 계약이다.
-- `V` 제한 보고서는 V 이상이 볼 수 있는 비공개 wiki/catalog 구조화 참조를 유지할 수 있다. 비공개 personnel은 GM 제한 보고서에서만 참조 가능하다.
-- 향후 신규 세션 보고서도 staging payload에서는 `V`를 기본값으로 둔다. exact live publication 시 `U`로 완화하려면 연결된 wiki/catalog/personnel도 같은 독자에게 열려 있어야 하며, 불일치하면 보고서 제한을 유지한다.
+- `U` 보고서의 구조화 링크가 소비자에서 제거되지 않도록 연결 wiki/catalog를 공개로 맞추고, 12개 관련 personnel도 모두 공개 해석 가능함을 live dry-run에서 확인한다.
+- 향후 신규 세션 보고서도 staging payload에서는 `V`를 기본값으로 둔다. exact live publication 시 `U`로 완화하면서 연결된 wiki/catalog/personnel을 같은 독자에게 맞추고, 불일치하면 publication을 중단한다.
 - live 쓰기는 `TIME`의 `soda` 2개 차감에만 수행했다. `character_inventory`는 68개 → 66개, `economic_operations`의 `session-consumable:NOSB-MINI-ROMANTID:TIME:soda:2`는 `completed`이며 기존 inventory lock anchor만 갱신됐다. 알림·SAN·효과·그 외 lore/economy DB write는 수행하지 않았다.
 
 ## Graph And Verification Plan

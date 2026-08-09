@@ -1,4 +1,4 @@
-<!-- MINI05 로맨티드 보존 기록 기반 비공개 격리 물품 catalog spec. -->
+<!-- MINI05 로맨티드 보존 기록 기반 공개·비판매 격리 물품 catalog spec. -->
 ---
 code: BOOK_810
 slug: book-810
@@ -10,11 +10,11 @@ effect: 내부 공간과 인격 현상을 발현하는 출처 불명의 고서
 description: MINI05 로맨티드 사건에서 해쉬 테거를 내부 공간으로 흡수하고 거대 입구를 형성한 출처 불명의 고서.
 previewImage: /assets/catalog/special/book-810.webp
 isAvailable: false
-isPublic: false
+isPublic: true
 tags: [NOSB-MINI-ROMANTID, MINI05, 로맨티드, 810번도서, 다름슈타트, 언더더브릿지, 격리물품]
 source: session-log
 createdAt: 2026-07-19T00:00:00Z
-updatedAt: 2026-08-07T00:00:00Z
+updatedAt: 2026-08-09T00:00:00Z
 ---
 
 ## 설명

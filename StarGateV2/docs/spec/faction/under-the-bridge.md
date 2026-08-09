@@ -1,4 +1,4 @@
-<!-- MINI05 로맨티드 보존 기록과 GM 정사 판정 기반 비공개 faction spec. -->
+<!-- MINI05 로맨티드 보존 기록과 GM 정사 판정 기반 공개 faction spec. -->
 ---
 code: UNDER_THE_BRIDGE
 slug: under-the-bridge
@@ -8,10 +8,10 @@ scope: external
 summary: 노부스 오르도가 정당성을 추구하던 시기에 갈라져 나온 비공개 음지 조직. MINI05 로맨티드 사건에서 줄루 중심 지휘와 강제 전입 또는 기억 소거 절차가 확인되었다.
 tags: [NOSB-MINI-ROMANTID, MINI05, 로맨티드, 음지조직, 줄루지휘, 비밀협약]
 notableMembers: []
-isPublic: false
+isPublic: true
 source: session-log
 createdAt: 2026-07-19T00:00:00Z
-updatedAt: 2026-08-07T00:00:00Z
+updatedAt: 2026-08-09T00:00:00Z
 ---
 
 ## 이념/가치관
