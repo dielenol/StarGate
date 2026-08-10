@@ -45,3 +45,20 @@ test("관리자 DTO는 outbox payload와 전달 secret·원본 오류를 노출�
   assert.match(client, /신규 처리 완료는 실제 발송과 정책상 생략을 구분/);
   assert.match(client, /이 화면은 읽기 전용입니다/);
 });
+
+test("관리자 연동 현황은 상태별 표현과 키보드 접근 가능한 표를 제공한다", async () => {
+  const [client, styles] = await Promise.all([
+    source("app/(erp)/erp/admin/AdminIntegrationStatusClient.tsx"),
+    source("app/(erp)/erp/admin/page.module.css"),
+  ]);
+
+  assert.match(client, /data-health=\{data\.worker\.health\.toLowerCase\(\)\}/);
+  assert.match(client, /role="heading"/);
+  assert.match(client, /role="region"/);
+  assert.match(client, /tabIndex=\{0\}/);
+  assert.match(client, /onKeyDown=\{handleOutboxTableKeyDown\}/);
+  assert.match(client, /role="alert"/);
+  assert.match(styles, /\.workerPanel\[data-health="critical"\]/);
+  assert.match(styles, /\.tableWrap:focus-visible/);
+  assert.doesNotMatch(styles, /\.kpi:nth-child/);
+});

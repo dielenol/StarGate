@@ -59,14 +59,16 @@
 }
 
 .kpiGrid {
-  display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
 }
 
 .kpi {
   display: grid;
-  grid-column: span 2;
+  flex: 0 1 calc((100% - 48px) / 5);
+  min-width: 0;
   min-height: 132px;
   align-content: space-between;
   gap: 8px;
@@ -76,10 +78,6 @@
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--ink-1) 2%, transparent), transparent 60%),
     var(--bg-1);
-}
-
-.kpi:nth-child(6) {
-  grid-column: 2 / span 2;
 }
 
 .kpi[data-tone="neutral"] {
@@ -114,7 +112,7 @@
 .jobCard small,
 .caption,
 .generatedAt {
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.04em;
@@ -148,7 +146,7 @@
 
 .kpi small {
   min-height: 2.8em;
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -182,7 +180,19 @@
   gap: 14px;
   padding: 22px;
   border-right: 1px solid var(--line);
-  background: color-mix(in srgb, var(--success) 4%, transparent);
+  background: color-mix(in srgb, var(--ink-2) 4%, transparent);
+}
+
+.workerPanel[data-health="healthy"] .workerPanel__status {
+  background: color-mix(in srgb, var(--success) 6%, transparent);
+}
+
+.workerPanel[data-health="warning"] .workerPanel__status {
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+}
+
+.workerPanel[data-health="critical"] .workerPanel__status {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .workerPanel__status > div {
@@ -196,7 +206,7 @@
 }
 
 .workerPanel__status span {
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -242,6 +252,11 @@
   scrollbar-width: thin;
 }
 
+.tableWrap:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 3px;
+}
+
 .table {
   width: 100%;
   min-width: 1380px;
@@ -265,7 +280,7 @@
   z-index: 2;
   top: 0;
   background: var(--bg-2);
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.06em;
@@ -331,7 +346,7 @@
 
 .table__kind small {
   margin-top: 4px;
-  color: var(--ink-3);
+  color: var(--ink-2);
   line-height: 1.35;
 }
 
@@ -347,7 +362,7 @@
 }
 
 .table__number[data-zero="true"] {
-  color: color-mix(in srgb, var(--ink-3) 70%, transparent);
+  color: var(--ink-2);
 }
 
 .table__number[data-alert="true"] {
@@ -447,13 +462,8 @@
 }
 
 @media (max-width: 1180px) {
-  .kpiGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .kpi,
-  .kpi:nth-child(6) {
-    grid-column: auto;
+  .kpi {
+    flex-basis: calc((100% - 24px) / 3);
   }
 
   .workerPanel {
@@ -535,11 +545,11 @@
   }
 
   .kpiGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
   }
 
   .kpi {
+    flex-basis: calc((100% - 9px) / 2);
     min-height: 124px;
     padding: 15px;
   }
@@ -560,7 +570,7 @@
 }
 
 @media (max-width: 350px) {
-  .kpiGrid {
-    grid-template-columns: 1fr;
+  .kpi {
+    flex-basis: 100%;
   }
 }

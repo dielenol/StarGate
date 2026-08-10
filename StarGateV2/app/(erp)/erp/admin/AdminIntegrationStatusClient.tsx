@@ -1,5 +1,7 @@
 "use client";
 
+import type { KeyboardEvent } from "react";
+
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
@@ -24,6 +26,19 @@ const HEALTH_LABEL: Record<AdminIntegrationHealth, string> = {
   UNKNOWN: "확인 필요",
 };
 
+const OVERALL_HEALTH_MESSAGE: Record<AdminIntegrationHealth, string> = {
+  HEALTHY: "감시 중인 연동이 모두 정상입니다.",
+  WARNING: "지연되거나 재확인이 필요한 항목이 있습니다.",
+  CRITICAL: "즉시 확인해야 할 연동 장애가 있습니다.",
+  UNKNOWN: "worker 연결 상태를 확인하고 있습니다.",
+};
+
+const COUNT_FORMATTER = new Intl.NumberFormat("ko-KR");
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
 function tone(health: AdminIntegrationHealth) {
   if (health === "HEALTHY") return "success" as const;
   if (health === "WARNING") return "gold" as const;
@@ -37,14 +52,11 @@ function HealthTag({ health }: { health: AdminIntegrationHealth }) {
 
 function dateTime(value: string | null): string {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return DATE_TIME_FORMATTER.format(new Date(value));
 }
 
 function countLabel(value: number): string {
-  return value.toLocaleString("ko-KR");
+  return COUNT_FORMATTER.format(value);
 }
 
 type MetricTone = "neutral" | "gold" | "success" | "danger" | "muted";
@@ -81,17 +93,18 @@ function CountCell({ value, alert = false }: { value: number; alert?: boolean })
   );
 }
 
+function handleOutboxTableKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+
+  event.preventDefault();
+  event.currentTarget.scrollBy({
+    left: event.key === "ArrowRight" ? 96 : -96,
+  });
+}
+
 export default function AdminIntegrationStatusClient({ initialData }: Props) {
   const query = useAdminIntegrationStatusQuery({ initialData });
   const data = query.data ?? initialData;
-  const overallMessage =
-    data.overallHealth === "HEALTHY"
-      ? "감시 중인 연동이 모두 정상입니다."
-      : data.overallHealth === "WARNING"
-        ? "지연되거나 재확인이 필요한 항목이 있습니다."
-        : data.overallHealth === "CRITICAL"
-          ? "즉시 확인해야 할 연동 장애가 있습니다."
-          : "worker 연결 상태를 확인하고 있습니다.";
 
   const summaryMetrics: Array<{
     label: string;
@@ -167,9 +180,9 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
           </p>
         </div>
         <div className={styles.overview__actions}>
-          <div className={styles.overview__health}>
+          <div className={styles.overview__health} role="status" aria-live="polite">
             <HealthTag health={data.overallHealth} />
-            <span>{overallMessage}</span>
+            <span>{OVERALL_HEALTH_MESSAGE[data.overallHealth]}</span>
           </div>
           <Button
             size="sm"
@@ -183,7 +196,7 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
       </Box>
 
       {query.isError ? (
-        <Box className={styles.error}>
+        <Box className={styles.error} role="alert">
           최신 상태 조회에 실패해 마지막으로 확인된 값을 표시하고 있습니다.
         </Box>
       ) : null}
@@ -194,14 +207,21 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
         ))}
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} aria-labelledby="worker-heartbeat-title">
         <PanelTitle
+          id="worker-heartbeat-title"
+          role="heading"
+          aria-level={2}
+          aria-label="Worker heartbeat"
           className={styles.sectionTitle}
           right={dateTime(data.worker.lastSeenAt)}
         >
           Worker heartbeat
         </PanelTitle>
-        <Box className={styles.workerPanel}>
+        <Box
+          className={styles.workerPanel}
+          data-health={data.worker.health.toLowerCase()}
+        >
           <div className={styles.workerPanel__status}>
             <HealthTag health={data.worker.health} />
             <div>
@@ -239,11 +259,24 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
         </Box>
       </section>
 
-      <section className={styles.section}>
-        <PanelTitle className={styles.sectionTitle} right={`${data.outbox.length}종`}>
+      <section className={styles.section} aria-labelledby="integration-outbox-title">
+        <PanelTitle
+          id="integration-outbox-title"
+          role="heading"
+          aria-level={2}
+          aria-label="Integration outbox"
+          className={styles.sectionTitle}
+          right={`${data.outbox.length}종`}
+        >
           Integration outbox
         </PanelTitle>
-        <div className={styles.tableWrap}>
+        <div
+          className={styles.tableWrap}
+          role="region"
+          aria-label="Integration outbox 종류별 전달 상태표"
+          tabIndex={0}
+          onKeyDown={handleOutboxTableKeyDown}
+        >
           <table className={styles.table}>
             <thead>
               <tr>
@@ -292,8 +325,15 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
       </section>
 
       <div className={styles.twoColumn}>
-        <section className={styles.section}>
-          <PanelTitle className={styles.sectionTitle}>Discord 상태 카드</PanelTitle>
+        <section className={styles.section} aria-labelledby="discord-state-card-title">
+          <PanelTitle
+            id="discord-state-card-title"
+            role="heading"
+            aria-level={2}
+            className={styles.sectionTitle}
+          >
+            Discord 상태 카드
+          </PanelTitle>
           <div className={styles.cardList}>
             {data.desiredStates.map((item) => (
               <Box key={item.key} className={styles.statusCard}>
@@ -310,8 +350,15 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
           </div>
         </section>
 
-        <section className={styles.section}>
-          <PanelTitle className={styles.sectionTitle}>봇 위임 흐름</PanelTitle>
+        <section className={styles.section} aria-labelledby="delegated-workflow-title">
+          <PanelTitle
+            id="delegated-workflow-title"
+            role="heading"
+            aria-level={2}
+            className={styles.sectionTitle}
+          >
+            봇 위임 흐름
+          </PanelTitle>
           <div className={styles.cardList}>
             {data.delegatedWorkflows.map((item) => (
               <Box key={item.key} className={styles.statusCard}>
@@ -328,8 +375,15 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
         </section>
       </div>
 
-      <section className={styles.section}>
-        <PanelTitle className={styles.sectionTitle} right="Dokploy worker 소유">
+      <section className={styles.section} aria-labelledby="scheduled-job-title">
+        <PanelTitle
+          id="scheduled-job-title"
+          role="heading"
+          aria-level={2}
+          aria-label="예약 작업"
+          className={styles.sectionTitle}
+          right="Dokploy worker 소유"
+        >
           예약 작업
         </PanelTitle>
         <div className={styles.jobGrid}>
