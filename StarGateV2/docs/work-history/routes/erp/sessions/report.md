@@ -100,3 +100,10 @@
 - 검증: wiki `_id=6a7944ca7c80e35d939e1fdb`, report `_id=6a7944f37c80e35d939e1fdd`, mirror `_id=6a7944f37c80e35d939e1fde`, ingestion run 3건 `succeeded`, DB exact re-read, U publication 38건 live dry-run, critical risk review
 - 관련 커밋: `aa591272`, `89584ba6`, `0c6a6a7a`
 - 후속 작업: 이르마 초상/생성 결정, 리처드와 `WHITE_ROSE_R` 동일인 결정, U publication 별도 승인, `localhost:3000` 포트 충돌 해소 뒤 역할별 인증 브라우저 검증이 남는다.
+
+## 2026-08-10 · 보안 개선 · 게스트 회원 전용 보고서 차단
+
+- 계정 없는 게스트에게 작전 보고서 목록은 빈 상태로, 상세는 `404`로 제공해 `authenticated` 보고서의 제목·본문·참가자 정보를 숨긴다.
+- 통합 검색과 위키·Dossier·카탈로그 역참조에서도 게스트 보고서를 제외해 우회 경로를 함께 차단했다.
+- 검증: 게스트 공개 경계 집중 테스트, 실제 게스트 목록 0건·상세 404·검색 결과 0건, 데스크톱·390×844 빈 상태와 콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `2df03010`

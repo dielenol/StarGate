@@ -93,3 +93,10 @@
 - 검증: `DOCTOR_ZENO` `_id=6a79450ce0f247419e0c7012`, `GERASIMOV` `_id=6a7587a61bc9225fc2395022`, `IRMA_KOCH` 0건, ingestion run 2건 `succeeded`, 게라쉬모프 사후 dry-run `예상 unchanged`, critical risk review
 - 관련 커밋: `aa591272`
 - 후속 작업: 이르마는 58×57 대화 아바타 대신 별도 원본 초상을 받을지, 빈 초상으로 생성할지 결정한다. 인증 브라우저 검증은 `localhost:3000` 포트 충돌 해소 뒤 진행한다.
+
+## 2026-08-10 · 보안 개선 · 게스트 Dossier 투영
+
+- 게스트 상세 API와 페이지가 `U` 공개 필드만 남기는 전용 투영을 사용해 소유자 ID, 등급 override, 원본 출처와 일괄 갱신 메타를 제거한다.
+- 관련 작전 보고서는 게스트에게 조회·직렬화하지 않으며 공개 Dossier 본문과 관계 링크는 기존 등급 마스킹을 유지한다.
+- 검증: 실제 게스트 공개 Dossier API/RSC의 운영 메타·보고서 링크 비노출, 데스크톱 상세 화면 가로 넘침·콘솔 오류 0건, 집중 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `2df03010`

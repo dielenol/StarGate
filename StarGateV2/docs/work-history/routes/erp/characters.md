@@ -21,3 +21,10 @@
 - 소유자 ID, 필드별 등급 override, 원문 로어와 개인 인벤토리는 게스트 응답에서 제거하고 장비 관리 권한은 항상 비활성화한다.
 - 검증: 게스트 접근 계약 테스트 11/11, 실제 게스트 API에서 소유자·override·원문 비노출 확인, 데스크톱 목록·상세 및 390×844 화면 확인, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `aa3ce2d8`
+
+## 2026-08-10 · 보안 개선 · 캐릭터 카드 운영 메타 제거
+
+- 서버 마스킹 계산에는 캐릭터별 등급 override를 사용하되, 게스트와 일반 회원의 API·RSC 카드 DTO에서는 해당 운영 맵을 항상 제거한다.
+- 게스트는 소유자 ID 없이 `U` 등급으로 투영된 공개 카드만 받고, 기존 회원의 공개/비공개 필터와 표시 결과는 유지한다.
+- 검증: 회원·게스트 DTO 테스트, 실제 게스트 19개 카드의 override 0건과 능력치 마스킹, 데스크톱 목록 가로 넘침·콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `2df03010`

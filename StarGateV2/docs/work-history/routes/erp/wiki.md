@@ -16,3 +16,10 @@
 - 카탈로그 상세의 관련 보고서 카드도 같은 서버 필터를 사용하며, 비공개 카탈로그를 참조하는 보고서는 V 이상으로 제한한다.
 - 검증: app 19건, projection 11건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `1949c42d`
+
+## 2026-08-10 · 보안 개선 · 게스트 공개 검색
+
+- 게스트 Lore Explorer를 비회원 공개 검색으로 분리해 `authenticated` 작전 보고서가 live index와 fallback 어느 쪽에서도 결과에 나타나지 않게 했다.
+- 개인 소유 검색 조건에는 합성 게스트 ID 대신 nullable viewer를 사용해 private workshop 문서와 충돌하지 않도록 유지했다.
+- 검증: 검색·호출처 계약 테스트, 실제 게스트 보고서 검색 결과 0건, 데스크톱 위키 목록 가로 넘침·콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `2df03010`

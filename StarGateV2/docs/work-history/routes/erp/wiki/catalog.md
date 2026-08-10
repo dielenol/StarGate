@@ -6,3 +6,10 @@
 - 카탈로그 전용 slug 이미지 매핑을 사용해 기존 소모품 이미지 fallback은 유지하면서 샘플·특수 품목 자산을 함께 해석한다.
 - 검증: 로컬 cutout 구조 검사와 4배경 시각 QA, 이미지 매핑 assertion, `pnpm typecheck`, `pnpm lint`, 인증된 데스크톱·390×844 브라우저에서 전체 86개 카드 이미지·placeholder 0건·상세 이미지·가로 넘침 0·콘솔 error/warning 0건 확인
 - 관련 커밋: `7c7eb4e3`
+
+## 2026-08-10 · 보안 개선 · 공개 카탈로그 DTO
+
+- 기록보관소 목록과 아이템 API를 표시 전용 allowlist DTO로 통일해 이름·설명·가격·공개 게임 스펙만 클라이언트에 전달한다.
+- 작성자·출처·상점 운영값·workshop 소유자/요청 ID·생성 시각 같은 저장소 메타는 모든 클라이언트 응답에서 제거한다.
+- 검증: forbidden-field DTO 테스트, 실제 게스트 84개 카탈로그 응답의 운영 메타 0건, 데스크톱·390×844 가로 넘침·콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `2df03010`

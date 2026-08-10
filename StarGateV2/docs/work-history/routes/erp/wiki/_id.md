@@ -45,3 +45,10 @@
 - 비공개 위키를 참조하는 보고서는 V 이상으로 제한해 위키와 보고서의 공개 범위가 어긋나지 않게 검증한다.
 - 검증: app 19건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `1949c42d`
+
+## 2026-08-10 · 보안 개선 · 공개 위키 상세 DTO
+
+- 위키 상세 API와 RSC를 명시적 클라이언트 DTO로 직렬화해 공개 본문·표시 작성자명은 유지하면서 내부 작성자 계정 ID를 제거했다.
+- 게스트 상세에서는 작전 보고서 참조 목록을 조회하지 않아 회원 전용 보고서의 제목·링크가 관련 문서로 노출되지 않는다.
+- 검증: DTO forbidden-field 테스트, 실제 게스트 API/RSC의 `authorId` 비노출과 보고서 역링크 없음, 상세 화면 가로 넘침·콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `2df03010`
