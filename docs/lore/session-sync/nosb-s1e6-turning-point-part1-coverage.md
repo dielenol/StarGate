@@ -48,7 +48,7 @@ source: stargate-lore
 ## Structured Digest
 
 1. 1944년 독일의 과학자들은 패전 뒤 미국·소련·아르헨티나로의 이탈을 논의했다. 오틸리아 발트만은 붕괴한 국가와 혈통 이념을 부정했고, 1938년부터 자신을 따르던 조수 이르마 코흐의 인종적 순수성·하이퍼보리아 신념을 거부했다.
-2. 현재 블랙 피라미드에서는 신임 연구차장 닥터 제노가 프로젝트 데드핸드를 직접 지휘한다고 선언하고 마가렛을 이관했다. 그는 부정적 자극으로 능력을 증폭한다는 명목 아래 고통 증폭 수술과 뇌 칩 이식을 예고했다.
+2. 현재 블랙 피라미드에서는 닥터 모스 사망 뒤 연구 기구 사무차장직을 승계한 닥터 제노가 프로젝트 데드핸드를 직접 지휘한다고 선언하고 마가렛을 이관했다. 그는 부정적 자극으로 능력을 증폭한다는 명목 아래 고통 증폭 수술과 뇌 칩 이식을 예고했다.
 3. 해쉬와 피펫은 마가렛을 인간으로 대해야 한다며 이관에 반대했으나 제지당했다. 피펫은 제노의 폭력에 맞서 반박했고, 마가렛의 최종 상태는 확인되지 않은 채 후속으로 이월됐다.
 4. 수잔 델라웨어는 화이트로즈 인원의 명단을 확보하고 황금여명회 컬티스트를 추적했다. 동시에 스타크 일로니손의 공개 기자회견은 미국·러시아의 규탄과 광원화 감염 은폐 의혹, NOGA 시위대의 무력 충돌로 붕괴했다.
 5. 스페이스 제로 CEO 요한 스미스는 NOGA·화이트로즈·반전주의자·분리주의자와 사회적 약자를 한꺼번에 제거할 수 있다면 어떻게 할지 스타크에게 물었다. 스타크는 사람 자체를 악으로 보지 않고 필요하다면 제거 시도에 맞서겠다고 답했다.
@@ -72,11 +72,11 @@ source: stargate-lore
 | 마지막 대대 | 대규모 병력·중화기·전차·지하 기지, 사령관 증언 | `wiki_pages.last-battalion`, report | 비공개 전용 wiki 생성; 기원·새 신·광원화 구원론은 사령관 증언으로 분리 | payload-ready |
 | 광명회 | 이르마의 수장 선언, 수메르 근거지, 마지막 대대와 공동 작전 | `wiki_pages.illuminati`, report | U 공개 시점의 단일 publication transaction에서만 기존 문서에 additive update; 이르마 효능 주장은 증언 처리 | payload-ready |
 | 광원화 바이러스 | 이르마가 개조했다고 주장한 푸른 주사액 | `wiki_pages.aurora-virus`, report | U 공개 시점에 `개조 광원화 바이러스 주장` 단락 추가; 효능 미확인 명시 | payload-ready |
-| 프로젝트 데드 핸드 | 제노의 직접 지휘 선언, 마가렛 이관·수술 계획 | `wiki_pages.project-dead-hand`, report | U 공개 시점에 지휘 이관과 미확인 수술 계획을 추가 | payload-ready |
+| 프로젝트 데드 핸드 | 닥터 모스 사망 뒤 제노의 연구 기구 사무차장직 승계, 직접 지휘 선언, 마가렛 이관·수술 계획 | `wiki_pages.project-dead-hand`, report | U 공개 시점에 후임 지휘부와 미확인 수술 계획을 추가 | payload-ready |
 | 스페이스 제로 | 요한 스미스의 대량 제거 가정 질문 | `wiki_pages.space-zero`, `JOHAN_SMITH`·`CLOWN` Dossier | U 공개 시점에 세션 접촉을 기존 문서와 양측 관계에 추가; 실제 제거 계획으로 단정하지 않음 | payload-ready |
 | 화이트로즈와 리처드 | 화이트로즈 명단 확보, 리처드가 하얀 장미를 바라본 장면 | report, `wiki_pages.white-rose`, `WHITE_ROSE_R` candidate | 조직 타격은 wiki에 추가하되 리처드=`R` 병합은 사용자 확인 전 차단 | publication-payload-ready · identity-merge-blocked |
-| 이르마 코흐 | 1944년 조수와 현재 광명회 수장 장면 | 신규 NPC candidate, 광명회 wiki, report | 신원·역할은 기록하되 공개 여부와 Dossier 초상 결정 전 NPC 생성 차단 | blocked |
-| 닥터 제노 | 신임 연구차장, 데드핸드 직접 지휘 | 신규 NPC candidate, 데드핸드 wiki, report | 내부 직책·등급 영향 검토, 공개 여부, 초상 결정 전 NPC 생성 차단 | blocked |
+| 이르마 코흐 | 1944년 조수와 현재 광명회 수장 장면 | 비공개 `IRMA_KOCH` Dossier, 광명회 wiki, report | `HOSTILE / AHNENERBE`, 외부 무등급, 빈 초상으로 비공개 신규 생성 | payload-ready |
+| 닥터 제노 | 닥터 모스 사망 뒤 연구 기구 사무차장직 승계, 데드핸드 직접 지휘 | 비공개 `DOCTOR_ZENO` Dossier, 데드핸드 wiki, report | `NOVUS_ORDO / SECRETARIAT / RESEARCH`, 전임자와 같은 `V`, 빈 초상으로 비공개 신규 생성 | payload-ready |
 | 리처드 | 총장 보좌관 표기, 해쉬와 첫 사적 대화 | 기존 `WHITE_ROSE_R` identity candidate | 동일인 여부와 직함 병합 방식을 사용자 확인 전 미변경 | blocked |
 | 수메르 지하 공동 | 좌표 제보, 유적·아눈나키 벽화·지하 기지 | report, 마지막 대대·광명회 wiki | 별도 장소 wiki로 atomize하지 않고 세 문서의 작전지로 병합 | payload-ready |
 | 네피림·천사·아눈나키 동일시 | 원로의 종료부 설명 | report, 마지막 대대 wiki | 원로 증언으로만 보존; 독립 개념 wiki 신규 생성 생략 | candidate-only |
@@ -109,8 +109,8 @@ source: stargate-lore
 | 발레리아 아젠트 | `AEGIS` | 크로노스 상태 확인·구조대 합류·억제광 방어·전차 교전 | payload-ready |
 | 백진연 / 운연 | `UNYEON` | 구조대 회복 지원, 억제 장비 노출, 전차 교전 | payload-ready |
 | 니콜라이 바자로프 | `BAZAROV` | 섹터 C 수호대와 증원, 해쉬에게 구조 지휘 독려 | payload-ready |
-| 이르마 코흐 | proposed `IRMA_KOCH` | 신규 NPC 승인 전 report/wiki prose만 유지 | blocked |
-| 닥터 제노 | proposed `DOCTOR_ZENO` | 신규 NPC 승인 전 report/wiki prose만 유지 | blocked |
+| 이르마 코흐 | `IRMA_KOCH` | 비공개 신규 Dossier에 세션 appearance와 source-side 관계를 함께 등록 | payload-ready |
+| 닥터 제노 | `DOCTOR_ZENO` | 비공개 신규 Dossier에 모스 후임 이력, 데드핸드 지휘와 세션 appearance를 등록 | payload-ready |
 | `“총장 보좌관” 리처드` | possible `WHITE_ROSE_R` | 기존 R과 동일인 확인 전 Dossier·관계 미변경 | blocked |
 | 셈퍼 파이 | no canonical target | 1940년대 역사 회고 cameo; 완전한 신원·현재 상태 없어 Dossier 미생성 | candidate-only |
 | Dr. 아르투르 | no canonical target | 성·소속·현재 상태 없는 1944년 과학자 cameo | candidate-only |
@@ -126,10 +126,10 @@ source: stargate-lore
 | `CLOWN` | `JOHAN_SMITH` | 사회적 약자와 반체제 세력 제거 가정을 거부하고 개입 의사를 밝힘 | confirmed | 양측 Dossier relation | payload-ready |
 | `네베드` | `MARIA` | 생존 약속 뒤 컬티스트를 처단한 행동을 약속 위반이라고 지적 | confirmed | 양측 Dossier relation | payload-ready |
 | `BAZAROV` | `INDEXER` | 무력감에 빠진 해쉬를 독려해 선발대 구조 지휘로 복귀시킴 | confirmed | 양측 Dossier relation | payload-ready |
-| `OTILIA` | proposed `IRMA_KOCH` | 1944년 제자·조수 관계에서 인종 이념을 부정하며 결별 | confirmed | 신규 NPC 승인 뒤 양측 relation | blocked |
-| `TIGER298` | proposed `IRMA_KOCH` | 이르마가 시유를 승천 그릇으로 규정하고 개조 바이러스를 제안 | testimony | 신규 NPC 승인 뒤 양측 relation | blocked |
+| `IRMA_KOCH` | `OTILIA` | 1944년 제자·조수 관계에서 인종 이념을 부정당하며 결별 | confirmed | 비공개 신규 NPC의 source-side relation | payload-ready |
+| `IRMA_KOCH` | `TIGER298` | 이르마가 시유를 승천 그릇으로 규정하고 개조 바이러스를 제안 | testimony | 비공개 신규 NPC의 source-side relation | payload-ready |
 | `INDEXER` | possible `WHITE_ROSE_R` | 리처드가 해쉬의 선택을 긍정하고 다가올 시점에 소중한 것을 지키라고 경고 | testimony | 동일인 확인 뒤 양측 relation | blocked |
-| proposed `DOCTOR_ZENO` | `INDEXER`·`PIPETTE`·`MARGARET` | 데드핸드 지휘권과 마가렛 통제권을 빼앗고 고통 증폭 연구를 예고 | confirmed | 신규 NPC 승인 뒤 relations | blocked |
+| `DOCTOR_ZENO` | `DOCTOR_MOSS`·`INDEXER`·`PIPETTE`·`MARGARET` | 모스 사망 뒤 사무차장직을 승계하고 데드핸드 지휘권과 마가렛 통제권을 넘겨받아 고통 증폭 연구를 예고 | confirmed | 비공개 신규 NPC의 source-side relations | payload-ready |
 
 ## Economy And Stock Decision
 
@@ -159,24 +159,24 @@ source: stargate-lore
 | `AEGIS` | 발레리아 아젠트(기존 ERP 신원) | 이지스(기존 ERP) | 실험체 유지; 구조대 방어·전차 교전 참가 | 세션 화자와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS`; 기존 `SECTOR_C` 보존 | 수메르 구조대 일시 합류 | `J` 유지(지원 파견은 정규 섹터·접근권 변화가 아님) | 기존 `/assets/peoples/Valeria-pixel-profile.png` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | 크로노스 돌봄과 구조 작전 appearance 누적 | ready-for-apply |
 | `UNYEON` | 백진연(기존 ERP 신원) | 운연(기존 ERP) | 실험체 / 연기인간 유지; 구조대 회복 지원 | alias map·세션 화자와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS` / `SECTOR_A` 보존 | 수메르 구조대 | `J` 유지(회복 지원은 직책·접근권 변화가 아님) | 기존 `/assets/peoples/Unyeon-pixel-profile.png` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | 세션 appearance만 누적 | ready-for-apply |
 | `BAZAROV` | 니콜라이 바자로프(기존 ERP 신원) | богослов(신학자)(기존 ERP) | 섹터 C 연구원장 → 감독관(기존 승인 이력) 유지; 이번에는 증원·조언자 | 세션 `바자로프 교수`와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS` / `SECTOR_C` 보존 | 수메르 구조대 지원; 섹터 C 감독관 직책 불변 | `M` 유지(이번 증원·조언 역할은 기존 감독관 직책과 책임 범위이며 권한등급에 영향 없음) | 기존 `/assets/npcs/Bazarov-profile.webp` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | `INDEXER` 독려 관계와 과학자 개입 관찰 누적 | ready-for-apply |
+| `IRMA_KOCH` | 이르마 코흐(세션 양 시점의 동일 표기) | 없음(별도 통칭·코드네임 미확인) | 1944년 오틸리아의 조수·제자 → 현재 아넨에르베 "광명회" 수장 | 1944년과 현재 장면에서 같은 이름으로 등장하고 현재 본인이 광명회 수장이라고 선언; 기술 식별자는 전체 이름 정규화 | `HOSTILE` / `AHNENERBE` | 수메르 지하 근거지와 의식 운영 | 없음(외부 적대 인물; `agentLevel` 미저장) | 사용자 승인에 따라 `previewImage`·`mainImage` 빈 값; PDF 장면·저해상도 아바타 재사용 없음 | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 세션 근거 성격·배경·역할과 `OTILIA`·`TIGER298` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록 | ready-for-apply |
+| `DOCTOR_ZENO` | 제노(성명 전체는 소스 미확인; `닥터`는 직함) | 없음(별도 통칭·코드네임 미확인) | 닥터 모스 사망 뒤 연구 기구 사무차장 / 프로젝트 데드 핸드 직접 지휘자; 이전 역할은 확인되지 않음 | 세션의 신임 연구차장·직접 지휘 선언과 사용자 후속 인사 확인; 기술 식별자는 확인 표기 정규화 | `NOVUS_ORDO` / `SECRETARIAT` / `RESEARCH` | 프로젝트 데드 핸드와 마가렛 직접 관리 | `V`(사용자가 사망한 닥터 모스의 정확한 후임 자리로 지정; 전임자와 같은 직위·승인 범위를 적용) | 사용자 승인에 따라 `previewImage`·`mainImage` 빈 값; PDF 장면·저해상도 아바타 재사용 없음 | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 모스 후임 이력, 마가렛 이관·수술 계획과 `DOCTOR_MOSS`·`MARGARET`·`INDEXER`·`PIPETTE` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록 | ready-for-apply |
 
 ## NPC Candidate Decision Ledger
 
-아래 행은 이번 publication payload의 생성·수정 대상이 아니다. 사용자 결정 뒤 정식 `NPC Approval Ledger`로 승격하고 별도 NPC payload를 만든다.
+아래 행은 이번 staging·publication payload의 생성·수정 대상이 아니다. 동일인 근거가 확보되고 사용자가 병합을 승인한 뒤 정식 `NPC Approval Ledger`로 승격한다.
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `WHITE_ROSE_R` | 기존 `R`; `리처드` 동일인 여부는 사용자 결정 필요 | 기존 별칭 없음; 리처드 병합 차단 | 기존 화이트로즈 수장(자칭) / 레짐 체인지 제안자 → `총장 보좌관` 추가·대체 여부 미확정 | 하얀 장미 연출은 정황 증거뿐이며 직접 동일인 표기 없음 | 기존 `CIVIL` / `WHITE_ROSE` 보존 | 리처드가 동일인일 경우 블랙 피라미드 접촉이나 현재는 미확정 | 없음(외부 인물; agentLevel 미저장). 동일인 확인 전 내부 등급 추정 금지 | 사용자 승인으로 빈 이미지인 기존 `previewImage: ""` 보존 | 기존 `isPublic: true` 보존; 동일인 병합 여부와 별개 | 기존 R 신상 보존; Richard라는 이름은 미반영 | 해쉬 관계·세션 appearance 모두 동일인 확인 전 미변경 | blocked |
-| proposed `IRMA_KOCH` | 이르마 코흐(세션 확인) | 명시적 별칭 없음 | 1944년 오틸리아의 조수·제자 → 현재 광명회 수장(역할 변화 확인) | 두 시점 모두 동일한 이름으로 등장하고 현재 본인이 이르마·광명회 수장이라고 선언 | existing faction `AHNENERBE`가 광명회와 대응; 외부 인물 | 수메르 지하 근거지와 육아원형 제단에서 지휘 | 없음(외부 인물; agentLevel 미저장). 조수→수장 변화는 내부 등급으로 번역하지 않음 | PDF에는 1035x503 컷신과 58px 아바타만 존재해 Dossier 초상으로 부적합; 사용자에게 빈 이미지 승인 또는 정확한 초상 필요 | 신규 NPC 공개/비공개를 사용자가 결정해야 함 | 성별·연령·국적·신체 수치는 소스 미확인으로 저장하지 않음 | 오틸리아 과거 관계와 시유 포섭, 개조 바이러스 주장은 출처 구분해 서술 가능 | blocked |
-| proposed `DOCTOR_ZENO` | 닥터 제노(성/이름 전체는 소스 미확인) | 명시적 별칭 없음 | 이전 역할 미확인 → 신임 연구차장 / 프로젝트 데드핸드 직접 지휘자(역할·접근 범위 변화 확인) | 병사와 본인이 신임 연구차장·직접 지휘를 명시 | 블랙 피라미드 연구부 소속은 확인되나 `NOVUS_ORDO` / `MANUS` / `SECTOR_A` 구조화 배치는 사용자 확인 필요 | 마가렛 통제권과 데드핸드 지휘권 인수 | 신규 내부 고위직의 `agentLevel`을 사용자 또는 권위 소스가 결정해야 함 | PDF에는 1035x503 장면 컷과 58px 아바타만 있어 정확한 Dossier 초상이 아님; 빈 이미지 승인 또는 정확한 초상 필요 | 신규 NPC 공개/비공개를 사용자가 결정해야 함 | 성별·연령·국적·신체 수치는 소스 미확인으로 저장하지 않음 | 마가렛 이관, 해쉬·피펫 충돌, 고통 증폭 수술 계획을 세션 확인 사실로 서술 가능 | blocked |
 
 ## Story-Driven Role/Level Review Summary
 
 - `BAZAROV`: 지난 회차에서 이미 섹터 C 감독관·`M`으로 승인 반영됐다. 이번 세션의 지원 출동과 조언은 새 임명이나 접근 범위 확대가 아니므로 `M`을 유지한다.
 - `INDEXER`: 구조대 임시 현장 지휘는 정규 직책·부서·접근권 변경이 아니므로 `J`를 유지한다.
 - `MARGARET`: 프로젝트 관리 책임자가 제노로 바뀌었지만 본인의 승인 권한이 변했다는 근거가 없어 `J`를 유지한다.
-- `IRMA_KOCH`: 조수에서 광명회 수장으로 역할이 변했으나 외부 세력 인물이므로 `agentLevel`을 만들지 않는다.
-- `DOCTOR_ZENO`: 신임 연구차장과 프로젝트 지휘권은 명시적 내부 권한 변화다. 기존 등급과 승인 등급이 모두 없어 사용자 결정 전 차단한다.
+- `IRMA_KOCH`: 조수에서 광명회 수장으로 역할이 변했으나 외부 적대 세력 인물이므로 `agentLevel`을 만들지 않는다. 사용자가 이 원칙과 비공개·빈 초상 생성을 승인했다.
+- `DOCTOR_ZENO`: 이전 역할은 미확인이지만 닥터 모스 사망 뒤 연구 기구 사무차장직과 동일한 승인 범위를 승계했다. 사용자가 전임자의 정확한 후임 자리로 지정했으므로 `NOVUS_ORDO / SECRETARIAT / RESEARCH`, `V`를 적용한다.
 - `WHITE_ROSE_R`: 리처드와 동일인인지 확정되지 않아 역할 병합과 등급 검토 자체를 보류한다. 외부 `R` 레코드에는 현재처럼 `agentLevel`을 저장하지 않는다.
 
 ## Personality Evidence Ledger
@@ -190,6 +190,8 @@ source: stargate-lore
 | `NOSB-S1E6-TURNING-POINT-PART1:NEVED:promise-accountability` | `네베드` | `NOSB-S1E6-TURNING-POINT-PART1` | 약속의 책임성 중시 | dialogue+action | 약속을 지키지 않는군요.<br>정보 취득 뒤 벌어진 처단의 절차적 문제를 제기함 | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
 | `NOSB-S1E6-TURNING-POINT-PART1:MARIA:punitive-retribution` | `MARIA` | `NOSB-S1E6-TURNING-POINT-PART1` | 응보적 처단 우선 | action+dialogue | 호주에서 학살을 벌인 살인범들에게 약속을 지켜야 하나요?<br>좌표를 얻은 뒤 컬티스트를 처단함 | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
 | `NOSB-S1E6-TURNING-POINT-PART1:BAZAROV:scientific-interventionism` | `BAZAROV` | `NOSB-S1E6-TURNING-POINT-PART1` | 관료 공백에서의 과학자 개입 | dialogue+action | 관료들이 무력한 지금, 우리들이 나서야만 하지 않은가?<br>섹터 C 전방 수호대와 함께 수메르 구조 증원에 합류함 | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E6-TURNING-POINT-PART1:IRMA_KOCH:racial-purity-fanaticism` | `IRMA_KOCH` | `NOSB-S1E6-TURNING-POINT-PART1` | 혈통 순수성과 초월 신념에 대한 집착 | description+action | 1944년에도 인종적 순수성과 하이퍼보리아 신념을 고수했다.<br>현재 시유를 천사가 될 그릇으로 규정하고 개조 바이러스를 제안했다. | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E6-TURNING-POINT-PART1:DOCTOR_ZENO:instrumental-cruelty` | `DOCTOR_ZENO` | `NOSB-S1E6-TURNING-POINT-PART1` | 고통의 연구 수단화 | action | 마가렛의 고통 증폭 수술과 뇌 칩 이식을 예고했다.<br>연구 방식에 반대한 피펫을 직접 제압하고 마가렛을 이송했다. | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
 
 후보 메모:
 
@@ -266,28 +268,28 @@ source: stargate-lore
 
 1. `nosb-s1e6-turning-point-part1-reference-targets.json`을 단독 실행해 비공개 `last-battalion` wiki 1건을 insert하고 DB 재조회한다.
 2. 같은 live snapshot을 대상으로 `nosb-s1e6-turning-point-part1-sync.json`을 fresh dry-run한 뒤 단독 실행해 `minRole: V` report와 비공개 mirror를 insert하고 재조회한다.
-3. V staging 단계에서는 여기서 중단한다. 공개 Dossier·기존 공개 wiki·관계·성격 관찰을 수정하는 별도 파일은 존재하지 않는다.
-4. 사용자가 U 공개를 별도 승인한 뒤에만 `nosb-s1e6-turning-point-part1-publication.json` 한 파일을 실행한다. 이 파일의 한 domain transaction 안에서 `last-battalion`과 mirror를 공개하고 report를 `minRole: U`로 전환한 뒤, 기존 공개 wiki 5건, Dossier appearance 16건, relation envelope 7건, personality observation 7건을 함께 반영한다. staging 3건 중 하나라도 없으면 첫 update가 실패해 전체 domain transaction이 abort된다.
-5. reference-targets와 sync는 정사 본문·메타데이터를 `$set`으로 갱신하되, 공개 여부·최저 역할과 `createdAt`만 `$setOnInsert`로 제한한다. 따라서 U 공개 뒤 staging 파일을 재실행해도 최신 정사 본문은 동기화하면서 `U/public`을 `V/private`로 되돌리지 않는다. publication 파일은 visibility를 최종 `U/true`로 고정하고 나머지는 조건부 append 또는 `$addToSet`이라 같은 문구의 재실행에 멱등이다.
+3. report 존재를 재확인한 뒤 `nosb-s1e6-turning-point-part1-new-npcs.json`을 단독 실행해 비공개·빈 초상의 `IRMA_KOCH`와 `DOCTOR_ZENO`를 insert하고 재조회한다. 이르마는 외부 무등급, 제노는 닥터 모스 후임 `SECRETARIAT / RESEARCH / V`로 생성한다.
+4. V staging 단계에서는 여기서 중단한다. 신규 두 NPC의 관계·appearance·성격 관찰은 비공개 Dossier 내부에만 존재하며, 기존 공개 Dossier의 역방향 관계나 기존 공개 wiki는 수정하지 않는다.
+5. 사용자가 U 공개를 별도 승인한 뒤에만 `nosb-s1e6-turning-point-part1-publication.json` 한 파일을 실행한다. 이 파일의 한 domain transaction 안에서 `last-battalion`과 mirror를 공개하고 report를 `minRole: U`로 전환한 뒤, 기존 공개 wiki 5건, Dossier appearance 16건, relation envelope 7건, personality observation 7건을 함께 반영한다. staging 3건 중 하나라도 없으면 첫 update가 실패해 전체 domain transaction이 abort된다.
+6. reference-targets와 sync는 정사 본문·메타데이터를 `$set`으로 갱신하되, 공개 여부·최저 역할과 `createdAt`만 `$setOnInsert`로 제한한다. 따라서 U 공개 뒤 staging 파일을 재실행해도 최신 정사 본문은 동기화하면서 `U/public`을 `V/private`로 되돌리지 않는다. 신규 NPC 파일은 최초 불변 성격 관찰을 함께 넣는 create-only payload다. 실행 직전 두 codename이 모두 0건이어야 하며, 한 번 성공한 뒤 같은 파일을 재실행하면 기존 codename 검출 즉시 전체 transaction을 fail-closed로 중단한다. 이후 보정은 이 파일을 재실행하지 않고 별도 focused update로 수행한다. publication 파일은 visibility를 최종 `U/true`로 고정하고 나머지는 조건부 append 또는 `$addToSet`이라 같은 내용의 재실행에 멱등이다.
 
-세 파일은 서로 별도 실행 단위다. 1단계 성공 뒤 2단계가 실패하면 비공개 `last-battalion`과 source/ingestion audit은 남으며 자동 원복하지 않는다. 각 단계 직후 독립 재조회와 다음 파일의 fresh dry-run을 거친다.
+네 파일은 서로 별도 실행 단위다. 앞 단계 성공 뒤 다음 단계가 실패하면 이미 반영된 비공개 record와 source/ingestion audit은 남으며 자동 원복하지 않는다. 각 단계 직후 독립 재조회와 다음 파일의 fresh dry-run을 거친다.
 
 ## Verification Record
 
 - Source extraction: complete; 125/125 pages, 1,464 normalized entries, 50 scene boundaries.
 - Live read-only baseline: report 0, mirror 0, last-battalion wiki 0, proposed Irma/Zeno Dossier 0, existing `WHITE_ROSE_R` 1.
-- Schema/payload validation: complete; 3개 파일 41개 envelope가 JSON parse와 DB-less seed schema 검증을 통과했다.
+- Schema/payload validation: complete; 신규 NPC 2건을 포함한 4개 파일 43개 envelope가 JSON parse와 DB-less seed schema를 통과했고, `IRMA_KOCH`·`DOCTOR_ZENO` spec의 adapter-managed fields가 생성 payload와 일치했다.
 - Coverage/static audit: complete; 전체 session coverage·taxonomy·link target·asset 검사가 통과했다.
 - Static baseline live parity: complete; `pnpm lore:baseline -- --verify-live`가 `stargate`의 versioned read-only target hash를 재확인했다.
-- NPC/personality checks: publication 파일의 기존 16개 Dossier target, relation 7개 envelope와 성격 관찰 7건이 live dry-run에서 유일 target update로 확인됐다. 정식 NPC Approval Ledger는 실제 publication target만 포함하며 NPC ready/payload parity와 personality ready/payload parity가 통과했다. 신규 이르마·제노와 `R`/리처드 identity row는 별도 Candidate Decision Ledger에 격리했고 결정 전 payload에서 제외했다.
+- NPC/personality checks: complete; publication 파일의 기존 16개 Dossier target·relation 7개·성격 관찰 7건과 신규 private NPC 2건의 필드·source-side relation·불변 성격 관찰 2건이 각각 focused payload parity를 통과했다. `R`/리처드 identity row만 Candidate Decision Ledger에 격리했다.
 - Visual/report-mirror parity: complete; 보고서와 mirror의 15개 경로·순서·alt·caption이 일치하고 모든 ledger 자산 경로가 존재한다.
-- Live dry-run: `last-battalion`은 insert 1건으로 확인했다. report/mirror는 선행 `last-battalion`이 아직 live에 없어 구조화 참조 gate가 차단됐다. publication 단일 파일은 staging 3건을 missing, 기존 wiki 5건과 Dossier/관계/성격 target 35건을 update로 확인했다. 이는 위 실행 순서의 선행조건과 공개 phase guard가 실제 live baseline에서 작동한 결과다.
+- Live dry-run: `last-battalion`은 insert 1건, `IRMA_KOCH`·`DOCTOR_ZENO`는 codename 0건 baseline에서 create-only insert 2건으로 확인했다. report/mirror는 선행 `last-battalion` 부재 때문에 report 1건만 구조화 참조 gate에서 차단되고 mirror는 insert로 판정됐다. publication은 staging 3건이 missing이며 기존 공개 wiki·Dossier 대상은 update로 확인돼 phase guard가 작동했다. 실제 실행은 committed source 기준으로 각 단계 직전 fresh dry-run하고, 신규 NPC 파일은 최초 성공 뒤 재실행하지 않는다.
 - Report numbering test: `node --test lib/format/__tests__/session-report-numbering.test.mjs` 6/6 통과.
 - Live write and DB re-read: not run — exact target/mutation approval required.
 - Authenticated ERP browser: not run — live staging records do not exist yet.
 
 ## Remaining Decisions
 
-1. `IRMA_KOCH`: 신규 Dossier를 공개/비공개 중 어느 쪽으로 둘지, 대표 이미지를 빈 값으로 승인할지 또는 정확한 초상을 제공할지 필요하다. 외부 광명회 수장이므로 `agentLevel`은 두지 않는다.
-2. `DOCTOR_ZENO`: 신규 Dossier 공개 여부, 정확한 정규 소속(`NOVUS_ORDO` / `MANUS` / `SECTOR_A` 후보), `agentLevel`, 빈 이미지 또는 정확한 초상 결정을 받아야 한다.
-3. `WHITE_ROSE_R`: 이번 로그의 `“총장 보좌관” 리처드`와 동일인인지, 동일인이라면 기존 이름 `R`을 `리처드`로 확장할지와 `총장 보좌관`을 기존 역할에 추가할지 결정해야 한다.
+1. `WHITE_ROSE_R`: 이번 로그의 `“총장 보좌관” 리처드`와 동일인인지, 동일인이라면 기존 이름 `R`을 `리처드`로 확장할지와 `총장 보좌관`을 기존 역할에 추가할지 결정해야 한다.
+2. 비공개 `IRMA_KOCH`·`DOCTOR_ZENO`는 향후 공개할 때만 Dossier 공개 여부, 공개 보고서의 구조화 인물 링크, 기존 공개 Dossier의 역방향 관계를 별도 publication payload로 검토한다.

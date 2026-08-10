@@ -281,7 +281,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 - **적재 handoff**: `scripts/seed-payloads/*.json`을 `seed:payload` dry-run으로 검증한다. live 쓰기는 최신 사용자 요청이 정확한 대상과 mutation을 지정하고 즉시 실행을 승인한 경우에만 `--execute --yes`로 수행한다.
 - **소비**: `factions` / `institutions` / `characters` / `master_items` / `wiki_pages` / `session_reports`가 기존 도메인 SSOT다. ERP의 `/erp/factions`, `/erp/personnel`, `/erp/wiki`, `/erp/sessions`, `/erp/wiki/catalog/{all|equipment|consumable|sample|special}`가 이를 소비한다. `/erp/wiki/catalog/material`은 sample 탭으로 이동하는 legacy alias다.
 
-## 저장소 durable inventory (2026-08-05)
+## 저장소 durable inventory (2026-08-10)
 
 아래 건수는 Git에 보존된 `docs/spec/{domain}/*.md` 파일 inventory다. live MongoDB 건수와 같다고 추정하지 않으며, live 상태를 보고할 때는 같은 날짜의 read-only 조회 증거를 별도로 남긴다.
 
@@ -289,7 +289,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 |--------|--------:|-----------|------|
 | faction | 7 | `factions` | `scope=external|internal`과 관계 vocabulary를 함께 유지 |
 | institution | 4 | `institutions` | `SECRETARIAT`/`MANUS`는 `NOVUS_ORDO` 산하, `SPACE_ZERO`/`WHITE_ROSE`는 독립·협력 기관 |
-| npc | 36 | `characters` (`type=NPC`) | Dossier 소비와 session appearance/personality evidence는 별도 누적 구조 |
+| npc | 41 | `characters` (`type=NPC`) | Dossier 소비와 session appearance/personality evidence는 별도 누적 구조 |
 | equipment | 21 | `master_items` | `WEAPON|ARMOR` |
 | consumable | 22 | `master_items` | `CONSUMABLE` |
 | catalog | 33 | `master_items` | `MATERIAL|SPECIAL` 등 전용 도메인으로 환원하기 어려운 항목 |
@@ -298,7 +298,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 
 2026-08-05 read-only DB 확인 결과는 `factions=7` (`AHNENERBE`, `CIVIL`, `COUNCIL`, `GOLDEN_DAWN`, `HOSTILE`, `MILITARY`, `NOVUS_ORDO`), `institutions=4` (`MANUS`, `SECRETARIAT`, `SPACE_ZERO`, `WHITE_ROSE`)다. 이 snapshot은 날짜가 지난 뒤 자동으로 현재 상태를 보장하지 않으므로 이후 감사에서는 다시 조회한다.
 
-같은 read-only 비교에서 NPC spec codename 36개와 live `characters(type=NPC)` codename 36개는 양방향 누락 없이 일치했다.
+2026-08-05 read-only 비교에서는 NPC spec codename 36개와 당시 live `characters(type=NPC)` codename 36개가 양방향 누락 없이 일치했다. 이후 이 작업 직전 durable inventory가 39개로 늘었고, 2026-08-10 비공개 신규 NPC `IRMA_KOCH`·`DOCTOR_ZENO` spec을 추가해 41개가 됐다. live 사전 조회에서는 이 두 codename이 모두 0건으로 확인됐으므로 이번 적용 대상 차이는 정확히 이 두 건이다.
 
 같은 날짜의 `session_reports` 감사에서는 문서 12건과 유효한 고유 `sessionId` 12개가 일치했고 누락·비문자열·빈 값·중복은 없었다. 이 12개 집합은 durable seed payload와 `docs/lore/session-sync/*-coverage.md` identity 집합에도 양방향 누락 없이 일치했다.
 
