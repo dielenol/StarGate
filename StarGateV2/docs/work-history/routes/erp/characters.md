@@ -14,3 +14,10 @@
 - 검증: 입력·API·migration 집중 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 커밋: `30ffe959`
 - 후속 작업: 읽기 전용 dry-run만 수행했으며 라이브 migration은 실행하지 않았다.
+
+## 2026-08-10 · 기능 추가 · 게스트 공개 캐릭터 열람
+
+- 게스트는 공개 캐릭터 목록과 상세를 `U` 등급 기준으로 열람할 수 있으며, 등급이 부족한 능력치·어빌리티·로어는 분류 처리한다.
+- 소유자 ID, 필드별 등급 override, 원문 로어와 개인 인벤토리는 게스트 응답에서 제거하고 장비 관리 권한은 항상 비활성화한다.
+- 검증: 게스트 접근 계약 테스트 11/11, 실제 게스트 API에서 소유자·override·원문 비노출 확인, 데스크톱 목록·상세 및 390×844 화면 확인, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `aa3ce2d8`
