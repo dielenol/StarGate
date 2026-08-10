@@ -52,3 +52,10 @@
 - 게스트 상세에서는 작전 보고서 참조 목록을 조회하지 않아 회원 전용 보고서의 제목·링크가 관련 문서로 노출되지 않는다.
 - 검증: DTO forbidden-field 테스트, 실제 게스트 API/RSC의 `authorId` 비노출과 보고서 역링크 없음, 상세 화면 가로 넘침·콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `2df03010`
+
+## 2026-08-10 · 라이브 적용 · S1E6 공개 문서 상세
+
+- 공개 `작전 보고서 S1E6: 변곡점 1부` mirror와 `마지막 대대`, 기존 연계 위키 5건에서 보고서·위키·Dossier 자동링크와 관련 카드가 정규 상세 경로로 연결된다.
+- mirror는 보고서와 같은 시각 자료 15개와 caption을 렌더하며 본문에는 원시 로어 링크 token이 남지 않는다.
+- 검증: 본문 장면 14개 natural/rendered `1035×503`, infobox 대표 이미지 natural `299×145`·rendered `260×195`, `object-fit: contain`, broken 0, PUBLIC 배지·보고서 역링크·미인증 상세 `307`
+- 관련 적용 소스 커밋: `1acea89c`

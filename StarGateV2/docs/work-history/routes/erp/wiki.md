@@ -23,3 +23,10 @@
 - 개인 소유 검색 조건에는 합성 게스트 ID 대신 nullable viewer를 사용해 private workshop 문서와 충돌하지 않도록 유지했다.
 - 검증: 검색·호출처 계약 테스트, 실제 게스트 보고서 검색 결과 0건, 데스크톱 위키 목록 가로 넘침·콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `2df03010`
+
+## 2026-08-10 · 라이브 적용 · S1E6 공개 로어 그래프
+
+- `s1e6-turning-point-part1` mirror와 `last-battalion`을 공개하고 광명회·광원화 바이러스·프로젝트 데드 핸드·스페이스 제로·화이트로즈 본문과 태그를 갱신했다.
+- Lore Explorer에서 `NOSB-S1E6-TURNING-POINT-PART1` 쿼리가 보고서·mirror·마지막 대대·관련 Dossier의 정규 링크를 `sourceMode: hybrid`, `degradedSources: []`로 반환한다.
+- 검증: 기존 위키 5건의 세션 표식·보고서 링크·공개 상태, 원시 `[[...]]` token 0, revision snapshot 5건, 미인증 검색 API `401`
+- 관련 적용 소스 커밋: `1acea89c`

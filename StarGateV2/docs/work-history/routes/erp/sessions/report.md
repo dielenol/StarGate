@@ -107,3 +107,11 @@
 - 통합 검색과 위키·Dossier·카탈로그 역참조에서도 게스트 보고서를 제외해 우회 경로를 함께 차단했다.
 - 검증: 게스트 공개 경계 집중 테스트, 실제 게스트 목록 0건·상세 404·검색 결과 0건, 데스크톱·390×844 빈 상태와 콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `2df03010`
+
+## 2026-08-10 · 라이브 적용 · S1E6 변곡점 1부 U 공개
+
+- `NOSB-S1E6-TURNING-POINT-PART1` 보고서를 `V`에서 모든 인증 역할 `U`로 전환하고 목록에 정규 보고서 `06`으로 공개했다.
+- 공개 mirror와 `last-battalion`, 기존 위키 5건, 공개 Dossier 16건의 세션 출현·관계·성격 관찰을 38-envelope 단일 transaction으로 함께 반영했다.
+- 검증: ingestion run `seed-payload:099d584a-ffc7-4990-a8c2-f154a8a18f79` 38/38 성공, DB exact 재조회, 목록·상세·역참조, 시각 자료 15개 natural/rendered `1035×503`·broken 0, 미인증 상세 `307`
+- 관련 적용 소스 커밋: `1acea89c`
+- 잔여 관찰: 최초 보고서 목록 진입에서 렌더를 막지 않는 React hydration `#418`이 1회 기록됐고 상세·mirror 탐색에서는 새 앱 오류가 없었다.

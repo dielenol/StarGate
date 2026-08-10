@@ -107,3 +107,11 @@
 - 비공개 Dossier에 오틸리아·타이거298 source-side 관계 2건, 변곡점 1부 세션 출현 1건, 불변 성격 관찰 1건을 함께 반영했다.
 - 검증: committed clean snapshot dry-run, transaction 후 schema 재조회, production 정적 자산 원본 SHA-256 일치, 인증된 상세·관계·세션 화면, 초상 natural 320×426/rendered 238×317, broken image 0, console warning/error 0, 미인증 상세 `307`·API `401`
 - 관련 구현 커밋: `1acea89c`
+
+## 2026-08-10 · 라이브 적용 · S1E6 공개 Dossier 연결
+
+- 기존 공개 Dossier 16건에 `NOSB-S1E6-TURNING-POINT-PART1` 세션 출현과 event ID를 각 1회 누적하고, 7개 관계 envelope의 관계 객체 8개와 불변 성격 관찰 7건을 반영했다.
+- BAZAROV 상세에서 보고서 역링크, 수메르 구조 증원 appearance, INDEXER 관계와 `관료 공백에서의 과학자 개입` 관찰을 확인했다.
+- 비공개 `IRMA_KOCH`·`DOCTOR_ZENO`와 기존 `WHITE_ROSE_R`은 이번 publication에서 수정하지 않았다.
+- 검증: 16개 Dossier DB exact 재조회, appearance 16·관계 객체 8·personality 7 중복 0, 인증된 상세 3개 탭과 정규 링크 확인
+- 관련 적용 소스 커밋: `1acea89c`
