@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type { ResearchDestination, ResearchRecipeId } from "@stargate/shared-db";
 
@@ -34,10 +34,20 @@ import type {
   ResearchConsoleJob,
   ResearchConsoleLine,
 } from "./ResearchConsole";
-import type { XenoDialogueMessage } from "./XenoStage";
+import {
+  createGmSimulationData,
+  makeGmSimulationOpening,
+  simulateGmChoice,
+  type GmSimulationScenario,
+} from "./gmSimulation";
+import type {
+  XenoDialogueMessage,
+  XenoRelationshipState,
+} from "./XenoStage";
 
 interface ResearchClientProps {
   initialData: ResearchLabOverview;
+  canSimulate: boolean;
 }
 
 interface InteractionLog {
@@ -260,7 +270,10 @@ function toViewData(
   };
 }
 
-export default function ResearchClient({ initialData }: ResearchClientProps) {
+export default function ResearchClient({
+  initialData,
+  canSimulate,
+}: ResearchClientProps) {
   const operations = useRef<OperationRefs>({
     initial: null,
     queue: null,
@@ -268,6 +281,18 @@ export default function ResearchClient({ initialData }: ResearchClientProps) {
     claim: null,
   });
   const [interaction, setInteraction] = useState<InteractionLog | null>(null);
+  const [simulationActive, setSimulationActive] = useState(canSimulate);
+  const [simulationScenario, setSimulationScenario] =
+    useState<GmSimulationScenario>("OPEN");
+  const [simulationRelationship, setSimulationRelationship] =
+    useState<XenoRelationshipState>("ACKNOWLEDGED");
+  const [simulationStartedAt, setSimulationStartedAt] = useState(() =>
+    Date.now(),
+  );
+  const [simulationMessages, setSimulationMessages] = useState<
+    XenoDialogueMessage[]
+  >(() => makeGmSimulationOpening());
+  const simulationEnabled = canSimulate && simulationActive;
   const overview = useResearchLab({ initialData });
   const initial = useStartInitialResearch();
   const queue = useQueueResearchJob();
@@ -275,6 +300,18 @@ export default function ResearchClient({ initialData }: ResearchClientProps) {
   const claim = useClaimResearchJob();
   const choice = useXenoChoice();
   const chat = useXenoChat();
+
+  const appendSimulationMessages = (
+    messages: Omit<XenoDialogueMessage, "id">[],
+  ) => {
+    setSimulationMessages((current) => [
+      ...current,
+      ...messages.map((message) => ({
+        ...message,
+        id: `gm-simulation-${crypto.randomUUID()}`,
+      })),
+    ]);
+  };
 
   const resetEconomicErrors = () => {
     initial.reset();
@@ -306,6 +343,18 @@ export default function ResearchClient({ initialData }: ResearchClientProps) {
   };
 
   const handleInitial = (recipeId: string) => {
+    if (simulationEnabled) {
+      setSimulationScenario("INITIAL");
+      setSimulationStartedAt(Date.now());
+      appendSimulationMessages([
+        {
+          speaker: "XENO",
+          text: "표본은 접수하지. 24시간 뒤에도 네가 이걸 연구라고 부를 수 있을지는 그때 판단해.",
+          expression: "smirk",
+        },
+      ]);
+      return;
+    }
     const line = overview.data?.lines.find(
       (candidate) => candidate.recipe.id === recipeId,
     );
@@ -324,6 +373,18 @@ export default function ResearchClient({ initialData }: ResearchClientProps) {
   };
 
   const handleQueue = (recipeId: string, destination: ResearchDestination) => {
+    if (simulationEnabled) {
+      setSimulationScenario("QUEUED");
+      setSimulationStartedAt(Date.now());
+      appendSimulationMessages([
+        {
+          speaker: "XENO",
+          text: `${destination === "SHARED" ? "공용 보관고" : "네 개인 수령함"}으로 지정했다. 생산기가 네 사정까지 배려해 줄 거라는 기대는 버려.`,
+          expression: "interested",
+        },
+      ]);
+      return;
+    }
     const line = overview.data?.lines.find(
       (candidate) => candidate.recipe.id === recipeId,
     );
@@ -343,6 +404,18 @@ export default function ResearchClient({ initialData }: ResearchClientProps) {
   };
 
   const handleCancel = (jobId: string) => {
+    if (simulationEnabled) {
+      setSimulationScenario("OPEN");
+      setSimulationStartedAt(Date.now());
+      appendSimulationMessages([
+        {
+          speaker: "XENO",
+          text: "취소 처리했다. 변덕까지 연구 변수로 기록해야 하나 고민되는군.",
+          expression: "displeased",
+        },
+      ]);
+      return;
+    }
     if (!window.confirm("대기 중인 생산 요청을 취소하고 500 CR을 전액 환불받으시겠습니까?")) return;
     resetEconomicErrors();
     const operation = retainIdempotencyOperation(
@@ -358,6 +431,18 @@ export default function ResearchClient({ initialData }: ResearchClientProps) {
   };
 
   const handleClaim = (jobId: string) => {
+    if (simulationEnabled) {
+      setSimulationScenario("OPEN");
+      setSimulationStartedAt(Date.now());
+      appendSimulationMessages([
+        {
+          speaker: "XENO",
+          text: "수령 확인. 떨어뜨리지만 마. 네 손에서 망가진 것까지 내 연구 실패로 적히는 건 사양이야.",
+          expression: "smirk",
+        },
+      ]);
+      return;
+    }
     if (!window.confirm("개인 수령함의 연구 산출물을 지금 수령하시겠습니까?")) return;
     resetEconomicErrors();
     const operation = retainIdempotencyOperation(
@@ -391,22 +476,95 @@ export default function ResearchClient({ initialData }: ResearchClientProps) {
     errorMessage(cancel.error) ??
     errorMessage(claim.error);
   const chatError = errorMessage(chat.error) ?? errorMessage(choice.error);
+  const liveViewData = useMemo(
+    () => (overview.data ? toViewData(overview.data, interaction) : null),
+    [interaction, overview.data],
+  );
+  const viewData = useMemo(() => {
+    if (!simulationEnabled || !liveViewData) return liveViewData;
+    return createGmSimulationData({
+      base: liveViewData,
+      scenario: simulationScenario,
+      relationshipState: simulationRelationship,
+      messages: simulationMessages,
+      startedAt: simulationStartedAt,
+    });
+  }, [
+    liveViewData,
+    simulationEnabled,
+    simulationMessages,
+    simulationRelationship,
+    simulationScenario,
+    simulationStartedAt,
+  ]);
 
   return (
     <ResearchLabView
-      data={overview.data ? toViewData(overview.data, interaction) : null}
-      isLoading={overview.isPending}
-      error={errorMessage(overview.error) ?? actionError}
-      pendingAction={pendingAction}
-      chatError={chatError}
-      onRefresh={() => { setInteraction(null); void overview.refetch(); }}
+      data={viewData}
+      isLoading={simulationEnabled ? false : overview.isPending}
+      error={simulationEnabled ? null : errorMessage(overview.error) ?? actionError}
+      pendingAction={simulationEnabled ? null : pendingAction}
+      chatError={simulationEnabled ? null : chatError}
+      simulation={
+        canSimulate
+          ? {
+              active: simulationEnabled,
+              disabled: pendingAction !== null,
+              scenario: simulationScenario,
+              relationshipState: simulationRelationship,
+              onToggle: () => {
+                if (pendingAction !== null) return;
+                setSimulationActive((active) => !active);
+                setSimulationStartedAt(Date.now());
+                setSimulationMessages(makeGmSimulationOpening());
+              },
+              onScenarioChange: (scenario) => {
+                setSimulationScenario(scenario);
+                setSimulationStartedAt(Date.now());
+              },
+              onRelationshipChange: setSimulationRelationship,
+            }
+          : undefined
+      }
+      onRefresh={() => {
+        if (simulationEnabled) {
+          setSimulationStartedAt(Date.now());
+          return;
+        }
+        setInteraction(null);
+        void overview.refetch();
+      }}
       onChatSubmit={(message) => {
+        if (simulationEnabled) {
+          appendSimulationMessages([
+            { speaker: "USER", text: message },
+            {
+              speaker: "XENO",
+              text: "질문은 들었어. 하지만 네가 원하는 답과 관찰 결과가 같을 거라고 기대하진 마.",
+              expression: "smirk",
+            },
+          ]);
+          return;
+        }
         chat.reset();
         choice.reset();
         setInteraction(null);
         chat.mutate({ message });
       }}
       onChoiceSelect={(choiceId) => {
+        if (simulationEnabled) {
+          const result = simulateGmChoice(choiceId);
+          setSimulationRelationship(result.relationshipState);
+          appendSimulationMessages([
+            { speaker: "USER", text: result.playerLine },
+            {
+              speaker: "XENO",
+              text: result.xenoLine,
+              expression: result.expression,
+            },
+          ]);
+          return;
+        }
         chat.reset();
         choice.reset();
         choice.mutate(

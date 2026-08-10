@@ -174,6 +174,61 @@ test("Query mutation은 연구·인벤토리·크레딧·알림 캐시를 함께
   assert.doesNotMatch(client, /relationshipScore|호감도.*\d|게이지/);
 });
 
+test("GM 시뮬레이션은 역할로 제한되고 라이브 mutation보다 먼저 종료된다", async () => {
+  const [page, client, simulation, view] = await Promise.all([
+    source("app/(erp)/erp/research/page.tsx"),
+    source("app/(erp)/erp/research/ResearchClient.tsx"),
+    source("app/(erp)/erp/research/gmSimulation.ts"),
+    source("app/(erp)/erp/research/ResearchLabView.tsx"),
+  ]);
+
+  assert.match(page, /canSimulate=\{session\.user\.role === "GM"\}/);
+  assert.match(view, /GM SIMULATION · NO LIVE MUTATION/);
+  assert.doesNotMatch(simulation, /\bfetch\b|axios|\.mutate\s*\(/);
+
+  const initialHandler = client.slice(
+    client.indexOf("const handleInitial"),
+    client.indexOf("const handleQueue"),
+  );
+  const queueHandler = client.slice(
+    client.indexOf("const handleQueue"),
+    client.indexOf("const handleCancel"),
+  );
+  const cancelHandler = client.slice(
+    client.indexOf("const handleCancel"),
+    client.indexOf("const handleClaim"),
+  );
+  const claimHandler = client.slice(
+    client.indexOf("const handleClaim"),
+    client.indexOf("const pendingAction"),
+  );
+  for (const handler of [
+    initialHandler,
+    queueHandler,
+    cancelHandler,
+    claimHandler,
+  ]) {
+    assert.ok(handler.indexOf("if (simulationEnabled)") >= 0);
+    assert.ok(
+      handler.indexOf("if (simulationEnabled)") < handler.indexOf(".mutate("),
+      "시뮬레이션 분기는 라이브 mutation보다 먼저 return해야 한다",
+    );
+  }
+
+  const chatHandler = client.slice(
+    client.indexOf("onChatSubmit={(message)"),
+    client.indexOf("onChoiceSelect={(choiceId)"),
+  );
+  const choiceHandler = client.slice(
+    client.indexOf("onChoiceSelect={(choiceId)"),
+    client.indexOf("onStartInitial={handleInitial}"),
+  );
+  for (const handler of [chatHandler, choiceHandler]) {
+    assert.ok(handler.indexOf("if (simulationEnabled)") >= 0);
+    assert.ok(handler.indexOf("return;") < handler.indexOf(".mutate("));
+  }
+});
+
 test("overview는 active job을 전역 500건으로 잘라내지 않고 안전정지를 노출한다", async () => {
   const [overview, types] = await Promise.all([
     source("lib/db/research-lab-overview.ts"),

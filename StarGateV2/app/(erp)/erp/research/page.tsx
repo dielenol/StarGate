@@ -25,7 +25,10 @@ export default async function ResearchPage() {
         breadcrumb={[{ label: "ERP", href: "/erp" }, { label: "연구소" }]}
         title="연구소"
       />
-      <ResearchClient initialData={initialData} />
+      <ResearchClient
+        initialData={initialData}
+        canSimulate={session.user.role === "GM"}
+      />
     </>
   );
 }

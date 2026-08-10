@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 
 import Image from "next/image";
 
-import Button from "@/components/ui/Button/Button";
-import Tag from "@/components/ui/Tag/Tag";
-
 import styles from "./page.module.css";
 
 export type XenoExpression =
@@ -57,6 +54,9 @@ export interface XenoStageProps {
   isChatPending?: boolean;
   chatError?: string | null;
   disabled?: boolean;
+  preferRelationshipExpression?: boolean;
+  isResearchOpen?: boolean;
+  onOpenResearch?: (trigger: HTMLButtonElement) => void;
   onChatChange: (value: string) => void;
   onChatSubmit: () => void;
   onChoiceSelect?: (choiceId: string) => void;
@@ -88,14 +88,20 @@ export default function XenoStage({
   isChatPending = false,
   chatError,
   disabled = false,
+  preferRelationshipExpression = false,
+  isResearchOpen = false,
+  onOpenResearch,
   onChatChange,
   onChatSubmit,
   onChoiceSelect,
 }: XenoStageProps) {
   const [expiredRetryAt, setExpiredRetryAt] = useState<string | null>(null);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [showComposer, setShowComposer] = useState(false);
   const isCoolingDown = Boolean(
     chatRetryAt && chatRetryAt !== expiredRetryAt,
   );
+
   useEffect(() => {
     if (!chatRetryAt) return;
     const remaining = Math.max(0, Date.parse(chatRetryAt) - Date.now());
@@ -105,100 +111,178 @@ export default function XenoStage({
     );
     return () => window.clearTimeout(timeout);
   }, [chatRetryAt]);
-  const latestXeno = [...messages].reverse().find((message) => message.speaker === "XENO");
-  const expression = latestXeno?.expression ?? DEFAULT_EXPRESSION[relationship.state];
+
+  const latestXenoIndex = messages.findLastIndex(
+    (message) => message.speaker === "XENO",
+  );
+  const latestXeno =
+    latestXenoIndex >= 0 ? messages[latestXenoIndex] : undefined;
+  const latestUser = [...messages]
+    .slice(0, latestXenoIndex >= 0 ? latestXenoIndex : messages.length)
+    .reverse()
+    .find((message) => message.speaker === "USER");
+  const expression = preferRelationshipExpression
+    ? DEFAULT_EXPRESSION[relationship.state]
+    : latestXeno?.expression ?? DEFAULT_EXPRESSION[relationship.state];
   const remainingCharacters = 300 - chatValue.length;
   const canSubmit =
-    !disabled && !isChatPending && !isCoolingDown && chatValue.trim().length > 0 && chatRemaining > 0;
+    !disabled &&
+    !isChatPending &&
+    !isCoolingDown &&
+    chatValue.trim().length > 0 &&
+    chatRemaining > 0;
 
   return (
     <section className={styles.xenoStage} aria-labelledby="xeno-stage-title">
-      <div className={styles.xenoStage__portrait}>
+      <div className={styles.relationshipHud}>
+        <Image
+          src={relationship.icon}
+          alt=""
+          width={256}
+          height={256}
+          sizes="52px"
+        />
+        <div>
+          <span>RELATION</span>
+          <strong>{relationship.label}</strong>
+          <p>{relationship.description}</p>
+        </div>
+      </div>
+
+      <button
+        className={styles.researchTerminal}
+        aria-expanded={isResearchOpen}
+        onClick={(event) => onOpenResearch?.(event.currentTarget)}
+      >
+        <span aria-hidden="true">⌬</span>
+        <span>
+          <small>LAB TERMINAL</small>
+          <strong>연구 장치 열기</strong>
+        </span>
+      </button>
+
+      <div className={styles.xenoStage__portrait} aria-hidden="true">
         <Image
           src={portraitPath(expression)}
-          alt={`제노의 ${relationship.label} 표정`}
-          width={520}
-          height={680}
-          sizes="(max-width: 760px) 100vw, 42vw"
+          alt=""
+          width={768}
+          height={1024}
+          sizes="(max-width: 760px) 86vw, 48vw"
           priority
         />
       </div>
-      <div className={styles.xenoStage__content}>
-        <header className={styles.xenoStage__header}>
-          <div>
-            <p className={styles.eyebrow}>XENO · RESEARCH LIAISON</p>
-            <h2 id="xeno-stage-title">제노</h2>
-          </div>
-          <div className={styles.relationship}>
-            <Image
-              src={relationship.icon}
-              alt=""
-              width={256}
-              height={256}
-              sizes="128px"
-            />
-            <div>
-              <Tag tone="gold">{relationship.label}</Tag>
-              <p>{relationship.description}</p>
-            </div>
-          </div>
-        </header>
 
-        <div className={styles.dialogueLog} aria-live="polite" aria-relevant="additions text">
-          {messages.length === 0 ? (
-            <p className={styles.emptyCopy}>아직 기록된 대화가 없습니다. 연구 절차를 물어보세요.</p>
-          ) : (
-            messages.map((message, index) => (
+      {choices.length > 0 && !showTranscript && !showComposer ? (
+        <div className={styles.dialogueChoices} aria-label="제노에게 할 말 선택">
+          {choices.map((choice, index) => (
+            <button
+              key={choice.id}
+              disabled={disabled || choice.disabled || isChatPending}
+              onClick={() => onChoiceSelect?.(choice.id)}
+            >
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              {choice.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <article className={styles.dialoguePanel}>
+        <div className={styles.dialoguePanel__speaker}>
+          <span>XENO · RESEARCH LIAISON</span>
+          <h2 id="xeno-stage-title">제노</h2>
+        </div>
+
+        {showTranscript ? (
+          <div
+            className={styles.dialogueTranscript}
+            aria-label="제노 대화 기록"
+          >
+            {messages.map((message) => (
               <p
                 key={message.id}
-                className={[
-                  styles.dialogueLog__message,
-                  message.speaker === "XENO" ? styles["dialogueLog__message--xeno"] : styles["dialogueLog__message--user"],
-                  index === messages.length - 1 && message.speaker === "XENO" ? styles["dialogueLog__message--typing"] : "",
-                ].filter(Boolean).join(" ")}
+                data-speaker={message.speaker.toLowerCase()}
               >
                 <strong>{message.speaker === "XENO" ? "제노" : "나"}</strong>
                 {message.text}
               </p>
-            ))
-          )}
-          {isChatPending ? <p className={styles.pendingCopy}>제노가 응답을 정리하고 있습니다…</p> : null}
-        </div>
-
-        {choices.length > 0 ? (
-          <div className={styles.dialogueChoices} aria-label="제노에게 할 말 선택">
-            {choices.map((choice) => (
-              <Button
-                key={choice.id}
-                size="sm"
-                disabled={disabled || choice.disabled || isChatPending}
-                onClick={() => onChoiceSelect?.(choice.id)}
-              >
-                {choice.label}
-              </Button>
             ))}
+          </div>
+        ) : (
+          <div
+            className={styles.dialoguePanel__copy}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {latestUser ? <small>나 · {latestUser.text}</small> : null}
+            <p className={styles.dialoguePanel__line}>
+              {latestXeno?.text ??
+                "샘플도 없이 찾아온 건 아니겠지. 내 시간을 낭비할 생각이면 문은 뒤에 있어."}
+            </p>
+            {isChatPending ? (
+              <span className={styles.dialoguePanel__pending}>
+                응답을 정리하는 중…
+              </span>
+            ) : null}
+          </div>
+        )}
+
+        {showComposer ? (
+          <div className={styles.chatComposer}>
+            <label htmlFor="xeno-free-chat">직접 말하기</label>
+            <textarea
+              id="xeno-free-chat"
+              value={chatValue}
+              maxLength={300}
+              disabled={
+                disabled ||
+                isChatPending ||
+                isCoolingDown ||
+                chatRemaining === 0
+              }
+              placeholder="제노에게 할 말을 입력하세요."
+              onChange={(event) => onChatChange(event.target.value)}
+            />
+            <div className={styles.chatComposer__actions}>
+              <span>
+                {remainingCharacters}자 · 오늘 {chatRemaining}회
+                {isCoolingDown ? " · 응답 대기" : ""}
+              </span>
+              <button disabled={!canSubmit} onClick={onChatSubmit}>
+                말한다
+              </button>
+            </div>
+            {chatError ? (
+              <p className={styles.feedbackError} role="alert">
+                {chatError}
+              </p>
+            ) : null}
           </div>
         ) : null}
 
-        <div className={styles.chatComposer}>
-          <label htmlFor="xeno-free-chat">자유 대화</label>
-          <textarea
-            id="xeno-free-chat"
-            value={chatValue}
-            maxLength={300}
-            disabled={disabled || isChatPending || isCoolingDown || chatRemaining === 0}
-            placeholder="연구 절차에 관해 물어보세요."
-            onChange={(event) => onChatChange(event.target.value)}
-          />
-          <div className={styles.chatComposer__meta}>
-            <span>{remainingCharacters}자 남음 · 오늘 {chatRemaining}회{isCoolingDown ? " · 응답 간격 대기" : ""}</span>
-            <Button variant="primary" disabled={!canSubmit} onClick={onChatSubmit}>
-              전송
-            </Button>
-          </div>
-          {chatError ? <p className={styles.feedbackError} role="alert">{chatError}</p> : null}
-        </div>
-      </div>
+        <footer className={styles.dialoguePanel__toolbar}>
+          <button
+            aria-pressed={showTranscript}
+            onClick={() => {
+              setShowTranscript((visible) => !visible);
+              setShowComposer(false);
+            }}
+          >
+            {showTranscript ? "현재 대사" : "대화 기록"}
+          </button>
+          <button
+            aria-pressed={showComposer}
+            disabled={chatRemaining === 0}
+            onClick={() => {
+              setShowComposer((visible) => !visible);
+              setShowTranscript(false);
+            }}
+          >
+            {showComposer ? "입력 닫기" : "직접 말하기"}
+          </button>
+          <span>{choices.length > 0 ? "선택지를 고르세요" : "TAP TO INTERACT"}</span>
+        </footer>
+      </article>
     </section>
   );
 }
