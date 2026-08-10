@@ -8,6 +8,7 @@ import {
   canViewPersonalInventory,
 } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { canEditLore, hasRole, isCharacterOwner } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
@@ -15,7 +16,10 @@ import {
   serializeCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
-import { stripDossierPersonalityObservations } from "@/lib/personnel";
+import {
+  filterCharacterForGuest,
+  stripDossierPersonalityObservations,
+} from "@/lib/personnel";
 
 import type { ChangeLogsPanelMode } from "./ChangeLogsPanel";
 import CharacterDetailClient from "./CharacterDetailClient";
@@ -52,9 +56,10 @@ export default async function CharacterDetailPage({ params }: PageProps) {
     redirect(`/erp/personnel/${id}`);
   }
 
-  const { id: userId, role } = session.user;
-  const decision = canEditLore(userId, role, character);
-  const isOwner = isCharacterOwner(userId, character);
+  const { role } = session.user;
+  const userId = getOwnedDataViewerId(session.user);
+  const decision = canEditLore(userId ?? undefined, role, character);
+  const isOwner = isCharacterOwner(userId ?? undefined, character);
   // 삭제는 admin(GM) 전용으로 계속 유지 — 자가삭제 도입은 별도 결정 필요.
   const canDelete = hasRole(role, "GM");
 
@@ -72,25 +77,35 @@ export default async function CharacterDetailPage({ params }: PageProps) {
     : "none";
 
   // MongoDB ObjectId -> string 직렬화 (client 전달용). 위 type guard 로 AgentCharacter 확정.
+  const visibleCharacter = session.user.isGuest
+    ? filterCharacterForGuest(character)
+    : character;
   const serialized = JSON.parse(
-    JSON.stringify(stripDossierPersonalityObservations(character)),
+    JSON.stringify(stripDossierPersonalityObservations(visibleCharacter)),
   ) as AgentCharacter;
-  const inventoryResult = await listCharacterInventoryEntries(id);
   const canManageEquipment = canViewPersonalInventory(userId, role, character);
-  const visibleInventoryEntries = canManageEquipment
-    ? inventoryResult.entries
-    : inventoryResult.entries.filter((entry) => entry.equippedSlot);
-  const initialInventory: CharacterInventoryResponse = {
-    inventory: canManageEquipment
-      ? serializeCharacterInventory(inventoryResult.inventory)
-      : [],
-    entries: visibleInventoryEntries,
-    equipped: Object.fromEntries(
-      visibleInventoryEntries
-        .filter((entry) => entry.equippedSlot)
-        .map((entry) => [entry.equippedSlot, entry]),
-    ),
+  let initialInventory: CharacterInventoryResponse = {
+    inventory: [],
+    entries: [],
+    equipped: {},
   };
+  if (!session.user.isGuest) {
+    const inventoryResult = await listCharacterInventoryEntries(id);
+    const visibleInventoryEntries = canManageEquipment
+      ? inventoryResult.entries
+      : inventoryResult.entries.filter((entry) => entry.equippedSlot);
+    initialInventory = {
+      inventory: canManageEquipment
+        ? serializeCharacterInventory(inventoryResult.inventory)
+        : [],
+      entries: visibleInventoryEntries,
+      equipped: Object.fromEntries(
+        visibleInventoryEntries
+          .filter((entry) => entry.equippedSlot)
+          .map((entry) => [entry.equippedSlot, entry]),
+      ),
+    };
+  }
 
   return (
     <CharacterDetailClient

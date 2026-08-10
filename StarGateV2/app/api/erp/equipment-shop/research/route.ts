@@ -26,9 +26,11 @@ export async function GET() {
 
   let mainCharacterId: string | null = null;
   try {
-    const mainCharacter = await findMainCharacterLiteByOwner(
-      authResult.session.id,
-    );
+    const mainCharacter = authResult.session.ownedDataViewerId
+      ? await findMainCharacterLiteByOwner(
+          authResult.session.ownedDataViewerId,
+        )
+      : null;
     mainCharacterId = mainCharacter?._id ? String(mainCharacter._id) : null;
   } catch {
     mainCharacterId = null;

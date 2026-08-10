@@ -10,6 +10,7 @@ import {
   IconLinked,
   IconSecurity,
 } from "@/components/icons";
+import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import DiscordLinkButton from "./DiscordLinkButton";
@@ -31,6 +32,31 @@ export default async function AccountPage() {
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  if (session.user.isGuest) {
+    return (
+      <>
+        <PageHead
+          breadcrumb={[
+            { label: "ERP", href: "/erp" },
+            { label: "ACCOUNT" },
+          ]}
+          title="계정 설정"
+        />
+        <Box>
+          <div className={styles.guestAccount}>
+            <span className={styles.guestAccount__eyebrow}>GUEST ACCOUNT</span>
+            <h2>읽기 전용 미리보기 세션</h2>
+            <p>
+              이 세션은 데이터베이스에 사용자 레코드를 만들지 않습니다. 계정 정보,
+              Discord 연동, 비밀번호 변경 기능은 실제 계정으로 로그인한 뒤 사용할 수
+              있습니다.
+            </p>
+          </div>
+        </Box>
+      </>
+    );
   }
 
   const user = await getCurrentAccountResponse(session.user.id);

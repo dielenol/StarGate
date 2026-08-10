@@ -122,6 +122,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.isGuest) {
+    const response: TradesResponse = {
+      me: null,
+      counterparties: [],
+      trades: [],
+      assets: { credits: 0, items: [], stocks: [] },
+    };
+    return jsonWithETag(request, response);
+  }
+
   try {
     const [me, counterparties, trades] = await Promise.all([
       resolveSelf(session.user),

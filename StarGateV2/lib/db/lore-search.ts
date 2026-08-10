@@ -52,7 +52,7 @@ export interface LoreSearchResponse {
 }
 
 interface LoreSearchViewer {
-  userId: string;
+  userId: string | null;
   role: UserRole;
 }
 
@@ -147,7 +147,9 @@ async function resolveLiveIndexDocuments(
   const wikiVisibility = canViewPrivate ? {} : { isPublic: true };
   const catalogVisibility = canViewPrivate
     ? {}
-    : {
+    : viewer.userId === null
+      ? { isPublic: { $ne: false } }
+      : {
         $or: [
           { isPublic: { $ne: false } },
           { "workshop.ownerId": viewer.userId },
@@ -352,7 +354,11 @@ async function searchIndexedLore(
 ): Promise<LoreSearchResult[]> {
   const docs = await searchLoreDocuments(
     { query, statuses: INDEX_SEARCH_STATUSES, limit: MAX_RESULTS },
-    { isAuthenticated: true, role: viewer.role, userId: viewer.userId },
+    {
+      isAuthenticated: true,
+      role: viewer.role,
+      ...(viewer.userId ? { userId: viewer.userId } : {}),
+    },
   );
   const liveDocuments = await resolveLiveIndexDocuments(docs, viewer);
   return docs.flatMap((doc) => {
@@ -395,7 +401,9 @@ async function searchFallbackLore(
   const wikiVisibility = canViewPrivate ? {} : { isPublic: true };
   const catalogVisibility = canViewPrivate
     ? {}
-    : {
+    : viewer.userId === null
+      ? { isPublic: { $ne: false } }
+      : {
         $or: [
           { isPublic: { $ne: false } },
           { "workshop.ownerId": viewer.userId },
@@ -420,9 +428,13 @@ async function searchFallbackLore(
     { "lore.nameNative": { $regex: regex } },
     { "lore.nameEn": { $regex: regex } },
   ];
-  const ownerIds: unknown[] = [viewer.userId];
-  if (ObjectId.isValid(viewer.userId)) ownerIds.push(new ObjectId(viewer.userId));
-  const ownerFilter = { ownerId: { $in: ownerIds } };
+  const ownerIds: unknown[] = viewer.userId === null ? [] : [viewer.userId];
+  if (viewer.userId !== null && ObjectId.isValid(viewer.userId)) {
+    ownerIds.push(new ObjectId(viewer.userId));
+  }
+  const ownerFilter = viewer.userId === null
+    ? { _id: { $exists: false } }
+    : { ownerId: { $in: ownerIds } };
   const allowedOverrideLevels = Object.entries(ROLE_LEVEL_RANK)
     .filter(([, rank]) => rank <= ROLE_LEVEL_RANK[viewer.role])
     .map(([role]) => role);

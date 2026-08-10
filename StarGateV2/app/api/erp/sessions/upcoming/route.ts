@@ -18,6 +18,12 @@ export async function GET() {
   }
 
   try {
+    if (session.user.isGuest) {
+      return NextResponse.json(
+        { sessions: [] },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
     return NextResponse.json(await getUpcomingSessionsResponse(guildId));
   } catch (error) {
     console.error("[sessions/upcoming] GET failed", error);

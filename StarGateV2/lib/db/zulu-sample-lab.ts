@@ -269,7 +269,7 @@ function itemDto(
 }
 
 export async function getZuluSampleLabOverview(args: {
-  userId: string;
+  userId: string | null;
   isGm: boolean;
 }): Promise<ZuluSampleLabOverview> {
   const recipe = requireRecipe();
@@ -285,7 +285,9 @@ export async function getZuluSampleLabOverview(args: {
   let eligibilityCode: ZuluSampleLabOverview["viewer"]["eligibilityCode"] =
     "NO_MAIN_CHARACTER";
   try {
-    const main = await findMainCharacterLiteByOwner(args.userId);
+    const main = args.userId
+      ? await findMainCharacterLiteByOwner(args.userId)
+      : null;
     if (main?._id && main.type === "AGENT") {
       character = { id: String(main._id), codename: main.codename };
       balance = await getCharacterBalance(character.id);

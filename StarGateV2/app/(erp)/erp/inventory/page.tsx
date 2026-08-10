@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { listCharactersByOwner } from "@/lib/db/characters";
 
 import Box from "@/components/ui/Box/Box";
@@ -13,9 +14,10 @@ export default async function InventoryPage() {
     redirect("/login");
   }
 
-  const myCharacters = await listCharactersByOwner(session.user.id).catch(
-    () => [],
-  );
+  const ownerId = getOwnedDataViewerId(session.user);
+  const myCharacters = ownerId
+    ? await listCharactersByOwner(ownerId).catch(() => [])
+    : [];
 
   if (myCharacters.length > 0) {
     const first = myCharacters[0];

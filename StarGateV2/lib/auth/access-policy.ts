@@ -27,17 +27,19 @@ export function canViewCharacter(
 }
 
 export function canViewPersonalInventory(
-  viewerId: string,
+  viewerId: string | null,
   viewerRole: UserRole,
   character: CharacterAccessSubject,
 ): boolean {
   if (viewerRole === "GM") return true;
-  if (normalizeId(character.ownerId) === viewerId) return true;
+  if (viewerId !== null && normalizeId(character.ownerId) === viewerId) {
+    return true;
+  }
   return character.isPublic !== false && viewerRole === "V";
 }
 
 export function canManageCharacterEquipment(
-  viewerId: string,
+  viewerId: string | null,
   viewerRole: UserRole,
   character: CharacterAccessSubject,
 ): boolean {
@@ -46,6 +48,7 @@ export function canManageCharacterEquipment(
   return (
     character.type === "NPC" &&
     viewerRole === "GM" &&
+    viewerId !== null &&
     normalizeId(character.ownerId) === viewerId
   );
 }

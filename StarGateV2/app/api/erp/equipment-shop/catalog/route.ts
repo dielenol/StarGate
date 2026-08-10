@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwner } from "@/lib/db/characters";
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const isGM = hasRole(session.user.role, "GM");
+  const ownerId = getOwnedDataViewerId(session.user);
   const canUseAllPlayerServices =
     isGM || hasPlayerServiceTestAccess(session.user);
   const requestedScope = new URL(request.url).searchParams.get("scope");
@@ -54,7 +56,9 @@ export async function GET(request: NextRequest) {
         : "all";
 
   try {
-    const mainCharacter = await findMainCharacterByOwner(session.user.id);
+    const mainCharacter = ownerId
+      ? await findMainCharacterByOwner(ownerId)
+      : null;
     const [masterItems, licenseAccess, recentActivity] = await Promise.all([
       listMasterItemsByCategoryFilter(EQUIPMENT_SHOP_CATEGORIES),
       mainCharacter?._id
@@ -81,10 +85,10 @@ export async function GET(request: NextRequest) {
     const secret = process.env.AUTH_SECRET;
     const characterId = mainCharacter?._id ? String(mainCharacter._id) : null;
     const items =
-      secret && characterId
+      secret && characterId && ownerId
         ? applyAcheronArmorReferrals(licensedItems, {
             token: request.cookies.get(ARMOR_REFERRAL_COOKIE_NAME)?.value,
-            userId: session.user.id,
+            userId: ownerId,
             characterId,
             secret,
           })

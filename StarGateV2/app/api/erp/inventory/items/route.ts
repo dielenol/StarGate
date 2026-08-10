@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getClient } from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { createMasterItem, listVisibleMasterItems } from "@/lib/db/inventory";
 import { equipmentShopItemZone } from "@/lib/equipment-shop/catalog";
@@ -30,7 +31,7 @@ export async function GET() {
 
   try {
     const items = await listVisibleMasterItems({
-      userId: session.user.id,
+      userId: getOwnedDataViewerId(session.user),
       includePrivate: hasRole(session.user.role, "V"),
     });
     return NextResponse.json(

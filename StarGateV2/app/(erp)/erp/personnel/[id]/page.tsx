@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 
 import { canViewCharacter } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import {
   findCharacterById,
@@ -37,7 +38,7 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
   // 본인 보유 캐릭터는 자동 GM clearance — 자기 캐릭터의 전체 정보(스탯/어빌리티/메타)는
   // 권한 등급과 무관하게 볼 수 있어야 한다 (예: J 등급 플레이어가 본인 캐릭터 스탯 확인 가능).
   const clearance = getEffectivePersonnelClearance(
-    session.user.id,
+    getOwnedDataViewerId(session.user),
     session.user.role,
     character,
   );

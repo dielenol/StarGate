@@ -11,6 +11,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getHoldings, getStockPrices } from "@/lib/db/stocks";
 import { findStockByTicker } from "@/lib/stocks/catalog";
@@ -43,14 +44,22 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const ownerId = getOwnedDataViewerId(session.user);
+  if (ownerId === null) {
+    const empty: HoldingsResponse = { items: [], hasMainCharacter: false };
+    return NextResponse.json(empty, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
   // 누설 방지 — buy/route.ts 와 동일 정책. throw 메시지(codename 들 포함)는
   // 운영 채널 로그에만 남기고 사용자에게는 일반화된 메시지만 반환.
   let mainChar;
   try {
-    mainChar = await findMainCharacterByOwner(session.user.id);
+    mainChar = await findMainCharacterByOwner(ownerId);
   } catch (err) {
     console.error(
-      `[stocks/holdings] findMainCharacterByOwner integrity violation (userId=${session.user.id}): `,
+      `[stocks/holdings] findMainCharacterByOwner integrity violation (userId=${ownerId}): `,
       err,
     );
     return NextResponse.json(

@@ -54,7 +54,9 @@ export default async function ERPLayout({
     bypassPageLocks ||
     hasPlayerServiceTestPathAccess(session.user, pathname);
   const headerCharacterPromise =
-    session.user.role === "GM"
+    session.user.isGuest
+      ? Promise.resolve(null)
+      : session.user.role === "GM"
       ? findDisplayCharacterByOwner(session.user.id)
       : findMainCharacterByOwner(session.user.id);
   const [displayCharacter, pageLockOverrides] = await Promise.all([
@@ -72,7 +74,9 @@ export default async function ERPLayout({
     session.user.role !== "GM" &&
     isNavPathLocked(pathname, pageLockOverrides);
   const initialPageLocks = { overrides: pageLockOverrides };
-  const realtimeClientMode = getRealtimeClientMode();
+  const realtimeClientMode = session.user.isGuest
+    ? "off"
+    : getRealtimeClientMode();
 
   return (
     <SessionWrapper session={session}>
@@ -80,8 +84,21 @@ export default async function ERPLayout({
         <RealtimeProvider mode={realtimeClientMode}>
           <PageHeadProvider>
             <NavPendingProvider>
-              <div className={styles.erp} data-scope="erp">
+              <div
+                className={styles.erp}
+                data-scope="erp"
+                data-guest-read-only={session.user.isGuest || undefined}
+              >
                 <ERPHeader user={session.user} identity={headerIdentity} />
+                {session.user.isGuest ? (
+                  <div className={styles.erp__guestBanner} role="status">
+                    <strong>GUEST PREVIEW</strong>
+                    <span>
+                      공개 범위의 ERP를 조회 중입니다. 구매·편집·신청 등 데이터 변경은
+                      사용할 수 없습니다.
+                    </span>
+                  </div>
+                ) : null}
                 <div className={styles.erp__body}>
                   <ERPSidebar
                     initialPageLocks={initialPageLocks}

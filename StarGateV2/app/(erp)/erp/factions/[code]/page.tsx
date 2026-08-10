@@ -14,6 +14,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 import {
@@ -123,16 +124,21 @@ export default async function FactionDetailPage({
   const [activityLogs, questProgress, contactActor] = await Promise.all([
     listFactionRelationLogs(node.code).catch(() => []),
     listFactionQuestProgress(node.code).catch(() => []),
-    findMainCharacterLiteByOwner(session.user.id)
-      .then((character) =>
-        character
-          ? {
-              codename: character.codename,
-              agentLevel: character.agentLevel ?? null,
-            }
-          : null,
-      )
-      .catch(() => null),
+    (() => {
+      const ownerId = getOwnedDataViewerId(session.user);
+      return ownerId
+        ? findMainCharacterLiteByOwner(ownerId)
+            .then((character) =>
+              character
+                ? {
+                    codename: character.codename,
+                    agentLevel: character.agentLevel ?? null,
+                  }
+                : null,
+            )
+            .catch(() => null)
+        : Promise.resolve(null);
+    })(),
   ]);
 
   return (

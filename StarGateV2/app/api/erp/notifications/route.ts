@@ -11,7 +11,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const notifications = await listUserNotifications(session.user.id);
+    const notifications = session.user.isGuest
+      ? []
+      : await listUserNotifications(session.user.id);
     return jsonWithETag(request, { notifications });
   } catch {
     return NextResponse.json(

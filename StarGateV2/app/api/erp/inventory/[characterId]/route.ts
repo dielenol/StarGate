@@ -8,6 +8,7 @@ import type {
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { canViewPersonalInventory } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { requireRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
@@ -54,12 +55,20 @@ export async function GET(
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
 
+  const ownerId = getOwnedDataViewerId(session.user);
+  if (ownerId === null) {
+    return NextResponse.json(
+      { error: "캐릭터를 찾을 수 없습니다." },
+      { status: 404 },
+    );
+  }
+
   try {
     const character = await findCharacterById(characterId);
     if (
       !character ||
       !canViewPersonalInventory(
-        session.user.id,
+        ownerId,
         session.user.role,
         character,
       )

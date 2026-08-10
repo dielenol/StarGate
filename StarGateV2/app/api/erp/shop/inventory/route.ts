@@ -16,6 +16,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import {
   findMasterItemsBySlugs,
@@ -29,9 +30,17 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const ownerId = getOwnedDataViewerId(session.user);
+  if (ownerId === null) {
+    return NextResponse.json(
+      { items: [], hasMainCharacter: false },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+
   let mainChar;
   try {
-    mainChar = await findMainCharacterByOwner(session.user.id);
+    mainChar = await findMainCharacterByOwner(ownerId);
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "메인 캐릭터 조회 실패 (정합성 위반)";

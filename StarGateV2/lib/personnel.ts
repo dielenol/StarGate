@@ -16,7 +16,11 @@ import type {
   PlaySheet,
 } from "@/types/character";
 import type { UserRole } from "@/types/user";
-import type { CharacterListItem, CharacterRef } from "@/lib/db/characters";
+import type {
+  AgentCharacterCard,
+  CharacterListItem,
+  CharacterRef,
+} from "@/lib/db/characters";
 
 /* ── 등급 수치화 (rbac.ts와 동일 rank 공유) ── */
 
@@ -96,12 +100,15 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
  * 소유자는 자기 캐릭터에 한해서 GM 등급으로 승격하며, polling 응답도 같은 규칙을 쓴다.
  */
 export function getEffectivePersonnelClearance(
-  userId: string,
+  userId: string | null,
   userRole: UserRole,
   character: Pick<Character, "ownerId">,
 ): AgentLevel {
   const ownerId = character.ownerId;
-  return ownerId !== null && ownerId !== undefined && String(ownerId) === userId
+  return userId !== null &&
+    ownerId !== null &&
+    ownerId !== undefined &&
+    String(ownerId) === userId
     ? "GM"
     : getUserClearance(userRole);
 }
@@ -470,4 +477,77 @@ export function filterCharacterForList(
   }
 
   return { ...character, lore };
+}
+
+/** 게스트 신원조회 목록에서는 마스킹 연산용 운영 override 메타도 제거한다. */
+export function filterCharacterForListForGuest(
+  character: CharacterListItem,
+): CharacterListItem {
+  const safe = filterCharacterForList(character, "U");
+  delete safe.clearanceOverrides;
+  return safe;
+}
+
+/**
+ * AGENT 카탈로그 카드의 clearance projection.
+ * full character를 읽지 않고도 owner 메타와 카드용 전투 스탯을 같은 정책으로 마스킹한다.
+ */
+export function filterAgentCharacterCardByClearance(
+  character: AgentCharacterCard,
+  clearance: AgentLevel,
+): AgentCharacterCard {
+  const overrides = normalizeClearanceOverrides(character.clearanceOverrides);
+  const canIdentity = canViewField(clearance, "identity", overrides);
+  const canRealName = canViewRealName(clearance, overrides);
+  const canCombat = canViewField(clearance, "combatStats", overrides);
+  const canMeta = canViewField(clearance, "meta", overrides);
+
+  const safe: AgentCharacterCard = {
+    ...character,
+    ownerId: canMeta ? character.ownerId : null,
+    lore: {
+      ...character.lore,
+      ...redactNameFields(character.lore, canRealName, canIdentity),
+    },
+    play: {
+      className: character.play.className,
+      hp: canCombat ? character.play.hp : 0,
+      hpDelta: canCombat ? character.play.hpDelta : 0,
+      san: canCombat ? character.play.san : 0,
+      sanDelta: canCombat ? character.play.sanDelta : 0,
+      def: canCombat ? character.play.def : 0,
+      defDelta: canCombat ? character.play.defDelta : 0,
+      atk: canCombat ? character.play.atk : 0,
+      atkDelta: canCombat ? character.play.atkDelta : 0,
+    },
+  };
+
+  if (!canMeta) {
+    delete safe.clearanceOverrides;
+  }
+
+  return safe;
+}
+
+/** 익명 게스트 카드에서는 clearance override와 무관하게 계정 연결 메타를 제거한다. */
+export function filterAgentCharacterCardForGuest(
+  character: AgentCharacterCard,
+): AgentCharacterCard {
+  const safe = filterAgentCharacterCardByClearance(character, "U");
+  safe.ownerId = null;
+  delete safe.clearanceOverrides;
+  return safe;
+}
+
+/**
+ * 익명 게스트 상세 DTO. U clearance 마스킹에 더해 계정/동기화 운영 메타를 제거한다.
+ * createdAt/updatedAt은 상세 UI의 공개 등록 이력 표시에 사용하므로 유지한다.
+ */
+export function filterCharacterForGuest(character: Character): Character {
+  const safe = filterCharacterByClearance(character, "U");
+  safe.ownerId = null;
+  delete safe.source;
+  delete safe.bulkUpdatedAt;
+  delete safe.clearanceOverrides;
+  return safe;
 }

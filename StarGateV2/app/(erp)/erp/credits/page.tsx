@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import {
@@ -23,7 +24,8 @@ export default async function CreditsPage() {
     redirect("/login");
   }
 
-  const { id: userId, role } = session.user;
+  const { role } = session.user;
+  const userId = getOwnedDataViewerId(session.user);
 
   // 본인 메인 캐릭 + ledger + balance — user → character 라우팅 단계.
   // null = 정상 미등록(가이드 안내), throw = 1인 1 MAIN 정합성 위반(GM 개입 필요).
@@ -31,7 +33,7 @@ export default async function CreditsPage() {
   let mainCharacter: Awaited<ReturnType<typeof findMainCharacterByOwner>> | null = null;
   let mainIntegrityError: string | null = null;
   try {
-    mainCharacter = await findMainCharacterByOwner(userId);
+    mainCharacter = userId ? await findMainCharacterByOwner(userId) : null;
   } catch (err) {
     mainIntegrityError =
       err instanceof Error ? err.message : "메인 캐릭터 조회 실패 (정합성 위반)";

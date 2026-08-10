@@ -132,14 +132,49 @@
     border-color 0.2s ease;
 }
 
-.login__discord:hover {
+.login__discord:hover:not(:disabled) {
   background: rgba(88, 101, 242, 0.25);
+}
+
+.login__discord:disabled,
+.login__guest:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .login__discord-icon {
   width: 20px;
   height: 20px;
   fill: #5865f2;
+}
+
+.login__guest {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(197, 160, 89, 0.55);
+  background: rgba(197, 160, 89, 0.06);
+  color: #d8c59f;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.login__guest:hover:not(:disabled) {
+  border-color: #c5a059;
+  background: rgba(197, 160, 89, 0.14);
+}
+
+.login__guest-note {
+  margin: 8px 0 0;
+  color: rgba(203, 213, 225, 0.62);
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .login__error {

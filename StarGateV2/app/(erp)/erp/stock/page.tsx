@@ -17,6 +17,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
@@ -53,7 +54,7 @@ export default async function StockPage() {
     redirect("/login");
   }
 
-  const userId = session.user.id;
+  const userId = getOwnedDataViewerId(session.user);
 
   // STOCK_CATALOG 시드 누락은 운영 사고 — 빌드 시 invariant.
   if (STOCK_CATALOG.length === 0) {
@@ -68,10 +69,10 @@ export default async function StockPage() {
   > | null = null;
   let mainCharacterError: string | null = null;
   try {
-    mainCharacter = await findMainCharacterByOwner(userId);
+    mainCharacter = userId ? await findMainCharacterByOwner(userId) : null;
   } catch (err) {
     console.error(
-      `[stock] findMainCharacterByOwner integrity violation (userId=${userId}): `,
+      `[stock] findMainCharacterByOwner integrity violation (userId=${userId ?? "guest"}): `,
       err,
     );
     mainCharacterError =

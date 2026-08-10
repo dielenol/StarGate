@@ -67,7 +67,7 @@ function serializeDashboardSession(
 }
 
 export async function getErpDashboardResponse(input: {
-  userId: string;
+  userId: string | null;
   viewerRole: UserRole;
   viewerDiscordId: string | null;
 }): Promise<ErpDashboardResponse> {
@@ -75,6 +75,45 @@ export async function getErpDashboardResponse(input: {
   const guildId = process.env.GUILD_ID ?? "";
   const todayKst = toKstDateString(new Date());
   const todayKstYearMonth = currentKstYearMonth();
+
+  if (userId === null) {
+    const [todaySessionCount, wikiPages] = await Promise.all([
+      guildId
+        ? countMergedSessionsOnKstDate(
+            guildId,
+            todayKstYearMonth.year,
+            todayKstYearMonth.monthIndex,
+            todayKst,
+          ).catch(() => 0)
+        : Promise.resolve(0),
+      listRecentWikiPagesLite(RECENT_WIKI_LIMIT, {
+        includePrivate: false,
+      }).catch(() => []),
+    ]);
+
+    return {
+      displayCharacter: null,
+      balance: 0,
+      characterPointBalance: null,
+      characterPointHref: "/erp/characters",
+      discordLinked: false,
+      joinedDays: 0,
+      mainIntegrityError: null,
+      myCharacterCount: 0,
+      myRsvpUpcoming: [],
+      mySessionCount: null,
+      notificationPreview: [],
+      pendingResponse: [],
+      recentWikis: wikiPages.map((page) => ({
+        _id: page._id?.toString() ?? "",
+        title: page.title,
+        updatedAt: new Date(page.updatedAt).toISOString(),
+      })),
+      todaySessionCount,
+      unreadCount: 0,
+    };
+  }
+
   const mainCharacterPromise = findMainCharacterByOwner(userId).then(
     (value) => ({ ok: true as const, value }),
     (error: unknown) => ({

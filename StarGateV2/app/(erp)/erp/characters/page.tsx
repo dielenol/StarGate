@@ -6,6 +6,7 @@ import { CHARACTER_TIERS } from "@/types/character";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { listAgentCharacterCards } from "@/lib/db/characters";
+import { filterAgentCharacterCardForGuest } from "@/lib/personnel";
 
 import CharactersClient from "./CharactersClient";
 
@@ -37,9 +38,14 @@ export default async function CharactersPage({ searchParams }: PageProps) {
   const rawCharacters = await listAgentCharacterCards(null).catch(() => []);
 
   // GM 외에는 isPublic=false 캐릭터(테스트 더미 등) 숨김.
-  const characters = isGM
+  let characters = isGM
     ? rawCharacters
     : rawCharacters.filter((c) => c.isPublic !== false);
+  if (session.user.isGuest) {
+    characters = characters.map((character) =>
+      filterAgentCharacterCardForGuest(character),
+    );
+  }
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const serializedCharacters = characters.map((c) => ({

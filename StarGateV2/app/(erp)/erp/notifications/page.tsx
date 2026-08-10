@@ -14,9 +14,11 @@ export default async function NotificationsPage() {
     redirect("/login");
   }
 
-  const notifications = await listUserNotifications(session.user.id).catch(
-    (): Notification[] => [],
-  );
+  const notifications = session.user.isGuest
+    ? []
+    : await listUserNotifications(session.user.id).catch(
+        (): Notification[] => [],
+      );
   const initialNotifications: ClientNotification[] = notifications.map(
     ({ _id, createdAt, ...notification }) => {
       if (!_id) {

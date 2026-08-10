@@ -5,6 +5,7 @@ import type { CreditTransactionType } from "@/types/credit";
 import { GM_DIRECT_GRANT_TYPES, isGmDirectGrantType } from "@/types/credit";
 
 import { auth } from "@/lib/auth/config";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { isCreditOperationCharacter } from "@/lib/character-operation-targets";
@@ -69,6 +70,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const viewerOwnerId = getOwnedDataViewerId(session.user);
+  if (viewerOwnerId === null) {
+    return NextResponse.json(
+      {
+        error: "메인 캐릭터 미등록 — 캐릭터 등록 후 다시 시도하세요.",
+        code: "NO_MAIN_CHARACTER",
+      },
+      { status: 404 },
+    );
+  }
+
   try {
     const isPrivileged = hasRole(session.user.role, "V");
     const url = new URL(request.url);
@@ -128,7 +140,7 @@ export async function GET(request: Request) {
       // 본인 메인 캐릭. 1인 1 MAIN 위반(throw) 과 정상 미등록(null) 을 분리.
       let main;
       try {
-        main = await findMainCharacterByOwner(session.user.id);
+        main = await findMainCharacterByOwner(viewerOwnerId);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "메인 캐릭터 조회 실패 (정합성 위반)";

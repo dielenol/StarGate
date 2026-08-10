@@ -9,6 +9,8 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 
+import { ERP_GUEST_USER } from "@/lib/auth/guest";
+import { readAuthSecrets } from "@/lib/auth/session-runtime";
 import {
   findUserByUsername,
   findUserByDiscordId,
@@ -47,6 +49,7 @@ const discordClientSecret = readDiscordEnv(
 );
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: readAuthSecrets(),
   trustHost: true,
   pages: {
     signIn: "/login",
@@ -85,6 +88,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           discordId: user.discordId,
         };
+      },
+    }),
+    CredentialsProvider({
+      id: "guest",
+      name: "guest",
+      credentials: {},
+      authorize() {
+        return { ...ERP_GUEST_USER };
       },
     }),
   ],
@@ -148,6 +159,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.displayName = user.displayName;
         token.role = user.role;
         token.discordId = user.discordId;
+        token.isGuest = user.isGuest === true;
+        token.active = true;
+      } else if (token.isGuest === true) {
+        // 게스트는 의도적으로 DB 레코드가 없다. 일반 사용자용 최신 role/status
+        // 재조회에 넣으면 다음 auth() 호출에서 세션이 즉시 무효화된다.
         token.active = true;
       } else if (typeof token.id === "string") {
         // JWT role/status는 로그인 시점 스냅샷이므로 매 요청에서 DB 최신값으로 갱신한다.
@@ -159,6 +175,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           delete token.displayName;
           delete token.role;
           delete token.discordId;
+          delete token.isGuest;
           token.active = false;
           return token;
         }
@@ -193,6 +210,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         role: token.role as (typeof session.user)["role"],
         discordId:
           typeof token.discordId === "string" ? token.discordId : null,
+        isGuest: token.isGuest === true,
       };
       return session;
     },

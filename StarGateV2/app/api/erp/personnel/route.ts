@@ -5,6 +5,7 @@ import { hasRole } from "@/lib/auth/rbac";
 import { listCharacterListItems } from "@/lib/db/characters";
 import {
   filterCharacterForList,
+  filterCharacterForListForGuest,
   getUserClearance,
 } from "@/lib/personnel";
 
@@ -23,7 +24,9 @@ export async function GET() {
       ? characters
       : characters.filter((c) => c.isPublic !== false);
     const filtered = visible.map((character) =>
-      filterCharacterForList(character, clearance),
+      session.user.isGuest
+        ? filterCharacterForListForGuest(character)
+        : filterCharacterForList(character, clearance),
     );
 
     return NextResponse.json(

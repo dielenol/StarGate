@@ -679,3 +679,31 @@
   .kv__row dt { width: 100%; }
   .primaryBtn, .ghostBtn { justify-content: center; height: 44px; }
 }
+.guestAccount {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: clamp(42px, 8vw, 84px) 24px;
+  text-align: center;
+}
+
+.guestAccount__eyebrow {
+  color: var(--gold);
+  font-family: var(--font-pixel), monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+
+.guestAccount h2 {
+  margin: 0;
+  color: var(--ink-1);
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+.guestAccount p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.75;
+}

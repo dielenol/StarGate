@@ -10,6 +10,7 @@ declare module "next-auth" {
       displayName: string;
       role: UserRole;
       discordId: string | null;
+      isGuest: boolean;
       image?: string | null;
     };
   }
@@ -20,6 +21,7 @@ declare module "next-auth" {
     displayName: string;
     role: UserRole;
     discordId: string | null;
+    isGuest?: boolean;
   }
 }
 
@@ -31,5 +33,6 @@ declare module "@auth/core/jwt" {
     displayName?: string;
     role?: UserRole;
     discordId?: string | null;
+    isGuest?: boolean;
   }
 }

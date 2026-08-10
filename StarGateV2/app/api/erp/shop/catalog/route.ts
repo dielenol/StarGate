@@ -27,6 +27,7 @@ export async function GET() {
     // 응답 조립은 /erp/shop 페이지와 공유하는 빌더가 담당 (shop/_data.ts).
     const payload = await buildShopCatalogResponse(
       hasPlayerServiceTestAccess(session.user),
+      { readOnly: session.user.isGuest },
     );
 
     return NextResponse.json(payload, {

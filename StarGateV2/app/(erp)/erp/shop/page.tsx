@@ -12,6 +12,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -41,7 +42,7 @@ export default async function ShopPage() {
     redirect("/login");
   }
 
-  const userId = session.user.id;
+  const userId = getOwnedDataViewerId(session.user);
   const isGM = hasRole(session.user.role, "GM");
   const playerServiceTestAccess = hasPlayerServiceTestAccess(session.user);
 
@@ -51,12 +52,14 @@ export default async function ShopPage() {
   > | null = null;
   let mainCharacterError: string | null = null;
   try {
-    mainCharacter = await findMainCharacterByOwner(userId);
+    mainCharacter = userId
+      ? await findMainCharacterByOwner(userId)
+      : null;
   } catch (err) {
     // 원본 메시지(메인 캐릭 codename 들 포함)는 운영 채널(Vercel 로그)에만 남기고
     // 사용자에게는 일반화된 메시지만 노출 — 자기 정보지만 운영 메시지를 직접 보여주지 않는다.
     console.error(
-      `[shop] findMainCharacterByOwner integrity violation (userId=${userId}): `,
+      `[shop] findMainCharacterByOwner integrity violation (userId=${userId ?? "guest"}): `,
       err,
     );
     mainCharacterError =
@@ -68,7 +71,9 @@ export default async function ShopPage() {
   // ledger 는 useCredits 의 initialData 시드용 (페이지 진입 시 1회 fetch 절약).
   const [initialCatalog, initialBalance, initialLedger, pendingReorderCount] =
     await Promise.all([
-      buildShopCatalogResponse(playerServiceTestAccess).catch(
+      buildShopCatalogResponse(playerServiceTestAccess, {
+        readOnly: session.user.isGuest,
+      }).catch(
         (): ShopCatalogResponse => ({
           items: [],
           isOpen: false,

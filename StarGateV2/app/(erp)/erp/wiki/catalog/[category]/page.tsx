@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import type { ItemCategory } from "@stargate/shared-db";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import {
   CATALOG_SCOPE_CATEGORIES,
@@ -36,7 +37,7 @@ export default async function CatalogPage({
   let items: Awaited<ReturnType<typeof listVisibleMasterItems>> = [];
   try {
     items = await listVisibleMasterItems({
-      userId: session.user.id,
+      userId: getOwnedDataViewerId(session.user),
       includePrivate: hasRole(session.user.role, "V"),
     }, {
       categories: allCatalogCategories,

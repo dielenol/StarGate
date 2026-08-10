@@ -6,6 +6,7 @@ import { ObjectId, type ClientSession } from "mongodb";
 
 import { isNavPathLocked } from "@/components/erp/nav-config";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
 import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
@@ -15,6 +16,7 @@ import { findUserById } from "@/lib/db/users";
 
 export interface ResearchRouteSession {
   id: string;
+  ownedDataViewerId: string | null;
   role: UserRole;
   displayName: string;
 }
@@ -75,6 +77,7 @@ export async function requireResearchUser(): Promise<
   return {
     session: {
       id: session.user.id,
+      ownedDataViewerId: getOwnedDataViewerId(session.user),
       role: session.user.role,
       displayName: session.user.displayName,
     },

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { jsonWithETag } from "@/lib/api/http-cache";
 import { auth } from "@/lib/auth/config";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { getErpDashboardResponse } from "@/lib/erp/dashboard";
 
 export async function GET(request: Request) {
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
 
   try {
     const payload = await getErpDashboardResponse({
-      userId: session.user.id,
+      userId: getOwnedDataViewerId(session.user),
       viewerRole: session.user.role,
       viewerDiscordId: session.user.discordId ?? null,
     });

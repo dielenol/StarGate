@@ -60,6 +60,8 @@ interface SessionsClientProps {
   initialUpcoming: UpcomingSessionLink[];
   /** 작전 보고서 작성 권한 — V 이상. */
   canCreateReport: boolean;
+  /** 공개 게스트에서는 참여자 명단과 외부 Discord/TRPG 링크를 숨긴다. */
+  guestReadOnly: boolean;
   /**
    * trpg-web 캘린더 base URL (env: `TRPG_WEB_BASE_URL`).
    *
@@ -95,6 +97,7 @@ export default function SessionsClient({
   guildId,
   initialUpcoming,
   canCreateReport,
+  guestReadOnly,
   trpgWebBaseUrl,
 }: SessionsClientProps) {
   const [view, setView] = useState<ViewKey>("calendar");
@@ -400,6 +403,7 @@ export default function SessionsClient({
               expandedId={listExpandedId}
               onExpandedChange={setListExpandedId}
               canCreateReport={canCreateReport}
+              guestReadOnly={guestReadOnly}
               trpgWebBaseUrl={trpgWebBaseUrl}
             />
           ) : null}
@@ -505,6 +509,7 @@ interface SessionsListProps {
   expandedId: string | null;
   onExpandedChange: (next: string | null) => void;
   canCreateReport: boolean;
+  guestReadOnly: boolean;
   trpgWebBaseUrl: string | null;
 }
 
@@ -515,6 +520,7 @@ function SessionsList({
   expandedId,
   onExpandedChange,
   canCreateReport,
+  guestReadOnly,
   trpgWebBaseUrl,
 }: SessionsListProps) {
   const [upcomingOnly, setUpcomingOnly] = useState(false);
@@ -590,6 +596,7 @@ function SessionsList({
                 onExpandedChange(expandedId === s._id ? null : s._id)
               }
               canCreateReport={canCreateReport}
+              guestReadOnly={guestReadOnly}
               trpgWebBaseUrl={trpgWebBaseUrl}
             />
           ))}
@@ -604,6 +611,7 @@ interface SessionsListItemProps {
   expanded: boolean;
   onToggle: () => void;
   canCreateReport: boolean;
+  guestReadOnly: boolean;
   trpgWebBaseUrl: string | null;
 }
 
@@ -612,6 +620,7 @@ function SessionsListItem({
   expanded,
   onToggle,
   canCreateReport,
+  guestReadOnly,
   trpgWebBaseUrl,
 }: SessionsListItemProps) {
   const itemRef = useRef<HTMLDivElement | null>(null);
@@ -728,51 +737,59 @@ function SessionsListItem({
           </dl>
 
           <div className={styles.listParticipants}>
-            <ParticipantGroup
-              label={isTrpg ? "참가자" : "응답 참여자"}
-              items={yesParticipants}
-            />
+            {guestReadOnly ? (
+              <div className={styles.listParticipants__empty}>
+                게스트 미리보기에서는 참여자 정보가 숨겨집니다.
+              </div>
+            ) : (
+              <ParticipantGroup
+                label={isTrpg ? "참가자" : "응답 참여자"}
+                items={yesParticipants}
+              />
+            )}
           </div>
 
-          <div className={styles.listActions}>
-            {canCreateReport ? (
-              <Link href={reportCreateHref} className={styles.listAction}>
-                작전 보고서 작성 →
-              </Link>
-            ) : null}
-            {isTrpg ? (
-              trpgCalendarUrl ? (
-                <a
-                  href={trpgCalendarUrl}
+          {!guestReadOnly ? (
+            <div className={styles.listActions}>
+              {canCreateReport ? (
+                <Link href={reportCreateHref} className={styles.listAction}>
+                  작전 보고서 작성 →
+                </Link>
+              ) : null}
+              {isTrpg ? (
+                trpgCalendarUrl ? (
+                  <a
+                    href={trpgCalendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.listAction}
+                  >
+                    TRPG 캘린더로 이동 →
+                  </a>
+                ) : (
+                  <span
+                    className={[
+                      styles.listAction,
+                      styles["listAction--disabled"],
+                    ].join(" ")}
+                    aria-disabled="true"
+                    title={TRPG_LINK_UNSET_LABEL}
+                  >
+                    {TRPG_LINK_UNSET_LABEL}
+                  </span>
+                )
+              ) : (
+                <Link
+                  href={buildDiscordLink(s)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.listAction}
                 >
-                  TRPG 캘린더로 이동 →
-                </a>
-              ) : (
-                <span
-                  className={[
-                    styles.listAction,
-                    styles["listAction--disabled"],
-                  ].join(" ")}
-                  aria-disabled="true"
-                  title={TRPG_LINK_UNSET_LABEL}
-                >
-                  {TRPG_LINK_UNSET_LABEL}
-                </span>
-              )
-            ) : (
-              <Link
-                href={buildDiscordLink(s)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.listAction}
-              >
-                디스코드 공지사항으로 이동 →
-              </Link>
-            )}
-          </div>
+                  디스코드 공지사항으로 이동 →
+                </Link>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

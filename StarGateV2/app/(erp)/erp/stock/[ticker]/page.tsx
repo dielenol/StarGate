@@ -15,6 +15,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
@@ -64,7 +65,7 @@ export default async function StockTradePage({ params }: Props) {
     notFound();
   }
 
-  const userId = session.user.id;
+  const userId = getOwnedDataViewerId(session.user);
 
   // 메인 캐릭터 — null=정상 미등록, throw=1인 1 MAIN 정합성 위반.
   let mainCharacter: Awaited<
@@ -72,10 +73,10 @@ export default async function StockTradePage({ params }: Props) {
   > | null = null;
   let mainCharacterError: string | null = null;
   try {
-    mainCharacter = await findMainCharacterByOwner(userId);
+    mainCharacter = userId ? await findMainCharacterByOwner(userId) : null;
   } catch (err) {
     console.error(
-      `[stock/[ticker]] findMainCharacterByOwner integrity violation (userId=${userId}): `,
+      `[stock/[ticker]] findMainCharacterByOwner integrity violation (userId=${userId ?? "guest"}): `,
       err,
     );
     mainCharacterError =

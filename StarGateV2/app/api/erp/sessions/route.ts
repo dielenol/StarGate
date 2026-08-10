@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getActiveSession } from "@/lib/auth/active-session";
 import { findMergedSessionsByGuildInMonth } from "@/lib/db/sessions";
+import { projectSessionsForGuest } from "@/lib/session-guest-view";
 
 // 단일 길드 전제. 다중 길드 확장 시 세션 유저의 소속 길드 화이트리스트 검증 추가.
 export async function GET(request: Request) {
@@ -42,12 +43,15 @@ export async function GET(request: Request) {
   try {
     // findMergedSessionsByGuildInMonth: registra(공유 길드) + trpg(별도 길드) 통합.
     // monthIndex 는 0~11 기반 — month(1~12) 에서 -1.
-    const serialized = await findMergedSessionsByGuildInMonth(
+    const mergedSessions = await findMergedSessionsByGuildInMonth(
       guildId,
       year,
       month - 1,
       session.user.discordId,
     );
+    const serialized = session.user.isGuest
+      ? projectSessionsForGuest(mergedSessions)
+      : mergedSessions;
 
     return NextResponse.json(
       { sessions: serialized },

@@ -36,7 +36,10 @@ import { getClient } from "@/lib/db/client";
 import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { enqueueCharacterEditWebhook } from "@/lib/outbox/integration";
-import { stripDossierPersonalityObservations } from "@/lib/personnel";
+import {
+  filterCharacterForGuest,
+  stripDossierPersonalityObservations,
+} from "@/lib/personnel";
 import { SessionReportInboundReferenceError } from "@/lib/db/session-reports";
 
 interface RouteContext {
@@ -62,8 +65,11 @@ export async function GET(_request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
+    const visibleCharacter = session.user.isGuest
+      ? filterCharacterForGuest(character)
+      : character;
     return NextResponse.json({
-      character: stripDossierPersonalityObservations(character),
+      character: stripDossierPersonalityObservations(visibleCharacter),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "캐릭터 조회 실패";

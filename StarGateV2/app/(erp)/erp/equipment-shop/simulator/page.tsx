@@ -1,4 +1,5 @@
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { listCharacterInventoryEntries } from "@/lib/db/inventory";
 import {
   getSimulatorEquippedWeapons,
@@ -90,7 +91,10 @@ export default async function EquipmentShopSimulatorPage() {
   let attacker = fallbackAttackerProfile(session.user);
   let mainCharacterId: string | null = null;
   try {
-    const mainCharacter = await findMainCharacterByOwner(session.user.id);
+    const ownerId = getOwnedDataViewerId(session.user);
+    const mainCharacter = ownerId
+      ? await findMainCharacterByOwner(ownerId)
+      : null;
     mainCharacterId = mainCharacter?._id ? String(mainCharacter._id) : null;
     if (mainCharacter?.type === "AGENT") {
       attacker = {

@@ -153,21 +153,24 @@ export async function findMasterItemBySlugOrId(
 }
 
 function catalogVisibilityFilter(input: {
-  userId: string;
+  userId: string | null;
   includePrivate: boolean;
 }): Filter<MasterItem> {
   if (input.includePrivate) return {};
+  const visibility: Filter<MasterItem>[] = [
+    { isPublic: { $ne: false } },
+  ];
+  if (input.userId !== null) {
+    visibility.push({ "workshop.ownerId": input.userId });
+  }
   return {
-    $or: [
-      { isPublic: { $ne: false } },
-      { "workshop.ownerId": input.userId },
-    ],
+    $or: visibility,
   };
 }
 
 export async function findVisibleMasterItemBySlugOrId(
   key: string,
-  viewer: { userId: string; includePrivate: boolean },
+  viewer: { userId: string | null; includePrivate: boolean },
 ): Promise<MasterItem | null> {
   const trimmed = key.trim();
   if (!trimmed) return null;
@@ -181,7 +184,7 @@ export async function findVisibleMasterItemBySlugOrId(
 }
 
 export async function listVisibleMasterItems(
-  viewer: { userId: string; includePrivate: boolean },
+  viewer: { userId: string | null; includePrivate: boolean },
   options: {
     categories?: readonly ItemCategory[];
     availableOnly?: boolean;

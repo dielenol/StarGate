@@ -7,6 +7,7 @@ import { getTrpgWebBaseUrl } from "@/lib/db/trpg-sessions-bridge";
 import { getUpcomingSessionsResponse } from "@/lib/erp/upcoming-sessions";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
+import { projectSessionsForGuest } from "@/lib/session-guest-view";
 
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
 import type { UpcomingSessionLink } from "@/types/erp-realtime";
@@ -43,9 +44,13 @@ export default async function SessionsPage() {
           month - 1,
           session.user.discordId,
         ),
-        getUpcomingSessionsResponse(guildId),
+        session.user.isGuest
+          ? Promise.resolve({ sessions: [] })
+          : getUpcomingSessionsResponse(guildId),
       ]);
-      serializedSessions = mergedSessions;
+      serializedSessions = session.user.isGuest
+        ? projectSessionsForGuest(mergedSessions)
+        : mergedSessions;
       initialUpcoming = upcomingResponse.sessions;
     } catch (err) {
       console.error("[SessionsPage] initial fetch failed", err);
@@ -70,10 +75,11 @@ export default async function SessionsPage() {
       initialSessions={serializedSessions}
       initialYear={year}
       initialMonth={month}
-      guildId={guildId}
+      guildId={session.user.isGuest ? "guest" : guildId}
       initialUpcoming={initialUpcoming}
       canCreateReport={hasRole(session.user.role, "V")}
-      trpgWebBaseUrl={getTrpgWebBaseUrl()}
+      trpgWebBaseUrl={session.user.isGuest ? null : getTrpgWebBaseUrl()}
+      guestReadOnly={session.user.isGuest}
     />
   );
 }

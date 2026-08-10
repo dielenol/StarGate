@@ -15,6 +15,7 @@ import {
   relatedWikiForCatalogItem,
 } from "@/lib/catalog/related";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { findVisibleMasterItemBySlugOrId } from "@/lib/db/inventory";
 import { listVisibleSessionReports } from "@/lib/db/session-reports";
@@ -91,7 +92,7 @@ export default async function CatalogItemPage({
 
   const { key } = await params;
   const item = await findVisibleMasterItemBySlugOrId(decodeURIComponent(key), {
-    userId: session.user.id,
+    userId: getOwnedDataViewerId(session.user),
     includePrivate: hasRole(session.user.role, "V"),
   });
   if (!item) notFound();

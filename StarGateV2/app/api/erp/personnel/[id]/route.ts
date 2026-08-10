@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { canViewCharacter } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 import {
@@ -35,7 +36,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const clearance = getEffectivePersonnelClearance(
-      session.user.id,
+      getOwnedDataViewerId(session.user),
       session.user.role,
       character,
     );

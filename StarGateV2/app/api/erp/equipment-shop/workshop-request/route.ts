@@ -54,6 +54,13 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.isGuest) {
+    return NextResponse.json(
+      { requests: [] },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+
   const isGM = hasRole(session.user.role, "GM");
   const requests = isGM
     ? await listEquipmentWorkshopOperationsRequests({ recentLimit: 100 })

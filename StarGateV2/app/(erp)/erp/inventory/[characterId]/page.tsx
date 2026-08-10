@@ -8,6 +8,7 @@ import type {
 
 import { canViewPersonalInventory } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import {
   findCharacterById,
   findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner,
@@ -44,20 +45,25 @@ export default async function CharacterInventoryPage({
     notFound();
   }
 
+  const ownerId = getOwnedDataViewerId(session.user);
+  if (ownerId === null) {
+    notFound();
+  }
+
   const character = await findCharacterById(characterId);
   if (!character) {
     notFound();
   }
   if (
     !canViewPersonalInventory(
-      session.user.id,
+      ownerId,
       session.user.role,
       character,
     )
   ) {
     notFound();
   }
-  const mainCharacter = await findMainCharacterByOwner(session.user.id);
+  const mainCharacter = await findMainCharacterByOwner(ownerId);
   const canUseMrBeastLottery =
     mainCharacter !== null && String(mainCharacter._id) === characterId;
 

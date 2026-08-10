@@ -10,6 +10,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
 
@@ -31,17 +32,17 @@ export default async function StockPortfolioPage() {
     redirect("/login");
   }
 
-  const userId = session.user.id;
+  const userId = getOwnedDataViewerId(session.user);
 
   let mainCharacter: Awaited<
     ReturnType<typeof findMainCharacterByOwner>
   > | null = null;
   let mainCharacterError: string | null = null;
   try {
-    mainCharacter = await findMainCharacterByOwner(userId);
+    mainCharacter = userId ? await findMainCharacterByOwner(userId) : null;
   } catch (err) {
     console.error(
-      `[stock/portfolio] findMainCharacterByOwner integrity violation (userId=${userId}): `,
+      `[stock/portfolio] findMainCharacterByOwner integrity violation (userId=${userId ?? "guest"}): `,
       err,
     );
     mainCharacterError =

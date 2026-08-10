@@ -13,10 +13,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [recent, unreadCount] = await Promise.all([
-      listUserNotifications(session.user.id, RECENT_NOTIFICATION_LIMIT),
-      countUnread(session.user.id),
-    ]);
+    const [recent, unreadCount] = session.user.isGuest
+      ? [[], 0]
+      : await Promise.all([
+          listUserNotifications(session.user.id, RECENT_NOTIFICATION_LIMIT),
+          countUnread(session.user.id),
+        ]);
 
     return jsonWithETag(request, { recent, unreadCount });
   } catch {

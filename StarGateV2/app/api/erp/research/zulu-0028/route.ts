@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { getZuluSampleLabOverview } from "@/lib/db/zulu-sample-lab";
 
@@ -17,7 +18,7 @@ export async function GET() {
 
   try {
     const overview = await getZuluSampleLabOverview({
-      userId: session.user.id,
+      userId: getOwnedDataViewerId(session.user),
       isGm: hasRole(session.user.role, "GM"),
     });
     return NextResponse.json(overview, {

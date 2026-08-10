@@ -64,6 +64,20 @@ export async function GET() {
 
   try {
     const config = await getMrBeastLotteryConfig();
+    if (session.user.isGuest) {
+      const recentWinners = await listRecentMrBeastLotteryWinners();
+      return NextResponse.json(
+        {
+          enabled: config.active,
+          active: config.active,
+          eventId: config.eventId,
+          availableTickets: 0,
+          pendingClaim: null,
+          recentWinners,
+        },
+        { headers: NO_STORE_HEADERS },
+      );
+    }
     const mainCharacter = await findAuthorizedMainCharacter(session.user.id);
     if (!mainCharacter) {
       const recentWinners = await listRecentMrBeastLotteryWinners();

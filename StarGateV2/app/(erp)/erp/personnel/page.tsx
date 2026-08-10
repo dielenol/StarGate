@@ -8,13 +8,23 @@ import type { CharacterListItemDto } from "@/hooks/queries/useCharactersQuery";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { listCharacterListItems } from "@/lib/db/characters";
-import { getUserClearance, filterCharacterForList } from "@/lib/personnel";
+import {
+  filterCharacterForList,
+  filterCharacterForListForGuest,
+  getUserClearance,
+} from "@/lib/personnel";
 
 import ERPLoading from "../loading";
 
 import PersonnelClient from "./PersonnelClient";
 
-async function PersonnelBody({ role }: { role: UserRole }) {
+async function PersonnelBody({
+  role,
+  isGuest,
+}: {
+  role: UserRole;
+  isGuest: boolean;
+}) {
   const rawCharacters = await listCharacterListItems().catch(() => []);
   const clearance = getUserClearance(role);
   const isGM = hasRole(role, "GM");
@@ -26,7 +36,9 @@ async function PersonnelBody({ role }: { role: UserRole }) {
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const filtered: CharacterListItemDto[] = characters.map((c) => {
-    const masked = filterCharacterForList(c, clearance);
+    const masked = isGuest
+      ? filterCharacterForListForGuest(c)
+      : filterCharacterForList(c, clearance);
     return {
       ...masked,
       _id: masked._id?.toString() ?? "",
@@ -44,7 +56,10 @@ export default async function PersonnelPage() {
 
   return (
     <Suspense fallback={<ERPLoading />}>
-      <PersonnelBody role={session.user.role} />
+      <PersonnelBody
+        role={session.user.role}
+        isGuest={session.user.isGuest === true}
+      />
     </Suspense>
   );
 }

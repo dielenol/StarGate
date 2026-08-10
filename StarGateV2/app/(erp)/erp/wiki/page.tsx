@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { searchLore } from "@/lib/db/lore-search";
 import { listWikiPageSummaries } from "@/lib/db/wiki";
@@ -75,7 +76,7 @@ export default async function WikiListPage({
       }),
       normalizedQuery.length >= 2
         ? searchLore(normalizedQuery, {
-            userId: session.user.id,
+            userId: getOwnedDataViewerId(session.user),
             role: session.user.role,
           })
         : Promise.resolve(undefined),

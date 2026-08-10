@@ -36,6 +36,7 @@ export type AgentCharacterCard = Pick<
   | "previewImage"
   | "ownerId"
   | "isPublic"
+  | "clearanceOverrides"
 > & {
   lore: Pick<
     Character["lore"],
@@ -246,6 +247,7 @@ export async function listAgentCharacterCards(
       previewImage: 1,
       ownerId: 1,
       isPublic: 1,
+      clearanceOverrides: 1,
       "lore.name": 1,
       "lore.nameNative": 1,
       "lore.nickname": 1,

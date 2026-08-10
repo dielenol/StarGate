@@ -10,6 +10,7 @@ import type { CharacterTier, CreateCharacterInput } from "@/types/character";
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { parseSkillTrainingInput } from "@/lib/character/skill-training";
+import { filterAgentCharacterCardForGuest } from "@/lib/personnel";
 import {
   ADMIN_ALLOWED_CHARACTER_FIELDS,
   listAgentCharacterCards,
@@ -43,6 +44,11 @@ export async function GET(request: Request) {
     // GM 외에는 isPublic=false 캐릭터(테스트 더미 등) 숨김.
     if (!hasRole(session.user.role, "GM")) {
       characters = characters.filter((c) => c.isPublic !== false);
+    }
+    if (session.user.isGuest) {
+      characters = characters.map((character) =>
+        filterAgentCharacterCardForGuest(character),
+      );
     }
 
     return NextResponse.json(

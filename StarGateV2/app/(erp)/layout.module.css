@@ -21,6 +21,36 @@
   min-height: 0;
 }
 
+.erp__guestBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 38px;
+  padding: 8px 18px;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.4);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(197, 160, 89, 0.035) 0,
+      rgba(197, 160, 89, 0.035) 8px,
+      transparent 8px,
+      transparent 16px
+    ),
+    #111b1d;
+  color: rgba(226, 232, 240, 0.78);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.erp__guestBanner strong {
+  flex: 0 0 auto;
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+
 .erp__main {
   flex: 1;
   min-width: 0;
@@ -32,5 +62,13 @@
 @media (max-width: 1279px) {
   .erp__main {
     padding: 18px 14px 14px;
+  }
+
+  .erp__guestBanner {
+    align-items: flex-start;
+    gap: 7px;
+    padding: 8px 12px;
+    font-size: 11px;
+    text-align: left;
   }
 }

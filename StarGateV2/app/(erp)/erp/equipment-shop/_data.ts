@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
@@ -195,17 +196,17 @@ export async function loadEquipmentShopPageData(
     redirect("/erp");
   }
 
-  const userId = session.user.id;
+  const userId = getOwnedDataViewerId(session.user);
 
   let mainCharacter: Awaited<
     ReturnType<typeof findMainCharacterByOwner>
   > | null = null;
   let mainCharacterError: string | null = null;
   try {
-    mainCharacter = await findMainCharacterByOwner(userId);
+    mainCharacter = userId ? await findMainCharacterByOwner(userId) : null;
   } catch (err) {
     console.error(
-      `[equipment-shop] findMainCharacterByOwner integrity violation (userId=${userId}): `,
+      `[equipment-shop] findMainCharacterByOwner integrity violation (userId=${userId ?? "guest"}): `,
       err,
     );
     mainCharacterError =
@@ -237,7 +238,7 @@ export async function loadEquipmentShopPageData(
         character: mainCharacter,
         characterId: mainCharacterId,
         licenseAccess: licenseAccessPromise,
-        ...(mainCharacterId && referralSecret
+        ...(mainCharacterId && referralSecret && userId
           ? {
               armorReferral: {
                 token: referralToken,
@@ -320,7 +321,7 @@ export async function loadEquipmentShopPageData(
   return {
     initialCatalog,
     initialResearch,
-    viewerUserId: userId,
+    viewerUserId: userId ?? "",
     mainCharacter: mainCharacter
       ? {
           id: String(mainCharacter._id),
