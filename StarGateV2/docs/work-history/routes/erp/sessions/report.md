@@ -74,3 +74,12 @@
 - 검증: PDF 145페이지/1,847레코드 추출, lore 전체 감사, schema corpus 11건, 참조·Dossier·관계·성격 관찰 read-only dry-run
 - 관련 커밋: `e3fe81ae`
 - 후속 작업: `book-810`, `key-shaped-bookmark` 참조 대상을 먼저 live 반영한 뒤 보고서·mirror 적용, DB 재조회, 역할별 인증 브라우저 검증이 필요하다.
+
+## 2026-08-10 · 로어 동기화 · S1E6 변곡점 1부
+
+- S1E6 변곡점 1부를 정규 보고서 `06`으로 식별하고 지도 표적 위치를 추가했다.
+- V 이상 보고서·비공개 mirror·비공개 마지막 대대 문서를 staging하고, U 공개 시 기존 wiki·Dossier·관계·성격 관찰을 한 transaction에서 반영하는 payload를 분리했다.
+- 보고서와 mirror에 같은 순서로 쓰는 장면 자산 15종을 추가했으며, live DB에는 적용하지 않았다.
+- 검증: PDF 125페이지/1,464레코드 추출, 번호 테스트 6건, 3파일 41-envelope schema, NPC·성격·시각자료 parity, 전체 lore static audit, `pnpm typecheck`, 대상 ESLint, critical risk review
+- 관련 커밋: `27dc9e9f`
+- 후속 작업: 신규 NPC 2명과 리처드/R 동일인 여부를 결정한 뒤, 별도 live 승인으로 V staging과 U publication을 순서대로 적용하고 DB 재조회·역할별 인증 브라우저 검증을 진행한다.
