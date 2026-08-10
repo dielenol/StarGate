@@ -18,8 +18,8 @@ isPublic: false
 loreTags: [광명회, 아넨에르베, 하이퍼보리아, 수메르, 개조광원화바이러스, NOSB-S1E6-TURNING-POINT-PART1]
 appearsInEvents: [NOSB-S1E6-TURNING-POINT-PART1]
 source: session-log
-previewImage:
-mainImage:
+previewImage: /assets/npcs/Irma-Koch-profile.webp
+mainImage: /assets/npcs/Irma-Koch-profile.webp
 pixelCharacterImage:
 posterImage:
 createdAt: 2026-07-26T00:00:00.000Z
@@ -29,7 +29,7 @@ updatedAt: 2026-08-10T00:00:00.000Z
 ## 대사
 
 ## 외형
-개인 식별에 충분한 외형 세부는 확인되지 않았다.
+검은 단발과 고른 앞머리다. 1944년 조수 시기에는 흰색 제복과 머리쓰개를 착용했으며, 현재에는 파란 후드 로브와 금속 장식 흉갑 차림이다.
 
 ## 성격
 인종적 순수성과 하이퍼보리아 신념을 유지하며, 자신과 같은 목표를 공유한다고 믿었던 오틸리아가 이를 부정하자 결별했다. 현재에는 광명회의 목표를 위해 감염자와 아이들을 새로운 존재로 바꾸려는 태도를 보인다.
