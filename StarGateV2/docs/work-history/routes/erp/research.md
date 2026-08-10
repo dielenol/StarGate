@@ -33,5 +33,14 @@
 - desktop 2열과 390×844 mobile 순서·sticky 액션, 실제 서버 시각 countdown, 세 연구선 탭·FIFO·수령함·관계 초상과 아이콘을 연결했다.
 - 크레딧·인벤토리·환불·작업 전이는 transaction·CAS·멱등 키로 보호하고, worker lease·알림 outbox·8회 실패 안전정지와 Web/worker 이중 활성화 gate를 추가했다.
 - 검증: `pnpm typecheck`, `pnpm lint`, `pnpm build`, dialogue 22/22, worker 85/85, 연구·관계·Ollama·lore 집중 테스트, GM desktop·390×844 및 플레이어 6계정 read-only 브라우저 확인, critical risk review P0~P3 없음
-- 관련 커밋: `913dfc30`
+- 관련 커밋: `ff983be6`
 - 후속 작업: replica-set Mongo 동시성 7건과 과학자·비과학자 계정 분기 QA는 환경 부재로 남았다. 운영 index·왕관 균사편 seed·lore rebuild·worker/Web flag 전환은 별도 승인 전 실행하지 않는다.
+
+## 2026-08-10 · 안정성 개선 · 제노 연구소 복구와 안전정지
+
+- 신규 최초 연구·반복생산만 worker readiness를 요구하고, 이미 결제된 작업의 취소·개인 수령과 제노 상호작용은 worker 장애 중에도 Web mutation flag 아래에서 복구할 수 있게 했다. 완료된 멱등 응답은 readiness·inventory preflight보다 먼저 재생한다.
+- active job admission CAS를 추가해 worker 안전정지와 enqueue를 같은 문서에서 직렬화하고, 안전정지 연구선은 500 CR 차감 전에 서버와 UI 양쪽에서 결제를 차단한다.
+- 제노 선택지 응답의 VN 중복 표시를 제거하고, active job 조회의 전역 500건 절단을 recipe/status 필터·최소 projection·기존 compound index 순서 조회로 교체했다.
+- 검증: 연구 집중 24건 통과·replica-set Mongo 7건 환경 부재로 skip, shared-db build, `pnpm typecheck`, `pnpm lint`, `pnpm build`, dialogue 22/22와 lint, critical risk review P0~P3 없음
+- 관련 커밋: `b20cfc8d`
+- 운영 경계: 라이브 DB·index·seed·크레딧·인벤토리·worker flag는 변경하지 않았다. halt/enqueue barrier를 포함한 Mongo 동시성 테스트와 운영 postflight는 활성화 전 차단 조건으로 유지한다.

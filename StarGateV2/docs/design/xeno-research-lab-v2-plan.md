@@ -173,6 +173,7 @@
 | 2. 도메인·DB·worker·알림 | VERIFIED | registry, collections, indexes, operations, consumer/outbox | shared/worker build, 85개 worker test, lease·idempotency 계약 검증 |
 | 3. API·Query·UI | VERIFIED | 일반화 API, hooks, VN 연구소 | typecheck, lint, production build, 관련 계약·대화 test |
 | 4. 브라우저·리뷰·이력 | VERIFIED | responsive QA, risk review, work history | GM desktop/mobile QA, P0~P3 없음, 구현 커밋과 페이지 이력 기록 |
+| 5. 사후 코드리뷰 개선 | VERIFIED | 복구 mutation 경계, 안전정지 결제 차단, VN 중복 제거, active job 조회 보강 | 집중 테스트 24 pass·Mongo 7 skip, typecheck·lint·build, 위험 재리뷰 P0~P3 없음 |
 
 ## 변경·검증 로그
 
@@ -225,7 +226,7 @@
 
 ### 2026-08-10 · 배포 준비 상태와 기본 차단
 
-- Web POST는 `RESEARCH_LAB_MUTATIONS_ENABLED=true`만으로 열리지 않는다. 90초 이내 active worker heartbeat가 실제 `research-lab` consumer와 `RESEARCH_LAB_DM` outbox 준비를 함께 증명해야 한다.
+- 신규 최초 연구·반복생산 POST는 `RESEARCH_LAB_MUTATIONS_ENABLED=true`와 90초 이내 active worker heartbeat를 함께 요구한다. 이미 결제된 작업의 취소·수령과 제노 선택·자유대화는 worker 장애 중에도 복구할 수 있도록 Web mutation flag만 요구하며, 완료된 멱등 replay는 gate보다 먼저 반환한다.
 - worker heartbeat는 active mode, 별도 worker flag, 실제 enabled consumer 세 조건을 모두 만족할 때만 연구 mutation consumer를 광고한다.
 - 신규 균사편 payload의 `sourceClass: design-proposal`을 seed schema, master item type, lore snapshot loader와 projection까지 전달했다. 필드 누락 시 canon으로 추측되는 fallback이 있으므로 라이브 seed readback과 lore postflight를 활성화 조건으로 남긴다.
 - realtime `research` resource가 없는 현재 구조에서는 60초 안전 polling을 유지하고, focus 복귀는 fresh 여부와 무관하게 강제 refetch하며, countdown 0초에서도 한 번 재조회한다.
@@ -246,6 +247,24 @@
 - SKIP: `RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI`가 없어 replica-set Mongo 동시성 7건은 실행하지 못했다.
 - 기존 harness 제한: `hooks/__tests__/cache-invalidation.test.mjs`의 독립 Node 실행은 `@/lib` path alias를 해석하지 못한다. 연구 mutation invalidation은 별도 연구 API source contract와 production build로 검증했다.
 
+### 2026-08-10 · 사후 코드리뷰 개선 시작
+
+- 생산 시작·최초 연구는 fresh worker readiness를 계속 요구하되, 이미 결제된 작업의 취소·수령과 제노 상호작용은 Web mutation flag만으로 복구할 수 있도록 활성화 경계를 분리한다.
+- 안전정지된 연구선은 동일 transaction 안에서 500 CR 차감 전에 거절하고 overview/UI에 결제 불가 상태를 노출한다.
+- 선택지 응답의 Query cache와 로컬 VN 상호작용이 같은 제노 대사를 중복 표시하지 않도록 단일 표시 소유권과 방어적 dedupe를 적용한다.
+- overview의 전역 `limit: 500`을 제거해 오래 실행 중인 active job이 조회에서 사라지지 않게 한다.
+- 이 배치에서는 운영 DB, index, seed, 크레딧·인벤토리, worker flag를 변경하지 않는다.
+
+### 2026-08-10 · 사후 코드리뷰 개선 완료
+
+- 신규 연구·생산과 복구 mutation의 readiness를 분리했다. 취소·수령은 worker heartbeat가 만료돼도 Web mutation flag 아래에서 실행되며, 모든 경제 API의 완료 replay가 준비 검사보다 먼저 반환된다.
+- 안전정지 active job에 `queueAdmissionVersion` 조건부 write를 수행해 worker halt·terminal 전이와 enqueue를 같은 문서에서 직렬화했다. 안전정지 승자 시 500 CR 차감과 job insert가 모두 abort되며 UI는 해당 연구선을 결제 불가로 표시한다.
+- 선택지 mutation은 관계 상태와 선택지 소진만 Query cache에 반영하고 실제 응답 대사는 로컬 VN interaction이 한 번만 표시한다. action refetch와 같은 대사가 겹치는 경우도 텍스트 dedupe로 방어한다.
+- active job 조회는 전역 500건 절단 없이 등록 recipe·활성 status만 기존 compound index 순서로 조회한다. 전용 projection 타입과 최소 필드 projection, recipe Map 그룹화로 full-document 조회와 반복 필터링을 제거했다.
+- PASS: 연구·관계·Ollama 집중 테스트 24건, readiness·guest·계약 테스트, shared-db build, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm dialogue:test`, `pnpm dialogue:lint`, `git diff --check`.
+- SKIP: `RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI`가 없어 새 halt/enqueue barrier를 포함한 replica-set Mongo 7건은 실행하지 못했다.
+- 읽기 전용 critical 위험 재리뷰에서 P0·P1·P2·P3 잔여 결함 없음 판정을 받았다. 라이브 활성화 차단 조건은 그대로 유지한다.
+
 ## 라이브 활성화 차단 조건
 
 아래 항목은 구현 완료와 별개이며 정확한 대상과 실행 동작에 대한 별도 승인 전에는 `BLOCKED`다.
@@ -260,4 +279,5 @@
 ## 구현 커밋
 
 - `ff983be6` · `feat(all): 관계형 제노 샘플 연구소를 구현한다`
-- 라이브 mutation·index 생성·seed·lore rebuild·worker 활성화는 이 커밋에 포함되지 않았다.
+- `b20cfc8d` · `fix(all): 제노 연구소의 복구와 안전정지를 보강한다`
+- 라이브 mutation·index 생성·seed·lore rebuild·worker 활성화는 이 커밋들에 포함되지 않았다.
