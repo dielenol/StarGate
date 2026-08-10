@@ -32,6 +32,11 @@ test("lore storage preflight는 sparse와 internal lock metadata를 진단한다
   assert.match(indexInspectionSource, /entries\.push\(\["_fts", "text"\], \["_ftsx", 1\]\)/u);
   assert.match(rebuildSource, /indexDefinitionIssues\(expected, actual\)\.length > 0/u);
   assert.match(rebuildSource, /SESSION_REPORT_INDEX_DEFINITIONS/u);
+  const masterItemProjection = rebuildSource.slice(
+    rebuildSource.indexOf('.collection("master_items")'),
+    rebuildSource.indexOf('db.collection("factions")'),
+  );
+  assert.match(masterItemProjection, /sourceClass: 1/u);
   assert.match(source, /uniqueIndex\.sparse === true \? \["sparse"\]/u);
   assert.match(source, /invalid_report_reference_lock_timestamp/u);
   assert.match(source, /legacy_report_reference_version/u);

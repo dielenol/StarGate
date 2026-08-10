@@ -165,6 +165,21 @@ test("제한 보고서의 lore projection도 같은 최소 역할을 강제", ()
   });
 });
 
+test("catalog sourceClass가 design-proposal이면 lore graph도 후보 상태를 보존한다", () => {
+  const input = snapshot();
+  input.masterItems[0].sourceClass = "design-proposal";
+  const bundle = buildLoreProjection(input);
+  const catalog = bundle.searchDocuments.find(
+    (document) => document.entityRef === "catalog:sample-item",
+  );
+  assert.equal(catalog?.status, "design-proposal");
+  assert.ok(
+    bundle.claims
+      .filter((claim) => claim.subjectRef === "catalog:sample-item")
+      .every((claim) => claim.status === "design-proposal"),
+  );
+});
+
 test("같은 snapshot은 stable IDs와 logical keys를 재현", () => {
   const first = buildLoreProjection(snapshot());
   const second = buildLoreProjection(snapshot());

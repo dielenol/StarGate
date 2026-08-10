@@ -36,6 +36,7 @@ import {
   type RealtimeChangeStreamSource,
 } from "./realtime/change-stream-source.js";
 import { mapRealtimeChange } from "./realtime/resource-mapper.js";
+import { activeMutationConsumersForConfig } from "./runtime-status.js";
 
 export interface WorkerRuntimeDependencies {
   logger?: WorkerLogger;
@@ -80,6 +81,7 @@ export class WorkerRuntime {
       mode: config.mode,
       enabledConsumers:
         config.mode === "active" ? config.enabledConsumers : [],
+      activeMutationConsumers: activeMutationConsumersForConfig(config),
       expectedConsumers: [...WORKER_CONSUMER_NAMES],
       enabledOutboxKinds: integrationOutboxHandlers?.kinds ?? [],
       isReady: () => {

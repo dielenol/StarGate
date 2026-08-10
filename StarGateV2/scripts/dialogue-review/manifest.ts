@@ -193,6 +193,23 @@ export const DIALOGUE_SOURCE_MANIFEST = [
     propertyNames: ["idleLines", "previewLine", "confirmedLine", "errorLine"],
     variableNames: ["AHNENERBE_DIALOGUE"],
   },
+  {
+    speakerId: "xeno",
+    displayName: "제노",
+    voiceCard:
+      "S1E6 근거의 오만한 연구 책임자. 짧은 반말·단정문으로 상대 핵심어를 되받아 비웃고 통계·방법론·관찰값을 앞세운다. 겉으로 달래도 공감하지 않으며, 호의는 다정함이 아니라 조건부 인정과 흥미로만 표현한다.",
+    allowedProperNouns: [
+      "제노",
+      "NOVUS ORDO",
+      "마가렛",
+      "메리골드",
+      "해쉬 테거",
+      "휘트모어 핀치",
+    ],
+    relativePath: "lib/research/xeno-dialogue.ts",
+    propertyNames: ["text", "response"],
+    variableNames: ["XENO_FIXED_SCENES", "XENO_CHOICES"],
+  },
 ] as const satisfies readonly DialogueSourceDefinition[];
 
 export const DIALOGUE_SPEAKER_IDS = DIALOGUE_SOURCE_MANIFEST.map(

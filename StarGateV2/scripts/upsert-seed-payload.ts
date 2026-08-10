@@ -790,6 +790,7 @@ function summarizeSavedDoc(
         isPublic: doc.isPublic,
         isAvailable: doc.isAvailable,
         tags: doc.tags,
+        sourceClass: doc.sourceClass,
       };
     case "equipment_workshop_blueprints":
       return {

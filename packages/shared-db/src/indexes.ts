@@ -245,6 +245,103 @@ export const BUREAUCRAT_VOTE_INDEX_DEFINITIONS: IndexDescription[] = [
   },
 ];
 
+export const RESEARCH_LAB_INDEX_DEFINITIONS: Record<
+  string,
+  IndexDescription[]
+> = {
+  research_lab_jobs: [
+    {
+      key: { requestId: 1 },
+      name: "research_lab_jobs_requestId_unique",
+      unique: true,
+    },
+    {
+      key: { outstandingKey: 1 },
+      name: "research_lab_jobs_outstandingKey_unique",
+      unique: true,
+      partialFilterExpression: { outstandingKey: { $type: "string" } },
+    },
+    {
+      key: { activeLineKey: 1 },
+      name: "research_lab_jobs_activeLineKey_unique",
+      unique: true,
+      partialFilterExpression: { activeLineKey: { $type: "string" } },
+    },
+    {
+      key: { recipeId: 1, status: 1, queuedAt: 1, _id: 1 },
+      name: "research_lab_jobs_recipe_fifo",
+    },
+    {
+      key: { status: 1, completesAt: 1, claimDeadline: 1, leaseUntil: 1 },
+      name: "research_lab_jobs_due_lease",
+    },
+    {
+      key: { pendingSignals: 1, signalLeaseUntil: 1, updatedAt: 1 },
+      name: "research_lab_jobs_signal_due",
+    },
+    {
+      key: {
+        status: 1,
+        claimReminderAt: 1,
+        claimReminderSentAt: 1,
+        reminderLeaseUntil: 1,
+      },
+      name: "research_lab_jobs_reminder_due",
+    },
+    {
+      key: { requesterUserId: 1, createdAt: -1 },
+      name: "research_lab_jobs_requester_createdAt",
+    },
+  ],
+  npc_relationships: [
+    {
+      key: { npcId: 1, userId: 1, characterId: 1 },
+      name: "npc_relationships_npc_user_character_unique",
+      unique: true,
+    },
+  ],
+  npc_relationship_events: [
+    {
+      key: { dedupeKey: 1 },
+      name: "npc_relationship_events_dedupeKey_unique",
+      unique: true,
+    },
+    {
+      key: { npcId: 1, userId: 1, characterId: 1, sceneId: 1 },
+      name: "npc_relationship_events_user_scene_unique",
+      unique: true,
+      partialFilterExpression: { sceneId: { $type: "string" } },
+    },
+    {
+      key: { npcId: 1, userId: 1, characterId: 1, createdAt: 1, _id: 1 },
+      name: "npc_relationship_events_npc_user_character_createdAt",
+    },
+  ],
+  npc_conversations: [
+    {
+      key: { npcId: 1, userId: 1, characterId: 1 },
+      name: "npc_conversations_npc_user_character_unique",
+      unique: true,
+    },
+  ],
+};
+
+export async function ensureResearchLabIndexes(
+  database?: Db,
+  options: IndexEnsureOptions = {},
+): Promise<void> {
+  const db = database ?? (await getDb());
+  for (const [collection, indexes] of Object.entries(
+    RESEARCH_LAB_INDEX_DEFINITIONS,
+  )) {
+    for (const index of indexes) {
+      const { key, ...indexOptions } = index;
+      const name = await db.collection(collection).createIndex(key, indexOptions);
+      options.onEnsured?.({ collection, name });
+    }
+  }
+}
+
 export async function ensureBureaucratVoteIndexes(
   database?: Db,
   options: IndexEnsureOptions = {},
@@ -440,6 +537,7 @@ export async function ensureAllIndexes(): Promise<void> {
     ensureLoreIndexes(db),
     ensureSessionReportIndexes(db),
     ensureBureaucratVoteIndexes(db),
+    ensureResearchLabIndexes(db),
 
     /* ── character_change_logs (감사 로그) ── */
     ensureChangeLogsIndexes(db),

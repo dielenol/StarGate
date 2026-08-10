@@ -18,6 +18,8 @@ export async function executeEconomicOperationResult<T>(args: {
   domain: string;
   actorId: string;
   payload: unknown;
+  /** 기존 완료 operation replay 확인 뒤, 신규 실행에만 필요한 transaction 외부 준비. */
+  prepare?: () => Promise<void>;
   run: (session: ClientSession) => Promise<{ status: number; body: T }>;
 }): Promise<EconomicOperationResult<T>> {
   const existing = await findEconomicOperation(args);
@@ -33,6 +35,36 @@ export async function executeEconomicOperationResult<T>(args: {
       throw new EconomicOperationConflictError(existing.kind);
     }
     throw new Error("INVALID_ECONOMIC_OPERATION_STATE");
+  }
+
+  if (args.prepare) {
+    try {
+      await args.prepare();
+    } catch (error) {
+      const replay = await findEconomicOperation(args);
+      if (replay?.kind === "completed" || replay?.kind === "failed") {
+        return {
+          status: replay.status,
+          body: replay.body as T,
+          replayed: true,
+        };
+      }
+      if (replay?.kind === "processing" || replay?.kind === "conflict") {
+        throw new EconomicOperationConflictError(replay.kind);
+      }
+      throw error;
+    }
+    const replay = await findEconomicOperation(args);
+    if (replay?.kind === "completed" || replay?.kind === "failed") {
+      return {
+        status: replay.status,
+        body: replay.body as T,
+        replayed: true,
+      };
+    }
+    if (replay?.kind === "processing" || replay?.kind === "conflict") {
+      throw new EconomicOperationConflictError(replay.kind);
+    }
   }
 
   const client = await getClient();

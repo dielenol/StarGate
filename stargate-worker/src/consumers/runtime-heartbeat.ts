@@ -13,6 +13,7 @@ export interface WorkerRuntimeStatusDocument {
   instanceId: string;
   mode: WorkerMode;
   enabledConsumers: WorkerConsumerName[];
+  activeMutationConsumers: WorkerConsumerName[];
   expectedConsumers: WorkerConsumerName[];
   enabledOutboxKinds: IntegrationOutboxKind[];
   ready: boolean;
@@ -29,6 +30,7 @@ export class WorkerRuntimeHeartbeatConsumer implements DueWorkConsumerPort {
     private readonly options: {
       mode: WorkerMode;
       enabledConsumers: WorkerConsumerName[];
+      activeMutationConsumers: WorkerConsumerName[];
       expectedConsumers: WorkerConsumerName[];
       enabledOutboxKinds: IntegrationOutboxKind[];
       isReady: () => boolean;
@@ -45,6 +47,7 @@ export class WorkerRuntimeHeartbeatConsumer implements DueWorkConsumerPort {
           instanceId: this.#instanceId,
           mode: this.options.mode,
           enabledConsumers: [...this.options.enabledConsumers],
+          activeMutationConsumers: [...this.options.activeMutationConsumers],
           expectedConsumers: [...this.options.expectedConsumers],
           enabledOutboxKinds: [...this.options.enabledOutboxKinds],
           ready: this.options.isReady(),

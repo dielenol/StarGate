@@ -76,6 +76,24 @@ export function createShadowDomainConsumers(): DueWorkConsumerPort[] {
       }),
     ),
     new ShadowBoundaryConsumer(
+      "research-lab",
+      "research_lab_jobs",
+      (now) => ({
+        workerHaltedAt: { $exists: false },
+        $or: [
+          { status: "QUEUED" },
+          { status: "RUNNING", completesAt: { $lte: now } },
+          { status: "CLAIMABLE", claimDeadline: { $lte: now } },
+          { "pendingSignals.0": { $exists: true } },
+          {
+            status: "CLAIMABLE",
+            claimReminderAt: { $lte: now },
+            claimReminderSentAt: { $exists: false },
+          },
+        ],
+      }),
+    ),
+    new ShadowBoundaryConsumer(
       "shop-restock",
       "shop_restock_notifications",
       (now) => ({

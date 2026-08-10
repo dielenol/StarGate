@@ -298,7 +298,7 @@ test("게스트 상점 조회는 일일 재고 갱신을 건너뛴다", async ()
 });
 
 test("개인 데이터 GET 경계는 게스트 합성 ID 대신 nullable owner ID를 사용한다", async () => {
-  const [dashboard, inventory, lore, research, zulu] = await Promise.all([
+  const [dashboard, inventory, lore, research, researchLab] = await Promise.all([
     readFile(new URL("../../erp/dashboard.ts", import.meta.url), "utf8"),
     readFile(
       new URL(
@@ -317,7 +317,7 @@ test("개인 데이터 GET 경계는 게스트 합성 ID 대신 nullable owner I
     ),
     readFile(
       new URL(
-        "../../../app/api/erp/research/zulu-0028/route.ts",
+        "../../../app/api/erp/research/route.ts",
         import.meta.url,
       ),
       "utf8",
@@ -328,5 +328,5 @@ test("개인 데이터 GET 경계는 게스트 합성 ID 대신 nullable owner I
   assert.match(inventory, /getOwnedDataViewerId\(session\.user\)/);
   assert.match(lore, /userId: string \| null/);
   assert.match(research, /session\.ownedDataViewerId/);
-  assert.match(zulu, /getOwnedDataViewerId\(session\.user\)/);
+  assert.match(researchLab, /getOwnedDataViewerId\(session\.user\)/);
 });

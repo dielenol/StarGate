@@ -75,9 +75,22 @@ interface EntityCandidate {
 }
 
 const MAX_SEARCH_TEXT = 100_000;
+const CATALOG_SOURCE_CLASSES = new Set<LoreRecordStatus>([
+  "canon-from-source",
+  "session-confirmed",
+  "design-proposal",
+  "balance-candidate",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function catalogLoreStatus(value: unknown): LoreRecordStatus {
+  return typeof value === "string" &&
+    CATALOG_SOURCE_CLASSES.has(value as LoreRecordStatus)
+    ? (value as LoreRecordStatus)
+    : "canon-from-source";
 }
 
 function asString(value: unknown): string {
@@ -494,7 +507,7 @@ function buildEntities(snapshot: LoreDomainSnapshot): EntityCandidate[] {
         tags: asStringArray(doc.tags),
         itemCategories: uniqueStrings([doc.category]),
       }),
-      status: "canon-from-source",
+      status: catalogLoreStatus(doc.sourceClass),
       access: catalogAccess(doc.isPublic, { ownerId: workshopOwner(doc) }),
       sourceCollection: "master_items",
       sourceKey: asString(doc.slug) || key,

@@ -5,6 +5,7 @@ import {
   WorkerConfigurationError,
   loadWorkerConfig,
 } from "../dist/config.js";
+import { activeMutationConsumersForConfig } from "../dist/runtime-status.js";
 
 const validEnvironment = {
   WORKER_MODE: "shadow",
@@ -22,6 +23,7 @@ test("worker 설정은 shadow와 단일 replica를 기본 안전 경계로 사�
   assert.equal(config.replicaCount, 1);
   assert.equal(config.pollIntervalMs, 30_000);
   assert.deepEqual(config.enabledConsumers, []);
+  assert.equal(config.researchLabWorkerEnabled, false);
   assert.equal(config.realtime.maxConnections, 500);
   assert.equal(config.realtime.maxConnectionsPerUser, 5);
   assert.deepEqual(config.realtime.allowedOrigins, [
@@ -52,6 +54,43 @@ test("consumer는 지원 목록만 중복 없이 opt-in한다", () => {
   );
 });
 
+test("연구소 mutation heartbeat는 별도 worker gate 값을 보존한다", () => {
+  assert.equal(
+    loadWorkerConfig({
+      ...validEnvironment,
+      RESEARCH_LAB_WORKER_ENABLED: "true",
+    }).researchLabWorkerEnabled,
+    true,
+  );
+});
+
+test("research-lab consumer가 실제 enabled 목록에 있을 때만 active mutation을 광고한다", () => {
+  assert.deepEqual(
+    activeMutationConsumersForConfig({
+      mode: "active",
+      enabledConsumers: ["research-lab"],
+      researchLabWorkerEnabled: true,
+    }),
+    ["research-lab"],
+  );
+  assert.deepEqual(
+    activeMutationConsumersForConfig({
+      mode: "active",
+      enabledConsumers: ["ameri-dm"],
+      researchLabWorkerEnabled: true,
+    }),
+    [],
+  );
+  assert.deepEqual(
+    activeMutationConsumersForConfig({
+      mode: "shadow",
+      enabledConsumers: ["research-lab"],
+      researchLabWorkerEnabled: true,
+    }),
+    [],
+  );
+});
+
 test("active worker는 domain consumer 전체를 명시하지 않으면 기동을 거부한다", () => {
   assert.deepEqual(
     loadWorkerConfig({
@@ -59,7 +98,13 @@ test("active worker는 domain consumer 전체를 명시하지 않으면 기동�
       WORKER_MODE: "active",
       WORKER_CONSUMERS: "all",
     }).enabledConsumers,
-    ["ameri-dm", "research-card", "shop-restock", "stock-market-wire"],
+    [
+      "ameri-dm",
+      "research-card",
+      "research-lab",
+      "shop-restock",
+      "stock-market-wire",
+    ],
   );
   assert.throws(
     () =>

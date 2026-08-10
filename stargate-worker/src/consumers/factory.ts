@@ -3,6 +3,16 @@ import { AmeriDmConsumer } from "./ameri-dm.js";
 import { DiscordDesiredStateConsumer } from "./discord-desired-state.js";
 import type { DueWorkConsumerPort } from "./port.js";
 import { ResearchCardConsumer } from "./research-card.js";
+import { ResearchLabConsumer } from "./research-lab.js";
+
+/** 코드 배포와 운영 mutation 활성화를 분리하는 명시적 research-lab gate. */
+export class ResearchLabActivationGateConsumer implements DueWorkConsumerPort {
+  readonly name = "research-lab";
+
+  async tick() {
+    return { observedDue: 0 };
+  }
+}
 
 export class DomainConsumerConfigurationError extends Error {
   constructor(message: string) {
@@ -72,6 +82,10 @@ export function createDefaultDomainConsumers(
             env.NEXT_PUBLIC_SITE_URL?.trim() ||
             env.SITE_BASE_URL?.trim(),
         });
+      case "research-lab":
+        return env.RESEARCH_LAB_WORKER_ENABLED?.trim().toLowerCase() === "true"
+          ? new ResearchLabConsumer()
+          : new ResearchLabActivationGateConsumer();
       case "shop-restock":
         return new DiscordDesiredStateConsumer(name, {
           collectionName: "shop_restock_notifications",

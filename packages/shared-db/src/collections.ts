@@ -43,6 +43,13 @@ import type {
   LoreSource,
 } from "./types/lore-knowledge.js";
 import type { BureaucratVote } from "./types/bureaucrat-vote.js";
+import type {
+  NpcConversation,
+  NpcRelationship,
+  NpcRelationshipEvent,
+  ResearchLabJob,
+  ResearchLabLine,
+} from "./types/research-lab.js";
 
 import { getDb, getDbSync } from "./client.js";
 
@@ -88,6 +95,11 @@ const COL = {
   LORE_SEARCH_DOCUMENTS: "lore_search_documents",
   LORE_INGESTION_RUNS: "lore_ingestion_runs",
   BUREAUCRAT_VOTES: "bureaucrat_votes",
+  RESEARCH_LAB_LINES: "research_lab_lines",
+  RESEARCH_LAB_JOBS: "research_lab_jobs",
+  NPC_RELATIONSHIPS: "npc_relationships",
+  NPC_RELATIONSHIP_EVENTS: "npc_relationship_events",
+  NPC_CONVERSATIONS: "npc_conversations",
 } as const;
 
 /* ── Async accessors (both modes) ── */
@@ -295,6 +307,31 @@ export async function bureaucratVotesCol(): Promise<Collection<BureaucratVote>> 
   return db.collection<BureaucratVote>(COL.BUREAUCRAT_VOTES);
 }
 
+export async function researchLabLinesCol(): Promise<Collection<ResearchLabLine>> {
+  const db = await getDb();
+  return db.collection<ResearchLabLine>(COL.RESEARCH_LAB_LINES);
+}
+
+export async function researchLabJobsCol(): Promise<Collection<ResearchLabJob>> {
+  const db = await getDb();
+  return db.collection<ResearchLabJob>(COL.RESEARCH_LAB_JOBS);
+}
+
+export async function npcRelationshipsCol(): Promise<Collection<NpcRelationship>> {
+  const db = await getDb();
+  return db.collection<NpcRelationship>(COL.NPC_RELATIONSHIPS);
+}
+
+export async function npcRelationshipEventsCol(): Promise<Collection<NpcRelationshipEvent>> {
+  const db = await getDb();
+  return db.collection<NpcRelationshipEvent>(COL.NPC_RELATIONSHIP_EVENTS);
+}
+
+export async function npcConversationsCol(): Promise<Collection<NpcConversation>> {
+  const db = await getDb();
+  return db.collection<NpcConversation>(COL.NPC_CONVERSATIONS);
+}
+
 /* ── Sync accessors (long-running only) ── */
 
 export function usersColSync(): Collection<User> {
@@ -461,4 +498,26 @@ export function loreIngestionRunsColSync(): Collection<LoreIngestionRun> {
 
 export function bureaucratVotesColSync(): Collection<BureaucratVote> {
   return getDbSync().collection<BureaucratVote>(COL.BUREAUCRAT_VOTES);
+}
+
+export function researchLabLinesColSync(): Collection<ResearchLabLine> {
+  return getDbSync().collection<ResearchLabLine>(COL.RESEARCH_LAB_LINES);
+}
+
+export function researchLabJobsColSync(): Collection<ResearchLabJob> {
+  return getDbSync().collection<ResearchLabJob>(COL.RESEARCH_LAB_JOBS);
+}
+
+export function npcRelationshipsColSync(): Collection<NpcRelationship> {
+  return getDbSync().collection<NpcRelationship>(COL.NPC_RELATIONSHIPS);
+}
+
+export function npcRelationshipEventsColSync(): Collection<NpcRelationshipEvent> {
+  return getDbSync().collection<NpcRelationshipEvent>(
+    COL.NPC_RELATIONSHIP_EVENTS,
+  );
+}
+
+export function npcConversationsColSync(): Collection<NpcConversation> {
+  return getDbSync().collection<NpcConversation>(COL.NPC_CONVERSATIONS);
 }

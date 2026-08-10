@@ -359,6 +359,7 @@ async function loadSnapshot(
           isAvailable: 1,
           lore: 1,
           loreMd: 1,
+          sourceClass: 1,
           workshop: 1,
           createdAt: 1,
           updatedAt: 1,

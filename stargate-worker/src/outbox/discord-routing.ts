@@ -9,7 +9,7 @@ export type DiscordWebhookDestination =
 
 type WebhookIntegrationKind = Exclude<
   IntegrationOutboxKind,
-  "PLAYER_TRADE_DM"
+  "PLAYER_TRADE_DM" | "RESEARCH_LAB_DM"
 >;
 
 export const DISCORD_OUTBOX_DESTINATIONS = {

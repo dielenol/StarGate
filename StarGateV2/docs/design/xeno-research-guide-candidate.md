@@ -1,5 +1,7 @@
 # 제노 연구소 안내 NPC 후보 원장
 
+> 2026-08-10 v2 전환: 이 문서는 ZULU-0028 연구소 v1 당시의 임시 후보 기록이다. 현재 `/erp/research` 구현 기준은 `docs/design/xeno-research-lab-v2-plan.md`, 제노의 신원·소속·등급·관계 기준은 `docs/spec/npc/doctor-zeno.md`다. 아래 blocked 항목과 GM 중심 UI 제한은 역사 기록으로만 보존하며 새 구현에 적용하지 않는다.
+
 ## 용도
 
 이 문서는 `/erp/research`의 초기 안내 캐릭터 뼈대에만 사용한다. 정식 NPC 신원조회 spec, `characters` 적재 payload, 소속 그래프 입력으로 사용하지 않는다.
