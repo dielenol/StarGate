@@ -2,7 +2,7 @@
 title: Personnel deceased status structured sync coverage
 category: session-sync
 tags: [personnel, deceased, dossier, stargate-lore]
-updated: 2026-08-07
+updated: 2026-08-10
 source: stargate-lore
 ---
 
@@ -34,7 +34,7 @@ source: stargate-lore
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `RODION` | 로드리온 로마노비치 라스콜니코프(기존 승인값 유지) | `грибы(버섯들)`(기존 승인값 유지) | 전 섹터 C 감독관 / 심부 굴착 생존자(기존값 유지) | 기존 ERP 내부 식별자와 S1E5 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C`(기존값 유지) | 없음(정규 배치 유지) | `M`(기존 승인값 유지) | `/assets/npcs/Rodion-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 67세; 190cm; 체중 미상(기존값 유지) | 기존 서술·관계는 보존; 실각 뒤 전기 오브 투척으로 확정된 사망을 `DECEASED`로 구조화 | ready-for-apply |
 | `PECHORIN` | 그리고리 페초린(기존 승인값 유지) | 없음(기록 없음) | 섹터 C 전방 수호대 통솔 대령(기존값 유지) | 기존 ERP 내부 식별자와 S1E5 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C`(기존값 유지) | 없음(정규 배치 유지) | `H`(기존 승인값 유지) | `/assets/npcs/Pechorin-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이·신장·체중 미상(기존값 유지) | 기존 서술·관계는 보존; 데드핸드 임무를 위한 자결로 확정된 사망을 `DECEASED`로 구조화 | ready-for-apply |
-| `GERASIMOV` | 게라쉬모프(성만 확인; 이름·부칭은 원문 미상) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 호명, 1·2부 역할 연속성, 기존 승인 spec의 성 기반 기술 식별자 | `MILITARY` 외부 군부 | 러시아 측 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(기존 승인 초상 유지) | `true`(기존 승인값 유지) | 남성; 나이·신장·체중은 원문 미상 | 기존 승인 spec으로 base-on-insert만 허용; 오틸리아의 공격으로 확정된 사망을 `DECEASED`로 구조화 | ready-for-apply |
+| `GERASIMOV` | 미하일 게라쉬모프(2026-08-10 후속 신원 확인) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 호명, 1·2부 역할 연속성과 후속 전체 이름 확인; 기존 기술 식별자 유지 | `MILITARY / RUSSIA` 외부 군부 산하 러시아 정부 | 러시아 정부 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(기존 승인 초상 유지) | `true`(기존 승인값 유지) | 남성; 나이·신장·체중은 원문 미상 | 사망 구조화 결과는 보존하고 표시명·영문명·department·관련 공개 서술·`loreMd`·`러시아정부` 태그는 별도 focused repair로 동기화 | ready-for-apply |
 | `PERK_ESHHALL` | 퍼크슈타인 에스홀(기존 승인값 유지) | 없음(기록 없음) | NOGA 더블린 지부 지부장(기존값 유지) | 기존 ERP 내부 식별자와 New Dublin durable spec | `MILITARY / NOGA`(기존값 유지) | 없음(정규 소속 유지) | 없음(외부 인물; `agentLevel` 미저장 유지) | `/assets/npcs/Puck-Asshole-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 41세; 189cm; 체중 미상(기존값 유지) | 기존 서술·관계는 보존; NOGA 거점 진압 중 확정된 사망을 `DECEASED`로 구조화 | ready-for-apply |
 | `DOCTOR_MOSS` | 모이세이 알렉산드로비치 코헨(기존 승인값 유지) | `Dr.모스`(기존 명시적 통칭 유지) | 노부스 오르도 연구 기구 사무차장(기존값 유지) | 기존 ERP 내부 식별자와 Prato durable spec | `NOVUS_ORDO / SECRETARIAT / RESEARCH`(기존값 유지) | 없음(정규 배치 유지) | `V`(기존 승인값 유지) | `/assets/npcs/Doctor-Moss-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 61세; 158cm; 체중 미상(기존값 유지) | 기존 관계는 보존; 상부 보고 시도 직후 확정된 사망과 사건 링크를 `DECEASED`로 구조화 | ready-for-apply |
 

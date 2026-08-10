@@ -2,7 +2,7 @@
 title: NOSB-S1E5-EVIL-PART2 session sync coverage
 category: session-sync
 tags: [NOSB-S1E5-EVIL-PART2, S1E5, 악, sector-c, stargate-lore]
-updated: 2026-08-07
+updated: 2026-08-10
 source: stargate-lore
 ---
 
@@ -47,7 +47,7 @@ source: stargate-lore
 | 그리고리 페초린 | p.21-p.29, p.74-p.83 | NPC spec + existing Dossier | 동료 보호, 자결, 마가렛의 망자 조종을 통한 냉각 활성화, 사망 상태 반영 | applied |
 | 로드리온 라스콜니코프 | p.58-p.70, p.88-p.99 | NPC spec + existing Dossier | 게라쉬모프와의 충돌, 포로의 광원화 샘플화, 실각 투표와 오브에 의한 사망 반영 | applied |
 | 니콜라이 바자로프 | p.100, p.112 | NPC spec + existing Dossier | 레짐 체인지 프로토콜에 따른 섹터 C 감독관 취임과 후속 안정화 기록 | applied |
-| 러시아 장군 게라쉬모프 | p.58-p.60, p.92-p.97 + 사용자 제공 초상 | 신규 NPC spec + Dossier, report 1·2부 | 성을 표시명으로 보존하고 `MILITARY` 외부 인물·등급 없음으로 등록, 오틸리아·로드리온 관계와 사망 반영 | applied |
+| 러시아 장군 미하일 게라쉬모프 | p.58-p.60, p.92-p.97 + 사용자 제공 초상 + 후속 신원 확인 | 기존 NPC spec + Dossier, report 1·2부 | 전체 이름과 러시아 정부 분류에 맞춰 identity·organization prose를 동기화하고, 오틸리아·로드리온 관계와 사망은 보존 | identity/organization-repair-ready |
 | 화이트로즈 수장 R | p.61-p.65 | 신규 NPC spec + Dossier, report, `wiki_pages.white-rose` | `WHITE_ROSE_R` 공개 Dossier를 무이미지·등급 없음으로 등록하고, 자칭 수장·지도부 동시 실각 제안·인질 증언과 후속 레짐 체인지를 증언/확인 사실로 분리 | applied |
 | 섹터 C 전기 오브 | p.14-p.19, p.71-p.99 | 신규 `wiki_pages.sector-c-electrical-orb` | 전자기기 추적, 전자 장비 무력화, 고열·전기 피해와 맘모스·로드리온 사망 연계 기록 | applied · public |
 | 스트리고이와 노스페라투 | p.34-p.56 | 신규 `wiki_pages.sector-c-strigoi` | 빛·은 반응, 노스페라투의 포커 통행 거래, 섹터 C 이탈 기록 | applied · public |
@@ -85,20 +85,20 @@ source: stargate-lore
 | 그리고리 페초린 | `PECHORIN` | 유지시설 방어와 동료 보호, 자결로 냉각 복구 수단 제공, 사망 | applied |
 | 로드리온 라스콜니코프 | `RODION` | 사보타주 대응 실패, 포로 샘플화, 실각과 오브에 의한 사망 | applied |
 | 니콜라이 바자로프 | `BAZAROV` | 레짐 체인지 프로토콜로 섹터 C 감독관 취임 | applied |
-| 게라쉬모프 | `GERASIMOV` | 1부의 러시아 장군 정체 연결, 섹터 C 국영화 시도와 오틸리아의 처단 | applied |
+| 미하일 게라쉬모프 | `GERASIMOV` | 1부의 러시아 장군 정체 연결, 섹터 C 국영화 시도와 오틸리아의 처단 | applied |
 | R | `WHITE_ROSE_R` | 화이트로즈 수장 자칭, 지도부 동시 실각·후임 파견 제안과 해쉬의 절차 검토 | applied |
 | 바부슈카 | `RUBIN_BABUSHKA` | 초토화된 마을의 주민으로 등록하고 웬디고와의 발화는 testimony로 제한 | applied |
 
 ## NPC Approval Ledger
 
-기존 세 NPC는 2부 상태를 갱신하되, `PECHORIN`·`RODION`의 등급은 보존하고 `BAZAROV`는 감독관 취임에 대한 사용자 승인에 따라 `H → M`으로 승급한다. 기존 세 NPC의 초상·공개 여부·소속은 보존한다. 게라쉬모프와 바부슈카는 사용자 제공 초상·공개 결정과 외부 소속 분류를 반영해 신규 Dossier로 준비한다. R은 화이트로즈 소속 공개 Dossier로 생성하되, 사용자 지시에 따라 초상 없이 등록하고 실명 미상 상태를 보존한다.
+기존 세 NPC는 2부 상태를 갱신하되, `PECHORIN`·`RODION`의 등급은 보존하고 `BAZAROV`는 감독관 취임에 대한 사용자 승인에 따라 `H → M`으로 승급한다. 기존 세 NPC의 초상·공개 여부·소속은 보존한다. 게라쉬모프와 바부슈카는 사용자 제공 초상·공개 결정과 외부 소속 분류를 반영해 신규 Dossier로 준비한다. R은 화이트로즈 소속 공개 Dossier로 생성하되, 사용자 지시에 따라 초상 없이 등록하고 실명 미상 상태를 보존한다. 2026-08-10 후속 확인에서는 게라쉬모프의 전체 이름과 러시아 정부 분류에 맞춰 표시명·영문명·조직 department·관련 공개 서술·`loreMd`·`러시아정부` 태그를 한 focused repair로 동기화한다.
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `PECHORIN` | 그리고리 페초린 | 없음(기록 없음) | 섹터 C 전방 수호대 통솔 대령 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `H`(기존 승인값 유지) | `/assets/npcs/Pechorin-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이·신장·체중 미상 | 마가렛에게 데드핸드 실행을 맡기고 자결해 비상 냉각을 가능하게 함; 사망 상태 추가 | applied |
 | `RODION` | 로드리온 로마노비치 라스콜니코프 | `грибы(버섯들)` | 전 섹터 C 감독관 / 심부 굴착 생존자 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 없음(정규 배치) | `M`(기존 승인값 유지) | `/assets/npcs/Rodion-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 67세; 190cm; 체중 미상 | 실각 투표 뒤 마리아가 오브에 투척했고 화염·전기 피해로 사망 | applied |
 | `BAZAROV` | 니콜라이 바자로프 | `богослов(신학자)` | 섹터 C 연구원장 → 섹터 C 감독관 | 기존 ERP 내부 식별자와 1부 승인 원장 | `NOVUS_ORDO / MANUS / SECTOR_C` | 연구원장→감독관 직책 변경 | `H → M`(사용자 승인; 섹터 C 단일 부서 감독관 취임에 따른 부서 관리자 등급) | `/assets/npcs/Bazarov-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 나이 미상; 176cm; 체중 미상 | 레짐 체인지 프로토콜로 새 감독관이 되었고 섹터 C 사태가 후속 안정화됨 | applied |
-| `GERASIMOV` | 게라쉬모프(성만 확인; 이름·부칭은 원문 미상) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 호명, 1·2부 역할 연속성, 사용자 제공 초상 매칭; 성 기반 기술 식별자 | `MILITARY` 외부 군부 | 러시아 측 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 남성; 나이·신장·체중은 원문 미상 | 로드리온과 지휘권 경쟁; 지도부 투표 뒤 오틸리아의 공격으로 사망; 양방향 Dossier 관계 | applied |
+| `GERASIMOV` | 미하일 게라쉬모프(사용자 후속 신원 확인) | 없음(기록 없음) | 러시아 측 파견 장군 / 섹터 C 국영화 추진자 | 로드리온의 성 호명, 1·2부 역할 연속성, 사용자 제공 초상 매칭과 후속 전체 이름 확인; 기존 기술 식별자 유지 | `MILITARY / RUSSIA` 외부 군부 산하 러시아 정부 | 러시아 정부 / 섹터 C 국영화·지도부 교체 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Gerasimov-profile.webp`(기존 공개 초상 보존) | `true`(기존 공개 상태 보존) | 남성; 나이·신장·체중은 원문 미상 | 표시명·영문명·department·외형 도입부·배경·역할 상세·이름 설명·`loreMd`·`러시아정부` 태그를 동기화하고 사망·초상·공개·관계·사건 링크·성격 관찰은 보존 | ready-for-apply |
 | `WHITE_ROSE_R` | R(교신 식별명; 실명·전체 이름은 원문 미상) | 없음(`R`은 현재 확인된 주 식별명) | 화이트로즈 수장(자칭) / 레짐 체인지 제안자 | 통신에서 본인이 조직 수장 R이라고 발화; 조직명과 식별명을 결합한 기술 식별자 | `CIVIL / WHITE_ROSE` 외부 시민사회 | 본부 긴급 통신망 개입 / 섹터 C 후임 파견 제안 | 없음(외부 조직 인물; `agentLevel` 미저장) | 빈 값(사용자 명시적 무이미지 결정; 교신 컷신 재사용 금지) | `true`(앞선 공개 결정 유지) | 성별·나이·신장·체중은 원문 미상 | 지도부 동시 실각과 화이트로즈 인사 파견을 제안; `INDEXER`와 양방향 testimony 관계 | applied |
 | `RUBIN_BABUSHKA` | 바부슈카(실명은 원문 미상; speaker label을 표시명으로 보존) | 없음(바부슈카는 기록 표시명) | 루빈 인근 마을 주민 / 실명 미상 | 종료 장면 speaker label과 사용자 제공 초상; 사건 기반 기술 식별자 | `CIVIL` 외부 시민사회 | 루빈 인근 마을 주민 | 없음(외부 인물; `agentLevel` 미저장) | `/assets/npcs/Rubin-Babushka-profile.webp`(사용자 제공 원본 초상) | `true`(사용자 공개 결정) | 여성 노인; 신장·체중은 원문 미상 | 웬디고와 `Мама`·`내 아들` 발화를 교환했다는 증언만 보존하고 실제 가족관계는 확정하지 않음 | applied |
 
@@ -107,7 +107,7 @@ source: stargate-lore
 - `PECHORIN`과 `RODION`의 등급은 1부 승인값을 보존한다. `BAZAROV`는 사용자 승인에 따라 연구원장 `H`에서 섹터 C 단일 부서 감독관 `M`으로 승급한다. 기존 세 NPC의 초상·공개 여부·소속은 그대로 보존한다.
 - `PECHORIN`과 `RODION`의 사망은 GM 서술로 확정됐으므로 spec 및 기존 Dossier 상태 서술에 반영한다.
 - `BAZAROV`의 감독관 취임은 레짐 체인지 방송과 종료 시점 GM 서술이 함께 뒷받침한다.
-- `GERASIMOV`는 `MILITARY`, `RUBIN_BABUSHKA`는 `CIVIL`, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE` 외부 인물로 분류하고 내부 `agentLevel`은 저장하지 않는다. 러시아와 루빈 마을은 역할·태그·서사에 보존하며 단일 인물을 위해 새 조직 코드를 만들지 않는다.
+- `GERASIMOV`는 `MILITARY / RUSSIA`, `RUBIN_BABUSHKA`는 `CIVIL`, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE` 외부 인물로 분류하고 내부 `agentLevel`은 저장하지 않는다. 사용자 요청에 따라 미국 정부와 같은 외부 하위 조직 문법으로 `RUSSIA` 칸을 추가하며, 루빈 마을은 역할·태그·서사에만 보존한다.
 - 게라쉬모프와 바부슈카의 초상은 사용자 제공 원본을 크롭·생성 변형 없이 WebP로 변환했고, `isPublic: true` 결정을 반영한다.
 - R은 사용자 지시에 따라 `WHITE_ROSE_R` 공개 Dossier로 생성하되 `previewImage`와 `lore.mainImage`를 빈 값으로 둔다. 교신 컷신은 보고서 역할만 유지하고 Dossier 초상으로 재사용하지 않는다.
 - `R`의 2028년 전쟁 기획, 병력·주민의 우크라이나 파견과 가족 인질 주장은 발화자의 증언으로만 보존한다.
@@ -237,7 +237,7 @@ source: stargate-lore
 |---|---|---|---|
 | 신규 wiki 공개 여부 | 사용자가 공개로 결정 | report mirror·오브·스트리고이·맘모스를 `isPublic: true`로 live 적용 | 없음 — DB 재조회와 ERP consumer 확인 완료 |
 | 시각 자산 직접 URL 공개 | 사용자가 공개로 결정 | 장면 자산 15개와 Dossier 초상 2개의 `public/` 경로를 production 배포 | 없음 — 17개 production URL `200 image/webp` 확인 |
-| 게라쉬모프 신원 | 성·장군 직함·러시아 측 역할과 사용자 제공 초상 확인 | `GERASIMOV`, `MILITARY`, 등급 없음, 공개 Dossier; 이름·부칭은 미상으로 보존 | 전체 이름이 후속 소스에서 밝혀질 경우 갱신 |
+| 게라쉬모프 신원 | 작전 기록의 성·장군 직함·러시아 측 역할·초상과 사용자 후속 전체 이름 확인 | `GERASIMOV`, 표시명 `미하일 게라쉬모프`, `MILITARY / RUSSIA`, 등급 없음, 공개·사망·초상 보존 | 없음 — identity·organization prose focused repair 적용과 재조회만 남음 |
 | R 신원 | 화이트로즈 수장이라고 자칭; 사용자가 Dossier 생성·무이미지를 명시 | `WHITE_ROSE_R`, `CIVIL / WHITE_ROSE`, 등급 없음, 빈 초상, 공개 Dossier; 실명 미상 보존 | 전체 이름·인적 정보·실제 조직 직책이 후속 소스에서 밝혀질 경우 갱신 |
 | 바부슈카 신원과 웬디고 | speaker label·여성 노인 묘사·사용자 제공 초상, 상호 `Mama`·`내 아들` 발화 | `RUBIN_BABUSHKA`, `CIVIL`, 등급 없음, 공개 Dossier; 관계는 testimony로 보존 | 실명과 실제 가족관계 확인 |
 | 오브 식별자 | 현장 임시 명칭 `오브`만 확인 | wiki title에 `섹터 C 전기 오브` 사용, 비공식 명칭 명시 | 정식 ZULU 번호·분류 |
@@ -255,9 +255,10 @@ source: stargate-lore
 - 보고서·wiki mirror: 15개 이미지 경로·순서·alt·caption이 완전히 같아야 한다.
 - 보고서 구조화 링크: 최초 sync에는 현재 live target만 저장하고, 신규 wiki 3건·NPC 3건 생성 뒤 follow-up이 2부 forward edge를 합집합으로 추가해야 한다. 1부 연결은 `GERASIMOV` Dossier의 `appearsInEvents`와 `sessionAppearances`로 제공한다.
 - 정적 자산: 보고서 WebP 15개는 모두 1035×503, Dossier 초상은 각각 876×1280·956×1280이며 payload·ledger 경로와 일치해야 한다.
-- NPC: `PECHORIN`·`RODION`은 기존 등급을 보존하고 `BAZAROV`는 `H → M`으로 승급하며, 기존 세 NPC의 초상·공개 여부·소속은 보존한다. `GERASIMOV`와 `RUBIN_BABUSHKA`는 외부 소속·등급 없음·공개 초상으로, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE`·등급 없음·빈 초상·공개 상태로 신규 생성해야 한다.
+- NPC: `PECHORIN`·`RODION`은 기존 등급을 보존하고 `BAZAROV`는 `H → M`으로 승급하며, 기존 세 NPC의 초상·공개 여부·소속은 보존한다. `GERASIMOV`는 외부 무등급·공개·사망·초상을 보존하면서 표시명·영문명·`department: RUSSIA`·관련 공개 서술·`loreMd`·`러시아정부` 태그를 동기화하고, `RUBIN_BABUSHKA`는 외부 소속·등급 없음·공개 초상, `WHITE_ROSE_R`은 `CIVIL / WHITE_ROSE`·등급 없음·빈 초상·공개 상태를 유지해야 한다.
 - Dossier: 21개 기존 codename이 모두 dry-run에서 `예상 update` 또는 멱등 `예상 unchanged`여야 한다.
 - focused grade repair: `BAZAROV` role이 승인된 감독관 이력과 같고 현재 등급이 `H`이면 1건 `예상 update`, 같은 role에서 이미 `M`이면 1건 `예상 unchanged`, role/등급 precondition이 다르면 `예상 missing`으로 중단해야 한다. 실제 update 뒤 `updatedAt` 증가와 `lore_ingestion_runs` 성공 audit을 함께 확인한다.
+- focused identity/organization repair: `GERASIMOV`가 공개·사망·외부 무등급·기존 초상·`MILITARY` 상태이고 department·`loreMd`가 없으며 기존 표시명·영문명·외형·배경·역할 상세·이름 설명이 모두 승인된 이전 값과 정확히 일치할 때만, 표시명 `미하일 게라쉬모프`, 영문명 `Mikhail Gerasimov`, `department: RUSSIA`, 러시아 정부 기준의 관련 공개 서술·`loreMd`, `러시아정부` 태그를 쓴다. runner가 `updatedAt`을 갱신한다. 이미 모든 목표 필드가 일치하면 postcondition으로 멱등 종료하고, 한 필드라도 다른 동시 변경이 있으면 `예상 missing`으로 중단해야 한다.
 - personality: 6개 observation은 immutable ID별 단일 `$addToSet` envelope이며 timestamp를 포함하지 않아야 한다.
 - 경제: payload 전체에 경제·인벤토리·상점·주식·`master_items` mutation이 없어야 한다.
 - focused BAZAROV 등급 교정과 나머지 2부 payload 6개는 live 적용·DB 재조회·감사 레코드·인증 브라우저 검증까지 완료했다.
@@ -266,6 +267,7 @@ source: stargate-lore
 
 - 원본 113쪽에서 1,485개 기록과 31개 시각 프레임을 추출했고 빈 페이지·대체문자가 없음을 확인했다. 대표 시작·중간·종료 페이지와 선정 프레임을 시각 판독했다.
 - `PECHORIN`, `RODION`, `BAZAROV`, `GERASIMOV`, `WHITE_ROSE_R`, `RUBIN_BABUSHKA` spec은 `parseFrontmatter → npcFrontmatterSchema → toDbNpc → npcDocSchema` 계약을 통과했다. `BAZAROV`는 사용자 승인 승급값 `M`으로 정정했고, 신규 세 NPC는 외부 소속, 직렬화 후 `agentLevel` field absence, `isPublic: true`가 확인됐으며 R은 `CIVIL / WHITE_ROSE`, 빈 `previewImage`로 검증됐다.
+- 2026-08-10 `GERASIMOV` spec과 신규 생성 원본 payload의 adapter-managed fields를 전체 이름·`department: RUSSIA` 기준으로 다시 맞췄다. focused repair는 기존 표시명·영문명·외형·배경·역할 상세·이름 설명·`loreMd` 부재까지 exact CAS로 보호하고, 목표 표시명·영문명·department·관련 공개 서술·`loreMd`·태그를 함께 쓴다. live read-only dry-run에서 이 exact filter가 단일 `_id`의 `예상 update`로 확인됐다. 사망·공개·초상·관계·사건 링크·성격 관찰은 update 대상에서 제외하며 runner 관리 `updatedAt`과 ingestion audit만 부수 효과로 남는다.
 - 보고서·wiki mirror의 15개 이미지 path/order/alt/caption parity, 33개 visual ledger, main NPC ledger, payload 대상 전용 apply-ready ledger, personality ready ledger와 관찰 6개의 일치를 `check_lore_output.py`로 검증했다. `BAZAROV`의 `H → M` ledger/payload 일치, 외부 신규 세 NPC의 `agentLevel` assignment 부재, `WHITE_ROSE_R`의 명시적 무이미지 결정과 NPC payload 포함이 apply-ready 검사를 통과했다.
 - repository 전체 coverage/static payload/category/link/asset 감사가 통과했고 coverage·NPC 적용 명세는 `docs/lore/README.md` 인덱스에 포함됐다. public payload 문자열의 내부 경로·parser·payload·raw page/line·candidate-only·경제 no-op 표현 검사도 통과했다.
 - 2026-08-07 live read-only 등급 preflight에서 `BAZAROV`의 현재 role이 `섹터 C 연구원장 → 섹터 C 감독관`, `agentLevel`이 `H`임을 확인했고, `nosb-s1e5-evil-part2-bazarov-level-repair.json`의 `H → M` 단일 등급 변경이 1건 `예상 update`로 판정됐다.

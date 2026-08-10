@@ -57,6 +57,17 @@ export const EXTERNAL_SUB_ORGS: readonly ExternalSubOrg[] = [
     doctrine: "국가 권력 · 군사 정보망",
   },
   {
+    code: "RUSSIA",
+    label: "러시아 정부",
+    labelEn: "Russian Government",
+    summary: "군부 산하 러시아 정치·군사·정보기관 라인",
+    parentCode: "MILITARY",
+    parentLabel: "군부",
+    logoUrl: "",
+    logoVariant: "badge",
+    doctrine: "국가 통제 · 군사 행정망",
+  },
+  {
     code: "NOGA",
     label: "NOGA",
     labelEn: "Novus Ordo Great Again",

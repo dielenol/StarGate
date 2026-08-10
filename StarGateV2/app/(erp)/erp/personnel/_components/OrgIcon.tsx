@@ -63,6 +63,7 @@ export type OrgIconCode =
   | "SONGSARI"
   // 외부 세력 산하 조직 (ExternalSubOrg — 로고 이미지가 없는 조직만)
   | "USA"
+  | "RUSSIA"
   | "NOGA"
   | "GOLDEN_DAWN"
   | "AHNENERBE";
@@ -137,6 +138,7 @@ export function getCivilCategoryIcon(code: string): OrgIconCode | undefined {
  *  logoUrl 이미지가 없는 조직만 등재 (WHITE_ROSE/SPACE_ZERO 는 로고 이미지 우선). */
 const EXTERNAL_SUB_ORG_ICON_MAP: Record<string, OrgIconCode> = {
   USA: "USA",
+  RUSSIA: "RUSSIA",
   NOGA: "NOGA",
   GOLDEN_DAWN: "GOLDEN_DAWN",
   AHNENERBE: "AHNENERBE",
@@ -244,6 +246,10 @@ const ICONS: Record<OrgIconCode, IconPath> = {
   USA: {
     /* 미국 — 물결치는 성조기: 깃대 + 장식 + 캔턴(별 4점) + 웨이브 스트라이프 3줄. */
     body: `<path d="M4.5 21.5V3.4"/><circle cx="4.5" cy="2.4" r="0.7" fill="currentColor" stroke="none"/><path d="M4.5 4.3c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3v9.3c-2.7-1.1-5.2-1.1-7.6-.3-2.5.8-4.9.8-7.4-.2z"/><path d="M11.9 4.5v5.1"/><path d="M11.9 7.2c2.4-.8 4.9-.8 7.6.3"/><path d="M4.5 9.4c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/><path d="M4.5 11.9c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/><circle cx="6.4" cy="6.1" r="0.5" fill="currentColor" stroke="none"/><circle cx="8.6" cy="6.6" r="0.5" fill="currentColor" stroke="none"/><circle cx="6.4" cy="7.9" r="0.5" fill="currentColor" stroke="none"/><circle cx="8.6" cy="8.4" r="0.5" fill="currentColor" stroke="none"/>`,
+  },
+  RUSSIA: {
+    /* 러시아 정부 — 깃대와 삼색기를 단색 조직도 문법으로 단순화. */
+    body: `<path d="M4.5 21.5V3.4"/><circle cx="4.5" cy="2.4" r="0.7" fill="currentColor" stroke="none"/><path d="M4.5 4.3c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3v9.3c-2.7-1.1-5.2-1.1-7.6-.3-2.5.8-4.9.8-7.4-.2z"/><path d="M4.5 7.4c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/><path d="M4.5 10.5c2.5 1 4.9 1 7.4.2 2.4-.8 4.9-.8 7.6.3"/>`,
   },
   NOGA: {
     /* NOGA (Novus Ordo Great Again) — 군부(MILITARY) 도상에서 꺾쇠를 1단으로 줄인 파생형. 군부 계열 하위 조직 표식. */
