@@ -81,6 +81,7 @@ import {
 } from "./lib/seed-payload-normalization.ts";
 import { assertCommittedRepositorySource } from "./lib/repository-source.ts";
 import {
+  classifyPlannedReferenceVisibilityMutation,
   createPlannedReferenceTargets,
   reconcilePlannedReferenceTargetIssues,
   recordPlannedReferenceTarget,
@@ -1205,6 +1206,7 @@ async function dryRunWithDb(
       plan.postcondition?.[stableIdentityKey(plan.collection)] ??
         plan.filter[stableIdentityKey(plan.collection)],
       referenceCandidate,
+      classifyPlannedReferenceVisibilityMutation(plan),
       plannedReferenceTargets,
     );
     const preview = await buildEconomicPreview(col, plan, existing);

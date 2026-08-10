@@ -12,6 +12,53 @@ interface PlannedReferenceTarget {
   isPublic: boolean;
 }
 
+export type PlannedReferenceVisibilityMutation =
+  | { kind: "preserve" }
+  | { kind: "set"; isPublic: boolean }
+  | { kind: "set-on-insert"; isPublic: boolean }
+  | { kind: "dynamic" };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function classifyPlannedReferenceVisibilityMutation(plan: {
+  payload?: Record<string, unknown>;
+  update?: Record<string, unknown> | Record<string, unknown>[];
+}): PlannedReferenceVisibilityMutation {
+  if (plan.payload) {
+    if (!("isPublic" in plan.payload)) return { kind: "preserve" };
+    return typeof plan.payload.isPublic === "boolean"
+      ? { kind: "set", isPublic: plan.payload.isPublic }
+      : { kind: "dynamic" };
+  }
+  if (!plan.update) return { kind: "preserve" };
+
+  const stages = Array.isArray(plan.update) ? plan.update : [plan.update];
+  let mutation: PlannedReferenceVisibilityMutation = { kind: "preserve" };
+  let classicTouches = 0;
+  for (const stage of stages) {
+    for (const [operator, operand] of Object.entries(stage)) {
+      if (!isRecord(operand)) continue;
+      const entry = Object.entries(operand).find(
+        ([path]) => path.split(".", 1)[0] === "isPublic",
+      );
+      if (!entry) continue;
+      if (!Array.isArray(plan.update)) classicTouches += 1;
+      const value = entry[1];
+      mutation =
+        operator === "$set" && typeof value === "boolean"
+          ? { kind: "set", isPublic: value }
+          : operator === "$setOnInsert" && typeof value === "boolean"
+            ? { kind: "set-on-insert", isPublic: value }
+            : { kind: "dynamic" };
+    }
+  }
+  return !Array.isArray(plan.update) && classicTouches > 1
+    ? { kind: "dynamic" }
+    : mutation;
+}
+
 export type PlannedReferenceTargets = Record<
   ReferenceField,
   Map<string, PlannedReferenceTarget>
@@ -35,6 +82,7 @@ export function recordPlannedReferenceTarget(
   collection: string,
   expectedIdentity: unknown,
   candidate: Document | null,
+  visibilityMutation: PlannedReferenceVisibilityMutation,
   planned: PlannedReferenceTargets,
 ): void {
   if (!candidate) return;
@@ -66,7 +114,25 @@ export function recordPlannedReferenceTarget(
       `[seed-payload] dry-run planned reference target identity 불일치: ${collection}`,
     );
   }
-  planned[target.field].set(target.identity, { isPublic: target.isPublic });
+  const existing = planned[target.field].get(target.identity);
+  if (!existing) {
+    planned[target.field].set(target.identity, { isPublic: target.isPublic });
+    return;
+  }
+  if (
+    visibilityMutation.kind === "preserve" ||
+    visibilityMutation.kind === "set-on-insert"
+  ) {
+    return;
+  }
+  if (visibilityMutation.kind === "dynamic") {
+    throw new Error(
+      `[seed-payload] 같은 파일의 선행 target 상태에 의존하는 동적 isPublic dry-run은 허용하지 않습니다: ${collection}`,
+    );
+  }
+  planned[target.field].set(target.identity, {
+    isPublic: visibilityMutation.isPublic,
+  });
 }
 
 function isVisibleToReport(
