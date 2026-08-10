@@ -6,12 +6,12 @@ import {
   applyXenoResearchChoice,
   requireXenoResearchActor,
 } from "@/lib/db/xeno-research";
+import { isResearchLabMutationConfigured } from "@/lib/research/research-lab-readiness";
 import { getXenoChoiceDefinition } from "@/lib/research/xeno-dialogue";
 import type { ResearchChoiceResponse } from "@/types/research";
 
 import {
   guestReadOnlyResponse,
-  isResearchLabMutationEnabled,
   researchLabNotActivatedResponse,
   researchLabErrorResponse,
   unauthorizedResearchResponse,
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) return unauthorizedResearchResponse();
   if (session.user.isGuest) return guestReadOnlyResponse();
-  if (!(await isResearchLabMutationEnabled())) return researchLabNotActivatedResponse();
+  if (!isResearchLabMutationConfigured()) return researchLabNotActivatedResponse();
   const body = (await request.json().catch(() => null)) as {
     choiceId?: unknown;
   } | null;

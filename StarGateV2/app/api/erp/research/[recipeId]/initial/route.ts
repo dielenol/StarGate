@@ -11,9 +11,8 @@ import {
   fallbackResearchActionDialogue,
   guestReadOnlyResponse,
   invalidIdempotencyKeyResponse,
-  isResearchLabMutationEnabled,
-  researchLabNotActivatedResponse,
   researchLabErrorResponse,
+  requireResearchLabProductionReady,
   unauthorizedResearchResponse,
 } from "../../_response";
 
@@ -29,7 +28,6 @@ export async function POST(
   const session = await auth();
   if (!session?.user) return unauthorizedResearchResponse();
   if (session.user.isGuest) return guestReadOnlyResponse();
-  if (!(await isResearchLabMutationEnabled())) return researchLabNotActivatedResponse();
   const requestId = readIdempotencyKey(request);
   if (!requestId) return invalidIdempotencyKeyResponse();
   const { recipeId } = await context.params;
@@ -40,6 +38,7 @@ export async function POST(
       domain: "research-lab-initial",
       actorId: session.user.id,
       payload: { recipeId },
+      prepare: requireResearchLabProductionReady,
       run: async (mongoSession) => {
         await beginInitialResearch({
           recipeId,

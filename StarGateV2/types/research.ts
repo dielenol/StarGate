@@ -68,6 +68,7 @@ export interface ResearchRecipeView {
 export interface ResearchLineView {
   recipe: ResearchRecipeView;
   status: ResearchLineStatus;
+  isHalted: boolean;
   submittedByCharacterCodename: string | null;
   startedAt: string | null;
   completesAt: string | null;
@@ -118,6 +119,7 @@ export interface ResearchLabOverview {
     isScientist: boolean;
     balance: number | null;
     mutationsEnabled: boolean;
+    productionEnabled: boolean;
   };
   lines: ResearchLineView[];
   xeno: ResearchXenoView | null;

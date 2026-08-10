@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isResearchLabWorkerRuntimeStatusReady } from "../../research/research-lab-readiness.ts";
+import {
+  isResearchLabMutationConfigured,
+  isResearchLabWorkerRuntimeStatusReady,
+} from "../../research/research-lab-readiness.ts";
 
 const now = new Date("2026-08-10T12:00:00.000Z");
 
@@ -15,6 +18,13 @@ function status(overrides = {}) {
     ...overrides,
   };
 }
+
+test("Web mutation flag는 worker heartbeat와 별도의 기본 활성화 경계다", () => {
+  assert.equal(isResearchLabMutationConfigured("true"), true);
+  assert.equal(isResearchLabMutationConfigured(" TRUE "), true);
+  assert.equal(isResearchLabMutationConfigured("false"), false);
+  assert.equal(isResearchLabMutationConfigured(undefined), false);
+});
 
 test("active worker heartbeat가 연구 consumer와 DM outbox를 준비한 경우만 mutation ready다", () => {
   assert.equal(isResearchLabWorkerRuntimeStatusReady(status(), now), true);

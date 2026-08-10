@@ -110,6 +110,8 @@ export interface ResearchLabJob {
   lastError?: string;
   nextAttemptAt?: Date;
   workerHaltedAt?: Date;
+  /** enqueue와 worker 안전정지가 같은 active job 문서에서 충돌하도록 하는 admission fence. */
+  queueAdmissionVersion?: number;
   pendingSignals?: ResearchLabSignalKind[];
   signalSentAt?: Date;
   signalLeaseToken?: string;

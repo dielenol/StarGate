@@ -408,6 +408,67 @@ test(
       }),
       1,
     );
+
+    const db = await getDb();
+    const balanceBeforeHaltedRequest = (
+      await db.collection("credit_balances").findOne({
+        characterId: String(ids.soldierCharacter),
+      })
+    )?.balance;
+    const haltSession = (await getClient()).startSession();
+    let enqueueOutcome;
+    try {
+      haltSession.startTransaction();
+      await db.collection("research_lab_jobs").updateOne(
+        { _id: first.job._id },
+        { $set: { workerHaltedAt: new Date(completedAt.getTime() + 2_000) } },
+        { session: haltSession },
+      );
+      const enqueueAttempt = transaction((session) =>
+        enqueueResearchJob({
+          recipeId: "ZULU_0028",
+          destination: "SHARED",
+          actor: { id: String(ids.soldierUser), displayName: "SOLDIER" },
+          requestId: "repeat-halted",
+          session,
+          now: new Date(completedAt.getTime() + 3_000),
+        }),
+      ).then(
+        (value) => ({ ok: true, value }),
+        (error) => ({ ok: false, error }),
+      );
+      let enqueueSettled = false;
+      void enqueueAttempt.finally(() => {
+        enqueueSettled = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      assert.equal(
+        enqueueSettled,
+        false,
+        "worker halt transaction이 열린 동안 enqueue admission은 commit되면 안 된다",
+      );
+      await haltSession.commitTransaction();
+      enqueueOutcome = await enqueueAttempt;
+    } finally {
+      if (haltSession.inTransaction()) await haltSession.abortTransaction();
+      await haltSession.endSession();
+    }
+    assert.equal(enqueueOutcome?.ok, false);
+    assert.equal(enqueueOutcome?.error?.code, "LINE_HALTED");
+    assert.equal(
+      (
+        await db.collection("credit_balances").findOne({
+          characterId: String(ids.soldierCharacter),
+        })
+      )?.balance,
+      balanceBeforeHaltedRequest,
+    );
+    assert.equal(
+      await db.collection("credit_transactions").countDocuments({
+        requestId: /repeat-halted/u,
+      }),
+      0,
+    );
   },
 );
 

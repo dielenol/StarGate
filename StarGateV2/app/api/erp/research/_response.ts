@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { EconomicOperationConflictError } from "@/lib/db/execute-economic-operation";
-import { isResearchLabMutationRuntimeReady } from "@/lib/db/research-lab-readiness";
+import { isResearchLabProductionRuntimeReady } from "@/lib/db/research-lab-readiness";
 import {
   readXenoRelationshipState,
   requireXenoResearchActor,
 } from "@/lib/db/xeno-research";
 import { ResearchLabError } from "@/lib/research/research-lab";
+import { isResearchLabMutationConfigured } from "@/lib/research/research-lab-readiness";
 import {
   buildXenoFixedScene,
   type XenoSceneId,
@@ -93,14 +94,28 @@ export function guestReadOnlyResponse(): NextResponse {
   );
 }
 
-export async function isResearchLabMutationEnabled(): Promise<boolean> {
-  return isResearchLabMutationRuntimeReady();
+export function requireResearchLabMutationConfigured(): void {
+  if (isResearchLabMutationConfigured()) return;
+  throw new ResearchLabError(
+    "RESEARCH_LAB_NOT_ACTIVATED",
+    503,
+    "연구소 운영 mutation이 아직 활성화되지 않았습니다.",
+  );
+}
+
+export async function requireResearchLabProductionReady(): Promise<void> {
+  if (await isResearchLabProductionRuntimeReady()) return;
+  throw new ResearchLabError(
+    "RESEARCH_LAB_NOT_ACTIVATED",
+    503,
+    "연구소 생산 worker가 아직 준비되지 않았습니다.",
+  );
 }
 
 export function researchLabNotActivatedResponse(): NextResponse {
   return NextResponse.json(
     {
-      error: "연구소 운영 mutation 또는 worker가 아직 준비되지 않았습니다.",
+      error: "연구소 운영 mutation이 아직 활성화되지 않았습니다.",
       code: "RESEARCH_LAB_NOT_ACTIVATED",
     },
     { status: 503 },

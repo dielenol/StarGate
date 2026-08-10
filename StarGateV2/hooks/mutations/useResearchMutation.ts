@@ -157,8 +157,6 @@ export function useXenoChoice() {
                   relationship: response.relationship,
                   dialogue: {
                     ...current.xeno.dialogue,
-                    text: response.dialogue.text,
-                    expression: response.dialogue.expression,
                     choices: [],
                   },
                 },

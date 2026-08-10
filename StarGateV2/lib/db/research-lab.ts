@@ -13,6 +13,7 @@ import {
   insertResearchLabJob,
   masterItemsCol,
   prepareCharacterInventoryItemLocks,
+  researchLabJobsCol,
   researchLabLinesCol,
   researchOutstandingKey,
   sharedInventoryCol,
@@ -305,6 +306,37 @@ export async function enqueueResearchJob(input: {
     );
   }
   const character = await requireActiveMainCharacter(input.actor, input.session);
+  const jobs = await researchLabJobsCol();
+  const admittedActiveJob = await jobs.findOneAndUpdate(
+    {
+      recipeId: recipe.id,
+      activeLineKey: recipe.id,
+      workerHaltedAt: { $exists: false },
+    },
+    { $inc: { queueAdmissionVersion: 1 } },
+    {
+      projection: { _id: 1 },
+      returnDocument: "before",
+      session: input.session,
+    },
+  );
+  const haltedJob = admittedActiveJob
+    ? null
+    : await jobs.findOne(
+        {
+          recipeId: recipe.id,
+          activeLineKey: recipe.id,
+          workerHaltedAt: { $exists: true },
+        },
+        { projection: { _id: 1 }, session: input.session },
+      );
+  if (haltedJob) {
+    throw new ResearchLabError(
+      "LINE_HALTED",
+      503,
+      "이 연구선은 운영 안전정지 상태라 결제할 수 없습니다.",
+    );
+  }
   const { output } = await resolveRecipeItems(recipe, input.session);
   let debit;
   try {

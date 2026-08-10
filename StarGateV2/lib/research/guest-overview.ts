@@ -12,6 +12,7 @@ export function toGuestResearchLabOverview(
       isScientist: false,
       balance: null,
       mutationsEnabled: false,
+      productionEnabled: false,
     },
     lines: overview.lines.map((line) => ({
       recipe: {
@@ -33,6 +34,7 @@ export function toGuestResearchLabOverview(
         repeatCreditCost: line.recipe.repeatCreditCost,
       },
       status: line.status,
+      isHalted: line.isHalted,
       submittedByCharacterCodename: null,
       startedAt: null,
       completesAt: null,

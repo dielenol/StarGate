@@ -4,12 +4,12 @@ import { kstDateTag } from "@stargate/core/domain/kst-time";
 import {
   RESEARCH_RECIPE_IDS,
   getCharacterBalance,
-  listResearchLabJobs,
   listResearchLabLines,
   masterItemsCol,
   npcConversationsCol,
   npcRelationshipsCol,
   npcRelationshipEventsCol,
+  researchLabJobsCol,
   sharedInventoryCol,
   type AgentCharacter,
   type ResearchJobStatus,
@@ -30,6 +30,7 @@ import {
   RESEARCH_LAB_RECIPES,
   type ResearchLabRecipe,
 } from "../research/research-lab";
+import { isResearchLabMutationConfigured } from "../research/research-lab-readiness";
 import {
   buildXenoFixedScene,
   getXenoRelationshipPresentation,
@@ -43,13 +44,47 @@ import {
   XENO_CHAT_COOLDOWN_MS,
   XENO_CHAT_DAILY_LIMIT,
 } from "../research/xeno-ollama";
-import { isResearchLabMutationRuntimeReady } from "./research-lab-readiness";
+import { isResearchLabProductionRuntimeReady } from "./research-lab-readiness";
 
 const ACTIVE_JOB_STATUSES: readonly ResearchJobStatus[] = [
   "QUEUED",
   "RUNNING",
   "CLAIMABLE",
 ];
+
+type OverviewResearchJob = Pick<
+  ResearchLabJob,
+  | "recipeId"
+  | "kind"
+  | "status"
+  | "destination"
+  | "requesterUserId"
+  | "characterId"
+  | "characterCodename"
+  | "queuedAt"
+  | "startedAt"
+  | "completesAt"
+  | "claimDeadline"
+  | "activeLineKey"
+  | "workerHaltedAt"
+> & { _id: NonNullable<ResearchLabJob["_id"]> };
+
+const OVERVIEW_JOB_PROJECTION = {
+  _id: 1,
+  recipeId: 1,
+  kind: 1,
+  status: 1,
+  destination: 1,
+  requesterUserId: 1,
+  characterId: 1,
+  characterCodename: 1,
+  queuedAt: 1,
+  startedAt: 1,
+  completesAt: 1,
+  claimDeadline: 1,
+  activeLineKey: 1,
+  workerHaltedAt: 1,
+} as const satisfies Record<keyof OverviewResearchJob, 1>;
 
 const RECIPE_COPY: Readonly<
   Record<
@@ -125,14 +160,17 @@ async function resolveViewerCharacter(
   }
 }
 
-function compareQueue(left: ResearchLabJob, right: ResearchLabJob): number {
+function compareQueue(
+  left: OverviewResearchJob,
+  right: OverviewResearchJob,
+): number {
   const byQueuedAt = left.queuedAt.getTime() - right.queuedAt.getTime();
   if (byQueuedAt !== 0) return byQueuedAt;
   return String(left._id).localeCompare(String(right._id), "en");
 }
 
 function toJobView(
-  job: ResearchLabJob,
+  job: OverviewResearchJob,
   userId: string | null,
   characterId: string | null,
   position: number | null,
@@ -243,7 +281,8 @@ export async function getResearchLabOverview(input: {
 }): Promise<ResearchLabOverview> {
   const now = input.now ?? new Date();
   const userId = input.userId;
-  const mutationsEnabled = await isResearchLabMutationRuntimeReady();
+  const mutationsEnabled = isResearchLabMutationConfigured();
+  const productionEnabled = await isResearchLabProductionRuntimeReady();
   const recipes = RESEARCH_RECIPE_IDS.map((id) => RESEARCH_LAB_RECIPES[id]);
   const itemSlugs = recipes.flatMap((recipe) => [
     recipe.source.slug,
@@ -252,7 +291,14 @@ export async function getResearchLabOverview(input: {
   const [viewer, storedLines, activeJobs, masterItems] = await Promise.all([
     resolveViewerCharacter(input.userId),
     listResearchLabLines(),
-    listResearchLabJobs({ statuses: [...ACTIVE_JOB_STATUSES], limit: 500 }),
+    (await researchLabJobsCol())
+      .find({
+        recipeId: { $in: [...RESEARCH_RECIPE_IDS] },
+        status: { $in: [...ACTIVE_JOB_STATUSES] },
+      })
+      .project<OverviewResearchJob>(OVERVIEW_JOB_PROJECTION)
+      .sort({ recipeId: 1, status: 1, queuedAt: 1, _id: 1 })
+      .toArray(),
     (await masterItemsCol())
       .find({ slug: { $in: itemSlugs } })
       .project({ _id: 1, slug: 1, name: 1 })
@@ -283,12 +329,25 @@ export async function getResearchLabOverview(input: {
   }
 
   const storedLineById = new Map(storedLines.map((line) => [line._id, line]));
+  const activeJobsByRecipe = new Map<
+    ResearchRecipeId,
+    OverviewResearchJob[]
+  >();
+  for (const job of activeJobs) {
+    const recipeJobs = activeJobsByRecipe.get(job.recipeId) ?? [];
+    recipeJobs.push(job);
+    activeJobsByRecipe.set(job.recipeId, recipeJobs);
+  }
   const characterId = viewer.character?._id
     ? String(viewer.character._id)
     : null;
   const lines: ResearchLineView[] = recipes.map((recipe) => {
     const storedLine = storedLineById.get(recipe.id);
-    const jobs = activeJobs.filter((job) => job.recipeId === recipe.id);
+    const jobs = activeJobsByRecipe.get(recipe.id) ?? [];
+    const isHalted = jobs.some(
+      (job) =>
+        job.activeLineKey === recipe.id && job.workerHaltedAt !== undefined,
+    );
     const active = jobs.find(
       (job) => job.status === "RUNNING" || job.status === "CLAIMABLE",
     );
@@ -309,6 +368,7 @@ export async function getResearchLabOverview(input: {
         sharedQuantities,
       }),
       status: storedLine?.status ?? "LOCKED",
+      isHalted,
       submittedByCharacterCodename:
         storedLine?.submittedByCharacterCodename ?? null,
       startedAt: storedLine?.startedAt?.toISOString() ?? null,
@@ -329,6 +389,7 @@ export async function getResearchLabOverview(input: {
         isScientist: false,
         balance: null,
         mutationsEnabled,
+        productionEnabled,
       },
       lines,
       xeno: null,
@@ -400,6 +461,7 @@ export async function getResearchLabOverview(input: {
       isScientist: viewer.character.play.className === "과학자",
       balance,
       mutationsEnabled,
+      productionEnabled,
     },
     lines,
     xeno: {

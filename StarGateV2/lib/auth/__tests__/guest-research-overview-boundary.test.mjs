@@ -18,6 +18,7 @@ test("게스트 샘플 연구소 응답은 작업·캐릭터·공용 재고 원�
       isScientist: true,
       balance: 999,
       mutationsEnabled: true,
+      productionEnabled: true,
     },
     lines: [
       {
@@ -52,6 +53,7 @@ test("게스트 샘플 연구소 응답은 작업·캐릭터·공용 재고 원�
           repeatCreditCost: 500,
         },
         status: "OPEN",
+        isHalted: true,
         submittedByCharacterCodename: "PRIVATE_AGENT",
         startedAt: "2026-08-01T00:00:00.000Z",
         completesAt: "2026-08-02T00:00:00.000Z",
@@ -82,6 +84,8 @@ test("게스트 샘플 연구소 응답은 작업·캐릭터·공용 재고 원�
   assert.equal(overview.viewer.character, null);
   assert.equal(overview.viewer.balance, null);
   assert.equal(overview.viewer.mutationsEnabled, false);
+  assert.equal(overview.viewer.productionEnabled, false);
+  assert.equal(overview.lines[0].isHalted, true);
   assert.equal(overview.lines[0].recipe.source.sharedQuantity, 0);
   assert.equal(overview.lines[0].recipe.output.sharedQuantity, 0);
   assert.equal(overview.lines[0].submittedByCharacterCodename, null);

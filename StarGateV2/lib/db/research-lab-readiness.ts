@@ -3,16 +3,15 @@ import "./init";
 import { getDb } from "@stargate/shared-db";
 
 import {
+  isResearchLabMutationConfigured,
   isResearchLabWorkerRuntimeStatusReady,
   type ResearchLabWorkerRuntimeStatus,
 } from "../research/research-lab-readiness";
 
-export async function isResearchLabMutationRuntimeReady(
+export async function isResearchLabProductionRuntimeReady(
   now?: Date,
 ): Promise<boolean> {
-  if (
-    process.env.RESEARCH_LAB_MUTATIONS_ENABLED?.trim().toLowerCase() !== "true"
-  ) {
+  if (!isResearchLabMutationConfigured()) {
     return false;
   }
   try {

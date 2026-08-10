@@ -58,11 +58,21 @@ test("경제 연구 API는 멱등 operation 안에서만 트랜잭션 도메인�
     assert.ok(domainIndex > transactionIndex, `${paths[index]} transaction 밖 mutation`);
     assert.match(route, /session: mongoSession/);
     assert.match(route, /session\.user\.isGuest/);
-    assert.match(route, /isResearchLabMutationEnabled\(\)/);
+    assert.doesNotMatch(
+      route.slice(route.indexOf("export async function POST"), operationIndex),
+      /ResearchLab(?:ProductionReady|MutationConfigured)/,
+      `${paths[index]} readiness gate가 완료 operation replay보다 먼저 실행됨`,
+    );
   });
+  assert.match(routes[0], /prepare: requireResearchLabProductionReady/);
+  assert.match(routes[1], /prepare: requireResearchLabProductionReady/);
+  assert.match(
+    routes[2],
+    /prepare: async \(\) => requireResearchLabMutationConfigured\(\)/,
+  );
   assert.match(
     routes[3],
-    /executeEconomicOperationResult<[\s\S]*prepare: \(\) =>[\s\S]*prepareResearchJobClaimInventoryLock/,
+    /executeEconomicOperationResult<[\s\S]*prepare: async \(\) => \{[\s\S]*requireResearchLabMutationConfigured\(\)[\s\S]*prepareResearchJobClaimInventoryLock/,
   );
   const domain = await source("lib/db/research-lab.ts");
   const operation = await source("lib/db/execute-economic-operation.ts");
@@ -78,6 +88,16 @@ test("경제 연구 API는 멱등 operation 안에서만 트랜잭션 도메인�
     domain,
     /claimResearchLabCharacterOutput\(\{[\s\S]*characterId: character\.id/,
   );
+  assert.ok(
+    domain.indexOf("workerHaltedAt: { $exists: true }") <
+      domain.indexOf("debit = await addCredit"),
+    "안전정지 확인은 500 CR 차감보다 먼저 실행해야 한다",
+  );
+  assert.match(
+    domain,
+    /findOneAndUpdate\([\s\S]*workerHaltedAt: \{ \$exists: false \}[\s\S]*\$inc: \{ queueAdmissionVersion: 1 \}[\s\S]*session: input\.session/,
+  );
+  assert.match(domain, /"LINE_HALTED",[\s\S]*503/);
   assert.ok(
     operation.indexOf("const existing = await findEconomicOperation(args)") <
       operation.indexOf("if (args.prepare)"),
@@ -111,6 +131,8 @@ test("제노 선택·자유대화 API는 서버 registry와 제한·fallback 경
   assert.match(chat, /reservation\.summaryLease/);
   assert.match(chat, /summaryLeaseToken: summaryLease\.token/);
   assert.match(chat, /turnLeaseToken: reservation\.turnLease\.token/);
+  assert.match(choice, /isResearchLabMutationConfigured\(\)/);
+  assert.match(chat, /isResearchLabMutationConfigured\(\)/);
   assert.match(
     chat,
     /assistantCreatedAt\.getTime\(\) \+ XENO_CHAT_COOLDOWN_MS/,
@@ -141,5 +163,48 @@ test("Query mutation은 연구·인벤토리·크레딧·알림 캐시를 함께
   assert.doesNotMatch(mutation, /router\.refresh/);
   assert.match(client, /retainIdempotencyOperation/);
   assert.match(client, /window\.confirm/);
+  const choiceMutation = mutation.slice(
+    mutation.indexOf("export function useXenoChoice"),
+    mutation.indexOf("export function useXenoChat"),
+  );
+  assert.doesNotMatch(choiceMutation, /text: response\.dialogue\.text/);
+  assert.doesNotMatch(choiceMutation, /expression: response\.dialogue\.expression/);
+  assert.match(choiceMutation, /choices: \[\]/);
+  assert.match(client, /interactionHasCurrentDialogue/);
   assert.doesNotMatch(client, /relationshipScore|호감도.*\d|게이지/);
+});
+
+test("overview는 active job을 전역 500건으로 잘라내지 않고 안전정지를 노출한다", async () => {
+  const [overview, types] = await Promise.all([
+    source("lib/db/research-lab-overview.ts"),
+    source("types/research.ts"),
+  ]);
+
+  assert.match(overview, /researchLabJobsCol\(\)/);
+  assert.match(
+    overview,
+    /recipeId: \{ \$in: \[\.\.\.RESEARCH_RECIPE_IDS\] \}/,
+  );
+  assert.match(overview, /OVERVIEW_JOB_PROJECTION/);
+  assert.match(
+    overview,
+    /type OverviewResearchJob = Pick<[\s\S]*project<OverviewResearchJob>\(OVERVIEW_JOB_PROJECTION\)/,
+  );
+  const projection = overview.slice(
+    overview.indexOf("const OVERVIEW_JOB_PROJECTION"),
+    overview.indexOf("const RECIPE_COPY"),
+  );
+  assert.doesNotMatch(
+    projection,
+    /requestId|requesterDisplayName|creditCost|output|lastError/,
+  );
+  assert.match(
+    overview,
+    /sort\(\{ recipeId: 1, status: 1, queuedAt: 1, _id: 1 \}\)/,
+  );
+  assert.doesNotMatch(overview, /limit:\s*500|\.limit\(500\)/);
+  assert.match(overview, /workerHaltedAt !== undefined/);
+  assert.match(overview, /activeJobsByRecipe/);
+  assert.match(types, /isHalted: boolean/);
+  assert.match(types, /productionEnabled: boolean/);
 });

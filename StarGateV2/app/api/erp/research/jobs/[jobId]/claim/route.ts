@@ -14,9 +14,8 @@ import {
   fallbackResearchActionDialogue,
   guestReadOnlyResponse,
   invalidIdempotencyKeyResponse,
-  isResearchLabMutationEnabled,
-  researchLabNotActivatedResponse,
   researchLabErrorResponse,
+  requireResearchLabMutationConfigured,
   unauthorizedResearchResponse,
 } from "../../../_response";
 
@@ -32,7 +31,6 @@ export async function POST(
   const session = await auth();
   if (!session?.user) return unauthorizedResearchResponse();
   if (session.user.isGuest) return guestReadOnlyResponse();
-  if (!(await isResearchLabMutationEnabled())) return researchLabNotActivatedResponse();
   const requestId = readIdempotencyKey(request);
   if (!requestId) return invalidIdempotencyKeyResponse();
   const { jobId } = await context.params;
@@ -43,11 +41,13 @@ export async function POST(
       domain: "research-lab-job-claim",
       actorId: session.user.id,
       payload: { jobId },
-      prepare: () =>
-        prepareResearchJobClaimInventoryLock({
+      prepare: async () => {
+        requireResearchLabMutationConfigured();
+        await prepareResearchJobClaimInventoryLock({
           jobId,
           requesterUserId: session.user.id,
-        }),
+        });
+      },
       run: async (mongoSession) => {
         await claimResearchJob({
           jobId,

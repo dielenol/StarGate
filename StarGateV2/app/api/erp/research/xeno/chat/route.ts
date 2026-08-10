@@ -14,6 +14,7 @@ import {
   getXenoRelationshipPresentation,
   sanitizeXenoChatInput,
 } from "@/lib/research/xeno-dialogue";
+import { isResearchLabMutationConfigured } from "@/lib/research/research-lab-readiness";
 import {
   generateXenoChat,
   summarizeXenoConversation,
@@ -24,7 +25,6 @@ import type { ResearchChatResponse } from "@/types/research";
 
 import {
   guestReadOnlyResponse,
-  isResearchLabMutationEnabled,
   researchLabNotActivatedResponse,
   researchLabErrorResponse,
   unauthorizedResearchResponse,
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) return unauthorizedResearchResponse();
   if (session.user.isGuest) return guestReadOnlyResponse();
-  if (!(await isResearchLabMutationEnabled())) return researchLabNotActivatedResponse();
+  if (!isResearchLabMutationConfigured()) return researchLabNotActivatedResponse();
   const body = (await request.json().catch(() => null)) as {
     message?: unknown;
   } | null;

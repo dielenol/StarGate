@@ -65,7 +65,10 @@ function errorMessage(error: unknown): string | null {
   return null;
 }
 
-function toConsoleJob(job: ResearchLineView["activeJob"]): ResearchConsoleJob | null {
+function toConsoleJob(
+  job: ResearchLineView["activeJob"],
+  mutationsEnabled: boolean,
+): ResearchConsoleJob | null {
   if (!job) return null;
   return {
     id: job.id,
@@ -77,8 +80,8 @@ function toConsoleJob(job: ResearchLineView["activeJob"]): ResearchConsoleJob | 
     completesAt: job.completesAt ?? undefined,
     claimDeadline: job.claimDeadline ?? undefined,
     isViewerJob: job.isMine,
-    cancellable: job.canCancel,
-    claimable: job.canClaim,
+    cancellable: mutationsEnabled && job.canCancel,
+    claimable: mutationsEnabled && job.canClaim,
   };
 }
 
@@ -88,6 +91,9 @@ function initialEligibilityMessage(
 ): string {
   if (!data.viewer.mutationsEnabled) {
     return "라이브 index와 catalog 적재 승인 전이라 연구 접수를 잠가 두었습니다.";
+  }
+  if (!data.viewer.productionEnabled) {
+    return "생산 worker 준비 상태를 확인할 수 없어 신규 연구 접수를 잠갔습니다.";
   }
   if (data.viewer.eligibilityCode === "MAIN_CHARACTER_INTEGRITY") {
     return "MAIN AGENT 캐릭터 정합성을 운영자가 확인해야 합니다.";
@@ -113,6 +119,12 @@ function productionEligibilityMessage(
 ): string {
   if (!data.viewer.mutationsEnabled) {
     return "운영 활성화 전이라 반복생산 요청을 잠가 두었습니다.";
+  }
+  if (!data.viewer.productionEnabled) {
+    return "생산 worker 준비 상태를 확인할 수 없어 신규 반복생산 요청을 잠갔습니다.";
+  }
+  if (line.isHalted) {
+    return "운영 안전정지된 연구선입니다. 복구 전에는 500 CR 결제를 받지 않습니다.";
   }
   if (!data.viewer.character) {
     return "활성 MAIN AGENT 캐릭터가 있어야 반복생산을 요청할 수 있습니다.";
@@ -142,6 +154,7 @@ function toConsoleLine(
     description: line.recipe.description,
     gameplayNote: line.recipe.gameplayNote,
     status: line.status,
+    isHalted: line.isHalted,
     source: {
       name: line.recipe.source.name,
       slug: line.recipe.source.slug,
@@ -159,16 +172,16 @@ function toConsoleLine(
       registered: line.recipe.output.registered,
     },
     initialCompletesAt: line.completesAt ?? undefined,
-    currentJob: toConsoleJob(line.activeJob),
+    currentJob: toConsoleJob(line.activeJob, data.viewer.mutationsEnabled),
     queue: line.queue.flatMap((job) => {
-      const mapped = toConsoleJob(job);
+      const mapped = toConsoleJob(job, data.viewer.mutationsEnabled);
       return mapped ? [mapped] : [];
     }),
     repeatCreditCost: line.recipe.repeatCreditCost,
     viewerBalance: data.viewer.balance,
     canStartInitial:
       line.status === "LOCKED" &&
-      data.viewer.mutationsEnabled &&
+      data.viewer.productionEnabled &&
       data.viewer.isScientist &&
       line.recipe.source.registered &&
       line.recipe.output.registered &&
@@ -176,7 +189,8 @@ function toConsoleLine(
     initialEligibilityMessage: initialMessage,
     canCreateJob:
       line.status === "OPEN" &&
-      data.viewer.mutationsEnabled &&
+      data.viewer.productionEnabled &&
+      !line.isHalted &&
       data.viewer.character !== null &&
       line.recipe.output.registered &&
       line.myJob === null &&
@@ -204,7 +218,15 @@ function toViewData(
   const lastAssistant = [...recentMessages]
     .reverse()
     .find((message) => message.speaker === "XENO");
-  if (currentDialogue && lastAssistant?.text !== currentDialogue.text) {
+  const interactionHasCurrentDialogue = interaction?.messages.some(
+    (message) =>
+      message.speaker === "XENO" && message.text === currentDialogue?.text,
+  );
+  if (
+    currentDialogue &&
+    lastAssistant?.text !== currentDialogue.text &&
+    !interactionHasCurrentDialogue
+  ) {
     recentMessages.push({
       id: `scene-${currentDialogue.sceneId}`,
       speaker: "XENO",
