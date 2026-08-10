@@ -100,3 +100,10 @@
 - 관련 작전 보고서는 게스트에게 조회·직렬화하지 않으며 공개 Dossier 본문과 관계 링크는 기존 등급 마스킹을 유지한다.
 - 검증: 실제 게스트 공개 Dossier API/RSC의 운영 메타·보고서 링크 비노출, 데스크톱 상세 화면 가로 넘침·콘솔 오류 0건, 집중 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `2df03010`
+
+## 2026-08-10 · 라이브 적용 · 이르마 코흐 Dossier
+
+- 사용자 제공 현재 초상을 원본 비율과 투명도를 보존한 1086×1448 WebP로 배포하고, 이르마 코흐를 `HOSTILE / AHNENERBE` 외부 무등급·비공개 Dossier로 생성했다. 1944년 참고 초상은 공개 자산이나 live 필드에 연결하지 않았다.
+- 비공개 Dossier에 오틸리아·타이거298 source-side 관계 2건, 변곡점 1부 세션 출현 1건, 불변 성격 관찰 1건을 함께 반영했다.
+- 검증: committed clean snapshot dry-run, transaction 후 schema 재조회, production 정적 자산 원본 SHA-256 일치, 인증된 상세·관계·세션 화면, 초상 natural 320×426/rendered 238×317, broken image 0, console warning/error 0, 미인증 상세 `307`·API `401`
+- 관련 구현 커밋: `1acea89c`

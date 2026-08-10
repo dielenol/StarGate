@@ -298,7 +298,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 
 2026-08-05 read-only DB 확인 결과는 `factions=7` (`AHNENERBE`, `CIVIL`, `COUNCIL`, `GOLDEN_DAWN`, `HOSTILE`, `MILITARY`, `NOVUS_ORDO`), `institutions=4` (`MANUS`, `SECRETARIAT`, `SPACE_ZERO`, `WHITE_ROSE`)다. 이 snapshot은 날짜가 지난 뒤 자동으로 현재 상태를 보장하지 않으므로 이후 감사에서는 다시 조회한다.
 
-2026-08-05 read-only 비교에서는 NPC spec codename 36개와 당시 live `characters(type=NPC)` codename 36개가 양방향 누락 없이 일치했다. 이후 durable inventory가 39개로 늘었고, 2026-08-10 비공개 신규 NPC `IRMA_KOCH`·`DOCTOR_ZENO` spec을 추가해 41개가 됐다. 같은 날 `DOCTOR_ZENO`는 live에 비공개 생성됐고, 현재 남은 durable/live 차이는 exact 확인 전인 `IRMA_KOCH` 1건이다.
+2026-08-05 read-only 비교에서는 NPC spec codename 36개와 당시 live `characters(type=NPC)` codename 36개가 양방향 누락 없이 일치했다. 이후 durable inventory가 39개로 늘었고, 2026-08-10 비공개 신규 NPC `IRMA_KOCH`·`DOCTOR_ZENO` spec을 추가해 41개가 됐다. 같은 날 두 NPC를 각각 비공개 생성해 이 추가분의 durable/live 차이를 해소했다. 이 수치는 해당 날짜의 snapshot이며 이후 전체 parity는 다시 감사해야 한다.
 
 같은 날짜의 `session_reports` 감사에서는 문서 12건과 유효한 고유 `sessionId` 12개가 일치했고 누락·비문자열·빈 값·중복은 없었다. 이 12개 집합은 durable seed payload와 `docs/lore/session-sync/*-coverage.md` identity 집합에도 양방향 누락 없이 일치했다.
 
