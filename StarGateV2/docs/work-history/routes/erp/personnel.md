@@ -75,3 +75,12 @@
 - 비공개 인물을 참조하는 보고서는 GM 전용으로 제한해 인물 공개 범위와 역참조가 어긋나지 않게 검증한다.
 - 검증: app 19건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `1949c42d`
+
+## 2026-08-10 · 로어 동기화 · 신규 연구 지휘부와 러시아 정부
+
+- 이르마 코흐를 외부 광명회 수장, 닥터 제노를 닥터 모스 후임 연구 기구 사무차장으로 정의하고 비공개·빈 초상 create-only Dossier payload를 준비했다.
+- 군부 조직도에 미국과 같은 정적 하위 조직 문법의 `RUSSIA` 분기와 전용 아이콘을 추가했다. 별도 faction·institution·호감도 DB 레코드는 만들지 않는다.
+- 기존 공개·사망·무등급·초상을 보존하면서 게라쉬모프의 표시명·영문명·러시아 정부 소속과 관련 공개 서술을 exact CAS로 맞추는 focused repair를 준비했으며, live DB에는 적용하지 않았다.
+- 검증: 조직 분기 테스트 1건, 아이콘 감사 113종·37 route, NPC/성격 checker, 게라쉬모프 live read-only dry-run 단일 `예상 update`, `pnpm typecheck`, 대상 ESLint, critical risk review
+- 관련 커밋: `4435a8be`, `cabc04ba`
+- 후속 작업: 별도 live 승인과 적용 후 DB 재조회가 필요하다. 인증 브라우저 확인은 `localhost:3000`을 다른 프로젝트가 점유한 로컬 충돌을 해소한 뒤 진행한다.

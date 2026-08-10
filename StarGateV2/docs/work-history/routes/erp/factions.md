@@ -38,3 +38,12 @@
 - 검증: 세력·R-05·NPC·비프 계약 테스트 95/95, 대사 도구 테스트 22/22, `pnpm dialogue:lint` 고위험 경고 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 커밋: `034755c8`
 - 운영 경계: 세력 활동 실행과 API·DB mutation은 수행하지 않았다.
+
+## 2026-08-10 · 조직도 보강 · 러시아 정부 분기
+
+- 군부 산하 외부 조직에 `RUSSIA / 러시아 정부`를 추가해 미국 정부와 같은 code-driven 조직 카드 경로를 사용하도록 했다.
+- 조직 아이콘 inline source, 공개 SVG mirror와 NOVUS 아이콘 마스터를 같은 삼색기 도형으로 동기화했다. 이 과정에서 아이콘 마스터에만 누락됐던 기존 내비게이션 route 5개도 현재 앱 매핑으로 복구했다.
+- 이 분기는 인물의 `department: RUSSIA`를 그룹화하는 정적 UI 정의이며 faction·institution·호감도 DB row를 생성하지 않는다.
+- 검증: 외부 조직 테스트 1건, 아이콘 감사 113종·37 route, master JS syntax, `pnpm typecheck`, 대상 ESLint, critical risk review
+- 관련 커밋: `cabc04ba`
+- 운영 경계: 게라쉬모프 Dossier repair와 브라우저 확인은 별도 live 승인·적용 뒤 진행한다.

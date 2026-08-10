@@ -83,3 +83,12 @@
 - 검증: PDF 125페이지/1,464레코드 추출, 번호 테스트 6건, 3파일 41-envelope schema, NPC·성격·시각자료 parity, 전체 lore static audit, `pnpm typecheck`, 대상 ESLint, critical risk review
 - 관련 커밋: `27dc9e9f`
 - 후속 작업: 신규 NPC 2명과 리처드/R 동일인 여부를 결정한 뒤, 별도 live 승인으로 V staging과 U publication을 순서대로 적용하고 DB 재조회·역할별 인증 브라우저 검증을 진행한다.
+
+## 2026-08-10 · 로어 동기화 보강 · 이르마 코흐와 닥터 제노
+
+- 이르마 코흐를 아넨에르베 광명회 수장인 외부 무등급 NPC로, 닥터 제노를 사망한 닥터 모스의 후임 연구 기구 사무차장 `V`로 확정했다.
+- 두 Dossier는 빈 초상·비공개 상태로 최초 관계·세션 출현·불변 성격 관찰을 함께 넣는 create-only staging payload로 분리했다. 성공 뒤 같은 파일 재실행은 fail-closed이며 후속 보정은 focused update만 허용한다.
+- 보고서와 프로젝트 데드 핸드 mirror의 제노 관련 서술을 후임 인사 결정에 맞췄으며, live DB에는 적용하지 않았다.
+- 검증: spec adapter parity 3건, NPC·성격·시각자료·공개 문구 checker, live read-only dry-run `예상 insert` 2건, `pnpm typecheck`, critical risk review
+- 관련 커밋: `4435a8be`
+- 후속 작업: 별도 live 승인 후 비공개 마지막 대대 → V 보고서·mirror → 신규 NPC 2명 순서로 staging하고, 각 단계 DB 재조회 뒤 U publication을 별도 승인받는다.
