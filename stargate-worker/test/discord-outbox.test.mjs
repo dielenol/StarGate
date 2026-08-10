@@ -124,6 +124,194 @@ test("활성화한 kind의 secret이 없으면 claim 전에 설정 오류를 낸
   );
 });
 
+test("RESEARCH_LAB_DM은 활성 사용자에게 멱등 nonce와 고정 연구 안내를 전송한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "RESEARCH_LAB_DM",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      REGISTRAR_DISCORD_BOT_TOKEN: "test-token",
+      NEXT_PUBLIC_SITE_URL: "https://www.ordonet.co.kr",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({
+          url: String(url),
+          body: init?.body ? JSON.parse(String(init.body)) : null,
+        });
+        if (String(url).endsWith("/users/@me/channels")) {
+          return Response.json({ id: "12345678901234567" });
+        }
+        return Response.json({ id: "22345678901234567" });
+      },
+      async findUser() {
+        return {
+          _id: new ObjectId(),
+          status: "ACTIVE",
+          discordId: "32345678901234567",
+        };
+      },
+      async findResearchJob() {
+        return {
+          status: "CLAIMABLE",
+          claimDeadline: new Date(Date.now() + 60 * 60 * 1_000),
+        };
+      },
+    },
+  );
+
+  const result = await registry.get("RESEARCH_LAB_DM").deliver(
+    outboxEvent("RESEARCH_LAB_DM", {
+      event: "CHARACTER_CLAIM_REMINDER",
+      userId: "user-1",
+      jobId: "job-1",
+      recipeId: "ZULU_0028",
+      outputName: "깨진 음절",
+      timestamp: new Date().toISOString(),
+      claimDeadline: new Date(Date.now() + 60 * 60 * 1_000).toISOString(),
+    }),
+  );
+
+  assert.equal(result.outcome, "SENT");
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].body.enforce_nonce, true);
+  assert.equal(requests[1].body.nonce.length, 25);
+  assert.match(requests[1].body.content, /수령 마감까지 1시간/);
+  assert.match(requests[1].body.content, /\/erp\/research/);
+});
+
+test("RESEARCH_LAB_DM은 최초/공용/개인준비/공용전환 이벤트를 모두 고정 대사로 지원한다", async () => {
+  const contents = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "RESEARCH_LAB_DM",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      REGISTRAR_DISCORD_BOT_TOKEN: "test-token",
+    },
+    {
+      async fetchImpl(url, init) {
+        if (String(url).endsWith("/users/@me/channels")) {
+          return Response.json({ id: "12345678901234567" });
+        }
+        contents.push(JSON.parse(String(init?.body)).content);
+        return Response.json({ id: "22345678901234567" });
+      },
+      async findUser() {
+        return { status: "ACTIVE", discordId: "32345678901234567" };
+      },
+      async findResearchJob() {
+        return {
+          status: "CLAIMABLE",
+          claimDeadline: new Date(Date.now() + 60 * 60 * 1_000),
+        };
+      },
+    },
+  );
+  for (const event of [
+    "INITIAL_COMPLETED",
+    "SHARED_COMPLETED",
+    "CHARACTER_CLAIMABLE",
+    "CHARACTER_DIVERTED",
+  ]) {
+    await registry.get("RESEARCH_LAB_DM").deliver(
+      outboxEvent("RESEARCH_LAB_DM", {
+        event,
+        userId: "user-1",
+        jobId: `job-${event}`,
+        recipeId: "ZULU_0028",
+        outputName: "깨진 음절",
+        timestamp: new Date().toISOString(),
+        claimDeadline: new Date(Date.now() + 6 * 60 * 60 * 1_000).toISOString(),
+      }),
+    );
+  }
+  assert.equal(contents.length, 4);
+  assert.match(contents[0], /최초 연구가 끝났어/);
+  assert.match(contents[1], /공용 인벤토리에 넣었다/);
+  assert.match(contents[2], /6시간 안에 직접 수령/);
+  assert.match(contents[3], /공용 인벤토리로 전환/);
+});
+
+test("이미 수령·전환된 개인 연구 DM은 Discord 전송 직전에 stale로 폐기한다", async () => {
+  let fetched = 0;
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "RESEARCH_LAB_DM",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      REGISTRAR_DISCORD_BOT_TOKEN: "test-token",
+    },
+    {
+      async fetchImpl() {
+        fetched += 1;
+        return Response.json({ id: "22345678901234567" });
+      },
+      async findResearchJob() {
+        return { status: "COMPLETED" };
+      },
+      async findUser() {
+        return { status: "ACTIVE", discordId: "32345678901234567" };
+      },
+    },
+  );
+
+  const result = await registry.get("RESEARCH_LAB_DM").deliver(
+    outboxEvent("RESEARCH_LAB_DM", {
+      event: "CHARACTER_CLAIMABLE",
+      userId: "user-1",
+      jobId: "job-stale",
+      recipeId: "ZULU_0028",
+      outputName: "깨진 음절",
+      timestamp: new Date().toISOString(),
+      claimDeadline: new Date(Date.now() + 60 * 60 * 1_000).toISOString(),
+    }),
+  );
+
+  assert.deepEqual(result, { outcome: "SKIPPED", reason: "STALE" });
+  assert.equal(fetched, 0);
+});
+
+test("수령 마감이 지난 개인 연구 DM은 전환 처리 전이어도 stale로 폐기한다", async () => {
+  let fetched = 0;
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "RESEARCH_LAB_DM",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      REGISTRAR_DISCORD_BOT_TOKEN: "test-token",
+    },
+    {
+      async fetchImpl() {
+        fetched += 1;
+        return Response.json({ id: "22345678901234567" });
+      },
+      async findResearchJob() {
+        return {
+          status: "CLAIMABLE",
+          claimDeadline: new Date(Date.now() - 1),
+        };
+      },
+      async findUser() {
+        return { status: "ACTIVE", discordId: "32345678901234567" };
+      },
+    },
+  );
+
+  for (const event of ["CHARACTER_CLAIMABLE", "CHARACTER_CLAIM_REMINDER"]) {
+    const result = await registry.get("RESEARCH_LAB_DM").deliver(
+      outboxEvent("RESEARCH_LAB_DM", {
+        event,
+        userId: "user-1",
+        jobId: `job-expired-${event}`,
+        recipeId: "ZULU_0028",
+        outputName: "깨진 음절",
+        timestamp: new Date().toISOString(),
+        claimDeadline: new Date(Date.now() - 1).toISOString(),
+      }),
+    );
+    assert.deepEqual(result, { outcome: "SKIPPED", reason: "STALE" });
+  }
+  assert.equal(fetched, 0);
+});
+
 test("감사·워크플로·편의점 kind는 typed channel registry대로 분리된다", async () => {
   const requests = [];
   const registry = createDiscordIntegrationOutboxHandlers(

@@ -8,6 +8,7 @@ import { findStockByTicker } from "@stargate/core/domain/stock-catalog";
 import {
   INTEGRATION_OUTBOX_KINDS,
   findCharacterById,
+  findResearchLabJob,
   findUserById,
   getDb,
   type IntegrationOutboxEvent,
@@ -96,6 +97,7 @@ type Environment = NodeJS.ProcessEnv;
 interface DiscordHandlerDependencies {
   fetchImpl?: typeof fetch;
   findCharacter?: typeof findCharacterById;
+  findResearchJob?: typeof findResearchLabJob;
   findUser?: (id: string) => Promise<User | null>;
   isWorkflowEventCurrent?: (
     payload: Record<string, unknown>,
@@ -220,9 +222,9 @@ function webhookUrlFor(
   kind: IntegrationOutboxKind,
   env: Environment,
 ): string {
-  if (kind === "PLAYER_TRADE_DM") {
+  if (kind === "PLAYER_TRADE_DM" || kind === "RESEARCH_LAB_DM") {
     throw new IntegrationOutboxConfigurationError(
-      "PLAYER_TRADE_DM은 Discord webhook route가 아닙니다.",
+      `${kind}은 Discord webhook route가 아닙니다.`,
     );
   }
   try {
@@ -728,6 +730,8 @@ function buildWebhookPayload(
       return buildWorkflowStatus(event.payload, env);
     case "PLAYER_TRADE_DM":
       throw new Error("PLAYER_TRADE_DM은 webhook payload가 아닙니다.");
+    case "RESEARCH_LAB_DM":
+      throw new Error("RESEARCH_LAB_DM은 webhook payload가 아닙니다.");
   }
 }
 
@@ -783,6 +787,32 @@ function tradeDmContent(
   });
 }
 
+function researchLabDmContent(
+  payload: Record<string, unknown>,
+  env: Environment,
+): string {
+  const event = text(payload.event, "event", 50);
+  const recipeId = text(payload.recipeId, "recipeId", 50);
+  const outputName = text(payload.outputName, "outputName", 100);
+  const deadline = optionalText(payload.claimDeadline, 100);
+  const url = `${siteBaseUrl(env)}/erp/research`;
+  const messages: Record<string, string> = {
+    INITIAL_COMPLETED:
+      `${recipeId} 최초 연구가 끝났어. ${outputName}은 공용 인벤토리에 넣었고, 반복 생산도 열어 뒀지.`,
+    SHARED_COMPLETED:
+      `${recipeId} 생산이 끝났어. ${outputName}은 공용 인벤토리에 넣었다.`,
+    CHARACTER_CLAIMABLE:
+      `${recipeId} 생산이 끝났어. ${outputName}을 6시간 안에 직접 수령해. 기한이 지나면 공용으로 돌린다.${deadline ? `\n수령 마감: ${deadline}` : ""}`,
+    CHARACTER_CLAIM_REMINDER:
+      `${outputName} 수령 마감까지 1시간 남았어. 놓치면 공용 인벤토리로 보낸다.${deadline ? `\n수령 마감: ${deadline}` : ""}`,
+    CHARACTER_DIVERTED:
+      `${outputName} 수령 기한이 끝났어. 약속대로 공용 인벤토리로 전환했다.`,
+  };
+  const message = messages[event];
+  if (!message) throw new Error(`지원하지 않는 RESEARCH_LAB_DM event입니다: ${event}`);
+  return `**제노 연구소**\n${message}\n${url}`;
+}
+
 function enabledKinds(env: Environment): IntegrationOutboxKind[] {
   const raw = env.WORKER_OUTBOX_KINDS?.trim();
   if (!raw) {
@@ -827,12 +857,78 @@ export function createDiscordIntegrationOutboxHandlers(
 ): IntegrationOutboxHandlerRegistry {
   const fetchImpl = dependencies.fetchImpl ?? fetch;
   const findCharacter = dependencies.findCharacter ?? findCharacterById;
+  const findResearchJob =
+    dependencies.findResearchJob ?? findResearchLabJob;
   const findUser = dependencies.findUser ?? findUserById;
   const workflowEventIsCurrent =
     dependencies.isWorkflowEventCurrent ?? isWorkflowEventCurrent;
   const handlers: IntegrationOutboxDeliveryHandler[] = [];
 
   for (const kind of enabledKinds(env)) {
+    if (kind === "RESEARCH_LAB_DM") {
+      const botToken = env.REGISTRAR_DISCORD_BOT_TOKEN?.trim();
+      if (!botToken) {
+        throw new IntegrationOutboxConfigurationError(
+          "RESEARCH_LAB_DM에 REGISTRAR_DISCORD_BOT_TOKEN이 필요합니다.",
+        );
+      }
+      handlers.push({
+        kind,
+        async deliver(event) {
+          if (event.version !== 1) {
+            throw new Error(
+              `지원하지 않는 RESEARCH_LAB_DM payload version입니다: ${event.version}`,
+            );
+          }
+          const researchEvent = text(event.payload.event, "event", 50);
+          const researchJobId = text(event.payload.jobId, "jobId", 200);
+          if (
+            researchEvent === "CHARACTER_CLAIMABLE" ||
+            researchEvent === "CHARACTER_CLAIM_REMINDER"
+          ) {
+            const currentJob = await findResearchJob(researchJobId);
+            const deliveryNow = new Date();
+            if (
+              currentJob?.status !== "CLAIMABLE" ||
+              !(currentJob.claimDeadline instanceof Date) ||
+              currentJob.claimDeadline <= deliveryNow
+            ) {
+              return { outcome: "SKIPPED", reason: "STALE" };
+            }
+          }
+          const userId = text(event.payload.userId, "userId", 200);
+          const user = await findUser(userId);
+          if (!user || user.status !== "ACTIVE") {
+            return { outcome: "SKIPPED", reason: "RECIPIENT_INACTIVE" };
+          }
+          if (!user.discordId || !SNOWFLAKE.test(user.discordId)) {
+            return { outcome: "SKIPPED", reason: "RECIPIENT_UNLINKED" };
+          }
+          const nonce = createHash("sha256")
+            .update(`research-lab:${researchJobId}:${researchEvent}:${userId}`)
+            .digest("hex")
+            .slice(0, 25);
+          try {
+            const externalMessageId = await sendDiscordDirectMessage(
+              {
+                recipientId: user.discordId,
+                content: researchLabDmContent(event.payload, env),
+                nonce,
+                botToken,
+              },
+              fetchImpl,
+            );
+            return { outcome: "SENT", externalMessageId };
+          } catch (error) {
+            if (error instanceof DiscordDeliveryError && error.status === 403) {
+              return { outcome: "SKIPPED", reason: "RECIPIENT_UNREACHABLE" };
+            }
+            throw error;
+          }
+        },
+      });
+      continue;
+    }
     if (kind === "PLAYER_TRADE_DM") {
       const botToken = env.REGISTRAR_DISCORD_BOT_TOKEN?.trim();
       if (!botToken) {

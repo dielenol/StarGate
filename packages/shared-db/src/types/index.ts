@@ -200,6 +200,35 @@ export {
   BUREAUCRAT_VOTE_DURATION_MS,
   BUREAUCRAT_VOTE_TITLE_MAX_LENGTH,
 } from "./bureaucrat-vote.js";
+
+export type {
+  ResearchRecipeId,
+  ResearchLineStatus,
+  ResearchJobStatus,
+  ResearchDestination,
+  RelationshipState,
+  ResearchLabItemSnapshot,
+  ResearchLabLine,
+  ResearchJobKind,
+  ResearchLabSignalKind,
+  ResearchLabJob,
+  NpcRelationship,
+  NpcRelationshipEvent,
+  NpcConversationMessage,
+  NpcConversation,
+} from "./research-lab.js";
+export {
+  RESEARCH_RECIPE_IDS,
+  RESEARCH_LINE_STATUSES,
+  RESEARCH_JOB_STATUSES,
+  RESEARCH_DESTINATIONS,
+  RELATIONSHIP_STATES,
+  RESEARCH_INITIAL_DURATION_MS,
+  RESEARCH_REPEAT_DURATION_MS,
+  RESEARCH_CLAIM_WINDOW_MS,
+  RESEARCH_CLAIM_REMINDER_LEAD_MS,
+  RESEARCH_REPEAT_CREDIT_COST,
+} from "./research-lab.js";
 export type {
   BureaucratVote,
   BureaucratVoteActor,

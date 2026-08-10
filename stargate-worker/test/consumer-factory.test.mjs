@@ -27,3 +27,16 @@ test("domain consumer는 opt-in된 종류만 만들고 필요한 secret을 선�
     DomainConsumerConfigurationError,
   );
 });
+
+test("research-lab consumer는 별도 운영 flag 전에는 mutation gate로 유지한다", async () => {
+  const [gated] = createDefaultDomainConsumers(["research-lab"], {});
+  assert.equal(gated.name, "research-lab");
+  assert.equal(gated.constructor.name, "ResearchLabActivationGateConsumer");
+  assert.deepEqual(await gated.tick(), { observedDue: 0 });
+
+  const [active] = createDefaultDomainConsumers(["research-lab"], {
+    RESEARCH_LAB_WORKER_ENABLED: "true",
+  });
+  assert.equal(active.name, "research-lab");
+  assert.equal(active.constructor.name, "ResearchLabConsumer");
+});

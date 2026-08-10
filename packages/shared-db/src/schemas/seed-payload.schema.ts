@@ -459,6 +459,12 @@ const masterItemPatchSchema = z
     lore: masterItemLoreSchema,
     "lore.acquisition": z.string(),
     loreMd: z.string(),
+    sourceClass: z.enum([
+      "canon-from-source",
+      "session-confirmed",
+      "design-proposal",
+      "balance-candidate",
+    ]),
     source: z.string(),
     authorId: z.string(),
     authorName: z.string(),

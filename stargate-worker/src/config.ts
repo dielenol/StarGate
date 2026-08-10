@@ -3,6 +3,7 @@ export type WorkerMode = "shadow" | "active";
 export const WORKER_CONSUMER_NAMES = [
   "ameri-dm",
   "research-card",
+  "research-lab",
   "shop-restock",
   "stock-market-wire",
 ] as const;
@@ -26,6 +27,7 @@ export interface WorkerConfig {
   port: number;
   pollIntervalMs: number;
   enabledConsumers: WorkerConsumerName[];
+  researchLabWorkerEnabled: boolean;
   mongo: {
     uri: string;
     dbName: string;
@@ -203,6 +205,8 @@ export function loadWorkerConfig(
         env.WORKER_CONSUMERS_ALLOW_PARTIAL?.trim().toLowerCase() ===
         "true",
     }),
+    researchLabWorkerEnabled:
+      env.RESEARCH_LAB_WORKER_ENABLED?.trim().toLowerCase() === "true",
     mongo: loadWorkerMongoConfig(env),
     realtime: {
       secret,

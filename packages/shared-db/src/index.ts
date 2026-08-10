@@ -160,6 +160,20 @@ export type {
   BureaucratVoteResolution,
   BureaucratVoteStatus,
   BureaucratVoteWorkshopRef,
+  ResearchRecipeId,
+  ResearchLineStatus,
+  ResearchJobStatus,
+  ResearchDestination,
+  RelationshipState,
+  ResearchLabItemSnapshot,
+  ResearchLabLine,
+  ResearchJobKind,
+  ResearchLabSignalKind,
+  ResearchLabJob,
+  NpcRelationship,
+  NpcRelationshipEvent,
+  NpcConversationMessage,
+  NpcConversation,
 } from "./types/index.js";
 
 export {
@@ -206,6 +220,16 @@ export {
   BUREAUCRAT_VOTE_CONTENT_MAX_LENGTH,
   BUREAUCRAT_VOTE_DURATION_MS,
   BUREAUCRAT_VOTE_TITLE_MAX_LENGTH,
+  RESEARCH_RECIPE_IDS,
+  RESEARCH_LINE_STATUSES,
+  RESEARCH_JOB_STATUSES,
+  RESEARCH_DESTINATIONS,
+  RELATIONSHIP_STATES,
+  RESEARCH_INITIAL_DURATION_MS,
+  RESEARCH_REPEAT_DURATION_MS,
+  RESEARCH_CLAIM_WINDOW_MS,
+  RESEARCH_CLAIM_REMINDER_LEAD_MS,
+  RESEARCH_REPEAT_CREDIT_COST,
 } from "./types/index.js";
 
 /* ── Client ── */
@@ -263,6 +287,11 @@ export {
   loreSearchDocumentsCol,
   loreIngestionRunsCol,
   bureaucratVotesCol,
+  researchLabLinesCol,
+  researchLabJobsCol,
+  npcRelationshipsCol,
+  npcRelationshipEventsCol,
+  npcConversationsCol,
 } from "./collections.js";
 
 /* ── Collections (sync, long-running only) ── */
@@ -307,6 +336,11 @@ export {
   loreSearchDocumentsColSync,
   loreIngestionRunsColSync,
   bureaucratVotesColSync,
+  researchLabLinesColSync,
+  researchLabJobsColSync,
+  npcRelationshipsColSync,
+  npcRelationshipEventsColSync,
+  npcConversationsColSync,
 } from "./collections.js";
 
 /* ── Indexes ── */
@@ -316,10 +350,12 @@ export {
   ensureLoreIndexes,
   ensureSessionReportIndexes,
   ensureBureaucratVoteIndexes,
+  ensureResearchLabIndexes,
   findLoreUniqueIndexConflicts,
   LORE_INDEX_DEFINITIONS,
   SESSION_REPORT_INDEX_DEFINITIONS,
   BUREAUCRAT_VOTE_INDEX_DEFINITIONS,
+  RESEARCH_LAB_INDEX_DEFINITIONS,
 } from "./indexes.js";
 export { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
 

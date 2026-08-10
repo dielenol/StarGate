@@ -176,6 +176,12 @@ export interface MasterItem {
     notes?: string;
   };
   loreMd?: string;
+  /** lore graph가 이 카탈로그 레코드의 확정도를 추측하지 않도록 하는 명시적 분류. */
+  sourceClass?:
+    | "canon-from-source"
+    | "session-confirmed"
+    | "design-proposal"
+    | "balance-candidate";
   source?:
     | "discord"
     | "legacy-json"
