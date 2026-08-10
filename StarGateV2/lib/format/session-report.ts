@@ -90,6 +90,12 @@ const OPERATION_REPORT_NUMBER_PRESETS: Record<
     number: "05.5",
     sortOrder: 90,
   },
+  "NOSB-S1E6-TURNING-POINT-PART1": {
+    series: "regular",
+    sequence: 6,
+    number: "06",
+    sortOrder: 100,
+  },
   "NOSB-MINI-S1E1-NEW-DUBLIN": {
     series: "mini",
     sequence: 1,
@@ -146,6 +152,15 @@ function getPresetByTitle(
   report: Pick<OperationReportNumberSource, "sessionTitle">,
 ): OperationReportNumberPreset | null {
   const title = normalizeReportTitle(report.sessionTitle);
+
+  if (
+    (title.includes("s1e6") || title.includes("변곡점")) &&
+    /1\s*부|part\s*1/u.test(title)
+  ) {
+    return OPERATION_REPORT_NUMBER_PRESETS[
+      "NOSB-S1E6-TURNING-POINT-PART1"
+    ];
+  }
 
   if (
     (title.includes("s1e5") || title.includes("악 2부")) &&

@@ -1,0 +1,1184 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-publication",
+    "filter": {
+      "slug": "last-battalion"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-publication",
+    "filter": {
+      "slug": "s1e6-turning-point-part1"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-publication",
+    "filter": {
+      "sessionId": "NOSB-S1E6-TURNING-POINT-PART1"
+    },
+    "update": {
+      "$set": {
+        "minRole": "U",
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "illuminati"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART1"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 변곡점 1부 수메르 지하 작전\n수메르 유적 아래 지하 공동에서 광명회 의식과 마지막 대대의 대규모 병력이 함께 확인됐다. 현재의 이르마 코흐는 자신을 광명회 수장이라고 밝혔고, 시유와 네베드의 브라질 감염 이력을 알고 있었다. 그는 시유를 텔레키네시스트이자 천사가 될 적합한 그릇이라고 규정하고 자신이 개조한 광원화 바이러스는 광기 대신 힘을 준다고 주장했다.\n\n지하 기지와 공동 작전은 현장 관측으로 확인됐지만, 이르마의 공식 지위와 개조 바이러스의 효능, 광명회와 마지막 대대의 정확한 지휘 관계는 독립 검증되지 않았다. 관련 세력 문서: [[wiki:last-battalion|마지막 대대]].\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART1|작전 보고서 S1E6: 변곡점 1부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 1부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART1",
+                "수메르",
+                "이르마코흐",
+                "마지막대대",
+                "개조광원화주장"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-10T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "aurora-virus"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART1"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 개조 광원화 바이러스 주장\n이르마 코흐는 수메르 지하 기지에서 푸른 주사액을 제시하며 자신이 광원화 바이러스를 개조했고, 투여 시 광기 없이 힘을 얻을 수 있다고 주장했다. 그는 시유를 텔레키네시스트이자 천사가 될 적합한 그릇으로 보았다.\n\n이번 기록에서는 주사액의 성분, 실제 투여 여부와 효과가 확인되지 않았다. 따라서 새로운 변종이나 치료제로 확정하지 않고 광명회 측 증언과 연구 가설로 분류한다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART1|작전 보고서 S1E6: 변곡점 1부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 1부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART1",
+                "이르마코흐",
+                "개조바이러스",
+                "미확인효능"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-10T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "project-dead-hand"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART1"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 신임 연구 지휘부의 직접 통제 선언\n신임 연구차장으로 소개된 닥터 제노는 프로젝트 데드 핸드를 직접 지휘한다고 선언하고 마가렛의 관리 권한을 넘겨받았다. 그는 부정적 자극으로 능력을 증폭한다는 명목 아래 고통 증폭 수술과 뇌 칩 이식을 예고했다. 해쉬와 피펫은 마가렛을 인간으로 대해야 한다며 이관에 반대했다.\n\n마가렛은 제노 측에 이송됐지만 이번 기록에서 수술의 실행 여부와 최종 상태는 확인되지 않았다. 제노의 정규 소속, 권한 등급과 프로젝트 전체 지휘계통도 후속 확인 대상으로 남긴다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART1|작전 보고서 S1E6: 변곡점 1부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 1부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART1",
+                "닥터제노",
+                "마가렛",
+                "지휘이관",
+                "미확인수술"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-10T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "space-zero"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART1"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## CEO와 스타크의 비공개 윤리 질문\n스페이스 제로 CEO 요한 스미스는 스타크 일로니손에게 NOGA·화이트로즈·반전주의자·분리주의자와 사회적 약자를 한꺼번에 제거할 수 있다면 어떻게 하겠느냐고 물었다. 스타크는 사람 자체를 악으로 보지 않으며 그런 제거 시도가 벌어지면 개입하겠다고 답했다.\n\n이 대화는 스타크의 판단 기준을 확인하려는 가정 질문으로 기록한다. 스페이스 제로가 실제 집단 제거 계획을 수립했거나 실행했다는 근거로 사용하지 않는다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART1|작전 보고서 S1E6: 변곡점 1부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 1부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART1",
+                "요한스미스",
+                "스타크",
+                "윤리가정",
+                "NOGA"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-10T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "white-rose"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART1"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 명단 노출과 리처드의 경고\n수잔 델라웨어의 추적 과정에서 화이트로즈 관련 인원의 명단이 확보됐다. 노출 범위와 이후 피해 여부는 확인되지 않았다.\n\n총장 보좌관으로 호명된 리처드는 하얀 장미가 있는 정원에서 해쉬에게 오르도 내부에서 세상을 바꾸고 소중한 것을 지키라고 말했으며 시간이 얼마 남지 않았다고 경고했다. 장면 연출은 화이트로즈와의 연계를 시사하지만, 리처드가 기존 수장 R과 동일인이라는 직접 확인은 없으므로 두 신원을 병합하지 않는다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART1|작전 보고서 S1E6: 변곡점 1부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 1부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART1",
+                "리처드",
+                "명단노출",
+                "R",
+                "신원미확정"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-10T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "데드핸드",
+            "수메르구조작전"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "프로젝트 데드 핸드 이관 반대자 및 수메르 구조대 지휘자",
+          "summary": "마가렛을 인간으로 대해야 한다며 닥터 제노의 이관에 반대했다. 선발대 상실 뒤 바자로프의 독려를 받고 구조대 지휘를 맡아 억제 장비와 타이거 전차 돌파를 이끌었다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "데드핸드",
+            "마지막대대"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "데드 핸드 연구 윤리 반대자 및 수메르 선발대원",
+          "summary": "고통 증폭 수술의 필요성을 추궁하며 마가렛 이관에 반대했다. 수메르 지하 통로에서는 마지막 대대의 독가스 공격으로 갈비뼈 골절과 호흡 곤란을 겪었다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "데드핸드",
+            "지휘이관"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "프로젝트 데드 핸드 지휘 이관 대상",
+          "summary": "신임 연구차장 닥터 제노가 직접 지휘를 선언하면서 기존 관리선에서 이관됐다. 고통 증폭 수술과 뇌 칩 이식이 예고됐지만 실제 수술 여부와 최종 상태는 확인되지 않았다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "CLAIRVOYANCE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "화이트로즈",
+            "황금여명회"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "화이트로즈·황금여명회 추적 요원",
+          "summary": "화이트로즈 관련자의 명단을 확보하고 황금여명회 컬티스트를 추적해 수메르 지하 근거지로 이어지는 정보선을 만들었다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "NOGA",
+            "스페이스제로"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "NOGA 충돌 기자회견 당사자",
+          "summary": "미국·러시아의 규탄과 광원화 감염 은폐 의혹에 대응하던 기자회견이 NOGA 시위대의 총격과 화염병 충돌로 붕괴했다. 요한 스미스가 제시한 집단 제거 가정을 거부했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "JOHAN_SMITH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "스페이스제로",
+            "윤리가정"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "스페이스 제로 윤리 가정 질문자",
+          "summary": "스타크에게 NOGA·화이트로즈·반전주의자·분리주의자와 사회적 약자를 제거할 수 있다면 어떻게 하겠느냐고 물었다. 실제 제거 계획이 아니라 비공개 가정 질문으로 기록한다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "이르마코흐",
+            "수메르포로"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "1944년 이념 결별 당사자 및 수메르 포로",
+          "summary": "1944년 조수 이르마의 혈통 우월주의와 하이퍼보리아 신념을 거부했다. 현재의 수메르 선발대에 합류해 마지막 대대와 교전한 뒤 시유와 함께 포로가 됐으며 최종 상태는 확인되지 않았다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "수메르",
+            "광명회"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "좌표 취조자 및 수메르 선발대원",
+          "summary": "광명회 근거지 좌표를 얻은 뒤 생존을 약속했던 컬티스트를 처단했다. 수메르 선발대에서 함정과 마지막 대대 교전에 참여하고 종료부 원로의 설명을 들었다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "마지막대대",
+            "타이거전차"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "수메르 지하 침투 및 전차 약점 공격자",
+          "summary": "마리아의 컬티스트 처단을 약속 위반이라고 지적했다. 지하 기지에 침투해 마지막 대대의 규모와 광명회 의식을 확인하고 타이거 전차의 약점을 공격했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "수메르포로",
+            "이르마코흐"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "수메르 선발대원 및 광명회 포로",
+          "summary": "수메르 지하에서 마지막 대대와 교전한 뒤 오틸리아와 함께 포로가 됐다. 이르마는 시유를 텔레키네시스트이자 천사가 될 적합한 그릇이라고 주장했지만 제안의 결과는 확인되지 않았다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "WD-(𝓃)"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "뉘른베르크",
+            "수메르"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "역사 회고 관찰자 및 수메르 선발대원",
+          "summary": "뉘른베르크 처형을 지켜본 회고 장면에 등장했고, 현재에는 수메르 선발대에 합류해 마지막 대대의 중화기 저지선과 교전했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "LEE DONGSIK"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "수메르",
+            "마지막대대"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "수메르 유적 선발대 지원 요원",
+          "summary": "금괴를 미끼로 한 함정과 아눈나키 벽화를 확인하고 지하 통로의 마지막 대대 교전에 참여했다. 선발대가 분리된 뒤 구조·회수 대상이 됐다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "TIME"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "수메르구조작전",
+            "타이거전차"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "수메르 구조대 지원 및 전차 교전 요원",
+          "summary": "생성형 AI로 조작된 미스터비스트 소다 광고를 확인했다. 이후 구조대에 합류해 능력 억제 장비의 영향을 받으면서 타이거 전차 돌파를 지원했다. 정확한 소다 소비 수량은 확인되지 않았다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "AEGIS"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "수메르구조작전",
+            "타이거전차"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "수메르 구조대 방어 및 전차 교전 요원",
+          "summary": "크로노스의 상태를 확인하고 구조대에 합류했다. 억제 장비와 타이거 전차의 공격을 방어하며 지하 저지선 돌파를 지원했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "UNYEON"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "수메르구조작전",
+            "능력억제장비"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "수메르 구조대 회복 지원 요원",
+          "summary": "구조대에 합류해 부상자 회복을 지원했고 능력 억제 장비의 영향을 견디며 타이거 전차 교전에 참여했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "BAZAROV"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "변곡점",
+            "섹터C",
+            "수메르구조작전"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "role": "섹터 C 증원 지휘자 및 구조 작전 독려자",
+          "summary": "섹터 C 전방 수호대와 함께 증원했고, 나폴레옹 케이크를 가져와 무력감에 빠진 해쉬에게 관료들이 무력한 동안 과학자들이 나서야 한다고 독려했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-10T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARGARET",
+              "targetName": "마가렛",
+              "label": "인격성 보호와 지휘 이관 반대",
+              "summary": "마가렛이 평범한 인간으로 살아갈 수 있어야 한다고 주장하며 닥터 제노의 관리권 이관에 반대했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "BAZAROV",
+              "targetName": "니콜라이 바자로프",
+              "label": "구조 지휘 복귀 독려",
+              "summary": "선발대 상실에 무력감을 보이던 중 바자로프의 독려를 받고 수메르 구조대 지휘를 맡았다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARGARET",
+              "targetName": "마가렛",
+              "label": "비인도적 연구 저지",
+              "summary": "고통 증폭 수술의 필요성을 추궁하고 마가렛의 특별 관리 방식이 더 나은 방법을 찾기 위한 것이라고 반박했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "JOHAN_SMITH",
+              "targetName": "요한 스미스",
+              "label": "집단 제거 가정 거부",
+              "summary": "요한이 제시한 반체제 세력과 사회적 약자 집단 제거 가정을 거부하고, 그런 시도가 벌어지면 개입하겠다고 답했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "JOHAN_SMITH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "CLOWN",
+              "targetName": "스타크 일로니손",
+              "label": "사회 정화 윤리 질문",
+              "summary": "NOGA·화이트로즈·반전주의자와 사회적 약자를 제거할 수 있다는 가정을 스타크에게 제시해 그의 개입 기준을 물었다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARIA",
+              "targetName": "마리아",
+              "label": "생존 약속 위반 지적",
+              "summary": "좌표를 제공한 컬티스트를 마리아가 처단하자 약속을 지키지 않았다고 지적했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "네베드",
+              "targetName": "키아나 오 캘러핸 / 네베드",
+              "label": "응보와 약속의 충돌",
+              "summary": "호주 학살에 연루된 컬티스트에게 한 생존 약속보다 처단을 우선했고 네베드에게 그 판단을 설명했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "BAZAROV"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "INDEXER",
+              "targetName": "해쉬 테거",
+              "label": "구조 작전 지휘 독려",
+              "summary": "관료들이 무력한 동안 과학자들이 나서야 한다며 해쉬가 선발대 구조 지휘로 복귀하도록 독려했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART1",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART1:INDEXER:personhood-commitment",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "trait": "타자의 인격성 수호",
+          "summary": "마가렛을 연구 수단이 아니라 인간으로 살아가야 할 인격으로 보며 지휘 이관에 반대했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "그들은 인간이어야 해."
+            },
+            {
+              "kind": "action",
+              "text": "닥터 제노의 마가렛 이관을 막으려 함"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART1:PIPETTE:ethical-research-resistance",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "trait": "비인도적 연구에 대한 저항",
+          "summary": "고통 증폭 수술의 필요성을 추궁하고 폭력에도 물러서지 않은 채 마가렛에게 손을 뻗었다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "더 좋은 방법을 찾기 위해 저희가 특별 관리를 하고 있던 겁니다."
+            },
+            {
+              "kind": "action",
+              "text": "제노에게 맞은 뒤에도 마가렛의 이송을 저지하려 함"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART1:OTILIA:anti-racial-essentialism",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "trait": "혈통 우월주의 부정",
+          "summary": "붕괴한 국가의 혈통 신념을 거부하고 인간을 장기와 신체의 공통성으로 바라보며 이르마의 순혈론을 반박했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "장기를 적출해 놓으면 독일인과 프랑스인과 유대인을 구분할 수 있겠나?"
+            },
+            {
+              "kind": "action",
+              "text": "이르마의 하이퍼보리아·순혈 신념과 결별함"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART1:CLOWN:anti-extermination-humanism",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "trait": "집단 말살 거부와 보편적 인간성",
+          "summary": "반체제 세력과 사회적 약자를 한꺼번에 제거하는 가정을 거부하고 실제 시도가 벌어지면 개입하겠다고 답했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "사람은 악이 아니지만."
+            },
+            {
+              "kind": "action",
+              "text": "집단 제거 시도에 맞서겠다는 의사를 밝힘"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART1:NEVED:promise-accountability",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "trait": "약속의 책임성 중시",
+          "summary": "생존을 약속한 컬티스트를 마리아가 처단하자 약속 위반이라는 점을 즉시 지적했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "약속을 지키지 않는군요."
+            },
+            {
+              "kind": "action",
+              "text": "정보 취득 뒤 벌어진 처단의 절차적 문제를 제기함"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART1:MARIA:punitive-retribution",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "trait": "응보적 처단 우선",
+          "summary": "생존 약속보다 호주 학살에 연루된 컬티스트에 대한 응보를 우선했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "호주에서 학살을 벌인 살인범들에게 약속을 지켜야 하나요?"
+            },
+            {
+              "kind": "action",
+              "text": "좌표를 얻은 뒤 컬티스트를 처단함"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "BAZAROV"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART1:BAZAROV:scientific-interventionism",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+          "trait": "관료 공백에서의 과학자 개입",
+          "summary": "관료가 무력한 상황에서는 과학자들이 직접 행동해야 한다고 보고 구조대에 합류해 해쉬를 독려했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "관료들이 무력한 지금, 우리들이 나서야만 하지 않은가?"
+            },
+            {
+              "kind": "action",
+              "text": "섹터 C 전방 수호대와 함께 수메르 구조 증원에 합류함"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  }
+]

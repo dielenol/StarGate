@@ -49,6 +49,45 @@ test("세션 ID가 달라도 S1E5 악 part 2 제목은 05.5 fallback을 쓴다",
   assert.equal(numbering[0]?.number, "05.5");
 });
 
+test("S1E6 변곡점 1부를 정규 보고서 06으로 고정한다", () => {
+  const reports = [
+    {
+      sessionId: "NOSB-S1E5-EVIL-PART2",
+      sessionTitle: "작전 보고서 S1E5: 악 2부",
+      createdAt: "2026-07-12T00:00:00.000Z",
+    },
+    {
+      sessionId: "NOSB-S1E6-TURNING-POINT-PART1",
+      sessionTitle: "작전 보고서 S1E6: 변곡점 1부",
+      createdAt: "2026-07-26T00:00:00.000Z",
+    },
+    {
+      sessionId: "NOSB-MINI-S1E1-NEW-DUBLIN",
+      sessionTitle: "작전 보고서 MINI01: 뉴 더블린",
+      createdAt: "2026-03-01T00:00:00.000Z",
+    },
+  ];
+
+  const numbering = buildOperationReportNumbering(reports);
+
+  assert.deepEqual(
+    numbering.map(({ number }) => number),
+    ["05.5", "06", "MINI01"],
+  );
+});
+
+test("세션 ID가 달라도 변곡점 part 1 제목은 06 fallback을 쓴다", () => {
+  const report = {
+    sessionId: "LEGACY-TURNING-POINT-PART1",
+    sessionTitle: "S1E6 변곡점 part 1",
+    createdAt,
+  };
+
+  const numbering = buildOperationReportNumbering([report]);
+
+  assert.equal(numbering[0]?.number, "06");
+});
+
 test("로맨티드를 미니 시리즈 다섯 번째 보고서로 고정한다", () => {
   const reports = [
     {
