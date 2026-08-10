@@ -106,6 +106,9 @@ test("generic seed runner도 shared report/target integrity gate와 provenance�
   assert.match(source, /withSeedRunnerInsertUpdatedAt/u);
   assert.match(source, /findSeedAuditIndexIssues\(db\)/u);
   assert.match(source, /report provenance source를 찾을 수 없습니다/u);
+  assert.match(source, /if \(plan\.file !== dryRunFile\)/u);
+  assert.match(source, /plannedReferenceTargets = createPlannedReferenceTargets\(\)/u);
+  assert.match(source, /recordPlannedReferenceTarget\(/u);
   const dryRunGate = source.slice(
     source.indexOf("async function auditSeedReferenceIntegrity("),
     source.indexOf("async function dryRunWithDb("),

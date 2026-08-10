@@ -80,6 +80,12 @@ import {
   withSeedRunnerInsertUpdatedAt,
 } from "./lib/seed-payload-normalization.ts";
 import { assertCommittedRepositorySource } from "./lib/repository-source.ts";
+import {
+  createPlannedReferenceTargets,
+  reconcilePlannedReferenceTargetIssues,
+  recordPlannedReferenceTarget,
+  type PlannedReferenceTargets,
+} from "./lib/seed-payload-reference-preview.ts";
 import { seedPayloadSourceId } from "./lib/seed-provenance.ts";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -1032,6 +1038,7 @@ async function auditSeedReferenceIntegrity(
   plan: UpsertPlan,
   before: Document | null,
   candidate: Document | null,
+  plannedReferenceTargets?: PlannedReferenceTargets,
 ): Promise<void> {
   if (!candidate) return;
   if (plan.collection === "session_reports") {
@@ -1073,10 +1080,19 @@ async function auditSeedReferenceIntegrity(
         );
       }
     }
-    const issues = await findSessionReportReferenceTargetIssues(
-      reportReferencesFromCandidate(candidate),
+    const references = reportReferencesFromCandidate(candidate);
+    const dbIssues = await findSessionReportReferenceTargetIssues(
+      references,
       { db, reportMinRole: candidate.minRole },
     );
+    const issues = plannedReferenceTargets
+      ? reconcilePlannedReferenceTargetIssues(
+          references,
+          candidate.minRole,
+          dbIssues,
+          plannedReferenceTargets,
+        )
+      : dbIssues;
     if (issues.length > 0) {
       throw new Error(
         `[seed-payload] 구조화 로어 링크 target 불일치: ${issues
@@ -1111,8 +1127,14 @@ async function dryRunWithDb(
       `[seed-payload] EXECUTE BLOCKED — 필수 인덱스 미준비: ${indexIssues.join(", ")}`,
     );
   }
+  let dryRunFile: string | null = null;
+  let plannedReferenceTargets = createPlannedReferenceTargets();
   for (const plan of plans) {
     try {
+    if (plan.file !== dryRunFile) {
+      dryRunFile = plan.file;
+      plannedReferenceTargets = createPlannedReferenceTargets();
+    }
     const col = colByName.get(plan.collection);
     if (!col) throw new Error(`[seed-payload] collection handle 누락: ${plan.collection}`);
     const needsReferenceState = [
@@ -1169,12 +1191,21 @@ async function dryRunWithDb(
     }
     if (referenceCandidate) {
       validateCompleteSavedDocument(plan, referenceCandidate);
+      validateSavedIdentity(plan, referenceCandidate);
     }
     await auditSeedReferenceIntegrity(
       db,
       plan,
       existing,
       referenceCandidate,
+      plannedReferenceTargets,
+    );
+    recordPlannedReferenceTarget(
+      plan.collection,
+      plan.postcondition?.[stableIdentityKey(plan.collection)] ??
+        plan.filter[stableIdentityKey(plan.collection)],
+      referenceCandidate,
+      plannedReferenceTargets,
     );
     const preview = await buildEconomicPreview(col, plan, existing);
     printSummary({
