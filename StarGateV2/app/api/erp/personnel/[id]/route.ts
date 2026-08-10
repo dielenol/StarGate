@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 
 import { canViewCharacter } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
-import { getOwnedDataViewerId } from "@/lib/auth/guest";
+import {
+  getOwnedDataViewerId,
+  isMemberErpViewer,
+} from "@/lib/auth/guest";
 import { findCharacterById } from "@/lib/db/characters";
 import { isValidObjectId } from "@/lib/db/utils";
 import {
   filterCharacterByClearance,
+  filterCharacterForGuest,
   getEffectivePersonnelClearance,
 } from "@/lib/personnel";
 import { findPersonnelRelatedReports } from "@/lib/personnel-related-reports";
@@ -40,12 +44,17 @@ export async function GET(_request: Request, context: RouteContext) {
       session.user.role,
       character,
     );
-    const filtered = filterCharacterByClearance(character, clearance);
-    const relatedReports = await findPersonnelRelatedReports(
-      filtered.lore,
-      filtered.codename,
-      session.user.role,
-    );
+    const isMemberViewer = isMemberErpViewer(session.user);
+    const filtered = isMemberViewer
+      ? filterCharacterByClearance(character, clearance)
+      : filterCharacterForGuest(character);
+    const relatedReports = isMemberViewer
+      ? await findPersonnelRelatedReports(
+          filtered.lore,
+          filtered.codename,
+          session.user.role,
+        )
+      : [];
     return NextResponse.json({ character: filtered, relatedReports });
   } catch (err) {
     const message =

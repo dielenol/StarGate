@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { MouseEvent } from "react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
-import type { MasterItem } from "@/types/inventory";
+import type { PublicMasterItemDto } from "@/types/inventory";
 
 import {
   IconConsumable,
@@ -32,11 +32,7 @@ import { getCatalogItemImageSrc } from "@/lib/shop/item-images";
 
 import styles from "./CatalogClient.module.css";
 
-type CatalogItem = Omit<MasterItem, "_id" | "createdAt" | "updatedAt"> & {
-  _id?: unknown;
-  createdAt?: unknown;
-  updatedAt?: unknown;
-};
+type CatalogItem = PublicMasterItemDto;
 
 const CATALOG_TAB_ICONS: Record<CatalogScope, IconComponent> = {
   all: IconGridAll,
@@ -120,7 +116,7 @@ export default function CatalogClient({ category, initialItems }: Props) {
   const [sortKey, setSortKey] = useState<"name" | "price">("name");
 
   const { data: items = initialItems } = useInventoryItems({
-    initialData: initialItems as MasterItem[],
+    initialData: initialItems,
   });
   const catalogItems = items as CatalogItem[];
 

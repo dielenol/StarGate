@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
-import { getOwnedDataViewerId } from "@/lib/auth/guest";
+import {
+  getOwnedDataViewerId,
+  isMemberErpViewer,
+} from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { searchLore } from "@/lib/db/lore-search";
 import { listWikiPageSummaries } from "@/lib/db/wiki";
@@ -78,6 +81,7 @@ export default async function WikiListPage({
         ? searchLore(normalizedQuery, {
             userId: getOwnedDataViewerId(session.user),
             role: session.user.role,
+            isAuthenticated: isMemberErpViewer(session.user),
           })
         : Promise.resolve(undefined),
     ]);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
+import { isMemberErpViewer } from "@/lib/auth/guest";
 import { requireRole } from "@/lib/auth/rbac";
 import {
   isExpectedUpdatedAtCurrent,
@@ -34,6 +35,16 @@ export async function GET(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isMemberErpViewer(session.user)) {
+    return NextResponse.json(
+      { error: "리포트를 찾을 수 없습니다." },
+      {
+        status: 404,
+        headers: { "Cache-Control": "private, no-store" },
+      },
+    );
   }
 
   const { id } = await params;

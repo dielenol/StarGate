@@ -522,10 +522,17 @@ export function filterAgentCharacterCardByClearance(
     },
   };
 
-  if (!canMeta) {
-    delete safe.clearanceOverrides;
-  }
+  delete safe.clearanceOverrides;
 
+  return safe;
+}
+
+/** 캐릭터 카드 응답에서 서버 마스킹 연산용 운영 메타를 제거한다. */
+export function filterAgentCharacterCardForClient(
+  character: AgentCharacterCard,
+): AgentCharacterCard {
+  const safe = { ...character };
+  delete safe.clearanceOverrides;
   return safe;
 }
 
@@ -535,7 +542,6 @@ export function filterAgentCharacterCardForGuest(
 ): AgentCharacterCard {
   const safe = filterAgentCharacterCardByClearance(character, "U");
   safe.ownerId = null;
-  delete safe.clearanceOverrides;
   return safe;
 }
 

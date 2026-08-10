@@ -15,7 +15,10 @@ import {
   relatedWikiForCatalogItem,
 } from "@/lib/catalog/related";
 import { getActiveSession } from "@/lib/auth/active-session";
-import { getOwnedDataViewerId } from "@/lib/auth/guest";
+import {
+  getOwnedDataViewerId,
+  isMemberErpViewer,
+} from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { findVisibleMasterItemBySlugOrId } from "@/lib/db/inventory";
 import { listVisibleSessionReports } from "@/lib/db/session-reports";
@@ -108,7 +111,9 @@ export default async function CatalogItemPage({
 
   const [allPages, allReports] = await Promise.all([
     listWikiPages({ includePrivate: isCurator }).catch(() => []),
-    listVisibleSessionReports(session.user.role).catch(() => []),
+    isMemberErpViewer(session.user)
+      ? listVisibleSessionReports(session.user.role).catch(() => [])
+      : Promise.resolve([]),
   ]);
   const visiblePages = isCurator
     ? allPages

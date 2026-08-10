@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { isMemberErpViewer } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForReport } from "@/lib/catalog/related";
 import { listCharacterRefs } from "@/lib/db/characters";
@@ -73,6 +74,9 @@ export default async function SessionReportDetailPage({ params }: Props) {
 
   if (!session?.user) {
     redirect("/login");
+  }
+  if (!isMemberErpViewer(session.user)) {
+    notFound();
   }
 
   const { id } = await params;

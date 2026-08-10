@@ -10,7 +10,10 @@ import type { CharacterTier, CreateCharacterInput } from "@/types/character";
 import { auth } from "@/lib/auth/config";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { parseSkillTrainingInput } from "@/lib/character/skill-training";
-import { filterAgentCharacterCardForGuest } from "@/lib/personnel";
+import {
+  filterAgentCharacterCardForClient,
+  filterAgentCharacterCardForGuest,
+} from "@/lib/personnel";
 import {
   ADMIN_ALLOWED_CHARACTER_FIELDS,
   listAgentCharacterCards,
@@ -45,11 +48,11 @@ export async function GET(request: Request) {
     if (!hasRole(session.user.role, "GM")) {
       characters = characters.filter((c) => c.isPublic !== false);
     }
-    if (session.user.isGuest) {
-      characters = characters.map((character) =>
-        filterAgentCharacterCardForGuest(character),
-      );
-    }
+    characters = characters.map((character) =>
+      session.user.isGuest
+        ? filterAgentCharacterCardForGuest(character)
+        : filterAgentCharacterCardForClient(character),
+    );
 
     return NextResponse.json(
       { characters },

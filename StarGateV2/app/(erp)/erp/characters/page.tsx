@@ -6,7 +6,10 @@ import { CHARACTER_TIERS } from "@/types/character";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { listAgentCharacterCards } from "@/lib/db/characters";
-import { filterAgentCharacterCardForGuest } from "@/lib/personnel";
+import {
+  filterAgentCharacterCardForClient,
+  filterAgentCharacterCardForGuest,
+} from "@/lib/personnel";
 
 import CharactersClient from "./CharactersClient";
 
@@ -41,11 +44,11 @@ export default async function CharactersPage({ searchParams }: PageProps) {
   let characters = isGM
     ? rawCharacters
     : rawCharacters.filter((c) => c.isPublic !== false);
-  if (session.user.isGuest) {
-    characters = characters.map((character) =>
-      filterAgentCharacterCardForGuest(character),
-    );
-  }
+  characters = characters.map((character) =>
+    session.user.isGuest
+      ? filterAgentCharacterCardForGuest(character)
+      : filterAgentCharacterCardForClient(character),
+  );
 
   // MongoDB ObjectId -> string 직렬화 (Client Component 전달용)
   const serializedCharacters = characters.map((c) => ({

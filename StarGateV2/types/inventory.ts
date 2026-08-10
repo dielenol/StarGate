@@ -2,6 +2,8 @@
  * @deprecated shared-db에서 직접 import하세요.
  */
 
+import type { MasterItem as SharedMasterItem } from "@stargate/shared-db/types";
+
 export type {
   MasterItem,
   CharacterInventory,
@@ -13,6 +15,25 @@ export type {
   CreateSharedInventoryInput,
   EquipmentSlot,
 } from "@stargate/shared-db/types";
+
+/** 공개 카탈로그 목록에서 사용하는 표시 전용 아이템 계약. */
+export type PublicMasterItemDto = Pick<
+  SharedMasterItem,
+  | "slug"
+  | "name"
+  | "category"
+  | "description"
+  | "price"
+  | "damage"
+  | "effect"
+  | "isAvailable"
+  | "nameEn"
+  | "tags"
+  | "previewImage"
+  | "isPublic"
+> & {
+  _id: string;
+};
 
 export interface InventoryEntryDto {
   _id: string;

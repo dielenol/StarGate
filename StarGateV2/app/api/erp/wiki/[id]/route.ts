@@ -18,6 +18,7 @@ import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { getClient } from "@/lib/db/client";
 import { readJsonObjectBody } from "@/lib/api/json-body";
 import { SessionReportInboundReferenceError } from "@/lib/db/session-reports";
+import { toWikiPageClient } from "@/lib/wiki/client-page";
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
@@ -76,7 +77,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ page });
+    return NextResponse.json({ page: toWikiPageClient(page) });
   } catch {
     return NextResponse.json(
       { error: "문서 조회 실패" },

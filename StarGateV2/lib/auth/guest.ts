@@ -19,6 +19,11 @@ export function getOwnedDataViewerId(user: {
   return user.isGuest === true ? null : user.id;
 }
 
+/** 계정 회원에게만 허용되는 ERP 콘텐츠를 볼 수 있는 세션인지 판정한다. */
+export function isMemberErpViewer(user: { isGuest?: boolean }): boolean {
+  return user.isGuest !== true;
+}
+
 export const GUEST_READ_ONLY_ERROR_CODE = "GUEST_READ_ONLY";
 
 const SAFE_ERP_API_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);

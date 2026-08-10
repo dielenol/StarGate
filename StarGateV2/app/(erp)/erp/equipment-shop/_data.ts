@@ -51,6 +51,9 @@ import {
   getStrategicScene,
   type StrategicScene,
 } from "@/lib/equipment-shop/strategic-scene";
+import {
+  buildGuestEquipmentResearchOverviewResponse,
+} from "@/lib/equipment-shop/guest-research";
 
 import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type {
@@ -268,18 +271,20 @@ export async function loadEquipmentShopPageData(
         forceClosed: false,
       }),
       includeResearch
-        ? buildEquipmentResearchOverviewResponse(mainCharacterId).catch(
-            (): EquipmentResearchOverviewResponse => ({
-              tree: EQUIPMENT_RESEARCH_NODES,
-              rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),
-              caps: EQUIPMENT_RESEARCH_CAPS,
-              capabilities: DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
-              projects: [],
-              fundingPools: [],
-              recentContributions: [],
-              contributionRankings: [],
-            }),
-          )
+        ? userId === null
+          ? Promise.resolve(buildGuestEquipmentResearchOverviewResponse())
+          : buildEquipmentResearchOverviewResponse(mainCharacterId).catch(
+              (): EquipmentResearchOverviewResponse => ({
+                tree: EQUIPMENT_RESEARCH_NODES,
+                rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),
+                caps: EQUIPMENT_RESEARCH_CAPS,
+                capabilities: DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
+                projects: [],
+                fundingPools: [],
+                recentContributions: [],
+                contributionRankings: [],
+              }),
+            )
         : Promise.resolve<EquipmentResearchOverviewResponse>({
           tree: EQUIPMENT_RESEARCH_NODES,
           rushRules: Object.values(EQUIPMENT_RESEARCH_RUSH_RULES),

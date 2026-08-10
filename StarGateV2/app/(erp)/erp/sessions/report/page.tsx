@@ -6,6 +6,7 @@ import type {
 } from "@/types/session-report";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { isMemberErpViewer } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { listVisibleSessionReports } from "@/lib/db/session-reports";
 
@@ -35,9 +36,11 @@ export default async function SessionReportListPage() {
   }
 
   const isGmOrAbove = hasRole(session.user.role, "V");
-  const reports = (
-    await listVisibleSessionReports(session.user.role).catch(() => [])
-  ).map(serializeReport);
+  const reports = isMemberErpViewer(session.user)
+    ? (
+        await listVisibleSessionReports(session.user.role).catch(() => [])
+      ).map(serializeReport)
+    : [];
 
   return (
     <>

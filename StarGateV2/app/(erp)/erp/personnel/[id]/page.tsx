@@ -3,7 +3,10 @@ import { ObjectId } from "mongodb";
 
 import { canViewCharacter } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
-import { getOwnedDataViewerId } from "@/lib/auth/guest";
+import {
+  getOwnedDataViewerId,
+  isMemberErpViewer,
+} from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import {
   findCharacterById,
@@ -13,6 +16,7 @@ import {
   getUserClearance,
   getEffectivePersonnelClearance,
   filterCharacterByClearance,
+  filterCharacterForGuest,
   maskedDisplayName,
 } from "@/lib/personnel";
 import { findPersonnelRelatedReports } from "@/lib/personnel-related-reports";
@@ -45,8 +49,11 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
   // 본인 승격은 "자기 캐릭터" 데이터에만 적용 — 관계 패널의 제3자 이름은 뷰어 실등급으로 게이트.
   const viewerClearance = getUserClearance(session.user.role);
   const canEditDossier = hasRole(session.user.role, "GM");
+  const isMemberViewer = isMemberErpViewer(session.user);
 
-  const filtered = filterCharacterByClearance(character, clearance);
+  const filtered = isMemberViewer
+    ? filterCharacterByClearance(character, clearance)
+    : filterCharacterForGuest(character);
   const serialized = JSON.parse(JSON.stringify(filtered));
   const relationTargetCodes = new Set(
     (filtered.lore.relations ?? [])
@@ -59,11 +66,13 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
   const [reportsForEvents, charactersForRelations] = await Promise.all([
     // SSR은 보고서 저장소 장애 시 Dossier 본문을 계속 보여주되, polling API는
     // 오류를 전파해 TanStack Query가 마지막 정상 링크 데이터를 보존하게 한다.
-    findPersonnelRelatedReports(
-      filtered.lore,
-      filtered.codename,
-      session.user.role,
-    ).catch(() => []),
+    isMemberViewer
+      ? findPersonnelRelatedReports(
+          filtered.lore,
+          filtered.codename,
+          session.user.role,
+        ).catch(() => [])
+      : Promise.resolve([]),
     relationTargetCodes.size > 0
       ? findCharactersByCodenames(Array.from(relationTargetCodes)).catch(
           () => [],

@@ -54,6 +54,7 @@ export interface LoreSearchResponse {
 interface LoreSearchViewer {
   userId: string | null;
   role: UserRole;
+  isAuthenticated: boolean;
 }
 
 const FALLBACK_LIMIT_PER_KIND = 12;
@@ -156,7 +157,9 @@ async function resolveLiveIndexDocuments(
         ],
       };
   const publicVisibility = canViewPrivate ? {} : { isPublic: true };
-  const reportVisibility = sessionReportVisibilityFilter(viewer.role);
+  const reportVisibility = viewer.isAuthenticated
+    ? sessionReportVisibilityFilter(viewer.role)
+    : { _id: { $exists: false } };
   const [wiki, reports, personnel, catalog, factions, institutions] =
     await Promise.all([
       db
@@ -355,7 +358,7 @@ async function searchIndexedLore(
   const docs = await searchLoreDocuments(
     { query, statuses: INDEX_SEARCH_STATUSES, limit: MAX_RESULTS },
     {
-      isAuthenticated: true,
+      isAuthenticated: viewer.isAuthenticated,
       role: viewer.role,
       ...(viewer.userId ? { userId: viewer.userId } : {}),
     },
@@ -412,7 +415,9 @@ async function searchFallbackLore(
   // wiki/character/organization은 isPublic === true만 공개다. master_items만
   // 기존 카탈로그 계약상 명시적 false가 아니면 legacy public으로 처리한다.
   const publicVisibility = canViewPrivate ? {} : { isPublic: true };
-  const reportVisibility = sessionReportVisibilityFilter(viewer.role);
+  const reportVisibility = viewer.isAuthenticated
+    ? sessionReportVisibilityFilter(viewer.role)
+    : { _id: { $exists: false } };
   const characterVisibility =
     viewer.role === "GM" ? {} : { isPublic: true };
   const characterBaseSearchFields = [

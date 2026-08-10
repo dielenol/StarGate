@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { isMemberErpViewer } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { relatedCatalogItemsForWiki } from "@/lib/catalog/related";
 import { listCharacterRefs } from "@/lib/db/characters";
@@ -18,7 +19,7 @@ import {
 } from "@/lib/lore-links";
 import { filterCharacterForLoreLinks, getUserClearance } from "@/lib/personnel";
 import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
-import type { WikiPageClient } from "@/types/wiki";
+import { toWikiPageClient } from "@/lib/wiki/client-page";
 
 import Box from "@/components/ui/Box/Box";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
@@ -83,6 +84,7 @@ export default async function WikiDetailPage({
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
   const canViewPrivate = hasRole(session.user.role, "V");
+  const canViewReports = isMemberErpViewer(session.user);
 
   // 본문 + 카테고리 네비/자동링크/연관 문서용 참조 4종 — 서로 독립 조회라 병렬 로드
   // (참조는 실패 시 빈 목록). 직렬 1+4 RTT → 1 RTT. 참조 4종은 ref projection —
@@ -91,7 +93,9 @@ export default async function WikiDetailPage({
     await Promise.all([
       findVisibleWikiPageById(id, { includePrivate: canViewPrivate }),
       listWikiPageRefs({ includePrivate: canViewPrivate }).catch(() => []),
-      listVisibleSessionReportRefs(session.user.role).catch(() => []),
+      canViewReports
+        ? listVisibleSessionReportRefs(session.user.role).catch(() => [])
+        : Promise.resolve([]),
       listCharacterRefs().catch(() => []),
       listMasterItemRefs().catch(() => []),
     ]);
@@ -102,12 +106,7 @@ export default async function WikiDetailPage({
   const isGM = canViewPrivate;
   const isAdmin = hasRole(session.user.role, "GM");
   const pageId = page._id!.toString();
-  const serializedPage: WikiPageClient = {
-    ...page,
-    _id: pageId,
-    createdAt: page.createdAt.toISOString(),
-    updatedAt: page.updatedAt?.toISOString() ?? "",
-  };
+  const serializedPage = toWikiPageClient(page);
   const categories = sortWikiCategories([
     ...new Set(allPages.map((p) => p.category)),
   ]);

@@ -17,12 +17,22 @@ import {
   EQUIPMENT_RESEARCH_RUSH_RULES,
   getComputedResearchStatus,
 } from "@/lib/equipment-shop/research";
+import {
+  buildGuestEquipmentResearchOverviewResponse,
+} from "@/lib/equipment-shop/guest-research";
 
 import { requireResearchAccess } from "./_lib";
 
 export async function GET() {
   const authResult = await requireResearchAccess();
   if ("response" in authResult) return authResult.response;
+
+  if (authResult.session.ownedDataViewerId === null) {
+    return NextResponse.json(buildGuestEquipmentResearchOverviewResponse(), {
+      status: 200,
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
 
   let mainCharacterId: string | null = null;
   try {

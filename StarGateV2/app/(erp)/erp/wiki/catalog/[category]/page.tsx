@@ -10,6 +10,7 @@ import {
   normalizeCatalogScope,
 } from "@/lib/catalog/categories";
 import { listVisibleMasterItems } from "@/lib/db/inventory";
+import { toPublicMasterItemDto } from "@/lib/inventory/public-master-item";
 
 import CatalogClient from "./CatalogClient";
 
@@ -55,23 +56,7 @@ export default async function CatalogPage({
           (it): it is typeof it & { category: ItemCategory } =>
             allCatalogCategories.includes(it.category),
         )
-        .map((it) => ({
-          _id: it._id?.toString() ?? "",
-          slug: it.slug,
-          name: it.name,
-          category: it.category,
-          description: it.description,
-          price: it.price,
-          damage: it.damage,
-          effect: it.effect,
-          previewImage: it.previewImage,
-          tags: it.tags,
-          isAvailable: it.isAvailable,
-          isPublic: it.isPublic,
-          workshop: it.workshop,
-          createdAt: it.createdAt,
-          updatedAt: it.updatedAt,
-        }))}
+        .map(toPublicMasterItemDto)}
     />
   );
 }

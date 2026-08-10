@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import type {
   CharacterInventoryResponse,
-  MasterItem,
+  PublicMasterItemDto,
 } from "@/types/inventory";
 
 export const inventoryKeys = {
@@ -23,7 +23,7 @@ export interface SharedInventoryResponse {
   }>;
 }
 
-async function fetchMasterItems(): Promise<MasterItem[]> {
+async function fetchMasterItems(): Promise<PublicMasterItemDto[]> {
   const res = await fetch("/api/erp/inventory/items");
   if (!res.ok) throw new Error("아이템 목록을 불러올 수 없습니다.");
   const data = await res.json();
@@ -53,7 +53,7 @@ async function fetchSharedInventory(): Promise<SharedInventoryResponse> {
 }
 
 export function useInventoryItems(options?: {
-  initialData?: MasterItem[];
+  initialData?: PublicMasterItemDto[];
 }) {
   return useQuery({
     queryKey: inventoryKeys.items,

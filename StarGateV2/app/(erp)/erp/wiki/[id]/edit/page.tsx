@@ -4,7 +4,7 @@ import { getActiveSession } from "@/lib/auth/active-session";
 import { requireRole } from "@/lib/auth/rbac";
 import { findWikiPageById } from "@/lib/db/wiki";
 import { isValidObjectId } from "@/lib/db/utils";
-import type { WikiPageClient } from "@/types/wiki";
+import { toWikiPageClient } from "@/lib/wiki/client-page";
 
 import WikiEditForm from "./WikiEditForm";
 
@@ -29,12 +29,7 @@ export default async function WikiEditPage({ params }: WikiEditPageProps) {
 
   const page = await findWikiPageById(id);
   if (!page) notFound();
-  const initialPage: WikiPageClient = {
-    ...page,
-    _id: page._id?.toString() ?? id,
-    createdAt: page.createdAt.toISOString(),
-    updatedAt: page.updatedAt?.toISOString() ?? "",
-  };
+  const initialPage = toWikiPageClient(page);
 
   return <WikiEditForm initialPage={initialPage} />;
 }

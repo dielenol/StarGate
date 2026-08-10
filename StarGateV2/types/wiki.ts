@@ -20,7 +20,7 @@ import type {
 
 export type WikiPageClient = Omit<
   WikiPage,
-  "_id" | "createdAt" | "updatedAt"
+  "_id" | "authorId" | "createdAt" | "updatedAt"
 > & {
   _id: string;
   createdAt: string;

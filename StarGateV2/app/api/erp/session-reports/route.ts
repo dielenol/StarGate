@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { MongoServerError } from "mongodb";
 
 import { auth } from "@/lib/auth/config";
+import { isMemberErpViewer } from "@/lib/auth/guest";
 import { requireRole } from "@/lib/auth/rbac";
 import {
   validateSessionReportArrays,
@@ -27,6 +28,13 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isMemberErpViewer(session.user)) {
+    return NextResponse.json(
+      { reports: [] },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   }
 
   try {

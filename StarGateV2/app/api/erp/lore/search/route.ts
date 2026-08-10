@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { getOwnedDataViewerId } from "@/lib/auth/guest";
+import {
+  getOwnedDataViewerId,
+  isMemberErpViewer,
+} from "@/lib/auth/guest";
 import { searchLore } from "@/lib/db/lore-search";
 
 export async function GET(request: Request) {
@@ -29,6 +32,7 @@ export async function GET(request: Request) {
     const response = await searchLore(query, {
       userId: getOwnedDataViewerId(session.user),
       role: session.user.role,
+      isAuthenticated: isMemberErpViewer(session.user),
     });
     return NextResponse.json(
       {

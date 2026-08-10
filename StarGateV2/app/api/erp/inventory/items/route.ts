@@ -6,6 +6,7 @@ import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { createMasterItem, listVisibleMasterItems } from "@/lib/db/inventory";
 import { equipmentShopItemZone } from "@/lib/equipment-shop/catalog";
+import { toPublicMasterItemDto } from "@/lib/inventory/public-master-item";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { enqueueShopProductLaunchWebhook } from "@/lib/outbox/integration";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
@@ -35,7 +36,7 @@ export async function GET() {
       includePrivate: hasRole(session.user.role, "V"),
     });
     return NextResponse.json(
-      { items },
+      { items: items.map(toPublicMasterItemDto) },
       {
         headers: {
           "Cache-Control": "private, max-age=1800, stale-while-revalidate=3600",
