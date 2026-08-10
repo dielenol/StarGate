@@ -75,7 +75,7 @@ test("활성화한 webhook과 거래 DM kind는 실제 Discord REST payload를 �
     },
   );
 
-  await registry.get("GM_ADMIN_AUDIT").deliver(
+  const webhookResult = await registry.get("GM_ADMIN_AUDIT").deliver(
     outboxEvent("GM_ADMIN_AUDIT", {
       action: "권한 변경",
       actor: { id: "gm-id", displayName: "GM", role: "GM" },
@@ -83,7 +83,7 @@ test("활성화한 webhook과 거래 DM kind는 실제 Discord REST payload를 �
       timestamp: new Date().toISOString(),
     }),
   );
-  await registry.get("PLAYER_TRADE_DM").deliver(
+  const dmResult = await registry.get("PLAYER_TRADE_DM").deliver(
     outboxEvent("PLAYER_TRADE_DM", {
       tradeId: "trade-1",
       event: "EXCHANGE_COMPLETED",
@@ -94,6 +94,14 @@ test("활성화한 webhook과 거래 DM kind는 실제 Discord REST payload를 �
   );
 
   assert.equal(requests.length, 3);
+  assert.deepEqual(webhookResult, {
+    outcome: "SENT",
+    externalMessageId: "22345678901234567",
+  });
+  assert.deepEqual(dmResult, {
+    outcome: "SENT",
+    externalMessageId: "22345678901234567",
+  });
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
   assert.match(requests[0].body.embeds[0].fields[0].value, /@​everyone/);
   assert.equal(requests[2].body.enforce_nonce, true);
@@ -142,7 +150,7 @@ test("감사·워크플로·편의점 kind는 typed channel registry대로 분�
           url: String(url),
           body: init?.body ? JSON.parse(String(init.body)) : null,
         });
-        return new Response(null, { status: 204 });
+        return Response.json({ id: "22345678901234567" });
       },
       async isWorkflowEventCurrent() {
         return true;
@@ -212,6 +220,12 @@ test("감사·워크플로·편의점 kind는 typed channel registry대로 분�
     ],
   );
   assert.match(requests[4].body.embeds[0].fields[3].value, /VERNIER → REGISTRAR/);
+  assert.equal(requests[0].body.embeds[0].fields[1].name, "설정 · 대표 대사");
+  assert.match(requests[1].body.embeds[0].description, /공방 요청/);
+  assert.equal(requests[4].body.embeds[0].fields[0].value, "🛠️ 작업 중");
+  assert.match(requests[4].body.embeds[0].fields[1].value, /플레이어/);
+  assert.match(requests[4].body.embeds[0].footer.text, /^추적 [A-F0-9]{8} · 개정 1$/);
+  assert.doesNotMatch(requests[4].body.embeds[0].footer.text, /workshop-1/);
 });
 
 test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", async () => {
@@ -229,7 +243,7 @@ test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", as
           url: String(url),
           body: init?.body ? JSON.parse(String(init.body)) : null,
         });
-        return new Response(null, { status: 204 });
+        return Response.json({ id: "22345678901234567" });
       },
     },
   );
@@ -269,7 +283,7 @@ test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노�
     {
       async fetchImpl(url) {
         requests.push(String(url));
-        return new Response(null, { status: 204 });
+        return Response.json({ id: "22345678901234567" });
       },
       async findCharacter() {
         return { isPublic: false };
@@ -277,7 +291,7 @@ test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노�
     },
   );
 
-  await registry.get("MRBEAST_LOTTERY_WINNER_WEBHOOK").deliver(
+  const result = await registry.get("MRBEAST_LOTTERY_WINNER_WEBHOOK").deliver(
     outboxEvent("MRBEAST_LOTTERY_WINNER_WEBHOOK", {
       claimId: "claim-private",
       eventId: "mrbeast-2026",
@@ -290,6 +304,7 @@ test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노�
   );
 
   assert.equal(requests.length, 0);
+  assert.deepEqual(result, { outcome: "SKIPPED", reason: "NOT_PUBLIC" });
 });
 
 test("편의점 신제품 출시는 띠아 대사와 전용 편의점 webhook으로 전달한다", async () => {
@@ -309,7 +324,7 @@ test("편의점 신제품 출시는 띠아 대사와 전용 편의점 webhook으
           url: String(url),
           body: init?.body ? JSON.parse(String(init.body)) : null,
         });
-        return new Response(null, { status: 204 });
+        return Response.json({ id: "22345678901234567" });
       },
     },
   );
@@ -373,7 +388,7 @@ test("신제품 이미지가 없거나 안전하지 않으면 이미지 없이 �
           url: String(url),
           body: init?.body ? JSON.parse(String(init.body)) : null,
         });
-        return new Response(null, { status: 204 });
+        return Response.json({ id: "22345678901234567" });
       },
     },
   );
@@ -414,7 +429,7 @@ test("미스터비스트 복권 2등 이상은 편의점 채널에 고액 당첨
           url: String(url),
           body: init?.body ? JSON.parse(String(init.body)) : null,
         });
-        return new Response(null, { status: 204 });
+        return Response.json({ id: "22345678901234567" });
       },
       async findCharacter() {
         return { isPublic: true };

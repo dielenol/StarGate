@@ -216,6 +216,8 @@ export {
   SCHEDULED_JOB_RUN_STATUSES,
   INTEGRATION_OUTBOX_STATUSES,
   INTEGRATION_OUTBOX_KINDS,
+  INTEGRATION_DELIVERY_OUTCOMES,
+  INTEGRATION_SKIP_REASONS,
 } from "./worker.js";
 export type {
   ScheduledJobRun,
@@ -223,7 +225,10 @@ export type {
   IntegrationOutboxEvent,
   IntegrationOutboxStatus,
   IntegrationOutboxKind,
+  IntegrationDeliveryOutcome,
+  IntegrationSkipReason,
   WorkerCheckpoint,
+  WorkerOperationalIncident,
 } from "./worker.js";
 
 export {

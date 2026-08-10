@@ -35,7 +35,7 @@
 
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -97,7 +97,7 @@
 
 .table {
   width: 100%;
-  min-width: 1240px;
+  min-width: 1480px;
   border-collapse: collapse;
   color: var(--ink-2);
   font-family: var(--font-mono);

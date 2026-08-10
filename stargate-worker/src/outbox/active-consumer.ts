@@ -55,11 +55,12 @@ export class SharedDbIntegrationOutboxConsumer
         if (!handler) {
           throw new IntegrationOutboxHandlerUnavailableError(event.kind);
         }
-        await handler.deliver(event);
+        const result = await handler.deliver(event);
         const completed = await this.persistence.complete({
           id: event._id,
           leaseToken: event.leaseToken,
           completedAt: new Date(),
+          result,
         });
         if (!completed) {
           throw new Error(

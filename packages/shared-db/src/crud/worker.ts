@@ -10,7 +10,10 @@ import {
 import type {
   IntegrationOutboxEvent,
   IntegrationOutboxKind,
+  IntegrationDeliveryOutcome,
+  IntegrationSkipReason,
   ScheduledJobRun,
+  WorkerOperationalIncident,
   WorkerCheckpoint,
 } from "../types/worker.js";
 
@@ -18,6 +21,7 @@ import {
   integrationOutboxCol,
   scheduledJobRunsCol,
   workerCheckpointsCol,
+  workerOperationalIncidentsCol,
 } from "../collections.js";
 
 const DEFAULT_LEASE_MS = 10 * 60 * 1000;
@@ -544,8 +548,14 @@ export async function claimIntegrationOutbox(
 export async function completeIntegrationOutbox(input: {
   id: ObjectId | string;
   leaseToken: string;
+  outcome: IntegrationDeliveryOutcome;
+  skipReason?: IntegrationSkipReason;
+  externalMessageId?: string;
   now?: Date;
 }): Promise<boolean> {
+  if (input.outcome === "SKIPPED" && !input.skipReason) {
+    throw new Error("SKIPPED integration_outbox 완료에는 skipReason이 필요합니다.");
+  }
   const col = await integrationOutboxCol();
   const now = input.now ?? new Date();
   const id =
@@ -561,12 +571,66 @@ export async function completeIntegrationOutbox(input: {
       $set: {
         status: "DELIVERED",
         deliveredAt: now,
+        deliveryOutcome: input.outcome,
+        ...(input.outcome === "SKIPPED" && input.skipReason
+          ? { skipReason: input.skipReason }
+          : {}),
+        ...(input.outcome === "SENT" && input.externalMessageId
+          ? { externalMessageId: input.externalMessageId }
+          : {}),
         updatedAt: now,
       },
-      $unset: { leaseToken: "", leaseUntil: "", lastError: "" },
+      $unset: {
+        leaseToken: "",
+        leaseUntil: "",
+        lastError: "",
+        ...(input.outcome === "SENT" ? { skipReason: "" } : {}),
+        ...(input.outcome === "SKIPPED" ? { externalMessageId: "" } : {}),
+      },
     },
   );
   return result.modifiedCount === 1;
+}
+
+export async function findWorkerOperationalIncident(
+  consumer: string,
+): Promise<WorkerOperationalIncident | null> {
+  const col = await workerOperationalIncidentsCol();
+  return col.findOne({ _id: consumer });
+}
+
+export async function recordWorkerOperationalIncident(input: {
+  consumer: string;
+  fingerprint: string;
+  severity: WorkerOperationalIncident["severity"];
+  sentAt: Date;
+}): Promise<void> {
+  const col = await workerOperationalIncidentsCol();
+  await col.updateOne(
+    { _id: input.consumer },
+    {
+      $set: {
+        fingerprint: input.fingerprint,
+        severity: input.severity,
+        lastSentAt: input.sentAt,
+        updatedAt: input.sentAt,
+      },
+      $setOnInsert: { openedAt: input.sentAt },
+    },
+    { upsert: true },
+  );
+}
+
+export async function resolveWorkerOperationalIncident(input: {
+  consumer: string;
+  fingerprint: string;
+}): Promise<boolean> {
+  const col = await workerOperationalIncidentsCol();
+  const result = await col.deleteOne({
+    _id: input.consumer,
+    fingerprint: input.fingerprint,
+  });
+  return result.deletedCount === 1;
 }
 
 export async function failIntegrationOutbox(input: {

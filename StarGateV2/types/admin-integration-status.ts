@@ -20,8 +20,11 @@ export type AdminIntegrationErrorCategory =
 
 export interface AdminWorkerRuntimeStatus {
   health: AdminIntegrationHealth;
+  mode: "shadow" | "active" | null;
   lastSeenAt: string | null;
   enabledConsumers: string[];
+  expectedConsumers: string[];
+  missingConsumers: string[];
   enabledOutboxKinds: IntegrationOutboxKind[];
 }
 
@@ -38,6 +41,9 @@ export interface AdminOutboxKindStatus {
   maxAttempts: number;
   oldestDueAt: string | null;
   lastDeliveredAt: string | null;
+  sentCount: number;
+  skippedCount: number;
+  unclassifiedCount: number;
   enabledByWorker: boolean | null;
 }
 
@@ -84,6 +90,9 @@ export interface AdminIntegrationStatusResponse {
     deadCount: number;
     desiredStateIssues: number;
     delegatedWorkflowIssues: number;
+    sentCount: number;
+    skippedCount: number;
+    unclassifiedCount: number;
   };
   worker: AdminWorkerRuntimeStatus;
   outbox: AdminOutboxKindStatus[];

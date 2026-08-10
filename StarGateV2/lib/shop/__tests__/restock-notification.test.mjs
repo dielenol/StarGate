@@ -12,6 +12,10 @@ const WORKER_JOBS = new URL(
   "../../../../stargate-worker/src/jobs/default-handlers.ts",
   import.meta.url,
 );
+const WORKER_DESIRED_STATE = new URL(
+  "../../../../stargate-worker/src/consumers/discord-desired-state.ts",
+  import.meta.url,
+);
 
 test("shop refresh applies daily stock before requesting the canonical notice", async () => {
   const source = await readFile(REFRESH_ROUTE, "utf8");
@@ -23,14 +27,12 @@ test("shop refresh applies daily stock before requesting the canonical notice", 
   assert.match(source, /status: ok \? 200 : 500/);
 });
 
-test("daily shop restock uses one singleton revision and lease state", async () => {
+test("daily shop restock only records one desired-state revision", async () => {
   const source = await readFile(NOTIFICATION, "utf8");
   assert.match(source, /STATE_ID = "daily-shop-restock"/);
   assert.match(source, /requestedRevision/);
   assert.match(source, /syncedRevision/);
   assert.match(source, /desiredPayloads/);
-  assert.match(source, /messageIds/);
-  assert.match(source, /cleanupMessageIds/);
   assert.match(
     source,
     /catalog\.every\(\(item\) => stockByItemId\.has\(item\.slug\)\)/,
@@ -38,11 +40,18 @@ test("daily shop restock uses one singleton revision and lease state", async () 
   assert.match(source, /loadRuntimeShopCatalog\(\)/);
   assert.doesNotMatch(source, /daily-shop-restock:\$\{today\}/);
   assert.doesNotMatch(source, /sentAt/);
-  assert.match(
-    source,
-    /deleteMessage: deleteDailyShopRestockDiscordMessage,[\s\S]*createMessage: createDailyShopRestockDiscordMessage/,
-  );
-  assert.doesNotMatch(source, /DISCORD_BOT_TOKEN|webhook-message-pruner/);
+  assert.doesNotMatch(source, /fetch\(|createDiscord|deleteDiscord|syncDaily/);
+});
+
+test("the worker replaces the shop card without an empty-message gap", async () => {
+  const source = await readFile(WORKER_DESIRED_STATE, "utf8");
+  const createAt = source.indexOf("await createDiscordWebhookMessage(");
+  const activateAt = source.indexOf("activationAttempted = true", createAt);
+  const deleteAt = source.indexOf("for (const messageId of previousIds)", activateAt);
+
+  assert.ok(createAt >= 0 && activateAt > createAt && deleteAt > activateAt);
+  assert.match(source, /replacementMessageIds/);
+  assert.match(source, /staleMessageIds/);
 });
 
 test("shop restock scheduled ownership belongs to the worker", async () => {

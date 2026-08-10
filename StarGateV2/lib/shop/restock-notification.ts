@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import "@/lib/db/init";
 
 import { getDb } from "@stargate/shared-db";
@@ -7,25 +5,17 @@ import { getDb } from "@stargate/shared-db";
 import { getAllDailyStocks } from "@/lib/db/shop";
 import {
   buildShopRestockDiscordPayloads,
-  createDailyShopRestockDiscordMessage,
-  deleteDailyShopRestockDiscordMessage,
   type DiscordPayload,
   type ShopRestockWebhookPayload,
 } from "@/lib/discord";
-import {
-  drainDiscordMessageBatchSync,
-  type DiscordMessageBatchSyncResult,
-} from "@/lib/discord/message-batch-sync";
 
 import { getShopOpenState } from "./open-state";
 import { loadRuntimeShopCatalog } from "./runtime-catalog";
 
 type ShopRestockNotificationStatus =
-  | "sent"
   | "queued"
   | "skipped-no-stock"
   | "skipped-incomplete"
-  | "skipped-no-webhook"
   | "skipped-current"
   | "failed";
 
@@ -41,20 +31,12 @@ interface ShopRestockNotificationState {
   syncedRevision: number;
   desiredDate: string;
   desiredPayloads: DiscordPayload[];
-  messageIds?: string[];
-  cleanupMessageIds?: string[];
-  leaseToken?: string;
-  leaseExpiresAt?: Date;
-  nextAttemptAt?: Date;
-  lastError?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const COLLECTION_NAME = "shop_restock_notifications";
 const STATE_ID = "daily-shop-restock";
-const LEASE_MS = 10 * 60_000;
-const RETRY_DELAY_MS = 5 * 60_000;
 
 async function notificationCollection() {
   const db = await getDb();
@@ -90,122 +72,6 @@ async function requestNotificationSync(args: {
   );
 }
 
-async function acquireNotificationLease(args: {
-  leaseToken: string;
-  now?: Date;
-}): Promise<ShopRestockNotificationState | null> {
-  const now = args.now ?? new Date();
-  return (await notificationCollection()).findOneAndUpdate(
-    {
-      _id: STATE_ID,
-      $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
-      $and: [
-        {
-          $or: [
-            { leaseToken: { $exists: false } },
-            { leaseExpiresAt: { $exists: false } },
-            { leaseExpiresAt: { $lte: now } },
-          ],
-        },
-        {
-          $or: [
-            { nextAttemptAt: { $exists: false } },
-            { nextAttemptAt: { $lte: now } },
-          ],
-        },
-      ],
-    },
-    {
-      $set: {
-        leaseToken: args.leaseToken,
-        leaseExpiresAt: new Date(now.getTime() + LEASE_MS),
-        updatedAt: now,
-      },
-    },
-    { returnDocument: "after" },
-  );
-}
-
-async function recordInflightMessages(args: {
-  leaseToken: string;
-  messageIds: string[];
-}): Promise<boolean> {
-  const result = await (await notificationCollection()).updateOne(
-    { _id: STATE_ID, leaseToken: args.leaseToken },
-    {
-      $set: {
-        cleanupMessageIds: args.messageIds,
-        updatedAt: new Date(),
-      },
-    },
-  );
-  return result.modifiedCount === 1;
-}
-
-async function completeNotificationSync(args: {
-  leaseToken: string;
-  syncedRevision: number;
-  messageIds: string[];
-}): Promise<boolean> {
-  const result = await (await notificationCollection()).updateOne(
-    { _id: STATE_ID, leaseToken: args.leaseToken },
-    {
-      $set: {
-        syncedRevision: args.syncedRevision,
-        messageIds: args.messageIds,
-        updatedAt: new Date(),
-      },
-      $unset: {
-        leaseToken: "",
-        leaseExpiresAt: "",
-        cleanupMessageIds: "",
-        lastError: "",
-        nextAttemptAt: "",
-      },
-    },
-  );
-  return result.modifiedCount === 1;
-}
-
-async function failNotificationSync(args: {
-  leaseToken: string;
-  error: string;
-  cleanupMessageIds: string[];
-}): Promise<void> {
-  const now = new Date();
-  const cleanupState =
-    args.cleanupMessageIds.length > 0
-      ? { cleanupMessageIds: args.cleanupMessageIds }
-      : {};
-  await (await notificationCollection()).updateOne(
-    { _id: STATE_ID, leaseToken: args.leaseToken },
-    {
-      $set: {
-        lastError: args.error.slice(0, 1000),
-        nextAttemptAt: new Date(now.getTime() + RETRY_DELAY_MS),
-        updatedAt: now,
-        ...cleanupState,
-      },
-      $unset: { leaseToken: "", leaseExpiresAt: "" },
-    },
-  );
-}
-
-async function isNotificationSyncComplete(args: {
-  syncedRevision: number;
-  messageIds: string[];
-}): Promise<boolean> {
-  const state = await (await notificationCollection()).findOne(
-    {
-      _id: STATE_ID,
-      syncedRevision: { $gte: args.syncedRevision },
-      messageIds: args.messageIds,
-    },
-    { projection: { _id: 1 } },
-  );
-  return Boolean(state);
-}
-
 async function buildRestockPayload(
   today: string,
   now: Date,
@@ -239,37 +105,7 @@ async function buildRestockPayload(
   };
 }
 
-export async function syncDailyShopRestockDiscordMessage(): Promise<DiscordMessageBatchSyncResult> {
-  return drainDiscordMessageBatchSync({
-    logPrefix: "shop-restock-discord",
-    newLeaseToken: randomUUID,
-    acquire: async (leaseToken) => {
-      const state = await acquireNotificationLease({ leaseToken });
-      return state
-        ? {
-            requestedRevision: state.requestedRevision,
-            messageIds: Array.from(
-              new Set([
-                ...(state.messageIds ?? []),
-                ...(state.cleanupMessageIds ?? []),
-              ]),
-            ),
-            desiredPayloads: state.desiredPayloads,
-            leaseToken,
-          }
-        : null;
-    },
-    deleteMessage: deleteDailyShopRestockDiscordMessage,
-    createMessage: createDailyShopRestockDiscordMessage,
-    recordInflight: recordInflightMessages,
-    complete: completeNotificationSync,
-    confirm: isNotificationSyncComplete,
-    fail: failNotificationSync,
-    warn: (message, error) => console.warn(message, error),
-  });
-}
-
-export async function recoverDailyShopRestockDiscordMessage(
+export async function recoverDailyShopRestockDesiredState(
   today: string,
   now: Date = new Date(),
 ): Promise<{
@@ -278,18 +114,13 @@ export async function recoverDailyShopRestockDiscordMessage(
     | "current"
     | "pending"
     | "incomplete"
-    | "no-stock"
-    | "skipped-no-webhook";
+    | "no-stock";
   itemCount: number;
 }> {
   const { payload, complete } = await buildRestockPayload(today, now);
   const itemCount = payload.items.length;
   if (!complete) return { status: "incomplete", itemCount };
   if (itemCount === 0) return { status: "no-stock", itemCount };
-  if (!process.env.DISCORD_WEBHOOK_SHOP_URL) {
-    return { status: "skipped-no-webhook", itemCount };
-  }
-
   const state = await findNotificationState();
   if (state?.desiredDate === today) {
     return {
@@ -312,7 +143,7 @@ export async function notifyDailyShopRestock(
   now: Date = new Date(),
 ): Promise<ShopRestockNotificationResult> {
   try {
-    const recovery = await recoverDailyShopRestockDiscordMessage(today, now);
+    const recovery = await recoverDailyShopRestockDesiredState(today, now);
     if (recovery.status === "no-stock") {
       return { status: "skipped-no-stock", itemCount: recovery.itemCount };
     }
@@ -322,31 +153,9 @@ export async function notifyDailyShopRestock(
         itemCount: recovery.itemCount,
       };
     }
-    if (recovery.status === "skipped-no-webhook") {
-      console.warn(
-        "[notifyDailyShopRestock] DISCORD_WEBHOOK_SHOP_URL 미설정 — silent skip",
-      );
-      return {
-        status: "skipped-no-webhook",
-        itemCount: recovery.itemCount,
-      };
-    }
-
-    const result = await syncDailyShopRestockDiscordMessage();
-    if (result === "synced") {
-      return { status: "sent", itemCount: recovery.itemCount };
-    }
-    if (result === "idle") {
-      return {
-        status:
-          recovery.status === "current" ? "skipped-current" : "queued",
-        itemCount: recovery.itemCount,
-      };
-    }
     return {
-      status: "failed",
+      status: recovery.status === "current" ? "skipped-current" : "queued",
       itemCount: recovery.itemCount,
-      error: `Discord 편의점 입고 공지 동기화 실패 (${result})`,
     };
   } catch (error) {
     const message = getErrorMessage(error);

@@ -23,6 +23,9 @@ interface ResearchCardState {
   requestedRevision: number;
   syncedRevision: number;
   messageId?: string;
+  replacementMessageId?: string;
+  staleMessageIds?: string[];
+  /** 이전 worker가 쓰던 생성 중 message id 필드. */
   cleanupMessageId?: string;
   leaseToken?: string;
   leaseExpiresAt?: Date;
@@ -93,7 +96,12 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
     const leaseToken = randomUUID();
     const card = await cards.findOneAndUpdate(
       {
-        $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
+        $or: [
+          { $expr: { $gt: ["$requestedRevision", "$syncedRevision"] } },
+          { "staleMessageIds.0": { $exists: true } },
+          { replacementMessageId: { $exists: true } },
+          { cleanupMessageId: { $exists: true } },
+        ],
         $and: [
           {
             $or: [
@@ -125,7 +133,9 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
 
     const fetchImpl = this.options.fetchImpl ?? fetch;
     let newMessageId: string | null = null;
-    let completionAttempted = false;
+    let activated = false;
+    let activationAttempted = false;
+    let preexistingReplacementCleanup = false;
     try {
       const [pool, project, contributions] = await Promise.all([
         db
@@ -150,20 +160,77 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
       if (!pool && !project) {
         throw new Error(`팀 연구 현황을 찾을 수 없습니다: ${card._id}`);
       }
-      const previousIds = Array.from(
+      const orphanReplacementIds = Array.from(
         new Set(
-          [card.messageId, card.cleanupMessageId].filter(
-            (value): value is string => Boolean(value),
+          [card.replacementMessageId, card.cleanupMessageId].filter(
+            (value): value is string =>
+              Boolean(value) && value !== card.messageId,
           ),
         ),
       );
-      for (const messageId of previousIds) {
+      preexistingReplacementCleanup = orphanReplacementIds.length > 0;
+      for (const messageId of orphanReplacementIds) {
         if (signal.aborted) throw new Error("worker shutdown requested");
         await deleteDiscordWebhookMessage(
           this.options.webhookUrl,
           messageId,
           fetchImpl,
         );
+      }
+      if (orphanReplacementIds.length > 0) {
+        const cleared = await cards.updateOne(
+          { _id: card._id, leaseToken },
+          {
+            $unset: { replacementMessageId: "", cleanupMessageId: "" },
+            $set: { updatedAt: new Date() },
+          },
+        );
+        if (cleared.modifiedCount !== 1) {
+          throw new Error("교체 중 연구 카드 정리 전에 lease를 상실했습니다.");
+        }
+        preexistingReplacementCleanup = false;
+      }
+
+      const staleIds = Array.from(new Set(card.staleMessageIds ?? []));
+      for (const messageId of staleIds) {
+        if (signal.aborted) throw new Error("worker shutdown requested");
+        await deleteDiscordWebhookMessage(
+          this.options.webhookUrl,
+          messageId,
+          fetchImpl,
+        );
+        const pulled = await cards.updateOne(
+          { _id: card._id, leaseToken },
+          {
+            $pull: { staleMessageIds: messageId },
+            $set: { updatedAt: new Date() },
+          },
+        );
+        if (pulled.modifiedCount !== 1) {
+          throw new Error("이전 연구 카드 정리 전에 lease를 상실했습니다.");
+        }
+      }
+
+      if (card.requestedRevision <= card.syncedRevision) {
+        const completedCleanup = await cards.updateOne(
+          { _id: card._id, leaseToken },
+          {
+            $unset: {
+              staleMessageIds: "",
+              replacementMessageId: "",
+              cleanupMessageId: "",
+              leaseToken: "",
+              leaseExpiresAt: "",
+              nextAttemptAt: "",
+              lastError: "",
+            },
+            $set: { updatedAt: new Date() },
+          },
+        );
+        if (completedCleanup.modifiedCount !== 1) {
+          throw new Error("연구 카드 정리 완료 전에 lease를 상실했습니다.");
+        }
+        return summary;
       }
 
       const node = getEquipmentResearchNode(card._id);
@@ -200,7 +267,7 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
         { _id: card._id, leaseToken },
         {
           $set: {
-            cleanupMessageId: newMessageId,
+            replacementMessageId: newMessageId,
             updatedAt: new Date(),
           },
         },
@@ -209,17 +276,52 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
         throw new Error("연구 카드 message id 기록 전에 lease를 상실했습니다.");
       }
 
-      completionAttempted = true;
-      const completed = await cards.updateOne(
+      activationAttempted = true;
+      const previousIds = card.messageId ? [card.messageId] : [];
+      const activatedResult = await cards.updateOne(
         { _id: card._id, leaseToken },
         {
           $set: {
             syncedRevision: card.requestedRevision,
             messageId: newMessageId,
+            staleMessageIds: previousIds,
             updatedAt: new Date(),
           },
           $unset: {
+            replacementMessageId: "",
             cleanupMessageId: "",
+          },
+        },
+      );
+      if (activatedResult.modifiedCount !== 1) {
+        throw new Error("연구 카드 활성화 전에 lease를 상실했습니다.");
+      }
+      activated = true;
+
+      for (const messageId of previousIds) {
+        if (signal.aborted) throw new Error("worker shutdown requested");
+        await deleteDiscordWebhookMessage(
+          this.options.webhookUrl,
+          messageId,
+          fetchImpl,
+        );
+        const pulled = await cards.updateOne(
+          { _id: card._id, leaseToken },
+          {
+            $pull: { staleMessageIds: messageId },
+            $set: { updatedAt: new Date() },
+          },
+        );
+        if (pulled.modifiedCount !== 1) {
+          throw new Error("이전 연구 카드 정리 전에 lease를 상실했습니다.");
+        }
+      }
+      const completed = await cards.updateOne(
+        { _id: card._id, leaseToken },
+        {
+          $set: { updatedAt: new Date() },
+          $unset: {
+            staleMessageIds: "",
             leaseToken: "",
             leaseExpiresAt: "",
             nextAttemptAt: "",
@@ -233,8 +335,7 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
       summary.delivered = 1;
       return summary;
     } catch (error) {
-      let completionUncertain = false;
-      if (completionAttempted && newMessageId) {
+      if (activationAttempted && !activated && newMessageId) {
         try {
           const confirmed = await cards.findOne(
             {
@@ -245,19 +346,21 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
             { projection: { _id: 1 } },
           );
           if (confirmed) {
-            summary.delivered = 1;
-            return summary;
+            activated = true;
           }
-        } catch {
-          completionUncertain = true;
-        }
+        } catch {}
       }
-      if (newMessageId && !completionUncertain) {
+      // 활성화 write 결과가 불명확한 경우 새 카드를 보존한다. commit됐을 수도 있는
+      // active 카드를 삭제하는 것보다 다음 lease에서 중복을 정리하는 편이 안전하다.
+      let preserveReplacement = activationAttempted && !activated;
+      if (newMessageId && !activated && !preserveReplacement) {
         await deleteDiscordWebhookMessage(
           this.options.webhookUrl,
           newMessageId,
           fetchImpl,
-        ).catch(() => {});
+        ).catch(() => {
+          preserveReplacement = true;
+        });
       }
       const failedAt = new Date();
       await cards.updateOne(
@@ -266,10 +369,20 @@ export class ResearchCardConsumer implements DueWorkConsumerPort {
           $set: {
             lastError: errorMessage(error).slice(0, 1_000),
             nextAttemptAt: new Date(failedAt.getTime() + RETRY_DELAY_MS),
-            ...(newMessageId ? { cleanupMessageId: newMessageId } : {}),
+            ...(!activated && preserveReplacement && newMessageId
+              ? { replacementMessageId: newMessageId }
+              : {}),
             updatedAt: failedAt,
           },
-          $unset: { leaseToken: "", leaseExpiresAt: "" },
+          $unset: {
+            leaseToken: "",
+            leaseExpiresAt: "",
+            ...(!activated &&
+            !preserveReplacement &&
+            !preexistingReplacementCleanup
+              ? { replacementMessageId: "", cleanupMessageId: "" }
+              : {}),
+          },
         },
       );
       summary.failed = 1;

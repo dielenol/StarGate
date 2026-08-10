@@ -32,6 +32,7 @@ import type {
   IntegrationOutboxEvent,
   ScheduledJobRun,
   WorkerCheckpoint,
+  WorkerOperationalIncident,
 } from "./types/worker.js";
 import type {
   LoreAlias,
@@ -79,6 +80,7 @@ const COL = {
   SCHEDULED_JOB_RUNS: "scheduled_job_runs",
   INTEGRATION_OUTBOX: "integration_outbox",
   WORKER_CHECKPOINTS: "worker_checkpoints",
+  WORKER_OPERATIONAL_INCIDENTS: "worker_operational_incidents",
   LORE_SOURCES: "lore_sources",
   LORE_ALIASES: "lore_aliases",
   LORE_EDGES: "lore_edges",
@@ -249,6 +251,15 @@ export async function workerCheckpointsCol(): Promise<Collection<WorkerCheckpoin
   return db.collection<WorkerCheckpoint>(COL.WORKER_CHECKPOINTS);
 }
 
+export async function workerOperationalIncidentsCol(): Promise<
+  Collection<WorkerOperationalIncident>
+> {
+  const db = await getDb();
+  return db.collection<WorkerOperationalIncident>(
+    COL.WORKER_OPERATIONAL_INCIDENTS,
+  );
+}
+
 export async function loreSourcesCol(): Promise<Collection<LoreSource>> {
   const db = await getDb();
   return db.collection<LoreSource>(COL.LORE_SOURCES);
@@ -416,6 +427,12 @@ export function mrBeastSodaStockImpactDemandColSync(): Collection<
 
 export function workerCheckpointsColSync(): Collection<WorkerCheckpoint> {
   return getDbSync().collection<WorkerCheckpoint>(COL.WORKER_CHECKPOINTS);
+}
+
+export function workerOperationalIncidentsColSync(): Collection<WorkerOperationalIncident> {
+  return getDbSync().collection<WorkerOperationalIncident>(
+    COL.WORKER_OPERATIONAL_INCIDENTS,
+  );
 }
 
 export function loreSourcesColSync(): Collection<LoreSource> {

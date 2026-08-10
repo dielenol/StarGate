@@ -1,10 +1,9 @@
 /**
- * 팀 연구별 Discord 현황 카드를 점검하고 다시 게시한다.
+ * 팀 연구별 Discord 현황 카드를 점검하고 worker 동기화를 요청한다.
  *
  * 기본은 DB를 읽어 대상과 현재 동기화 상태만 출력하는 dry-run이다.
- * 라이브 Discord 변경은 --execute --yes를 함께 지정한 경우에만 수행한다.
- * 이 도구는 DB에 저장된 기존 messageId를 웹훅으로 삭제한 뒤 현재 카드를
- * 다시 게시한다. messageId가 없는 구형 중복 메시지는 별도로 정리해야 한다.
+ * --execute --yes를 함께 지정하면 desired-state revision만 올리며, 실제 Discord
+ * 교체는 worker가 새 카드를 먼저 만든 뒤 이전 카드를 정리한다.
  */
 
 import { readFileSync } from "node:fs";
@@ -54,25 +53,16 @@ async function main(): Promise<void> {
   if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI가 필요합니다.");
   }
-  if (execute && !process.env.DISCORD_WEBHOOK_RESEARCH_URL) {
-    throw new Error(
-      "실행 모드에는 DISCORD_WEBHOOK_RESEARCH_URL이 필요합니다.",
-    );
-  }
   const {
     findEquipmentResearchDiscordCard,
     listEquipmentResearchDiscordProjectKeys,
     requestEquipmentResearchDiscordCardSync,
   } = await import("../lib/db/equipment-research.ts");
-  const {
-    buildCurrentResearchDiscordPayload,
-    syncEquipmentResearchDiscordCard,
-  } = await import(
+  const { buildCurrentResearchDiscordPayload } = await import(
     "../lib/notifications/equipment-research-discord.ts"
   );
   const { getClient } = await import("@stargate/shared-db");
 
-  let failed = false;
   try {
     const projectKeys = await listEquipmentResearchDiscordProjectKeys();
     console.log(
@@ -108,15 +98,12 @@ async function main(): Promise<void> {
 
     for (const projectKey of projectKeys) {
       await requestEquipmentResearchDiscordCardSync(projectKey);
-      const result = await syncEquipmentResearchDiscordCard(projectKey);
-      console.log(`[research-discord] ${projectKey} -> ${result}`);
-      if (result === "failed" || result === "pass_limit") failed = true;
+      console.log(`[research-discord] ${projectKey} -> queued-for-worker`);
     }
   } finally {
     await (await getClient()).close();
   }
 
-  if (failed) process.exitCode = 1;
 }
 
 void main().catch((error) => {

@@ -21,11 +21,19 @@ import type {
 
 const OUTBOX_WARNING_AFTER_MS = 10 * 60_000;
 const WORKER_STALE_AFTER_MS = 90_000;
+const FALLBACK_EXPECTED_CONSUMERS = [
+  "ameri-dm",
+  "research-card",
+  "shop-restock",
+  "stock-market-wire",
+];
 
 interface WorkerRuntimeStatusDocument {
   _id: "active";
+  mode?: "shadow" | "active";
   ready?: boolean;
   enabledConsumers?: string[];
+  expectedConsumers?: string[];
   enabledOutboxKinds?: IntegrationOutboxKind[];
   lastSeenAt?: Date;
 }
@@ -64,6 +72,14 @@ interface OutboxAggregateRow {
   deadCount: number;
   maxAttempts: number;
   oldestDueAt: Date;
+}
+
+interface DeliveredAggregateRow {
+  _id: IntegrationOutboxKind;
+  lastDeliveredAt: Date;
+  sentCount: number;
+  skippedCount: number;
+  unclassifiedCount: number;
 }
 
 function iso(value: Date | undefined | null): string | null {
@@ -114,7 +130,7 @@ function channelFor(kind: IntegrationOutboxKind): AdminOutboxKindStatus["channel
 
 function buildOutboxStatuses(input: {
   rows: Map<IntegrationOutboxKind, OutboxAggregateRow>;
-  lastDelivered: Map<IntegrationOutboxKind, Date>;
+  delivered: Map<IntegrationOutboxKind, DeliveredAggregateRow>;
   enabledKinds: Set<IntegrationOutboxKind> | null;
   now: Date;
 }): AdminOutboxKindStatus[] {
@@ -124,6 +140,7 @@ function buildOutboxStatuses(input: {
     const enabledByWorker = input.enabledKinds
       ? input.enabledKinds.has(kind)
       : null;
+    const delivered = input.delivered.get(kind);
     const health: AdminIntegrationHealth =
       (row?.deadCount ?? 0) > 0 ||
       (row?.expiredLeaseCount ?? 0) > 0 ||
@@ -147,7 +164,10 @@ function buildOutboxStatuses(input: {
       deadCount: row?.deadCount ?? 0,
       maxAttempts: row?.maxAttempts ?? 0,
       oldestDueAt: iso(oldestDue),
-      lastDeliveredAt: iso(input.lastDelivered.get(kind)),
+      lastDeliveredAt: iso(delivered?.lastDeliveredAt),
+      sentCount: delivered?.sentCount ?? 0,
+      skippedCount: delivered?.skippedCount ?? 0,
+      unclassifiedCount: delivered?.unclassifiedCount ?? 0,
       enabledByWorker,
     };
   });
@@ -318,10 +338,29 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
       ])
       .toArray(),
     db.collection("integration_outbox")
-      .aggregate<{ _id: IntegrationOutboxKind; lastDeliveredAt: Date }>([
+      .aggregate<DeliveredAggregateRow>([
         { $match: { status: "DELIVERED", deliveredAt: { $type: "date" } } },
-        { $sort: { kind: 1, deliveredAt: -1 } },
-        { $group: { _id: "$kind", lastDeliveredAt: { $first: "$deliveredAt" } } },
+        {
+          $group: {
+            _id: "$kind",
+            lastDeliveredAt: { $max: "$deliveredAt" },
+            sentCount: {
+              $sum: { $cond: [{ $eq: ["$deliveryOutcome", "SENT"] }, 1, 0] },
+            },
+            skippedCount: {
+              $sum: { $cond: [{ $eq: ["$deliveryOutcome", "SKIPPED"] }, 1, 0] },
+            },
+            unclassifiedCount: {
+              $sum: {
+                $cond: [
+                  { $in: ["$deliveryOutcome", ["SENT", "SKIPPED"]] },
+                  0,
+                  1,
+                ],
+              },
+            },
+          },
+        },
       ])
       .toArray(),
     db.collection<WorkerRuntimeStatusDocument>("worker_runtime_status")
@@ -366,28 +405,41 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
       .toArray(),
   ]);
 
-  const lastDelivered = new Map(
-    deliveredRows.map((row) => [row._id, row.lastDeliveredAt]),
-  );
+  const delivered = new Map(deliveredRows.map((row) => [row._id, row]));
   const workerFresh = Boolean(
     workerRuntime?.lastSeenAt &&
       now.getTime() - workerRuntime.lastSeenAt.getTime() < WORKER_STALE_AFTER_MS,
   );
+  const expectedConsumers =
+    workerRuntime?.expectedConsumers?.length
+      ? workerRuntime.expectedConsumers
+      : FALLBACK_EXPECTED_CONSUMERS;
+  const enabledConsumers = workerRuntime?.enabledConsumers ?? [];
+  const enabledConsumerSet = new Set(enabledConsumers);
+  const missingConsumers = expectedConsumers.filter(
+    (consumer) => !enabledConsumerSet.has(consumer),
+  );
   const worker = {
     health: !workerRuntime?.lastSeenAt
       ? "UNKNOWN" as const
-      : workerRuntime.ready === undefined
+      : workerRuntime.ready === undefined || workerRuntime.mode === undefined
         ? "UNKNOWN" as const
-        : workerFresh && workerRuntime.ready
+        : workerFresh &&
+            workerRuntime.ready &&
+            workerRuntime.mode === "active" &&
+            missingConsumers.length === 0
         ? "HEALTHY" as const
         : "CRITICAL" as const,
+    mode: workerRuntime?.mode ?? null,
     lastSeenAt: iso(workerRuntime?.lastSeenAt),
-    enabledConsumers: workerRuntime?.enabledConsumers ?? [],
+    enabledConsumers,
+    expectedConsumers,
+    missingConsumers,
     enabledOutboxKinds: workerRuntime?.enabledOutboxKinds ?? [],
   };
   const outbox = buildOutboxStatuses({
     rows: new Map(outboxRows.map((row) => [row._id, row])),
-    lastDelivered,
+    delivered,
     enabledKinds: workerRuntime
       ? new Set(workerRuntime.enabledOutboxKinds ?? [])
       : null,
@@ -440,7 +492,9 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
     {
       key: "AMERI_WORKSHOP_DM",
       label: "AMERI 공방 DM",
-      health: workshopErrors > 0
+      health: missingConsumers.includes("ameri-dm")
+        ? "CRITICAL"
+        : workshopErrors > 0
         ? "CRITICAL"
         : workshopDue > 0
           ? "WARNING"
@@ -503,6 +557,12 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
       ),
       delegatedWorkflowIssues: delegatedWorkflows.reduce(
         (sum, item) => sum + item.errorCount + item.dueCount,
+        0,
+      ),
+      sentCount: outbox.reduce((sum, item) => sum + item.sentCount, 0),
+      skippedCount: outbox.reduce((sum, item) => sum + item.skippedCount, 0),
+      unclassifiedCount: outbox.reduce(
+        (sum, item) => sum + item.unclassifiedCount,
         0,
       ),
     },

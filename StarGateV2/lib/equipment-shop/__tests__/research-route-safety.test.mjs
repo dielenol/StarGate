@@ -35,7 +35,7 @@ const RESEARCH_APPLICATION = new URL(
   "../research-application.ts",
   import.meta.url,
 );
-const RESEARCH_DISCORD_SYNC = new URL(
+const RESEARCH_DISCORD_PAYLOAD = new URL(
   "../../notifications/equipment-research-discord.ts",
   import.meta.url,
 );
@@ -209,16 +209,17 @@ test("research lifecycle queues workflow tracking and GM audit in its mutation t
 
 test("research Discord card delivery is left to the long-running worker", async () => {
   const [syncSource, workerConfig] = await Promise.all([
-    readFile(RESEARCH_DISCORD_SYNC, "utf8"),
+    readFile(RESEARCH_DISCORD_PAYLOAD, "utf8"),
     readFile(WORKER_CONFIG, "utf8"),
   ]);
 
   assert.doesNotMatch(syncSource, /syncPendingEquipmentResearchDiscordCards/);
+  assert.doesNotMatch(syncSource, /fetch\(|createDiscord|deleteDiscord/);
   assert.match(workerConfig, /"research-card"/);
 });
 
 test("legacy team projects without funding pools use project cost fallback", async () => {
-  const source = await readFile(RESEARCH_DISCORD_SYNC, "utf8");
+  const source = await readFile(RESEARCH_DISCORD_PAYLOAD, "utf8");
 
   assert.match(source, /if \(!pool && !project\)/);
   assert.match(source, /targetCost: pool\?\.targetCost \?\? project!\.cost/);

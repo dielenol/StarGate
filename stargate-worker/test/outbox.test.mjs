@@ -47,6 +47,10 @@ test("active outbox consumer는 handler 성공을 complete하고 미연결 kind�
       kind: "GM_ADMIN_AUDIT",
       async deliver(outboxEvent) {
         assert.equal(outboxEvent.dedupeKey, "audit:1");
+        return {
+          outcome: "SENT",
+          externalMessageId: "22345678901234567",
+        };
       },
     },
   ]);
@@ -67,6 +71,10 @@ test("active outbox consumer는 handler 성공을 complete하고 미연결 kind�
     dead: 0,
   });
   assert.equal(completed.length, 1);
+  assert.deepEqual(completed[0].result, {
+    outcome: "SENT",
+    externalMessageId: "22345678901234567",
+  });
   assert.equal(failed.length, 1);
   assert.match(
     String(failed[0].error),
@@ -125,6 +133,7 @@ test("알 수 없는 payload version은 외부 전달 없이 backoff한다", asy
         kind: "GM_ADMIN_AUDIT",
         async deliver() {
           delivered = true;
+          return { outcome: "SENT" };
         },
       },
     ]),

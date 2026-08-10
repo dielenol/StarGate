@@ -29,7 +29,7 @@ type WorkshopDmEvent =
   | "CANCELLED"
   | "COMPLETED";
 
-interface WorkshopDmOutboxEvent {
+export interface WorkshopDmOutboxEvent {
   id: string;
   event: WorkshopDmEvent;
   payload?: {
@@ -47,6 +47,32 @@ interface WorkshopDmOutboxEvent {
   availableAt: Date;
   sentAt?: Date;
   skippedAt?: Date;
+  skippedReason?: string;
+}
+
+export function planDueAmeriDmEvents(
+  events: readonly WorkshopDmOutboxEvent[],
+  now: Date,
+): {
+  superseded: WorkshopDmOutboxEvent[];
+  deliver: WorkshopDmOutboxEvent | null;
+} {
+  const due = events
+    .filter(
+      (event) =>
+        !event.sentAt &&
+        !event.skippedAt &&
+        new Date(event.availableAt).getTime() <= now.getTime(),
+    )
+    .sort(
+      (left, right) =>
+        new Date(left.availableAt).getTime() -
+        new Date(right.availableAt).getTime(),
+    );
+  return {
+    superseded: due.slice(0, -1),
+    deliver: due.at(-1) ?? null,
+  };
 }
 
 interface WorkshopRequest {
@@ -190,18 +216,64 @@ export class AmeriDmConsumer implements DueWorkConsumerPort {
       summary.claimed += 1;
 
       let failed = false;
-      const events = (request.discordDmOutbox ?? [])
-        .filter(
-          (event) =>
-            !event.sentAt &&
-            !event.skippedAt &&
-            new Date(event.availableAt).getTime() <= now.getTime(),
-        )
-        .sort(
-          (left, right) =>
-            new Date(left.availableAt).getTime() -
-            new Date(right.availableAt).getTime(),
+      const plan = planDueAmeriDmEvents(
+        request.discordDmOutbox ?? [],
+        now,
+      );
+      try {
+        for (const event of plan.superseded) {
+          const skipped = await requests.updateOne(
+            {
+              _id: request._id,
+              "discordDmDelivery.leaseToken": leaseToken,
+            },
+            {
+              $set: {
+                "discordDmOutbox.$[event].skippedAt": new Date(),
+                "discordDmOutbox.$[event].skippedReason":
+                  "superseded_by_newer_due_event",
+              },
+            },
+            {
+              arrayFilters: [
+                {
+                  "event.id": event.id,
+                  "event.sentAt": { $exists: false },
+                  "event.skippedAt": { $exists: false },
+                },
+              ],
+            },
+          );
+          if (skipped.modifiedCount !== 1) {
+            throw new Error("밀린 아메리 DM 정리 전에 lease를 상실했습니다.");
+          }
+          summary.skipped += 1;
+        }
+      } catch (error) {
+        failed = true;
+        summary.failed += 1;
+        const failedAt = new Date();
+        await requests.updateOne(
+          {
+            _id: request._id,
+            "discordDmDelivery.leaseToken": leaseToken,
+          },
+          {
+            $set: {
+              "discordDmDelivery.failedAt": failedAt,
+              "discordDmDelivery.nextAttemptAt": new Date(
+                failedAt.getTime() + RETRY_DELAY_MS,
+              ),
+              "discordDmDelivery.lastError": errorMessage(error).slice(0, 300),
+            },
+            $unset: {
+              "discordDmDelivery.leaseToken": "",
+              "discordDmDelivery.leaseUntil": "",
+            },
+          },
         );
+      }
+      const events = !failed && plan.deliver ? [plan.deliver] : [];
       for (const event of events) {
         try {
           let result:
@@ -320,7 +392,7 @@ export class AmeriDmConsumer implements DueWorkConsumerPort {
       }
 
       if (!failed) {
-        await requests.updateOne(
+        const released = await requests.updateOne(
           {
             _id: request._id,
             "discordDmDelivery.leaseToken": leaseToken,
@@ -335,6 +407,9 @@ export class AmeriDmConsumer implements DueWorkConsumerPort {
             },
           },
         );
+        if (released.modifiedCount !== 1) {
+          throw new Error("아메리 DM lease 해제 전에 소유권을 상실했습니다.");
+        }
       }
     }
     return summary;

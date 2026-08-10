@@ -375,6 +375,8 @@ test(
       await completeIntegrationOutbox({
         id: independentClaim._id,
         leaseToken: independentClaim.leaseToken,
+        outcome: "SENT",
+        externalMessageId: "22345678901234567",
         now: new Date(now.getTime() + 2),
       }),
       true,
@@ -393,10 +395,26 @@ test(
       await completeIntegrationOutbox({
         id: retryClaim._id,
         leaseToken: retryClaim.leaseToken,
+        outcome: "SKIPPED",
+        skipReason: "STALE",
         now: new Date(now.getTime() + 1_001),
       }),
       true,
     );
+    const completedRows = await (await getDb())
+      .collection("integration_outbox")
+      .find({ _id: { $in: [independent._id, first._id] } })
+      .toArray();
+    const sent = completedRows.find(
+      (row) => String(row._id) === String(independent._id),
+    );
+    const skipped = completedRows.find(
+      (row) => String(row._id) === String(first._id),
+    );
+    assert.equal(sent?.deliveryOutcome, "SENT");
+    assert.equal(sent?.externalMessageId, "22345678901234567");
+    assert.equal(skipped?.deliveryOutcome, "SKIPPED");
+    assert.equal(skipped?.skipReason, "STALE");
 
     const secondClaim = await claimIntegrationOutbox({
       now: new Date(now.getTime() + 1_002),

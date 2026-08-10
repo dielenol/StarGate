@@ -6,7 +6,8 @@ import {
 } from "./adapters/shared-db-connection.js";
 import { SharedDbScheduledJobCoordinator } from "./adapters/shared-db-job-coordinator.js";
 import { SharedDbIntegrationOutboxAdapter } from "./adapters/shared-db-outbox.js";
-import type { WorkerConfig } from "./config.js";
+import { SharedDbOperationalIncidentStore } from "./adapters/shared-db-operational-incidents.js";
+import { WORKER_CONSUMER_NAMES, type WorkerConfig } from "./config.js";
 import { ConsumerManager } from "./consumers/manager.js";
 import type { DueWorkConsumerPort } from "./consumers/port.js";
 import { createDefaultDomainConsumers } from "./consumers/factory.js";
@@ -77,7 +78,9 @@ export class WorkerRuntime {
     let consumerManager: ConsumerManager | undefined;
     const heartbeat = new WorkerRuntimeHeartbeatConsumer({
       mode: config.mode,
-      enabledConsumers: config.enabledConsumers,
+      enabledConsumers:
+        config.mode === "active" ? config.enabledConsumers : [],
+      expectedConsumers: [...WORKER_CONSUMER_NAMES],
       enabledOutboxKinds: integrationOutboxHandlers?.kinds ?? [],
       isReady: () => {
         const readiness = this.#health.readiness();
@@ -97,7 +100,9 @@ export class WorkerRuntime {
             heartbeat,
           ]
         : [
-            new IntegrationHealthProbeConsumer(),
+            new IntegrationHealthProbeConsumer({
+              enabledConsumers: config.enabledConsumers,
+            }),
             new WorkerLeaseSweeper(),
             ...(scheduledJobHandlers
               ? [
@@ -133,6 +138,7 @@ export class WorkerRuntime {
         ? new DiscordOperationalAlertReporter(
             resolveDiscordWebhookDestination("OPERATIONS"),
             this.#logger,
+            new SharedDbOperationalIncidentStore(),
           )
         : undefined,
     );
