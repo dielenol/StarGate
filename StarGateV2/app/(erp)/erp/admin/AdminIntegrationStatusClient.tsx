@@ -47,14 +47,118 @@ function countLabel(value: number): string {
   return value.toLocaleString("ko-KR");
 }
 
+type MetricTone = "neutral" | "gold" | "success" | "danger" | "muted";
+
+function SummaryMetric({
+  label,
+  value,
+  description,
+  tone: metricTone,
+}: {
+  label: string;
+  value: number;
+  description: string;
+  tone: MetricTone;
+}) {
+  return (
+    <Box className={styles.kpi} data-tone={metricTone}>
+      <span className={styles.kpi__label}>{label}</span>
+      <strong>{countLabel(value)}</strong>
+      <small>{description}</small>
+    </Box>
+  );
+}
+
+function CountCell({ value, alert = false }: { value: number; alert?: boolean }) {
+  return (
+    <td
+      className={styles.table__number}
+      data-alert={alert && value > 0 ? "true" : undefined}
+      data-zero={value === 0 ? "true" : undefined}
+    >
+      {countLabel(value)}
+    </td>
+  );
+}
+
 export default function AdminIntegrationStatusClient({ initialData }: Props) {
   const query = useAdminIntegrationStatusQuery({ initialData });
   const data = query.data ?? initialData;
+  const overallMessage =
+    data.overallHealth === "HEALTHY"
+      ? "감시 중인 연동이 모두 정상입니다."
+      : data.overallHealth === "WARNING"
+        ? "지연되거나 재확인이 필요한 항목이 있습니다."
+        : data.overallHealth === "CRITICAL"
+          ? "즉시 확인해야 할 연동 장애가 있습니다."
+          : "worker 연결 상태를 확인하고 있습니다.";
+
+  const summaryMetrics: Array<{
+    label: string;
+    value: number;
+    description: string;
+    tone: MetricTone;
+  }> = [
+    {
+      label: "즉시 처리 대기",
+      value: data.summary.dueCount,
+      description: "지금 처리할 이벤트",
+      tone: data.summary.dueCount > 0 ? "gold" : "neutral",
+    },
+    {
+      label: "예약 대기",
+      value: data.summary.scheduledCount,
+      description: "예약 시각을 기다리는 이벤트",
+      tone: data.summary.scheduledCount > 0 ? "gold" : "neutral",
+    },
+    {
+      label: "DEAD",
+      value: data.summary.deadCount,
+      description: "재시도 한도를 넘긴 실패",
+      tone: data.summary.deadCount > 0 ? "danger" : "neutral",
+    },
+    {
+      label: "lease 만료",
+      value: data.summary.expiredLeaseCount,
+      description: "작업권이 만료된 처리",
+      tone: data.summary.expiredLeaseCount > 0 ? "danger" : "neutral",
+    },
+    {
+      label: "상태 카드 문제",
+      value: data.summary.desiredStateIssues,
+      description: "revision 또는 갱신 오류",
+      tone: data.summary.desiredStateIssues > 0 ? "danger" : "neutral",
+    },
+    {
+      label: "봇 위임 문제",
+      value: data.summary.delegatedWorkflowIssues,
+      description: "DM 또는 게시 지연",
+      tone: data.summary.delegatedWorkflowIssues > 0 ? "danger" : "neutral",
+    },
+    {
+      label: "누적 실제 발송",
+      value: data.summary.sentCount,
+      description: "Discord가 받은 신규 기록",
+      tone: "success",
+    },
+    {
+      label: "누적 정책 생략",
+      value: data.summary.skippedCount,
+      description: "정책에 따라 보내지 않은 기록",
+      tone: "muted",
+    },
+    {
+      label: "구형 처리 미분류",
+      value: data.summary.unclassifiedCount,
+      description: "결과 구분 이전의 과거 기록",
+      tone: "muted",
+    },
+  ];
 
   return (
     <main className={styles.root}>
       <Box variant="gold" className={styles.overview}>
-        <div>
+        <div className={styles.overview__copy}>
           <Eyebrow tone="gold">DISCORD · WORKER · OUTBOX</Eyebrow>
           <h2>알림과 봇 위임 상태를 한곳에서 확인합니다.</h2>
           <p>
@@ -63,7 +167,10 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
           </p>
         </div>
         <div className={styles.overview__actions}>
-          <HealthTag health={data.overallHealth} />
+          <div className={styles.overview__health}>
+            <HealthTag health={data.overallHealth} />
+            <span>{overallMessage}</span>
+          </div>
           <Button
             size="sm"
             variant="default"
@@ -82,50 +189,25 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
       ) : null}
 
       <section className={styles.kpiGrid} aria-label="Discord 연동 요약">
-        <Box className={styles.kpi}>
-          <span>즉시 처리 대기</span>
-          <strong>{countLabel(data.summary.dueCount)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>예약 대기</span>
-          <strong>{countLabel(data.summary.scheduledCount)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>DEAD</span>
-          <strong>{countLabel(data.summary.deadCount)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>lease 만료</span>
-          <strong>{countLabel(data.summary.expiredLeaseCount)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>상태 카드 문제</span>
-          <strong>{countLabel(data.summary.desiredStateIssues)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>봇 위임 문제</span>
-          <strong>{countLabel(data.summary.delegatedWorkflowIssues)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>누적 실제 발송</span>
-          <strong>{countLabel(data.summary.sentCount)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>누적 정책 생략</span>
-          <strong>{countLabel(data.summary.skippedCount)}</strong>
-        </Box>
-        <Box className={styles.kpi}>
-          <span>구형 처리 미분류</span>
-          <strong>{countLabel(data.summary.unclassifiedCount)}</strong>
-        </Box>
+        {summaryMetrics.map((metric) => (
+          <SummaryMetric key={metric.label} {...metric} />
+        ))}
       </section>
 
       <section className={styles.section}>
-        <PanelTitle right={dateTime(data.worker.lastSeenAt)}>Worker heartbeat</PanelTitle>
+        <PanelTitle
+          className={styles.sectionTitle}
+          right={dateTime(data.worker.lastSeenAt)}
+        >
+          Worker heartbeat
+        </PanelTitle>
         <Box className={styles.workerPanel}>
           <div className={styles.workerPanel__status}>
             <HealthTag health={data.worker.health} />
-            <span>30초 주기의 active worker 상태 기록</span>
+            <div>
+              <strong>Worker {HEALTH_LABEL[data.worker.health]}</strong>
+              <span>30초 주기의 active worker 상태 기록</span>
+            </div>
           </div>
           <dl className={styles.definitionList}>
             <div>
@@ -158,45 +240,47 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
       </section>
 
       <section className={styles.section}>
-        <PanelTitle right={`${data.outbox.length}종`}>Integration outbox</PanelTitle>
+        <PanelTitle className={styles.sectionTitle} right={`${data.outbox.length}종`}>
+          Integration outbox
+        </PanelTitle>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>종류 / 채널</th>
-                <th>상태</th>
-                <th>즉시 대기</th>
-                <th>예약</th>
-                <th>처리 중</th>
-                <th>lease 만료</th>
-                <th>재시도</th>
-                <th>DEAD</th>
-                <th>누적 실제 발송</th>
-                <th>누적 정책 생략</th>
-                <th>구형 미분류</th>
-                <th>가장 오래된 대기</th>
-                <th>최근 처리 완료</th>
+                <th scope="col">종류 / 채널</th>
+                <th scope="col">상태</th>
+                <th scope="col">즉시 대기</th>
+                <th scope="col">예약</th>
+                <th scope="col">처리 중</th>
+                <th scope="col">lease 만료</th>
+                <th scope="col">재시도</th>
+                <th scope="col">DEAD</th>
+                <th scope="col">실제 발송</th>
+                <th scope="col">정책 생략</th>
+                <th scope="col">구형 미분류</th>
+                <th scope="col">가장 오래된 대기</th>
+                <th scope="col">최근 처리 완료</th>
               </tr>
             </thead>
             <tbody>
               {data.outbox.map((item) => (
-                <tr key={item.kind}>
-                  <td>
+                <tr key={item.kind} data-health={item.health.toLowerCase()}>
+                  <td className={styles.table__kind}>
                     <strong>{item.kind}</strong>
                     <small>{item.channel} · worker {item.enabledByWorker === null ? "미확인" : item.enabledByWorker ? "활성" : "누락"}</small>
                   </td>
-                  <td><HealthTag health={item.health} /></td>
-                  <td>{countLabel(item.dueCount)}</td>
-                  <td>{countLabel(item.scheduledCount)}</td>
-                  <td>{countLabel(item.processingCount)}</td>
-                  <td>{countLabel(item.expiredLeaseCount)}</td>
-                  <td>{countLabel(item.retryingCount)}</td>
-                  <td>{countLabel(item.deadCount)}</td>
-                  <td>{countLabel(item.sentCount)}</td>
-                  <td>{countLabel(item.skippedCount)}</td>
-                  <td>{countLabel(item.unclassifiedCount)}</td>
-                  <td>{dateTime(item.oldestDueAt)}</td>
-                  <td>{dateTime(item.lastDeliveredAt)}</td>
+                  <td className={styles.table__status}><HealthTag health={item.health} /></td>
+                  <CountCell value={item.dueCount} alert />
+                  <CountCell value={item.scheduledCount} />
+                  <CountCell value={item.processingCount} />
+                  <CountCell value={item.expiredLeaseCount} alert />
+                  <CountCell value={item.retryingCount} alert />
+                  <CountCell value={item.deadCount} alert />
+                  <CountCell value={item.sentCount} />
+                  <CountCell value={item.skippedCount} />
+                  <CountCell value={item.unclassifiedCount} />
+                  <td className={styles.table__date}>{dateTime(item.oldestDueAt)}</td>
+                  <td className={styles.table__date}>{dateTime(item.lastDeliveredAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -209,7 +293,7 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
 
       <div className={styles.twoColumn}>
         <section className={styles.section}>
-          <PanelTitle>Discord 상태 카드</PanelTitle>
+          <PanelTitle className={styles.sectionTitle}>Discord 상태 카드</PanelTitle>
           <div className={styles.cardList}>
             {data.desiredStates.map((item) => (
               <Box key={item.key} className={styles.statusCard}>
@@ -227,7 +311,7 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
         </section>
 
         <section className={styles.section}>
-          <PanelTitle>봇 위임 흐름</PanelTitle>
+          <PanelTitle className={styles.sectionTitle}>봇 위임 흐름</PanelTitle>
           <div className={styles.cardList}>
             {data.delegatedWorkflows.map((item) => (
               <Box key={item.key} className={styles.statusCard}>
@@ -245,7 +329,9 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
       </div>
 
       <section className={styles.section}>
-        <PanelTitle right="Dokploy worker 소유">예약 작업</PanelTitle>
+        <PanelTitle className={styles.sectionTitle} right="Dokploy worker 소유">
+          예약 작업
+        </PanelTitle>
         <div className={styles.jobGrid}>
           {data.scheduledJobs.map((job) => (
             <Box key={job.jobName} className={styles.jobCard}>
