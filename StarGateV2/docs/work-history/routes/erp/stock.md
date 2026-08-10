@@ -30,3 +30,12 @@
 - 검증: core 테스트 10개, focused stock/shop 테스트 10개, worker 테스트 47개, shared-db build, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review
 - 관련 커밋: `eff30f76`
 - 후속 작업: 격리 replica-set용 `TEST_MONGODB_URI`가 없어 Mongo rollback/replay 통합 테스트 1개는 skip됐다. 라이브 활성화 후 첫 자동 tick에서 STM history와 demand 원장을 재조회해야 한다.
+
+## 2026-08-10 · 안정성 개선 · 정기 공시 단일 메시지 교체
+
+- 네 장으로 나뉘던 정기 시세 공시를 한 Discord 메시지의 네 embed로 묶어 같은 회차가 채널에 흩어지지 않게 했다.
+- 웹은 공시 desired-state만 기록하고 worker가 새 메시지를 활성화한 뒤 이전 메시지를 정리해 교체 중 공백을 방지한다.
+- Discord의 embed·field·전체 6,000자 제한을 발송 직전에 적용하고, 줄어든 내용의 수를 메시지에 표시한다.
+- 검증: 주식 공시 집중 테스트 포함 웹 41건, worker 71건, 웹 `typecheck`·전체 `lint`, 엄격 코드 리뷰
+- 관련 커밋: `62c0b969`
+- 운영 경계: 라이브 시세 tick·주가·공시 메시지는 변경하지 않았다.

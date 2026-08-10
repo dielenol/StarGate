@@ -30,3 +30,11 @@
 - 검증: 거래·발주 계약 테스트 16건, worker 62건, 웹 `typecheck`·`lint`·production build, critical risk review
 - 관련 커밋: `45944a0c`
 - 운영 경계: 라이브 거래 생성·수정·확정·취소와 Discord DM은 실행하지 않았다.
+
+## 2026-08-10 · 안정성 개선 · 거래 DM 전달 결과 분리
+
+- 거래 DM을 실제 발송과 비활성 사용자·Discord 미연결·수신 거부에 따른 정책상 생략으로 구분해, 처리 완료가 곧 발송 성공으로 오인되지 않게 했다.
+- 실제 전송의 Discord message ID는 운영 DB에만 저장하고 관리자 API와 화면에는 누적 건수만 노출한다.
+- 검증: 거래 DM payload·skip 회귀 테스트 포함 worker 71건, 웹 `typecheck`·전체 `lint`, 관리자 DTO 비노출 계약 테스트
+- 관련 커밋: `62c0b969`
+- 운영 경계: 라이브 거래와 Discord DM은 실행하지 않았다.
