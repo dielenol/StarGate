@@ -1,6 +1,6 @@
 # 제노 관계형 샘플 연구소 v2 실행 원장
 
-- 문서 상태: `IN PROGRESS`
+- 문서 상태: `VERIFIED`
 - 최초 작성: 2026-08-10 (Asia/Seoul)
 - 대상 route: `/erp/research`
 - 작업 lane / risk: `wide / critical`
@@ -172,7 +172,7 @@
 | 1. skill·에셋·catalog 후보 | VERIFIED | 표정 workflow, 제노 14종, 왕관 균사편 | skill validator, 두 contact sheet 육안 QA, 14종 alpha·규격 QA, catalog dry-run |
 | 2. 도메인·DB·worker·알림 | VERIFIED | registry, collections, indexes, operations, consumer/outbox | shared/worker build, 85개 worker test, lease·idempotency 계약 검증 |
 | 3. API·Query·UI | VERIFIED | 일반화 API, hooks, VN 연구소 | typecheck, lint, production build, 관련 계약·대화 test |
-| 4. 브라우저·리뷰·이력 | IN PROGRESS | responsive QA, risk review, work history | GM desktop/mobile QA와 P0~P3 없음 확인. 커밋·이력 기록 진행 중 |
+| 4. 브라우저·리뷰·이력 | VERIFIED | responsive QA, risk review, work history | GM desktop/mobile QA, P0~P3 없음, 구현 커밋과 페이지 이력 기록 |
 
 ## 변경·검증 로그
 
@@ -256,3 +256,8 @@
 4. 승인된 lore rebuild 뒤 catalog graph entity가 candidate 상태인지 postflight.
 5. worker flag를 먼저 켜고 fresh ready heartbeat를 확인한 뒤 Web mutation flag 활성화. 비활성화는 Web flag부터 내린다.
 6. 과학자·비과학자·GM·guest와 소유권 이전 claim/cancel을 격리 DB에서 검증.
+
+## 구현 커밋
+
+- `ff983be6` · `feat(all): 관계형 제노 샘플 연구소를 구현한다`
+- 라이브 mutation·index 생성·seed·lore rebuild·worker 활성화는 이 커밋에 포함되지 않았다.

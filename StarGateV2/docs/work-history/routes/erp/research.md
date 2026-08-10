@@ -17,3 +17,21 @@
 - 검증: 집중 테스트 12건 통과, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 브라우저 데스크톱·390×844에서 가로 넘침·콘솔 오류 없음 확인
 - 관련 커밋: `a6cf284b`
 - 후속 작업: 다른 ZULU 레시피의 투입 개체·산출물·비용은 확정 전까지 미등록이며, 라이브 제출·추출 mutation은 실행하지 않았다.
+
+## 2026-08-10 · 보안 개선 · 게스트 연구 원장 투영
+
+- 게스트는 샘플 연구선의 공개 구조와 상태만 볼 수 있고 대표 캐릭터·잔액·공용 재고 수량·제출자·작업 ID·FIFO 대기열·시각·제노 관계 데이터는 받지 않는다.
+- API와 서버 컴포넌트 초기 데이터에 같은 공개 투영을 적용하고 mutation capability를 항상 비활성화했다.
+- 검증: 게스트 공개 경계 집중 테스트 26건, 실제 Auth.js 게스트 API의 작업 원장·공용 수량 비노출과 RSC `200`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `ff983be6`
+- 운영 경계: 라이브 연구·크레딧·인벤토리·관계 데이터는 변경하지 않았다.
+
+## 2026-08-10 · 기능 고도화 · 제노 관계형 샘플 연구소 v2
+
+- 최초 제출 주체를 과학자로 교정하고 ZULU-0028, ZULU-0040, 뒤집어진 양말의 독립 24시간 연구선과 6시간 FIFO 반복 생산을 추가했다. 반복 요청은 500 CR을 즉시 차감하며 공용 자동 지급 또는 개인 수령·6시간 미수령 공용 전환을 선택한다.
+- 숫자를 노출하지 않는 9단계 관계 상태, 직군·직급·세션 관계별 제노 대사, 고정 선택지와 서버 전용 Ollama 자유대화를 갖춘 VN형 스테이지로 화면을 전면 개편했다.
+- desktop 2열과 390×844 mobile 순서·sticky 액션, 실제 서버 시각 countdown, 세 연구선 탭·FIFO·수령함·관계 초상과 아이콘을 연결했다.
+- 크레딧·인벤토리·환불·작업 전이는 transaction·CAS·멱등 키로 보호하고, worker lease·알림 outbox·8회 실패 안전정지와 Web/worker 이중 활성화 gate를 추가했다.
+- 검증: `pnpm typecheck`, `pnpm lint`, `pnpm build`, dialogue 22/22, worker 85/85, 연구·관계·Ollama·lore 집중 테스트, GM desktop·390×844 및 플레이어 6계정 read-only 브라우저 확인, critical risk review P0~P3 없음
+- 관련 커밋: `913dfc30`
+- 후속 작업: replica-set Mongo 동시성 7건과 과학자·비과학자 계정 분기 QA는 환경 부재로 남았다. 운영 index·왕관 균사편 seed·lore rebuild·worker/Web flag 전환은 별도 승인 전 실행하지 않는다.
