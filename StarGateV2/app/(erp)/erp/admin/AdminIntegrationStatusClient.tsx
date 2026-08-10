@@ -106,6 +106,18 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
           <span>봇 위임 문제</span>
           <strong>{countLabel(data.summary.delegatedWorkflowIssues)}</strong>
         </Box>
+        <Box className={styles.kpi}>
+          <span>누적 실제 발송</span>
+          <strong>{countLabel(data.summary.sentCount)}</strong>
+        </Box>
+        <Box className={styles.kpi}>
+          <span>누적 정책 생략</span>
+          <strong>{countLabel(data.summary.skippedCount)}</strong>
+        </Box>
+        <Box className={styles.kpi}>
+          <span>구형 처리 미분류</span>
+          <strong>{countLabel(data.summary.unclassifiedCount)}</strong>
+        </Box>
       </section>
 
       <section className={styles.section}>
@@ -117,8 +129,23 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
           </div>
           <dl className={styles.definitionList}>
             <div>
+              <dt>runtime mode</dt>
+              <dd>
+                {data.worker.mode === "active"
+                  ? "active · 실제 전달"
+                  : data.worker.mode === "shadow"
+                    ? "shadow · 관찰 전용"
+                    : "확인되지 않음"}
+              </dd>
+            </div>
+            <div>
               <dt>domain consumers</dt>
-              <dd>{data.worker.enabledConsumers.join(", ") || "확인되지 않음"}</dd>
+              <dd>
+                {data.worker.enabledConsumers.length} / {data.worker.expectedConsumers.length} 활성
+                {data.worker.missingConsumers.length > 0
+                  ? ` · 누락 ${data.worker.missingConsumers.join(", ")}`
+                  : " · 전체 연결"}
+              </dd>
             </div>
             <div>
               <dt>outbox kinds</dt>
@@ -144,6 +171,9 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
                 <th>lease 만료</th>
                 <th>재시도</th>
                 <th>DEAD</th>
+                <th>누적 실제 발송</th>
+                <th>누적 정책 생략</th>
+                <th>구형 미분류</th>
                 <th>가장 오래된 대기</th>
                 <th>최근 처리 완료</th>
               </tr>
@@ -162,6 +192,9 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
                   <td>{countLabel(item.expiredLeaseCount)}</td>
                   <td>{countLabel(item.retryingCount)}</td>
                   <td>{countLabel(item.deadCount)}</td>
+                  <td>{countLabel(item.sentCount)}</td>
+                  <td>{countLabel(item.skippedCount)}</td>
+                  <td>{countLabel(item.unclassifiedCount)}</td>
                   <td>{dateTime(item.oldestDueAt)}</td>
                   <td>{dateTime(item.lastDeliveredAt)}</td>
                 </tr>
@@ -170,7 +203,7 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
           </table>
         </div>
         <p className={styles.caption}>
-          “처리 완료”는 실제 발송뿐 아니라 비공개·연결 해제 등 정책상 생략도 포함할 수 있습니다.
+          신규 처리 완료는 실제 발송과 정책상 생략을 구분합니다. “구형 미분류”는 이 구분을 저장하기 전에 처리된 과거 기록입니다.
         </p>
       </section>
 

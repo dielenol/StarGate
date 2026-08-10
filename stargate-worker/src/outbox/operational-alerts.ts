@@ -4,9 +4,25 @@ import { sendDiscordWebhook } from "./discord-client.js";
 
 const DEFAULT_COOLDOWN_MS = 30 * 60_000;
 
-interface IncidentState {
+export interface OperationalIncidentState {
   fingerprint: string;
-  lastSentAt: number;
+  severity: "WARNING" | "CRITICAL";
+  openedAt: Date;
+  lastSentAt: Date;
+}
+
+export interface OperationalIncidentStore {
+  find(consumer: string): Promise<OperationalIncidentState | null>;
+  record(input: {
+    consumer: string;
+    fingerprint: string;
+    severity: "WARNING" | "CRITICAL";
+    sentAt: Date;
+  }): Promise<void>;
+  resolve(input: {
+    consumer: string;
+    fingerprint: string;
+  }): Promise<boolean>;
 }
 
 export interface OperationalAlertReporter {
@@ -35,11 +51,10 @@ function payload(input: {
 }
 
 export class DiscordOperationalAlertReporter implements OperationalAlertReporter {
-  readonly #incidents = new Map<string, IncidentState>();
-
   constructor(
     private readonly webhookUrl: string,
     private readonly logger: WorkerLogger,
+    private readonly incidents: OperationalIncidentStore,
     private readonly options: {
       fetchImpl?: typeof fetch;
       cooldownMs?: number;
@@ -49,7 +64,7 @@ export class DiscordOperationalAlertReporter implements OperationalAlertReporter
 
   async observe(consumer: string, result: ConsumerTickResult): Promise<void> {
     const alert = result.operationalAlert ?? null;
-    const previous = this.#incidents.get(consumer);
+    const previous = await this.incidents.find(consumer);
     if (!alert) {
       if (!previous) return;
       if (result.operationalRecovery !== true) return;
@@ -63,7 +78,10 @@ export class DiscordOperationalAlertReporter implements OperationalAlertReporter
         }),
         this.options.fetchImpl,
       );
-      this.#incidents.delete(consumer);
+      await this.incidents.resolve({
+        consumer,
+        fingerprint: previous.fingerprint,
+      });
       return;
     }
 
@@ -72,7 +90,7 @@ export class DiscordOperationalAlertReporter implements OperationalAlertReporter
     if (
       previous &&
       previous.fingerprint === alert.fingerprint &&
-      now - previous.lastSentAt < cooldownMs
+      now - previous.lastSentAt.getTime() < cooldownMs
     ) {
       return;
     }
@@ -89,9 +107,11 @@ export class DiscordOperationalAlertReporter implements OperationalAlertReporter
       }),
       this.options.fetchImpl,
     );
-    this.#incidents.set(consumer, {
+    await this.incidents.record({
+      consumer,
       fingerprint: alert.fingerprint,
-      lastSentAt: now,
+      severity: alert.severity,
+      sentAt: new Date(now),
     });
     this.logger.warn("operational_alert_sent", {
       consumer,

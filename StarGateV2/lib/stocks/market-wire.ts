@@ -13,7 +13,6 @@ import {
   buildStockMarketIndexSnapshot,
   formatIndexValue,
 } from "@/lib/stocks/market-index";
-import type { DiscordMessageBatchSyncResult } from "@/lib/discord/message-batch-sync";
 
 type DiscordEmbedField = {
   name: string;
@@ -40,9 +39,7 @@ export type DiscordPayload = {
 };
 
 type MarketWireStatus =
-  | "sent"
   | "queued"
-  | "skipped-no-webhook"
   | "skipped-no-change"
   | "failed";
 
@@ -134,30 +131,6 @@ const MARKET_WIRE_OFFICERS: Record<number, MarketWireOfficer> = {
     linkLine: "주말 관제 기록은 요약 공시입니다. 자세한 시세는 거래소 화면을 참조하십시오.",
   },
 };
-
-function getWebhookUrl(): string | undefined {
-  return process.env.DISCORD_WEBHOOK_STOCK_URL;
-}
-
-function requireWebhookUrl(): string {
-  const webhookUrl = getWebhookUrl();
-  if (!webhookUrl) {
-    throw new Error(
-      "DISCORD_WEBHOOK_STOCK_URL 환경변수가 설정되지 않았습니다.",
-    );
-  }
-  return webhookUrl;
-}
-
-function buildWebhookMessageUrl(
-  webhookUrl: string,
-  messageId: string,
-): string {
-  const url = new URL(webhookUrl);
-  url.pathname = `${url.pathname.replace(/\/+$/, "")}/messages/${encodeURIComponent(messageId)}`;
-  url.search = "";
-  return url.toString();
-}
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -438,16 +411,6 @@ function buildRoutineLedgerEmbeds(input: {
   return embeds;
 }
 
-function splitPayloadIntoSingleEmbedMessages(
-  payload: DiscordPayload,
-): DiscordPayload[] {
-  return payload.embeds.map((embed, index) => ({
-    ...payload,
-    content: index === 0 ? payload.content : undefined,
-    embeds: [embed],
-  }));
-}
-
 function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPayload | null {
   const changed = summary.results.filter((result) => result.status !== "skipped");
   if (changed.length === 0) return null;
@@ -493,63 +456,12 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
   };
 }
 
-export async function createScheduledStockMarketWireMessage(
-  payload: DiscordPayload,
-): Promise<string> {
-  const url = new URL(requireWebhookUrl());
-  url.searchParams.set("wait", "true");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Discord 주식 공시 생성 실패 (${response.status}): ${errorText}`,
-    );
-  }
-  const message = (await response.json()) as { id?: unknown };
-  if (typeof message.id !== "string" || message.id.length === 0) {
-    throw new Error("Discord 주식 공시 생성 응답에 message id가 없습니다.");
-  }
-  return message.id;
-}
-
-export async function deleteScheduledStockMarketWireMessage(
-  messageId: string,
-): Promise<void> {
-  const response = await fetch(
-    buildWebhookMessageUrl(requireWebhookUrl(), messageId),
-    {
-      method: "DELETE",
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
-  if (response.status === 404 || response.ok) return;
-  const errorText = await response.text();
-  throw new Error(
-    `Discord 주식 공시 삭제 실패 (${response.status}): ${errorText}`,
-  );
-}
-
-export async function syncScheduledStockMarketWireMessages(): Promise<DiscordMessageBatchSyncResult> {
-  const { syncScheduledStockMarketWireMessages: sync } = await import(
-    "@/lib/notifications/stock-market-wire-discord"
-  );
-  return sync();
-}
-
 interface ScheduledStockMarketWireDependencies {
   request(args: {
     date: string;
     sourceRevision?: string;
     payloads: DiscordPayload[];
   }): Promise<void>;
-  sync(): Promise<DiscordMessageBatchSyncResult>;
   rebuild?(summary: ScheduledStockTickSummary): Promise<ScheduledStockTickSummary>;
 }
 
@@ -560,7 +472,6 @@ const scheduledStockMarketWireDependencies: ScheduledStockMarketWireDependencies
     );
     await requestScheduledStockMarketWireSync(args);
   },
-  sync: syncScheduledStockMarketWireMessages,
   rebuild: async (summary) => {
     const { rebuildScheduledStockTickSummary } = await import(
       "@/lib/stocks/scheduled-tick"
@@ -574,26 +485,7 @@ export async function notifyScheduledStockMarketWire(
   dependencies: ScheduledStockMarketWireDependencies = scheduledStockMarketWireDependencies,
 ): Promise<MarketWireResult> {
   if (summary.results.every((result) => result.status === "skipped")) {
-    if (getWebhookUrl()) {
-      try {
-        const recovery = await dependencies.sync();
-        if (recovery === "failed" || recovery === "pass_limit") {
-          return {
-            status: "failed",
-            error: `Discord 정기 공시 교체 복구 실패 (${recovery})`,
-          };
-        }
-      } catch (error) {
-        return { status: "failed", error: getErrorMessage(error) };
-      }
-    }
     return { status: "skipped-no-change" };
-  }
-  if (!getWebhookUrl()) {
-    console.warn(
-      "[stock-market-wire] DISCORD_WEBHOOK_STOCK_URL 미설정 — silent skip",
-    );
-    return { status: "skipped-no-webhook" };
   }
 
   try {
@@ -602,30 +494,17 @@ export async function notifyScheduledStockMarketWire(
       : summary;
     const payload = buildScheduledPayload(canonicalSummary);
     if (!payload) return { status: "skipped-no-change" };
-    const payloads = splitPayloadIntoSingleEmbedMessages(payload);
+    const payloads = [payload];
     await dependencies.request({
       date: summary.date,
       sourceRevision: canonicalSummary.sourceRevision,
       payloads,
     });
-    const result = await dependencies.sync();
-    if (result === "synced") {
-      return {
-        status: "sent",
-        embedCount: payload.embeds.length,
-        messageCount: payloads.length,
-      };
-    }
-    if (result === "idle") {
-      return {
-        status: "queued",
-        embedCount: payload.embeds.length,
-        messageCount: payloads.length,
-      };
-    }
-    const error = `Discord 정기 공시 동기화 실패 (${result})`;
-    console.warn(`[stock-market-wire] ${error}`);
-    return { status: "failed", error };
+    return {
+      status: "queued",
+      embedCount: payload.embeds.length,
+      messageCount: payloads.length,
+    };
   } catch (error) {
     const message = getErrorMessage(error);
     console.warn("[stock-market-wire] 정기 공시 상태 요청 실패:", message);

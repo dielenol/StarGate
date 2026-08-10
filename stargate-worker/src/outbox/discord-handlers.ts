@@ -39,6 +39,57 @@ const SHOP_GROUP_LABELS: Record<string, string> = {
   LUXURY: "기호품",
   RARE: "희귀 물품",
 };
+const ACTOR_KIND_LABELS: Record<string, string> = {
+  PLAYER: "플레이어",
+  GM: "GM",
+  BOT: "봇",
+  SYSTEM: "시스템",
+  SERVICE: "서비스",
+};
+const WORKFLOW_STAGE_LABELS: Record<string, string> = {
+  REQUESTED: "📝 접수",
+  IN_REVIEW: "🔎 검토 중",
+  QUOTED: "📄 견적 발행",
+  OPENED: "📬 시작",
+  OFFER_UPDATED: "✏️ 제안 변경",
+  PARTICIPANT_CONFIRMED: "🤝 참여자 확인",
+  IN_PROGRESS: "🛠️ 작업 중",
+  READY: "📦 수령 가능",
+  STARTED: "🚀 연구 시작",
+  RUSHED: "⚡ 연구 가속",
+  APPLIED: "✅ 연구 적용",
+  FULFILLED: "📦 입고 완료",
+  ADJUSTED: "📊 잔액 조정",
+  SET: "🎯 잔액 설정",
+  APPROVED: "✅ 승인",
+  CLOSED_APPROVED: "✅ 가결 마감",
+  COMPLETED: "🎉 완료",
+  DECLINED: "⛔ 견적 거절",
+  REJECTED: "⛔ 반려",
+  CLOSED_REJECTED: "⛔ 부결 마감",
+  CANCELLED: "🚫 취소",
+};
+const CHARACTER_FIELD_LABELS: Record<string, string> = {
+  name: "이름",
+  codename: "코드네임",
+  type: "캐릭터 유형",
+  tier: "등급",
+  agentLevel: "요원 등급",
+  department: "부서",
+  faction: "소속 세력",
+  institution: "소속 기관",
+  isPublic: "공개 여부",
+  previewImage: "미리보기 이미지",
+  avatar: "아바타",
+  lore: "설정",
+  play: "플레이 정보",
+  quote: "대표 대사",
+  description: "설명",
+  personality: "성격",
+  background: "배경",
+  abilities: "능력",
+  equipment: "장비",
+};
 
 type Environment = NodeJS.ProcessEnv;
 
@@ -106,6 +157,26 @@ function displayValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+function characterFieldLabel(value: unknown): string {
+  const path = text(value, "changes.field", FIELD_NAME_MAX);
+  return path
+    .split(".")
+    .map((segment) => CHARACTER_FIELD_LABELS[segment] ?? sanitize(segment))
+    .join(" · ");
+}
+
+function workflowStageLabel(stage: string): string {
+  return WORKFLOW_STAGE_LABELS[stage] ?? `ℹ️ ${sanitize(stage)}`;
+}
+
+function workflowTrackingCode(workflowId: string): string {
+  return createHash("sha256")
+    .update(workflowId)
+    .digest("hex")
+    .slice(0, 8)
+    .toUpperCase();
 }
 
 function isoTimestamp(value: unknown): string {
@@ -260,7 +331,7 @@ function buildCharacterEdit(
   for (const item of payload.changes.slice(0, 10)) {
     const change = record(item, "changes");
     fields.push({
-      name: text(change.field, "changes.field", FIELD_NAME_MAX),
+      name: characterFieldLabel(change.field),
       value: `${displayValue(change.before)}\n→\n${displayValue(change.after)}`.slice(
         0,
         FIELD_VALUE_MAX,
@@ -315,7 +386,7 @@ function buildWorkshop(
     isoTimestamp(payload.timestamp),
     {
       url: `${siteBaseUrl(env)}/erp/characters/${encodeURIComponent(characterId)}`,
-      description: `${text(character.name, "character.name")} 캐릭터 편집 검토 필요`,
+      description: `${text(character.name, "character.name")}의 공방 요청입니다. 접수 내용과 처리 가능 여부를 검토해 주세요.`,
       color: 0x5ea3c5,
       fields,
     },
@@ -562,11 +633,14 @@ function buildWorkflowStatus(
     throw new Error(`지원하지 않는 workflow입니다: ${workflow}`);
   }
   const stage = text(payload.stage, "stage", 80);
+  const stageLabel = workflowStageLabel(stage);
+  const actorKind = text(actor.kind, "actor.kind", 20);
+  const actorKindLabel = ACTOR_KIND_LABELS[actorKind] ?? sanitize(actorKind);
   const fields: DiscordWebhookPayload["embeds"][number]["fields"] = [
-    { name: "단계", value: stage, inline: true },
+    { name: "단계", value: stageLabel, inline: true },
     {
       name: "처리 주체",
-      value: `${text(actor.displayName, "actor.displayName", 100)} · ${text(actor.kind, "actor.kind", 20)}`,
+      value: `${text(actor.displayName, "actor.displayName", 100)} · ${actorKindLabel}`,
       inline: true,
     },
     { name: "진행 내용", value: text(payload.summary, "summary") },
@@ -600,11 +674,14 @@ function buildWorkflowStatus(
     : undefined;
   const revision =
     typeof payload.revision === "number" && Number.isSafeInteger(payload.revision)
-      ? ` · revision ${payload.revision}`
+      ? ` · 개정 ${payload.revision}`
       : "";
+  const trackingCode = workflowTrackingCode(
+    text(payload.workflowId, "workflowId", 200),
+  );
   return basePayload(
     "StarGate Workflow Watch",
-    `${workflowLabel} 진행: ${stage}`,
+    `${workflowLabel} 진행 · ${stageLabel}`,
     isoTimestamp(payload.occurredAt),
     {
       ...(url ? { url } : {}),
@@ -621,7 +698,7 @@ function buildWorkflowStatus(
           ? 0x2fbf71
           : 0x5ea3c5,
       fields,
-      footer: `${text(payload.workflowId, "workflowId", 200)}${revision}`,
+      footer: `추적 ${trackingCode}${revision}`,
     },
   );
 }
@@ -773,13 +850,11 @@ export function createDiscordIntegrationOutboxHandlers(
           }
           const userId = text(event.payload.userId, "userId", 200);
           const user = await findUser(userId);
-          if (
-            !user ||
-            user.status !== "ACTIVE" ||
-            !user.discordId ||
-            !SNOWFLAKE.test(user.discordId)
-          ) {
-            return;
+          if (!user || user.status !== "ACTIVE") {
+            return { outcome: "SKIPPED", reason: "RECIPIENT_INACTIVE" };
+          }
+          if (!user.discordId || !SNOWFLAKE.test(user.discordId)) {
+            return { outcome: "SKIPPED", reason: "RECIPIENT_UNLINKED" };
           }
           const nonce = createHash("sha256")
             .update(
@@ -788,7 +863,7 @@ export function createDiscordIntegrationOutboxHandlers(
             .digest("hex")
             .slice(0, 25);
           try {
-            await sendDiscordDirectMessage(
+            const externalMessageId = await sendDiscordDirectMessage(
               {
                 recipientId: user.discordId,
                 content: tradeDmContent(event.payload, env),
@@ -797,9 +872,13 @@ export function createDiscordIntegrationOutboxHandlers(
               },
               fetchImpl,
             );
+            return { outcome: "SENT", externalMessageId };
           } catch (error) {
             if (error instanceof DiscordDeliveryError && error.status === 403) {
-              return;
+              return {
+                outcome: "SKIPPED",
+                reason: "RECIPIENT_UNREACHABLE",
+              };
             }
             throw error;
           }
@@ -822,12 +901,15 @@ export function createDiscordIntegrationOutboxHandlers(
           const currentCharacter = await findCharacter(
             text(character.id, "character.id", 200),
           );
-          if (!currentCharacter || currentCharacter.isPublic !== true) return;
-          await sendDiscordWebhook(
+          if (!currentCharacter || currentCharacter.isPublic !== true) {
+            return { outcome: "SKIPPED", reason: "NOT_PUBLIC" };
+          }
+          const externalMessageId = await sendDiscordWebhook(
             webhookUrl,
             buildMrBeastLotteryWinner(event.payload, env),
             fetchImpl,
           );
+          return { outcome: "SENT", externalMessageId };
         },
       });
       continue;
@@ -843,12 +925,15 @@ export function createDiscordIntegrationOutboxHandlers(
               `지원하지 않는 ${kind} payload version입니다: ${event.version}`,
             );
           }
-          if (!(await workflowEventIsCurrent(event.payload))) return;
-          await sendDiscordWebhook(
+          if (!(await workflowEventIsCurrent(event.payload))) {
+            return { outcome: "SKIPPED", reason: "STALE" };
+          }
+          const externalMessageId = await sendDiscordWebhook(
             webhookUrl,
             buildWorkflowStatus(event.payload, env),
             fetchImpl,
           );
+          return { outcome: "SENT", externalMessageId };
         },
       });
       continue;
@@ -863,11 +948,12 @@ export function createDiscordIntegrationOutboxHandlers(
             `지원하지 않는 ${kind} payload version입니다: ${event.version}`,
           );
         }
-        await sendDiscordWebhook(
+        const externalMessageId = await sendDiscordWebhook(
           webhookUrl,
           buildWebhookPayload(event, env),
           fetchImpl,
         );
+        return { outcome: "SENT", externalMessageId };
       },
     });
   }

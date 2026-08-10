@@ -37,6 +37,11 @@ test("관리자 DTO는 outbox payload와 전달 secret·원본 오류를 노출�
     /\b(payload|dedupeKey|leaseToken|messageId|recipientId|lastError)\??:/,
   );
   assert.doesNotMatch(types, /webhookUrl|botToken|secret/i);
-  assert.match(client, /“처리 완료”는 실제 발송뿐 아니라/);
+  assert.match(types, /sentCount: number/);
+  assert.match(types, /skippedCount: number/);
+  assert.match(types, /unclassifiedCount: number/);
+  assert.match(types, /mode: "shadow" \| "active" \| null/);
+  assert.match(types, /missingConsumers: string\[\]/);
+  assert.match(client, /신규 처리 완료는 실제 발송과 정책상 생략을 구분/);
   assert.match(client, /이 화면은 읽기 전용입니다/);
 });

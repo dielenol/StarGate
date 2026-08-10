@@ -70,62 +70,6 @@ async function sendDiscordWebhook(payload: DiscordPayload, urlOverride?: string)
   }
 }
 
-function getEquipmentResearchWebhookUrl(): string {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_RESEARCH_URL;
-  if (!webhookUrl) {
-    throw new Error("DISCORD_WEBHOOK_RESEARCH_URL 환경변수가 설정되지 않았습니다.");
-  }
-  return webhookUrl;
-}
-
-function buildWebhookMessageUrl(webhookUrl: string, messageId: string): string {
-  const url = new URL(webhookUrl);
-  url.pathname = `${url.pathname.replace(/\/+$/, "")}/messages/${encodeURIComponent(messageId)}`;
-  url.search = "";
-  return url.toString();
-}
-
-export async function createEquipmentResearchDiscordCard(
-  payload: DiscordPayload,
-): Promise<string> {
-  const url = new URL(getEquipmentResearchWebhookUrl());
-  url.searchParams.set("wait", "true");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Discord 연구 카드 생성 실패 (${response.status}): ${errorText}`,
-    );
-  }
-  const message = (await response.json()) as { id?: unknown };
-  if (typeof message.id !== "string" || message.id.length === 0) {
-    throw new Error("Discord 연구 카드 생성 응답에 message id가 없습니다.");
-  }
-  return message.id;
-}
-
-export async function deleteEquipmentResearchDiscordCard(
-  messageId: string,
-): Promise<void> {
-  const response = await fetch(
-    buildWebhookMessageUrl(getEquipmentResearchWebhookUrl(), messageId),
-    {
-      method: "DELETE",
-      cache: "no-store",
-    },
-  );
-  if (response.status === 404 || response.ok) return;
-  const errorText = await response.text();
-  throw new Error(
-    `Discord 연구 카드 삭제 실패 (${response.status}): ${errorText}`,
-  );
-}
-
 export async function notifyApplySubmission(input: ApplyFormInput) {
   // 가입 신청 전용 임베드 포맷입니다.
   const payload = buildPayload("가입 신청 접수", DISCORD_COLORS.apply, [
@@ -200,14 +144,6 @@ const SHOP_GROUP_LABELS: Record<ShopRestockWebhookItem["pageGroup"], string> = {
 };
 const SHOP_WEB_URL = "https://www.ordonet.co.kr/erp/shop";
 const SHOP_FIELDS_PER_PAYLOAD = 5;
-
-function getShopWebhookUrl(): string {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_SHOP_URL;
-  if (!webhookUrl) {
-    throw new Error("DISCORD_WEBHOOK_SHOP_URL 환경변수가 설정되지 않았습니다.");
-  }
-  return webhookUrl;
-}
 
 function formatShopRestockFields(
   items: ShopRestockWebhookItem[],
@@ -328,47 +264,4 @@ export function buildShopRestockDiscordPayloads(
       ],
     };
   });
-}
-
-export async function createDailyShopRestockDiscordMessage(
-  payload: DiscordPayload,
-): Promise<string> {
-  const url = new URL(getShopWebhookUrl());
-  url.searchParams.set("wait", "true");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Discord 편의점 입고 공지 생성 실패 (${response.status}): ${errorText}`,
-    );
-  }
-  const message = (await response.json()) as { id?: unknown };
-  if (typeof message.id !== "string" || message.id.length === 0) {
-    throw new Error("Discord 편의점 입고 공지 응답에 message id가 없습니다.");
-  }
-  return message.id;
-}
-
-export async function deleteDailyShopRestockDiscordMessage(
-  messageId: string,
-): Promise<void> {
-  const response = await fetch(
-    buildWebhookMessageUrl(getShopWebhookUrl(), messageId),
-    {
-      method: "DELETE",
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
-  if (response.status === 404 || response.ok) return;
-  const errorText = await response.text();
-  throw new Error(
-    `Discord 편의점 입고 공지 삭제 실패 (${response.status}): ${errorText}`,
-  );
 }

@@ -52,6 +52,39 @@ test("consumer는 지원 목록만 중복 없이 opt-in한다", () => {
   );
 });
 
+test("active worker는 domain consumer 전체를 명시하지 않으면 기동을 거부한다", () => {
+  assert.deepEqual(
+    loadWorkerConfig({
+      ...validEnvironment,
+      WORKER_MODE: "active",
+      WORKER_CONSUMERS: "all",
+    }).enabledConsumers,
+    ["ameri-dm", "research-card", "shop-restock", "stock-market-wire"],
+  );
+  assert.throws(
+    () =>
+      loadWorkerConfig({
+        ...validEnvironment,
+        WORKER_MODE: "active",
+        WORKER_CONSUMERS: "research-card,shop-restock,stock-market-wire",
+      }),
+    /누락: ameri-dm/,
+  );
+  assert.deepEqual(
+    loadWorkerConfig({
+      ...validEnvironment,
+      WORKER_MODE: "active",
+      WORKER_CONSUMERS_ALLOW_PARTIAL: "true",
+      WORKER_CONSUMERS: "ameri-dm",
+    }).enabledConsumers,
+    ["ameri-dm"],
+  );
+  assert.throws(
+    () => loadWorkerConfig({ ...validEnvironment, WORKER_MODE: "active" }),
+    /WORKER_CONSUMERS=all/,
+  );
+});
+
 test("두 개 이상의 replica 설정은 거부한다", () => {
   assert.throws(
     () =>

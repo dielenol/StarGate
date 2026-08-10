@@ -1,24 +1,12 @@
-import { randomUUID } from "node:crypto";
-
 import {
-  acquireEquipmentResearchDiscordCardLease,
-  completeEquipmentResearchDiscordCardSync,
-  failEquipmentResearchDiscordCardSync,
   findEquipmentResearchProjectByKey,
   findTeamFundingPoolByKey,
-  isEquipmentResearchDiscordCardSyncComplete,
   listEquipmentResearchContributionsByProjectKey,
-  recordEquipmentResearchDiscordCardInflightMessage,
 } from "@/lib/db/equipment-research";
-import {
-  createEquipmentResearchDiscordCard,
-  deleteEquipmentResearchDiscordCard,
-} from "@/lib/discord";
 import {
   buildResearchDiscordCardPayload,
   type ResearchDiscordPayload,
 } from "@/lib/equipment-shop/research-discord-card";
-import { drainResearchDiscordCardSync } from "@/lib/equipment-shop/research-discord-sync";
 import { getEquipmentResearchNode } from "@/lib/equipment-shop/research";
 
 function getSiteBaseUrl(): string {
@@ -63,37 +51,4 @@ export async function buildCurrentResearchDiscordPayload(
     },
     process.env.DISCORD_WEBHOOK_RESEARCH_AVATAR_URL || undefined,
   );
-}
-
-export async function syncEquipmentResearchDiscordCard(
-  projectKey: string,
-): Promise<"synced" | "idle" | "failed" | "pass_limit"> {
-  return drainResearchDiscordCardSync(projectKey, {
-    newLeaseToken: randomUUID,
-    acquire: async (key, leaseToken) => {
-      const card = await acquireEquipmentResearchDiscordCardLease({
-        projectKey: key,
-        leaseToken,
-      });
-      return card
-        ? {
-            projectKey: card._id,
-            requestedRevision: card.requestedRevision,
-            ...(card.messageId ? { messageId: card.messageId } : {}),
-            ...(card.cleanupMessageId
-              ? { cleanupMessageId: card.cleanupMessageId }
-              : {}),
-            leaseToken,
-          }
-        : null;
-    },
-    buildPayload: buildCurrentResearchDiscordPayload,
-    deleteMessage: deleteEquipmentResearchDiscordCard,
-    createMessage: createEquipmentResearchDiscordCard,
-    recordInflight: recordEquipmentResearchDiscordCardInflightMessage,
-    complete: completeEquipmentResearchDiscordCardSync,
-    confirm: isEquipmentResearchDiscordCardSyncComplete,
-    fail: failEquipmentResearchDiscordCardSync,
-    warn: (message, error) => console.warn(message, error),
-  });
 }

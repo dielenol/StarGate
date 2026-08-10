@@ -261,7 +261,7 @@ export function buildStockMarketWireDesiredPayloads(
         `${tierLabel(result)} · ${directionLabel(result)} · **${stockName(result.ticker)}**\n${sanitize(result.eventText)}`,
     );
 
-  return [
+  const payloads: DiscordWebhookPayload[] = [
     {
       ...basePayload,
       content: `ORDO-NET 주식 거래소 바로가기: ${STOCK_URL}`,
@@ -383,6 +383,12 @@ export function buildStockMarketWireDesiredPayloads(
           timestamp,
         },
       ],
+    },
+  ];
+  return [
+    {
+      ...payloads[0],
+      embeds: payloads.flatMap((payload) => payload.embeds),
     },
   ];
 }

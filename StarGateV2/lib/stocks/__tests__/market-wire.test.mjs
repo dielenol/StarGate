@@ -38,7 +38,6 @@ registerHooks({
 const { notifyScheduledStockMarketWire } = await import("../market-wire.ts");
 
 const ENV_KEYS = [
-  "DISCORD_WEBHOOK_STOCK_URL",
   "DISCORD_WEBHOOK_STOCK_AVATAR_URL",
 ];
 
@@ -70,11 +69,9 @@ function makeResult(overrides) {
   };
 }
 
-test("scheduled stock market wire requests one durable four-message batch", async (t) => {
+test("scheduled stock market wire requests one durable message with four embeds", async (t) => {
   const envSnapshot = snapshotEnv();
   const requests = [];
-
-  process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
 
   t.after(() => {
     restoreEnv(envSnapshot);
@@ -91,23 +88,21 @@ test("scheduled stock market wire requests one durable four-message batch", asyn
     ],
   }, {
     request: async (request) => requests.push(request),
-    sync: async () => "synced",
   });
 
-  assert.deepEqual(result, { status: "sent", embedCount: 4, messageCount: 4 });
+  assert.deepEqual(result, { status: "queued", embedCount: 4, messageCount: 1 });
   assert.equal(requests.length, 1);
   assert.equal(requests[0].date, "2026-07-09");
   assert.deepEqual(
     requests[0].payloads.map((payload) => payload.embeds.length),
-    [1, 1, 1, 1],
+    [4],
   );
   assert.match(
     requests[0].payloads[0].content,
     /ORDO-NET 주식 거래소 바로가기/,
   );
-  assert.equal(requests[0].payloads[1].content, undefined);
   assert.deepEqual(
-    requests[0].payloads.map((payload) => payload.embeds[0].title),
+    requests[0].payloads[0].embeds.map((embed) => embed.title),
     [
       "재무기구 정기 시세 공시 · 2026-07-09",
       "상승 마감 장부",
@@ -119,7 +114,6 @@ test("scheduled stock market wire requests one durable four-message batch", asyn
 
 test("scheduled stock market wire leaves a concurrent request queued", async (t) => {
   const envSnapshot = snapshotEnv();
-  process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
   t.after(() => restoreEnv(envSnapshot));
 
   const result = await notifyScheduledStockMarketWire(
@@ -130,22 +124,19 @@ test("scheduled stock market wire leaves a concurrent request queued", async (t)
     },
     {
       request: async () => {},
-      sync: async () => "idle",
     },
   );
 
   assert.deepEqual(result, {
     status: "queued",
     embedCount: 4,
-    messageCount: 4,
+    messageCount: 1,
   });
 });
 
-test("a fully skipped tick retries a pending webhook replacement without creating a revision", async (t) => {
+test("a fully skipped tick leaves pending replacement recovery to the worker", async (t) => {
   const envSnapshot = snapshotEnv();
   let requested = false;
-  let synced = false;
-  process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
   t.after(() => restoreEnv(envSnapshot));
 
   const result = await notifyScheduledStockMarketWire(
@@ -158,21 +149,15 @@ test("a fully skipped tick retries a pending webhook replacement without creatin
       request: async () => {
         requested = true;
       },
-      sync: async () => {
-        synced = true;
-        return "idle";
-      },
     },
   );
 
   assert.deepEqual(result, { status: "skipped-no-change" });
   assert.equal(requested, false);
-  assert.equal(synced, true);
 });
 
-test("a skipped tick surfaces webhook replacement recovery failure", async (t) => {
+test("a skipped tick does not invoke a web-owned Discord recovery", async (t) => {
   const envSnapshot = snapshotEnv();
-  process.env.DISCORD_WEBHOOK_STOCK_URL = "https://discord.test/stock";
   t.after(() => restoreEnv(envSnapshot));
 
   const result = await notifyScheduledStockMarketWire(
@@ -183,12 +168,8 @@ test("a skipped tick surfaces webhook replacement recovery failure", async (t) =
     },
     {
       request: async () => {},
-      sync: async () => "failed",
     },
   );
 
-  assert.deepEqual(result, {
-    status: "failed",
-    error: "Discord 정기 공시 교체 복구 실패 (failed)",
-  });
+  assert.deepEqual(result, { status: "skipped-no-change" });
 });

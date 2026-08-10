@@ -125,8 +125,21 @@ function parseOrigins(raw: string): string[] {
   return values;
 }
 
-function parseConsumerNames(raw: string | undefined): WorkerConsumerName[] {
-  if (!raw?.trim()) return [];
+function parseConsumerNames(
+  raw: string | undefined,
+  options: { mode: WorkerMode; allowPartial: boolean },
+): WorkerConsumerName[] {
+  if (!raw?.trim()) {
+    if (options.mode === "active") {
+      throw new WorkerConfigurationError(
+        "active worker에는 WORKER_CONSUMERS=all 설정이 필요합니다.",
+      );
+    }
+    return [];
+  }
+  if (raw.trim().toLowerCase() === "all") {
+    return [...WORKER_CONSUMER_NAMES];
+  }
   const allowed = new Set<string>(WORKER_CONSUMER_NAMES);
   const values = [...new Set(raw.split(",").map((value) => value.trim()))]
     .filter(Boolean)
@@ -138,12 +151,26 @@ function parseConsumerNames(raw: string | undefined): WorkerConsumerName[] {
       }
       return value as WorkerConsumerName;
     });
+  if (
+    options.mode === "active" &&
+    !options.allowPartial &&
+    values.length !== WORKER_CONSUMER_NAMES.length
+  ) {
+    const configured = new Set(values);
+    const missing = WORKER_CONSUMER_NAMES.filter(
+      (name) => !configured.has(name),
+    );
+    throw new WorkerConfigurationError(
+      `WORKER_CONSUMERS가 전체 domain consumer를 포함해야 합니다. 누락: ${missing.join(", ")}. 전체 활성화는 all을 사용하세요.`,
+    );
+  }
   return values;
 }
 
 export function loadWorkerConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): WorkerConfig {
+  const mode = loadWorkerMode(env);
   const replicaCount = integerInRange(
     env,
     "WORKER_REPLICA_COUNT",
@@ -159,7 +186,7 @@ export function loadWorkerConfig(
   }
 
   return {
-    mode: loadWorkerMode(env),
+    mode,
     replicaCount,
     host: env.WORKER_HOST?.trim() || "0.0.0.0",
     port: integerInRange(env, "WORKER_PORT", 3001, 1, 65_535),
@@ -170,7 +197,12 @@ export function loadWorkerConfig(
       1_000,
       30_000,
     ),
-    enabledConsumers: parseConsumerNames(env.WORKER_CONSUMERS),
+    enabledConsumers: parseConsumerNames(env.WORKER_CONSUMERS, {
+      mode,
+      allowPartial:
+        env.WORKER_CONSUMERS_ALLOW_PARTIAL?.trim().toLowerCase() ===
+        "true",
+    }),
     mongo: loadWorkerMongoConfig(env),
     realtime: {
       secret,

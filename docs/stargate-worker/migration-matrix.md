@@ -36,10 +36,10 @@
 
 | 전달 | 현재 방식 | 목표 | 상태 | 비고 |
 |---|---|---|---|---|
-| 아메리 공방 DM | 공방 요청 내 embedded outbox | worker 전용 consumer | CODE_READY | 10분 lease, 5분 backoff, nonce 유지; 웹 drain 제거 |
-| 연구 Discord 카드 | desired-state | worker consumer | CODE_READY | revision/lease와 `nextAttemptAt` 5분 retry 유지 |
-| 편의점 입고 공지 | desired-state | worker consumer | CODE_READY | singleton revision/lease/backoff 유지 |
-| 주식 공시 | desired-state | worker consumer | CODE_READY | singleton revision/lease/backoff 유지 |
+| 아메리 공방 DM | 공방 요청 내 embedded outbox | worker 전용 consumer | CODE_READY | 10분 lease, 5분 backoff, nonce; 밀린 동일 요청은 최신 도달 단계로 수렴 |
+| 연구 Discord 카드 | desired-state | worker consumer | CODE_READY | 새 카드 활성화 뒤 이전 카드 정리, revision/lease와 5분 retry 유지 |
+| 편의점 입고 공지 | desired-state | worker consumer | CODE_READY | 웹은 desired-state만 기록, worker가 create-before-retire 교체 |
+| 주식 공시 | desired-state | worker consumer | CODE_READY | 네 embed를 메시지 한 건으로 묶고 create-before-retire 교체 |
 | GM admin audit | transaction enqueue | `integration_outbox` | CODE_READY | mutation과 감사 enqueue를 같은 session에 기록 |
 | 플레이어 거래 DM | transaction enqueue | `integration_outbox` | CODE_READY | 자산 mutation과 enqueue 원자적 커밋, 발송 직전 사용자 재조회 + nonce |
 | 공방 상태 webhook/DM | transaction enqueue/embedded outbox | worker consumer | CODE_READY | 접수부터 수령까지 workflow와 위임 단계를 함께 기록 |
@@ -49,9 +49,9 @@
 | 캐릭터 변경 감사 | transaction enqueue | `integration_outbox` | CODE_READY | 변경·변경 이력·감사 enqueue 원자적 커밋 |
 | 수동 주가 조정 공시 | transaction enqueue | `integration_outbox` | CODE_READY | 직접 webhook 제거, 전용 stock webhook 사용 |
 
-production 코드의 `after()` 직접 외부 전송은 제거했다. 내부 ERP 알림 생성은 외부 전달과 분리하고, 편의점 입고처럼 경제 transaction과 강하게 결합된 enqueue는 같은 Mongo session에 포함했다.
+production 코드의 `after()` 직접 외부 전송과 편의점·주식·연구 카드의 웹 직접 생성/삭제 adapter는 제거했다. 웹은 desired-state만 기록하고 Discord 변경은 worker 하나가 소유한다. 내부 ERP 알림 생성은 외부 전달과 분리하고, 편의점 입고처럼 경제 transaction과 강하게 결합된 enqueue는 같은 Mongo session에 포함했다.
 
-`integration_outbox`의 생성/claim/complete/fail, 지수 backoff, 최대 8회 후 DEAD persistence와 typed handler/channel registry가 구현되어 있다. webhook 9종과 거래 DM handler가 있으며 active worker는 `WORKER_OUTBOX_KINDS=all`이 아니거나 필요한 destination secret이 없으면 어떤 문서도 claim하기 전에 기동을 거부한다. 제한된 staging 검증만 `WORKER_OUTBOX_ALLOW_PARTIAL=true`를 명시해 부분 kind를 허용한다. 거래 DM은 발송 직전 사용자의 ACTIVE 상태와 Discord 연결을 재조회하고 nonce를 강제한다.
+`integration_outbox`의 생성/claim/complete/fail, 지수 backoff, 최대 8회 후 DEAD persistence와 typed handler/channel registry가 구현되어 있다. 완료는 실제 Discord 발송 `SENT`와 비활성·미연결·비공개·stale 등 정책상 `SKIPPED`를 구분한다. webhook 9종과 거래 DM handler가 있으며 production active worker는 `WORKER_CONSUMERS=all`, `WORKER_OUTBOX_KINDS=all`이 아니거나 필요한 destination secret이 없으면 어떤 문서도 claim하기 전에 기동을 거부한다. 제한된 staging 검증만 두 `*_ALLOW_PARTIAL=true`를 명시해 부분 consumer/kind를 허용한다. 거래 DM은 발송 직전 사용자의 ACTIVE 상태와 Discord 연결을 재조회하고 nonce를 강제한다.
 
 `integration_outbox`의 dedupe는 queue enqueue/claim 중복을 막지만 Discord webhook API에는 bot message의 `enforce_nonce`와 같은 계약이 없다. 따라서 webhook은 네트워크 응답과 완료 기록 사이 장애 구간에서 외부 at-least-once 가능성이 남는다. 아메리·연구·입고·공시 desired-state는 첫 이관에서 범용 outbox로 재작성하지 않았고, 기존 5분 retry를 계속 사용하므로 8회 DEAD 정책 대상이 아니다.
 

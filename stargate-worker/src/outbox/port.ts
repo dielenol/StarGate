@@ -1,15 +1,20 @@
 import type {
   IntegrationOutboxEvent,
   IntegrationOutboxKind,
+  IntegrationSkipReason,
 } from "@stargate/shared-db";
+
+export type IntegrationOutboxDeliveryResult =
+  | { outcome: "SENT"; externalMessageId?: string }
+  | { outcome: "SKIPPED"; reason: IntegrationSkipReason };
 
 export interface IntegrationOutboxDeliveryHandler {
   readonly kind: IntegrationOutboxKind;
   /**
-   * 성공적으로 외부 전달했거나 정책상 영구 skip이면 resolve한다.
+   * 외부 전달과 정책상 영구 skip을 구분해 반환한다.
    * 재시도해야 하는 오류는 throw한다.
    */
-  deliver(event: IntegrationOutboxEvent): Promise<void>;
+  deliver(event: IntegrationOutboxEvent): Promise<IntegrationOutboxDeliveryResult>;
 }
 
 /**
@@ -22,6 +27,7 @@ export interface IntegrationOutboxPort {
     id: NonNullable<IntegrationOutboxEvent["_id"]>;
     leaseToken: string;
     completedAt: Date;
+    result: IntegrationOutboxDeliveryResult;
   }): Promise<boolean>;
   fail(input: {
     id: NonNullable<IntegrationOutboxEvent["_id"]>;

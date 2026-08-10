@@ -1,5 +1,9 @@
 import { getDb } from "@stargate/shared-db";
 
+import {
+  WORKER_CONSUMER_NAMES,
+  type WorkerConsumerName,
+} from "../config.js";
 import type { DueWorkConsumerPort } from "./port.js";
 
 const STALE_AFTER_MS = 10 * 60_000;
@@ -29,6 +33,12 @@ interface DesiredStateDocument {
 export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
   readonly name = "integration-health";
 
+  constructor(
+    private readonly options: {
+      enabledConsumers?: readonly WorkerConsumerName[];
+    } = {},
+  ) {}
+
   async tick() {
     const db = await getDb();
     const now = new Date();
@@ -40,6 +50,7 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
       expiredLeases,
       desiredStates,
       workshopDmErrors,
+      workshopDmOverdue,
       votePublicationStalls,
       latestScheduledFailures,
     ] =
@@ -77,6 +88,15 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
         db.collection("equipment_workshop_requests").countDocuments({
           "discordDmDelivery.lastError": { $exists: true, $ne: "" },
         }),
+        db.collection("equipment_workshop_requests").countDocuments({
+          discordDmOutbox: {
+            $elemMatch: {
+              availableAt: { $lte: staleBefore },
+              sentAt: { $exists: false },
+              skippedAt: { $exists: false },
+            },
+          },
+        }),
         db.collection("bureaucrat_votes").countDocuments({
           $or: [
             { "publication.lastError": { $exists: true, $ne: "" } },
@@ -96,6 +116,10 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
           ])
           .toArray(),
       ]);
+    const enabledConsumers = new Set(this.options.enabledConsumers ?? []);
+    const missingConsumers = WORKER_CONSUMER_NAMES.filter(
+      (name) => !enabledConsumers.has(name),
+    );
     const desired = desiredStates.reduce((sum, count) => sum + count, 0);
     const issueCount =
       dead +
@@ -104,6 +128,8 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
       expiredLeases +
       desired +
       workshopDmErrors +
+      workshopDmOverdue +
+      missingConsumers.length +
       votePublicationStalls +
       latestScheduledFailures.length;
     if (issueCount === 0) {
@@ -122,6 +148,12 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
       expiredLeases > 0 ? `만료 lease ${expiredLeases}건` : null,
       desired > 0 ? `desired-state 지연/오류 ${desired}건` : null,
       workshopDmErrors > 0 ? `AMERI DM 지연 ${workshopDmErrors}건` : null,
+      workshopDmOverdue > 0
+        ? `AMERI DM 10분 초과 ${workshopDmOverdue}건`
+        : null,
+      missingConsumers.length > 0
+        ? `consumer 누락 ${missingConsumers.join(", ")}`
+        : null,
       votePublicationStalls > 0
         ? `REGISTRAR 표결 게시 지연 ${votePublicationStalls}건`
         : null,
@@ -136,12 +168,15 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
       expiredLeases > 0 ? "OUTBOX_EXPIRED_LEASE" : null,
       desired > 0 ? "DESIRED_STATE" : null,
       workshopDmErrors > 0 ? "AMERI_DM" : null,
+      workshopDmOverdue > 0 ? "AMERI_DM_OVERDUE" : null,
+      missingConsumers.length > 0 ? "CONSUMER_MISSING" : null,
       votePublicationStalls > 0 ? "REGISTRAR_VOTE" : null,
       latestScheduledFailures.length > 0 ? "SCHEDULED_JOB" : null,
     ].filter((value): value is string => Boolean(value));
     const severity =
       dead > 0 ||
       expiredLeases > 0 ||
+      missingConsumers.length > 0 ||
       latestScheduledFailures.some((row) => row.status === "DEAD")
         ? "CRITICAL" as const
         : "WARNING" as const;

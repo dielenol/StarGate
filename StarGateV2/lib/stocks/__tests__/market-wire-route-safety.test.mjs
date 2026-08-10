@@ -19,8 +19,8 @@ const STOCK_ADMIN_CLIENT = new URL(
   import.meta.url,
 );
 const STATE_DB = new URL("../../db/stock-market-wire.ts", import.meta.url);
-const MARKET_WIRE_DISCORD = new URL(
-  "../../notifications/stock-market-wire-discord.ts",
+const WORKER_DESIRED_STATE = new URL(
+  "../../../../stargate-worker/src/consumers/discord-desired-state.ts",
   import.meta.url,
 );
 const WORKER_JOBS = new URL(
@@ -44,24 +44,25 @@ test("the web tick route is an explicit manual recovery endpoint", async () => {
   assert.doesNotMatch(source, /LEGACY_CRON_|owner.*vercel/);
 });
 
-test("the scheduled wire singleton persists desired payloads and message ids", async () => {
+test("the web producer only persists the scheduled wire desired state", async () => {
   const source = await readFile(STATE_DB, "utf8");
   assert.match(source, /stock_discord_market_wires/);
   assert.match(source, /SCHEDULED_WIRE_ID = "scheduled"/);
   assert.match(source, /desiredPayloads/);
-  assert.match(source, /messageIds/);
-  assert.match(source, /cleanupMessageIds/);
   assert.match(source, /requestedRevision/);
-  assert.match(source, /leaseExpiresAt/);
+  assert.doesNotMatch(source, /fetch\(|createDiscord|deleteDiscord/);
+  assert.doesNotMatch(source, /acquireScheduledStockMarketWireLease/);
 });
 
-test("the scheduled wire replaces stored messages through the webhook only", async () => {
-  const source = await readFile(MARKET_WIRE_DISCORD, "utf8");
-  assert.match(
-    source,
-    /deleteMessage: deleteScheduledStockMarketWireMessage,[\s\S]*createMessage: createScheduledStockMarketWireMessage/,
-  );
-  assert.doesNotMatch(source, /DISCORD_BOT_TOKEN|webhook-message-pruner/);
+test("the worker creates a replacement before retiring the active wire", async () => {
+  const source = await readFile(WORKER_DESIRED_STATE, "utf8");
+  const createAt = source.indexOf("await createDiscordWebhookMessage(");
+  const activateAt = source.indexOf("activationAttempted = true", createAt);
+  const deleteAt = source.indexOf("for (const messageId of previousIds)", activateAt);
+
+  assert.ok(createAt >= 0 && activateAt > createAt && deleteAt > activateAt);
+  assert.match(source, /replacementMessageIds/);
+  assert.match(source, /staleMessageIds/);
 });
 
 test("GM special disclosures enqueue a dedicated outbox event", async () => {

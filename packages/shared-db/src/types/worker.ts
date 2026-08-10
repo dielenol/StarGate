@@ -36,6 +36,21 @@ export const INTEGRATION_OUTBOX_STATUSES = [
 export type IntegrationOutboxStatus =
   (typeof INTEGRATION_OUTBOX_STATUSES)[number];
 
+export const INTEGRATION_DELIVERY_OUTCOMES = ["SENT", "SKIPPED"] as const;
+export type IntegrationDeliveryOutcome =
+  (typeof INTEGRATION_DELIVERY_OUTCOMES)[number];
+
+export const INTEGRATION_SKIP_REASONS = [
+  "RECIPIENT_INACTIVE",
+  "RECIPIENT_UNLINKED",
+  "RECIPIENT_UNREACHABLE",
+  "NOT_PUBLIC",
+  "STALE",
+  "POLICY",
+] as const;
+export type IntegrationSkipReason =
+  (typeof INTEGRATION_SKIP_REASONS)[number];
+
 export const INTEGRATION_OUTBOX_KINDS = [
   "GM_ADMIN_AUDIT",
   "CHARACTER_EDIT_WEBHOOK",
@@ -71,7 +86,19 @@ export interface IntegrationOutboxEvent {
   createdAt: Date;
   updatedAt: Date;
   deliveredAt?: Date;
+  deliveryOutcome?: IntegrationDeliveryOutcome;
+  skipReason?: IntegrationSkipReason;
+  externalMessageId?: string;
   deadAt?: Date;
+}
+
+export interface WorkerOperationalIncident {
+  _id: string;
+  fingerprint: string;
+  severity: "WARNING" | "CRITICAL";
+  openedAt: Date;
+  lastSentAt: Date;
+  updatedAt: Date;
 }
 
 export interface WorkerCheckpoint {

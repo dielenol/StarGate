@@ -70,15 +70,16 @@ shadow는 `worker_checkpoints`에 resume token을 기록한다. 이는 passive �
 
 ## 3. Durable 외부 전달 이관
 
-한 번에 한 consumer만 전환한다.
+staging에서는 한 번에 한 consumer만 검증한다.
 
-1. `WORKER_CONSUMERS=ameri-dm`
-2. `WORKER_CONSUMERS=ameri-dm,research-card`
+1. `WORKER_CONSUMERS_ALLOW_PARTIAL=true`, `WORKER_CONSUMERS=ameri-dm`
+2. `research-card` 추가
 3. `shop-restock` 추가
 4. `stock-market-wire` 추가
-5. staging에서 범용 `integration_outbox` kind를 한 종류씩 검증한 뒤 production은 전체 kind로 전환
+5. 범용 `integration_outbox` kind도 staging에서 한 종류씩 검증
+6. production은 `WORKER_CONSUMERS=all`, `WORKER_CONSUMERS_ALLOW_PARTIAL=false`, `WORKER_OUTBOX_KINDS=all`, `WORKER_OUTBOX_ALLOW_PARTIAL=false`로 한 번에 고정
 
-도메인 consumer와 범용 outbox는 서로 다른 설정이다. `WORKER_CONSUMERS`에는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`만 넣는다. 범용 outbox의 제한된 staging 검증은 `WORKER_OUTBOX_ALLOW_PARTIAL=true`와 검사할 kind 목록을 함께 사용하고, production active는 반드시 `WORKER_OUTBOX_KINDS=all`, `WORKER_OUTBOX_ALLOW_PARTIAL=false`를 사용한다. 지원 kind는 GM 감사, 캐릭터 변경, 공방, 발주 요청/완료, 편의점 신제품 출시, 미스터비스트 복권 고액 당첨, 수동 주가 공시, 중앙 workflow 상태, 거래 DM이다. typed destination별 `DISCORD_WEBHOOK_*`, `AMERI_DISCORD_BOT_TOKEN`, `REGISTRAR_DISCORD_BOT_TOKEN`을 claim 전에 주입한다.
+도메인 consumer와 범용 outbox는 서로 다른 설정이다. 부분 활성화 escape hatch는 staging 검증 전용이다. production active에서 어느 한 consumer나 kind라도 빠지면 기동을 거부하며, heartbeat·관리자 화면·운영 경보에도 누락을 장애로 남긴다. 지원 kind는 GM 감사, 캐릭터 변경, 공방, 발주 요청/완료, 편의점 신제품 출시, 미스터비스트 복권 고액 당첨, 수동 주가 공시, 중앙 workflow 상태, 거래 DM이다. typed destination별 `DISCORD_WEBHOOK_*`, `AMERI_DISCORD_BOT_TOKEN`, `REGISTRAR_DISCORD_BOT_TOKEN`을 claim 전에 주입한다.
 
 각 consumer 공통 기준:
 
@@ -87,6 +88,7 @@ shadow는 `worker_checkpoints`에 resume token을 기록한다. 이는 passive �
 - [ ] lease 획득/만료/재시작 시 한 delivery만 완료된다.
 - [ ] Discord 403/429/5xx/timeout이 정책대로 skip 또는 backoff된다.
 - [ ] 발송 직전 사용자 ACTIVE 상태와 Discord 연결을 재조회한다.
+- [ ] 완료 문서가 실제 전송 `SENT` 또는 제한된 사유의 `SKIPPED`로 구분되고, `SENT`에는 Discord message ID가 저장된다.
 - [ ] 기존 Vercel 직접 전송을 끄기 전에 worker 성공 증거를 확보했다.
 
 `integration_outbox` 전용 기준:
@@ -175,9 +177,12 @@ db.integration_outbox.aggregate([
 
 아메리/desired-state 전용 기준:
 
+- [ ] active 전환 전 AMERI due 문서 수와 단계 분포를 read-only로 확인한다. 같은 요청의 여러 과거 단계는 최신 도달 단계만 발송되고 나머지는 superseded skip되므로 예상 발송/생략 건수를 승인 문장에 적는다.
 - [ ] 기존 10분 lease와 5분 retry가 재시작 후에도 이어진다.
 - [ ] `nextAttemptAt` 전에는 실패 대상을 다시 claim하지 않는다.
 - [ ] 이 모델은 8회 DEAD가 아니라 기존 지속 retry이므로 stuck due/oldest lag 경보를 둔다.
+- [ ] 편의점·주식·연구 카드는 새 메시지 생성과 활성화가 끝난 뒤 이전 메시지를 삭제하며, 중간 실패 시 기존 활성 카드가 남는다.
+- [ ] 정기 주식 공시 한 회차가 네 embed를 담은 Discord 메시지 한 건으로 생성된다.
 
 Discord webhook은 queue 중복 방지는 보장하지만 Execute Webhook 자체에는 bot Create Message의 `enforce_nonce`가 없다. 응답 수신 직후 완료 기록 전 장애까지 외부 exactly-once가 필수라면 이 컷오버를 중지하고 bot channel 전송 또는 수신측 idempotency/reconciliation을 먼저 설계한다.
 
@@ -258,7 +263,7 @@ ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다�
 
 ## 7. 관찰 지표
 
-Production은 workflow webhook과 다른 전용 `DISCORD_WEBHOOK_OPS_URL`을 필수로 둔다. workflow destination 자체가 실패할 때 같은 URL로 장애 알림을 보내는 순환 fallback을 허용하지 않는다. 현재 operational incident/cooldown 상태는 worker 메모리에만 있으므로 재시작 뒤 지속 장애가 한 번 더 알림될 수 있고, 재시작 사이 해소된 장애의 복구 메시지는 보장되지 않는다. 이 제한을 수용할 수 없다면 active 컷오버 전에 incident 상태를 MongoDB에 영속화한다.
+Production은 workflow webhook과 다른 전용 `DISCORD_WEBHOOK_OPS_URL`을 필수로 둔다. workflow destination 자체가 실패할 때 같은 URL로 장애 알림을 보내는 순환 fallback을 허용하지 않는다. operational incident의 fingerprint, severity, 최초 발생 시각, 최근 경보 시각은 `worker_operational_incidents`에 영속화한다. 재시작 뒤에도 같은 장애의 cooldown을 유지하며 명시적인 정상 probe가 확인된 경우에만 복구 메시지를 한 번 보내고 incident를 닫는다.
 
 - queue depth, oldest available age
 - claim conflict, lease expiry/reclaim

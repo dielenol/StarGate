@@ -3,6 +3,16 @@ const DISCORD_USER_AGENT = "DiscordBot (https://www.ordonet.co.kr, 1.0.0)";
 const DISCORD_SNOWFLAKE_PATTERN = /^\d{17,20}$/;
 const MAX_RATE_LIMIT_RETRIES = 2;
 const MAX_RATE_LIMIT_WAIT_MS = 10_000;
+const MAX_USERNAME = 80;
+const MAX_CONTENT = 2_000;
+const MAX_EMBEDS = 10;
+const MAX_EMBED_FIELDS = 25;
+const MAX_EMBED_TEXT = 6_000;
+const MAX_EMBED_TITLE = 256;
+const MAX_EMBED_DESCRIPTION = 4_096;
+const MAX_FIELD_NAME = 256;
+const MAX_FIELD_VALUE = 1_024;
+const MAX_FOOTER_TEXT = 2_048;
 
 export interface DiscordWebhookPayload {
   content?: string;
@@ -29,6 +39,187 @@ export class DiscordDeliveryError extends Error {
     super(message);
     this.name = "DiscordDeliveryError";
   }
+}
+
+function truncate(value: string | undefined, max: number): string | undefined {
+  if (value === undefined || value.length <= max) return value;
+  return `${value.slice(0, Math.max(0, max - 1))}…`;
+}
+
+function embedTextLength(
+  embed: DiscordWebhookPayload["embeds"][number],
+): number {
+  return (
+    embed.title.length +
+    (embed.description?.length ?? 0) +
+    (embed.footer?.text.length ?? 0) +
+    embed.fields.reduce(
+      (sum, field) => sum + field.name.length + field.value.length,
+      0,
+    )
+  );
+}
+
+/** Discord embed의 개별 제한과 전체 6,000자 제한을 발송 직전에 보장한다. */
+export function fitDiscordWebhookPayload(
+  payload: DiscordWebhookPayload,
+): DiscordWebhookPayload {
+  let omittedEmbeds = Math.max(0, payload.embeds.length - MAX_EMBEDS);
+  let omittedFields = 0;
+  const embeds = payload.embeds.slice(0, MAX_EMBEDS).map((embed) => {
+    omittedFields += Math.max(0, embed.fields.length - MAX_EMBED_FIELDS);
+    return {
+      title: truncate(embed.title, MAX_EMBED_TITLE) || "Discord 알림",
+      ...(embed.url ? { url: embed.url } : {}),
+      ...(embed.description
+        ? { description: truncate(embed.description, MAX_EMBED_DESCRIPTION) }
+        : {}),
+      color: embed.color,
+      fields: embed.fields.slice(0, MAX_EMBED_FIELDS).map((field) => ({
+        ...field,
+        name: truncate(field.name, MAX_FIELD_NAME) || "항목",
+        value: truncate(field.value, MAX_FIELD_VALUE) || "—",
+      })),
+      ...(embed.image ? { image: embed.image } : {}),
+      ...(embed.footer?.text
+        ? { footer: { text: truncate(embed.footer.text, MAX_FOOTER_TEXT) || "—" } }
+        : {}),
+      timestamp: embed.timestamp,
+    };
+  });
+
+  const totalLength = () =>
+    embeds.reduce((sum, embed) => sum + embedTextLength(embed), 0);
+  const summaryReserve = 96;
+  while (totalLength() > MAX_EMBED_TEXT - summaryReserve) {
+    const lastWithFields = [...embeds]
+      .reverse()
+      .find((embed) => embed.fields.length > 0);
+    if (lastWithFields) {
+      lastWithFields.fields.pop();
+      omittedFields += 1;
+      continue;
+    }
+    const last = embeds.at(-1);
+    if (last?.description && last.description.length > 1) {
+      const overflow = totalLength() - (MAX_EMBED_TEXT - summaryReserve);
+      last.description =
+        truncate(last.description, Math.max(1, last.description.length - overflow)) ??
+        "";
+      continue;
+    }
+    if (embeds.length > 1) {
+      embeds.pop();
+      omittedEmbeds += 1;
+      continue;
+    }
+    break;
+  }
+
+  if (embeds.length === 0) {
+    embeds.push({
+      title: "Discord 알림",
+      color: 0xc5a059,
+      fields: [],
+      timestamp: new Date().toISOString(),
+    });
+  }
+  if (omittedFields > 0 || omittedEmbeds > 0) {
+    const first = embeds[0];
+    if (first.fields.length >= MAX_EMBED_FIELDS) {
+      first.fields.pop();
+      omittedFields += 1;
+    }
+    first.fields.push({
+      name: "내용 일부 생략",
+      value: [
+        omittedFields > 0 ? `필드 ${omittedFields}개` : null,
+        omittedEmbeds > 0 ? `embed ${omittedEmbeds}개` : null,
+        "Discord 표시 한도로 나머지를 줄였습니다.",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    });
+  }
+
+  while (totalLength() > MAX_EMBED_TEXT) {
+    const overflow = totalLength() - MAX_EMBED_TEXT;
+    let changed = false;
+    for (const embed of [...embeds].reverse()) {
+      const field = [...embed.fields]
+        .reverse()
+        .find((candidate) => candidate.value.length > 1 || candidate.name.length > 1);
+      if (field?.value && field.value.length > 1) {
+        field.value = truncate(
+          field.value,
+          Math.max(1, field.value.length - overflow),
+        ) || "—";
+        changed = true;
+        break;
+      }
+      if (field?.name && field.name.length > 1) {
+        field.name = truncate(
+          field.name,
+          Math.max(1, field.name.length - overflow),
+        ) || "—";
+        changed = true;
+        break;
+      }
+      if (embed.description && embed.description.length > 1) {
+        embed.description = truncate(
+          embed.description,
+          Math.max(1, embed.description.length - overflow),
+        );
+        changed = true;
+        break;
+      }
+      if (embed.footer?.text && embed.footer.text.length > 1) {
+        embed.footer.text = truncate(
+          embed.footer.text,
+          Math.max(1, embed.footer.text.length - overflow),
+        ) || "—";
+        changed = true;
+        break;
+      }
+      if (embed.title.length > 1) {
+        embed.title = truncate(
+          embed.title,
+          Math.max(1, embed.title.length - overflow),
+        ) || "—";
+        changed = true;
+        break;
+      }
+    }
+    if (changed) continue;
+    embeds.splice(0, embeds.length, {
+      title: "Discord 알림",
+      description: "내용이 Discord 표시 한도를 초과해 축약되었습니다.",
+      color: 0xc5a059,
+      fields: [],
+      timestamp: new Date().toISOString(),
+    });
+  }
+  const content = truncate(payload.content, MAX_CONTENT);
+  return {
+    ...payload,
+    username: truncate(payload.username, MAX_USERNAME) || "StarGate",
+    ...(content ? { content } : { content: undefined }),
+    embeds,
+  };
+}
+
+async function discordMessageId(
+  response: Response,
+  action: string,
+): Promise<string> {
+  const message = (await response.json()) as { id?: unknown };
+  if (
+    typeof message.id !== "string" ||
+    !DISCORD_SNOWFLAKE_PATTERN.test(message.id)
+  ) {
+    throw new Error(`Discord ${action} 응답에 올바른 message id가 없습니다.`);
+  }
+  return message.id;
 }
 
 async function responseError(
@@ -96,15 +287,16 @@ export async function sendDiscordWebhook(
   webhookUrl: string,
   payload: DiscordWebhookPayload,
   fetchImpl: typeof fetch = fetch,
-): Promise<void> {
+): Promise<string> {
   const url = new URL(webhookUrl);
   url.searchParams.set("wait", "true");
   const response = await discordFetch(fetchImpl, url.toString(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(fitDiscordWebhookPayload(payload)),
   });
   if (!response.ok) throw await responseError(response, "Webhook 전송");
+  return discordMessageId(response, "Webhook 전송");
 }
 
 export async function createDiscordWebhookMessage(
@@ -117,17 +309,10 @@ export async function createDiscordWebhookMessage(
   const response = await discordFetch(fetchImpl, url.toString(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(fitDiscordWebhookPayload(payload)),
   });
   if (!response.ok) throw await responseError(response, "Webhook 생성");
-  const message = (await response.json()) as { id?: unknown };
-  if (
-    typeof message.id !== "string" ||
-    !DISCORD_SNOWFLAKE_PATTERN.test(message.id)
-  ) {
-    throw new Error("Discord Webhook 응답에 올바른 message id가 없습니다.");
-  }
-  return message.id;
+  return discordMessageId(response, "Webhook 생성");
 }
 
 export async function deleteDiscordWebhookMessage(
@@ -157,7 +342,7 @@ export async function sendDiscordDirectMessage(
     botToken: string;
   },
   fetchImpl: typeof fetch = fetch,
-): Promise<void> {
+): Promise<string> {
   if (!DISCORD_SNOWFLAKE_PATTERN.test(input.recipientId)) {
     throw new Error("Discord 개인 DM 수신자 ID가 올바르지 않습니다.");
   }
@@ -210,4 +395,5 @@ export async function sendDiscordDirectMessage(
   if (!messageResponse.ok) {
     throw await responseError(messageResponse, "개인 메시지 전송");
   }
+  return discordMessageId(messageResponse, "개인 메시지 전송");
 }

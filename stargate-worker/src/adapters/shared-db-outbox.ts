@@ -32,10 +32,17 @@ export class SharedDbIntegrationOutboxAdapter
     id: Parameters<typeof completeIntegrationOutbox>[0]["id"];
     leaseToken: string;
     completedAt: Date;
+    result: Parameters<IntegrationOutboxPort["complete"]>[0]["result"];
   }) {
     return completeIntegrationOutbox({
       id: input.id,
       leaseToken: input.leaseToken,
+      outcome: input.result.outcome,
+      ...(input.result.outcome === "SKIPPED"
+        ? { skipReason: input.result.reason }
+        : input.result.externalMessageId
+          ? { externalMessageId: input.result.externalMessageId }
+          : {}),
       now: input.completedAt,
     });
   }

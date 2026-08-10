@@ -71,7 +71,7 @@ test("active CLI는 네 도메인 handler를 연결하고 Mongo 설정 없이는
   assert.doesNotMatch(result.stderr, /handler가 연결되지 않았습니다/);
 });
 
-test("정기 주식 공시는 시장감시실 4개 장부 메시지로 구성한다", () => {
+test("정기 주식 공시는 한 메시지 안의 시장감시실 4개 장부로 구성한다", () => {
   const payloads = buildStockMarketWireDesiredPayloads(
     {
       date: "2026-07-20",
@@ -100,9 +100,9 @@ test("정기 주식 공시는 시장감시실 4개 장부 메시지로 구성한
     new Date("2026-07-20T03:13:00.000Z"),
   );
 
-  assert.equal(payloads.length, 4);
+  assert.equal(payloads.length, 1);
   assert.deepEqual(
-    payloads.map((payload) => payload.embeds[0].title),
+    payloads[0].embeds.map((embed) => embed.title),
     [
       "재무기구 정기 시세 공시 · 2026-07-20",
       "상승 마감 장부",
@@ -111,23 +111,22 @@ test("정기 주식 공시는 시장감시실 4개 장부 메시지로 구성한
     ],
   );
   assert.deepEqual(
-    payloads.slice(1).map((payload) => payload.embeds[0].color),
+    payloads[0].embeds.slice(1).map((embed) => embed.color),
     [0x2fbf71, 0xd95f5f, 0xc5a059],
   );
   assert.match(payloads[0].content, /ORDO-NET 주식 거래소 바로가기/);
-  assert.equal(payloads[1].content, undefined);
   assert.equal(payloads[0].username, "재무기구 시장감시실");
   assert.deepEqual(
     payloads[0].embeds[0].fields.map((field) => field.name),
     ["공시 개요", "시장 방향", "NOVEX 종합지수"],
   );
-  assert.match(payloads[1].embeds[0].fields[0].value, /토와스키 \(TWS\)/);
-  assert.match(payloads[2].embeds[0].fields[0].value, /VF제약 \(VFP\)/);
+  assert.match(payloads[0].embeds[1].fields[0].value, /토와스키 \(TWS\)/);
+  assert.match(payloads[0].embeds[2].fields[0].value, /VF제약 \(VFP\)/);
   assert.match(
-    payloads[3].embeds[0].fields.at(-1).value,
+    payloads[0].embeds[3].fields.at(-1).value,
     /특이 · 하락 · \*\*VF제약 \(VFP\)\*\*/,
   );
-  assert.match(payloads[3].embeds[0].fields.at(-1).value, /@​everyone/);
+  assert.match(payloads[0].embeds[3].fields.at(-1).value, /@​everyone/);
 });
 
 test("이미 처리된 주식 tick은 빈 Discord 장부로 교체하지 않는다", () => {
