@@ -44,3 +44,12 @@
 - 검증: 연구 집중 24건 통과·replica-set Mongo 7건 환경 부재로 skip, shared-db build, `pnpm typecheck`, `pnpm lint`, `pnpm build`, dialogue 22/22와 lint, critical risk review P0~P3 없음
 - 관련 커밋: `b20cfc8d`
 - 운영 경계: 라이브 DB·index·seed·크레딧·인벤토리·worker flag는 변경하지 않았다. halt/enqueue barrier를 포함한 Mongo 동시성 테스트와 운영 postflight는 활성화 전 차단 조건으로 유지한다.
+
+## 2026-08-10 · UI/UX 개선 · 비주얼노벨 무대와 GM 시뮬레이션
+
+- 카드형 2열 화면을 샘플 격리 연구소 배경, 큰 제노 초상, 선택지와 하단 대화창이 한 장면을 이루는 풀스테이지 비주얼노벨 화면으로 교체했다. 연구 정보는 무대 위 장치에서 여는 desktop drawer·mobile 전면 콘솔로 이동했다.
+- GM은 실제 사용자 데이터와 분리된 비영속 시뮬레이션에서 다섯 연구 상태와 관계 9단계, 최초 제출·생산·취소·개인 수령·선택지·자유대화 반응을 확인할 수 있다. 모든 시뮬레이션 동작은 라이브 mutation 호출 전에 종료된다.
+- console modal의 초기 초점·동적 focus trap·Escape·opener 복귀와 연구선 tabs의 방향키/Home/End·tabpanel 연결을 추가하고, 390×844에서 fixed 운영 도구와 생산 액션이 겹치지 않게 조정했다.
+- 검증: `$stargate-images` skill validator, 연구 계약 6/6, dialogue 22/22, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, GM 인증 브라우저 1440×900·390×844 및 키보드 QA, critical risk review P0~P3 없음
+- 관련 커밋: `6ee19b74`
+- 운영 경계: 라이브 DB·index·seed·크레딧·인벤토리·관계·worker flag는 변경하지 않았다.

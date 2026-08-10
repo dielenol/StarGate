@@ -174,6 +174,7 @@
 | 3. API·Query·UI | VERIFIED | 일반화 API, hooks, VN 연구소 | typecheck, lint, production build, 관련 계약·대화 test |
 | 4. 브라우저·리뷰·이력 | VERIFIED | responsive QA, risk review, work history | GM desktop/mobile QA, P0~P3 없음, 구현 커밋과 페이지 이력 기록 |
 | 5. 사후 코드리뷰 개선 | VERIFIED | 복구 mutation 경계, 안전정지 결제 차단, VN 중복 제거, active job 조회 보강 | 집중 테스트 24 pass·Mongo 7 skip, typecheck·lint·build, 위험 재리뷰 P0~P3 없음 |
+| 6. VN 화면 재설계·GM 시뮬레이션 | VERIFIED | 샘플 연구소 배경, 풀스테이지 대화 UI, 비영속 GM 테스트 | skill validator, 계약 6/6, typecheck·lint·build, 1440×900·390×844 QA, 위험 리뷰 P0~P3 없음 |
 
 ## 변경·검증 로그
 
@@ -265,6 +266,24 @@
 - SKIP: `RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI`가 없어 새 halt/enqueue barrier를 포함한 replica-set Mongo 7건은 실행하지 못했다.
 - 읽기 전용 critical 위험 재리뷰에서 P0·P1·P2·P3 잔여 결함 없음 판정을 받았다. 라이브 활성화 차단 조건은 그대로 유지한다.
 
+### 2026-08-10 · 비주얼노벨 화면 재설계 시작
+
+- 기존 2열 카드 화면이 제노와 상호작용하는 연애 시뮬레이션의 무대감보다 ERP 콘솔의 인상을 우선한다는 실제 화면 피드백을 반영한다.
+- `$stargate-images`에 범용 `environment-background` 규격을 추가하고, 캐릭터 안전 영역과 하단 대화창 안전 영역을 갖춘 샘플 연구소 배경을 제작한다.
+- 제노를 큰 전신 초상으로 배치한 풀스테이지, 하단 VN 대화창·선택지, 필요할 때 여는 연구 콘솔 오버레이 구조로 데스크톱과 모바일을 다시 설계한다.
+- GM은 실제 경제·인벤토리·관계 API를 우회하지 않고도 모든 대표 상태를 확인할 수 있는 클라이언트 비영속 시뮬레이션 모드를 사용한다. 시뮬레이션 동작은 라이브 mutation을 호출하지 않는다.
+- 이 배치에서도 운영 DB, index, seed, 크레딧·인벤토리, worker flag를 변경하지 않는다.
+
+### 2026-08-10 · 비주얼노벨 화면 재설계 완료
+
+- 1920×1080 샘플 격리 연구소 배경과 큰 제노 초상을 한 무대에 배치하고, 선택지·현재 대사·관계 상태·자유대화를 하단 비주얼노벨 인터페이스로 통합했다.
+- 연구선은 무대 위 장치에서 여는 반투명 콘솔로 옮겼다. 연구 상태·투입물·산출물·FIFO·수령처·생산 액션을 유지하면서 desktop 우측 drawer와 mobile 전면 console로 반응형을 구성했다.
+- GM에게만 서버 세션 역할로 비영속 시뮬레이션을 노출했다. 최초 제출 전·연구 중·생산 가능·대기열·개인 수령 대기와 관계 9단계를 로컬 fixture로 전환하며, 최초 연구·결제·취소·수령·선택지·자유대화가 라이브 mutation보다 먼저 반환하도록 계약 테스트로 고정했다.
+- modal 초기 초점·동적 focus trap·Escape/닫기 후 실제 opener 복귀와 연구선 tab의 roving focus·방향키/Home/End·tabpanel 연결을 적용했다. `prefers-reduced-motion`에서는 무대·대화·장치 전환 효과를 생략한다.
+- PASS: `$stargate-images` skill validator, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 연구 계약 6/6, dialogue 22/22, `git diff --check`.
+- PASS: GM 인증 브라우저 1440×900과 390×844에서 배경·대화 선택·자유대화·다섯 연구 상태·관계 9단계·drawer·개인 수령 액션·가로 overflow·console error·키보드 초점 이동을 확인했다.
+- 읽기 전용 critical 위험 재리뷰에서 P0·P1·P2·P3 잔여 결함 없음 판정을 받았다. 구현 커밋은 `6ee19b74`이며 라이브 운영 데이터는 변경하지 않았다.
+
 ## 라이브 활성화 차단 조건
 
 아래 항목은 구현 완료와 별개이며 정확한 대상과 실행 동작에 대한 별도 승인 전에는 `BLOCKED`다.
@@ -280,4 +299,5 @@
 
 - `ff983be6` · `feat(all): 관계형 제노 샘플 연구소를 구현한다`
 - `b20cfc8d` · `fix(all): 제노 연구소의 복구와 안전정지를 보강한다`
+- `6ee19b74` · `feat(novusweb): 제노 연구소를 비주얼노벨 무대로 개편한다`
 - 라이브 mutation·index 생성·seed·lore rebuild·worker 활성화는 이 커밋들에 포함되지 않았다.
