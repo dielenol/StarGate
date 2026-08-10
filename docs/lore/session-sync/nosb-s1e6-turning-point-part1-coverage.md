@@ -75,7 +75,7 @@ source: stargate-lore
 | 프로젝트 데드 핸드 | 닥터 모스 사망 뒤 제노의 연구 기구 사무차장직 승계, 직접 지휘 선언, 마가렛 이관·수술 계획 | `wiki_pages.project-dead-hand`, report | U 공개 시점에 후임 지휘부와 미확인 수술 계획을 추가 | payload-ready |
 | 스페이스 제로 | 요한 스미스의 대량 제거 가정 질문 | `wiki_pages.space-zero`, `JOHAN_SMITH`·`CLOWN` Dossier | U 공개 시점에 세션 접촉을 기존 문서와 양측 관계에 추가; 실제 제거 계획으로 단정하지 않음 | payload-ready |
 | 화이트로즈와 리처드 | 화이트로즈 명단 확보, 리처드가 하얀 장미를 바라본 장면 | report, `wiki_pages.white-rose`, `WHITE_ROSE_R` candidate | 조직 타격은 wiki에 추가하되 리처드=`R` 병합은 사용자 확인 전 차단 | publication-payload-ready · identity-merge-blocked |
-| 이르마 코흐 | 1944년 조수와 현재 광명회 수장 장면 | 비공개 `IRMA_KOCH` Dossier, 광명회 wiki, report | `HOSTILE / AHNENERBE`, 외부 무등급, 빈 초상으로 비공개 신규 생성 | payload-ready |
+| 이르마 코흐 | 1944년 조수와 현재 광명회 수장 장면 | 비공개 `IRMA_KOCH` Dossier, 광명회 wiki, report | `HOSTILE / AHNENERBE`, 외부 무등급 생성 payload를 독립 보존한다. 원본 재검수에서도 큰 장면은 뒷모습 또는 아이들 군상이고 정면 인물 소스는 58×57 아바타뿐이므로 빈 초상 원칙을 유지하되 이번 live 실행에서는 제외한다. | payload-ready · live-held |
 | 닥터 제노 | 닥터 모스 사망 뒤 연구 기구 사무차장직 승계, 데드핸드 직접 지휘 | 비공개 `DOCTOR_ZENO` Dossier, 데드핸드 wiki, report | `NOVUS_ORDO / SECRETARIAT / RESEARCH`, 전임자와 같은 `V`, 빈 초상으로 비공개 신규 생성 | payload-ready |
 | 리처드 | 총장 보좌관 표기, 해쉬와 첫 사적 대화 | 기존 `WHITE_ROSE_R` identity candidate | 동일인 여부와 직함 병합 방식을 사용자 확인 전 미변경 | blocked |
 | 수메르 지하 공동 | 좌표 제보, 유적·아눈나키 벽화·지하 기지 | report, 마지막 대대·광명회 wiki | 별도 장소 wiki로 atomize하지 않고 세 문서의 작전지로 병합 | payload-ready |
@@ -159,7 +159,7 @@ source: stargate-lore
 | `AEGIS` | 발레리아 아젠트(기존 ERP 신원) | 이지스(기존 ERP) | 실험체 유지; 구조대 방어·전차 교전 참가 | 세션 화자와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS`; 기존 `SECTOR_C` 보존 | 수메르 구조대 일시 합류 | `J` 유지(지원 파견은 정규 섹터·접근권 변화가 아님) | 기존 `/assets/peoples/Valeria-pixel-profile.png` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | 크로노스 돌봄과 구조 작전 appearance 누적 | ready-for-apply |
 | `UNYEON` | 백진연(기존 ERP 신원) | 운연(기존 ERP) | 실험체 / 연기인간 유지; 구조대 회복 지원 | alias map·세션 화자와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS` / `SECTOR_A` 보존 | 수메르 구조대 | `J` 유지(회복 지원은 직책·접근권 변화가 아님) | 기존 `/assets/peoples/Unyeon-pixel-profile.png` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | 세션 appearance만 누적 | ready-for-apply |
 | `BAZAROV` | 니콜라이 바자로프(기존 ERP 신원) | богослов(신학자)(기존 ERP) | 섹터 C 연구원장 → 감독관(기존 승인 이력) 유지; 이번에는 증원·조언자 | 세션 `바자로프 교수`와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS` / `SECTOR_C` 보존 | 수메르 구조대 지원; 섹터 C 감독관 직책 불변 | `M` 유지(이번 증원·조언 역할은 기존 감독관 직책과 책임 범위이며 권한등급에 영향 없음) | 기존 `/assets/npcs/Bazarov-profile.webp` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | `INDEXER` 독려 관계와 과학자 개입 관찰 누적 | ready-for-apply |
-| `IRMA_KOCH` | 이르마 코흐(세션 양 시점의 동일 표기) | 없음(별도 통칭·코드네임 미확인) | 1944년 오틸리아의 조수·제자 → 현재 아넨에르베 "광명회" 수장 | 1944년과 현재 장면에서 같은 이름으로 등장하고 현재 본인이 광명회 수장이라고 선언; 기술 식별자는 전체 이름 정규화 | `HOSTILE` / `AHNENERBE` | 수메르 지하 근거지와 의식 운영 | 없음(외부 적대 인물; `agentLevel` 미저장) | 사용자 승인에 따라 `previewImage`·`mainImage` 빈 값; PDF 장면·저해상도 아바타 재사용 없음 | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 세션 근거 성격·배경·역할과 `OTILIA`·`TIGER298` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록 | ready-for-apply |
+| `IRMA_KOCH` | 이르마 코흐(세션 양 시점의 동일 표기) | 없음(별도 통칭·코드네임 미확인) | 1944년 오틸리아의 조수·제자 → 현재 아넨에르베 "광명회" 수장 | 1944년과 현재 장면에서 같은 이름으로 등장하고 현재 본인이 광명회 수장이라고 선언; 기술 식별자는 전체 이름 정규화 | `HOSTILE` / `AHNENERBE` | 수메르 지하 근거지와 의식 운영 | 없음(외부 적대 인물; `agentLevel` 미저장) | 기존 승인대로 `previewImage`·`mainImage` 빈 값. 재검수한 p.7 대형 장면은 뒷모습, p.119 대형 장면은 아이들 군상이고 현재 이르마 정면 소스 `X2845.jp2`는 원본부터 58×57이라 Dossier 초상으로 승격하지 않는다. | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 세션 근거 성격·배경·역할과 `OTILIA`·`TIGER298` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록. 독립 payload는 준비됐으나 이번 live 실행 대상에서는 제외한다. | ready-for-apply |
 | `DOCTOR_ZENO` | 제노(성명 전체는 소스 미확인; `닥터`는 직함) | 없음(별도 통칭·코드네임 미확인) | 닥터 모스 사망 뒤 연구 기구 사무차장 / 프로젝트 데드 핸드 직접 지휘자; 이전 역할은 확인되지 않음 | 세션의 신임 연구차장·직접 지휘 선언과 사용자 후속 인사 확인; 기술 식별자는 확인 표기 정규화 | `NOVUS_ORDO` / `SECRETARIAT` / `RESEARCH` | 프로젝트 데드 핸드와 마가렛 직접 관리 | `V`(사용자가 사망한 닥터 모스의 정확한 후임 자리로 지정; 전임자와 같은 직위·승인 범위를 적용) | 사용자 승인에 따라 `previewImage`·`mainImage` 빈 값; PDF 장면·저해상도 아바타 재사용 없음 | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 모스 후임 이력, 마가렛 이관·수술 계획과 `DOCTOR_MOSS`·`MARGARET`·`INDEXER`·`PIPETTE` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록 | ready-for-apply |
 
 ## NPC Candidate Decision Ledger
@@ -268,23 +268,24 @@ source: stargate-lore
 
 1. `nosb-s1e6-turning-point-part1-reference-targets.json`을 단독 실행해 비공개 `last-battalion` wiki 1건을 insert하고 DB 재조회한다.
 2. 같은 live snapshot을 대상으로 `nosb-s1e6-turning-point-part1-sync.json`을 fresh dry-run한 뒤 단독 실행해 `minRole: V` report와 비공개 mirror를 insert하고 재조회한다.
-3. report 존재를 재확인한 뒤 `nosb-s1e6-turning-point-part1-new-npcs.json`을 단독 실행해 비공개·빈 초상의 `IRMA_KOCH`와 `DOCTOR_ZENO`를 insert하고 재조회한다. 이르마는 외부 무등급, 제노는 닥터 모스 후임 `SECRETARIAT / RESEARCH / V`로 생성한다.
-4. V staging 단계에서는 여기서 중단한다. 신규 두 NPC의 관계·appearance·성격 관찰은 비공개 Dossier 내부에만 존재하며, 기존 공개 Dossier의 역방향 관계나 기존 공개 wiki는 수정하지 않는다.
+3. report 존재를 재확인한 뒤 `nosb-s1e6-turning-point-part1-doctor-zeno.json`을 단독 실행해 비공개·빈 초상의 `DOCTOR_ZENO`를 닥터 모스 후임 `SECRETARIAT / RESEARCH / V`로 insert하고 재조회한다.
+4. `nosb-s1e6-turning-point-part1-irma-koch.json`은 외부 무등급·비공개·빈 초상 create-only payload로 독립 보존하되, 원본 이미지 품질에 대한 사용자 질문을 반영해 이번 live 실행에서는 제외한다. 제노의 관계·appearance·성격 관찰은 비공개 Dossier 내부에만 존재하며, 기존 공개 Dossier의 역방향 관계나 기존 공개 wiki는 수정하지 않는다.
 5. 사용자가 U 공개를 별도 승인한 뒤에만 `nosb-s1e6-turning-point-part1-publication.json` 한 파일을 실행한다. 이 파일의 한 domain transaction 안에서 `last-battalion`과 mirror를 공개하고 report를 `minRole: U`로 전환한 뒤, 기존 공개 wiki 5건, Dossier appearance 16건, relation envelope 7건, personality observation 7건을 함께 반영한다. staging 3건 중 하나라도 없으면 첫 update가 실패해 전체 domain transaction이 abort된다.
-6. reference-targets와 sync는 정사 본문·메타데이터를 `$set`으로 갱신하되, 공개 여부·최저 역할과 `createdAt`만 `$setOnInsert`로 제한한다. 따라서 U 공개 뒤 staging 파일을 재실행해도 최신 정사 본문은 동기화하면서 `U/public`을 `V/private`로 되돌리지 않는다. 신규 NPC 파일은 최초 불변 성격 관찰을 함께 넣는 create-only payload다. 실행 직전 두 codename이 모두 0건이어야 하며, 한 번 성공한 뒤 같은 파일을 재실행하면 기존 codename 검출 즉시 전체 transaction을 fail-closed로 중단한다. 이후 보정은 이 파일을 재실행하지 않고 별도 focused update로 수행한다. publication 파일은 visibility를 최종 `U/true`로 고정하고 나머지는 조건부 append 또는 `$addToSet`이라 같은 내용의 재실행에 멱등이다.
+6. reference-targets와 sync는 정사 본문·메타데이터를 `$set`으로 갱신하되, 공개 여부·최저 역할과 `createdAt`만 `$setOnInsert`로 제한한다. 따라서 U 공개 뒤 staging 파일을 재실행해도 최신 정사 본문은 동기화하면서 `U/public`을 `V/private`로 되돌리지 않는다. 이르마와 제노는 각각 최초 불변 성격 관찰을 함께 넣는 독립 create-only payload다. 각 파일은 실행 직전 해당 codename이 0건이어야 하며, 한 번 성공한 파일을 재실행하면 기존 codename 검출 즉시 fail-closed로 중단한다. 이후 보정은 생성 파일을 재실행하지 않고 별도 focused update로 수행한다. publication 파일은 visibility를 최종 `U/true`로 고정하고 나머지는 조건부 append 또는 `$addToSet`이라 같은 내용의 재실행에 멱등이다.
 
-네 파일은 서로 별도 실행 단위다. 앞 단계 성공 뒤 다음 단계가 실패하면 이미 반영된 비공개 record와 source/ingestion audit은 남으며 자동 원복하지 않는다. 각 단계 직후 독립 재조회와 다음 파일의 fresh dry-run을 거친다.
+다섯 파일은 서로 별도 실행 단위다. 앞 단계 성공 뒤 다음 단계가 실패하면 이미 반영된 비공개 record와 source/ingestion audit은 남으며 자동 원복하지 않는다. 각 단계 직후 독립 재조회와 다음 파일의 fresh dry-run을 거친다.
 
 ## Verification Record
 
 - Source extraction: complete; 125/125 pages, 1,464 normalized entries, 50 scene boundaries.
 - Live read-only baseline: report 0, mirror 0, last-battalion wiki 0, proposed Irma/Zeno Dossier 0, existing `WHITE_ROSE_R` 1.
-- Schema/payload validation: complete; 신규 NPC 2건을 포함한 4개 파일 43개 envelope가 JSON parse와 DB-less seed schema를 통과했고, `IRMA_KOCH`·`DOCTOR_ZENO` spec의 adapter-managed fields가 생성 payload와 일치했다.
+- Schema/payload validation: complete; 신규 NPC 2건을 독립 create-only 파일로 분리한 5개 파일 43개 envelope가 JSON parse와 DB-less seed schema를 통과했고, `IRMA_KOCH`·`DOCTOR_ZENO` spec의 adapter-managed fields가 각 생성 payload와 일치했다.
 - Coverage/static audit: complete; 전체 session coverage·taxonomy·link target·asset 검사가 통과했다.
 - Static baseline live parity: complete; `pnpm lore:baseline -- --verify-live`가 `stargate`의 versioned read-only target hash를 재확인했다.
-- NPC/personality checks: complete; publication 파일의 기존 16개 Dossier target·relation 7개·성격 관찰 7건과 신규 private NPC 2건의 필드·source-side relation·불변 성격 관찰 2건이 각각 focused payload parity를 통과했다. `R`/리처드 identity row만 Candidate Decision Ledger에 격리했다.
+- NPC/personality checks: complete; publication 파일의 기존 16개 Dossier target·relation 7개·성격 관찰 7건과 신규 private NPC 2건의 필드·source-side relation·불변 성격 관찰 2건이 독립 focused payload parity를 통과했다. `R`/리처드 identity row만 Candidate Decision Ledger에 격리했다.
 - Visual/report-mirror parity: complete; 보고서와 mirror의 15개 경로·순서·alt·caption이 일치하고 모든 ledger 자산 경로가 존재한다.
-- Live dry-run: `last-battalion`은 insert 1건, `IRMA_KOCH`·`DOCTOR_ZENO`는 codename 0건 baseline에서 create-only insert 2건으로 확인했다. report/mirror는 선행 `last-battalion` 부재 때문에 report 1건만 구조화 참조 gate에서 차단되고 mirror는 insert로 판정됐다. publication은 staging 3건이 missing이며 기존 공개 wiki·Dossier 대상은 update로 확인돼 phase guard가 작동했다. 실제 실행은 committed source 기준으로 각 단계 직전 fresh dry-run하고, 신규 NPC 파일은 최초 성공 뒤 재실행하지 않는다.
+- Dossier image source re-review: complete; p.7 `X115.jp2` 1035×503 장면은 이르마의 뒷모습이고 p.119 `X2822.jp2` 1035×503 장면은 연설을 듣는 아이들 군상이다. 현재 이르마 정면 소스 `X2845.jp2`는 실제 내장 해상도 58×57의 대화 아바타라 확대 시 얼굴 정보가 보존되지 않아 초상으로 승격하지 않았다.
+- Live dry-run: `last-battalion`은 insert 1건, 분리된 `IRMA_KOCH`·`DOCTOR_ZENO`는 각각 codename 0건 baseline에서 create-only insert 1건으로 확인했다. report/mirror는 선행 `last-battalion` 부재 때문에 report 1건만 구조화 참조 gate에서 차단되고 mirror는 insert로 판정됐다. publication은 staging 3건이 missing이며 기존 공개 wiki·Dossier 대상은 update로 확인돼 phase guard가 작동했다. 실제 실행은 committed source 기준으로 각 단계 직전 fresh dry-run하고, 성공한 신규 NPC 생성 파일은 재실행하지 않는다.
 - Report numbering test: `node --test lib/format/__tests__/session-report-numbering.test.mjs` 6/6 통과.
 - Live write and DB re-read: not run — exact target/mutation approval required.
 - Authenticated ERP browser: not run — live staging records do not exist yet.
@@ -292,4 +293,5 @@ source: stargate-lore
 ## Remaining Decisions
 
 1. `WHITE_ROSE_R`: 이번 로그의 `“총장 보좌관” 리처드`와 동일인인지, 동일인이라면 기존 이름 `R`을 `리처드`로 확장할지와 `총장 보좌관`을 기존 역할에 추가할지 결정해야 한다.
-2. 비공개 `IRMA_KOCH`·`DOCTOR_ZENO`는 향후 공개할 때만 Dossier 공개 여부, 공개 보고서의 구조화 인물 링크, 기존 공개 Dossier의 역방향 관계를 별도 publication payload로 검토한다.
+2. `IRMA_KOCH`: 원본 로그에서 쓸 수 있는 정면 자료는 58×57 채팅 아바타뿐이다. 빈 초상으로 비공개 생성할지, 별도 원본 초상을 받을지 결정한 뒤 독립 payload를 실행한다.
+3. 비공개 `IRMA_KOCH`·`DOCTOR_ZENO`는 향후 공개할 때만 Dossier 공개 여부, 공개 보고서의 구조화 인물 링크, 기존 공개 Dossier의 역방향 관계를 별도 publication payload로 검토한다.
