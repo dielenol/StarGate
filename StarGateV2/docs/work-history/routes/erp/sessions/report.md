@@ -92,3 +92,11 @@
 - 검증: spec adapter parity 3건, NPC·성격·시각자료·공개 문구 checker, live read-only dry-run `예상 insert` 2건, `pnpm typecheck`, critical risk review
 - 관련 커밋: `4435a8be`
 - 후속 작업: 별도 live 승인 후 비공개 마지막 대대 → V 보고서·mirror → 신규 NPC 2명 순서로 staging하고, 각 단계 DB 재조회 뒤 U publication을 별도 승인받는다.
+
+## 2026-08-10 · 라이브 적용 · S1E6 V staging
+
+- `last-battalion`을 비공개 wiki로, `NOSB-S1E6-TURNING-POINT-PART1`을 `minRole: V`·보고 순번 `06`으로, `s1e6-turning-point-part1` mirror를 비공개로 live staging했다.
+- 보고서와 mirror의 장면 참조는 각각 15개로 재조회했고, 이번 단계에서는 U 공개 publication과 기존 공개 wiki·Dossier 역방향 링크를 실행하지 않았다.
+- 검증: wiki `_id=6a7944ca7c80e35d939e1fdb`, report `_id=6a7944f37c80e35d939e1fdd`, mirror `_id=6a7944f37c80e35d939e1fde`, ingestion run 3건 `succeeded`, DB exact re-read, U publication 38건 live dry-run, critical risk review
+- 관련 커밋: `aa591272`, `89584ba6`, `0c6a6a7a`
+- 후속 작업: 이르마 초상/생성 결정, 리처드와 `WHITE_ROSE_R` 동일인 결정, U publication 별도 승인, `localhost:3000` 포트 충돌 해소 뒤 역할별 인증 브라우저 검증이 남는다.

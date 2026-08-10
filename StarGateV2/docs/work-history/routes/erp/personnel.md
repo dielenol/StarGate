@@ -84,3 +84,12 @@
 - 검증: 조직 분기 테스트 1건, 아이콘 감사 113종·37 route, NPC/성격 checker, 게라쉬모프 live read-only dry-run 단일 `예상 update`, `pnpm typecheck`, 대상 ESLint, critical risk review
 - 관련 커밋: `4435a8be`, `cabc04ba`
 - 후속 작업: 별도 live 승인과 적용 후 DB 재조회가 필요하다. 인증 브라우저 확인은 `localhost:3000`을 다른 프로젝트가 점유한 로컬 충돌을 해소한 뒤 진행한다.
+
+## 2026-08-10 · 라이브 적용 · 닥터 제노와 게라쉬모프
+
+- 이르마 코흐와 닥터 제노의 create-only payload를 개별 파일로 분리하고, 이번 승인에서는 이르마 생성을 제외했다.
+- 닥터 제노를 닥터 모스 후임 연구 기구 사무차장 `V`로 비공개·빈 초상 생성했다. 모스·마가렛·해쉬·피펫 관계 4건, 세션 출현 1건, 불변 성격 관찰 1건을 함께 재조회했다.
+- 게라쉬모프의 공개·사망·초상·외부 무등급과 기존 사건·관계를 보존하면서 표시명을 `미하일 게라쉬모프`, 소속을 `MILITARY / RUSSIA`로 live 보정했다.
+- 검증: `DOCTOR_ZENO` `_id=6a79450ce0f247419e0c7012`, `GERASIMOV` `_id=6a7587a61bc9225fc2395022`, `IRMA_KOCH` 0건, ingestion run 2건 `succeeded`, 게라쉬모프 사후 dry-run `예상 unchanged`, critical risk review
+- 관련 커밋: `aa591272`
+- 후속 작업: 이르마는 58×57 대화 아바타 대신 별도 원본 초상을 받을지, 빈 초상으로 생성할지 결정한다. 인증 브라우저 검증은 `localhost:3000` 포트 충돌 해소 뒤 진행한다.

@@ -67,16 +67,16 @@ source: stargate-lore
 
 | subject | source evidence | target surface | action | status |
 |---|---|---|---|---|
-| 변곡점 1부 전체 기록 | 본문 시작·종료 표기와 전 페이지 | `session_reports.NOSB-S1E6-TURNING-POINT-PART1`, `wiki_pages.s1e6-turning-point-part1` | 보고서 `minRole: V`, 비공개 mirror, 동일한 15개 시각 자료 순서로 등록 | payload-ready |
+| 변곡점 1부 전체 기록 | 본문 시작·종료 표기와 전 페이지 | `session_reports.NOSB-S1E6-TURNING-POINT-PART1`, `wiki_pages.s1e6-turning-point-part1` | 보고서 `minRole: V`, 비공개 mirror, 동일한 15개 시각 자료 순서로 등록 | staging-applied |
 | 보고서 번호·지도 카드 | 정규 6화 1부, 수메르 유적 | `lib/format/session-report.ts`, report map | `06` preset·제목 fallback과 지도 카드 배치 추가 | payload-ready |
-| 마지막 대대 | 대규모 병력·중화기·전차·지하 기지, 사령관 증언 | `wiki_pages.last-battalion`, report | 비공개 전용 wiki 생성; 기원·새 신·광원화 구원론은 사령관 증언으로 분리 | payload-ready |
+| 마지막 대대 | 대규모 병력·중화기·전차·지하 기지, 사령관 증언 | `wiki_pages.last-battalion`, report | 비공개 전용 wiki 생성; 기원·새 신·광원화 구원론은 사령관 증언으로 분리 | staging-applied |
 | 광명회 | 이르마의 수장 선언, 수메르 근거지, 마지막 대대와 공동 작전 | `wiki_pages.illuminati`, report | U 공개 시점의 단일 publication transaction에서만 기존 문서에 additive update; 이르마 효능 주장은 증언 처리 | payload-ready |
 | 광원화 바이러스 | 이르마가 개조했다고 주장한 푸른 주사액 | `wiki_pages.aurora-virus`, report | U 공개 시점에 `개조 광원화 바이러스 주장` 단락 추가; 효능 미확인 명시 | payload-ready |
 | 프로젝트 데드 핸드 | 닥터 모스 사망 뒤 제노의 연구 기구 사무차장직 승계, 직접 지휘 선언, 마가렛 이관·수술 계획 | `wiki_pages.project-dead-hand`, report | U 공개 시점에 후임 지휘부와 미확인 수술 계획을 추가 | payload-ready |
 | 스페이스 제로 | 요한 스미스의 대량 제거 가정 질문 | `wiki_pages.space-zero`, `JOHAN_SMITH`·`CLOWN` Dossier | U 공개 시점에 세션 접촉을 기존 문서와 양측 관계에 추가; 실제 제거 계획으로 단정하지 않음 | payload-ready |
 | 화이트로즈와 리처드 | 화이트로즈 명단 확보, 리처드가 하얀 장미를 바라본 장면 | report, `wiki_pages.white-rose`, `WHITE_ROSE_R` candidate | 조직 타격은 wiki에 추가하되 리처드=`R` 병합은 사용자 확인 전 차단 | publication-payload-ready · identity-merge-blocked |
 | 이르마 코흐 | 1944년 조수와 현재 광명회 수장 장면 | 비공개 `IRMA_KOCH` Dossier, 광명회 wiki, report | `HOSTILE / AHNENERBE`, 외부 무등급 생성 payload를 독립 보존한다. 원본 재검수에서도 큰 장면은 뒷모습 또는 아이들 군상이고 정면 인물 소스는 58×57 아바타뿐이므로 빈 초상 원칙을 유지하되 이번 live 실행에서는 제외한다. | payload-ready · live-held |
-| 닥터 제노 | 닥터 모스 사망 뒤 연구 기구 사무차장직 승계, 데드핸드 직접 지휘 | 비공개 `DOCTOR_ZENO` Dossier, 데드핸드 wiki, report | `NOVUS_ORDO / SECRETARIAT / RESEARCH`, 전임자와 같은 `V`, 빈 초상으로 비공개 신규 생성 | payload-ready |
+| 닥터 제노 | 닥터 모스 사망 뒤 연구 기구 사무차장직 승계, 데드핸드 직접 지휘 | 비공개 `DOCTOR_ZENO` Dossier, 데드핸드 wiki, report | `NOVUS_ORDO / SECRETARIAT / RESEARCH`, 전임자와 같은 `V`, 빈 초상으로 비공개 신규 생성 | staging-applied |
 | 리처드 | 총장 보좌관 표기, 해쉬와 첫 사적 대화 | 기존 `WHITE_ROSE_R` identity candidate | 동일인 여부와 직함 병합 방식을 사용자 확인 전 미변경 | blocked |
 | 수메르 지하 공동 | 좌표 제보, 유적·아눈나키 벽화·지하 기지 | report, 마지막 대대·광명회 wiki | 별도 장소 wiki로 atomize하지 않고 세 문서의 작전지로 병합 | payload-ready |
 | 네피림·천사·아눈나키 동일시 | 원로의 종료부 설명 | report, 마지막 대대 wiki | 원로 증언으로만 보존; 독립 개념 wiki 신규 생성 생략 | candidate-only |
@@ -110,7 +110,7 @@ source: stargate-lore
 | 백진연 / 운연 | `UNYEON` | 구조대 회복 지원, 억제 장비 노출, 전차 교전 | payload-ready |
 | 니콜라이 바자로프 | `BAZAROV` | 섹터 C 수호대와 증원, 해쉬에게 구조 지휘 독려 | payload-ready |
 | 이르마 코흐 | `IRMA_KOCH` | 비공개 신규 Dossier에 세션 appearance와 source-side 관계를 함께 등록 | payload-ready |
-| 닥터 제노 | `DOCTOR_ZENO` | 비공개 신규 Dossier에 모스 후임 이력, 데드핸드 지휘와 세션 appearance를 등록 | payload-ready |
+| 닥터 제노 | `DOCTOR_ZENO` | 비공개 신규 Dossier에 모스 후임 이력, 데드핸드 지휘와 세션 appearance를 등록 | staging-applied |
 | `“총장 보좌관” 리처드` | possible `WHITE_ROSE_R` | 기존 R과 동일인 확인 전 Dossier·관계 미변경 | blocked |
 | 셈퍼 파이 | no canonical target | 1940년대 역사 회고 cameo; 완전한 신원·현재 상태 없어 Dossier 미생성 | candidate-only |
 | Dr. 아르투르 | no canonical target | 성·소속·현재 상태 없는 1944년 과학자 cameo | candidate-only |
@@ -129,7 +129,7 @@ source: stargate-lore
 | `IRMA_KOCH` | `OTILIA` | 1944년 제자·조수 관계에서 인종 이념을 부정당하며 결별 | confirmed | 비공개 신규 NPC의 source-side relation | payload-ready |
 | `IRMA_KOCH` | `TIGER298` | 이르마가 시유를 승천 그릇으로 규정하고 개조 바이러스를 제안 | testimony | 비공개 신규 NPC의 source-side relation | payload-ready |
 | `INDEXER` | possible `WHITE_ROSE_R` | 리처드가 해쉬의 선택을 긍정하고 다가올 시점에 소중한 것을 지키라고 경고 | testimony | 동일인 확인 뒤 양측 relation | blocked |
-| `DOCTOR_ZENO` | `DOCTOR_MOSS`·`INDEXER`·`PIPETTE`·`MARGARET` | 모스 사망 뒤 사무차장직을 승계하고 데드핸드 지휘권과 마가렛 통제권을 넘겨받아 고통 증폭 연구를 예고 | confirmed | 비공개 신규 NPC의 source-side relations | payload-ready |
+| `DOCTOR_ZENO` | `DOCTOR_MOSS`·`INDEXER`·`PIPETTE`·`MARGARET` | 모스 사망 뒤 사무차장직을 승계하고 데드핸드 지휘권과 마가렛 통제권을 넘겨받아 고통 증폭 연구를 예고 | confirmed | 비공개 신규 NPC의 source-side relations | staging-applied |
 
 ## Economy And Stock Decision
 
@@ -160,7 +160,7 @@ source: stargate-lore
 | `UNYEON` | 백진연(기존 ERP 신원) | 운연(기존 ERP) | 실험체 / 연기인간 유지; 구조대 회복 지원 | alias map·세션 화자와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS` / `SECTOR_A` 보존 | 수메르 구조대 | `J` 유지(회복 지원은 직책·접근권 변화가 아님) | 기존 `/assets/peoples/Unyeon-pixel-profile.png` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | 세션 appearance만 누적 | ready-for-apply |
 | `BAZAROV` | 니콜라이 바자로프(기존 ERP 신원) | богослов(신학자)(기존 ERP) | 섹터 C 연구원장 → 감독관(기존 승인 이력) 유지; 이번에는 증원·조언자 | 세션 `바자로프 교수`와 기존 Dossier 일치 | `NOVUS_ORDO` / `MANUS` / `SECTOR_C` 보존 | 수메르 구조대 지원; 섹터 C 감독관 직책 불변 | `M` 유지(이번 증원·조언 역할은 기존 감독관 직책과 책임 범위이며 권한등급에 영향 없음) | 기존 `/assets/npcs/Bazarov-profile.webp` 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | `INDEXER` 독려 관계와 과학자 개입 관찰 누적 | ready-for-apply |
 | `IRMA_KOCH` | 이르마 코흐(세션 양 시점의 동일 표기) | 없음(별도 통칭·코드네임 미확인) | 1944년 오틸리아의 조수·제자 → 현재 아넨에르베 "광명회" 수장 | 1944년과 현재 장면에서 같은 이름으로 등장하고 현재 본인이 광명회 수장이라고 선언; 기술 식별자는 전체 이름 정규화 | `HOSTILE` / `AHNENERBE` | 수메르 지하 근거지와 의식 운영 | 없음(외부 적대 인물; `agentLevel` 미저장) | 기존 승인대로 `previewImage`·`mainImage` 빈 값. 재검수한 p.7 대형 장면은 뒷모습, p.119 대형 장면은 아이들 군상이고 현재 이르마 정면 소스 `X2845.jp2`는 원본부터 58×57이라 Dossier 초상으로 승격하지 않는다. | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 세션 근거 성격·배경·역할과 `OTILIA`·`TIGER298` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록. 독립 payload는 준비됐으나 이번 live 실행 대상에서는 제외한다. | ready-for-apply |
-| `DOCTOR_ZENO` | 제노(성명 전체는 소스 미확인; `닥터`는 직함) | 없음(별도 통칭·코드네임 미확인) | 닥터 모스 사망 뒤 연구 기구 사무차장 / 프로젝트 데드 핸드 직접 지휘자; 이전 역할은 확인되지 않음 | 세션의 신임 연구차장·직접 지휘 선언과 사용자 후속 인사 확인; 기술 식별자는 확인 표기 정규화 | `NOVUS_ORDO` / `SECRETARIAT` / `RESEARCH` | 프로젝트 데드 핸드와 마가렛 직접 관리 | `V`(사용자가 사망한 닥터 모스의 정확한 후임 자리로 지정; 전임자와 같은 직위·승인 범위를 적용) | 사용자 승인에 따라 `previewImage`·`mainImage` 빈 값; PDF 장면·저해상도 아바타 재사용 없음 | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 모스 후임 이력, 마가렛 이관·수술 계획과 `DOCTOR_MOSS`·`MARGARET`·`INDEXER`·`PIPETTE` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록 | ready-for-apply |
+| `DOCTOR_ZENO` | 제노(성명 전체는 소스 미확인; `닥터`는 직함) | 없음(별도 통칭·코드네임 미확인) | 닥터 모스 사망 뒤 연구 기구 사무차장 / 프로젝트 데드 핸드 직접 지휘자; 이전 역할은 확인되지 않음 | 세션의 신임 연구차장·직접 지휘 선언과 사용자 후속 인사 확인; 기술 식별자는 확인 표기 정규화 | `NOVUS_ORDO` / `SECRETARIAT` / `RESEARCH` | 프로젝트 데드 핸드와 마가렛 직접 관리 | `V`(사용자가 사망한 닥터 모스의 정확한 후임 자리로 지정; 전임자와 같은 직위·승인 범위를 적용) | 사용자 승인에 따라 `previewImage`·`mainImage` 빈 값; PDF 장면·저해상도 아바타 재사용 없음 | `isPublic: false`(V staging에서 비공개 생성 승인) | 성별·연령·국적·신체 수치는 소스 미확인으로 빈 값 | 모스 후임 이력, 마가렛 이관·수술 계획과 `DOCTOR_MOSS`·`MARGARET`·`INDEXER`·`PIPETTE` source-side 관계, 불변 성격 관찰 1건을 비공개 Dossier에 등록하고 live DB 재조회 완료 | applied |
 
 ## NPC Candidate Decision Ledger
 
@@ -191,7 +191,7 @@ source: stargate-lore
 | `NOSB-S1E6-TURNING-POINT-PART1:MARIA:punitive-retribution` | `MARIA` | `NOSB-S1E6-TURNING-POINT-PART1` | 응보적 처단 우선 | action+dialogue | 호주에서 학살을 벌인 살인범들에게 약속을 지켜야 하나요?<br>좌표를 얻은 뒤 컬티스트를 처단함 | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
 | `NOSB-S1E6-TURNING-POINT-PART1:BAZAROV:scientific-interventionism` | `BAZAROV` | `NOSB-S1E6-TURNING-POINT-PART1` | 관료 공백에서의 과학자 개입 | dialogue+action | 관료들이 무력한 지금, 우리들이 나서야만 하지 않은가?<br>섹터 C 전방 수호대와 함께 수메르 구조 증원에 합류함 | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
 | `NOSB-S1E6-TURNING-POINT-PART1:IRMA_KOCH:racial-purity-fanaticism` | `IRMA_KOCH` | `NOSB-S1E6-TURNING-POINT-PART1` | 혈통 순수성과 초월 신념에 대한 집착 | description+action | 1944년에도 인종적 순수성과 하이퍼보리아 신념을 고수했다.<br>현재 시유를 천사가 될 그릇으로 규정하고 개조 바이러스를 제안했다. | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
-| `NOSB-S1E6-TURNING-POINT-PART1:DOCTOR_ZENO:instrumental-cruelty` | `DOCTOR_ZENO` | `NOSB-S1E6-TURNING-POINT-PART1` | 고통의 연구 수단화 | action | 마가렛의 고통 증폭 수술과 뇌 칩 이식을 예고했다.<br>연구 방식에 반대한 피펫을 직접 제압하고 마가렛을 이송했다. | 작전 보고서 S1E6: 변곡점 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E6-TURNING-POINT-PART1:DOCTOR_ZENO:instrumental-cruelty` | `DOCTOR_ZENO` | `NOSB-S1E6-TURNING-POINT-PART1` | 고통의 연구 수단화 | action | 마가렛의 고통 증폭 수술과 뇌 칩 이식을 예고했다.<br>연구 방식에 반대한 피펫을 직접 제압하고 마가렛을 이송했다. | 작전 보고서 S1E6: 변곡점 1부 | confirmed | applied |
 
 후보 메모:
 
@@ -285,10 +285,10 @@ source: stargate-lore
 - NPC/personality checks: complete; publication 파일의 기존 16개 Dossier target·relation 7개·성격 관찰 7건과 신규 private NPC 2건의 필드·source-side relation·불변 성격 관찰 2건이 독립 focused payload parity를 통과했다. `R`/리처드 identity row만 Candidate Decision Ledger에 격리했다.
 - Visual/report-mirror parity: complete; 보고서와 mirror의 15개 경로·순서·alt·caption이 일치하고 모든 ledger 자산 경로가 존재한다.
 - Dossier image source re-review: complete; p.7 `X115.jp2` 1035×503 장면은 이르마의 뒷모습이고 p.119 `X2822.jp2` 1035×503 장면은 연설을 듣는 아이들 군상이다. 현재 이르마 정면 소스 `X2845.jp2`는 실제 내장 해상도 58×57의 대화 아바타라 확대 시 얼굴 정보가 보존되지 않아 초상으로 승격하지 않았다.
-- Live dry-run: `last-battalion`은 insert 1건, 분리된 `IRMA_KOCH`·`DOCTOR_ZENO`는 각각 codename 0건 baseline에서 create-only insert 1건으로 확인했다. report/mirror는 선행 `last-battalion` 부재 때문에 report 1건만 구조화 참조 gate에서 차단되고 mirror는 insert로 판정됐다. publication은 staging 3건이 missing이며 기존 공개 wiki·Dossier 대상은 update로 확인돼 phase guard가 작동했다. 실제 실행은 committed source 기준으로 각 단계 직전 fresh dry-run하고, 성공한 신규 NPC 생성 파일은 재실행하지 않는다.
+- Live dry-run: staging 전에는 `last-battalion`·분리된 `IRMA_KOCH`·`DOCTOR_ZENO`가 각각 create-only insert 1건으로 확인됐고, report는 선행 `last-battalion` 부재에서만 차단됐다. staging 후 publication 38개 envelope의 fresh dry-run은 모두 `예상 update`로 통과했다. generic runner의 DB dry-run은 같은 파일에서 앞선 envelope가 공개·생성할 reference target의 최종 가시성을 파일 경계와 실행 순서 안에서만 preview한다. 뒤 envelope 우선, 역순 차단, 파일 격리, ambiguous DB target 보존, stable identity rename 차단, 후속 preserve·`$setOnInsert`, 동적 visibility fail-closed를 포함한 helper 11건과 storage contract 3건이 통과했다(`89584ba6`, `0c6a6a7a`). 실제 U publication은 별도 사용자 승인 전 실행하지 않는다. 성공한 신규 NPC 생성 파일은 재실행하지 않는다.
 - Report numbering test: `node --test lib/format/__tests__/session-report-numbering.test.mjs` 6/6 통과.
-- Live write and DB re-read: not run — exact target/mutation approval required.
-- Authenticated ERP browser: not run — live staging records do not exist yet.
+- Live write and DB re-read: partial staging applied. `last-battalion` `_id=6a7944ca7c80e35d939e1fdb`는 `isPublic:false`, report `_id=6a7944f37c80e35d939e1fdd`는 `minRole:V`·`reportNumber:06`, mirror `_id=6a7944f37c80e35d939e1fde`는 `isPublic:false`로 재조회했다. report/mirror의 시각 자료 참조는 각각 15개다. `DOCTOR_ZENO` `_id=6a79450ce0f247419e0c7012`는 비공개·빈 초상·`NOVUS_ORDO / SECRETARIAT / RESEARCH / V`, event 1·source-side relation 4·session appearance 1·immutable personality observation 1로 재조회했고 `IRMA_KOCH`는 0건을 유지했다. 세 run `6f4a6491-ef97-4f64-9fd7-2a4ca4f5cc2d`, `3e5ccacf-ef38-429b-884e-9d7522c38260`, `670a38b9-a80a-4397-98bb-a6975108c0f6`는 모두 `succeeded`다.
+- Authenticated ERP browser: not run — `localhost:3000`의 IPv6 listener를 다른 프로젝트가 점유해 프로젝트가 요구하는 host에서 안전한 인증 검증을 수행하지 못했다. DB·payload·정적 consumer 검증은 완료했으나 report/mirror와 private Dossier의 실제 렌더 검증은 남는다.
 
 ## Remaining Decisions
 
