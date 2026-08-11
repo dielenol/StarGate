@@ -163,7 +163,7 @@ export default function ResearchLabView({
       <section className={styles.stageFrame} aria-label="제노의 샘플 연구소">
         <Image
           className={styles.stageFrame__background}
-          src="/assets/research/xeno-sample-lab.webp"
+          src="/assets/research/xeno-sample-lab-maria.webp"
           alt=""
           fill
           sizes="100vw"
