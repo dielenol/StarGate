@@ -19,6 +19,7 @@ export * from "./domain/shop-catalog.js";
 export * from "./domain/shop-stock.js";
 export * from "./domain/stock-catalog.js";
 export * from "./domain/stock-events.js";
+export * from "./domain/stock-market-wire.js";
 export * from "./domain/stock-pricing.js";
 export * from "./operations/daily-allowance.js";
 export * from "./operations/session-reminders.js";

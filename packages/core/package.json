@@ -62,6 +62,10 @@
       "types": "./dist/domain/stock-events.d.ts",
       "import": "./dist/domain/stock-events.js"
     },
+    "./domain/stock-market-wire": {
+      "types": "./dist/domain/stock-market-wire.d.ts",
+      "import": "./dist/domain/stock-market-wire.js"
+    },
     "./domain/stock-pricing": {
       "types": "./dist/domain/stock-pricing.d.ts",
       "import": "./dist/domain/stock-pricing.js"

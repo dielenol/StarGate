@@ -69,7 +69,7 @@ function makeResult(overrides) {
   };
 }
 
-test("scheduled stock market wire requests one durable message with four embeds", async (t) => {
+test("scheduled stock market wire requests four durable single-embed messages", async (t) => {
   const envSnapshot = snapshotEnv();
   const requests = [];
 
@@ -90,19 +90,27 @@ test("scheduled stock market wire requests one durable message with four embeds"
     request: async (request) => requests.push(request),
   });
 
-  assert.deepEqual(result, { status: "queued", embedCount: 4, messageCount: 1 });
+  assert.deepEqual(result, { status: "queued", embedCount: 4, messageCount: 4 });
   assert.equal(requests.length, 1);
   assert.equal(requests[0].date, "2026-07-09");
+  assert.equal(
+    requests[0].formatRevision,
+    "four-single-embed-messages-v1",
+  );
   assert.deepEqual(
     requests[0].payloads.map((payload) => payload.embeds.length),
-    [4],
+    [1, 1, 1, 1],
   );
   assert.match(
     requests[0].payloads[0].content,
     /ORDO-NET 주식 거래소 바로가기/,
   );
   assert.deepEqual(
-    requests[0].payloads[0].embeds.map((embed) => embed.title),
+    requests[0].payloads.slice(1).map((payload) => payload.content),
+    [undefined, undefined, undefined],
+  );
+  assert.deepEqual(
+    requests[0].payloads.map((payload) => payload.embeds[0].title),
     [
       "재무기구 정기 시세 공시 · 2026-07-09",
       "상승 마감 장부",
@@ -130,7 +138,7 @@ test("scheduled stock market wire leaves a concurrent request queued", async (t)
   assert.deepEqual(result, {
     status: "queued",
     embedCount: 4,
-    messageCount: 1,
+    messageCount: 4,
   });
 });
 
@@ -154,6 +162,44 @@ test("a fully skipped tick leaves pending replacement recovery to the worker", a
 
   assert.deepEqual(result, { status: "skipped-no-change" });
   assert.equal(requested, false);
+});
+
+test("a skipped tick rebuilds history and replaces the legacy message format", async (t) => {
+  const envSnapshot = snapshotEnv();
+  const requests = [];
+  t.after(() => restoreEnv(envSnapshot));
+
+  const result = await notifyScheduledStockMarketWire(
+    {
+      date: "2026-08-11",
+      slot: "2026-08-11 12:00",
+      results: [makeResult({ status: "skipped" })],
+    },
+    {
+      rebuild: async () => ({
+        date: "2026-08-11",
+        slot: "2026-08-11 12:00",
+        sourceRevision: "same-stock-prices",
+        results: [makeResult({ status: "updated" })],
+      }),
+      request: async (request) => requests.push(request),
+    },
+  );
+
+  assert.deepEqual(result, {
+    status: "queued",
+    embedCount: 4,
+    messageCount: 4,
+  });
+  assert.equal(requests.length, 1);
+  assert.equal(
+    requests[0].formatRevision,
+    "four-single-embed-messages-v1",
+  );
+  assert.deepEqual(
+    requests[0].payloads.map((payload) => payload.embeds.length),
+    [1, 1, 1, 1],
+  );
 });
 
 test("a skipped tick does not invoke a web-owned Discord recovery", async (t) => {

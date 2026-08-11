@@ -41,6 +41,7 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
       stateId: string;
       webhookUrl: string;
       fetchImpl?: typeof fetch;
+      getDbImpl?: typeof getDb;
     },
   ) {}
 
@@ -53,7 +54,7 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
     };
     if (signal.aborted) return summary;
 
-    const db = await getDb();
+    const db = await (this.options.getDbImpl ?? getDb)();
     const col = db.collection<DiscordDesiredState>(
       this.options.collectionName,
     );

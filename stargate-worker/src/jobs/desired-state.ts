@@ -12,6 +12,7 @@ import {
   STOCK_CATALOG,
   findStockByTicker,
 } from "@stargate/core/domain/stock-catalog";
+import { STOCK_MARKET_WIRE_FORMAT_REVISION } from "@stargate/core/domain/stock-market-wire";
 import {
   formatSignedStockValue,
   formatStockValue,
@@ -102,9 +103,29 @@ interface DesiredMessageState {
   syncedRevision: number;
   desiredDate: string;
   desiredSourceRevision?: string;
+  desiredFormatRevision?: string;
   desiredPayloads: DiscordWebhookPayload[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export function isDesiredStateRevisionCurrent(
+  current: Pick<
+    DesiredMessageState,
+    "desiredDate" | "desiredSourceRevision" | "desiredFormatRevision"
+  > | null,
+  desired: {
+    date: string;
+    sourceRevision: string;
+    formatRevision?: string;
+  },
+): boolean {
+  return (
+    current?.desiredDate === desired.date &&
+    current.desiredSourceRevision === desired.sourceRevision &&
+    (desired.formatRevision === undefined ||
+      current.desiredFormatRevision === desired.formatRevision)
+  );
 }
 
 function sanitize(value: string): string {
@@ -385,12 +406,7 @@ export function buildStockMarketWireDesiredPayloads(
       ],
     },
   ];
-  return [
-    {
-      ...payloads[0],
-      embeds: payloads.flatMap((payload) => payload.embeds),
-    },
-  ];
+  return payloads;
 }
 
 async function requestDesiredState(input: {
@@ -398,18 +414,22 @@ async function requestDesiredState(input: {
   stateId: string;
   date: string;
   sourceRevision: string;
+  formatRevision?: string;
   payloads: DiscordWebhookPayload[];
 }): Promise<"requested" | "current"> {
   const db = await getDb();
   const col = db.collection<DesiredMessageState>(input.collectionName);
   const current = await col.findOne(
     { _id: input.stateId },
-    { projection: { desiredDate: 1, desiredSourceRevision: 1 } },
+    {
+      projection: {
+        desiredDate: 1,
+        desiredSourceRevision: 1,
+        desiredFormatRevision: 1,
+      },
+    },
   );
-  if (
-    current?.desiredDate === input.date &&
-    current.desiredSourceRevision === input.sourceRevision
-  ) {
+  if (isDesiredStateRevisionCurrent(current, input)) {
     return "current";
   }
 
@@ -420,6 +440,9 @@ async function requestDesiredState(input: {
     $set: {
       desiredDate: input.date,
       desiredSourceRevision: input.sourceRevision,
+      ...(input.formatRevision
+        ? { desiredFormatRevision: input.formatRevision }
+        : {}),
       desiredPayloads: input.payloads,
       updatedAt: now,
     },
@@ -446,6 +469,9 @@ async function requestDesiredState(input: {
           syncedRevision: 0,
           desiredDate: input.date,
           desiredSourceRevision: input.sourceRevision,
+          ...(input.formatRevision
+            ? { desiredFormatRevision: input.formatRevision }
+            : {}),
           desiredPayloads: input.payloads,
           createdAt: now,
           updatedAt: now,
@@ -664,6 +690,7 @@ export async function requestStockMarketWireState(
     stateId: STOCK_STATE_ID,
     date: summary.date,
     sourceRevision,
+    formatRevision: STOCK_MARKET_WIRE_FORMAT_REVISION,
     payloads,
   });
 }

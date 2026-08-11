@@ -1,0 +1,205 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { DiscordDesiredStateConsumer } from "../dist/consumers/discord-desired-state.js";
+
+const OLD_MESSAGE_IDS = [
+  "90000000000000001",
+  "90000000000000002",
+  "90000000000000003",
+  "90000000000000004",
+];
+
+function payload(index) {
+  return {
+    username: "재무기구 시장감시실",
+    allowed_mentions: { parse: [] },
+    embeds: [
+      {
+        title: `공시 카드 ${index}`,
+        color: 0xc5a059,
+        fields: [{ name: "항목", value: `내용 ${index}` }],
+        timestamp: "2026-08-11T03:00:00.000Z",
+      },
+    ],
+  };
+}
+
+function applyUpdate(state, update) {
+  if (update.$set) {
+    Object.assign(state, structuredClone(update.$set));
+  }
+  if (update.$pull) {
+    for (const [field, value] of Object.entries(update.$pull)) {
+      state[field] = (state[field] ?? []).filter((item) => item !== value);
+    }
+  }
+  if (update.$unset) {
+    for (const field of Object.keys(update.$unset)) {
+      delete state[field];
+    }
+  }
+}
+
+function makeFixture() {
+  const state = {
+    _id: "scheduled",
+    requestedRevision: 2,
+    syncedRevision: 1,
+    desiredPayloads: [1, 2, 3, 4].map(payload),
+    messageIds: [...OLD_MESSAGE_IDS],
+    updatedAt: new Date("2026-08-11T03:00:00.000Z"),
+  };
+  const visible = new Set(OLD_MESSAGE_IDS);
+  const posts = [];
+  const deletes = [];
+  let nextMessageId = 91000000000000000n;
+  let failPostAt = null;
+  let failDeleteId = null;
+
+  const collection = {
+    async findOneAndUpdate(_filter, update) {
+      const now = new Date();
+      const hasDueRevision = state.requestedRevision > state.syncedRevision;
+      const hasCleanup = [
+        ...(state.staleMessageIds ?? []),
+        ...(state.replacementMessageIds ?? []),
+        ...(state.cleanupMessageIds ?? []),
+      ].length > 0;
+      const leaseAvailable =
+        !state.leaseToken ||
+        !state.leaseExpiresAt ||
+        state.leaseExpiresAt <= now;
+      const retryDue = !state.nextAttemptAt || state.nextAttemptAt <= now;
+      if ((!hasDueRevision && !hasCleanup) || !leaseAvailable || !retryDue) {
+        return null;
+      }
+      applyUpdate(state, update);
+      return structuredClone(state);
+    },
+    async updateOne(filter, update) {
+      if (filter.leaseToken && filter.leaseToken !== state.leaseToken) {
+        return { modifiedCount: 0 };
+      }
+      applyUpdate(state, update);
+      return { modifiedCount: 1 };
+    },
+    async findOne(filter) {
+      const messageIdsMatch =
+        !filter.messageIds ||
+        JSON.stringify(filter.messageIds) === JSON.stringify(state.messageIds);
+      const revisionMatches =
+        !filter.syncedRevision?.$gte ||
+        state.syncedRevision >= filter.syncedRevision.$gte;
+      return messageIdsMatch && revisionMatches ? { _id: state._id } : null;
+    },
+  };
+
+  const fetchImpl = async (url, init) => {
+    if (init.method === "POST") {
+      posts.push(JSON.parse(init.body));
+      if (failPostAt === posts.length) {
+        failPostAt = null;
+        return new Response("POST_FAILED", { status: 500 });
+      }
+      nextMessageId += 1n;
+      const id = nextMessageId.toString();
+      visible.add(id);
+      return Response.json({ id });
+    }
+
+    const id = new URL(url).pathname.split("/").at(-1);
+    deletes.push(id);
+    if (id === failDeleteId) {
+      failDeleteId = null;
+      return new Response("DELETE_FAILED", { status: 500 });
+    }
+    visible.delete(id);
+    return new Response(null, { status: 204 });
+  };
+
+  const consumer = new DiscordDesiredStateConsumer("stock-market-wire", {
+    collectionName: "stock_discord_market_wires",
+    stateId: "scheduled",
+    webhookUrl: "https://discord.test/api/webhooks/123/token",
+    fetchImpl,
+    getDbImpl: async () => ({ collection: () => collection }),
+  });
+
+  return {
+    consumer,
+    deletes,
+    posts,
+    state,
+    visible,
+    failNextPostAt(index) {
+      failPostAt = index;
+    },
+    failNextDelete(id) {
+      failDeleteId = id;
+    },
+    allowRetry() {
+      state.nextAttemptAt = new Date(0);
+    },
+  };
+}
+
+test("네 장 생성 중 세 번째 실패는 새 카드만 정리하고 재시도에서 네 장으로 수렴한다", async () => {
+  const fixture = makeFixture();
+  fixture.failNextPostAt(3);
+
+  const failed = await fixture.consumer.tick({
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(failed.failed, 1);
+  assert.equal(fixture.state.syncedRevision, 1);
+  assert.deepEqual([...fixture.visible], OLD_MESSAGE_IDS);
+  assert.equal(fixture.state.replacementMessageIds, undefined);
+  assert.match(fixture.state.lastError, /POST_FAILED/);
+
+  fixture.allowRetry();
+  const retried = await fixture.consumer.tick({
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(retried.delivered, 1);
+  assert.equal(fixture.state.syncedRevision, 2);
+  assert.equal(fixture.state.messageIds.length, 4);
+  assert.deepEqual([...fixture.visible], fixture.state.messageIds);
+  assert.ok(
+    fixture.state.messageIds.every((id) => !OLD_MESSAGE_IDS.includes(id)),
+  );
+  assert.deepEqual(
+    fixture.posts.slice(-4).map((posted) => posted.embeds.length),
+    [1, 1, 1, 1],
+  );
+});
+
+test("네 장 활성화 뒤 이전 카드 삭제 실패는 재시도에서 새 네 장을 보존한다", async () => {
+  const fixture = makeFixture();
+  fixture.failNextDelete(OLD_MESSAGE_IDS[0]);
+
+  const failed = await fixture.consumer.tick({
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(failed.failed, 1);
+  assert.equal(fixture.state.syncedRevision, 2);
+  assert.equal(fixture.state.messageIds.length, 4);
+  assert.equal(fixture.visible.size, 8);
+  assert.deepEqual(fixture.state.staleMessageIds, OLD_MESSAGE_IDS);
+
+  fixture.allowRetry();
+  const retried = await fixture.consumer.tick({
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(retried.failed, 0);
+  assert.equal(fixture.state.syncedRevision, 2);
+  assert.deepEqual([...fixture.visible], fixture.state.messageIds);
+  assert.ok(
+    fixture.state.messageIds.every((id) => !OLD_MESSAGE_IDS.includes(id)),
+  );
+  assert.equal(fixture.state.staleMessageIds, undefined);
+});

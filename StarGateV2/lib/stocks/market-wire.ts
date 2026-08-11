@@ -1,3 +1,5 @@
+import { STOCK_MARKET_WIRE_FORMAT_REVISION } from "@stargate/core/domain/stock-market-wire";
+
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import type { StockEventTier } from "@/lib/stocks/events";
 import type {
@@ -411,9 +413,9 @@ function buildRoutineLedgerEmbeds(input: {
   return embeds;
 }
 
-function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPayload | null {
+function buildScheduledPayloads(summary: ScheduledStockTickSummary): DiscordPayload[] {
   const changed = summary.results.filter((result) => result.status !== "skipped");
-  if (changed.length === 0) return null;
+  if (changed.length === 0) return [];
 
   const officer = getOfficerForDate(summary.date);
   const upCount = changed.filter(
@@ -432,34 +434,40 @@ function buildScheduledPayload(summary: ScheduledStockTickSummary): DiscordPaylo
     officer.noticeLine,
   ].join("\n");
 
-  return {
-    content: stockMarketContent(),
+  const basePayload: Omit<DiscordPayload, "content" | "embeds"> = {
     username: "재무기구 시장감시실",
     avatar_url: process.env.DISCORD_WEBHOOK_STOCK_AVATAR_URL || undefined,
     allowed_mentions: { parse: [] },
-    embeds: [
-      {
-        title: `재무기구 정기 시세 공시 · ${summary.date}`,
-        url: STOCK_WEB_URL,
-        description,
-        color,
-        fields: buildRoutineOverviewFields(summary, changed),
-        timestamp,
-      },
-      ...buildRoutineLedgerEmbeds({
-        changed,
-        officer,
-        summary,
-        timestamp,
-      }),
-    ],
   };
+  const embeds: DiscordEmbed[] = [
+    {
+      title: `재무기구 정기 시세 공시 · ${summary.date}`,
+      url: STOCK_WEB_URL,
+      description,
+      color,
+      fields: buildRoutineOverviewFields(summary, changed),
+      timestamp,
+    },
+    ...buildRoutineLedgerEmbeds({
+      changed,
+      officer,
+      summary,
+      timestamp,
+    }),
+  ];
+
+  return embeds.map((embed, index) => ({
+    ...basePayload,
+    ...(index === 0 ? { content: stockMarketContent() } : {}),
+    embeds: [embed],
+  }));
 }
 
 interface ScheduledStockMarketWireDependencies {
   request(args: {
     date: string;
     sourceRevision?: string;
+    formatRevision: string;
     payloads: DiscordPayload[];
   }): Promise<void>;
   rebuild?(summary: ScheduledStockTickSummary): Promise<ScheduledStockTickSummary>;
@@ -484,25 +492,24 @@ export async function notifyScheduledStockMarketWire(
   summary: ScheduledStockTickSummary,
   dependencies: ScheduledStockMarketWireDependencies = scheduledStockMarketWireDependencies,
 ): Promise<MarketWireResult> {
-  if (summary.results.every((result) => result.status === "skipped")) {
-    return { status: "skipped-no-change" };
-  }
-
   try {
     const canonicalSummary = dependencies.rebuild
       ? await dependencies.rebuild(summary)
       : summary;
-    const payload = buildScheduledPayload(canonicalSummary);
-    if (!payload) return { status: "skipped-no-change" };
-    const payloads = [payload];
+    const payloads = buildScheduledPayloads(canonicalSummary);
+    if (payloads.length === 0) return { status: "skipped-no-change" };
     await dependencies.request({
       date: summary.date,
       sourceRevision: canonicalSummary.sourceRevision,
+      formatRevision: STOCK_MARKET_WIRE_FORMAT_REVISION,
       payloads,
     });
     return {
       status: "queued",
-      embedCount: payload.embeds.length,
+      embedCount: payloads.reduce(
+        (count, payload) => count + payload.embeds.length,
+        0,
+      ),
       messageCount: payloads.length,
     };
   } catch (error) {
