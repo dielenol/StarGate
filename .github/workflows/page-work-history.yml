@@ -1,0 +1,64 @@
+name: Audit page work history
+
+on:
+  pull_request:
+    paths:
+      - "StarGateV2/app/**"
+      - "StarGateV2/components/**"
+      - "StarGateV2/hooks/**"
+      - "StarGateV2/lib/**"
+      - "StarGateV2/styles/**"
+      - "StarGateV2/types/**"
+      - "StarGateV2/next.config.ts"
+      - "StarGateV2/proxy.ts"
+      - "StarGateV2/docs/work-history/**"
+      - "StarGateV2/scripts/audit-page-work-history.mjs"
+      - "StarGateV2/scripts/__tests__/audit-page-work-history.test.mjs"
+      - "StarGateV2/package.json"
+      - ".github/workflows/page-work-history.yml"
+  push:
+    branches: [main]
+    paths:
+      - "StarGateV2/app/**"
+      - "StarGateV2/components/**"
+      - "StarGateV2/hooks/**"
+      - "StarGateV2/lib/**"
+      - "StarGateV2/styles/**"
+      - "StarGateV2/types/**"
+      - "StarGateV2/next.config.ts"
+      - "StarGateV2/proxy.ts"
+      - "StarGateV2/docs/work-history/**"
+      - "StarGateV2/scripts/audit-page-work-history.mjs"
+      - "StarGateV2/scripts/__tests__/audit-page-work-history.test.mjs"
+      - "StarGateV2/package.json"
+      - ".github/workflows/page-work-history.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Warn about likely omissions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Test auditor
+        run: node --test StarGateV2/scripts/__tests__/audit-page-work-history.test.mjs
+
+      - name: Audit changed commits
+        env:
+          AUDIT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          AUDIT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: >-
+          node StarGateV2/scripts/audit-page-work-history.mjs
+          --base "$AUDIT_BASE_SHA"
+          --head "$AUDIT_HEAD_SHA"
