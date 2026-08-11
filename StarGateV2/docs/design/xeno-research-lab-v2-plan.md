@@ -175,6 +175,7 @@
 | 4. 브라우저·리뷰·이력 | VERIFIED | responsive QA, risk review, work history | GM desktop/mobile QA, P0~P3 없음, 구현 커밋과 페이지 이력 기록 |
 | 5. 사후 코드리뷰 개선 | VERIFIED | 복구 mutation 경계, 안전정지 결제 차단, VN 중복 제거, active job 조회 보강 | 집중 테스트 24 pass·Mongo 7 skip, typecheck·lint·build, 위험 재리뷰 P0~P3 없음 |
 | 6. VN 화면 재설계·GM 시뮬레이션 | VERIFIED | 샘플 연구소 배경, 풀스테이지 대화 UI, 비영속 GM 테스트 | skill validator, 계약 6/6, typecheck·lint·build, 1440×900·390×844 QA, 위험 리뷰 P0~P3 없음 |
+| 7. 마리아 화풍 배경 보강 | VERIFIED | 마리아 레퍼런스 필수 환경 배경 workflow, 연구소 배경 재생성 | skill validator, 1920×1080 asset QA, typecheck·lint·build, 1440×900·390×844 QA |
 
 ## 변경·검증 로그
 
@@ -284,6 +285,23 @@
 - PASS: GM 인증 브라우저 1440×900과 390×844에서 배경·대화 선택·자유대화·다섯 연구 상태·관계 9단계·drawer·개인 수령 액션·가로 overflow·console error·키보드 초점 이동을 확인했다.
 - 읽기 전용 critical 위험 재리뷰에서 P0·P1·P2·P3 잔여 결함 없음 판정을 받았다. 구현 커밋은 `6ee19b74`이며 라이브 운영 데이터는 변경하지 않았다.
 
+### 2026-08-11 · 마리아 화풍 배경 보강 시작
+
+- 기존 `environment-background`가 신규 장소를 무참조로 생성하도록 허용해, 실제 연구소 배경에 고정 마리아 레퍼런스의 선화·회색 워시·선택색·질감이 반영되지 않은 문제를 확인했다.
+- 환경 배경도 `assets/maria-style-reference.png`를 첫 번째 화풍 레퍼런스로 반드시 전달하고, 기존 장면을 계승할 때만 두 번째 이미지로 공간 구조·구도 레퍼런스를 전달하도록 Skill 계약을 보강한다.
+- 현재 샘플 연구소 배경은 마리아 화풍 레퍼런스와 기존 배경의 공간 구성만 분리해 입력한 뒤 재생성한다. 인물·문자·UI를 넣지 않고 기존 캐릭터·대화창 안전 영역을 유지한다.
+- 이 배치에서도 운영 DB, index, seed, 크레딧·인벤토리, 관계·worker flag를 변경하지 않는다.
+
+### 2026-08-11 · 마리아 화풍 배경 보강 완료
+
+- `$stargate-images`의 `environment-background`를 고정 마리아 레퍼런스 필수 workflow로 교정했다. 신규 장소는 마리아 레퍼런스만, 기존 장소 계승은 `마리아 화풍 → 장면 구조·구도` 순서로 입력하며 무참조 생성을 금지한다.
+- 고정 레퍼런스에서는 가는 수작업 선화·옅은 회색 워시·절제된 선택색·종이 질감만 가져오고, 은발 인물·분홍 눈·의상·혀·이빨·포즈 등 캐릭터 고유 요소가 배경에 섞이지 않도록 prompt와 QA를 고정했다.
+- 기존 연구소 공간 구성을 두 번째 장면 레퍼런스로 사용해 새 배경을 생성하고, 1920×1080 불투명 sRGB WebP `xeno-sample-lab-maria.webp`로 정규화했다. 캐릭터 안전 영역과 하단 34% 대화 안전 영역을 유지했다.
+- 동일 URL의 Next image cache가 이전 실사풍 에셋을 유지하지 않도록 소비 경로를 새 파일명으로 변경했다.
+- PASS: Skill validator, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`.
+- PASS: GM 인증 브라우저 1440×900과 390×844에서 새 에셋 로드, 제노·선택지·대화창 대비, mobile 가로 overflow 부재, console error 0건을 확인했다.
+- 구현 커밋은 `fcc7d940`이며 라이브 운영 데이터는 변경하지 않았다.
+
 ## 라이브 활성화 차단 조건
 
 아래 항목은 구현 완료와 별개이며 정확한 대상과 실행 동작에 대한 별도 승인 전에는 `BLOCKED`다.
@@ -300,4 +318,5 @@
 - `ff983be6` · `feat(all): 관계형 제노 샘플 연구소를 구현한다`
 - `b20cfc8d` · `fix(all): 제노 연구소의 복구와 안전정지를 보강한다`
 - `6ee19b74` · `feat(novusweb): 제노 연구소를 비주얼노벨 무대로 개편한다`
+- `fcc7d940` · `fix(novusweb): 연구소 배경에 마리아 화풍을 반영한다`
 - 라이브 mutation·index 생성·seed·lore rebuild·worker 활성화는 이 커밋들에 포함되지 않았다.

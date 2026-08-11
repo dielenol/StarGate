@@ -53,3 +53,12 @@
 - 검증: `$stargate-images` skill validator, 연구 계약 6/6, dialogue 22/22, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, GM 인증 브라우저 1440×900·390×844 및 키보드 QA, critical risk review P0~P3 없음
 - 관련 커밋: `6ee19b74`
 - 운영 경계: 라이브 DB·index·seed·크레딧·인벤토리·관계·worker flag는 변경하지 않았다.
+
+## 2026-08-11 · UI 보정 · 마리아 화풍 연구소 배경
+
+- 기존 연구소 배경이 `$stargate-images` 환경 workflow를 사용했지만 고정 마리아 레퍼런스를 실제 입력하지 않아 실사풍 3D 질감으로 생성된 문제를 교정했다.
+- 마리아 레퍼런스의 가는 선화·회색 워시·절제된 보라/청록 선택색만 적용하고, 기존 연구소의 공간 구조와 캐릭터·하단 대화 안전 영역을 유지한 1920×1080 WebP 배경으로 교체했다.
+- 에셋 경로를 `xeno-sample-lab-maria.webp`로 변경해 Next image cache에서도 이전 배경이 남지 않게 했다.
+- 검증: `$stargate-images` skill validator, 불투명 sRGB·규격 QA, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, GM 인증 브라우저 1440×900·390×844에서 새 배경 로드·텍스트 대비·가로 overflow·console error 확인
+- 관련 커밋: `fcc7d940`
+- 운영 경계: 라이브 DB·크레딧·인벤토리·관계·worker flag는 변경하지 않았다.
