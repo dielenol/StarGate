@@ -18,9 +18,10 @@ isPublic: true
 loreTags: [시민사회, 화이트로즈, 수장, 레짐체인지, 긴급통신, NOSB-S1E5-EVIL-PART2]
 appearsInEvents: [NOSB-S1E5-EVIL-PART2]
 source: manual
-previewImage:
+previewImage: /assets/npcs/Unknown-Person-profile.webp
+mainImage: /assets/npcs/Unknown-Person-profile.webp
 createdAt: 2026-07-12T00:00:00.000Z
-updatedAt: 2026-08-07T00:00:00.000Z
+updatedAt: 2026-08-12T00:00:00.000Z
 ---
 
 ## 대사

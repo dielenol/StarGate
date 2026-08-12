@@ -38,3 +38,8 @@ source: stargate-lore
 - 신규 Dossier 3건, 관계 대상 5건/관계 6개, 기존 Dossier 21건과 personality observation 6건의 live 적용·독립 DB 재조회가 통과했다.
 - `GERASIMOV`, `RUBIN_BABUSHKA`, `WHITE_ROSE_R`은 모두 공개 외부 NPC이고 `agentLevel` 필드가 없다. R은 `previewImage`와 `lore.mainImage`가 빈 값이다.
 - 인증 ERP에서 신규 세 Dossier, 바자로프 `M · 부서 관리자`, R의 무이미지와 개인 `U` 배지 비노출, 관계 카드의 정·역방향 앵커를 확인했다.
+
+## 2026-08-12 R Portrait Supersession
+
+- 이 문서의 빈 초상 판정은 최초 생성 당시 적용 이력이다. 사용자가 2026-08-12 공용 미상 초상을 사용하도록 새로 지시했으므로 최신 목표는 `WHITE_ROSE_R.previewImage`와 `lore.mainImage`의 `/assets/npcs/Unknown-Person-profile.webp`다.
+- R의 실명 미상, `CIVIL / WHITE_ROSE`, 외부 무등급, 공개 상태와 기존 관계는 변경하지 않는다. 새 focused 원장은 `public-personnel-release-2026-08-12-review.md`다.

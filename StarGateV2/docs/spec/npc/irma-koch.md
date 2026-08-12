@@ -14,7 +14,7 @@ weight:
 factionCode: HOSTILE
 institutionCode:
 department: AHNENERBE
-isPublic: false
+isPublic: true
 loreTags: [광명회, 아넨에르베, 하이퍼보리아, 수메르, 개조광원화바이러스, NOSB-S1E6-TURNING-POINT-PART1]
 appearsInEvents: [NOSB-S1E6-TURNING-POINT-PART1]
 source: session-log
@@ -23,7 +23,7 @@ mainImage: /assets/npcs/Irma-Koch-profile.webp
 pixelCharacterImage:
 posterImage:
 createdAt: 2026-07-26T00:00:00.000Z
-updatedAt: 2026-08-10T00:00:00.000Z
+updatedAt: 2026-08-12T00:00:00.000Z
 ---
 
 ## 대사

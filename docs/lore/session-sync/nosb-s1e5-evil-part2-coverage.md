@@ -263,6 +263,12 @@ source: stargate-lore
 - 경제: payload 전체에 경제·인벤토리·상점·주식·`master_items` mutation이 없어야 한다.
 - focused BAZAROV 등급 교정과 나머지 2부 payload 6개는 live 적용·DB 재조회·감사 레코드·인증 브라우저 검증까지 완료했다.
 
+## 2026-08-12 R Portrait Addendum
+
+- 위 원장의 `WHITE_ROSE_R` 빈 초상은 2026-08-07 당시 사용자 결정과 실행 이력을 보존한 것이다.
+- 사용자가 2026-08-12 기존 무이미지 결정을 철회하고 실초상 미상 인물용 공용 표식을 요청했다. 최신 목표는 `previewImage`와 `lore.mainImage` 모두 `/assets/npcs/Unknown-Person-profile.webp`이며, 실명·직책·소속·외부 무등급·공개 여부·기존 관계는 그대로 보존한다.
+- 리처드와 R의 동일인 여부는 여전히 미확정이다. focused 적용 범위와 자산 근거는 `public-personnel-release-2026-08-12-review.md`에 보존한다.
+
 ## Verification Evidence
 
 - 원본 113쪽에서 1,485개 기록과 31개 시각 프레임을 추출했고 빈 페이지·대체문자가 없음을 확인했다. 대표 시작·중간·종료 페이지와 선정 프레임을 시각 판독했다.

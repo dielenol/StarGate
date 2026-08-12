@@ -1,0 +1,267 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "PUTIN",
+      "type": "NPC",
+      "role": "러시아 연방 대통령 / 섹터 C 국영화 지시권자",
+      "department": "RUSSIA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "블라디미르 푸틴",
+        "nameEn": "Vladimir Putin",
+        "gender": "",
+        "age": "",
+        "height": "",
+        "weight": "",
+        "appearance": "개인 식별용 실물 초상은 보존 기록에 첨부되지 않았으며, 외형을 확정할 추가 자료도 남아 있지 않다.",
+        "personality": "이번 기록에는 직접 발언이나 현장 행동이 남아 있지 않아 성격을 확정할 근거가 충분하지 않다.",
+        "background": "블라디미르 푸틴은 러시아 연방 대통령이자 러시아 정부의 최고지도자로 기록된 인물이다. 섹터 C 사태에서는 시설 국영화와 지도부 교체를 추진하도록 미하일 게라쉬모프 장군을 현장에 파견한 지시권자로 언급된다.\n\n푸틴 본인은 섹터 C 현장에 직접 나타나지 않았으며, 파견 명령의 세부 조건과 후속 대응은 현재 보존 기록만으로 확인되지 않는다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "러시아",
+          "러시아정부",
+          "대통령",
+          "섹터C",
+          "국영화",
+          "미하일게라쉬모프",
+          "NOSB-S1E5-EVIL-PART1"
+        ],
+        "appearsInEvents": [
+          "NOSB-S1E5-EVIL-PART1"
+        ],
+        "relations": [
+          {
+            "targetCodename": "GERASIMOV",
+            "targetName": "미하일 게라쉬모프",
+            "label": "현장 파견",
+            "summary": "섹터 C 국영화와 지도부 교체를 추진하도록 미하일 게라쉬모프 장군을 현장에 파견했다.",
+            "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+            "sourceLabel": "작전 보고서 S1E5: 악 1부",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E5-EVIL-PART1",
+            "role": "러시아 정부 후방 지시권자 / 게라쉬모프 파견자",
+            "summary": "섹터 C 국영화와 지도부 교체를 추진하도록 미하일 게라쉬모프 장군을 현장에 파견한 인물로 언급됐다. 본인은 현장에 직접 나타나지 않았다.",
+            "sourceLabel": "작전 보고서 S1E5: 악 1부"
+          }
+        ],
+        "personalityObservations": [],
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 러시아 정부(RUSSIA) 최고지도자\n- 확인 직책: 러시아 연방 대통령\n- 작전 접점: 섹터 C 국영화와 지도부 교체를 추진하기 위한 미하일 게라쉬모프 파견\n- 내부 권한등급: 없음. 노부스 오르도 외부 인물이므로 `agentLevel`을 저장하지 않는다.\n- 현장 출현: 없음. 작전 기록에서는 후방 지시권자로만 확인된다.",
+        "notes": "후속 신원 대조로 전체 이름이 `블라디미르 푸틴`임을 확인했다. `PUTIN`은 성을 기준으로 정규화한 Dossier 식별자이며 별도 작전 코드네임이 아니다."
+      },
+      "loreMd": "## 대사\n\n## 외형\n개인 식별용 실물 초상은 보존 기록에 첨부되지 않았으며, 외형을 확정할 추가 자료도 남아 있지 않다.\n\n## 성격\n이번 기록에는 직접 발언이나 현장 행동이 남아 있지 않아 성격을 확정할 근거가 충분하지 않다.\n\n## 배경\n블라디미르 푸틴은 러시아 연방 대통령이자 러시아 정부의 최고지도자로 기록된 인물이다. 섹터 C 사태에서는 시설 국영화와 지도부 교체를 추진하도록 미하일 게라쉬모프 장군을 현장에 파견한 지시권자로 언급된다.\n\n푸틴 본인은 섹터 C 현장에 직접 나타나지 않았으며, 파견 명령의 세부 조건과 후속 대응은 현재 보존 기록만으로 확인되지 않는다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 러시아 정부(RUSSIA) 최고지도자\n- 확인 직책: 러시아 연방 대통령\n- 작전 접점: 섹터 C 국영화와 지도부 교체를 추진하기 위한 미하일 게라쉬모프 파견\n- 내부 권한등급: 없음. 노부스 오르도 외부 인물이므로 `agentLevel`을 저장하지 않는다.\n- 현장 출현: 없음. 작전 기록에서는 후방 지시권자로만 확인된다.\n\n## 이름 설명\n후속 신원 대조로 전체 이름이 `블라디미르 푸틴`임을 확인했다. `PUTIN`은 성을 기준으로 정규화한 Dossier 식별자이며 별도 작전 코드네임이 아니다.\n\n## 관계 (참고)\n- `GERASIMOV` — 섹터 C 국영화와 지도부 교체를 위해 현장에 파견한 러시아 장군\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-06-28T00:00:00.000Z",
+      "updatedAt": "2026-08-12T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-publication",
+    "filter": {
+      "codename": "IRMA_KOCH",
+      "type": "NPC",
+      "factionCode": "HOSTILE",
+      "department": "AHNENERBE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": false,
+      "previewImage": "/assets/npcs/Irma-Koch-profile.webp",
+      "lore.mainImage": "/assets/npcs/Irma-Koch-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true
+      }
+    },
+    "postcondition": {
+      "codename": "IRMA_KOCH",
+      "type": "NPC",
+      "factionCode": "HOSTILE",
+      "department": "AHNENERBE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Irma-Koch-profile.webp",
+      "lore.mainImage": "/assets/npcs/Irma-Koch-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-publication-and-image",
+    "filter": {
+      "codename": "DOCTOR_ZENO",
+      "type": "NPC",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "department": "RESEARCH",
+      "agentLevel": "V",
+      "isPublic": false,
+      "previewImage": "",
+      "lore.mainImage": ""
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+      }
+    },
+    "postcondition": {
+      "codename": "DOCTOR_ZENO",
+      "type": "NPC",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "department": "RESEARCH",
+      "agentLevel": "V",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-image",
+    "filter": {
+      "codename": "WHITE_ROSE_R",
+      "type": "NPC",
+      "factionCode": "CIVIL",
+      "institutionCode": "WHITE_ROSE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "previewImage": "",
+      "lore.mainImage": ""
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+      }
+    },
+    "postcondition": {
+      "codename": "WHITE_ROSE_R",
+      "type": "NPC",
+      "factionCode": "CIVIL",
+      "institutionCode": "WHITE_ROSE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "GERASIMOV",
+      "type": "NPC",
+      "factionCode": "MILITARY",
+      "department": "RUSSIA",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "lifeStatus": "DECEASED",
+      "lore.relations": {
+        "$not": {
+          "$elemMatch": {
+            "targetCodename": "PUTIN"
+          }
+        }
+      }
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "PUTIN",
+          "targetName": "블라디미르 푸틴",
+          "label": "파견 지시자",
+          "summary": "블라디미르 푸틴의 지시에 따라 섹터 C 국영화와 지도부 교체를 추진하기 위해 현장에 파견됐다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "confirmed"
+        }
+      }
+    },
+    "postcondition": {
+      "codename": "GERASIMOV",
+      "lore.relations": {
+        "$elemMatch": {
+          "targetCodename": "PUTIN",
+          "targetName": "블라디미르 푸틴",
+          "label": "파견 지시자",
+          "summary": "블라디미르 푸틴의 지시에 따라 섹터 C 국영화와 지도부 교체를 추진하기 위해 현장에 파견됐다.",
+          "sourceEvent": "NOSB-S1E5-EVIL-PART1",
+          "sourceLabel": "작전 보고서 S1E5: 악 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-personnel-link",
+    "filter": {
+      "sessionId": "NOSB-S1E5-EVIL-PART1",
+      "minRole": {
+        "$exists": false
+      }
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": "PUTIN"
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E5-EVIL-PART1",
+      "minRole": {
+        "$exists": false
+      },
+      "relatedPersonnelCodenames": "PUTIN"
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-personnel-link",
+    "filter": {
+      "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+      "minRole": "U"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "IRMA_KOCH",
+            "DOCTOR_ZENO"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E6-TURNING-POINT-PART1",
+      "minRole": "U",
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "IRMA_KOCH",
+          "DOCTOR_ZENO"
+        ]
+      }
+    }
+  }
+]

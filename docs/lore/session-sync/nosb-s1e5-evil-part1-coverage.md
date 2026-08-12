@@ -216,6 +216,13 @@ source: stargate-lore
 - 보고서 wiki mirror는 첫 시각 자료를 infobox로 승격하고 나머지를 본문에 렌더한다. 현재 6개 ordered set 가운데 지도는 Next Image infobox에서 `object-fit: contain`, 나머지 5장은 본문에서 1035×503 → 732×356, blurred backdrop·캡션·broken 0으로 확인됐다.
 - 전용 위키 소비처도 별도 확인했다. `sector-c`는 지도 infobox와 최고 격리구역·냉동 감염자 본문 도판, `bear-hunting-armor`, `sector-c-ballerina`, `zulu-0103-wendigo`는 각각 전용 infobox 한 장을 사용하며 모두 `object-fit: contain`·broken 0이었다. 로컬 서버 재시작 이후 새 console warning/error는 0건이다.
 
+## 2026-08-12 Putin Dossier Addendum
+
+- 사용자 후속 신원 확인에 따라 S1E5에서 섹터 C 국영화와 지도부 교체를 추진하도록 미하일 게라쉬모프를 파견한 러시아 정부 지시권자를 공개 `PUTIN` Dossier로 승격한다.
+- `PUTIN`은 `MILITARY / RUSSIA` 외부 인물로 분류하며 내부 `agentLevel`은 저장하지 않는다. 현장 직접 출현이나 직접 발언·성격은 확정하지 않는다.
+- 실초상이 제공되지 않아 `/assets/npcs/Unknown-Person-profile.webp` 공용 표식을 사용하고, `GERASIMOV` 양방향 관계와 `NOSB-S1E5-EVIL-PART1` 보고서 역링크를 같은 focused transaction에 포함한다.
+- durable spec·원장·payload는 각각 `docs/spec/npc/putin.md`, `public-personnel-release-2026-08-12-review.md`, `public-personnel-release-2026-08-12.json`이며 exact live 실행 전 상태는 `ready-for-apply`다.
+
 ## Personality Evidence Ledger
 
 - skipped: source unavailable — this coverage predates immutable observation extraction, and the current audit does not have a source-complete dialogue/description/action inventory from which to create safe observation rows.

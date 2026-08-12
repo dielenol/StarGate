@@ -295,4 +295,10 @@ source: stargate-lore
 ## Remaining Decisions
 
 1. `WHITE_ROSE_R`: 이번 로그의 `“총장 보좌관” 리처드`와 동일인인지, 동일인이라면 기존 이름 `R`을 `리처드`로 확장할지와 `총장 보좌관`을 기존 역할에 추가할지 결정해야 한다.
-2. 비공개 `IRMA_KOCH`·`DOCTOR_ZENO`는 향후 공개할 때만 Dossier 공개 여부, 공개 보고서의 구조화 인물 링크, 기존 공개 Dossier의 역방향 관계를 별도 publication payload로 검토한다.
+2. `IRMA_KOCH`·`DOCTOR_ZENO`의 공개 여부와 보고서 구조화 인물 링크는 2026-08-12 사용자 결정으로 공개 전환 대상으로 확정했다. focused 원장과 원자 payload는 `public-personnel-release-2026-08-12-review.md` 및 `public-personnel-release-2026-08-12.json`에 보존하며, exact live 실행·재조회 전까지 상태는 `ready-for-apply`다.
+
+## 2026-08-12 Personnel Publication Addendum
+
+- 초기 staging에서 `isPublic: false`로 생성한 위 기록은 당시 실행 이력이다. 최신 정사 목표는 `IRMA_KOCH`, `DOCTOR_ZENO` 모두 `isPublic: true`다.
+- 이르마는 기존 사용자 승인 실초상을 유지한다. 제노는 실초상이 확인되지 않아 사용자 지시에 따른 `/assets/npcs/Unknown-Person-profile.webp` 공용 표식을 `previewImage`와 `lore.mainImage`에 적용한다.
+- 두 인물의 기존 직책·소속·등급·관계·세션 appearance·성격 관찰은 바꾸지 않고, 공개 S1E6 보고서의 `relatedPersonnelCodenames`에 두 codename을 add-only로 연결한다.

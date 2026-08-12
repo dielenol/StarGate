@@ -15,16 +15,16 @@ factionCode: NOVUS_ORDO
 institutionCode: SECRETARIAT
 department: RESEARCH
 agentLevel: V
-isPublic: false
+isPublic: true
 loreTags: [연구기구, 사무차장, 프로젝트데드핸드, 마가렛, NOSB-S1E6-TURNING-POINT-PART1]
 appearsInEvents: [NOSB-S1E6-TURNING-POINT-PART1]
 source: session-log
-previewImage:
-mainImage:
+previewImage: /assets/npcs/Unknown-Person-profile.webp
+mainImage: /assets/npcs/Unknown-Person-profile.webp
 pixelCharacterImage:
 posterImage:
 createdAt: 2026-07-26T00:00:00.000Z
-updatedAt: 2026-08-10T00:00:00.000Z
+updatedAt: 2026-08-12T00:00:00.000Z
 ---
 
 ## 대사

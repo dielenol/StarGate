@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-08-10
+updated: 2026-08-12
 ---
 
 # StarGate 로어북
@@ -77,6 +77,7 @@ docs/lore/
 - [NOSB S1E5 악 2부 NPC 적용 명세](session-sync/nosb-s1e5-evil-part2-npc-apply.md)
 - [NOSB S1E6 변곡점 1부 coverage](session-sync/nosb-s1e6-turning-point-part1-coverage.md)
 - [사망 인원 상태 동기화 검토](session-sync/personnel-deceased-status-2026-08-07-review.md)
+- [공개 신원조회 및 미상 초상 적용 원장](session-sync/public-personnel-release-2026-08-12-review.md)
 
 ### static target baseline
 
