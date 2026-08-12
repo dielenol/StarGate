@@ -76,3 +76,11 @@
 - 검증: 웹 주식 테스트 20개, core 테스트 20개, worker 테스트 88개, 웹 `typecheck`·전체 `lint`, `git diff --check`, critical risk review
 - 관련 커밋: `9a1e2cd8`
 - 운영 경계: 라이브 시세 tick·주가·desired-state·Discord 메시지는 변경하지 않았다.
+
+## 2026-08-12 · 배포 회귀 방지 · worker 반영 검증
+
+- 정기 공시 네 장 복구 뒤에도 Dokploy의 stargate-worker branch가 분리 배포 브랜치에 남아 `main` webhook을 `Branch Not Match`로 거절했고, 기존 GitHub Actions는 redirect된 응답을 성공으로 오인한 원인을 확인했다.
+- worker 배포는 Dokploy의 HTTP 200과 정확한 접수 메시지를 모두 요구하고, 배포 이미지의 source revision이 `/readyz`에 실제로 나타날 때까지 확인해야 성공하도록 강화했다.
+- 301 branch 불일치, 잘못된 200 응답, 비 JSON 응답, 정상 배포와 구버전 timeout을 실행형 테스트로 검증하고 전체 worker 94개·core 20개 테스트, Docker 전체 빌드와 runtime revision 일치, YAML parse·`bash -n`·`git diff --check`, critical risk review를 통과했다.
+- 관련 커밋: `9fc8c3b1`
+- 운영 경계: Dokploy branch 설정 변경·worker 재배포·오늘 공시 재요청·Discord 메시지 교체는 실행하지 않았다.
