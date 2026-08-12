@@ -3,8 +3,8 @@ import test from "node:test";
 
 import { WorkerHealthState } from "../dist/health/state.js";
 
-test("readyz는 Mongo, consumer, Change Stream이 모두 준비되어야 true다", () => {
-  const health = new WorkerHealthState("shadow");
+test("readyz는 source revision과 Mongo, consumer, Change Stream 준비 상태를 노출한다", () => {
+  const health = new WorkerHealthState("shadow", "source-revision-test");
   health.setProcessState("RUNNING");
   health.setComponent("mongo", true);
   health.setComponent("consumers", true);
@@ -12,6 +12,7 @@ test("readyz는 Mongo, consumer, Change Stream이 모두 준비되어야 true다
 
   health.setComponent("changeStream", true);
   assert.equal(health.readiness().ready, true);
+  assert.equal(health.readiness().sourceRevision, "source-revision-test");
   assert.deepEqual(health.readiness().components, {
     mongo: true,
     consumers: true,

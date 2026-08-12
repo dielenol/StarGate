@@ -4,11 +4,13 @@ on:
   push:
     branches: [main]
     paths:
+      - '.dockerignore'
       - 'registra-bot/**'
       - 'trpg-bot/**'
       - 'stargate-worker/**'
       - 'packages/core/**'
       - 'packages/shared-db/**'
+      - 'deploy/trigger-stargate-worker-deploy.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -64,9 +66,11 @@ jobs:
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
             worker:
+              - '.dockerignore'
               - 'stargate-worker/**'
               - 'packages/core/**'
               - 'packages/shared-db/**'
+              - 'deploy/trigger-stargate-worker-deploy.sh'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -156,30 +160,20 @@ jobs:
        inputs.target == 'worker-shadow' &&
        inputs.confirm_worker_shadow_mode == true)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: stargate-worker-deploy
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute expected worker source revision
+        id: source-revision
+        run: echo "value=$(node stargate-worker/source-revision.mjs)" >> "$GITHUB_OUTPUT"
+
       - name: Trigger Dokploy deploy (stargate-worker)
         env:
           WEBHOOK_URL: ${{ secrets.DOKPLOY_STARGATE_WORKER_WEBHOOK }}
           CHANGED_PATH: stargate-worker/package.json
+          HEALTH_URL: https://realtime.ordonet.co.kr/readyz
+          EXPECTED_SOURCE_REVISION: ${{ steps.source-revision.outputs.value }}
         run: |
-          if [ -z "$WEBHOOK_URL" ]; then
-            echo "❌ DOKPLOY_STARGATE_WORKER_WEBHOOK secret이 설정되지 않았습니다."
-            echo "→ Dokploy → stargate-worker → Deployments → Webhook URL 을 복사해서"
-            echo "  GitHub repo → Settings → Secrets → Actions 에 등록하세요."
-            exit 1
-          fi
-          payload="$(jq -nc \
-            --arg ref "$GITHUB_REF" \
-            --arg sha "$GITHUB_SHA" \
-            --arg repo "$GITHUB_REPOSITORY" \
-            --arg message "GitHub Actions deploy: $GITHUB_WORKFLOW" \
-            --arg path "$CHANGED_PATH" \
-            '{ref: $ref, repository: {full_name: $repo}, head_commit: {id: $sha, message: $message}, commits: [{modified: [$path]}]}'
-          )"
-          curl --fail-with-body -sSL -X POST \
-            -H "Content-Type: application/json" \
-            -H "X-GitHub-Event: push" \
-            --data "$payload" \
-            "$WEBHOOK_URL"
-          echo "✅ stargate-worker deploy triggered"
+          bash deploy/trigger-stargate-worker-deploy.sh
