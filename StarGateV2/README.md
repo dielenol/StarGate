@@ -76,7 +76,7 @@ pnpm --filter @stargate/shared-db build
 
 # StarGateV2에서
 cd StarGateV2
-pnpm dev         # next dev --turbopack (http://localhost:3000)
+pnpm dev         # next dev --turbopack (http://localhost:43849)
 pnpm build       # shared-db 빌드 + next build
 pnpm start       # 프로덕션 서버
 pnpm lint        # eslint . --max-warnings=0
