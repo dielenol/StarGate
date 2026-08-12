@@ -203,35 +203,84 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 
 ## 이미지 자산 컨벤션
 
-### peoples/ (AGENT — 플레이어블 캐릭터)
+생성 방식이 아니라 **도메인 엔티티와 UI 역할**로 최종 경로를 정한다. `cutout`, `maria-style`, 생성 날짜, 실행 ID, UUID는 staging 정보이며 `public/assets`의 최종 파일명에 넣지 않는다. 신규 raster 자산의 기본 배포 형식은 WebP다. 투명 아이콘·초상도 alpha WebP로 발행한다.
 
-`StarGateV2/public/assets/peoples/<Slug>-<type>.<ext>` 규격:
+경로 계산의 SSOT는 `lib/assets/spec.ts`의 `StarGateV2AssetSpec`이다. 실제 소비 경로는 다음 레지스트리에 모은다.
 
-- 핵심 3종은 PNG 원본과 WebP 최적화본을 같은 해상도로 함께 보관한다.
-  - `<Slug>-main-image.{png,webp}` — 신원조회 portrait, `lore.mainImage` 매핑
-  - `<Slug>-pixel-character.{png,webp}` — 도트 풀샷, `pixelCharacterImage` 매핑
-  - `<Slug>-pixel-profile.{png,webp}` — 도트 프로필, `previewImage` 매핑
-- `<Slug>-poster.webp` — 캐릭터 상세 PosterHero 와이드 히어로. `lore.posterImage`가 있는 캐릭터만 보관하는 선택 자산이다.
-- `preferOptimizedPublicImagePath()`가 DB의 PNG 경로를 WebP로 우선 변환하므로 PNG/WebP 쌍의 파일명과 해상도가 반드시 일치해야 한다.
-- `KNOWN_CHARACTER_ASSET_SLUGS`에 등록된 플레이어블 캐릭터는 핵심 3종의 PNG/WebP 쌍이 모두 있어야 한다. 메인 이미지만 있는 미니세션 캐릭터는 픽셀 자산이 준비되기 전까지 등록하지 않는다.
+- `lib/assets/characters.ts` — codename 매핑과 플레이어블 캐릭터 역할 경로
+- `lib/assets/npcs.ts` — NPC profile/mood와 공방 초상
+- `lib/assets/shop.ts` — 편의점 아이템, TIA HUD, 이벤트 이미지
+- `lib/assets/catalog.ts` — 카탈로그 및 공방 결과 이미지
 
-### npcs/ (NPC — 비플레이어블)
+기존 `lib/format/character-asset.ts`와 `lib/shop/item-images.ts`는 호환 진입점만 유지한다. 신규 코드는 `lib/assets/*`를 직접 사용한다.
 
-`StarGateV2/public/assets/npcs/<Slug>-profile.webp`를 우선 사용하고 legacy `.png`도 허용한다. `previewImage`에 서버 루트 경로(`/assets/npcs/...`)를 저장한다. 증거가 없는 placeholder portrait나 임의 생성 이미지는 추가하지 않는다.
+### 도메인별 최종 경로
 
-### 슬러그 규칙
+| 용도 | 경로 템플릿 | slug 규칙 |
+|------|-------------|-----------|
+| 플레이어블 캐릭터 | `/assets/peoples/<Entity>-<main-image\|pixel-character\|pixel-profile\|poster>.webp` | 기존 정식 영문 Entity case 보존 |
+| NPC 핵심/표정 | `/assets/npcs/<Entity>-<profile\|main-image\|pixel-character\|pixel-profile\|mood>.webp` | Entity case 보존, mood는 lower-kebab |
+| NPC 표정 컬렉션 | `/assets/npcs/<entity>/<portraits\|relationship>/<variant>.webp` | lower-kebab |
+| 카탈로그 | `/assets/catalog/<consumables\|equipment\|samples\|special>/<entity>.webp` | lower-kebab |
+| 편의점 | `/assets/shop/<items\|hud\|events>/<entity>.webp` | HUD/event는 lower-kebab, DB item slug의 `_`는 보존 |
+| 장비 상점 | `/assets/equipment-shop/<rooms\|simulator>/<entity>.webp` | lower-kebab |
+| 세션 보고서 | `/assets/session-reports/<session>/<scene>.webp` | lower-kebab |
+| 위키 | `/assets/wiki/<entities\|places>/<entity>.webp` | lower-kebab |
+| 연구/세계관 | `/assets/research/<entity>.webp`, `/assets/world-view/<entity>.webp` | lower-kebab |
 
-- **PascalCase 영문 강제** (예: `BigBoy`, `InDexer`, `Margaret`, `Unyeon`, `Yuhoe`).
-- 한글 슬러그 금지 (URL 인코딩 + macOS/Windows/Linux 간 NFC/NFD 차이로 인한 OS 호환성 문제).
-- codename ↔ slug 매핑은 `StarGateV2/lib/format/character-asset.ts` 의 `EXPLICIT_CODENAME_TO_SLUG` + `KNOWN_CHARACTER_ASSET_SLUGS` 가 SSOT. 신규 캐릭터/NPC 추가 시 매핑을 **동시에** 갱신해야 한다 (매핑 없이 파일만 추가하면 폴백 경로가 mismatch).
+`peoples`의 `KNOWN_CHARACTER_ASSET_SLUGS`에 등록된 캐릭터는 `main-image`, `pixel-character`, `pixel-profile` WebP 3종을 모두 갖춰야 한다. 메인 이미지만 있는 미니세션 캐릭터는 핵심 세트가 준비되기 전까지 등록하지 않는다. `poster`는 `lore.posterImage`가 있는 캐릭터만 두는 선택 자산이다.
+
+한글 slug는 URL 인코딩과 파일시스템 NFC/NFD 차이를 피하기 위해 사용하지 않는다. 단, `cup_ramen`, `first_aid_patch`처럼 이미 상점과 DB의 식별자로 쓰는 item slug는 호환성을 위해 언더스코어를 유지한다.
+
+### 생성·발행 CLI
+
+이미지를 만들기 전에 목적지를 먼저 확인한다.
+
+```bash
+pnpm asset:path -- \
+  --domain npc \
+  --entity-slug Irena-Vukovic-Suture \
+  --role mood \
+  --variant recovery
+```
+
+생성 결과나 컷아웃 PNG는 task 전용 staging에 둔 뒤 프로젝트용 WebP로 발행한다. 기본값은 기존 파일 덮어쓰기 거부다.
+
+```bash
+pnpm asset:publish -- \
+  --input /absolute/task-staging/suture-recovery-cutout.png \
+  --domain npc \
+  --entity-slug Irena-Vukovic-Suture \
+  --role mood \
+  --variant recovery
+```
+
+기존 자산을 의도적으로 교체할 때만 `--overwrite`를 사용하고, 교체 후 캐시 버전이 필요한 소비 경로는 `withPublicAssetVersion()`으로 관리한다.
 
 ### 원본 파일
 
-레포 외부 보관 (psd/ai/aseprite 등). `StarGateV2/public/` 아래 절대 두지 말 것 — Next.js 가 정적 서빙하므로 원본을 두면 인터넷에서 그대로 다운로드 가능.
+PSD/AI/Aseprite, 생성 원본, 후보, QA board, chroma source, 컷아웃 중간 PNG는 레포 외부 또는 task 임시 디렉터리에 보관한다. `public/` 아래에는 웹이 실제 소비하는 최종 파일만 둔다. Next.js가 `public/`을 그대로 정적 서빙하므로 원본을 두면 외부에서 다운로드할 수 있다.
+
+`preferOptimizedPublicImagePath()`는 DB나 legacy 코드에 남은 `.png`/`.jpg` 참조를 같은 stem의 `.webp`로 변환하는 호환 계층이다. 신규 DB/spec 값은 처음부터 최종 `.webp` 경로를 저장한다. 실제 PNG/JPG를 `public/assets`에 유지하는 경우에는 같은 stem의 WebP 대응본이 반드시 있어야 한다.
 
 ### 경로 마이그레이션
 
-이미지 파일명/경로 변경 시 DB 의 4 필드(`previewImage` / `pixelCharacterImage` / `lore.mainImage` / `lore.posterImage`) 도 함께 갱신해야 한다. 패턴은 `StarGateV2/scripts/_oneoff-fix-image-paths.mjs` 같은 일회성 마이그레이션 스크립트로 처리 후 즉시 삭제 (영구 보관 X).
+이미지 파일명/경로 변경 시 코드와 seed payload뿐 아니라 DB의 `previewImage`, `pixelCharacterImage`, `lore.mainImage`, `lore.posterImage`도 함께 갱신해야 한다. live DB 변경은 별도 승인된 일회성 마이그레이션으로 처리한다.
+
+```bash
+pnpm assets:audit
+pnpm assets:test
+```
+
+`assets:audit`는 다음을 검사한다.
+
+- `exec-*`, `call_*`, UUID, `-cutout`, `-source`, `-qa`, `maria-style` 같은 공정 기반 최종 파일명
+- 도메인별 case/slug/역할 경로
+- 코드·문서·seed payload의 `/assets/...` 참조 실재 여부
+- 실제 PNG/JPG의 WebP 대응본과 플레이어블 캐릭터 핵심 WebP 세트
+- working tree의 asset rename과 남아 있는 코드/seed 참조
+
+현재 일괄 rename하지 않는 기존 예외(브랜드 루트 파일, `equipment-shop/training-target.webp`, `world-view/wolrdview_*.webp`)는 감사 결과의 점진적 마이그레이션 목록에 표시된다. 이 파일들은 실제 소비 경로와 DB 값을 함께 바꿀 수 있는 작업에서만 정리한다.
 
 ## 제약 — frontmatter 평탄 YAML
 
@@ -253,11 +302,7 @@ Equipment/Consumable과 동일한 `master_items` 구조를 쓰되, `category`는
 
 그 외 `docs/spec/personnel-spec.md`는 인물 명세 원본으로 별도 유지.
 
-> 자산 마이그레이션 audit 규약: 이미지/asset 파일명·경로 변경 시 **forward(DB)** 와 **backward(소스 코드 하드코딩)** 양쪽을 모두 검사해야 한다. backward audit 게이트:
-> ```bash
-> grep -rn 'assets/(peoples|npcs)/' StarGateV2/{app,components,lib}
-> ```
-> 결과를 `lib/format/character-asset.ts` 의 `KNOWN_CHARACTER_ASSET_SLUGS` + 마이그 스크립트의 `REPLACEMENTS` 와 교차 검증.
+> 자산 마이그레이션 audit 규약: 이미지/asset 파일명·경로 변경 시 **forward(DB)** 와 **backward(코드·seed payload)** 양쪽을 검사한다. 자동 게이트는 `pnpm assets:audit`이며, live DB 필드는 승인된 마이그레이션에서 별도로 검증한다.
 
 ## 작업 흐름
 
