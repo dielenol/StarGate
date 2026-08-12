@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { useDashboard } from "@/hooks/queries/useDashboardQuery";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
-import { getPixelCharacterPath } from "@/lib/format/character-asset";
+import { getPixelCharacterPath } from "@/lib/assets/characters";
 import { formatDate, formatTime } from "@/lib/format/date";
 
 import type { ErpDashboardResponse } from "@/types/erp-realtime";
@@ -55,7 +55,7 @@ function buildDiscordLink(opts: {
 
 /**
  * MY CHARACTER 아바타 — pixel-character (도트 풀샷) 우선, 폴백 chain:
- *   1. /assets/peoples/<Slug>-pixel-character.png (codename → slug 매핑)
+ *   1. /assets/peoples/<Slug>-pixel-character.webp (codename → slug 매핑)
  *   2. previewImage (pixel-profile 도트)
  *   3. Seal initial 글자
  */

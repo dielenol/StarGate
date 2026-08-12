@@ -13,6 +13,7 @@ import {
 
 import { useCompleteTowaskiLicenseTest } from "@/hooks/mutations/useEquipmentShopMutation";
 import { DialogueBeepEngine } from "@/lib/audio/dialogue-beep-engine";
+import { TOWASKI_MOOD_ASSETS } from "@/lib/assets/npcs";
 import {
   getTowaskiLicenseTargetRemainingMs,
   getTowaskiLicenseTestProgram,
@@ -922,7 +923,7 @@ export default function TowaskiLicenseTest({
         <div className={styles.briefing}>
           <div className={styles.instructorPortrait}>
             <Image
-              src="/assets/npcs/Towaski-blocked.webp?v=cutout-1"
+              src={TOWASKI_MOOD_ASSETS.blocked}
               alt="자격시험 절차를 설명하는 립 토와스키"
               fill
               sizes="(max-width: 720px) 100vw, 360px"

@@ -3,6 +3,11 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import {
+  GENERAL_COMBATANT_PROFILE_SRC,
+  SECTOR_C_FIELD_AGENT_PROFILE_SRC,
+} from "../../assets/npcs.ts";
+
 const CLIENT_URL = new URL(
   "../../../app/(erp)/erp/equipment-shop/simulator/EquipmentSimulatorClient.tsx",
   import.meta.url,
@@ -21,11 +26,11 @@ const TURN_END_SFX_URL = new URL(
   import.meta.url,
 );
 const DEFAULT_AGENT_URL = new URL(
-  "../../../public/assets/npcs/Sector-C-Field-Agent-profile.webp",
+  `../../../public${SECTOR_C_FIELD_AGENT_PROFILE_SRC}`,
   import.meta.url,
 );
 const DEFAULT_TARGET_URL = new URL(
-  "../../../public/assets/npcs/General-Combatant-profile.webp",
+  `../../../public${GENERAL_COMBATANT_PROFILE_SRC}`,
   import.meta.url,
 );
 
@@ -249,8 +254,8 @@ test("the main-character token uses final sheet stats, mapped art, and safe fall
   assert.match(simulator, /characterUrl\?: string/);
   assert.match(page, /value\?\.trim\(\)/);
   assert.doesNotMatch(page, /mainCharacter\.previewImage\.trim\(\)/);
-  assert.match(page, /Registrar-pixel-profile\.webp/);
-  assert.match(page, /Registrar-pixel-character\.webp/);
+  assert.match(page, /REGISTRAR_PIXEL_PROFILE_SRC/);
+  assert.match(page, /REGISTRAR_PIXEL_CHARACTER_SRC/);
   assert.match(page, /getPixelProfilePath\(character\.codename\)/);
   assert.match(page, /getPixelCharacterPath\(character\.codename\)/);
   assert.match(page, /function simulatorStat\(base: number, delta\?: number\)/);
@@ -261,8 +266,8 @@ test("the main-character token uses final sheet stats, mapped art, and safe fall
   assert.match(page, /optimizedAssetPath\(character\.pixelCharacterImage\)/);
   assert.match(page, /const assets = simulatorCharacterAssets\(\{ codename \}\)/);
   assert.match(page, /portraitUrl: assets\.portraitUrl \?\? DEFAULT_TRAINING_AGENT_PORTRAIT/);
-  assert.match(page, /Sector-C-Field-Agent-profile\.webp/);
-  assert.match(client, /General-Combatant-profile\.webp/);
+  assert.match(page, /SECTOR_C_FIELD_AGENT_PROFILE_SRC/);
+  assert.match(client, /GENERAL_COMBATANT_PROFILE_SRC/);
   assert.match(client, /src=\{DEFAULT_TARGET_PORTRAIT\}/);
   assert.match(client, /attacker\.portraitUrl \?\? attacker\.characterUrl/);
   assert.match(client, /src=\{attackerTokenUrl\}/);

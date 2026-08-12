@@ -26,7 +26,7 @@ import {
 } from "@/components/icons";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
-import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import { getConsumableItemImageSrc } from "@/lib/assets/catalog";
 
 import styles from "./page.module.css";
 

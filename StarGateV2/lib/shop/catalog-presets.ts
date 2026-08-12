@@ -4,6 +4,7 @@ import type {
   ArmoryZone,
   CatalogTarget,
 } from "@/lib/shop/catalog-item-input";
+import { SHOP_ITEM_IMAGE_BY_SLUG } from "../assets/shop.ts";
 
 export interface CatalogItemPresetForm {
   target: CatalogTarget;
@@ -55,7 +56,7 @@ export const CATALOG_ITEM_PRESETS: readonly CatalogItemPreset[] = [
         "톡 쏘는 탄산과 강한 에너지 향으로 몸과 정신을 함께 끌어올리는 한정 소다.",
       damage: "",
       effect: "HP 10 / SAN 10 회복",
-      previewImage: "/assets/shop/items/mrbeast_soda.png",
+      previewImage: SHOP_ITEM_IMAGE_BY_SLUG.mrbeast_soda,
       tags: "편의점, 회복, 소다, 미스터비스트",
       isAvailable: true,
       isPublic: true,

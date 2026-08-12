@@ -20,7 +20,7 @@ test("미스터비스트 소다 프리셋은 협의한 회복량과 권장가를
   assert.equal(preset.form.effect, "HP 10 / SAN 10 회복");
   assert.equal(
     preset.form.previewImage,
-    "/assets/shop/items/mrbeast_soda.png",
+    "/assets/shop/items/mrbeast_soda.webp",
   );
   assert.equal(preset.form.stockMin, "2");
   assert.equal(preset.form.stockMax, "5");

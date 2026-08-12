@@ -24,7 +24,7 @@ import { findVisibleMasterItemBySlugOrId } from "@/lib/db/inventory";
 import { listVisibleSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
-import { getCatalogItemImageSrc } from "@/lib/shop/item-images";
+import { getCatalogItemImageSrc } from "@/lib/assets/catalog";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";

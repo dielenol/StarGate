@@ -28,7 +28,7 @@ import {
   categoryTone,
   normalizeCatalogScope,
 } from "@/lib/catalog/categories";
-import { getCatalogItemImageSrc } from "@/lib/shop/item-images";
+import { getCatalogItemImageSrc } from "@/lib/assets/catalog";
 
 import styles from "./CatalogClient.module.css";
 

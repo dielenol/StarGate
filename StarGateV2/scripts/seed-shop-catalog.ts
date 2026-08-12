@@ -35,7 +35,7 @@ import {
 } from "@stargate/shared-db";
 
 import { SHOP_CATALOG, type ShopCatalogItem } from "../lib/shop/catalog.ts";
-import { getShopItemImageSrc } from "../lib/shop/item-images.ts";
+import { getShopItemImageSrc } from "../lib/assets/shop.ts";
 
 /* ── .env.local / .env 로드 ──
    `=== undefined` 로 빈 문자열("")을 unset 취급하지 않도록 방어.

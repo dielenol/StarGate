@@ -24,6 +24,10 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
+import {
+  GENERAL_COMBATANT_PROFILE_SRC,
+  SECTOR_C_FIELD_AGENT_PROFILE_SRC,
+} from "@/lib/assets/npcs";
 import { formatCredits } from "@/lib/format/credit";
 import {
   advanceSimulatorTargetRound,
@@ -221,10 +225,8 @@ const DEFAULT_BOSS_PARTS: SimulatorBossPart[] = [
 ];
 const TURN_END_SFX_SRC =
   "/assets/equipment-shop/sfx/ui-notice-level-up.mp3";
-const DEFAULT_TRAINING_AGENT_PORTRAIT =
-  "/assets/npcs/Sector-C-Field-Agent-profile.webp";
-const DEFAULT_TARGET_PORTRAIT =
-  "/assets/npcs/General-Combatant-profile.webp";
+const DEFAULT_TRAINING_AGENT_PORTRAIT = SECTOR_C_FIELD_AGENT_PROFILE_SRC;
+const DEFAULT_TARGET_PORTRAIT = GENERAL_COMBATANT_PROFILE_SRC;
 const DEFAULT_BOSS_PORTRAIT =
   "/assets/equipment-shop/simulator/mammoth-boss.webp";
 const DEFAULT_BOSS_FOOTPRINT: SimulatorEnemyFootprint = {

@@ -9,6 +9,8 @@ import type {
   MrBeastLotteryConfig,
   MrBeastLotteryTier,
 } from "@/lib/shop/mrbeast-lottery";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { MRBEAST_LOTTERY_SRC } from "@/lib/assets/shop";
 
 import {
   addCredit,
@@ -473,8 +475,8 @@ export function isMrBeastLotteryTicketMasterReady(master: {
     master?.slug === MRBEAST_LOTTERY_SLUG &&
     master.category === "CONSUMABLE" &&
     Number(master.price) === 0 &&
-    master.previewImage ===
-      "/assets/shop/events/mrbeast-lottery-transparent.png" &&
+    preferOptimizedPublicImagePath(master.previewImage ?? "") ===
+      MRBEAST_LOTTERY_SRC &&
     master.isAvailable === false &&
     master.isPublic === false
   );

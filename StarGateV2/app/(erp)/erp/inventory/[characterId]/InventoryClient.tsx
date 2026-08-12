@@ -38,7 +38,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { formatDate } from "@/lib/format/date";
-import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import { getConsumableItemImageSrc } from "@/lib/assets/catalog";
 import { MRBEAST_LOTTERY_SLUG } from "@/lib/shop/mrbeast-lottery";
 
 import styles from "./page.module.css";

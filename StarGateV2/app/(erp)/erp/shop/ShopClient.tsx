@@ -39,6 +39,13 @@ import {
 } from "@/components/icons";
 
 import type { DialogueBeepOptions } from "@/lib/audio/dialogue-beep-engine";
+import {
+  MRBEAST_LOTTERY_SRC,
+  MRBEAST_SODA_POSTER_SRC,
+  MRBEAST_SODA_SRC,
+  TIA_MOOD_ASSETS,
+  TIA_PROFILE_SRC,
+} from "@/lib/assets/shop";
 import type { MrBeastLotteryPendingClaimDto } from "@/lib/db/mrbeast-lottery";
 import { describeApiError } from "@/lib/api/describe-error";
 import { formatCredits } from "@/lib/format/credit";
@@ -69,17 +76,11 @@ interface RetainedCheckoutOperation extends RetainedIdempotencyOperation {
   expectsLotteryTickets: boolean;
 }
 const MAX_CART_QUANTITY_PER_ITEM = 9;
-const MRBEAST_SODA_POSTER_SRC =
-  "/assets/shop/events/mrbeast-soda-lottery-poster.png";
-const MRBEAST_SODA_SRC = "/assets/shop/items/mrbeast_soda.png";
-const MRBEAST_LOTTERY_SRC =
-  "/assets/shop/events/mrbeast-lottery-transparent.png";
 const SHOP_ENTRY_SFX_SRC = "/assets/shop/sfx/convenience-chime.mp3";
 const SHOP_ENTRY_SFX_VOLUME = 0.145;
 const TIA_IDLE_DELAY_MS = 18000;
 const LOW_STOCK_THRESHOLD = 2;
 
-const TIA_PROFILE_SRC = "/assets/shop/hud/tia-profile.webp";
 const SHOP_CLOSED_BEEP_OPTIONS = {
   preset: "system",
   pitch: 720,
@@ -91,16 +92,6 @@ const SHOP_CLOSED_BEEP_OPTIONS = {
   DialogueBeepOptions,
   "initialDelay" | "pitch" | "preset" | "speed" | "volume" | "wave"
 >;
-
-const TIA_MOOD_ASSETS: Record<TiaMood, string> = {
-  welcome: "/assets/shop/hud/tia-welcome.webp",
-  tired: "/assets/shop/hud/tia-tired.webp",
-  soldout: "/assets/shop/hud/tia-soldout.webp",
-  bag: "/assets/shop/hud/tia-bag.webp",
-  doodle: "/assets/shop/hud/tia-doodle.webp",
-  purchase: "/assets/shop/hud/tia-purchase-complete.webp",
-  nap: "/assets/shop/hud/tia-nap.webp",
-};
 
 const TAB_DEFS: { value: ShopTabValue; label: string; icon: IconComponent }[] = [
   { value: "ALL", label: "전체", icon: IconGridAll },

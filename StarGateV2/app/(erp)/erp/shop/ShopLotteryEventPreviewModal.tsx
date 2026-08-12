@@ -9,16 +9,19 @@ import {
   type CSSProperties,
 } from "react";
 
+import {
+  MRBEAST_LOTTERY_SRC,
+  MRBEAST_SODA_POSTER_SRC,
+  MRBEAST_SODA_SRC,
+} from "@/lib/assets/shop";
 import type { MrBeastLotteryTier } from "@/lib/shop/mrbeast-lottery";
 
 import lotteryStyles from "./MrBeastLotteryModal.module.css";
 import styles from "./ShopLotteryEventPreviewModal.module.css";
 
-const POSTER_SRC =
-  "/assets/shop/events/mrbeast-soda-lottery-poster.png";
-const LOTTERY_IMAGE_SRC =
-  "/assets/shop/events/mrbeast-lottery-transparent.png";
-const SODA_IMAGE_SRC = "/assets/shop/items/mrbeast_soda.png";
+const POSTER_SRC = MRBEAST_SODA_POSTER_SRC;
+const LOTTERY_IMAGE_SRC = MRBEAST_LOTTERY_SRC;
+const SODA_IMAGE_SRC = MRBEAST_SODA_SRC;
 
 type PreviewScene = "poster" | "locked" | MrBeastLotteryTier;
 

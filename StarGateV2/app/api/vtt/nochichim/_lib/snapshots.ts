@@ -5,7 +5,7 @@ import { findSessionById } from "@/lib/db/sessions";
 import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { notifyUser } from "@/lib/notifications/events";
-import { getConsumableItemImageSrc } from "@/lib/shop/item-images";
+import { getConsumableItemImageSrc } from "@/lib/assets/catalog";
 import {
   resolveConsumableOutcomes,
   type MrBeastSodaConsumptionOutcome,

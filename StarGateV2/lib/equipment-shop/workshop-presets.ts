@@ -1,4 +1,5 @@
 import type { EquipmentWorkshopBlueprintInput } from "@/lib/equipment-shop/workshop-blueprint";
+import { CATALOG_ITEM_IMAGE_BY_SLUG } from "../assets/catalog.ts";
 import {
   CENSOR3_MANUFACTURE_VOTE_PRESET,
   CENSOR3_MANUFACTURE_VOTE_PRESET_KEY,
@@ -51,7 +52,7 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
             "악식의 콘치타의 근거리 타격 구조를 보강하고 절제의 출혈 지속 피해를 연동한 개조형 단검.",
           damage: "근거리 15 물리 / 중거리 5 물리",
           previewImage:
-            "/assets/catalog/equipment/conchita-of-gluttony-modified.webp",
+            CATALOG_ITEM_IMAGE_BY_SLUG["conchita-of-gluttony-modified"],
           tags: ["전용장비", "단검", "TIGER298"],
           equipmentAbilityOverrides: [
             {
@@ -102,7 +103,9 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
             "아케론 대장간에서 방패 본체와 장약 마운트를 보강한 뒤 토와스키가 전용 크레모아 장약과 기폭 계통을 통합한 이동식 전용 개조형이다. 기본 공격은 12 물리로 상향한다.",
           damage: "12 물리",
           previewImage:
-            "/assets/catalog/equipment/assault-shield-claymore-modified-v2.webp",
+            CATALOG_ITEM_IMAGE_BY_SLUG[
+              "assault-shield-claymore-modified-v2"
+            ],
           tags: [
             "공방개조",
             "전용장비",
@@ -186,7 +189,9 @@ export const EQUIPMENT_WORKSHOP_PRESETS: readonly EquipmentWorkshopPreset[] = [
           effect:
             "거치와 해제는 각각 액션 1을 소모한다. 거치 상태에서는 이동할 수 없지만, 대각선 사격이 가능해진다. 대각선 사격은 다이아몬드 범위로 판정하며, 자세한 범위는 훈련장을 참조한다.",
           previewImage:
-            "/assets/catalog/equipment/cmmg-mk47-mutant-pian-bulwark.webp",
+            CATALOG_ITEM_IMAGE_BY_SLUG[
+              "cmmg-mk47-mutant-pian-bulwark"
+            ],
           tags: [
             "공방개조",
             "전용장비",

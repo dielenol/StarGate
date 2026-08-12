@@ -12,6 +12,7 @@ import {
 
 import { useRevealMrBeastLotteryClaim } from "@/hooks/mutations/useShopMutation";
 
+import { MRBEAST_LOTTERY_SRC } from "@/lib/assets/shop";
 import type {
   MrBeastLotteryPendingClaimDto,
   MrBeastLotteryRevealDto,
@@ -22,8 +23,7 @@ import styles from "./MrBeastLotteryModal.module.css";
 const SCRATCH_REVEAL_THRESHOLD = 0.65;
 const SCRATCH_SAMPLE_STEP = 8;
 const SCRATCH_BRUSH_SIZE = 46;
-const LOTTERY_IMAGE_SRC =
-  "/assets/shop/events/mrbeast-lottery-transparent.png";
+const LOTTERY_IMAGE_SRC = MRBEAST_LOTTERY_SRC;
 
 interface Props {
   claim: MrBeastLotteryPendingClaimDto;

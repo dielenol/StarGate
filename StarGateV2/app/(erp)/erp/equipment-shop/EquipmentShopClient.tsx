@@ -56,6 +56,22 @@ import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
 import {
+  AMERI_MOOD_ASSETS,
+  AMERI_PROFILE_SRC,
+  RATCHET_MOOD_ASSETS,
+  SUTURE_MOOD_ASSETS,
+  SUTURE_PROFILE_SRC,
+  TEMPER_MOOD_ASSETS,
+  TEMPER_PROFILE_SRC,
+  TOWASKI_MOOD_ASSETS,
+  TOWASKI_PORTRAIT_SRC,
+  TOWASKI_PROFILE_SRC,
+  VERNIER_PROFILE_SRC,
+  WORKSHOP_SPECIALIST_PORTRAITS,
+  workshopPortrait,
+  type TowaskiMood,
+} from "@/lib/assets/npcs";
+import {
   isActiveEquipmentWorkshopRequestStatus,
   WORKSHOP_RELOAD_REQUEST_DETAILS,
   WORKSHOP_REQUEST_DETAIL_MIN_LENGTH,
@@ -204,17 +220,6 @@ type FeedbackState = {
 } | null;
 type TowaskiDebugMode = "live" | "unlicensed" | "licensed" | "no-agent";
 type MainCharacterStats = Record<EquipmentResearchStat, number>;
-type TowaskiMood =
-  | "welcome"
-  | "inspect"
-  | "stock"
-  | "cart"
-  | "license"
-  | "checkout"
-  | "range"
-  | "rangeFailed"
-  | "blocked"
-  | "idle";
 type SutureDebugMode = "live" | SutureMood;
 type MainCharacterProfile = "assault" | "guard" | "endurance" | "focus" | "balanced";
 type ArmoryZoneDef = {
@@ -226,30 +231,38 @@ type ArmoryZoneDef = {
   npc: string;
 };
 
-const TOWASKI_PROFILE_SRC = "/assets/npcs/Towaski-profile.webp?v=cutout-1";
-const TOWASKI_PORTRAIT_SRC = "/assets/npcs/Towaski-profile.webp?v=cutout-1";
 const TOWASKI_IDLE_DELAY_MS = 12000;
-const AMERI_PROFILE_SRC = "/assets/npcs/Ameri-main-image.webp";
 const AMERI_IDLE_DELAY_MS = 13500;
-const SUTURE_PROFILE_SRC = "/assets/npcs/Irena-Vukovic-Suture-profile.webp";
 const SUTURE_IDLE_DELAY_MS = 14000;
-const TEMPER_PROFILE_SRC = "/assets/npcs/Brigid-Kane-Temper-profile.webp";
 const TEMPER_IDLE_DELAY_MS = 13000;
 const TEMPER_ENTRY_SFX_SRC =
   "/assets/equipment-shop/sfx/temper-forge-double-strike.m4a";
-const RATCHET_PROFILE_SRC = "/assets/npcs/Mateo-Rivas-Ratchet-profile.webp";
 const RATCHET_IDLE_DELAY_MS = 12500;
-const VERNIER_PROFILE_SRC = "/assets/npcs/Ada-Schreiber-Vernier-profile.webp";
 
 const WORKSHOP_SPECIALISTS: Record<
   EquipmentWorkshopSpecialist,
   { label: string; portrait: string }
 > = {
-  VERNIER: { label: "VERNIER · 접수/종합", portrait: VERNIER_PROFILE_SRC },
-  TEMPER: { label: "TEMPER · 냉병기", portrait: TEMPER_PROFILE_SRC },
-  TOWASKI: { label: "TOWASKI · 화기", portrait: TOWASKI_PROFILE_SRC },
-  SUTURE: { label: "SUTURE · 증강체", portrait: SUTURE_PROFILE_SRC },
-  RATCHET: { label: "RATCHET · 전략 장비", portrait: RATCHET_PROFILE_SRC },
+  VERNIER: {
+    label: "VERNIER · 접수/종합",
+    portrait: WORKSHOP_SPECIALIST_PORTRAITS.VERNIER,
+  },
+  TEMPER: {
+    label: "TEMPER · 냉병기",
+    portrait: WORKSHOP_SPECIALIST_PORTRAITS.TEMPER,
+  },
+  TOWASKI: {
+    label: "TOWASKI · 화기",
+    portrait: WORKSHOP_SPECIALIST_PORTRAITS.TOWASKI,
+  },
+  SUTURE: {
+    label: "SUTURE · 증강체",
+    portrait: WORKSHOP_SPECIALIST_PORTRAITS.SUTURE,
+  },
+  RATCHET: {
+    label: "RATCHET · 전략 장비",
+    portrait: WORKSHOP_SPECIALIST_PORTRAITS.RATCHET,
+  },
 };
 
 const WORKSHOP_MODIFICATION_DOMAIN_LABELS = {
@@ -273,87 +286,7 @@ function workshopDialogue(
   return "VERNIER: 요청을 접수했다. 담당 기술자 배정과 견적을 기다려 줘.";
 }
 
-function workshopPortrait(
-  specialist: EquipmentWorkshopSpecialist,
-  status: EquipmentWorkshopComputedStatus,
-): string {
-  const blocked = status === "DECLINED" || status === "REJECTED" || status === "CANCELLED";
-  if (specialist === "TEMPER") {
-    return blocked
-      ? "/assets/npcs/Brigid-Kane-Temper-blocked.webp"
-      : status === "QUOTED"
-        ? "/assets/npcs/Brigid-Kane-Temper-balance.webp"
-        : status === "IN_PROGRESS"
-          ? "/assets/npcs/Brigid-Kane-Temper-cart.webp"
-          : "/assets/npcs/Brigid-Kane-Temper-checkout.webp";
-  }
-  if (specialist === "TOWASKI") {
-    return blocked
-      ? "/assets/npcs/Towaski-blocked.webp?v=cutout-1"
-      : status === "QUOTED"
-        ? "/assets/npcs/Towaski-inspect.webp?v=cutout-1"
-        : "/assets/npcs/Towaski-checkout.webp?v=cutout-1";
-  }
-  if (specialist === "SUTURE") {
-    return blocked
-      ? "/assets/npcs/Irena-Vukovic-Suture-blocked.webp?v=clean-stop-2"
-      : status === "QUOTED"
-        ? "/assets/npcs/Irena-Vukovic-Suture-assessment.webp"
-        : status === "IN_PROGRESS"
-          ? "/assets/npcs/Irena-Vukovic-Suture-procedure.webp"
-          : "/assets/npcs/Irena-Vukovic-Suture-recovery.webp";
-  }
-  if (specialist === "RATCHET") {
-    return blocked
-      ? "/assets/npcs/Mateo-Rivas-Ratchet-blocked.webp"
-      : status === "QUOTED"
-        ? "/assets/npcs/Mateo-Rivas-Ratchet-inspect.webp"
-        : status === "IN_PROGRESS"
-          ? "/assets/npcs/Mateo-Rivas-Ratchet-dispatch.webp"
-          : "/assets/npcs/Mateo-Rivas-Ratchet-checkout.webp";
-  }
-  return VERNIER_PROFILE_SRC;
-}
 const VERNIER_IDLE_DELAY_MS = 13200;
-
-const AMERI_MOOD_ASSETS: Record<AmeriMood, string> = {
-  welcome: "/assets/npcs/Ameri-welcome.webp",
-  routing: "/assets/npcs/Ameri-routing.webp",
-  review: "/assets/npcs/Ameri-review.webp",
-  blocked: "/assets/npcs/Ameri-blocked.webp",
-  idle: "/assets/npcs/Ameri-idle.webp",
-};
-
-const RATCHET_MOOD_ASSETS: Record<StrategicMood, string> = {
-  welcome: RATCHET_PROFILE_SRC,
-  inspect: "/assets/npcs/Mateo-Rivas-Ratchet-inspect.webp",
-  systems: "/assets/npcs/Mateo-Rivas-Ratchet-systems.webp",
-  dispatch: "/assets/npcs/Mateo-Rivas-Ratchet-dispatch.webp",
-  checkout: "/assets/npcs/Mateo-Rivas-Ratchet-checkout.webp",
-  blocked: "/assets/npcs/Mateo-Rivas-Ratchet-blocked.webp",
-  idle: "/assets/npcs/Mateo-Rivas-Ratchet-idle.webp",
-};
-
-const TEMPER_MOOD_ASSETS: Record<TemperMood, string> = {
-  welcome: TEMPER_PROFILE_SRC,
-  inspect: "/assets/npcs/Brigid-Kane-Temper-inspect.webp",
-  balance: "/assets/npcs/Brigid-Kane-Temper-balance.webp",
-  cart: "/assets/npcs/Brigid-Kane-Temper-cart.webp",
-  checkout: "/assets/npcs/Brigid-Kane-Temper-checkout.webp",
-  blocked: "/assets/npcs/Brigid-Kane-Temper-blocked.webp",
-  idle: "/assets/npcs/Brigid-Kane-Temper-idle.webp",
-};
-
-const SUTURE_MOOD_ASSETS: Record<SutureMood, string> = {
-  welcome: "/assets/npcs/Irena-Vukovic-Suture-welcome.webp",
-  assessment: "/assets/npcs/Irena-Vukovic-Suture-assessment.webp",
-  protocol: "/assets/npcs/Irena-Vukovic-Suture-protocol.webp",
-  funding: "/assets/npcs/Irena-Vukovic-Suture-funding.webp",
-  procedure: "/assets/npcs/Irena-Vukovic-Suture-procedure.webp",
-  recovery: "/assets/npcs/Irena-Vukovic-Suture-recovery.webp",
-  blocked: "/assets/npcs/Irena-Vukovic-Suture-blocked.webp?v=clean-stop-2",
-  idle: "/assets/npcs/Irena-Vukovic-Suture-idle.webp",
-};
 
 const SUTURE_DEBUG_MODES: readonly {
   value: SutureDebugMode;
@@ -379,19 +312,6 @@ const TOWASKI_DEBUG_MODES: readonly {
   { value: "licensed", label: "면허 보유" },
   { value: "no-agent", label: "AGENT 없음" },
 ];
-
-const TOWASKI_MOOD_ASSETS: Record<TowaskiMood, string> = {
-  welcome: "/assets/npcs/Towaski-welcome.webp?v=cutout-1",
-  inspect: "/assets/npcs/Towaski-inspect.webp?v=cutout-1",
-  stock: "/assets/npcs/Towaski-stock.webp?v=cutout-1",
-  cart: "/assets/npcs/Towaski-cart.webp?v=cutout-1",
-  license: "/assets/npcs/Towaski-checkout.webp?v=cutout-1",
-  checkout: "/assets/npcs/Towaski-checkout.webp?v=cutout-1",
-  range: "/assets/npcs/Towaski-blocked.webp?v=cutout-1",
-  rangeFailed: "/assets/npcs/Towaski-blocked.webp?v=cutout-1",
-  blocked: "/assets/npcs/Towaski-blocked.webp?v=cutout-1",
-  idle: "/assets/npcs/Towaski-idle.webp?v=cutout-1",
-};
 
 const TOWASKI_MOOD_LABELS: Record<TowaskiMood, string> = {
   welcome: "입점 확인",

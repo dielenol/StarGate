@@ -10,7 +10,12 @@ import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import {
   getPixelCharacterPath,
   getPixelProfilePath,
-} from "@/lib/format/character-asset";
+} from "@/lib/assets/characters";
+import {
+  REGISTRAR_PIXEL_CHARACTER_SRC,
+  REGISTRAR_PIXEL_PROFILE_SRC,
+  SECTOR_C_FIELD_AGENT_PROFILE_SRC,
+} from "@/lib/assets/npcs";
 
 import EquipmentShopComingSoon from "../EquipmentShopComingSoon";
 import { requireEquipmentShopSession } from "../_access";
@@ -23,11 +28,10 @@ export const metadata = {
 };
 
 const REGISTRAR_SIMULATOR_ASSETS = {
-  portraitUrl: "/assets/npcs/Registrar-pixel-profile.webp",
-  characterUrl: "/assets/npcs/Registrar-pixel-character.webp",
+  portraitUrl: REGISTRAR_PIXEL_PROFILE_SRC,
+  characterUrl: REGISTRAR_PIXEL_CHARACTER_SRC,
 } as const;
-const DEFAULT_TRAINING_AGENT_PORTRAIT =
-  "/assets/npcs/Sector-C-Field-Agent-profile.webp";
+const DEFAULT_TRAINING_AGENT_PORTRAIT = SECTOR_C_FIELD_AGENT_PROFILE_SRC;
 
 function optimizedAssetPath(value?: string | null): string | undefined {
   const path = value?.trim();

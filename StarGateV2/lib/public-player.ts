@@ -9,7 +9,7 @@ import type {
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
-import { getPixelCharacterPath } from "@/lib/format/character-asset";
+import { getPixelCharacterPath } from "@/lib/assets/characters";
 
 export function isPublicAgentWithSheet(
   character: Character | null | undefined,

@@ -18,16 +18,16 @@ test("활성 복권 이벤트는 소다·복권 이미지와 일일 한도를 �
     readWeb("app/api/erp/shop/checkout/route.ts"),
     stat(
       new URL(
-        "public/assets/shop/events/mrbeast-soda-lottery-poster.png",
+        "public/assets/shop/events/mrbeast-soda-lottery-poster.webp",
         WEB_ROOT,
       ),
     ),
   ]);
 
   assert.match(client, /lotteryState\?\.active/);
-  assert.match(client, /mrbeast-soda-lottery-poster\.png/);
-  assert.match(client, /assets\/shop\/items\/mrbeast_soda\.png/);
-  assert.match(client, /assets\/shop\/events\/mrbeast-lottery-transparent\.png/);
+  assert.match(client, /MRBEAST_SODA_POSTER_SRC/);
+  assert.match(client, /MRBEAST_SODA_SRC/);
+  assert.match(client, /MRBEAST_LOTTERY_SRC/);
   assert.match(client, /사용자당 하루 최대 10개/);
   assert.match(client, /판매 1개당 STM \+0\.10%p/);
   assert.match(client, /0등 100,000 CR/);

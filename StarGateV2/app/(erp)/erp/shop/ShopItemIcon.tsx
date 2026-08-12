@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
-import { getShopItemImageSrc } from "@/lib/shop/item-images";
+import { getShopItemImageSrc } from "@/lib/assets/shop";
 
 interface Props {
   slug: string;
