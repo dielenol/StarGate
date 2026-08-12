@@ -136,3 +136,12 @@
 - 검증: ingestion run `seed-payload:099d584a-ffc7-4990-a8c2-f154a8a18f79` 38/38 성공, DB exact 재조회, 목록·상세·역참조, 시각 자료 15개 natural/rendered `1035×503`·broken 0, 미인증 상세 `307`
 - 관련 적용 소스 커밋: `1acea89c`
 - 잔여 관찰: 최초 보고서 목록 진입에서 렌더를 막지 않는 React hydration `#418`이 1회 기록됐고 상세·mirror 탐색에서는 새 앱 오류가 없었다.
+
+## 2026-08-12 · 로어 동기화 · MINI06 전사의 탄생
+
+- 네베드 미니세션 전·후편을 하나의 `NOSB-MINI-NEVED` 보고서와 `mini06-neved` wiki mirror로 통합하고, 보고 순번 `MINI06`과 지도 카드 배치를 추가했다.
+- 같은 순서로 쓰는 장면 자산 12종, 기존 공개 Dossier 11건의 세션 출현, 네베드·샌드맨 성격 관찰 2건을 publication payload로 준비했다.
+- 세션상 현장 전원의 200,000 크레딧 즉시 지급은 정사로 기록했지만 exact ERP 수령자·계정·기존 ledger 반영 여부가 확인되지 않아 경제 mutation은 제외했다. `TIME`의 소다 1개 소비도 별도 검토로 남겼다.
+- 검증: 번호 테스트 9건, personality 테스트 8건, NPC·성격·시각·공개 문구·report/mirror parity·전체 lore static audit, live read-only dry-run staging 2건과 publication 15건, `pnpm typecheck`, `pnpm lint`, 자산 audit·테스트 11건, critical risk review
+- 관련 커밋: `44e73cd3`
+- 후속 작업: 별도 live 승인 뒤 V/private staging → DB 재조회 → fresh U/public publication dry-run·실행 → 역할별 보고서·mirror·Dossier·이미지 consumer 검증을 진행한다. 신규 NPC 후보 14건과 경제 원장 보정은 필요한 사용자 결정을 별도로 받는다.
