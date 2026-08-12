@@ -54,6 +54,7 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   MINI03: { x: 0, y: -112 },
   MINI04: { x: -92, y: -94 },
   MINI05: { x: 92, y: -112, labelX: 132 },
+  MINI06: { x: 92, y: -94, labelX: 132 },
 };
 
 function getPinCardLayout(reportNumber: string): PinCardLayout {

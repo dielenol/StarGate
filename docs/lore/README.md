@@ -66,6 +66,8 @@ docs/lore/
 - [NOSB MINI03 5959 사태 coverage](session-sync/nosb-mini-5959-containment-coverage.md)
 - [NOSB MINI04 화양연화 coverage](session-sync/nosb-mini-hwayangyeonhwa-coverage.md)
 - [NOSB MINI05 로맨티드 coverage](session-sync/nosb-mini-romantid-coverage.md)
+- [NOSB MINI06 전사의 탄생 coverage](session-sync/nosb-mini-neved-coverage.md)
+- [NOSB MINI06 전사의 탄생 NPC 적용 명세](session-sync/nosb-mini-neved-npc-apply.md)
 - [NOSB S1E1 질서 coverage](session-sync/nosb-s1e1-order-coverage.md)
 - [NOSB S1E1 미니 coverage](session-sync/nosb-s1e1-mini-coverage.md)
 - [NOSB S1E2 선택 coverage](session-sync/nosb-s1e2-choice-coverage.md)

@@ -121,3 +121,59 @@ test("세션 ID가 달라도 로맨티드 제목은 MINI05 fallback을 쓴다", 
 
   assert.equal(numbering[0]?.number, "MINI05");
 });
+
+test("전사의 탄생을 미니 시리즈 여섯 번째 보고서로 고정한다", () => {
+  const reports = [
+    {
+      sessionId: "NOSB-MINI-ROMANTID",
+      sessionTitle: "작전 보고서 MINI05: 로맨티드",
+      createdAt: "2026-07-19T00:00:00.000Z",
+    },
+    {
+      sessionId: "NOSB-MINI-NEVED",
+      sessionTitle: "작전 보고서 MINI06: 전사의 탄생",
+      createdAt: "2026-07-30T00:00:00.000Z",
+    },
+  ];
+
+  const numbering = buildOperationReportNumbering(reports);
+
+  assert.deepEqual(
+    numbering.map(({ number }) => number),
+    ["MINI05", "MINI06"],
+  );
+});
+
+test("세션 ID가 달라도 네베드·전사의 탄생 제목은 MINI06 fallback을 쓴다", () => {
+  const reports = [
+    {
+      sessionId: "LEGACY-NEVED-MINI",
+      sessionTitle: "키아나 미니세션 전사의 탄생",
+      createdAt,
+    },
+    {
+      sessionId: "LEGACY-NEVED-NAME",
+      sessionTitle: "네베드 미니세션",
+      createdAt,
+    },
+  ];
+
+  const numbering = buildOperationReportNumbering(reports);
+
+  assert.deepEqual(
+    numbering.map(({ number }) => number),
+    ["MINI06", "MINI06"],
+  );
+});
+
+test("미니 표기가 없는 네베드 정규 보고서는 MINI06 fallback을 쓰지 않는다", () => {
+  const report = {
+    sessionId: "LEGACY-NEVED-MAIN",
+    sessionTitle: "네베드 작전 기록",
+    createdAt,
+  };
+
+  const numbering = buildOperationReportNumbering([report]);
+
+  assert.equal(numbering[0]?.number, "01");
+});

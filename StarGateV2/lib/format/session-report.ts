@@ -126,6 +126,12 @@ const OPERATION_REPORT_NUMBER_PRESETS: Record<
     number: "MINI05",
     sortOrder: 150,
   },
+  "NOSB-MINI-NEVED": {
+    series: "mini",
+    sequence: 6,
+    number: "MINI06",
+    sortOrder: 160,
+  },
 };
 
 function reportIdentity(report: OperationReportNumberSource): string {
@@ -233,6 +239,14 @@ function getPresetByTitle(
 
   if (title.includes("로맨티드") || title.includes("romantid")) {
     return OPERATION_REPORT_NUMBER_PRESETS["NOSB-MINI-ROMANTID"];
+  }
+
+  if (
+    title.includes("전사의 탄생") ||
+    (title.includes("네베드") &&
+      (title.includes("미니") || title.includes("mini")))
+  ) {
+    return OPERATION_REPORT_NUMBER_PRESETS["NOSB-MINI-NEVED"];
   }
 
   return null;
