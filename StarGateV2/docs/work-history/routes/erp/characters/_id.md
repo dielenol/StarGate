@@ -91,3 +91,10 @@
 - 검증: character revert 12건, shared-db character mock 25건, 웹 `typecheck`·`lint`·production build, critical risk review
 - 관련 커밋: `45944a0c`
 - 운영 경계: 라이브 캐릭터 변경·되돌리기는 실행하지 않았다.
+
+## 2026-08-13 · 정보 노출 수정 · 인벤토리 내부 메모
+
+- 일반 플레이어에게 전달되는 캐릭터 상세 초기 인벤토리와 장비 교체 응답에서 공방 request 추적 메모를 제거했다.
+- V 이상 API와 GM 관리자 화면의 운영 기록은 유지하며 장비 상태·효과·장착 정보는 기존과 동일하게 전달한다.
+- 검증: 인벤토리·권한·장비 집중 테스트 12건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, critical risk review. 라이브 장비 교체와 DB mutation 미실행.
+- 관련 커밋: `58108c1c`
