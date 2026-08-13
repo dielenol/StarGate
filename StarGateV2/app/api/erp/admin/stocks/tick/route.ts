@@ -4,7 +4,10 @@ import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbea
 import { auth } from "@/lib/auth/config";
 import { requireRole } from "@/lib/auth/rbac";
 import { notifyScheduledStockMarketWire } from "@/lib/stocks/market-wire";
-import { applyScheduledStockTick } from "@/lib/stocks/scheduled-tick";
+import {
+  applyScheduledStockTick,
+  ScheduledStockTickNotDueError,
+} from "@/lib/stocks/scheduled-tick";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface PostBody {
@@ -39,13 +42,24 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const summary = await applyScheduledStockTick({
-    force,
-    sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
-      process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
-    ),
-    ...(force ? { operationId } : {}),
-  });
+  let summary;
+  try {
+    summary = await applyScheduledStockTick({
+      force,
+      sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
+        process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
+      ),
+      ...(force ? { operationId } : {}),
+    });
+  } catch (error) {
+    if (error instanceof ScheduledStockTickNotDueError) {
+      return NextResponse.json(
+        { error: "정기 틱은 당일 12:00 KST 이후에만 실행할 수 있습니다." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
   if (summary.results.some((result) => result.status !== "skipped")) {
     await scheduleGmAdminAudit({
       action: "주식 정기 변동 수동 실행",

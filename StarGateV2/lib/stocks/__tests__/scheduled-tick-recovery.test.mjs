@@ -182,6 +182,7 @@ test("100 concurrent scheduled runs apply one ticker/date operation each", async
         { sodaStockImpactEnabled: true },
         {
           applyMutation,
+          claimScheduledEvent: async () => null,
           consumeStockImpact: async () => {
             stockImpactConsumeCalls += 1;
             return { soldQuantity: 36, eventIds: ["mrbeast-2026"] };
@@ -281,13 +282,14 @@ test("backfill gate가 닫혀 있으면 자동 tick도 소다 판매량을 소�
   await applyScheduledStockTick(
     {},
     {
+      claimScheduledEvent: async () => null,
       consumeStockImpact: async () => {
         consumeCalls += 1;
         return { soldQuantity: 10, eventIds: ["mrbeast-2026"] };
       },
       random: () => 0.5,
       applyMutation: async (input) => {
-        assert.equal(input.loadContext, undefined);
+        assert.equal(typeof input.loadContext, "function");
         const current = {
           ticker: input.ticker,
           price: input.initialPrice,
@@ -295,7 +297,8 @@ test("backfill gate가 닫혀 있으면 자동 tick도 소다 판매량을 소�
           eventText: "seed",
           lastUpdate: input.initialLastUpdateKst,
         };
-        const mutation = input.calculate(current, undefined);
+        const context = await input.loadContext({ inTransaction: () => true });
+        const mutation = input.calculate(current, context);
         return {
           applied: true,
           initialized: false,
@@ -325,6 +328,7 @@ test("2026-08-14 STM 정기 공시는 직전가를 절반으로 만들고 규제
       sodaStockImpactEnabled: true,
     },
     {
+      claimScheduledEvent: async () => null,
       random: () => 0.5,
       consumeStockImpact: async () => {
         consumeCalls += 1;
@@ -378,13 +382,57 @@ test("2026-08-14 STM 정기 공시는 직전가를 절반으로 만들고 규제
   );
 });
 
-test("2026-08-14 12:00 KST 전 수동 정기 실행은 STM 예약 충격을 조기 적용하지 않는다", async () => {
+test("2026-08-14 12:00 KST 전 non-force 실행은 어떤 정기 history도 만들지 않는다", async () => {
+  let mutationCalls = 0;
+  await assert.rejects(
+    applyScheduledStockTick(
+      { now: new Date("2026-08-14T02:59:59.999Z") },
+      {
+        applyMutation: async () => {
+          mutationCalls += 1;
+          throw new Error("must not run");
+        },
+      },
+    ),
+    (error) => error?.name === "ScheduledStockTickNotDueError",
+  );
+  assert.equal(mutationCalls, 0);
+});
+
+test("GM 예약 이벤트는 지정 정기 틱에서 한 번 claim되고 소다 영향보다 우선한다", async () => {
+  let eventClaimCalls = 0;
+  let stockImpactConsumeCalls = 0;
   const summary = await applyScheduledStockTick(
-    { now: new Date("2026-08-14T02:59:59.999Z") },
+    {
+      now: new Date("2026-08-15T03:00:00.000Z"),
+      sodaStockImpactEnabled: true,
+    },
     {
       random: () => 0.5,
+      claimScheduledEvent: async (input) => {
+        eventClaimCalls += 1;
+        return input.ticker === "STM"
+          ? {
+              _id: "stock-event:2026-08-15:STM",
+              ticker: "STM",
+              kstDate: "2026-08-15",
+              executeAt: new Date("2026-08-15T03:00:00.000Z"),
+              changePercent: -25,
+              eventText: "감독기관 후속 영업정지 처분",
+              eventTier: "shock",
+              status: "APPLIED",
+              createdBy: { id: "gm", displayName: "GM" },
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }
+          : null;
+      },
+      consumeStockImpact: async () => {
+        stockImpactConsumeCalls += 1;
+        return { soldQuantity: 50, eventIds: ["mrbeast-2026"] };
+      },
       applyMutation: async (input) => {
-        const currentPrice = input.ticker === "STM" ? 5.4 : input.initialPrice;
+        const currentPrice = input.ticker === "STM" ? 8 : input.initialPrice;
         const current = {
           ticker: input.ticker,
           price: currentPrice,
@@ -392,7 +440,10 @@ test("2026-08-14 12:00 KST 전 수동 정기 실행은 STM 예약 충격을 조�
           eventText: "seed",
           lastUpdate: input.initialLastUpdateKst,
         };
-        const mutation = input.calculate(current, undefined);
+        const context = input.loadContext
+          ? await input.loadContext({ inTransaction: () => true })
+          : undefined;
+        const mutation = input.calculate(current, context);
         return {
           applied: true,
           initialized: false,
@@ -413,6 +464,11 @@ test("2026-08-14 12:00 KST 전 수동 정기 실행은 STM 예약 충격을 조�
   );
 
   const stm = summary.results.find((result) => result.ticker === "STM");
-  assert.notEqual(stm.changePercent, -50);
-  assert.doesNotMatch(stm.eventText, /미국 식약청/);
+  assert.equal(stm.previousPrice, 8);
+  assert.equal(stm.price, 6);
+  assert.equal(stm.changePercent, -25);
+  assert.equal(stm.eventTier, "shock");
+  assert.match(stm.eventText, /영업정지 처분 -25\.00%/);
+  assert.equal(eventClaimCalls, STOCK_CATALOG.length);
+  assert.equal(stockImpactConsumeCalls, 0);
 });

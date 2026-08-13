@@ -164,6 +164,13 @@ export type {
 } from "./stock.js";
 
 export type {
+  StockScheduledEvent,
+  StockScheduledEventActor,
+  StockScheduledEventStatus,
+  StockScheduledEventTier,
+} from "./stock-scheduled-event.js";
+
+export type {
   PlayerTrade,
   PlayerTradeKind,
   PlayerTradeStatus,

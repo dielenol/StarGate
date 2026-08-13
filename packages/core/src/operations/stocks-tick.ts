@@ -1,5 +1,6 @@
 import {
   applyScheduledStockPriceMutation,
+  claimPendingStockScheduledEvent,
   consumeMrBeastSodaStockImpactDemand,
   listScheduledStockPriceHistoryRange,
   type ApplyScheduledStockPriceMutationResult,
@@ -38,9 +39,19 @@ export interface ApplyScheduledStockTickOptions {
 
 interface ApplyScheduledStockTickDependencies {
   applyMutation?: typeof applyScheduledStockPriceMutation;
+  claimScheduledEvent?: typeof claimPendingStockScheduledEvent;
   consumeStockImpact?: typeof consumeMrBeastSodaStockImpactDemand;
   random?: () => number;
   createRunId?: () => string;
+}
+
+interface ScheduledTickContext {
+  scheduledEvent?: {
+    priceMultiplier: number;
+    tier: Exclude<StockEventTier, "routine">;
+    text: string;
+  };
+  stockImpact?: { soldQuantity: number; eventIds: string[] };
 }
 
 export interface ScheduledStockTickResult {
@@ -58,6 +69,18 @@ export interface ScheduledStockTickSummary {
   slot: string;
   sourceRevision?: string;
   results: ScheduledStockTickResult[];
+}
+
+export class ScheduledStockTickNotDueError extends Error {
+  readonly date: string;
+  readonly executeAt: Date;
+
+  constructor(date: string, executeAt: Date) {
+    super(`SCHEDULED_STOCK_TICK_NOT_DUE:${executeAt.toISOString()}`);
+    this.name = "ScheduledStockTickNotDueError";
+    this.date = date;
+    this.executeAt = executeAt;
+  }
 }
 
 function randomMagnitude(random: () => number): number {
@@ -141,14 +164,10 @@ function replayRandom(samples: readonly number[]): () => number {
 function calculateScheduledMutation(
   current: StockPrice,
   meta: (typeof STOCK_CATALOG)[number],
-  scheduledEventDate: string | undefined,
-  now: Date,
+  scheduledEvent: ScheduledTickContext["scheduledEvent"],
   randomSamples: readonly number[],
   stockImpact: { soldQuantity: number; eventIds: string[] } | undefined,
 ) {
-  const scheduledEvent = scheduledEventDate
-    ? findScheduledStockMarketEvent(scheduledEventDate, meta.ticker, now)
-    : undefined;
   if (scheduledEvent) {
     const nextPrice = normalizeStockPrice(
       current.price * scheduledEvent.priceMultiplier,
@@ -220,6 +239,10 @@ export async function applyScheduledStockTick(
 ): Promise<ScheduledStockTickSummary> {
   const now = options.now ?? new Date();
   const today = kstDateTag(now);
+  const executeAt = new Date(`${today}T12:00:00+09:00`);
+  if (!options.force && now.getTime() < executeAt.getTime()) {
+    throw new ScheduledStockTickNotDueError(today, executeAt);
+  }
   const slot = `${today} 12:00`;
   const lastUpdate = kstNowTag(now);
   const results: ScheduledStockTickResult[] = [];
@@ -227,6 +250,8 @@ export async function applyScheduledStockTick(
     dependencies.applyMutation ?? applyScheduledStockPriceMutation;
   const consumeStockImpact =
     dependencies.consumeStockImpact ?? consumeMrBeastSodaStockImpactDemand;
+  const claimScheduledEvent =
+    dependencies.claimScheduledEvent ?? claimPendingStockScheduledEvent;
   const random = dependencies.random ?? Math.random;
   const forceRunId = options.force
     ? options.operationId ??
@@ -239,36 +264,61 @@ export async function applyScheduledStockTick(
       ? `stocks.tick.manual:${today}:${forceRunId}:${meta.ticker}`
       : `stocks.tick:${today}:${meta.ticker}`;
     const randomSamples = collectRandomSamples(random);
-    const hasScheduledEvent =
-      !options.force &&
-      findScheduledStockMarketEvent(today, meta.ticker, now) !== undefined;
-    const loadStockImpact =
-      options.sodaStockImpactEnabled === true &&
-      !options.force &&
-      !hasScheduledEvent &&
-      meta.ticker === MRBEAST_SODA_STOCK_IMPACT_TICKER
-        ? (session: Parameters<typeof consumeStockImpact>[0]["session"]) =>
-            consumeStockImpact({
-              operationKey,
-              now,
-              session,
-            })
-        : undefined;
+    const builtInEvent = !options.force
+      ? findScheduledStockMarketEvent(today, meta.ticker, now)
+      : undefined;
+    const loadContext = !options.force
+      ? async (
+          session: Parameters<typeof claimScheduledEvent>[0]["session"],
+        ): Promise<ScheduledTickContext> => {
+          if (builtInEvent) return { scheduledEvent: builtInEvent };
+
+          const claimed = await claimScheduledEvent({
+            ticker: meta.ticker,
+            kstDate: today,
+            operationKey,
+            now,
+            session,
+          });
+          if (claimed) {
+            return {
+              scheduledEvent: {
+                priceMultiplier: 1 + claimed.changePercent / 100,
+                tier: claimed.eventTier,
+                text: claimed.eventText,
+              },
+            };
+          }
+
+          if (
+            options.sodaStockImpactEnabled === true &&
+            meta.ticker === MRBEAST_SODA_STOCK_IMPACT_TICKER
+          ) {
+            return {
+              stockImpact: await consumeStockImpact({
+                operationKey,
+                now,
+                session,
+              }),
+            };
+          }
+          return {};
+        }
+      : undefined;
     const outcome = await applyMutation({
       ticker: meta.ticker,
       operationKey,
       initialPrice: meta.basePrice,
       initialLastUpdateKst: lastUpdate,
       initialEventText: "정기 시세 초기화",
-      loadContext: loadStockImpact,
-      calculate: (current, stockImpact) =>
+      loadContext,
+      calculate: (current, context: ScheduledTickContext | undefined) =>
         calculateScheduledMutation(
           current,
           meta,
-          options.force ? undefined : today,
-          now,
+          context?.scheduledEvent,
           randomSamples,
-          stockImpact,
+          context?.stockImpact,
         ),
     });
 

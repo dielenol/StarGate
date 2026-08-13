@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 import {
@@ -50,12 +50,14 @@ interface Props {
   initialPrices: StockPricesResponse;
   initialMarketWire: StockMarketWireResponse;
   initialHoldings: StockAdminHoldingsResponse;
+  children?: ReactNode;
 }
 
 export default function StockAdminClient({
   initialPrices,
   initialMarketWire,
   initialHoldings,
+  children,
 }: Props) {
   const pricesQuery = useStockPrices({ initialData: initialPrices });
   const holdingsQuery = useStockAdminHoldings({ initialData: initialHoldings });
@@ -428,6 +430,8 @@ export default function StockAdminClient({
             <div className={styles.empty}>조정할 종목이 없습니다.</div>
           )}
         </section>
+
+        {children}
 
         <section className={[styles.panel, styles.holdingsPanel].join(" ")}>
           <div className={styles.panel__head}>

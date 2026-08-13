@@ -39,6 +39,13 @@ const SCHEDULED_STOCK_MARKET_EVENTS: readonly ScheduledStockMarketEvent[] = [
   },
 ];
 
+export function listScheduledStockMarketEvents(): ScheduledStockMarketEvent[] {
+  return SCHEDULED_STOCK_MARKET_EVENTS.map((event) => ({
+    ...event,
+    executeAt: new Date(event.executeAt),
+  }));
+}
+
 const EVENTS_BY_TICKER: Record<string, StockMarketEvent[]> = {
   TWS: [
     { tier: "scenario", text: "치안국 대량 조달 계약 체결", minPercent: 0.05, maxPercent: 0.13 },
