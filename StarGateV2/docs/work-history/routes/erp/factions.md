@@ -69,3 +69,10 @@
 - 신원조회와 세력도가 같은 `OrgIcon` 매핑을 공유하며 공개 SVG mirror와 NOVUS 아이콘 마스터도 동기화했다.
 - 검증: 외부 조직·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, master JS syntax, `npx tsc --noEmit`, 대상 ESLint, 인증된 신원조회 실제 렌더 확인
 - 관련 구현 커밋: `ba3d8973`
+
+## 2026-08-13 · 문장 재설계 · 생성 원화 기반 외부 전사 조직
+
+- 세력도에서 갈로글라는 켈트 매듭 스파스 문장으로, 욤스비킹은 방패 3열 용두 장선 문장으로 식별되도록 생성 원화를 단색 벡터화해 적용했다.
+- 신원조회와 같은 `OrgIcon` source를 공유하며 공개 SVG mirror와 아이콘 마스터도 동일한 `currentColor` 도형으로 맞췄다.
+- 검증: 인증된 세력도 실제 렌더, 외부 조직·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, master JS syntax
+- 관련 구현 커밋: `a3ade187`

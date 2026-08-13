@@ -164,3 +164,10 @@
 - 기존 공개 Dossier 11건에는 `NOSB-MINI-NEVED` 세션 출현과 event/tag를, 네베드·샌드맨에는 불변 성격 관찰을 각각 1회 반영했다.
 - 검증: create run `seed-payload:7c6c66b6-9568-49ba-ba8e-017b3f79e645` 11/11, publication run `seed-payload:e558d44d-70d0-4420-8279-afeeec1f55fb` 15/15, DB exact 재조회, 인증된 조직도·신규/사망 Dossier·보고서 역링크·가로 넘침·콘솔 오류 확인
 - 관련 적용 소스 커밋: `1ffb0ba9`, `ba3d8973`
+
+## 2026-08-13 · 문장 재설계 · 생성 원화 기반 외부 전사 조직
+
+- 수제 조합형이던 갈로글라·욤스비킹 아이콘을 이미지 생성으로 만든 켈트 매듭 스파스와 방패열 용두 장선 원화에서 추출한 단색 벡터 문장으로 교체했다.
+- 배경과 미세 장식을 제거한 뒤 24px에 맞춰 단순화했으며, 조직도 inline source·공개 SVG mirror·NOVUS 아이콘 마스터가 같은 `currentColor` 도형을 사용하도록 유지했다.
+- 검증: 24px 래스터 미리보기, 인증된 1280px 신원조회 실제 18–20px 렌더, 외부 조직·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, master JS syntax, `npx tsc --noEmit`, 대상 ESLint
+- 관련 구현 커밋: `a3ade187`
