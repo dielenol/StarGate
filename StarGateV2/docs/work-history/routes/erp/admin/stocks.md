@@ -20,3 +20,11 @@
 - 검증: 주식 집중 테스트, 웹 `typecheck`·`lint`·production build, worker 62건, `git diff --check`
 - 관련 커밋: `45944a0c`
 - 운영 경계: Dokploy schedule·주가·수당 mutation은 실행하지 않았다.
+
+## 2026-08-13 · 이벤트 추가 · STM 규제 적발 충격 예약
+
+- 2026-08-14 12:00 KST의 자동 정기 틱에만 STM 직전가 대비 50% 충격과 노부스오르도 감사팀·미국 식약청의 소다 원료 적발 사유를 적용하도록 예약했다.
+- 슬롯 전 수동 실행과 강제 재실행은 예약 충격을 적용하지 않고, 특별 공시에 가려진 소다 판매량 영향도 소진하지 않도록 했다.
+- 검증: core 21건, scheduled tick 복구 8건, worker 95건, core `typecheck`, `git diff --check`, critical risk review
+- 관련 커밋: `b54bf3c3`
+- 운영 경계: 라이브 STM 시세·이력·공시와 배포는 아직 변경하지 않았다.

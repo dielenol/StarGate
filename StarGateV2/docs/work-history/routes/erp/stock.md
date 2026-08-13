@@ -93,3 +93,11 @@
 - 검증: 주식 read model·Query 계약 테스트, 집중 테스트 47/47, `pnpm typecheck`, `pnpm lint`, 프로덕션 build, JTEST 목록 조회, critical risk review
 - 관련 커밋: `c39f7c34`
 - 운영 경계: 매수·매도·시세·DB 인덱스 mutation은 실행하지 않았다.
+
+## 2026-08-13 · 이벤트 추가 · STM 규제 적발 충격 공시
+
+- 2026-08-14 12:00 KST 정기 틱에서 STM을 직전가의 정확히 50%로 조정하고, 노부스오르도 감사팀·미국 식약청의 미스터비스트 소다 함량 미달·불법 원료 적발을 충격 공시 사유로 표시한다.
+- 12시 전 일반 수동 실행과 GM 강제 재실행에는 이벤트를 적용하지 않으며, 당일 미반영 소다 판매량 영향은 소진하지 않고 다음 일반 정기 틱으로 이월한다.
+- 검증: core 21건, scheduled tick 복구 8건, worker 95건, core `typecheck`, `git diff --check`, critical risk review
+- 관련 커밋: `b54bf3c3`
+- 운영 경계: 라이브 STM 시세·이력·공시와 배포는 아직 변경하지 않았다.
