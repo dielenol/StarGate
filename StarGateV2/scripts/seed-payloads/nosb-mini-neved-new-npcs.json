@@ -1,0 +1,783 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "GARRETT_CLIMAC",
+      "type": "NPC",
+      "role": "갈로글라 청년 전사대장 / 현 섹터 B 경호원",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "개럿 클라이맥",
+        "gender": "남성",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에서 정확한 신체 정보는 확인되지 않았다. 사이먼의 반격으로 얼굴에 흉터가 남았고, 현재 시점에도 그 흔적이 확인된다.",
+        "personality": "힘에 의한 질서를 주장하며 거짓말과 위협으로 키아나의 선택을 통제하려 했다. 자신의 계획이 저지되자 야수화 주사를 직접 사용하고 무력으로 뜻을 관철하려 했다.",
+        "background": "갈로글라 공동체의 청년 전사대장이자 도리스 클라이맥의 아들이다. 열여덟 살 키아나 오 캘러핸의 강제 약혼 상대로 지목됐으며, 사이먼 오 캘러핸을 살해하고 키아나를 강까지 추격했다. 야수화 주사액을 훔쳐 자신에게 투여했으나 현장팀에게 제압돼 인간으로 돌아왔다.\n\n현재 시점에는 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 정규 고용 주체와 보직 경위는 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "전사대장",
+          "섹터B",
+          "야수화",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Garrett Climac",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 과거 역할: 갈로글라 청년 전사대장\n- 현재 확인 역할: 섹터 B 경호원\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 생사 상태: 현재 시점 생존 확인",
+        "notes": "사무국 인명 대조 결과 영문 표기는 `Garrett Climac`으로 등록한다.",
+        "relations": [
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸 / 네베드",
+            "label": "강제 약혼 상대 / 적대",
+            "summary": "키아나의 의사와 무관한 약혼을 강요하고 거짓말과 야수화 주사로 선택을 통제했으며, 기억 속에서 인질로 잡고 살해를 시도했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "SIMON_OCALLAHAN",
+            "targetName": "사이먼 오 캘러핸",
+            "label": "살해 관계",
+            "summary": "사이먼을 기습해 살해하고 그의 칼을 가져갔다. 회복된 기억에서 범행이 확인됐다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "갈로글라 청년 전사대장 / 사이먼 살해자 / 현 섹터 B 경호원",
+            "summary": "사이먼 살해와 야수화 주사 절도의 실행자로 드러났고 키아나를 인질로 잡은 뒤 곰인간으로 변했다. 제압 후 인간으로 돌아왔으며 현재 시점에는 섹터 B 경호원으로 생존해 있다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에서 정확한 신체 정보는 확인되지 않았다. 사이먼의 반격으로 얼굴에 흉터가 남았고, 현재 시점에도 그 흔적이 확인된다.\n\n## 성격\n힘에 의한 질서를 주장하며 거짓말과 위협으로 키아나의 선택을 통제하려 했다. 자신의 계획이 저지되자 야수화 주사를 직접 사용하고 무력으로 뜻을 관철하려 했다.\n\n## 배경\n갈로글라 공동체의 청년 전사대장이자 도리스 클라이맥의 아들이다. 열여덟 살 키아나 오 캘러핸의 강제 약혼 상대로 지목됐으며, 사이먼 오 캘러핸을 살해하고 키아나를 강까지 추격했다. 야수화 주사액을 훔쳐 자신에게 투여했으나 현장팀에게 제압돼 인간으로 돌아왔다.\n\n현재 시점에는 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 정규 고용 주체와 보직 경위는 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 과거 역할: 갈로글라 청년 전사대장\n- 현재 확인 역할: 섹터 B 경호원\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 생사 상태: 현재 시점 생존 확인\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Garrett Climac`으로 등록한다.\n\n## 관계 (참고)\n- `네베드` — 강제 약혼 상대이자 살해 시도 피해자\n- `SIMON_OCALLAHAN` — 개럿에게 살해된 갈로글라 전사\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "SIMON_OCALLAHAN",
+      "type": "NPC",
+      "role": "갈로글라 전사 / 키아나의 선대·교사",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-08-03T00:00:00.000Z",
+      "lifeStatusEventId": "NOSB-MINI-NEVED",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "사이먼 오 캘러핸",
+        "gender": "남성",
+        "age": "당시 20세",
+        "height": "188cm",
+        "weight": "미상",
+        "appearance": "보존 기록에서 키 188cm의 스무 살 남성으로 확인되나, 그 밖의 외형을 확정할 식별 자료는 없다.",
+        "personality": "전사의 힘은 살해가 아니라 보호를 위해 써야 한다고 가르쳤다. 마지막 순간에도 키아나에게 도망치라고 외치며 그를 보호하려 했다.",
+        "background": "갈로글라의 전사이자 키아나 오 캘러핸의 선대·교사였다. 개럿 클라이맥의 기습을 받고도 반격해 얼굴에 상처를 남겼으나 결국 살해됐다. 그의 가르침은 키아나가 케르나허 의식과 개럿의 강요를 거부하는 기준이 됐다.",
+        "quote": "> \"전사는 죽이는 사람이 아니라, 지키는 사람이야.\"",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "전사",
+          "키아나교사",
+          "사망",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Simon O'Callahan",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 역할: 갈로글라 전사, 키아나의 선대·교사\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 상태 확정: MINI06 기억 회복 과정에서 사망 사실 확인",
+        "notes": "사무국 인명 대조 결과 영문 표기는 `Simon O'Callahan`으로 등록한다.",
+        "relations": [
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸 / 네베드",
+            "label": "선대 전사 / 교사",
+            "summary": "키아나에게 전사는 죽이는 사람이 아니라 지키는 사람이라고 가르쳤고 마지막 순간에도 도망치라고 외치며 보호했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "GARRETT_CLIMAC",
+            "targetName": "개럿 클라이맥",
+            "label": "피살 관계",
+            "summary": "개럿의 기습을 받고 반격했으나 살해됐다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "키아나의 선대 전사·교사 / 피살자",
+            "summary": "키아나에게 보호하는 전사의 길을 가르친 갈로글라 전사다. 회복된 기억에서 개럿의 기습으로 사망한 사실이 확인됐다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 대사\n> \"전사는 죽이는 사람이 아니라, 지키는 사람이야.\"\n\n## 외형\n보존 기록에서 키 188cm의 스무 살 남성으로 확인되나, 그 밖의 외형을 확정할 식별 자료는 없다.\n\n## 성격\n전사의 힘은 살해가 아니라 보호를 위해 써야 한다고 가르쳤다. 마지막 순간에도 키아나에게 도망치라고 외치며 그를 보호하려 했다.\n\n## 배경\n갈로글라의 전사이자 키아나 오 캘러핸의 선대·교사였다. 개럿 클라이맥의 기습을 받고도 반격해 얼굴에 상처를 남겼으나 결국 살해됐다. 그의 가르침은 키아나가 케르나허 의식과 개럿의 강요를 거부하는 기준이 됐다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 역할: 갈로글라 전사, 키아나의 선대·교사\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 상태 확정: MINI06 기억 회복 과정에서 사망 사실 확인\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Simon O'Callahan`으로 등록한다.\n\n## 관계 (참고)\n- `네베드` — 보호하고 가르친 후계 전사\n- `GARRETT_CLIMAC` — 자신을 살해한 갈로글라 전사대장\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "CONNOR_OCALLAHAN",
+      "type": "NPC",
+      "role": "갈로글라 지도자 / 오 캘러핸 가주",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "코너 오 캘러핸",
+        "gender": "남성",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "과거 기억에서는 키아나에게 전사 훈련과 혼인을 강하게 요구하고 데이비드의 개입을 막았다. 현재 시점에는 과거 적대 세력이던 욤스비킹과 동맹을 선언했다. 이 두 장면 밖의 성향은 확정하지 않는다.",
+        "background": "갈로글라 지도자이자 키아나와 데이비드 오 캘러핸의 부친이다. 기억 속에서 키아나의 진입을 막으려는 데이비드와 대치했다. 현재 시점에는 욤스비킹 지도자 스벤 트로엘베인과 함께 노부스 오르도 아래의 동맹을 선언했다.\n\n개럿의 배후를 조종했다는 설은 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "지도자",
+          "오캘러핸",
+          "욤스비킹동맹",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Connor O'Callahan",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 직책: 갈로글라 지도자\n- 현재 외교 상태: 욤스비킹과 노부스 오르도 산하 동맹 선언\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장",
+        "notes": "사무국 인명 대조 결과 영문 표기는 `Connor O'Callahan`으로 등록한다.",
+        "relations": [
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸 / 네베드",
+            "label": "부친",
+            "summary": "키아나에게 전사 훈련과 혼인을 요구한 갈로글라 지도자다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "SANDMAN",
+            "targetName": "데이비드 오 캘러핸",
+            "label": "부친 / 기억 속 대치",
+            "summary": "데이비드가 키아나에게 가는 것을 막았고 데이비드는 현장팀의 진입 시간을 벌기 위해 코너와 대치했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "SVEN_TROELBEIN",
+            "targetName": "스벤 트로엘베인",
+            "label": "현재 동맹",
+            "summary": "현재 시점 기록에서 노부스 오르도 아래 갈로글라·욤스비킹 동맹을 함께 선언했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "갈로글라 지도자 / 오 캘러핸 가주",
+            "summary": "기억 속에서 키아나의 전사 훈련과 혼인을 통제하고 데이비드의 개입을 막았다. 현재 시점에는 스벤과 함께 갈로글라·욤스비킹 동맹을 선언했다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n과거 기억에서는 키아나에게 전사 훈련과 혼인을 강하게 요구하고 데이비드의 개입을 막았다. 현재 시점에는 과거 적대 세력이던 욤스비킹과 동맹을 선언했다. 이 두 장면 밖의 성향은 확정하지 않는다.\n\n## 배경\n갈로글라 지도자이자 키아나와 데이비드 오 캘러핸의 부친이다. 기억 속에서 키아나의 진입을 막으려는 데이비드와 대치했다. 현재 시점에는 욤스비킹 지도자 스벤 트로엘베인과 함께 노부스 오르도 아래의 동맹을 선언했다.\n\n개럿의 배후를 조종했다는 설은 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 직책: 갈로글라 지도자\n- 현재 외교 상태: 욤스비킹과 노부스 오르도 산하 동맹 선언\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Connor O'Callahan`으로 등록한다.\n\n## 관계 (참고)\n- `네베드` — 딸\n- `SANDMAN` — 아들, 기억 속 대치 상대\n- `SVEN_TROELBEIN` — 현재 동맹을 선언한 욤스비킹 지도자\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "NERIN_OCALLAHAN",
+      "type": "NPC",
+      "role": "갈로글라 공동체 주민 / 오 캘러핸 가문",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "네린 오 캘러핸",
+        "gender": "여성",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "기억 조사에서 가족사에 관해 답한 장면만 확인돼 성격 전반을 확정할 근거가 충분하지 않다.",
+        "background": "갈로글라 공동체의 주민이자 키아나 오 캘러핸의 모친이다. MINI06 기억 공간에서 현장팀의 가족사 조사 대상이 됐다. 현재 시점의 생사와 행적은 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "오캘러핸",
+          "키아나모친",
+          "기억조사",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Nerin O'Callahan",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 관계: 키아나·데이비드 오 캘러핸의 모친\n- 현재 상태: 미확인\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장",
+        "notes": "사무국 인명 대조 결과 영문 표기는 `Nerin O'Callahan`으로 등록한다.",
+        "relations": [
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸 / 네베드",
+            "label": "모친",
+            "summary": "키아나 오 캘러핸의 모친으로 기억 조사에서 확인됐다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "SANDMAN",
+            "targetName": "데이비드 오 캘러핸",
+            "label": "모친",
+            "summary": "데이비드 오 캘러핸의 모친으로 확인됐다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "오 캘러핸 가문 구성원 / 기억 조사 대상",
+            "summary": "갈로글라 기억 공간에서 가족사 조사 대상이 됐다. 현재 시점의 생사와 행적은 확인되지 않았다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n기억 조사에서 가족사에 관해 답한 장면만 확인돼 성격 전반을 확정할 근거가 충분하지 않다.\n\n## 배경\n갈로글라 공동체의 주민이자 키아나 오 캘러핸의 모친이다. MINI06 기억 공간에서 현장팀의 가족사 조사 대상이 됐다. 현재 시점의 생사와 행적은 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 관계: 키아나·데이비드 오 캘러핸의 모친\n- 현재 상태: 미확인\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Nerin O'Callahan`으로 등록한다.\n\n## 관계 (참고)\n- `네베드` — 딸\n- `SANDMAN` — 아들\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "ENDA_CLIMAC",
+      "type": "NPC",
+      "role": "은퇴한 갈로글라 전사 / 클라이맥 가문 원로",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "엔다 클라이맥",
+        "gender": "여성",
+        "age": "당시 89세",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "기억 당시 89세의 노년 여성으로 확인되나, 그 밖의 외형을 확정할 식별 자료는 없다.",
+        "personality": "사이먼의 후계자로 키아나를 지목하고, 개럿의 야수화를 저지할 세포 억제제를 현장팀에 넘겼다. 전사 전통을 중시하면서도 공동체의 피해를 막기 위한 대응에 협조했다.",
+        "background": "은퇴한 전설적 갈로글라 전사이자 개럿 클라이맥의 조모다. MINI06 기억 공간에서 사이먼 오 캘러핸의 후계자로 키아나를 지목했다. 현장팀에 개럿용 세포 억제제를 제공해 야수화 제압에 기여했다. 현재 시점의 생사와 행적은 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "은퇴전사",
+          "클라이맥",
+          "세포억제제",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Enda Climac",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 과거 역할: 전설적 전사, 현재 기억 시점에는 은퇴\n- 가족 관계: 도리스 클라이맥의 모친, 개럿 클라이맥의 조모\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장",
+        "notes": "사무국 인명 대조 결과 영문 표기는 `Enda Climac`으로 등록한다.",
+        "relations": [
+          {
+            "targetCodename": "GARRETT_CLIMAC",
+            "targetName": "개럿 클라이맥",
+            "label": "조모",
+            "summary": "개럿 클라이맥의 조모이자 클라이맥 가문의 원로다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸 / 네베드",
+            "label": "후계자 지명",
+            "summary": "죽은 사이먼의 후계자로 키아나를 지목하고 개럿 제압용 세포 억제제를 제공했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "은퇴한 전설적 전사 / 개럿 제압 조력자",
+            "summary": "사이먼의 후계자로 키아나를 지목하고 현장팀에 개럿용 세포 억제제를 제공했다. 현재 시점의 생사와 행적은 확인되지 않았다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n기억 당시 89세의 노년 여성으로 확인되나, 그 밖의 외형을 확정할 식별 자료는 없다.\n\n## 성격\n사이먼의 후계자로 키아나를 지목하고, 개럿의 야수화를 저지할 세포 억제제를 현장팀에 넘겼다. 전사 전통을 중시하면서도 공동체의 피해를 막기 위한 대응에 협조했다.\n\n## 배경\n은퇴한 전설적 갈로글라 전사이자 개럿 클라이맥의 조모다. MINI06 기억 공간에서 사이먼 오 캘러핸의 후계자로 키아나를 지목했다. 현장팀에 개럿용 세포 억제제를 제공해 야수화 제압에 기여했다. 현재 시점의 생사와 행적은 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 과거 역할: 전설적 전사, 현재 기억 시점에는 은퇴\n- 가족 관계: 도리스 클라이맥의 모친, 개럿 클라이맥의 조모\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Enda Climac`으로 등록한다.\n\n## 관계 (참고)\n- `GARRETT_CLIMAC` — 손자\n- `네베드` — 사이먼의 후계자로 지목한 전사\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "EVA_HANNER",
+      "type": "NPC",
+      "role": "갈로글라 한너 클랜 지도자",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "에바 한너",
+        "gender": "여성",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "성인식 회의와 클랜 지도 장면만 확인돼 성격 전반을 확정할 근거가 충분하지 않다.",
+        "background": "갈로글라 한너 클랜 공동체의 지도자다. MINI06 기억 공간에서 케르나허 성인 의식과 공동체 회의에 관여했다. 현재 시점의 생사와 행적은 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "한너클랜",
+          "지도자",
+          "케르나허",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Eva Hanner",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 직책: 한너 클랜 지도자\n- 관련 사건: 케르나허 성인 의식\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장",
+        "notes": "사무국 인명 대조 결과 영문 표기는 `Eva Hanner`로 등록한다.",
+        "relations": [],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "갈로글라 한너 클랜 지도자",
+            "summary": "기억 속 갈로글라 공동체의 성인식 회의와 케르나허 의식에 관여했다. 현재 시점의 생사와 행적은 확인되지 않았다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n성인식 회의와 클랜 지도 장면만 확인돼 성격 전반을 확정할 근거가 충분하지 않다.\n\n## 배경\n갈로글라 한너 클랜 공동체의 지도자다. MINI06 기억 공간에서 케르나허 성인 의식과 공동체 회의에 관여했다. 현재 시점의 생사와 행적은 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 직책: 한너 클랜 지도자\n- 관련 사건: 케르나허 성인 의식\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Eva Hanner`로 등록한다.\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "RONNIE_KEANE",
+      "type": "NPC",
+      "role": "갈로글라 공동체 사냥꾼 / 사이먼 사망 증언자",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "로니 킨",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "사이먼의 사망 현장에 관한 조사에 응하고 관찰한 상처와 분실된 칼을 설명했다. 이 증언 밖의 성격은 확정하지 않는다.",
+        "background": "갈로글라 공동체의 사냥꾼이다. 사이먼의 치명상이 거대한 발톱과 청년 전사의 칼에서 비롯됐고 사이먼의 칼이 사라졌다고 증언해 개럿의 범행을 밝히는 데 기여했다. 현재 시점의 생사와 행적은 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "사냥꾼",
+          "사이먼증언",
+          "기억조사",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Ronnie Keane",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 직업: 사냥꾼\n- 사건 역할: 사이먼 사망 현장 증언자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장",
+        "notes": "사무국 인명 대조 결과 영문 표기는 `Ronnie Keane`으로 등록한다.",
+        "relations": [
+          {
+            "targetCodename": "SIMON_OCALLAHAN",
+            "targetName": "사이먼 오 캘러핸",
+            "label": "사망 현장 증언자",
+            "summary": "사이먼의 치명상과 분실된 칼을 설명해 개럿의 범행을 밝히는 데 기여했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "사냥꾼 / 사이먼 사망 현장 증언자",
+            "summary": "사이먼의 상처가 거대한 발톱과 청년 전사의 칼에서 비롯됐고 그의 칼이 사라졌다고 증언했다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n사이먼의 사망 현장에 관한 조사에 응하고 관찰한 상처와 분실된 칼을 설명했다. 이 증언 밖의 성격은 확정하지 않는다.\n\n## 배경\n갈로글라 공동체의 사냥꾼이다. 사이먼의 치명상이 거대한 발톱과 청년 전사의 칼에서 비롯됐고 사이먼의 칼이 사라졌다고 증언해 개럿의 범행을 밝히는 데 기여했다. 현재 시점의 생사와 행적은 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 직업: 사냥꾼\n- 사건 역할: 사이먼 사망 현장 증언자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Ronnie Keane`으로 등록한다.\n\n## 관계 (참고)\n- `SIMON_OCALLAHAN` — 사망 현장과 상처를 증언한 대상\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "NOSTER",
+      "type": "NPC",
+      "role": "갈로글라 공동체 양조업자 / 야수화 주사 절도 증언자",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-08-03T00:00:00.000Z",
+      "lifeStatusEventId": "NOSB-MINI-NEVED",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "노스터",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "개럿에게 약물로 제압당한 뒤에도 야수화 주사액 절도 사실을 현장팀에 증언했다. 이 장면 밖의 성격은 확정하지 않는다.",
+        "background": "갈로글라 공동체의 양조업자다. 개럿이 자신에게 약물을 먹이고 야수화 주사액 한 병을 훔쳤다고 증언했다. 증언 직후 석궁에 맞아 사망했고, 현장에는 욤스비킹의 늑대인간·곰인간 전승을 설명하는 쪽지가 남았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "양조업자",
+          "야수화주사",
+          "증언자",
+          "사망",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Noster",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 직업: 양조업자\n- 사건 역할: 야수화 주사 절도 피해자·증언자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 상태 확정: MINI06 기억 조사 중 석궁 피격 사망 확인",
+        "notes": "사건 기록에는 `노스터`로 등재한다. 성과 전체 법적 이름은 확인되지 않았다.",
+        "relations": [
+          {
+            "targetCodename": "GARRETT_CLIMAC",
+            "targetName": "개럿 클라이맥",
+            "label": "약물·절도 피해 및 증언",
+            "summary": "개럿이 자신에게 약물을 먹이고 야수화 주사액 한 병을 훔쳤다고 증언했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "양조업자 / 야수화 주사 절도 증언자 / 피살자",
+            "summary": "개럿의 약물 투여와 야수화 주사액 절도를 증언한 직후 석궁에 맞아 사망했다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n개럿에게 약물로 제압당한 뒤에도 야수화 주사액 절도 사실을 현장팀에 증언했다. 이 장면 밖의 성격은 확정하지 않는다.\n\n## 배경\n갈로글라 공동체의 양조업자다. 개럿이 자신에게 약물을 먹이고 야수화 주사액 한 병을 훔쳤다고 증언했다. 증언 직후 석궁에 맞아 사망했고, 현장에는 욤스비킹의 늑대인간·곰인간 전승을 설명하는 쪽지가 남았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 직업: 양조업자\n- 사건 역할: 야수화 주사 절도 피해자·증언자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 상태 확정: MINI06 기억 조사 중 석궁 피격 사망 확인\n\n## 이름 설명\n사건 기록에는 `노스터`로 등재한다. 성과 전체 법적 이름은 확인되지 않았다.\n\n## 관계 (참고)\n- `GARRETT_CLIMAC` — 약물 투여와 야수화 주사 절도를 증언한 대상\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "GAL_MUJIK",
+      "type": "NPC",
+      "role": "갈로글라 경비 / 욤스 회수 협력자",
+      "department": "GALLOGLA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "갈 무직",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "공동체의 공식 적대 관계와 별개로 데이비드와 협력해 부상한 욤스를 회수망에 넘겼다. 이 행동 밖의 성격은 확정하지 않는다.",
+        "background": "사건 기록에 `갈 무직`으로 등재된 갈로글라 경비다. 키아나의 성인식 과정에서 우회로를 제공했고, 이후 데이비드 오 캘러핸과 함께 부상한 욤스를 케이시 레이서 측 회수자에게 넘겼다. 실명과 현재 행적은 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "갈로글라",
+          "경비",
+          "비밀협력자",
+          "욤스회수",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 역할: 공동체 경비, 욤스 회수 비밀 협력자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 현재 상태: 미확인",
+        "notes": "사건 기록에는 `갈 무직`으로 등재한다. 실명은 확인되지 않았다.",
+        "relations": [
+          {
+            "targetCodename": "SANDMAN",
+            "targetName": "데이비드 오 캘러핸",
+            "label": "비밀 협력",
+            "summary": "데이비드와 함께 부상한 욤스를 케이시 레이서 측 회수자에게 넘겼다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "YOMS",
+            "targetName": "욤스",
+            "label": "회수 지원",
+            "summary": "부상한 욤스를 비밀 회수망에 넘기는 일을 지원했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "갈로글라 경비 / 욤스 회수 협력자",
+            "summary": "키아나의 성인식 과정에서 우회로를 제공했고 이후 데이비드와 함께 부상한 욤스의 회수를 지원했다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n공동체의 공식 적대 관계와 별개로 데이비드와 협력해 부상한 욤스를 회수망에 넘겼다. 이 행동 밖의 성격은 확정하지 않는다.\n\n## 배경\n사건 기록에 `갈 무직`으로 등재된 갈로글라 경비다. 키아나의 성인식 과정에서 우회로를 제공했고, 이후 데이비드 오 캘러핸과 함께 부상한 욤스를 케이시 레이서 측 회수자에게 넘겼다. 실명과 현재 행적은 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 확인 역할: 공동체 경비, 욤스 회수 비밀 협력자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 현재 상태: 미확인\n\n## 이름 설명\n사건 기록에는 `갈 무직`으로 등재한다. 실명은 확인되지 않았다.\n\n## 관계 (참고)\n- `SANDMAN` — 욤스 회수를 함께 지원한 협력자\n- `YOMS` — 회수망으로 넘긴 부상자\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "YOMS",
+      "type": "NPC",
+      "role": "욤스비킹 포로·정보원 / 회수 생존자",
+      "department": "JOMSVIKING",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "욤스",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "포로 상태에서 크루아던·카다던 탈취 계획과 내부 협력자 식별법을 설명했다. 생존을 위한 증언 외의 성격은 확정하지 않는다.",
+        "background": "갈로글라에 붙잡힌 욤스비킹 인물이다. 욤스비킹이 전승 검 크루아던과 카다던을 노리고 있고, 내부 협력자는 `오딘의 아이`로 불리며 적외선으로 비밀 편지를 읽는다고 증언했다.\n\n키아나는 케르나허 의식에서 욤스를 죽이지 않고 쇠사슬만 끊었다. 개럿의 총격으로 부상했으나 이후 데이비드와 갈 무직이 케이시 레이서 측 회수자에게 넘겨 생존했다. 실명과 현재 행적은 확인되지 않았다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "욤스비킹",
+          "포로",
+          "정보원",
+          "생존자",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 욤스비킹(JOMSVIKING)\n- 사건 역할: 갈로글라 포로, 내부 협력자 정보원, 회수 생존자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 현재 상태: 회수 이후 미확인",
+        "notes": "사건 기록에는 `욤스`로 등재한다. 실명은 확인되지 않았다.",
+        "relations": [
+          {
+            "targetCodename": "네베드",
+            "targetName": "키아나 오 캘러핸 / 네베드",
+            "label": "살해 거부로 살아남은 포로",
+            "summary": "키아나가 케르나허 의식에서 살해를 거부하고 쇠사슬만 끊어 줬다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          },
+          {
+            "targetCodename": "GAL_MUJIK",
+            "targetName": "갈 무직",
+            "label": "회수 지원자",
+            "summary": "개럿의 총격으로 부상한 뒤 갈 무직과 데이비드의 도움으로 회수망에 인계됐다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "욤스비킹 포로·정보원 / 회수 생존자",
+            "summary": "크루아던·카다던 탈취 계획과 내부 협력자 식별법을 증언했다. 키아나가 살해를 거부한 뒤 개럿에게 총격당했으나 비밀 회수망에 인계돼 생존했다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n포로 상태에서 크루아던·카다던 탈취 계획과 내부 협력자 식별법을 설명했다. 생존을 위한 증언 외의 성격은 확정하지 않는다.\n\n## 배경\n갈로글라에 붙잡힌 욤스비킹 인물이다. 욤스비킹이 전승 검 크루아던과 카다던을 노리고 있고, 내부 협력자는 `오딘의 아이`로 불리며 적외선으로 비밀 편지를 읽는다고 증언했다.\n\n키아나는 케르나허 의식에서 욤스를 죽이지 않고 쇠사슬만 끊었다. 개럿의 총격으로 부상했으나 이후 데이비드와 갈 무직이 케이시 레이서 측 회수자에게 넘겨 생존했다. 실명과 현재 행적은 확인되지 않았다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 욤스비킹(JOMSVIKING)\n- 사건 역할: 갈로글라 포로, 내부 협력자 정보원, 회수 생존자\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 현재 상태: 회수 이후 미확인\n\n## 이름 설명\n사건 기록에는 `욤스`로 등재한다. 실명은 확인되지 않았다.\n\n## 관계 (참고)\n- `네베드` — 성인식에서 살해를 거부하고 쇠사슬을 끊어 준 인물\n- `GAL_MUJIK` — 부상 뒤 회수를 지원한 갈로글라 협력자\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "SVEN_TROELBEIN",
+      "type": "NPC",
+      "role": "욤스비킹 지도자",
+      "department": "JOMSVIKING",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "isPublic": true,
+      "lore": {
+        "name": "스벤 트로엘베인",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "보존 기록에는 외형을 확정할 만한 식별 자료가 없다.",
+        "personality": "현재 시점의 동맹 선언 장면만 확인돼 성격 전반을 확정할 근거가 충분하지 않다.",
+        "background": "욤스비킹의 지도자다. 현재 시점 기록에서 갈로글라 지도자 코너 오 캘러핸과 함께 과거의 적대를 끝내고 노부스 오르도 아래에서 동맹을 선언했다.",
+        "quote": "",
+        "mainImage": "/assets/npcs/Unknown-Person-profile.webp",
+        "loreTags": [
+          "군부",
+          "욤스비킹",
+          "지도자",
+          "갈로글라동맹",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "appearsInEvents": [
+          "NOSB-MINI-NEVED"
+        ],
+        "nameEn": "Sven Troelbein",
+        "roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 욤스비킹(JOMSVIKING)\n- 확인 직책: 욤스비킹 지도자\n- 현재 외교 상태: 갈로글라와 노부스 오르도 산하 동맹 선언\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장",
+        "notes": "현재 시점 동맹 기록에서 영문 표기 `Sven Troelbein`을 확인했다.",
+        "relations": [
+          {
+            "targetCodename": "CONNOR_OCALLAHAN",
+            "targetName": "코너 오 캘러핸",
+            "label": "현재 동맹",
+            "summary": "현재 시점 기록에서 노부스 오르도 아래 갈로글라·욤스비킹 동맹을 함께 선언했다.",
+            "sourceEvent": "NOSB-MINI-NEVED",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생",
+            "confidence": "confirmed"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-MINI-NEVED",
+            "role": "욤스비킹 지도자 / 갈로글라 동맹 대표",
+            "summary": "현재 시점 기록에서 코너 오 캘러핸과 함께 과거 적대를 끝내고 노부스 오르도 아래 동맹을 선언했다.",
+            "sourceLabel": "작전 보고서 MINI06: 전사의 탄생"
+          }
+        ],
+        "personalityObservations": []
+      },
+      "loreMd": "## 외형\n보존 기록에는 외형을 확정할 만한 식별 자료가 없다.\n\n## 성격\n현재 시점의 동맹 선언 장면만 확인돼 성격 전반을 확정할 근거가 충분하지 않다.\n\n## 배경\n욤스비킹의 지도자다. 현재 시점 기록에서 갈로글라 지도자 코너 오 캘러핸과 함께 과거의 적대를 끝내고 노부스 오르도 아래에서 동맹을 선언했다.\n\n## 역할 상세\n- 정규 분류: 외부 군부(MILITARY) 산하 욤스비킹(JOMSVIKING)\n- 확인 직책: 욤스비킹 지도자\n- 현재 외교 상태: 갈로글라와 노부스 오르도 산하 동맹 선언\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n\n## 이름 설명\n현재 시점 동맹 기록에서 영문 표기 `Sven Troelbein`을 확인했다.\n\n## 관계 (참고)\n- `CONNOR_OCALLAHAN` — 현재 동맹을 선언한 갈로글라 지도자\n",
+      "source": "manual",
+      "ownerId": null,
+      "createdAt": "2026-08-03T00:00:00.000Z",
+      "updatedAt": "2026-08-13T00:00:00.000Z"
+    }
+  }
+]

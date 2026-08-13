@@ -6,12 +6,12 @@ label: 군부
 labelEn: Military
 scope: external
 summary: 광원화 사태 이전부터 존재한 군사 권력 블록. 노부스 오르도의 조율주의에 불만을 품고 전통적 군사 권위와 무장 대응을 중시한다.
-tags: [외부, 군부, 온건파, 전통복고, 권위주의, 군사권력, 미국, NOGA]
-notableMembers: [WEXLER, JOHN_WONG, PERK_ESHHALL]
+tags: [외부, 군부, 온건파, 전통복고, 권위주의, 군사권력, 미국, 러시아정부, NOGA, 갈로글라, 욤스비킹]
+notableMembers: [WEXLER, JOHN_WONG, GERASIMOV, PERK_ESHHALL, CONNOR_OCALLAHAN, SVEN_TROELBEIN]
 isPublic: true
 source: manual
 createdAt: 2026-05-14T00:00:00Z
-updatedAt: 2026-08-06T00:00:00Z
+updatedAt: 2026-08-13T00:00:00Z
 ---
 
 ## 이념/가치관
@@ -38,12 +38,18 @@ updatedAt: 2026-08-06T00:00:00Z
 
 - `WEXLER` - 미국 부통령이자 전직 대통령이며 외부 군부 핵심 인사인 캘빈 R. 웩슬러. NOVUS ORDO 내부 `agentLevel`은 없다.
 - `JOHN_WONG` - 프라토 1부에서 확인된 CIA 고위 요원.
+- `GERASIMOV` - 러시아 정부 측에서 섹터 C로 파견됐던 장군 미하일 게라쉬모프.
 - `PERK_ESHHALL` - NOGA 더블린 지부 지부장.
+- `CONNOR_OCALLAHAN` - 갈로글라 지도자. 현재 욤스비킹과 노부스 오르도 산하 동맹을 선언했다.
+- `SVEN_TROELBEIN` - 욤스비킹 지도자. 현재 갈로글라와 노부스 오르도 산하 동맹을 선언했다.
 
 ## 산하/관계 조직
 
 - `USA` - 미국 정치·군사·정보기관 라인. 웩슬러와 존 웡을 이 하위 분류로 정리한다.
+- `RUSSIA` - 러시아 정치·군사·정보기관 라인. 게라쉬모프를 이 하위 분류로 정리한다.
 - `NOGA` - Novus Ordo Great Again. 뉴 더블린 기록에서는 인류 우월주의 폭력조직으로 확인되며, 퍼크슈타인 에스홀을 이 하위 분류로 정리한다.
+- `GALLOGLA` - 아일랜드계 전사·용병 공동체. 내부 MANUS 섹터가 아니라 군부 계열 외부 하위 조직으로 분류한다.
+- `JOMSVIKING` - 북유럽계 전사·용병 공동체. 내부 MANUS 섹터가 아니라 군부 계열 외부 하위 조직으로 분류한다.
 
 ## 타 세력/기관 관계
 

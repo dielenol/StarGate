@@ -263,7 +263,10 @@ export function getUserClearance(userRole: UserRole): AgentLevel {
 FACTIONS (권력 블록)                          INSTITUTIONS (내부 기관)
 ├─ MILITARY    (군부)        [external]       ├─ SECRETARIAT (사무국)  [parent: NOVUS_ORDO]
 │  ├─ USA       (미국)        [external sub-org]
-│  └─ NOGA      (NOGA)       [external sub-org]
+│  ├─ RUSSIA    (러시아 정부) [external sub-org]
+│  ├─ NOGA      (NOGA)       [external sub-org]
+│  ├─ GALLOGLA  (갈로글라)   [external sub-org]
+│  └─ JOMSVIKING (욤스비킹)  [external sub-org]
 ├─ COUNCIL     (이사회)      [external]       │   ├─ HQ (사무총장실)
 ├─ CIVIL       (시민사회)    [external]       │   ├─ RESEARCH (연구 기구)
 │  ├─ WHITE_ROSE (백장미단) [external sub-org]
@@ -314,7 +317,7 @@ FACTIONS (권력 블록)                          INSTITUTIONS (내부 기관)
 
 - **좌측**: 외부 기관 (`FACTIONS · scope=external`) — 삼각형 배치 (COUNCIL 상단, MILITARY 좌하, CIVIL 우하)
 - **우측**: 본부 (`NOVUS_ORDO · scope=internal`) 박스 + 산하 내부 기관 (`INSTITUTIONS` SECRETARIAT/MANUS) 수직 스택
-- **외부 하위 조직**: `EXTERNAL_SUB_ORGS` 기반으로 WHITE_ROSE/SPACE_ZERO/USA/NOGA 등 비적대 하위 조직을 별도 카드로 노출
+- **외부 하위 조직**: `EXTERNAL_SUB_ORGS` 기반으로 WHITE_ROSE/SPACE_ZERO/USA/RUSSIA/NOGA/GALLOGLA/JOMSVIKING 등 비적대 하위 조직을 별도 카드로 노출
 - **하단**: `UNASSIGNED` (미배정) — 존재할 때만 카드 그리드로 노출
 - **시각**: 외부 영역은 차가운 톤(회색-녹색 계열) 배경, 본부 영역은 금색 강조 보더로 분리. NOVUS_ORDO 박스는 본부 카드(`node--hq`)로 별도 톤 처리.
 - **구현 수준**: CSS Grid + SVG 라인으로 충분. 현재 노드 규모 (외부 세력 3 + 본부 1 + 내부 기관 2 + 하위 기구 11 = **17개**)에서 react-flow 등 전문 라이브러리는 오버엔지니어링. 노드 50+ 시점에 재검토.
