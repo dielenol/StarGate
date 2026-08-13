@@ -90,6 +90,7 @@ function CharAvatar({
           src={src}
           alt=""
           fill
+          loading={variant === "hero" ? "eager" : undefined}
           sizes={variant === "hero" ? "176px" : "112px"}
           className={styles.charMini__avatarImg}
         />
