@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
@@ -274,6 +275,10 @@ export function CalendarClient({
           >
             오늘로
           </button>
+          <Link className={styles.calendar__roulette} href="/roulette">
+            <span aria-hidden="true">●</span>
+            마블 룰렛
+          </Link>
           <button
             className={`${styles["calendar__mine-toggle"]} ${
               showMineOnly ? styles["calendar__mine-toggle--active"] : ""
