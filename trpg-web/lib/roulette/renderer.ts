@@ -1,14 +1,18 @@
 import {
+  getRouletteSpinnerSegments,
   ROULETTE_BOARD_WIDTH,
   type RouletteBall,
   type RouletteCourse,
   type RouletteParticipant,
   type RouletteRace,
+  type RouletteSegment,
+  type RouletteSpinner,
 } from "./engine";
 
 interface DrawRouletteSceneOptions {
   race: RouletteRace | null;
   previewParticipants: readonly RouletteParticipant[];
+  previewElapsedSeconds?: number;
   course: RouletteCourse;
   avatarImages: ReadonlyMap<string, CanvasImageSource>;
 }
@@ -18,15 +22,19 @@ export function drawRouletteScene(
   {
     race,
     previewParticipants,
+    previewElapsedSeconds = 0,
     course,
     avatarImages,
   }: DrawRouletteSceneOptions,
 ): void {
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
   context.clearRect(0, 0, ROULETTE_BOARD_WIDTH, course.height);
   drawBackground(context, course);
-  drawTrack(context, course);
+  drawTrack(context, course, race?.elapsedSeconds ?? previewElapsedSeconds);
 
   if (race) {
+    const winnerIds = new Set(race.winnerParticipantIds);
     const orderedBalls = [...race.balls].sort((first, second) =>
       first.finished === second.finished
         ? first.y - second.y
@@ -37,7 +45,7 @@ export function drawRouletteScene(
         context,
         ball,
         avatarImages.get(ball.id),
-        race.winnerBallId === ball.ballId,
+        winnerIds.has(ball.id),
       );
     }
   } else {
@@ -50,129 +58,213 @@ function drawBackground(
   course: RouletteCourse,
 ): void {
   const gradient = context.createLinearGradient(0, 0, 0, course.height);
-  gradient.addColorStop(0, "#16192c");
+  gradient.addColorStop(0, "#171b31");
   gradient.addColorStop(0.52, "#101426");
   gradient.addColorStop(1, "#090c17");
   context.fillStyle = gradient;
   context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, course.height);
 
-  context.fillStyle = "rgba(142, 160, 255, 0.2)";
-  for (let y = 8; y < course.height; y += 13) {
-    for (let x = 7; x < ROULETTE_BOARD_WIDTH; x += 17) {
-      const offset = ((x * 7 + y * 11) % 9) - 4;
-      context.fillRect(x + offset, y, 1, 1);
-    }
-  }
+  const glow = context.createRadialGradient(
+    ROULETTE_BOARD_WIDTH / 2,
+    180,
+    20,
+    ROULETTE_BOARD_WIDTH / 2,
+    180,
+    500,
+  );
+  glow.addColorStop(0, "rgba(88, 101, 242, 0.2)");
+  glow.addColorStop(0.48, "rgba(88, 101, 242, 0.06)");
+  glow.addColorStop(1, "rgba(88, 101, 242, 0)");
+  context.fillStyle = glow;
+  context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, Math.min(course.height, 760));
 
-  context.strokeStyle = "rgba(142, 160, 255, 0.1)";
-  context.lineWidth = 1;
-  for (let y = 128; y < course.height; y += 32) {
-    context.beginPath();
-    context.moveTo(0, y + 0.5);
-    context.lineTo(ROULETTE_BOARD_WIDTH, y + 0.5);
-    context.stroke();
-  }
+  context.save();
+  context.shadowColor = "rgba(0, 0, 0, 0.34)";
+  context.shadowBlur = 18;
+  context.fillStyle = "rgba(25, 30, 54, 0.92)";
+  roundedRect(context, 22, 20, ROULETTE_BOARD_WIDTH - 44, 62, 16);
+  context.fill();
+  context.restore();
 
-  context.fillStyle = "#1b2038";
-  context.fillRect(18, 18, ROULETTE_BOARD_WIDTH - 36, 64);
-  context.fillStyle = "#5865f2";
-  context.fillRect(18, 76, ROULETTE_BOARD_WIDTH - 36, 6);
-
-  context.fillStyle = "#eef1ff";
-  context.font = "900 17px ui-monospace, monospace";
+  context.fillStyle = "#aeb9ff";
+  context.font = "700 13px system-ui, -apple-system, sans-serif";
   context.textAlign = "left";
   context.textBaseline = "middle";
-  context.fillText(
-    `COURSE ${course.number} / ${course.distance}`,
-    36,
-    49,
-  );
+  context.fillText(`COURSE ${course.number} · ${course.distance}`, 42, 51);
+  context.fillStyle = "#f4f6ff";
+  context.font = "800 15px system-ui, -apple-system, sans-serif";
   context.textAlign = "right";
-  context.fillText(course.name, ROULETTE_BOARD_WIDTH - 36, 49);
+  context.fillText(course.name, ROULETTE_BOARD_WIDTH - 42, 51);
 
-  context.strokeStyle = "#313852";
-  context.lineWidth = 6;
-  context.strokeRect(8, 8, ROULETTE_BOARD_WIDTH - 16, course.height - 16);
-  context.strokeStyle = "#5865f2";
-  context.lineWidth = 2;
-  context.strokeRect(16, 16, ROULETTE_BOARD_WIDTH - 32, course.height - 32);
+  context.strokeStyle = "rgba(150, 163, 255, 0.28)";
+  context.lineWidth = 1.5;
+  roundedRect(context, 12, 12, ROULETTE_BOARD_WIDTH - 24, course.height - 24, 20);
+  context.stroke();
 
-  context.fillStyle = "#c7d0ff";
-  context.font = "900 13px ui-monospace, monospace";
+  context.fillStyle = "rgba(216, 222, 255, 0.76)";
+  context.font = "700 11px system-ui, -apple-system, sans-serif";
   context.textAlign = "center";
-  context.fillText("▼ DROP ZONE ▼", ROULETTE_BOARD_WIDTH / 2, 101);
+  context.fillText("DROP ZONE", ROULETTE_BOARD_WIDTH / 2, 102);
 }
 
 function drawTrack(
   context: CanvasRenderingContext2D,
   course: RouletteCourse,
+  elapsedSeconds: number,
 ): void {
   context.save();
-  context.lineCap = "square";
-  context.lineJoin = "miter";
+  context.lineCap = "round";
+  context.lineJoin = "round";
 
   for (const segment of course.segments) {
-    context.strokeStyle = "#5865f2";
-    context.lineWidth = 12;
-    context.beginPath();
-    context.moveTo(segment.ax + 3, segment.ay + 3);
-    context.lineTo(segment.bx + 3, segment.by + 3);
-    context.stroke();
-
-    context.strokeStyle = "#c7d0ff";
-    context.lineWidth = 7;
-    context.beginPath();
-    context.moveTo(segment.ax, segment.ay);
-    context.lineTo(segment.bx, segment.by);
-    context.stroke();
+    drawRail(context, segment);
   }
   context.restore();
 
   for (const peg of course.pegs) {
-    const size = peg.radius * 2 + 8;
-    context.fillStyle = "#1b2038";
-    context.fillRect(
-      Math.round(peg.x - size / 2),
-      Math.round(peg.y - size / 2),
-      size,
-      size,
-    );
-    context.fillStyle = "#8ea0ff";
-    context.fillRect(
-      Math.round(peg.x - peg.radius / 2),
-      Math.round(peg.y - peg.radius / 2),
+    context.save();
+    context.shadowColor = "rgba(88, 101, 242, 0.55)";
+    context.shadowBlur = 12;
+    context.fillStyle = "#7080f5";
+    context.beginPath();
+    context.arc(peg.x, peg.y, peg.radius + 3, 0, Math.PI * 2);
+    context.fill();
+    context.shadowBlur = 0;
+    const pegGradient = context.createRadialGradient(
+      peg.x - peg.radius * 0.35,
+      peg.y - peg.radius * 0.35,
+      1,
+      peg.x,
+      peg.y,
       peg.radius,
-      peg.radius,
     );
+    pegGradient.addColorStop(0, "#ffffff");
+    pegGradient.addColorStop(0.4, "#dce1ff");
+    pegGradient.addColorStop(1, "#8ea0ff");
+    context.fillStyle = pegGradient;
+    context.beginPath();
+    context.arc(peg.x, peg.y, peg.radius, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
   }
 
-  const cellSize = 14;
-  const startX = 232;
-  const finishWidth = 256;
-  for (let row = 0; row < 2; row += 1) {
-    for (
-      let column = 0;
-      column < Math.ceil(finishWidth / cellSize);
-      column += 1
-    ) {
-      context.fillStyle =
-        (row + column) % 2 === 0 ? "#f5f6ff" : "#1b2038";
-      context.fillRect(
-        startX + column * cellSize,
-        course.finishY - 9 + row * 9,
-        cellSize,
-        9,
-      );
+  for (const spinner of course.spinners) {
+    drawSpinner(context, spinner, elapsedSeconds);
+  }
+
+  drawFinishLine(context, course);
+}
+
+function drawRail(
+  context: CanvasRenderingContext2D,
+  segment: RouletteSegment,
+): void {
+  context.save();
+  context.shadowColor = "rgba(88, 101, 242, 0.4)";
+  context.shadowBlur = 14;
+  context.strokeStyle = "#5968dc";
+  context.lineWidth = 13;
+  context.beginPath();
+  context.moveTo(segment.ax, segment.ay);
+  context.lineTo(segment.bx, segment.by);
+  context.stroke();
+  context.shadowBlur = 0;
+  context.strokeStyle = "#d9deff";
+  context.lineWidth = 7;
+  context.beginPath();
+  context.moveTo(segment.ax, segment.ay);
+  context.lineTo(segment.bx, segment.by);
+  context.stroke();
+  context.restore();
+}
+
+function drawSpinner(
+  context: CanvasRenderingContext2D,
+  spinner: RouletteSpinner,
+  elapsedSeconds: number,
+): void {
+  const segments = getRouletteSpinnerSegments(spinner, elapsedSeconds);
+
+  context.save();
+  context.lineCap = "round";
+  context.shadowColor = "rgba(104, 118, 255, 0.72)";
+  context.shadowBlur = 18;
+  for (const segment of segments) {
+    context.strokeStyle = "#5261d6";
+    context.lineWidth = 18;
+    context.beginPath();
+    context.moveTo(segment.ax, segment.ay);
+    context.lineTo(segment.bx, segment.by);
+    context.stroke();
+
+    context.shadowBlur = 0;
+    const armGradient = context.createLinearGradient(
+      segment.ax,
+      segment.ay,
+      segment.bx,
+      segment.by,
+    );
+    armGradient.addColorStop(0, "#8fa0ff");
+    armGradient.addColorStop(0.5, "#f2f4ff");
+    armGradient.addColorStop(1, "#8fa0ff");
+    context.strokeStyle = armGradient;
+    context.lineWidth = 9;
+    context.beginPath();
+    context.moveTo(segment.ax, segment.ay);
+    context.lineTo(segment.bx, segment.by);
+    context.stroke();
+
+    for (const point of [
+      { x: segment.ax, y: segment.ay },
+      { x: segment.bx, y: segment.by },
+    ]) {
+      context.fillStyle = "#dfe4ff";
+      context.beginPath();
+      context.arc(point.x, point.y, 7, 0, Math.PI * 2);
+      context.fill();
     }
   }
-  context.strokeStyle = "#5865f2";
+
+  const hubGradient = context.createRadialGradient(
+    spinner.x - 4,
+    spinner.y - 4,
+    2,
+    spinner.x,
+    spinner.y,
+    15,
+  );
+  hubGradient.addColorStop(0, "#ffffff");
+  hubGradient.addColorStop(0.42, "#b8c2ff");
+  hubGradient.addColorStop(1, "#5865f2");
+  context.fillStyle = hubGradient;
+  context.beginPath();
+  context.arc(spinner.x, spinner.y, 15, 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = "rgba(14, 18, 35, 0.72)";
   context.lineWidth = 3;
-  context.strokeRect(startX, course.finishY - 9, finishWidth, 18);
-  context.fillStyle = "#c7d0ff";
-  context.font = "900 13px ui-monospace, monospace";
+  context.stroke();
+  context.restore();
+}
+
+function drawFinishLine(
+  context: CanvasRenderingContext2D,
+  course: RouletteCourse,
+): void {
+  const startX = 232;
+  const finishWidth = 256;
+  const stripe = context.createLinearGradient(startX, 0, startX + finishWidth, 0);
+  stripe.addColorStop(0, "#ffffff");
+  stripe.addColorStop(0.48, "#cbd3ff");
+  stripe.addColorStop(0.52, "#5865f2");
+  stripe.addColorStop(1, "#8796ff");
+  context.fillStyle = stripe;
+  roundedRect(context, startX, course.finishY - 8, finishWidth, 16, 8);
+  context.fill();
+  context.fillStyle = "#dce1ff";
+  context.font = "800 12px system-ui, -apple-system, sans-serif";
   context.textAlign = "center";
   context.textBaseline = "alphabetic";
-  context.fillText("★ FINISH ★", ROULETTE_BOARD_WIDTH / 2, course.finishY + 31);
+  context.fillText("FINISH", ROULETTE_BOARD_WIDTH / 2, course.finishY + 34);
 }
 
 function drawPreviewBalls(
@@ -205,8 +297,8 @@ function drawPreviewBalls(
   });
 
   if (participants.length > visible.length) {
-    context.fillStyle = "#c7d0ff";
-    context.font = "900 13px ui-monospace, monospace";
+    context.fillStyle = "#cbd3ff";
+    context.font = "700 12px system-ui, -apple-system, sans-serif";
     context.textAlign = "right";
     context.fillText(
       `+${participants.length - visible.length}`,
@@ -223,18 +315,25 @@ function drawBall(
   winner: boolean,
 ): void {
   context.save();
-
-  context.fillStyle = "rgba(5, 8, 16, 0.68)";
+  context.shadowColor = winner
+    ? "rgba(255, 210, 86, 0.9)"
+    : "rgba(0, 0, 0, 0.52)";
+  context.shadowBlur = winner ? 22 : 8;
+  context.shadowOffsetY = winner ? 0 : 4;
+  context.fillStyle = winner ? "#ffd35c" : "#f1f3ff";
   context.beginPath();
-  context.arc(ball.x + 4, ball.y + 5, ball.radius + 3, 0, Math.PI * 2);
+  context.arc(ball.x, ball.y, ball.radius + (winner ? 4 : 3), 0, Math.PI * 2);
   context.fill();
+  context.restore();
 
+  context.save();
   context.beginPath();
   context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   context.clip();
 
   if (avatarImage) {
-    context.imageSmoothingEnabled = false;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
     context.drawImage(
       avatarImage,
       ball.x - ball.radius,
@@ -243,15 +342,23 @@ function drawBall(
       ball.radius * 2,
     );
   } else {
-    context.fillStyle = ball.color;
+    const fallback = context.createLinearGradient(
+      ball.x - ball.radius,
+      ball.y - ball.radius,
+      ball.x + ball.radius,
+      ball.y + ball.radius,
+    );
+    fallback.addColorStop(0, "#8ea0ff");
+    fallback.addColorStop(1, ball.color);
+    context.fillStyle = fallback;
     context.fillRect(
       ball.x - ball.radius,
       ball.y - ball.radius,
       ball.radius * 2,
       ball.radius * 2,
     );
-    context.fillStyle = "#f4f6ff";
-    context.font = "900 13px ui-monospace, monospace";
+    context.fillStyle = "#ffffff";
+    context.font = `800 ${Math.max(9, ball.radius - 2)}px system-ui, sans-serif`;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(getInitial(ball.name), ball.x, ball.y + 1);
@@ -259,38 +366,39 @@ function drawBall(
   context.restore();
 
   context.save();
-  context.strokeStyle = winner ? "#ffd35c" : "#eef1ff";
-  context.lineWidth = winner ? 6 : 4;
+  context.strokeStyle = winner ? "#fff1b8" : "rgba(255, 255, 255, 0.82)";
+  context.lineWidth = winner ? 3 : 2;
   context.beginPath();
   context.arc(ball.x, ball.y, ball.radius + 1, 0, Math.PI * 2);
   context.stroke();
-  if (winner) {
-    context.strokeStyle = "#5865f2";
-    context.lineWidth = 2;
-    context.beginPath();
-    context.arc(ball.x, ball.y, ball.radius + 6, 0, Math.PI * 2);
-    context.stroke();
-  }
 
   const label = fitCanvasLabel(context, ball.name, 102);
-  context.font = "900 11px ui-monospace, monospace";
+  context.font = "700 10px system-ui, -apple-system, sans-serif";
   context.textAlign = "center";
   context.textBaseline = "middle";
   const labelWidth = Math.min(
     114,
-    Math.max(34, context.measureText(label).width + 14),
+    Math.max(34, context.measureText(label).width + 16),
   );
-  const labelY = ball.y - ball.radius - 14;
-  context.fillStyle = "#090c17";
-  context.fillRect(
-    Math.round(ball.x - labelWidth / 2),
-    Math.round(labelY - 9),
-    Math.round(labelWidth),
-    18,
-  );
-  context.fillStyle = winner ? "#ffe7a3" : "#f4f6ff";
+  const labelY = ball.y - ball.radius - 15;
+  context.fillStyle = winner ? "rgba(104, 78, 0, 0.92)" : "rgba(7, 10, 20, 0.86)";
+  roundedRect(context, ball.x - labelWidth / 2, labelY - 9, labelWidth, 18, 9);
+  context.fill();
+  context.fillStyle = winner ? "#fff4c8" : "#f4f6ff";
   context.fillText(label, ball.x, labelY + 0.5);
   context.restore();
+}
+
+function roundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  context.beginPath();
+  context.roundRect(x, y, width, height, radius);
 }
 
 function getInitial(name: string): string {
@@ -302,7 +410,7 @@ function fitCanvasLabel(
   value: string,
   maxWidth: number,
 ): string {
-  context.font = "900 11px ui-monospace, monospace";
+  context.font = "700 10px system-ui, -apple-system, sans-serif";
   if (context.measureText(value).width <= maxWidth) return value;
 
   const characters = Array.from(value);

@@ -2,12 +2,17 @@ export const ROULETTE_BOARD_WIDTH = 720;
 export const ROULETTE_MIN_PARTICIPANTS = 2;
 export const ROULETTE_MAX_PARTICIPANTS = 32;
 export const ROULETTE_FIXED_STEP_SECONDS = 1 / 120;
+export const ROULETTE_MAX_WINNERS = 10;
+export const ROULETTE_MIN_BALLS_PER_PARTICIPANT = 1;
+export const ROULETTE_MAX_BALLS_PER_PARTICIPANT = 5;
+export const ROULETTE_MAX_TOTAL_BALLS = 96;
 
 const BALL_RADIUS = 15;
 const LEFT_WALL = 28;
 const RIGHT_WALL = ROULETTE_BOARD_WIDTH - 28;
 
 export type RouletteCourseId = "sprint" | "cascade" | "odyssey" | "classic";
+export type RouletteWinnerMode = "first" | "last";
 
 export interface RouletteParticipant {
   id: string;
@@ -39,6 +44,15 @@ export interface RouletteSegment {
   by: number;
 }
 
+export interface RouletteSpinner {
+  x: number;
+  y: number;
+  halfLength: number;
+  angularVelocity: number;
+  initialAngle: number;
+  arms: 1 | 2;
+}
+
 export interface RouletteCourse {
   id: RouletteCourseId;
   number: string;
@@ -53,6 +67,19 @@ export interface RouletteCourse {
   maxSpeed: number;
   pegs: readonly RoulettePeg[];
   segments: readonly RouletteSegment[];
+  spinners: readonly RouletteSpinner[];
+}
+
+export interface RouletteRaceOptions {
+  courseId?: RouletteCourseId;
+  winnerMode?: RouletteWinnerMode;
+  winnerCount?: number;
+  ballsPerParticipant?: number;
+}
+
+export interface RouletteFinish {
+  participantId: string;
+  ballId: number;
 }
 
 export interface RouletteRace {
@@ -60,8 +87,12 @@ export interface RouletteRace {
   courseId: RouletteCourseId;
   elapsedSeconds: number;
   balls: RouletteBall[];
-  finishOrder: string[];
-  winnerBallId: number | null;
+  winnerMode: RouletteWinnerMode;
+  winnerCount: number;
+  ballsPerParticipant: number;
+  finishOrder: RouletteFinish[];
+  winnerParticipantIds: string[];
+  winnerBallIds: number[];
   done: boolean;
 }
 
@@ -151,6 +182,24 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
       { ax: 28, ay: 488, bx: 196, by: 526 },
       { ax: 692, ay: 488, bx: 524, by: 526 },
     ],
+    spinners: [
+      {
+        x: 230,
+        y: 327,
+        halfLength: 48,
+        angularVelocity: 3.2,
+        initialAngle: 0.25,
+        arms: 1,
+      },
+      {
+        x: 495,
+        y: 405,
+        halfLength: 52,
+        angularVelocity: -3.6,
+        initialAngle: 1.1,
+        arms: 1,
+      },
+    ],
   },
   {
     id: "cascade",
@@ -165,15 +214,40 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
     gravity: 665,
     maxSpeed: 840,
     pegs: [
-      ...createPegGrid({ top: 190, rows: 6, spacingY: 43 }),
-      ...createPegGrid({ top: 530, rows: 5, spacingY: 43 }),
+      ...createPegGrid({ top: 190, rows: 5, spacingY: 43 }),
     ],
     segments: [
       ...createCourseWalls(CASCADE_FINISH_Y),
-      { ax: 28, ay: 470, bx: 270, by: 514 },
-      { ax: 692, ay: 470, bx: 450, by: 514 },
-      { ax: 314, ay: 482, bx: 360, by: 520 },
-      { ax: 406, ay: 482, bx: 360, by: 520 },
+      { ax: 28, ay: 510, bx: 270, by: 550 },
+      { ax: 692, ay: 510, bx: 450, by: 550 },
+      { ax: 278, ay: 594, bx: 360, by: 536 },
+      { ax: 442, ay: 594, bx: 360, by: 536 },
+    ],
+    spinners: [
+      {
+        x: 210,
+        y: 438,
+        halfLength: 46,
+        angularVelocity: 3.1,
+        initialAngle: 0,
+        arms: 1,
+      },
+      {
+        x: 510,
+        y: 438,
+        halfLength: 46,
+        angularVelocity: -3.1,
+        initialAngle: Math.PI / 2,
+        arms: 1,
+      },
+      {
+        x: 360,
+        y: 610,
+        halfLength: 54,
+        angularVelocity: 2.4,
+        initialAngle: 0.7,
+        arms: 2,
+      },
     ],
   },
   {
@@ -190,7 +264,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
     maxSpeed: 820,
     pegs: [
       ...createPegGrid({ top: 178, rows: 3, spacingY: 42 }),
-      ...createPegGrid({ top: 875, rows: 4, spacingY: 42 }),
+      ...createPegGrid({ top: 875, rows: 3, spacingY: 42 }),
     ],
     segments: [
       ...createCourseWalls(ODYSSEY_FINISH_Y),
@@ -198,6 +272,40 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
       { ax: 692, ay: 494, bx: 152, by: 560 },
       { ax: 28, ay: 682, bx: 568, by: 748 },
       { ax: 692, ay: 810, bx: 468, by: 848 },
+    ],
+    spinners: [
+      {
+        x: 212,
+        y: 435,
+        halfLength: 58,
+        angularVelocity: 2.7,
+        initialAngle: 0.3,
+        arms: 1,
+      },
+      {
+        x: 508,
+        y: 625,
+        halfLength: 58,
+        angularVelocity: -2.9,
+        initialAngle: 1.2,
+        arms: 1,
+      },
+      {
+        x: 230,
+        y: 798,
+        halfLength: 48,
+        angularVelocity: -3.5,
+        initialAngle: 0.8,
+        arms: 2,
+      },
+      {
+        x: 500,
+        y: 954,
+        halfLength: 46,
+        angularVelocity: 3.6,
+        initialAngle: 0,
+        arms: 1,
+      },
     ],
   },
   {
@@ -213,25 +321,63 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
     gravity: 645,
     maxSpeed: 830,
     pegs: [
-      ...createPegRow(310, [120, 225, 495, 600], 10),
-      ...createPegRow(390, [80, 180, 280, 440, 540, 640], 8),
       ...createPegGrid({
-        top: 690,
-        rows: 6,
+        top: 270,
+        rows: 2,
         columns: 9,
         startX: 88,
         spacingX: 68,
-        spacingY: 40,
+        spacingY: 50,
       }),
     ],
     segments: [
       ...createCourseWalls(CLASSIC_FINISH_Y),
       { ax: 28, ay: 178, bx: 284, by: 244 },
       { ax: 692, ay: 178, bx: 436, by: 244 },
-      { ax: 28, ay: 448, bx: 446, by: 508 },
-      { ax: 692, ay: 552, bx: 274, by: 612 },
-      { ax: 286, ay: 632, bx: 350, by: 674 },
-      { ax: 434, ay: 632, bx: 370, by: 674 },
+      { ax: 28, ay: 470, bx: 450, by: 530 },
+      { ax: 692, ay: 610, bx: 270, by: 670 },
+    ],
+    spinners: [
+      {
+        x: 205,
+        y: 385,
+        halfLength: 48,
+        angularVelocity: 3.4,
+        initialAngle: 0.4,
+        arms: 1,
+      },
+      {
+        x: 520,
+        y: 410,
+        halfLength: 48,
+        angularVelocity: -3.2,
+        initialAngle: 1.1,
+        arms: 1,
+      },
+      {
+        x: 555,
+        y: 535,
+        halfLength: 46,
+        angularVelocity: 3.8,
+        initialAngle: 0.2,
+        arms: 1,
+      },
+      {
+        x: 165,
+        y: 690,
+        halfLength: 46,
+        angularVelocity: -4.1,
+        initialAngle: 0.6,
+        arms: 1,
+      },
+      {
+        x: 440,
+        y: 805,
+        halfLength: 58,
+        angularVelocity: 2.7,
+        initialAngle: 1.2,
+        arms: 2,
+      },
     ],
   },
 ];
@@ -269,7 +415,7 @@ export function shuffleRouletteParticipants<T>(
 export function createRouletteRace(
   participants: readonly RouletteParticipant[],
   seed: number,
-  courseId: RouletteCourseId = ROULETTE_DEFAULT_COURSE_ID,
+  options: RouletteCourseId | RouletteRaceOptions = {},
 ): RouletteRace {
   if (
     participants.length < ROULETTE_MIN_PARTICIPANTS ||
@@ -284,33 +430,87 @@ export function createRouletteRace(
     throw new RangeError("참가자 ID는 중복될 수 없습니다.");
   }
 
-  const course = getRouletteCourse(courseId);
-  const random = createRouletteRandom(seed);
-  const shuffled = shuffleWithRandom(participants, random);
-  const columns = Math.min(10, shuffled.length);
-  const spacing = Math.min(56, 610 / Math.max(columns - 1, 1));
+  const resolvedOptions =
+    typeof options === "string" ? { courseId: options } : options;
+  const course = getRouletteCourse(
+    resolvedOptions.courseId ?? ROULETTE_DEFAULT_COURSE_ID,
+  );
+  const winnerMode = resolvedOptions.winnerMode ?? "first";
+  const winnerCount = resolvedOptions.winnerCount ?? 1;
+  const ballsPerParticipant = resolvedOptions.ballsPerParticipant ?? 1;
 
-  const balls = shuffled.map((participant, index): RouletteBall => {
+  if (winnerMode !== "first" && winnerMode !== "last") {
+    throw new RangeError("당첨 방식은 선착 또는 후착만 사용할 수 있습니다.");
+  }
+
+  if (
+    !Number.isInteger(winnerCount) ||
+    winnerCount < 1 ||
+    winnerCount > Math.min(ROULETTE_MAX_WINNERS, participants.length)
+  ) {
+    throw new RangeError(
+      `당첨 인원은 1명 이상 ${Math.min(ROULETTE_MAX_WINNERS, participants.length)}명 이하여야 합니다.`,
+    );
+  }
+
+  if (
+    !Number.isInteger(ballsPerParticipant) ||
+    ballsPerParticipant < ROULETTE_MIN_BALLS_PER_PARTICIPANT ||
+    ballsPerParticipant > ROULETTE_MAX_BALLS_PER_PARTICIPANT
+  ) {
+    throw new RangeError(
+      `1인당 마블 수는 ${ROULETTE_MIN_BALLS_PER_PARTICIPANT}개 이상 ${ROULETTE_MAX_BALLS_PER_PARTICIPANT}개 이하여야 합니다.`,
+    );
+  }
+
+  const totalBalls = participants.length * ballsPerParticipant;
+  if (totalBalls > ROULETTE_MAX_TOTAL_BALLS) {
+    throw new RangeError(
+      `전체 마블은 최대 ${ROULETTE_MAX_TOTAL_BALLS}개까지 사용할 수 있습니다.`,
+    );
+  }
+
+  const random = createRouletteRandom(seed);
+  const entries = participants.flatMap((participant, participantIndex) =>
+    Array.from({ length: ballsPerParticipant }, () => ({
+      participant,
+      participantIndex,
+    })),
+  );
+  const shuffled = shuffleWithRandom(entries, random);
+  const ballRadius = totalBalls > 64 ? 10 : totalBalls > 32 ? 12 : BALL_RADIUS;
+  const columns = Math.min(
+    totalBalls > 64 ? 20 : totalBalls > 32 ? 16 : 10,
+    totalBalls,
+  );
+  const spacing = Math.min(
+    ballRadius * 2 + 12,
+    620 / Math.max(columns - 1, 1),
+  );
+  const rowSpacing = ballRadius * 2 + 4;
+
+  const balls = shuffled.map((entry, index): RouletteBall => {
     const row = Math.floor(index / columns);
     const column = index % columns;
     const rowCount = Math.ceil(shuffled.length / columns);
     const rowColumns = Math.min(columns, shuffled.length - row * columns);
     const rowStartX =
       (ROULETTE_BOARD_WIDTH - spacing * (rowColumns - 1)) / 2;
-    const hue = (index * 137.508 + seed * 0.0001) % 360;
+    const hue =
+      (entry.participantIndex * 137.508 + seed * 0.0001) % 360;
 
     return {
-      ...participant,
+      ...entry.participant,
       ballId: index,
       color: `hsl(${hue.toFixed(1)} 68% 43%)`,
       x: rowStartX + column * spacing + (random() - 0.5) * 7,
       y:
         course.startY -
-        (rowCount - row - 1) * 34 +
+        (rowCount - row - 1) * rowSpacing +
         (random() - 0.5) * 3,
       vx: (random() - 0.5) * 32,
       vy: 16 + random() * 20,
-      radius: BALL_RADIUS,
+      radius: ballRadius,
       finished: false,
     };
   });
@@ -320,8 +520,12 @@ export function createRouletteRace(
     courseId: course.id,
     elapsedSeconds: 0,
     balls,
+    winnerMode,
+    winnerCount,
+    ballsPerParticipant,
     finishOrder: [],
-    winnerBallId: null,
+    winnerParticipantIds: [],
+    winnerBallIds: [],
     done: false,
   };
 }
@@ -335,6 +539,26 @@ function shuffleWithRandom<T>(values: readonly T[], random: () => number): T[] {
   }
 
   return shuffled;
+}
+
+export function getRouletteSpinnerSegments(
+  spinner: RouletteSpinner,
+  elapsedSeconds: number,
+): RouletteSegment[] {
+  const angle =
+    spinner.initialAngle + spinner.angularVelocity * elapsedSeconds;
+  const angles = spinner.arms === 2 ? [angle, angle + Math.PI / 2] : [angle];
+
+  return angles.map((armAngle) => {
+    const dx = Math.cos(armAngle) * spinner.halfLength;
+    const dy = Math.sin(armAngle) * spinner.halfLength;
+    return {
+      ax: spinner.x - dx,
+      ay: spinner.y - dy,
+      bx: spinner.x + dx,
+      by: spinner.y + dy,
+    };
+  });
 }
 
 export function stepRouletteRace(
@@ -362,6 +586,15 @@ export function stepRouletteRace(
     for (const segment of course.segments) {
       resolveSegmentCollision(ball, segment);
     }
+    for (const spinner of course.spinners) {
+      for (const segment of getRouletteSpinnerSegments(
+        spinner,
+        race.elapsedSeconds,
+      )) {
+        resolveSpinnerCollision(ball, spinner, segment);
+      }
+      resolvePegCollision(ball, { x: spinner.x, y: spinner.y, radius: 11 });
+    }
     capVelocity(ball, course.maxSpeed);
   }
 
@@ -376,10 +609,36 @@ export function stepRouletteRace(
     ball.y = course.finishY + ball.radius;
     ball.vx = 0;
     ball.vy = 0;
-    race.finishOrder.push(ball.id);
-    race.winnerBallId = ball.ballId;
+    race.finishOrder.push({ participantId: ball.id, ballId: ball.ballId });
+
+    if (
+      race.winnerMode === "first" &&
+      !race.winnerParticipantIds.includes(ball.id)
+    ) {
+      race.winnerParticipantIds.push(ball.id);
+      race.winnerBallIds.push(ball.ballId);
+      if (race.winnerParticipantIds.length === race.winnerCount) {
+        race.done = true;
+        break;
+      }
+    }
+  }
+
+  if (
+    race.winnerMode === "last" &&
+    race.balls.every((ball) => ball.finished)
+  ) {
+    for (
+      let index = race.finishOrder.length - 1;
+      index >= 0 && race.winnerParticipantIds.length < race.winnerCount;
+      index -= 1
+    ) {
+      const finish = race.finishOrder[index];
+      if (race.winnerParticipantIds.includes(finish.participantId)) continue;
+      race.winnerParticipantIds.push(finish.participantId);
+      race.winnerBallIds.push(finish.ballId);
+    }
     race.done = true;
-    break;
   }
 }
 
@@ -457,6 +716,57 @@ function resolveSegmentCollision(
   const normalVelocity = ball.vx * nx + ball.vy * ny;
   if (normalVelocity < 0) {
     const impulse = -(1 + 0.62) * normalVelocity;
+    ball.vx += nx * impulse;
+    ball.vy += ny * impulse;
+  }
+}
+
+function resolveSpinnerCollision(
+  ball: RouletteBall,
+  spinner: RouletteSpinner,
+  segment: RouletteSegment,
+): void {
+  const abx = segment.bx - segment.ax;
+  const aby = segment.by - segment.ay;
+  const lengthSquared = abx * abx + aby * aby;
+  const projection =
+    lengthSquared === 0
+      ? 0
+      : Math.min(
+          1,
+          Math.max(
+            0,
+            ((ball.x - segment.ax) * abx +
+              (ball.y - segment.ay) * aby) /
+              lengthSquared,
+          ),
+        );
+  const closestX = segment.ax + abx * projection;
+  const closestY = segment.ay + aby * projection;
+  const dx = ball.x - closestX;
+  const dy = ball.y - closestY;
+  const collisionDistance = ball.radius + 7;
+  const distanceSquared = dx * dx + dy * dy;
+
+  if (distanceSquared >= collisionDistance * collisionDistance) return;
+
+  const distance = Math.sqrt(distanceSquared);
+  const fallbackLength = Math.sqrt(lengthSquared) || 1;
+  const nx = distance === 0 ? -aby / fallbackLength : dx / distance;
+  const ny = distance === 0 ? abx / fallbackLength : dy / distance;
+  const overlap = collisionDistance - distance;
+  ball.x += nx * overlap;
+  ball.y += ny * overlap;
+
+  const radiusX = closestX - spinner.x;
+  const radiusY = closestY - spinner.y;
+  const surfaceVx = -spinner.angularVelocity * radiusY;
+  const surfaceVy = spinner.angularVelocity * radiusX;
+  const relativeNormalVelocity =
+    (ball.vx - surfaceVx) * nx + (ball.vy - surfaceVy) * ny;
+
+  if (relativeNormalVelocity < 0) {
+    const impulse = -(1 + 0.76) * relativeNormalVelocity;
     ball.vx += nx * impulse;
     ball.vy += ny * impulse;
   }

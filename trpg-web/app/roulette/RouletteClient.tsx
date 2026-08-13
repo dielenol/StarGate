@@ -21,12 +21,17 @@ import {
   ROULETTE_COURSES,
   ROULETTE_DEFAULT_COURSE_ID,
   ROULETTE_FIXED_STEP_SECONDS,
+  ROULETTE_MAX_BALLS_PER_PARTICIPANT,
   ROULETTE_MAX_PARTICIPANTS,
+  ROULETTE_MAX_TOTAL_BALLS,
+  ROULETTE_MAX_WINNERS,
+  ROULETTE_MIN_BALLS_PER_PARTICIPANT,
   ROULETTE_MIN_PARTICIPANTS,
   stepRouletteRace,
   type RouletteCourseId,
   type RouletteParticipant,
   type RouletteRace,
+  type RouletteWinnerMode,
 } from "@/lib/roulette/engine";
 import { drawRouletteScene } from "@/lib/roulette/renderer";
 
@@ -59,7 +64,7 @@ function MemberAvatar({
   variant = "member",
   meaningful = false,
 }: MemberAvatarProps) {
-  const size = variant === "winner" ? 76 : 38;
+  const size = variant === "winner" ? 54 : 38;
   const className = `${styles.roulette__avatar} ${styles[`roulette__avatar_${variant}`]}`;
 
   if (!avatarUrl) {
@@ -100,6 +105,7 @@ export function RouletteClient({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const raceRef = useRef<RouletteRace | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const previewAnimationFrameRef = useRef<number | null>(null);
   const previewParticipantsRef = useRef<RouletteParticipant[]>([]);
   const courseRef = useRef(getRouletteCourse(ROULETTE_DEFAULT_COURSE_ID));
   const avatarImagesRef = useRef(new Map<string, CanvasImageSource>());
@@ -113,8 +119,11 @@ export function RouletteClient({
   const [courseId, setCourseId] = useState<RouletteCourseId>(
     ROULETTE_DEFAULT_COURSE_ID,
   );
+  const [winnerMode, setWinnerMode] = useState<RouletteWinnerMode>("first");
+  const [winnerCount, setWinnerCount] = useState(1);
+  const [ballsPerParticipant, setBallsPerParticipant] = useState(1);
   const [phase, setPhase] = useState<RacePhase>("ready");
-  const [winner, setWinner] = useState<RouletteParticipant | null>(null);
+  const [winners, setWinners] = useState<RouletteParticipant[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastSeed, setLastSeed] = useState<number | null>(null);
 
@@ -157,6 +166,32 @@ export function RouletteClient({
     () => new Set(validSelectedIds),
     [validSelectedIds],
   );
+  const maxSelectableParticipants = Math.min(
+    ROULETTE_MAX_PARTICIPANTS,
+    Math.floor(ROULETTE_MAX_TOTAL_BALLS / ballsPerParticipant),
+  );
+  const effectiveWinnerCount = Math.min(
+    winnerCount,
+    Math.max(1, selectedParticipants.length),
+    ROULETTE_MAX_WINNERS,
+  );
+  const winnerCountOptions = Array.from(
+    {
+      length: Math.min(
+        ROULETTE_MAX_WINNERS,
+        Math.max(1, selectedParticipants.length),
+      ),
+    },
+    (_, index) => index + 1,
+  );
+  const totalBalls = selectedParticipants.length * ballsPerParticipant;
+  const previewMarbles = useMemo(
+    () =>
+      selectedParticipants.flatMap((participant) =>
+        Array.from({ length: ballsPerParticipant }, () => participant),
+      ),
+    [ballsPerParticipant, selectedParticipants],
+  );
 
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -188,6 +223,7 @@ export function RouletteClient({
     drawRouletteScene(context, {
       race: raceRef.current,
       previewParticipants: previewParticipantsRef.current,
+      previewElapsedSeconds: performance.now() / 1_000,
       course: activeCourse,
       avatarImages: avatarImagesRef.current,
     });
@@ -203,7 +239,7 @@ export function RouletteClient({
   const clearRace = useCallback(() => {
     stopAnimation();
     raceRef.current = null;
-    setWinner(null);
+    setWinners([]);
     setLastSeed(null);
     setPhase("ready");
     renderCanvas();
@@ -221,9 +257,9 @@ export function RouletteClient({
   }, [renderCanvas]);
 
   useEffect(() => {
-    previewParticipantsRef.current = selectedParticipants;
+    previewParticipantsRef.current = previewMarbles;
     if (!raceRef.current) renderCanvas();
-  }, [renderCanvas, selectedParticipants]);
+  }, [previewMarbles, renderCanvas]);
 
   useEffect(() => {
     courseRef.current = course;
@@ -265,23 +301,46 @@ export function RouletteClient({
 
   useEffect(() => stopAnimation, [stopAnimation]);
 
-  function prepareForSelectionChange() {
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    let lastRenderTime = 0;
+    const animatePreview = (currentTime: number) => {
+      if (!raceRef.current && currentTime - lastRenderTime >= 1_000 / 30) {
+        renderCanvas();
+        lastRenderTime = currentTime;
+      }
+      previewAnimationFrameRef.current = requestAnimationFrame(animatePreview);
+    };
+
+    previewAnimationFrameRef.current = requestAnimationFrame(animatePreview);
+    return () => {
+      if (previewAnimationFrameRef.current !== null) {
+        cancelAnimationFrame(previewAnimationFrameRef.current);
+        previewAnimationFrameRef.current = null;
+      }
+    };
+  }, [renderCanvas]);
+
+  function prepareForConfigurationChange() {
     if (phase !== "ready") clearRace();
     setErrorMessage(null);
   }
 
   function handleParticipantToggle(discordUserId: string) {
     if (phase === "running") return;
-    prepareForSelectionChange();
+    prepareForConfigurationChange();
 
     setSelectedIds((current) => {
       const activeCurrent = current.filter((id) => memberById.has(id));
       if (activeCurrent.includes(discordUserId)) {
         return activeCurrent.filter((id) => id !== discordUserId);
       }
-      if (activeCurrent.length >= ROULETTE_MAX_PARTICIPANTS) {
+      if (activeCurrent.length >= maxSelectableParticipants) {
         setErrorMessage(
-          `한 번에 최대 ${ROULETTE_MAX_PARTICIPANTS}명까지 선택할 수 있습니다.`,
+          `현재 마블 수에서는 최대 ${maxSelectableParticipants}명까지 선택할 수 있습니다.`,
         );
         return activeCurrent;
       }
@@ -291,25 +350,48 @@ export function RouletteClient({
 
   function handleSelectAll() {
     if (phase === "running") return;
-    prepareForSelectionChange();
+    prepareForConfigurationChange();
     setSelectedIds(
       members
-        .slice(0, ROULETTE_MAX_PARTICIPANTS)
+        .slice(0, maxSelectableParticipants)
         .map((member) => member.discordUserId),
     );
   }
 
   function handleClearSelection() {
     if (phase === "running") return;
-    prepareForSelectionChange();
+    prepareForConfigurationChange();
     setSelectedIds([]);
   }
 
   function handleCourseChange(nextCourseId: RouletteCourseId) {
     if (phase === "running" || nextCourseId === courseId) return;
-    if (phase !== "ready") clearRace();
-    setErrorMessage(null);
+    prepareForConfigurationChange();
     setCourseId(nextCourseId);
+  }
+
+  function handleWinnerModeChange(nextWinnerMode: RouletteWinnerMode) {
+    if (phase === "running" || nextWinnerMode === winnerMode) return;
+    prepareForConfigurationChange();
+    setWinnerMode(nextWinnerMode);
+  }
+
+  function handleWinnerCountChange(nextWinnerCount: number) {
+    if (phase === "running" || nextWinnerCount === winnerCount) return;
+    prepareForConfigurationChange();
+    setWinnerCount(nextWinnerCount);
+  }
+
+  function handleBallsPerParticipantChange(nextBallCount: number) {
+    if (phase === "running" || nextBallCount === ballsPerParticipant) return;
+    if (selectedParticipants.length * nextBallCount > ROULETTE_MAX_TOTAL_BALLS) {
+      setErrorMessage(
+        `전체 마블은 최대 ${ROULETTE_MAX_TOTAL_BALLS}개까지 사용할 수 있습니다.`,
+      );
+      return;
+    }
+    prepareForConfigurationChange();
+    setBallsPerParticipant(nextBallCount);
   }
 
   function handleStart() {
@@ -322,10 +404,15 @@ export function RouletteClient({
 
     stopAnimation();
     const seed = createBrowserSeed();
-    const race = createRouletteRace(selectedParticipants, seed, courseId);
+    const race = createRouletteRace(selectedParticipants, seed, {
+      courseId,
+      winnerMode,
+      winnerCount: effectiveWinnerCount,
+      ballsPerParticipant,
+    });
     raceRef.current = race;
     setErrorMessage(null);
-    setWinner(null);
+    setWinners([]);
     setLastSeed(seed);
     setPhase("running");
 
@@ -340,27 +427,29 @@ export function RouletteClient({
       previousTime = currentTime;
       accumulator += frameDelta;
 
-      while (
-        accumulator >= ROULETTE_FIXED_STEP_SECONDS &&
-        !race.done
-      ) {
+      while (accumulator >= ROULETTE_FIXED_STEP_SECONDS && !race.done) {
         stepRouletteRace(race, ROULETTE_FIXED_STEP_SECONDS);
         accumulator -= ROULETTE_FIXED_STEP_SECONDS;
       }
 
       if (race.done) {
-        const winnerBall = race.balls.find(
-          (ball) => ball.ballId === race.winnerBallId,
+        const result = race.winnerParticipantIds.flatMap(
+          (participantId): RouletteParticipant[] => {
+            const ball = race.balls.find(
+              (candidate) => candidate.id === participantId,
+            );
+            return ball
+              ? [
+                  {
+                    id: ball.id,
+                    name: ball.name,
+                    avatarUrl: ball.avatarUrl,
+                  },
+                ]
+              : [];
+          },
         );
-        setWinner(
-          winnerBall
-            ? {
-                id: winnerBall.id,
-                name: winnerBall.name,
-                avatarUrl: winnerBall.avatarUrl,
-              }
-            : null,
-        );
+        setWinners(result);
         setPhase("finished");
         animationFrameRef.current = null;
         renderCanvas();
@@ -381,6 +470,8 @@ export function RouletteClient({
       : phase === "finished"
         ? "선발 완료"
         : "출발 대기";
+  const resultLabel = winnerMode === "first" ? "선착 당첨" : "후착 당첨";
+  const winnerNames = winners.map((winner) => winner.name).join(", ");
 
   return (
     <main className={styles.roulette}>
@@ -411,7 +502,7 @@ export function RouletteClient({
                 <p>코스</p>
                 <strong>{course.distance}</strong>
               </div>
-              <span className={styles.roulette__pixel_badge}>4 TRACKS</span>
+              <span className={styles.roulette__badge}>4 TRACKS</span>
             </div>
 
             <div
@@ -447,9 +538,114 @@ export function RouletteClient({
           <section className={styles.roulette__control_section}>
             <div className={styles.roulette__control_header}>
               <div>
+                <p>추첨 설정</p>
+                <strong>{resultLabel}</strong>
+              </div>
+              <span className={styles.roulette__badge}>{totalBalls} BALLS</span>
+            </div>
+
+            <fieldset
+              className={styles.roulette__settings}
+              disabled={phase === "running"}
+            >
+              <legend className={styles.roulette__sr_only}>추첨 설정</legend>
+              <div className={styles.roulette__setting}>
+                <span>당첨 순서</span>
+                <div
+                  className={styles.roulette__mode_toggle}
+                  role="group"
+                  aria-label="당첨 순서"
+                >
+                  <button
+                    type="button"
+                    className={
+                      winnerMode === "first"
+                        ? styles.roulette__mode_selected
+                        : undefined
+                    }
+                    onClick={() => handleWinnerModeChange("first")}
+                    aria-pressed={winnerMode === "first"}
+                  >
+                    먼저 도착
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      winnerMode === "last"
+                        ? styles.roulette__mode_selected
+                        : undefined
+                    }
+                    onClick={() => handleWinnerModeChange("last")}
+                    aria-pressed={winnerMode === "last"}
+                  >
+                    마지막 도착
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.roulette__settings_grid}>
+                <label className={styles.roulette__setting}>
+                  <span>당첨 인원</span>
+                  <select
+                    value={effectiveWinnerCount}
+                    onChange={(event) =>
+                      handleWinnerCountChange(Number(event.target.value))
+                    }
+                  >
+                    {winnerCountOptions.map((count) => (
+                      <option key={count} value={count}>
+                        {count}명
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.roulette__setting}>
+                  <span>1인당 마블</span>
+                  <select
+                    value={ballsPerParticipant}
+                    onChange={(event) =>
+                      handleBallsPerParticipantChange(Number(event.target.value))
+                    }
+                  >
+                    {Array.from(
+                      {
+                        length:
+                          ROULETTE_MAX_BALLS_PER_PARTICIPANT -
+                          ROULETTE_MIN_BALLS_PER_PARTICIPANT +
+                          1,
+                      },
+                      (_, index) =>
+                        index + ROULETTE_MIN_BALLS_PER_PARTICIPANT,
+                    ).map((count) => (
+                      <option
+                        key={count}
+                        value={count}
+                        disabled={
+                          selectedParticipants.length * count >
+                          ROULETTE_MAX_TOTAL_BALLS
+                        }
+                      >
+                        {count}개
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <p className={styles.roulette__setting_note}>
+                참가자별 마블 수를 늘리면 당첨 기회도 함께 늘어납니다. 전체
+                마블은 최대 {ROULETTE_MAX_TOTAL_BALLS}개입니다.
+              </p>
+            </fieldset>
+          </section>
+
+          <section className={styles.roulette__control_section}>
+            <div className={styles.roulette__control_header}>
+              <div>
                 <p>참가자</p>
                 <strong>
-                  {selectedParticipants.length}/{ROULETTE_MAX_PARTICIPANTS}
+                  {selectedParticipants.length}/{maxSelectableParticipants}
                 </strong>
               </div>
               <span
@@ -477,7 +673,7 @@ export function RouletteClient({
                 onClick={handleSelectAll}
                 disabled={phase === "running" || members.length === 0}
               >
-                최대 32명 선택
+                최대 {maxSelectableParticipants}명 선택
               </button>
               <button
                 type="button"
@@ -495,16 +691,13 @@ export function RouletteClient({
             >
               {visibleMembers.map((member) => {
                 const selected = selectedIdSet.has(member.discordUserId);
-                const order =
-                  validSelectedIds.indexOf(member.discordUserId) + 1;
+                const order = validSelectedIds.indexOf(member.discordUserId) + 1;
                 return (
                   <button
                     key={member.discordUserId}
                     className={`${styles.roulette__member} ${selected ? styles.roulette__member_selected : ""}`}
                     type="button"
-                    onClick={() =>
-                      handleParticipantToggle(member.discordUserId)
-                    }
+                    onClick={() => handleParticipantToggle(member.discordUserId)}
                     aria-pressed={selected}
                     disabled={phase === "running"}
                   >
@@ -569,9 +762,11 @@ export function RouletteClient({
                   className={styles.roulette__primary}
                   type="button"
                   onClick={handleStart}
-                  disabled={selectedParticipants.length < ROULETTE_MIN_PARTICIPANTS}
+                  disabled={
+                    selectedParticipants.length < ROULETTE_MIN_PARTICIPANTS
+                  }
                 >
-                  출발
+                  {totalBalls}개 마블 출발
                 </button>
               ) : (
                 <button
@@ -587,7 +782,17 @@ export function RouletteClient({
             <dl className={styles.roulette__facts}>
               <div>
                 <dt>선정 방식</dt>
-                <dd>물리 충돌 후 결승선을 가장 먼저 통과한 프로필 마블</dd>
+                <dd>
+                  {winnerMode === "first"
+                    ? `결승선을 먼저 통과한 참가자 ${effectiveWinnerCount}명`
+                    : `모든 마블 완주 후 가장 늦은 참가자 ${effectiveWinnerCount}명`}
+                </dd>
+              </div>
+              <div>
+                <dt>마블 구성</dt>
+                <dd>
+                  {selectedParticipants.length}명 × {ballsPerParticipant}개 = 총 {totalBalls}개
+                </dd>
               </div>
               <div>
                 <dt>데이터</dt>
@@ -596,9 +801,7 @@ export function RouletteClient({
               {lastSeed !== null ? (
                 <div>
                   <dt>추첨 ID</dt>
-                  <dd>
-                    {lastSeed.toString(16).padStart(8, "0").toUpperCase()}
-                  </dd>
+                  <dd>{lastSeed.toString(16).padStart(8, "0").toUpperCase()}</dd>
                 </div>
               ) : null}
             </dl>
@@ -621,20 +824,32 @@ export function RouletteClient({
               style={{
                 aspectRatio: `${ROULETTE_BOARD_WIDTH} / ${course.height}`,
               }}
-              aria-label={`${course.name}에서 선택한 길드원의 프로필 마블이 장애물을 통과해 결승선으로 내려가는 룰렛`}
+              aria-label={`${course.name}에서 선택한 길드원의 프로필 마블이 회전 장애물과 충돌하며 결승선으로 내려가는 룰렛`}
               role="img"
             />
 
-            {winner ? (
+            {winners.length > 0 ? (
               <div className={styles.roulette__winner} role="status">
-                <MemberAvatar
-                  avatarUrl={winner.avatarUrl}
-                  name={winner.name}
-                  variant="winner"
-                  meaningful
-                />
-                <span>당첨자</span>
-                <strong>{winner.name}</strong>
+                <div className={styles.roulette__winner_heading}>
+                  <span>{winnerMode === "first" ? "FIRST IN" : "LAST IN"}</span>
+                  <strong>{winners.length}명 당첨</strong>
+                </div>
+                <ol className={styles.roulette__winner_list}>
+                  {winners.map((winner, index) => (
+                    <li key={winner.id}>
+                      <span className={styles.roulette__winner_rank}>
+                        {index + 1}
+                      </span>
+                      <MemberAvatar
+                        avatarUrl={winner.avatarUrl}
+                        name={winner.name}
+                        variant="winner"
+                        meaningful
+                      />
+                      <strong>{winner.name}</strong>
+                    </li>
+                  ))}
+                </ol>
                 <button type="button" onClick={clearRace}>
                   다시 추첨하기
                 </button>
@@ -643,12 +858,14 @@ export function RouletteClient({
           </div>
 
           <p className={styles.roulette__status} aria-live="polite">
-            {winner
-              ? `당첨자는 ${winner.name}입니다.`
+            {winners.length > 0
+              ? `${resultLabel}: ${winnerNames}`
               : phase === "running"
-                ? `${course.name}에서 프로필 마블이 낙하 중입니다.`
+                ? winnerMode === "last"
+                  ? `총 ${totalBalls}개 마블의 완주를 기다리는 중입니다.`
+                  : `${effectiveWinnerCount}명의 선착 당첨자를 가리는 중입니다.`
                 : selectedParticipants.length >= ROULETTE_MIN_PARTICIPANTS
-                  ? "명단과 코스를 확인한 뒤 출발하세요."
+                  ? "명단과 추첨 설정을 확인한 뒤 출발하세요."
                   : `길드원을 ${ROULETTE_MIN_PARTICIPANTS}명 이상 선택하면 출발할 수 있습니다.`}
           </p>
         </article>

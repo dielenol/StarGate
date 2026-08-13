@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   createRouletteRace,
+  getRouletteSpinnerSegments,
   ROULETTE_COURSES,
   ROULETTE_FIXED_STEP_SECONDS,
+  ROULETTE_MAX_TOTAL_BALLS,
   shuffleRouletteParticipants,
   stepRouletteRace,
 } from "../../lib/roulette/engine.ts";
@@ -17,8 +19,8 @@ function makeParticipants(count) {
   }));
 }
 
-function runToWinner(participants, seed, courseId, maxSeconds = 30) {
-  const race = createRouletteRace(participants, seed, courseId);
+function runRace(participants, seed, options, maxSeconds = 45) {
+  const race = createRouletteRace(participants, seed, options);
   const maxSteps = Math.ceil(maxSeconds / ROULETTE_FIXED_STEP_SECONDS);
 
   for (let step = 0; step < maxSteps && !race.done; step += 1) {
@@ -28,19 +30,33 @@ function runToWinner(participants, seed, courseId, maxSeconds = 30) {
   assert.equal(
     race.done,
     true,
-    `${courseId} course should produce a winner before timeout`,
+    `${race.courseId} course should finish before timeout`,
   );
-  assert.equal(race.finishOrder.length, 1);
-  return race.finishOrder[0];
+  return race;
 }
 
-test("four courses expose unique IDs and increasing physical heights", () => {
+test("four courses expose distinct rotating obstacle layouts", () => {
   assert.deepEqual(
     ROULETTE_COURSES.map((course) => course.id),
     ["sprint", "cascade", "odyssey", "classic"],
   );
   assert.ok(ROULETTE_COURSES[0].height < ROULETTE_COURSES[1].height);
   assert.ok(ROULETTE_COURSES[1].height < ROULETTE_COURSES[2].height);
+  assert.deepEqual(
+    ROULETTE_COURSES.map((course) => course.spinners.length),
+    [2, 3, 4, 5],
+  );
+});
+
+test("spinner geometry rotates deterministically over elapsed time", () => {
+  const spinner = ROULETTE_COURSES[3].spinners[2];
+  const initial = getRouletteSpinnerSegments(spinner, 0);
+  const repeated = getRouletteSpinnerSegments(spinner, 0);
+  const rotated = getRouletteSpinnerSegments(spinner, 0.5);
+
+  assert.deepEqual(initial, repeated);
+  assert.equal(initial.length, spinner.arms);
+  assert.notDeepEqual(initial, rotated);
 });
 
 test("participant shuffle is deterministic for a recorded seed", () => {
@@ -56,13 +72,67 @@ test("participant shuffle is deterministic for a recorded seed", () => {
   assert.notDeepEqual(first, shuffleRouletteParticipants(participants, 43));
 });
 
-test("race winner is reproducible for every course", () => {
+test("first-arrival winners are reproducible for every course", () => {
   const participants = makeParticipants(8);
 
   for (const course of ROULETTE_COURSES) {
+    const first = runRace(participants, 20260813, {
+      courseId: course.id,
+      winnerMode: "first",
+      winnerCount: 3,
+    });
+    const second = runRace(participants, 20260813, {
+      courseId: course.id,
+      winnerMode: "first",
+      winnerCount: 3,
+    });
+
+    assert.deepEqual(first.winnerParticipantIds, second.winnerParticipantIds);
+    assert.equal(first.winnerParticipantIds.length, 3);
+    assert.equal(new Set(first.winnerParticipantIds).size, 3);
+  }
+});
+
+test("last-arrival winners follow reverse unique finish order on every course", () => {
+  for (const course of ROULETTE_COURSES) {
+    const race = runRace(
+      makeParticipants(7),
+      3301,
+      {
+        courseId: course.id,
+        winnerMode: "last",
+        winnerCount: 3,
+        ballsPerParticipant: 2,
+      },
+      60,
+    );
+    const expected = [];
+
+    for (let index = race.finishOrder.length - 1; index >= 0; index -= 1) {
+      const participantId = race.finishOrder[index].participantId;
+      if (!expected.includes(participantId)) expected.push(participantId);
+      if (expected.length === 3) break;
+    }
+
+    assert.equal(race.finishOrder.length, 14);
+    assert.deepEqual(race.winnerParticipantIds, expected);
+    assert.equal(new Set(race.winnerParticipantIds).size, 3);
+  }
+});
+
+test("multiple marbles create unique ball IDs and repeat participant entries", () => {
+  const participants = makeParticipants(4);
+  const race = createRouletteRace(participants, 91, {
+    ballsPerParticipant: 5,
+    winnerCount: 2,
+  });
+
+  assert.equal(race.balls.length, 20);
+  assert.equal(new Set(race.balls.map((ball) => ball.ballId)).size, 20);
+  for (const participant of participants) {
     assert.equal(
-      runToWinner(participants, 20260813, course.id),
-      runToWinner(participants, 20260813, course.id),
+      race.balls.filter((ball) => ball.id === participant.id).length,
+      5,
     );
   }
 });
@@ -71,17 +141,40 @@ test("minimum and maximum participant races finish on every course", () => {
   for (const course of ROULETTE_COURSES) {
     for (const count of [2, 32]) {
       const participants = makeParticipants(count);
-      const winnerId = runToWinner(participants, count * 101, course.id);
+      const race = runRace(participants, count * 101, {
+        courseId: course.id,
+      });
 
+      assert.equal(race.finishOrder.length, 1);
       assert.equal(
-        participants.some((participant) => participant.id === winnerId),
+        participants.some(
+          (participant) =>
+            participant.id === race.winnerParticipantIds.at(0),
+        ),
         true,
       );
     }
   }
 });
 
-test("race rejects unsupported or duplicate participants", () => {
+test("maximum marble load can produce multiple first-arrival winners", () => {
+  const participants = makeParticipants(32);
+  const race = runRace(
+    participants,
+    8080,
+    {
+      courseId: "sprint",
+      winnerCount: 5,
+      ballsPerParticipant: 3,
+    },
+    60,
+  );
+
+  assert.equal(race.balls.length, ROULETTE_MAX_TOTAL_BALLS);
+  assert.equal(race.winnerParticipantIds.length, 5);
+});
+
+test("race rejects unsupported participant and draw settings", () => {
   assert.throws(() => createRouletteRace(makeParticipants(1), 1), RangeError);
   assert.throws(() => createRouletteRace(makeParticipants(33), 1), RangeError);
   assert.throws(
@@ -93,6 +186,24 @@ test("race rejects unsupported or duplicate participants", () => {
         ],
         1,
       ),
+    RangeError,
+  );
+  assert.throws(
+    () => createRouletteRace(makeParticipants(3), 1, { winnerCount: 4 }),
+    RangeError,
+  );
+  assert.throws(
+    () =>
+      createRouletteRace(makeParticipants(3), 1, {
+        ballsPerParticipant: 6,
+      }),
+    RangeError,
+  );
+  assert.throws(
+    () =>
+      createRouletteRace(makeParticipants(32), 1, {
+        ballsPerParticipant: 4,
+      }),
     RangeError,
   );
 });
