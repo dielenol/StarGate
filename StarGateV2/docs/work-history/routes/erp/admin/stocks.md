@@ -44,3 +44,11 @@
 - 검증: 주식·거래 집중 테스트 64건 통과, replica-set 통합 테스트 1건 환경 부재 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
 - 관련 커밋: `f75fd2ea`
 - 운영 경계: 라이브 종목 거래 상태·시세·보유량·거래는 변경하지 않았다.
+
+## 2026-08-13 · 버그 수정 · 예약 공시 안정성 보완
+
+- 취소 가능한 `PENDING` 예약은 수량 제한 없이 전부 노출하고, 종료 이력만 최근 100건으로 제한해 미래 예약이 이력에 밀려 숨지 않게 했다. 조회 경로에는 상태·실행 시각·종목 복합 인덱스를 추가했다.
+- 완료된 생성 요청은 공시 시각이 지난 뒤에도 저장된 멱등 응답을 먼저 replay하고, 예약 예상가는 같은 운영 화면의 최신 가격 Query를 따라 갱신하도록 연결했다.
+- 검증: 실제 MongoDB 7 replica set 경쟁·rollback·105개 대기 예약 조회 2건, 예약·틱 집중 테스트 16건, `pnpm typecheck`, 전체 `pnpm lint`, production build, GM 인증 로컬 브라우저 렌더링·오류 확인, critical risk review
+- 관련 커밋: `e89e2065`
+- 운영 경계: 라이브 예약·시세 mutation과 신규 인덱스 적용은 실행하지 않았다.
