@@ -278,6 +278,7 @@ export default function ERPSidebar({
                         onClick={close}
                         onFocus={() => prefetchHref(href)}
                         onMouseEnter={() => prefetchHref(href)}
+                        onTouchStart={() => prefetchHref(href)}
                         prefetch={false}
                       >
                         <LinkPendingProbe />
@@ -378,6 +379,7 @@ export default function ERPSidebar({
                               onClick={close}
                               onFocus={() => prefetchHref(childHref)}
                               onMouseEnter={() => prefetchHref(childHref)}
+                              onTouchStart={() => prefetchHref(childHref)}
                               prefetch={false}
                             >
                               <LinkPendingProbe />
@@ -415,6 +417,7 @@ export default function ERPSidebar({
             className={styles.sidebar__return}
             onFocus={() => prefetchHref("/")}
             onMouseEnter={() => prefetchHref("/")}
+            onTouchStart={() => prefetchHref("/")}
             prefetch={false}
           >
             <LinkPendingProbe />

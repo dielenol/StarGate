@@ -11,11 +11,13 @@ const dashboardSource = await readFile(
   "utf8",
 );
 
-test("sidebar prefetches only after pointer or keyboard intent", () => {
+test("sidebar prefetches only after pointer, touch, or keyboard intent", () => {
   assert.equal(sidebarSource.match(/prefetch=\{false\}/g)?.length, 3);
+  assert.equal(sidebarSource.match(/onTouchStart=/g)?.length, 3);
   assert.doesNotMatch(sidebarSource, /\n\s+prefetch\n/);
   assert.match(sidebarSource, /onFocus=\{\(\) => prefetchHref\(href\)\}/);
   assert.match(sidebarSource, /onMouseEnter=\{\(\) => prefetchHref\(href\)\}/);
+  assert.match(sidebarSource, /onTouchStart=\{\(\) => prefetchHref\(href\)\}/);
 });
 
 test("dashboard hero image is loaded eagerly as the LCP candidate", () => {
