@@ -1,12 +1,17 @@
 .roulette {
   width: 100%;
-  max-width: 1320px;
+  max-width: 1380px;
   min-height: 100dvh;
   margin: 0 auto;
   padding: 24px 32px 40px;
+  background:
+    linear-gradient(var(--grid-line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-soft) 1px, transparent 1px);
+  background-size: 12px 12px;
 }
 
 .roulette__header {
+  min-height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15,37 +20,47 @@
 }
 
 .roulette__heading {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 18px;
 }
 
 .roulette__heading h1 {
+  color: var(--text);
   font-size: 25px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 900;
+  letter-spacing: -0.04em;
 }
 
 .roulette__eyebrow {
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   color: var(--accent-text);
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
   font-weight: 900;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
+}
+
+.roulette__subtitle {
+  margin-top: 2px;
+  color: var(--text-dim);
+  font-size: 12px;
 }
 
 .roulette__back {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  flex: 0 0 auto;
   padding: 7px 11px;
   color: var(--text-muted);
   background: var(--control-bg);
   border: 1px solid var(--border);
   border-radius: 7px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 var(--accent-soft-5);
   transition:
     color 0.15s ease,
     background 0.15s ease,
@@ -55,13 +70,7 @@
 .roulette__back:hover {
   color: var(--text);
   background: var(--control-bg-hover);
-  border-color: var(--border-strong);
-}
-
-.roulette__back:focus-visible,
-.roulette__footer a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  border-color: var(--accent-border);
 }
 
 .roulette__account {
@@ -73,38 +82,53 @@
 .roulette__account > span {
   max-width: 180px;
   padding: 7px 10px;
+  overflow: hidden;
   color: var(--text);
   background: var(--accent-soft-2);
   border: 1px solid var(--accent-border);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 700;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .roulette__layout {
   display: grid;
-  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(330px, 390px) minmax(0, 1fr);
   align-items: start;
   gap: 20px;
+}
+
+.roulette__controls,
+.roulette__race_report {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 9px,
+      var(--accent-soft-1) 9px 10px
+    ),
+    var(--surface-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    3px 3px 0 var(--accent-soft-5),
+    var(--shadow-card);
 }
 
 .roulette__controls {
   position: sticky;
   top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px;
-  background: var(--surface-panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-card);
+  overflow: hidden;
 }
 
-.roulette__control_header {
+.roulette__control_section {
+  padding: 17px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.roulette__control_header,
+.roulette__race_heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -118,8 +142,9 @@
 }
 
 .roulette__control_header p {
+  color: var(--text);
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .roulette__control_header strong {
@@ -128,20 +153,25 @@
   font-size: 12px;
 }
 
+.roulette__pixel_badge,
 .roulette__phase {
-  padding: 3px 8px;
-  color: var(--text-muted);
-  background: var(--neutral-soft);
-  border: 1px solid var(--neutral-border);
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 800;
+  padding: 3px 7px;
+  color: var(--accent-text);
+  background: var(--accent-soft-2);
+  border: 1px solid var(--accent-border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 2px 2px 0 var(--accent-soft-4);
 }
 
 .roulette__phase_running {
   color: var(--warning);
   background: var(--warning-soft);
   border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+  animation: roulette-pulse 0.8s steps(2, end) infinite;
 }
 
 .roulette__phase_finished {
@@ -150,69 +180,336 @@
   border-color: color-mix(in srgb, var(--success) 42%, transparent);
 }
 
-.roulette__label {
+.roulette__course_grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.roulette__course {
+  min-width: 0;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 1px 8px;
+  padding: 8px;
   color: var(--text-muted);
-  font-size: 12px;
+  background: var(--control-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: left;
+  box-shadow: 2px 2px 0 var(--neutral-soft);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.roulette__course:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--control-bg-hover);
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}
+
+.roulette__course > span {
+  grid-row: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  color: var(--accent-text);
+  background: var(--accent-soft-3);
+  border: 1px solid var(--accent-border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.roulette__course strong {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roulette__course small {
+  color: var(--text-dim);
+  font-size: 9px;
   font-weight: 700;
 }
 
-.roulette__textarea {
-  width: 100%;
-  min-height: 254px;
-  resize: vertical;
-  padding: 11px 12px;
-  color: var(--text);
+.roulette__course_selected {
+  color: var(--accent-text-strong);
+  background: var(--accent-soft-4);
+  border-color: var(--accent-border-strong);
+  box-shadow: 2px 2px 0 var(--accent-soft-6);
+}
+
+.roulette__course_selected > span {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.roulette__course:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.roulette__course_description {
+  min-height: 33px;
+  margin-top: 9px;
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.roulette__search {
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 0 10px;
+  color: var(--text-dim);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.65;
+  border-radius: 7px;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
-.roulette__textarea:focus {
+.roulette__search:focus-within {
   border-color: var(--accent-border-strong);
-  outline: none;
   box-shadow: 0 0 0 3px var(--accent-soft-4);
 }
 
-.roulette__textarea:disabled {
-  color: var(--text-dim);
-  cursor: not-allowed;
-  opacity: 0.72;
+.roulette__search > span:not(.roulette__sr_only) {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 900;
 }
 
-.roulette__help {
-  margin-top: -5px;
-  color: var(--text-dim);
+.roulette__search input {
+  min-width: 0;
+  flex: 1;
+  padding: 8px 0;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: 0;
   font-size: 11px;
 }
 
-.roulette__error {
-  padding: 9px 10px;
-  color: var(--danger);
-  background: var(--danger-soft);
-  border: 1px solid var(--danger-border);
-  border-radius: 7px;
+.roulette__search input::placeholder {
+  color: var(--text-dim);
+}
+
+.roulette__selection_actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.roulette__selection_actions button {
+  min-height: 32px;
+  color: var(--text-muted);
+  background: var(--control-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.roulette__selection_actions button:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--control-bg-hover);
+  border-color: var(--border-strong);
+}
+
+.roulette__selection_actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.roulette__member_list {
+  max-height: 336px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 9px;
+  padding-right: 3px;
+  overflow-y: auto;
+  scrollbar-color: var(--accent) var(--bg-elev-2);
+  scrollbar-width: thin;
+}
+
+.roulette__member {
+  width: 100%;
+  min-height: 49px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 7px;
+  color: var(--text);
+  background: var(--control-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: left;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.12s ease;
+}
+
+.roulette__member:hover:not(:disabled) {
+  background: var(--control-bg-hover);
+  border-color: var(--accent-border);
+  transform: translateX(2px);
+}
+
+.roulette__member_selected {
+  background: var(--accent-soft-4);
+  border-color: var(--accent-border-strong);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.roulette__member:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.roulette__avatar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  background: var(--accent);
+  border: 2px solid var(--accent-border-strong);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 2px 2px 0 var(--accent-soft-6);
+}
+
+.roulette__avatar_member {
+  width: 34px;
+  height: 34px;
   font-size: 12px;
-  font-weight: 700;
+}
+
+.roulette__avatar_winner {
+  width: 76px;
+  height: 76px;
+  border-width: 3px;
+  font-size: 24px;
+  box-shadow: 4px 4px 0 var(--accent-soft-6);
+}
+
+.roulette__avatar_image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.roulette__member_identity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.roulette__member_identity strong,
+.roulette__member_identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roulette__member_identity strong {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.roulette__member_identity strong em {
+  margin-left: 5px;
+  padding: 1px 4px;
+  color: var(--accent-text-strong);
+  background: var(--accent-soft-4);
+  border-radius: 3px;
+  font-size: 8px;
+  font-style: normal;
+}
+
+.roulette__member_identity small {
+  margin-top: 1px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.roulette__member_order {
+  width: 27px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-text);
+  background: var(--accent-soft-2);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.roulette__member_selected .roulette__member_order {
+  color: #fff;
+  background: var(--accent);
+}
+
+.roulette__empty {
+  padding: 24px 12px;
+  color: var(--text-dim);
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.roulette__dispatch {
+  padding: 17px 18px;
 }
 
 .roulette__actions {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: 0.85fr 1.15fr;
   gap: 8px;
 }
 
 .roulette__actions button,
 .roulette__winner button {
-  min-height: 40px;
+  min-height: 42px;
   border-radius: 7px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
   transition:
     color 0.15s ease,
     background 0.15s ease,
@@ -225,21 +522,16 @@
   transform: translateY(1px);
 }
 
-.roulette__actions button:focus-visible,
-.roulette__winner button:focus-visible {
-  outline: 2px solid var(--accent-border-strong);
-  outline-offset: 2px;
-}
-
 .roulette__actions button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .roulette__primary {
   color: #fff;
   background: var(--accent);
   border: 1px solid var(--accent);
+  box-shadow: 3px 3px 0 var(--accent-soft-6);
 }
 
 .roulette__primary:hover:not(:disabled) {
@@ -259,150 +551,228 @@
   border-color: var(--border-strong);
 }
 
+.roulette__error {
+  margin-bottom: 9px;
+  padding: 8px 9px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .roulette__facts {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 12px;
+  margin-top: 14px;
+  padding-top: 13px;
   border-top: 1px solid var(--border);
 }
 
 .roulette__facts > div {
   display: grid;
-  grid-template-columns: 60px minmax(0, 1fr);
-  gap: 9px;
-  font-size: 11px;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 10px;
 }
 
 .roulette__facts dt {
-  color: var(--text-dim);
-  font-weight: 700;
+  color: var(--text-muted);
+  font-weight: 800;
 }
 
 .roulette__facts dd {
-  color: var(--text-muted);
+  color: var(--text-dim);
   overflow-wrap: anywhere;
 }
 
-.roulette__stage_wrap {
+.roulette__race_report {
   min-width: 0;
+  padding: 18px;
+}
+
+.roulette__race_heading {
+  min-height: 45px;
+  margin-bottom: 14px;
+}
+
+.roulette__race_heading p {
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.roulette__race_heading h2 {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.roulette__race_heading > span {
+  padding: 4px 8px;
+  color: var(--text-muted);
+  background: var(--neutral-soft);
+  border: 1px solid var(--neutral-border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .roulette__stage {
   position: relative;
-  width: min(100%, 820px);
+  width: min(100%, 860px);
   margin: 0 auto;
+  padding: 7px;
   overflow: hidden;
-  background: #090c17;
-  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
-  border-radius: 14px;
+  background: #0b0e1b;
+  border: 1px solid var(--accent-border);
+  border-radius: 9px;
   box-shadow:
-    var(--shadow-panel),
-    0 0 0 1px rgba(142, 160, 255, 0.08) inset;
+    0 0 0 4px var(--accent-soft-2),
+    3px 3px 0 var(--accent-soft-6);
 }
 
 .roulette__canvas {
   width: 100%;
-  aspect-ratio: 720 / 760;
   display: block;
+  background: #101426;
+  border-radius: 5px;
+  image-rendering: pixelated;
 }
 
 .roulette__winner {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: min(82%, 390px);
+  width: min(78%, 360px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 24px;
-  color: #f7f8ff;
-  background: rgba(8, 11, 22, 0.9);
-  border: 1px solid rgba(255, 211, 92, 0.64);
-  border-radius: 14px;
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.58),
-    0 0 38px rgba(255, 211, 92, 0.16);
+  gap: 7px;
+  padding: 18px;
+  color: var(--text);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 5px,
+      var(--accent-soft-1) 5px 6px
+    ),
+    var(--surface-frosted);
+  border: 1px solid var(--accent-border-strong);
+  border-radius: 10px;
   text-align: center;
   transform: translate(-50%, -50%);
-  backdrop-filter: blur(14px);
-  animation: winner-in 0.28s ease-out;
+  box-shadow:
+    5px 5px 0 var(--accent-soft-6),
+    0 20px 60px rgba(0, 0, 0, 0.48);
+  animation: roulette-winner-in 0.22s steps(4, end);
 }
 
 .roulette__winner > span {
-  color: #ffd35c;
+  color: var(--text-muted);
   font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.22em;
+  font-weight: 800;
 }
 
-.roulette__winner strong {
+.roulette__winner > strong {
   max-width: 100%;
-  color: #fff3c7;
-  font-size: clamp(25px, 5vw, 40px);
-  line-height: 1.15;
+  color: var(--text);
+  font-size: clamp(25px, 4vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
   overflow-wrap: anywhere;
-}
-
-.roulette__winner p {
-  color: rgba(231, 235, 255, 0.72);
-  font-size: 12px;
 }
 
 .roulette__winner button {
   width: 100%;
-  margin-top: 7px;
-  color: #151822;
-  background: #ffd35c;
-  border: 1px solid #ffd35c;
+  margin-top: 5px;
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid var(--accent);
 }
 
 .roulette__winner button:hover {
-  background: #ffe18a;
-  border-color: #ffe18a;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .roulette__status {
-  min-height: 21px;
-  margin-top: 9px;
+  width: min(100%, 860px);
+  margin: 13px auto 0;
+  padding: 8px 10px;
   color: var(--text-dim);
-  font-size: 11px;
+  background: var(--surface-muted);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
   text-align: center;
 }
 
 .roulette__footer {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  margin-top: 22px;
-  padding-top: 17px;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 0 2px;
   color: var(--text-dim);
-  border-top: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 10px;
 }
 
-.roulette__footer p {
-  max-width: 760px;
+.roulette__footer nav {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
 }
 
 .roulette__footer a {
   color: var(--accent-text);
   font-weight: 700;
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--accent-text) 45%, transparent);
-  text-underline-offset: 3px;
+  text-underline-offset: 2px;
 }
 
-.roulette__footer > a {
-  flex: 0 0 auto;
+.roulette__back:focus-visible,
+.roulette__footer a:focus-visible,
+.roulette__course:focus-visible,
+.roulette__member:focus-visible,
+.roulette__selection_actions button:focus-visible,
+.roulette__actions button:focus-visible,
+.roulette__winner button:focus-visible {
+  outline: 2px solid var(--accent-border-strong);
+  outline-offset: 2px;
 }
 
-@keyframes winner-in {
+.roulette__sr_only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes roulette-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes roulette-winner-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -46%) scale(0.96);
+    transform: translate(-50%, -50%) scale(0.88);
   }
+
   to {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
@@ -410,87 +780,105 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .roulette__phase_running,
   .roulette__winner {
     animation: none;
   }
+
+  .roulette__course,
+  .roulette__member {
+    transition: none;
+  }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1040px) {
   .roulette__layout {
     grid-template-columns: 1fr;
   }
 
   .roulette__controls {
     position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
-  .roulette__textarea {
-    min-height: 170px;
+  .roulette__control_section {
+    border-bottom: 0;
   }
 
-  .roulette__stage {
-    width: min(100%, 720px);
+  .roulette__control_section + .roulette__control_section {
+    border-left: 1px solid var(--border);
+  }
+
+  .roulette__dispatch {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+  }
+
+  .roulette__member_list {
+    max-height: 360px;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 700px) {
   .roulette {
-    padding: 16px 12px 28px;
+    padding: 16px 14px 28px;
   }
 
   .roulette__header {
     align-items: flex-start;
-    margin-bottom: 14px;
   }
 
   .roulette__heading {
     align-items: flex-start;
+    flex-direction: column;
     gap: 10px;
   }
 
-  .roulette__heading h1 {
-    font-size: 21px;
-  }
-
-  .roulette__back {
-    min-height: 34px;
-    padding: 6px 9px;
-    font-size: 0;
-  }
-
-  .roulette__back span {
-    font-size: 18px;
+  .roulette__subtitle {
+    display: none;
   }
 
   .roulette__account > span {
     display: none;
   }
 
-  .roulette__layout {
-    gap: 12px;
-  }
-
   .roulette__controls {
-    padding: 14px;
-    border-radius: 10px;
+    display: block;
   }
 
-  .roulette__textarea {
-    min-height: 142px;
+  .roulette__control_section + .roulette__control_section {
+    border-top: 1px solid var(--border);
+    border-left: 0;
   }
 
-  .roulette__stage {
-    border-radius: 10px;
+  .roulette__dispatch {
+    border-top: 1px solid var(--border);
+  }
+
+  .roulette__course_grid {
+    grid-template-columns: 1fr;
+  }
+
+  .roulette__course {
+    min-height: 58px;
+  }
+
+  .roulette__member_list {
+    max-height: 330px;
+  }
+
+  .roulette__race_report {
+    padding: 13px;
   }
 
   .roulette__winner {
     width: 86%;
-    padding: 18px;
+    padding: 13px;
   }
 
   .roulette__footer {
+    align-items: flex-start;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 16px;
   }
 }

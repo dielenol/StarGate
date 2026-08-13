@@ -19,6 +19,11 @@ export const upsertTrpgGuildMemberInputSchema = z.object({
   discordUserId: trpgDiscordIdSchema,
   discordUsername: z.string().min(1).max(100),
   displayName: z.string().min(1).max(100),
+  discordAvatarUrl: z
+    .string()
+    .max(500)
+    .regex(/^https:\/\/cdn\.discordapp\.com\//)
+    .nullable(),
   joinedAt: dateSchema,
   lastSyncedAt: dateSchema,
   leftAt: dateSchema.nullable(),

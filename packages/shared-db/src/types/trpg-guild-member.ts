@@ -21,6 +21,8 @@ export interface TrpgGuildMember {
   discordUsername: string;
   /** 표기용 이름: nickname → globalName → username 폴백 */
   displayName: string;
+  /** Discord CDN 프로필 이미지 URL (길드 아바타 → 글로벌 아바타 폴백) */
+  discordAvatarUrl: string | null;
   joinedAt: Date;
   /** 길드 이탈 시각 (잔류 중이면 null) */
   leftAt: Date | null;

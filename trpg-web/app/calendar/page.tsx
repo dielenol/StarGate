@@ -97,6 +97,7 @@ export default async function CalendarPage({
     discordUserId: m.discordUserId,
     displayName: m.displayName,
     discordUsername: m.discordUsername,
+    avatarUrl: m.discordAvatarUrl ?? null,
   }));
 
   return (

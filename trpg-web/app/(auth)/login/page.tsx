@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { signIn } from "@/lib/auth/config";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -69,6 +70,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             {errorMessage}
           </p>
         ) : null}
+
+        <p className={styles.login__privacy}>
+          로그인 전에 <Link href="/privacy">개인정보 처리방침</Link>을 확인할 수
+          있습니다.
+        </p>
       </div>
     </main>
   );

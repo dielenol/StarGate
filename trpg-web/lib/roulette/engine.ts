@@ -1,20 +1,22 @@
 export const ROULETTE_BOARD_WIDTH = 720;
-export const ROULETTE_BOARD_HEIGHT = 760;
 export const ROULETTE_MIN_PARTICIPANTS = 2;
 export const ROULETTE_MAX_PARTICIPANTS = 32;
 export const ROULETTE_FIXED_STEP_SECONDS = 1 / 120;
 
-const BALL_RADIUS = 11;
-const PEG_RADIUS = 6;
+const BALL_RADIUS = 15;
 const LEFT_WALL = 28;
 const RIGHT_WALL = ROULETTE_BOARD_WIDTH - 28;
-const FINISH_Y = ROULETTE_BOARD_HEIGHT - 34;
-const GRAVITY = 610;
-const MAX_SPEED = 820;
 
-export interface RouletteBall {
-  id: number;
+export type RouletteCourseId = "sprint" | "cascade" | "odyssey" | "classic";
+
+export interface RouletteParticipant {
+  id: string;
   name: string;
+  avatarUrl: string | null;
+}
+
+export interface RouletteBall extends RouletteParticipant {
+  ballId: number;
   color: string;
   x: number;
   y: number;
@@ -37,8 +39,25 @@ export interface RouletteSegment {
   by: number;
 }
 
+export interface RouletteCourse {
+  id: RouletteCourseId;
+  number: string;
+  name: string;
+  distance: string;
+  duration: string;
+  description: string;
+  height: number;
+  finishY: number;
+  startY: number;
+  gravity: number;
+  maxSpeed: number;
+  pegs: readonly RoulettePeg[];
+  segments: readonly RouletteSegment[];
+}
+
 export interface RouletteRace {
   seed: number;
+  courseId: RouletteCourseId;
   elapsedSeconds: number;
   balls: RouletteBall[];
   finishOrder: string[];
@@ -46,28 +65,37 @@ export interface RouletteRace {
   done: boolean;
 }
 
-export const ROULETTE_PEGS: readonly RoulettePeg[] = createPegs();
+interface PegGridOptions {
+  top: number;
+  rows: number;
+  columns?: number;
+  startX?: number;
+  spacingX?: number;
+  spacingY?: number;
+  radius?: number;
+}
 
-export const ROULETTE_SEGMENTS: readonly RouletteSegment[] = [
-  { ax: LEFT_WALL, ay: 78, bx: LEFT_WALL, by: 650 },
-  { ax: RIGHT_WALL, ay: 78, bx: RIGHT_WALL, by: 650 },
-  { ax: LEFT_WALL, ay: 650, bx: 122, by: FINISH_Y },
-  { ax: RIGHT_WALL, ay: 650, bx: 598, by: FINISH_Y },
-];
-
-function createPegs(): RoulettePeg[] {
+function createPegGrid({
+  top,
+  rows,
+  columns = 10,
+  startX = 72,
+  spacingX = 64,
+  spacingY = 42,
+  radius = 7,
+}: PegGridOptions): RoulettePeg[] {
   const pegs: RoulettePeg[] = [];
 
-  for (let row = 0; row < 13; row += 1) {
+  for (let row = 0; row < rows; row += 1) {
     const shifted = row % 2 === 1;
-    const columns = shifted ? 9 : 10;
-    const startX = shifted ? 104 : 72;
+    const rowColumns = shifted ? columns - 1 : columns;
+    const rowStartX = startX + (shifted ? spacingX / 2 : 0);
 
-    for (let column = 0; column < columns; column += 1) {
+    for (let column = 0; column < rowColumns; column += 1) {
       pegs.push({
-        x: startX + column * 64,
-        y: 154 + row * 39,
-        radius: PEG_RADIUS,
+        x: rowStartX + column * spacingX,
+        y: top + row * spacingY,
+        radius,
       });
     }
   }
@@ -75,13 +103,147 @@ function createPegs(): RoulettePeg[] {
   return pegs;
 }
 
-/** 쉼표 또는 줄바꿈으로 구분한 참가자 이름을 정규화한다. */
-export function parseRouletteParticipants(value: string): string[] {
-  return value
-    .split(/[\n,]+/)
-    .map((name) => name.trim().replace(/\s+/g, " "))
-    .filter(Boolean)
-    .map((name) => Array.from(name).slice(0, 24).join(""));
+function createPegRow(
+  y: number,
+  xs: readonly number[],
+  radius = 10,
+): RoulettePeg[] {
+  return xs.map((x) => ({ x, y, radius }));
+}
+
+function createCourseWalls(finishY: number): RouletteSegment[] {
+  const funnelTop = finishY - 86;
+
+  return [
+    { ax: LEFT_WALL, ay: 70, bx: LEFT_WALL, by: funnelTop },
+    { ax: RIGHT_WALL, ay: 70, bx: RIGHT_WALL, by: funnelTop },
+    { ax: LEFT_WALL, ay: funnelTop, bx: 232, by: finishY - 8 },
+    { ax: RIGHT_WALL, ay: funnelTop, bx: 488, by: finishY - 8 },
+  ];
+}
+
+const SPRINT_FINISH_Y = 592;
+const CASCADE_FINISH_Y = 822;
+const ODYSSEY_FINISH_Y = 1_092;
+const CLASSIC_FINISH_Y = 992;
+
+export const ROULETTE_COURSES: readonly RouletteCourse[] = [
+  {
+    id: "sprint",
+    number: "01",
+    name: "퀵 드롭",
+    distance: "단거리",
+    duration: "약 4초",
+    description: "큰 범퍼 사이를 빠르게 꺾어 내려오는 짧고 경쾌한 코스",
+    height: 630,
+    finishY: SPRINT_FINISH_Y,
+    startY: 112,
+    gravity: 720,
+    maxSpeed: 860,
+    pegs: [
+      ...createPegRow(205, [150, 290, 430, 570], 12),
+      ...createPegRow(285, [90, 220, 360, 500, 630], 11),
+      ...createPegRow(365, [160, 300, 440, 580], 12),
+      ...createPegRow(445, [105, 235, 365, 495, 625], 10),
+    ],
+    segments: [
+      ...createCourseWalls(SPRINT_FINISH_Y),
+      { ax: 28, ay: 488, bx: 196, by: 526 },
+      { ax: 692, ay: 488, bx: 524, by: 526 },
+    ],
+  },
+  {
+    id: "cascade",
+    number: "02",
+    name: "핀볼 캐스케이드",
+    distance: "중거리",
+    duration: "약 7초",
+    description: "촘촘한 핀과 두 갈래 게이트를 연속으로 통과하는 표준 코스",
+    height: 860,
+    finishY: CASCADE_FINISH_Y,
+    startY: 112,
+    gravity: 665,
+    maxSpeed: 840,
+    pegs: [
+      ...createPegGrid({ top: 190, rows: 6, spacingY: 43 }),
+      ...createPegGrid({ top: 530, rows: 5, spacingY: 43 }),
+    ],
+    segments: [
+      ...createCourseWalls(CASCADE_FINISH_Y),
+      { ax: 28, ay: 470, bx: 270, by: 514 },
+      { ax: 692, ay: 470, bx: 450, by: 514 },
+      { ax: 314, ay: 482, bx: 360, by: 520 },
+      { ax: 406, ay: 482, bx: 360, by: 520 },
+    ],
+  },
+  {
+    id: "odyssey",
+    number: "03",
+    name: "노부스 오디세이",
+    distance: "장거리",
+    duration: "약 11초",
+    description: "네 번의 스위치백과 최종 핀 구간을 버텨야 하는 장거리 코스",
+    height: 1_130,
+    finishY: ODYSSEY_FINISH_Y,
+    startY: 112,
+    gravity: 630,
+    maxSpeed: 820,
+    pegs: [
+      ...createPegGrid({ top: 178, rows: 3, spacingY: 42 }),
+      ...createPegGrid({ top: 875, rows: 4, spacingY: 42 }),
+    ],
+    segments: [
+      ...createCourseWalls(ODYSSEY_FINISH_Y),
+      { ax: 28, ay: 306, bx: 568, by: 372 },
+      { ax: 692, ay: 494, bx: 152, by: 560 },
+      { ax: 28, ay: 682, bx: 568, by: 748 },
+      { ax: 692, ay: 810, bx: 468, by: 848 },
+    ],
+  },
+  {
+    id: "classic",
+    number: "04",
+    name: "포춘 클래식",
+    distance: "원본풍",
+    duration: "약 9초",
+    description: "분기·지그재그·핀 숲을 잇는 Marble Roulette 감성의 대표 코스",
+    height: 1_030,
+    finishY: CLASSIC_FINISH_Y,
+    startY: 112,
+    gravity: 645,
+    maxSpeed: 830,
+    pegs: [
+      ...createPegRow(310, [120, 225, 495, 600], 10),
+      ...createPegRow(390, [80, 180, 280, 440, 540, 640], 8),
+      ...createPegGrid({
+        top: 690,
+        rows: 6,
+        columns: 9,
+        startX: 88,
+        spacingX: 68,
+        spacingY: 40,
+      }),
+    ],
+    segments: [
+      ...createCourseWalls(CLASSIC_FINISH_Y),
+      { ax: 28, ay: 178, bx: 284, by: 244 },
+      { ax: 692, ay: 178, bx: 436, by: 244 },
+      { ax: 28, ay: 448, bx: 446, by: 508 },
+      { ax: 692, ay: 552, bx: 274, by: 612 },
+      { ax: 286, ay: 632, bx: 350, by: 674 },
+      { ax: 434, ay: 632, bx: 370, by: 674 },
+    ],
+  },
+];
+
+export const ROULETTE_DEFAULT_COURSE_ID: RouletteCourseId = "classic";
+
+const COURSE_BY_ID = new Map(
+  ROULETTE_COURSES.map((course) => [course.id, course]),
+);
+
+export function getRouletteCourse(courseId: RouletteCourseId): RouletteCourse {
+  return COURSE_BY_ID.get(courseId) ?? ROULETTE_COURSES[0];
 }
 
 /** 동일 seed에 동일 순서를 돌려주는 작은 결정적 PRNG. */
@@ -97,24 +259,17 @@ export function createRouletteRandom(seed: number): () => number {
   };
 }
 
-export function shuffleRouletteParticipants(
-  participants: readonly string[],
+export function shuffleRouletteParticipants<T>(
+  participants: readonly T[],
   seed: number,
-): string[] {
-  const shuffled = [...participants];
-  const random = createRouletteRandom(seed);
-
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const target = Math.floor(random() * (index + 1));
-    [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
-  }
-
-  return shuffled;
+): T[] {
+  return shuffleWithRandom(participants, createRouletteRandom(seed));
 }
 
 export function createRouletteRace(
-  participants: readonly string[],
+  participants: readonly RouletteParticipant[],
   seed: number,
+  courseId: RouletteCourseId = ROULETTE_DEFAULT_COURSE_ID,
 ): RouletteRace {
   if (
     participants.length < ROULETTE_MIN_PARTICIPANTS ||
@@ -125,13 +280,17 @@ export function createRouletteRace(
     );
   }
 
+  if (new Set(participants.map((participant) => participant.id)).size !== participants.length) {
+    throw new RangeError("참가자 ID는 중복될 수 없습니다.");
+  }
+
+  const course = getRouletteCourse(courseId);
   const random = createRouletteRandom(seed);
   const shuffled = shuffleWithRandom(participants, random);
-  const columns = Math.min(12, shuffled.length);
-  const spacing = Math.min(48, 620 / Math.max(columns - 1, 1));
-  const startX = (ROULETTE_BOARD_WIDTH - spacing * (columns - 1)) / 2;
+  const columns = Math.min(10, shuffled.length);
+  const spacing = Math.min(56, 610 / Math.max(columns - 1, 1));
 
-  const balls = shuffled.map((name, index): RouletteBall => {
+  const balls = shuffled.map((participant, index): RouletteBall => {
     const row = Math.floor(index / columns);
     const column = index % columns;
     const rowCount = Math.ceil(shuffled.length / columns);
@@ -141,16 +300,16 @@ export function createRouletteRace(
     const hue = (index * 137.508 + seed * 0.0001) % 360;
 
     return {
-      id: index,
-      name,
-      color: `hsl(${hue.toFixed(1)} 82% 64%)`,
-      x:
-        (rowColumns === columns ? startX : rowStartX) +
-        column * spacing +
-        (random() - 0.5) * 8,
-      y: 86 - (rowCount - row - 1) * 29 + (random() - 0.5) * 4,
-      vx: (random() - 0.5) * 34,
-      vy: 18 + random() * 22,
+      ...participant,
+      ballId: index,
+      color: `hsl(${hue.toFixed(1)} 68% 43%)`,
+      x: rowStartX + column * spacing + (random() - 0.5) * 7,
+      y:
+        course.startY -
+        (rowCount - row - 1) * 34 +
+        (random() - 0.5) * 3,
+      vx: (random() - 0.5) * 32,
+      vy: 16 + random() * 20,
       radius: BALL_RADIUS,
       finished: false,
     };
@@ -158,6 +317,7 @@ export function createRouletteRace(
 
   return {
     seed: seed >>> 0,
+    courseId: course.id,
     elapsedSeconds: 0,
     balls,
     finishOrder: [],
@@ -183,13 +343,14 @@ export function stepRouletteRace(
 ): void {
   if (race.done) return;
 
+  const course = getRouletteCourse(race.courseId);
   const dt = Math.min(Math.max(deltaSeconds, 0), 1 / 30);
   race.elapsedSeconds += dt;
 
   for (const ball of race.balls) {
     if (ball.finished) continue;
 
-    ball.vy += GRAVITY * dt;
+    ball.vy += course.gravity * dt;
     const damping = Math.pow(0.998, dt * 60);
     ball.vx *= damping;
     ball.vy *= Math.pow(0.9995, dt * 60);
@@ -197,11 +358,11 @@ export function stepRouletteRace(
     ball.y += ball.vy * dt;
 
     keepInsideSideWalls(ball);
-    for (const peg of ROULETTE_PEGS) resolvePegCollision(ball, peg);
-    for (const segment of ROULETTE_SEGMENTS) {
+    for (const peg of course.pegs) resolvePegCollision(ball, peg);
+    for (const segment of course.segments) {
       resolveSegmentCollision(ball, segment);
     }
-    capVelocity(ball);
+    capVelocity(ball, course.maxSpeed);
   }
 
   for (let iteration = 0; iteration < 2; iteration += 1) {
@@ -209,14 +370,14 @@ export function stepRouletteRace(
   }
 
   for (const ball of race.balls) {
-    if (ball.finished || ball.y - ball.radius <= FINISH_Y) continue;
+    if (ball.finished || ball.y - ball.radius <= course.finishY) continue;
 
     ball.finished = true;
-    ball.y = FINISH_Y + ball.radius;
+    ball.y = course.finishY + ball.radius;
     ball.vx = 0;
     ball.vy = 0;
-    race.finishOrder.push(ball.name);
-    race.winnerBallId = ball.id;
+    race.finishOrder.push(ball.id);
+    race.winnerBallId = ball.ballId;
     race.done = true;
     break;
   }
@@ -348,15 +509,11 @@ function resolveBallCollisions(balls: RouletteBall[]): void {
   }
 }
 
-function capVelocity(ball: RouletteBall): void {
+function capVelocity(ball: RouletteBall, maxSpeed: number): void {
   const speedSquared = ball.vx * ball.vx + ball.vy * ball.vy;
-  if (speedSquared <= MAX_SPEED * MAX_SPEED) return;
+  if (speedSquared <= maxSpeed * maxSpeed) return;
 
-  const scale = MAX_SPEED / Math.sqrt(speedSquared);
+  const scale = maxSpeed / Math.sqrt(speedSquared);
   ball.vx *= scale;
   ball.vy *= scale;
-}
-
-export function getRouletteFinishY(): number {
-  return FINISH_Y;
 }

@@ -1,25 +1,30 @@
 import {
-  getRouletteFinishY,
-  ROULETTE_BOARD_HEIGHT,
   ROULETTE_BOARD_WIDTH,
-  ROULETTE_PEGS,
-  ROULETTE_SEGMENTS,
   type RouletteBall,
+  type RouletteCourse,
+  type RouletteParticipant,
   type RouletteRace,
 } from "./engine";
 
 interface DrawRouletteSceneOptions {
   race: RouletteRace | null;
-  previewParticipants: readonly string[];
+  previewParticipants: readonly RouletteParticipant[];
+  course: RouletteCourse;
+  avatarImages: ReadonlyMap<string, CanvasImageSource>;
 }
 
 export function drawRouletteScene(
   context: CanvasRenderingContext2D,
-  { race, previewParticipants }: DrawRouletteSceneOptions,
+  {
+    race,
+    previewParticipants,
+    course,
+    avatarImages,
+  }: DrawRouletteSceneOptions,
 ): void {
-  context.clearRect(0, 0, ROULETTE_BOARD_WIDTH, ROULETTE_BOARD_HEIGHT);
-  drawBackground(context);
-  drawTrack(context);
+  context.clearRect(0, 0, ROULETTE_BOARD_WIDTH, course.height);
+  drawBackground(context, course);
+  drawTrack(context, course);
 
   if (race) {
     const orderedBalls = [...race.balls].sort((first, second) =>
@@ -28,71 +33,94 @@ export function drawRouletteScene(
         : Number(first.finished) - Number(second.finished),
     );
     for (const ball of orderedBalls) {
-      drawBall(context, ball, race.winnerBallId === ball.id);
+      drawBall(
+        context,
+        ball,
+        avatarImages.get(ball.id),
+        race.winnerBallId === ball.ballId,
+      );
     }
   } else {
-    drawPreviewBalls(context, previewParticipants);
+    drawPreviewBalls(context, previewParticipants, course, avatarImages);
   }
 }
 
-function drawBackground(context: CanvasRenderingContext2D): void {
-  const gradient = context.createLinearGradient(
-    0,
-    0,
-    0,
-    ROULETTE_BOARD_HEIGHT,
-  );
+function drawBackground(
+  context: CanvasRenderingContext2D,
+  course: RouletteCourse,
+): void {
+  const gradient = context.createLinearGradient(0, 0, 0, course.height);
   gradient.addColorStop(0, "#16192c");
   gradient.addColorStop(0.52, "#101426");
   gradient.addColorStop(1, "#090c17");
   context.fillStyle = gradient;
-  context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, ROULETTE_BOARD_HEIGHT);
+  context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, course.height);
 
-  const glow = context.createRadialGradient(360, 90, 20, 360, 90, 430);
-  glow.addColorStop(0, "rgba(113, 129, 255, 0.22)");
-  glow.addColorStop(0.55, "rgba(88, 101, 242, 0.07)");
-  glow.addColorStop(1, "rgba(88, 101, 242, 0)");
-  context.fillStyle = glow;
-  context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, 520);
+  context.fillStyle = "rgba(142, 160, 255, 0.2)";
+  for (let y = 8; y < course.height; y += 13) {
+    for (let x = 7; x < ROULETTE_BOARD_WIDTH; x += 17) {
+      const offset = ((x * 7 + y * 11) % 9) - 4;
+      context.fillRect(x + offset, y, 1, 1);
+    }
+  }
 
-  context.save();
-  context.globalAlpha = 0.16;
-  context.strokeStyle = "#8ea0ff";
+  context.strokeStyle = "rgba(142, 160, 255, 0.1)";
   context.lineWidth = 1;
-  for (let x = 40; x < ROULETTE_BOARD_WIDTH; x += 40) {
+  for (let y = 128; y < course.height; y += 32) {
     context.beginPath();
-    context.moveTo(x, 0);
-    context.lineTo(x, ROULETTE_BOARD_HEIGHT);
+    context.moveTo(0, y + 0.5);
+    context.lineTo(ROULETTE_BOARD_WIDTH, y + 0.5);
     context.stroke();
   }
-  for (let y = 40; y < ROULETTE_BOARD_HEIGHT; y += 40) {
-    context.beginPath();
-    context.moveTo(0, y);
-    context.lineTo(ROULETTE_BOARD_WIDTH, y);
-    context.stroke();
-  }
-  context.restore();
 
-  context.fillStyle = "rgba(231, 235, 255, 0.72)";
-  context.font = "700 13px system-ui, sans-serif";
+  context.fillStyle = "#1b2038";
+  context.fillRect(18, 18, ROULETTE_BOARD_WIDTH - 36, 64);
+  context.fillStyle = "#5865f2";
+  context.fillRect(18, 76, ROULETTE_BOARD_WIDTH - 36, 6);
+
+  context.fillStyle = "#eef1ff";
+  context.font = "900 17px ui-monospace, monospace";
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillText(
+    `COURSE ${course.number} / ${course.distance}`,
+    36,
+    49,
+  );
+  context.textAlign = "right";
+  context.fillText(course.name, ROULETTE_BOARD_WIDTH - 36, 49);
+
+  context.strokeStyle = "#313852";
+  context.lineWidth = 6;
+  context.strokeRect(8, 8, ROULETTE_BOARD_WIDTH - 16, course.height - 16);
+  context.strokeStyle = "#5865f2";
+  context.lineWidth = 2;
+  context.strokeRect(16, 16, ROULETTE_BOARD_WIDTH - 32, course.height - 32);
+
+  context.fillStyle = "#c7d0ff";
+  context.font = "900 13px ui-monospace, monospace";
   context.textAlign = "center";
-  context.fillText("START", ROULETTE_BOARD_WIDTH / 2, 27);
-
-  context.fillStyle = "rgba(142, 160, 255, 0.12)";
-  context.fillRect(54, 39, ROULETTE_BOARD_WIDTH - 108, 67);
-  context.strokeStyle = "rgba(142, 160, 255, 0.34)";
-  context.strokeRect(54.5, 39.5, ROULETTE_BOARD_WIDTH - 109, 66);
+  context.fillText("▼ DROP ZONE ▼", ROULETTE_BOARD_WIDTH / 2, 101);
 }
 
-function drawTrack(context: CanvasRenderingContext2D): void {
+function drawTrack(
+  context: CanvasRenderingContext2D,
+  course: RouletteCourse,
+): void {
   context.save();
-  context.strokeStyle = "rgba(167, 177, 255, 0.75)";
-  context.lineWidth = 5;
-  context.lineCap = "round";
-  context.shadowColor = "rgba(88, 101, 242, 0.75)";
-  context.shadowBlur = 12;
+  context.lineCap = "square";
+  context.lineJoin = "miter";
 
-  for (const segment of ROULETTE_SEGMENTS) {
+  for (const segment of course.segments) {
+    context.strokeStyle = "#5865f2";
+    context.lineWidth = 12;
+    context.beginPath();
+    context.moveTo(segment.ax + 3, segment.ay + 3);
+    context.lineTo(segment.bx + 3, segment.by + 3);
+    context.stroke();
+
+    context.strokeStyle = "#c7d0ff";
+    context.lineWidth = 7;
     context.beginPath();
     context.moveTo(segment.ax, segment.ay);
     context.lineTo(segment.bx, segment.by);
@@ -100,72 +128,90 @@ function drawTrack(context: CanvasRenderingContext2D): void {
   }
   context.restore();
 
-  for (const peg of ROULETTE_PEGS) {
-    const pegGradient = context.createRadialGradient(
-      peg.x - 2,
-      peg.y - 2,
-      1,
-      peg.x,
-      peg.y,
-      peg.radius + 2,
+  for (const peg of course.pegs) {
+    const size = peg.radius * 2 + 8;
+    context.fillStyle = "#1b2038";
+    context.fillRect(
+      Math.round(peg.x - size / 2),
+      Math.round(peg.y - size / 2),
+      size,
+      size,
     );
-    pegGradient.addColorStop(0, "#ffffff");
-    pegGradient.addColorStop(0.25, "#c7d0ff");
-    pegGradient.addColorStop(1, "#5865f2");
-    context.fillStyle = pegGradient;
-    context.beginPath();
-    context.arc(peg.x, peg.y, peg.radius, 0, Math.PI * 2);
-    context.fill();
+    context.fillStyle = "#8ea0ff";
+    context.fillRect(
+      Math.round(peg.x - peg.radius / 2),
+      Math.round(peg.y - peg.radius / 2),
+      peg.radius,
+      peg.radius,
+    );
   }
 
-  const finishY = getRouletteFinishY();
-  const cellSize = 12;
-  const startX = 122;
-  const finishWidth = 476;
-  for (let column = 0; column < Math.ceil(finishWidth / cellSize); column += 1) {
-    context.fillStyle = column % 2 === 0 ? "#f5f6ff" : "#1b2038";
-    context.fillRect(startX + column * cellSize, finishY - 4, cellSize, 8);
+  const cellSize = 14;
+  const startX = 232;
+  const finishWidth = 256;
+  for (let row = 0; row < 2; row += 1) {
+    for (
+      let column = 0;
+      column < Math.ceil(finishWidth / cellSize);
+      column += 1
+    ) {
+      context.fillStyle =
+        (row + column) % 2 === 0 ? "#f5f6ff" : "#1b2038";
+      context.fillRect(
+        startX + column * cellSize,
+        course.finishY - 9 + row * 9,
+        cellSize,
+        9,
+      );
+    }
   }
-  context.fillStyle = "rgba(231, 235, 255, 0.74)";
-  context.font = "800 12px system-ui, sans-serif";
+  context.strokeStyle = "#5865f2";
+  context.lineWidth = 3;
+  context.strokeRect(startX, course.finishY - 9, finishWidth, 18);
+  context.fillStyle = "#c7d0ff";
+  context.font = "900 13px ui-monospace, monospace";
   context.textAlign = "center";
-  context.fillText("FINISH", ROULETTE_BOARD_WIDTH / 2, finishY + 23);
+  context.textBaseline = "alphabetic";
+  context.fillText("★ FINISH ★", ROULETTE_BOARD_WIDTH / 2, course.finishY + 31);
 }
 
 function drawPreviewBalls(
   context: CanvasRenderingContext2D,
-  participants: readonly string[],
+  participants: readonly RouletteParticipant[],
+  course: RouletteCourse,
+  avatarImages: ReadonlyMap<string, CanvasImageSource>,
 ): void {
-  const visible = participants.slice(0, 12);
-  const spacing = Math.min(46, 560 / Math.max(visible.length - 1, 1));
+  const visible = participants.slice(0, 10);
+  const spacing = Math.min(58, 570 / Math.max(visible.length - 1, 1));
   const startX = (ROULETTE_BOARD_WIDTH - spacing * (visible.length - 1)) / 2;
 
-  visible.forEach((name, index) => {
+  visible.forEach((participant, index) => {
     drawBall(
       context,
       {
-        id: index,
-        name,
-        color: `hsl(${(index * 137.508) % 360} 82% 64%)`,
+        ...participant,
+        ballId: index,
+        color: `hsl(${(index * 137.508) % 360} 68% 43%)`,
         x: startX + index * spacing,
-        y: 73,
+        y: course.startY + 22,
         vx: 0,
         vy: 0,
-        radius: 11,
+        radius: 15,
         finished: false,
       },
+      avatarImages.get(participant.id),
       false,
     );
   });
 
   if (participants.length > visible.length) {
-    context.fillStyle = "rgba(231, 235, 255, 0.72)";
-    context.font = "700 12px system-ui, sans-serif";
+    context.fillStyle = "#c7d0ff";
+    context.font = "900 13px ui-monospace, monospace";
     context.textAlign = "right";
     context.fillText(
       `+${participants.length - visible.length}`,
-      ROULETTE_BOARD_WIDTH - 64,
-      99,
+      ROULETTE_BOARD_WIDTH - 42,
+      course.startY + 30,
     );
   }
 }
@@ -173,52 +219,82 @@ function drawPreviewBalls(
 function drawBall(
   context: CanvasRenderingContext2D,
   ball: RouletteBall,
+  avatarImage: CanvasImageSource | undefined,
   winner: boolean,
 ): void {
   context.save();
-  context.shadowColor = winner ? "rgba(255, 211, 92, 0.95)" : ball.color;
-  context.shadowBlur = winner ? 24 : 9;
 
-  const gradient = context.createRadialGradient(
-    ball.x - ball.radius * 0.38,
-    ball.y - ball.radius * 0.4,
-    1,
-    ball.x,
-    ball.y,
-    ball.radius * 1.15,
-  );
-  gradient.addColorStop(0, "#ffffff");
-  gradient.addColorStop(0.18, ball.color);
-  gradient.addColorStop(1, "#171a2d");
-  context.fillStyle = gradient;
+  context.fillStyle = "rgba(5, 8, 16, 0.68)";
+  context.beginPath();
+  context.arc(ball.x + 4, ball.y + 5, ball.radius + 3, 0, Math.PI * 2);
+  context.fill();
+
   context.beginPath();
   context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-  context.fill();
+  context.clip();
 
-  context.shadowBlur = 0;
-  context.strokeStyle = winner ? "#ffd35c" : "rgba(255, 255, 255, 0.68)";
-  context.lineWidth = winner ? 3 : 1.5;
+  if (avatarImage) {
+    context.imageSmoothingEnabled = false;
+    context.drawImage(
+      avatarImage,
+      ball.x - ball.radius,
+      ball.y - ball.radius,
+      ball.radius * 2,
+      ball.radius * 2,
+    );
+  } else {
+    context.fillStyle = ball.color;
+    context.fillRect(
+      ball.x - ball.radius,
+      ball.y - ball.radius,
+      ball.radius * 2,
+      ball.radius * 2,
+    );
+    context.fillStyle = "#f4f6ff";
+    context.font = "900 13px ui-monospace, monospace";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(getInitial(ball.name), ball.x, ball.y + 1);
+  }
+  context.restore();
+
+  context.save();
+  context.strokeStyle = winner ? "#ffd35c" : "#eef1ff";
+  context.lineWidth = winner ? 6 : 4;
+  context.beginPath();
+  context.arc(ball.x, ball.y, ball.radius + 1, 0, Math.PI * 2);
   context.stroke();
+  if (winner) {
+    context.strokeStyle = "#5865f2";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.arc(ball.x, ball.y, ball.radius + 6, 0, Math.PI * 2);
+    context.stroke();
+  }
 
-  const label = fitCanvasLabel(context, ball.name, 92);
-  context.font = "800 11px system-ui, sans-serif";
+  const label = fitCanvasLabel(context, ball.name, 102);
+  context.font = "900 11px ui-monospace, monospace";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  const labelWidth = Math.min(104, Math.max(32, context.measureText(label).width + 13));
-  const labelY = ball.y - ball.radius - 13;
-  context.fillStyle = "rgba(5, 8, 16, 0.78)";
-  roundedRect(
-    context,
-    ball.x - labelWidth / 2,
-    labelY - 9,
-    labelWidth,
-    18,
-    5,
+  const labelWidth = Math.min(
+    114,
+    Math.max(34, context.measureText(label).width + 14),
   );
-  context.fill();
+  const labelY = ball.y - ball.radius - 14;
+  context.fillStyle = "#090c17";
+  context.fillRect(
+    Math.round(ball.x - labelWidth / 2),
+    Math.round(labelY - 9),
+    Math.round(labelWidth),
+    18,
+  );
   context.fillStyle = winner ? "#ffe7a3" : "#f4f6ff";
   context.fillText(label, ball.x, labelY + 0.5);
   context.restore();
+}
+
+function getInitial(name: string): string {
+  return Array.from(name.trim())[0]?.toUpperCase() ?? "?";
 }
 
 function fitCanvasLabel(
@@ -226,7 +302,7 @@ function fitCanvasLabel(
   value: string,
   maxWidth: number,
 ): string {
-  context.font = "800 11px system-ui, sans-serif";
+  context.font = "900 11px ui-monospace, monospace";
   if (context.measureText(value).width <= maxWidth) return value;
 
   const characters = Array.from(value);
@@ -236,28 +312,4 @@ function fitCanvasLabel(
     if (context.measureText(candidate).width <= maxWidth) return candidate;
   }
   return "…";
-}
-
-function roundedRect(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-): void {
-  const safeRadius = Math.min(radius, width / 2, height / 2);
-  context.beginPath();
-  context.moveTo(x + safeRadius, y);
-  context.arcTo(x + width, y, x + width, y + height, safeRadius);
-  context.arcTo(
-    x + width,
-    y + height,
-    x,
-    y + height,
-    safeRadius,
-  );
-  context.arcTo(x, y + height, x, y, safeRadius);
-  context.arcTo(x, y, x + width, y, safeRadius);
-  context.closePath();
 }

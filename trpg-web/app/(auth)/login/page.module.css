@@ -172,6 +172,24 @@
   font-size: 14px;
 }
 
+.login__privacy {
+  margin-top: 18px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.login__privacy a {
+  color: var(--accent-text);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.login__privacy a:focus-visible {
+  outline: 2px solid var(--brand-gold);
+  outline-offset: 2px;
+}
+
 @media (max-width: 640px) {
   .login {
     padding: 18px;

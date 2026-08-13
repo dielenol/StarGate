@@ -23,7 +23,7 @@ import {
 /**
  * 길드 멤버를 upsert 한다.
  *
- * - 이미 존재하면 displayName / username / leftAt / lastSyncedAt 만 갱신.
+ * - 이미 존재하면 displayName / username / avatar / leftAt / lastSyncedAt 갱신.
  * - 신규면 joinedAt 도 setOnInsert 로 박는다 (재가입 시 원본 보존 의도가 아니라
  *   "첫 인입 시각" 의미. 운영상 디스코드 join 이벤트 기반이라 사실상 일치).
  *
@@ -45,6 +45,7 @@ export async function upsertTrpgGuildMember(
       $set: {
         discordUsername: validated.discordUsername,
         displayName: validated.displayName,
+        discordAvatarUrl: validated.discordAvatarUrl,
         leftAt: validated.leftAt,
         lastSyncedAt: validated.lastSyncedAt,
       },
@@ -101,6 +102,7 @@ export async function markTrpgGuildMemberLeft(
     {
       $set: {
         leftAt,
+        discordAvatarUrl: null,
         lastSyncedAt: leftAt,
       },
     },

@@ -17,6 +17,7 @@ export interface TrpgMemberView {
   discordUserId: string;
   displayName: string;
   discordUsername: string;
+  avatarUrl: string | null;
 }
 
 export async function GET() {
@@ -32,6 +33,7 @@ export async function GET() {
       discordUserId: m.discordUserId,
       displayName: m.displayName,
       discordUsername: m.discordUsername,
+      avatarUrl: m.discordAvatarUrl ?? null,
     }));
 
     return NextResponse.json(payload);

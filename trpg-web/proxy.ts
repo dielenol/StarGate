@@ -28,9 +28,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // /login, /api/auth (next-auth), 정적 자원, public assets, favicon 을 제외한 전체 경로 가드.
+  // /login, /privacy, /api/auth (next-auth), 정적 자원, public assets, favicon 제외.
   // 향후 추가되는 보호 경로를 누락하지 않기 위한 negative pattern.
   matcher: [
-    "/((?!login|api/auth|_next/static|_next/image|assets|favicon.ico).*)",
+    "/((?!login|privacy|api/auth|_next/static|_next/image|assets|favicon.ico).*)",
   ],
 };
