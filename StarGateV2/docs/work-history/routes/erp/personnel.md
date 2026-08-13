@@ -171,3 +171,9 @@
 - 배경과 미세 장식을 제거한 뒤 24px에 맞춰 단순화했으며, 조직도 inline source·공개 SVG mirror·NOVUS 아이콘 마스터가 같은 `currentColor` 도형을 사용하도록 유지했다.
 - 검증: 24px 래스터 미리보기, 인증된 1280px 신원조회 실제 18–20px 렌더, 외부 조직·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, master JS syntax, `npx tsc --noEmit`, 대상 ESLint
 - 관련 구현 커밋: `a3ade187`
+
+## 2026-08-13 · 성능 최적화 · 조직 카드 화면 밖 렌더 지연
+
+- 조직 drill-down의 인원·권한·검색 결과는 모두 DOM에 유지하고 화면 밖 Dossier 카드의 최초 layout·paint만 지연했다.
+- 검증: JTEST 알파 섹터 17건의 첫·마지막 카드 `content-visibility: auto`와 끝 스크롤 렌더, 집중 테스트·타입 검사·lint·production build
+- 관련 커밋: `76845d44`

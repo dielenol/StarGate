@@ -182,3 +182,11 @@
 - 검증: 복권 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 빌드 manifest의 `node:crypto`·`randomInt` 0건, 인증 로컬 브라우저 콘솔 오류 0건
 - 관련 커밋: `ae4c7cc4`
 - 운영 경계: 구매·복권·재고 등 라이브 mutation은 실행하지 않았다.
+
+## 2026-08-13 · 성능 최적화 · 편의점 잔액 전용 조회
+
+- 편의점 최초 화면이 최근 크레딧 거래 50건을 함께 읽고 캐시하던 경로를 제거하고, 현재 캐릭터의 잔액 전용 응답만 사용하도록 분리했다.
+- 잔액 응답과 SSR 초기값의 캐릭터 식별자를 검증하고, 조회 실패 시 보존된 이전 캐시로 구매 버튼을 활성화하지 않는다.
+- 검증: 크레딧 Query·경제 안전 계약 테스트, `pnpm typecheck`, `pnpm lint`, 프로덕션 build, JTEST 편의점 조회, critical risk review
+- 관련 커밋: `c39f7c34`
+- 운영 경계: 구매·복권·재고 mutation은 실행하지 않았다.

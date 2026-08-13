@@ -34,3 +34,11 @@
 - claim ID 기반 고정 request ID와 원자 transaction으로 재시도·다중 요청에도 당첨금이 한 번만 지급되도록 했다.
 - 검증: 복권 집중 테스트, `pnpm typecheck`, `pnpm lint`, shared-db build, `pnpm build`
 - 관련 커밋: `e733a98`
+
+## 2026-08-13 · 성능 최적화 · 잔액·원장 캐시 분리
+
+- 크레딧 전체 원장 캐시를 `full` 범위로 명시하고, 편의점·병기부·주식이 사용하는 잔액 및 주식 전용 read model과 Query key를 분리했다.
+- 기존 `credits` 루트 invalidation은 모든 하위 캐시를 함께 갱신하므로 거래 후 정합성은 유지하면서, 제한이 다른 50건·100건 원장이 같은 캐시로 섞이지 않게 했다.
+- 검증: Query key·재조회·캐릭터 식별 계약 테스트, 집중 테스트 47/47, `pnpm typecheck`, `pnpm lint`, 프로덕션 build, critical risk review
+- 관련 커밋: `c39f7c34`
+- 운영 경계: 라이브 크레딧 거래 mutation은 실행하지 않았다.

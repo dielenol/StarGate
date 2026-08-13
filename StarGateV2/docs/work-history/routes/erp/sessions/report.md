@@ -159,3 +159,10 @@
 - 서버 조회 실패로 만든 빈 목록은 즉시 stale 처리해 자동 복구를 유지하고, realtime·mutation invalidation은 계속 즉시 갱신한다.
 - 검증: Query 런타임·realtime 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 로컬 브라우저에서 마운트 재호출·콘솔 오류 0건
 - 관련 커밋: `c488f832`
+
+## 2026-08-13 · 성능 최적화 · 목록 지도 DTO 축소
+
+- 보고서 번호와 legacy 위치 fallback을 서버에서 계산하고 목록에는 지도 카드가 쓰는 식별자·제목·보고자·날짜·좌표만 전달한다.
+- `summary`와 `highlights` 본문은 상세에는 유지하되 목록 hydration에서 제외했으며, 저장소 표본 9건 기준 직렬화 크기는 72,748B에서 1,393B로 줄었다.
+- 검증: 지도 좌표·번호·visibility 계약, 집중 테스트 47/47, 타입 검사·lint·production build, JTEST 보고서 링크 16건 정상 렌더
+- 관련 커밋: `6f0bfc0e`

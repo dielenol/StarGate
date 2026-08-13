@@ -52,3 +52,10 @@
 - 서버 조회 실패로 만든 빈 seed만 즉시 stale 처리해 클라이언트 복구 재시도는 유지하고, realtime·mutation invalidation은 계속 즉시 갱신한다.
 - 검증: Query 런타임·wiki·realtime 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 로컬 브라우저에서 `/api/erp/wiki` 마운트 재호출·콘솔 오류 0건
 - 관련 커밋: `c488f832`
+
+## 2026-08-13 · 성능 최적화 · 최근 문서 중복 조회 제거
+
+- 필터·검색·cursor가 없는 기본 첫 페이지는 같은 visibility와 정렬로 이미 읽은 목록의 첫 5건을 최근 문서로 재사용한다.
+- 분류·검색 화면은 기존 전역 최근 문서 조회를 유지해 결과 의미를 바꾸지 않았다.
+- 검증: 위키 visibility·pagination 계약, 집중 테스트 47/47, 타입 검사·lint·production build, JTEST 위키 목록 정상 렌더
+- 관련 커밋: `6f0bfc0e`

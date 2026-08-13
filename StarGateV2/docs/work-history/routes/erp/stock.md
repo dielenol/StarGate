@@ -84,3 +84,12 @@
 - 301 branch 불일치, 잘못된 200 응답, 비 JSON 응답, 정상 배포와 구버전 timeout을 실행형 테스트로 검증하고 전체 worker 94개·core 20개 테스트, Docker 전체 빌드와 runtime revision 일치, YAML parse·`bash -n`·`git diff --check`, critical risk review를 통과했다.
 - 관련 커밋: `9fc8c3b1`
 - 운영 경계: Dokploy branch 설정 변경·worker 재배포·오늘 공시 재요청·Discord 메시지 교체는 실행하지 않았다.
+
+## 2026-08-13 · 성능 최적화 · 주식 계정 read model 분리
+
+- 종목 목록은 사용하지 않는 최근 크레딧 거래 100건을 제거하고 현재 캐릭터 잔액만 SSR 초기값과 전용 Query로 읽는다.
+- 잔액 조회 실패나 메인 캐릭터 불일치 시 이전 캐시를 표시하거나 거래 가능 상태로 사용하지 않는다.
+- JTEST 읽기 전용 DB `explain`에서 신규 주식 원장 조회는 13개 문서·키 검사, 0~1ms였으므로 측정 근거 없는 인덱스 추가는 하지 않았다.
+- 검증: 주식 read model·Query 계약 테스트, 집중 테스트 47/47, `pnpm typecheck`, `pnpm lint`, 프로덕션 build, JTEST 목록 조회, critical risk review
+- 관련 커밋: `c39f7c34`
+- 운영 경계: 매수·매도·시세·DB 인덱스 mutation은 실행하지 않았다.

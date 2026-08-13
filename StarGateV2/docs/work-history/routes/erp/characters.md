@@ -35,3 +35,9 @@
 - 게스트는 소유자 ID 없이 `U` 등급으로 투영된 공개 카드만 받고, 기존 회원의 공개/비공개 필터와 표시 결과는 유지한다.
 - 검증: 회원·게스트 DTO 테스트, 실제 게스트 19개 카드의 override 0건과 능력치 마스킹, 데스크톱 목록 가로 넘침·콘솔 오류 0건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `2df03010`
+
+## 2026-08-13 · 성능 최적화 · 화면 밖 카드 렌더 지연
+
+- 캐릭터 카드와 검색·필터 결과는 DOM 순서 그대로 유지하고, 화면 밖 카드의 최초 layout·paint만 브라우저가 지연하도록 했다.
+- 검증: JTEST 목록 19건의 첫·마지막 카드 `content-visibility: auto`와 끝 스크롤 렌더, 집중 테스트·타입 검사·lint·production build
+- 관련 커밋: `76845d44`
