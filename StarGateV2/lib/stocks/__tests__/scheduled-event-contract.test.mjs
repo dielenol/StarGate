@@ -30,6 +30,16 @@ test("예약 생성·취소는 경제 operation과 GM 감사 outbox를 같은 tr
     createRoute,
     /run: async \(dbSession\)[\s\S]*const transactionNow = new Date\(\)[\s\S]*fenceStockScheduledEventCreation[\s\S]*createStockScheduledEvent/,
   );
+  const executorStart = createRoute.indexOf(
+    "executeEconomicOperationResult<CreateEventOperationBody>",
+  );
+  assert.ok(executorStart > 0);
+  const beforeIdempotencyReplay = createRoute.slice(0, executorStart);
+  assert.match(beforeIdempotencyReplay, /if \(!executeAt\)/);
+  assert.doesNotMatch(
+    beforeIdempotencyReplay,
+    /executeAt\.getTime\(\)\s*<=/,
+  );
 });
 
 test("예약 lifecycle은 ticker/date 결정 ID와 PENDING 조건부 claim·cancel을 사용한다", () => {
@@ -51,6 +61,19 @@ test("예약 lifecycle은 ticker/date 결정 ID와 PENDING 조건부 claim·canc
     database,
     /cancelStockScheduledEvent[\s\S]*status: "PENDING"[\s\S]*status: "CANCELLED"[\s\S]*session: input\.session/,
   );
+  assert.match(
+    database,
+    /const \[pending, history\] = await Promise\.all\([\s\S]*find\(\{ status: "PENDING" \}\)[\s\S]*status: \{ \$in: \["APPLIED", "CANCELLED"\] \}[\s\S]*limit\(historyLimit\)/,
+  );
+
+  const indexes = readFileSync(
+    resolve(repoDir, "packages/shared-db/src/indexes.ts"),
+    "utf8",
+  );
+  assert.match(
+    indexes,
+    /collection\("stock_scheduled_events"\)\.createIndex\([\s\S]*status: 1, executeAt: 1, ticker: 1[\s\S]*stock_scheduled_events_status_executeAt_ticker/,
+  );
 });
 
 test("정기 tick은 예약 이벤트 claim 뒤에만 소다 보정을 소비한다", () => {
@@ -69,10 +92,16 @@ test("정기 tick은 예약 이벤트 claim 뒤에만 소다 보정을 소비한
   );
 });
 
-test("예약 Query는 생성·취소 성공 뒤 전용 캐시를 무효화한다", () => {
+test("예약 Query는 전용 캐시를 무효화하고 실시간 가격 cache로 미리보기를 갱신한다", () => {
   const query = source("hooks/queries/useStockScheduledEventsQuery.ts");
   const mutation = source("hooks/mutations/useStockScheduledEventsMutation.ts");
   const page = source("app/(erp)/erp/admin/stocks/page.tsx");
+  const adminClient = source(
+    "app/(erp)/erp/admin/stocks/StockAdminClient.tsx",
+  );
+  const scheduledPanel = source(
+    "app/(erp)/erp/admin/stocks/StockScheduledEventsPanel.tsx",
+  );
 
   assert.match(query, /\["stocks", "scheduled-events"\]/);
   assert.equal(
@@ -80,5 +109,7 @@ test("예약 Query는 생성·취소 성공 뒤 전용 캐시를 무효화한다
       ?.length,
     2,
   );
-  assert.match(page, /<StockScheduledEventsPanel/);
+  assert.doesNotMatch(page, /StockScheduledEventsPanel/);
+  assert.match(adminClient, /<StockScheduledEventsPanel stocks=\{prices\.items\} \/>/);
+  assert.match(scheduledPanel, /현재가 기준 예상가/);
 });

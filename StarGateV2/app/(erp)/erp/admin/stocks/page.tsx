@@ -6,7 +6,6 @@ import { hasRole } from "@/lib/auth/rbac";
 import { buildMarketWireResponse, buildPricesResponse } from "../../stock/_data";
 import { buildStockAdminHoldingsResponse } from "./_data";
 import StockAdminClient from "./StockAdminClient";
-import StockScheduledEventsPanel from "./StockScheduledEventsPanel";
 
 export const metadata = {
   title: "주식 운영 — Stargate ERP",
@@ -35,14 +34,6 @@ export default async function StockAdminPage() {
       initialPrices={initialPrices}
       initialMarketWire={initialMarketWire}
       initialHoldings={initialHoldings}
-    >
-      <StockScheduledEventsPanel
-        stocks={initialPrices.items.map((item) => ({
-          ticker: item.ticker,
-          name: item.name,
-          price: item.price,
-        }))}
-      />
-    </StockAdminClient>
+    />
   );
 }

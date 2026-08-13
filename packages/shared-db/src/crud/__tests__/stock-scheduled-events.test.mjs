@@ -17,6 +17,7 @@ test(
       fenceStockScheduledEventCreation,
       getClient,
       getDb,
+      listStockScheduledEvents,
     } = await import("../../../dist/index.js");
 
     await connect({ uri: TEST_URI, dbName: TEST_DB_NAME });
@@ -198,5 +199,64 @@ test(
     );
     assert.equal((await prices.findOne({ ticker: "ROLLBACK" }))?.price, 10);
     assert.equal(await history.countDocuments({ operationKey: rollbackKey }), 0);
+
+    await t.test("100건을 넘어도 모든 PENDING 예약과 최신 종료 이력을 반환한다", async () => {
+      await events.deleteMany({});
+      const actor = { id: "gm", displayName: "GM" };
+      const pendingBase = new Date("2027-01-01T03:00:00.000Z");
+      const pending = Array.from({ length: 105 }, (_, index) => {
+        const executeAt = new Date(
+          pendingBase.getTime() + index * 24 * 60 * 60 * 1000,
+        );
+        const kstDate = executeAt.toISOString().slice(0, 10);
+        return {
+          _id: `pending-${index}`,
+          ticker: `P${index}`,
+          kstDate,
+          executeAt,
+          changePercent: -10,
+          eventText: `pending ${index}`,
+          eventTier: "shock",
+          status: "PENDING",
+          createdBy: actor,
+          createdAt: executeAt,
+          updatedAt: executeAt,
+        };
+      });
+      const historyBase = new Date("2026-08-01T03:00:00.000Z");
+      const terminal = Array.from({ length: 120 }, (_, index) => {
+        const executeAt = new Date(
+          historyBase.getTime() + index * 60 * 60 * 1000,
+        );
+        return {
+          _id: `history-${index}`,
+          ticker: `H${index}`,
+          kstDate: executeAt.toISOString().slice(0, 10),
+          executeAt,
+          changePercent: 5,
+          eventText: `history ${index}`,
+          eventTier: "scenario",
+          status: index % 2 === 0 ? "APPLIED" : "CANCELLED",
+          createdBy: actor,
+          createdAt: executeAt,
+          updatedAt: executeAt,
+        };
+      });
+      await events.insertMany([...pending, ...terminal]);
+
+      const listed = await listStockScheduledEvents({
+        from: new Date("2026-08-01T00:00:00.000Z"),
+      });
+      assert.equal(
+        listed.filter((event) => event.status === "PENDING").length,
+        pending.length,
+      );
+      assert.equal(
+        listed.filter((event) => event.status !== "PENDING").length,
+        100,
+      );
+      assert.ok(listed.some((event) => event._id === "history-119"));
+      assert.ok(!listed.some((event) => event._id === "history-0"));
+    });
   },
 );

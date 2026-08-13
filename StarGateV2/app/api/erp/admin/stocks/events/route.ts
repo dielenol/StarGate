@@ -156,10 +156,9 @@ export async function POST(request: Request) {
 
   const kstDate = body.kstDate?.trim() ?? "";
   const executeAt = resolveStockScheduledEventExecuteAt(kstDate);
-  const now = new Date();
-  if (!executeAt || executeAt.getTime() <= now.getTime()) {
+  if (!executeAt) {
     return NextResponse.json(
-      { error: "아직 도래하지 않은 정기 공시일을 선택해주세요." },
+      { error: "정기 공시일이 올바르지 않습니다." },
       { status: 400 },
     );
   }

@@ -148,15 +148,28 @@ export async function createStockScheduledEvent(
 
 export async function listStockScheduledEvents(input: {
   from: Date;
-  limit?: number;
+  historyLimit?: number;
 }): Promise<StockScheduledEvent[]> {
   const col = await scheduledEventsCol();
-  const limit = Math.min(200, Math.max(1, input.limit ?? 100));
-  return col
-    .find({ executeAt: { $gte: input.from } })
-    .sort({ executeAt: 1, ticker: 1 })
-    .limit(limit)
-    .toArray();
+  const historyLimit = Math.min(
+    200,
+    Math.max(1, input.historyLimit ?? 100),
+  );
+  const [pending, history] = await Promise.all([
+    col
+      .find({ status: "PENDING" })
+      .sort({ executeAt: 1, ticker: 1 })
+      .toArray(),
+    col
+      .find({
+        status: { $in: ["APPLIED", "CANCELLED"] },
+        executeAt: { $gte: input.from },
+      })
+      .sort({ executeAt: -1, ticker: -1 })
+      .limit(historyLimit)
+      .toArray(),
+  ]);
+  return [...pending, ...history];
 }
 
 /** 가격/history transaction 안에서만 호출해 이벤트 소비도 함께 commit한다. */

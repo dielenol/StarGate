@@ -221,7 +221,7 @@ export default function StockScheduledEventsPanel({ stocks }: Props) {
           <div className={styles.preview}>
             <span>현재가</span>
             <strong>¤ {selected ? formatStockValue(selected.price) : "-"}</strong>
-            <span>예약 적용가</span>
+            <span>현재가 기준 예상가</span>
             <strong className={changePercent < 0 ? styles.down : styles.up}>
               {preview === null ? "입력 대기" : `¤ ${formatStockValue(preview)}`}
             </strong>

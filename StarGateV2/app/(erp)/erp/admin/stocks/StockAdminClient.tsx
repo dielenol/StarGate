@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 import {
@@ -33,8 +33,9 @@ import {
 } from "@/lib/query/idempotency";
 
 import MarketWirePanel from "../../stock/MarketWirePanel";
-import { ARROW, priceDirection } from "../../stock/_helpers";
 import { StockLogo } from "../../stock/_logos";
+import StockScheduledEventsPanel from "./StockScheduledEventsPanel";
+import { ARROW, priceDirection } from "../../stock/_helpers";
 import styles from "./page.module.css";
 
 const QUICK_PRICE_MOVES = [-25, -10, -5, 5, 10, 25] as const;
@@ -51,14 +52,12 @@ interface Props {
   initialPrices: StockPricesResponse;
   initialMarketWire: StockMarketWireResponse;
   initialHoldings: StockAdminHoldingsResponse;
-  children?: ReactNode;
 }
 
 export default function StockAdminClient({
   initialPrices,
   initialMarketWire,
   initialHoldings,
-  children,
 }: Props) {
   const pricesQuery = useStockPrices({ initialData: initialPrices });
   const holdingsQuery = useStockAdminHoldings({ initialData: initialHoldings });
@@ -519,7 +518,7 @@ export default function StockAdminClient({
           )}
         </section>
 
-        {children}
+        <StockScheduledEventsPanel stocks={prices.items} />
 
         <section className={[styles.panel, styles.holdingsPanel].join(" ")}>
           <div className={styles.panel__head}>

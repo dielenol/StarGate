@@ -1050,6 +1050,12 @@ export async function ensureAllIndexes(): Promise<void> {
       }
     })(),
 
+    /* ── stock_scheduled_events (GM 일회성 공시 예약·최근 이력) ── */
+    db.collection("stock_scheduled_events").createIndex(
+      { status: 1, executeAt: 1, ticker: 1 },
+      { name: "stock_scheduled_events_status_executeAt_ticker" },
+    ),
+
     /* ── stock_price_history (M1: 30일 가격 시계열) ──
      * TTL 30일. ticker 별 차트 조회는 (ticker, createdAt desc) 복합 인덱스로 최적화.
      */
