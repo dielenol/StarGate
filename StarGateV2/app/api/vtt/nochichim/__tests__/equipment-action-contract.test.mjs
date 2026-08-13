@@ -19,6 +19,9 @@ test("구조화 장비 snapshot은 서버가 확정한 ID·분류·슬롯·액�
   assert.match(snapshots, /entry\.equipmentCharges\?\.\[action\.code\]/);
   assert.match(snapshots, /entry\.equipmentAmmo/);
   assert.match(snapshots, /item\.combatProfile/);
+  assert.match(snapshots, /price: item\.price/);
+  assert.match(snapshots, /previewImage: equipmentPreviewImage\(item\)/);
+  assert.match(snapshots, /item\.workshop\?\.blueprintRef\?\.slug/);
   assert.match(snapshots, /action\.rangeMinCells/);
   assert.match(snapshots, /action\.rangeMaxCells/);
   const equipmentMapper = snapshots.slice(

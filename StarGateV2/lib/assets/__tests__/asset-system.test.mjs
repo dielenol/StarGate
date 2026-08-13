@@ -6,7 +6,10 @@ import test from "node:test";
 
 import sharp from "sharp";
 
-import { getCatalogItemImageSrc } from "../catalog.ts";
+import {
+  EQUIPMENT_ITEM_IMAGE_BY_SLUG,
+  getCatalogItemImageSrc,
+} from "../catalog.ts";
 import {
   getPixelCharacterPath,
   resolveCharacterAssetSlug,
@@ -163,12 +166,19 @@ test("NPC·상점·카탈로그 레지스트리의 경로는 실제 배포 자�
   for (const assetPath of PUBLIC_ASSET_REGISTRY_PATHS) {
     await access(optimizedPublicUrl(assetPath));
   }
+  for (const assetPath of Object.values(EQUIPMENT_ITEM_IMAGE_BY_SLUG)) {
+    await access(optimizedPublicUrl(assetPath));
+  }
 
   assert.equal(MRBEAST_SODA_SRC, SHOP_ITEM_IMAGE_BY_SLUG.mrbeast_soda);
   assert.equal(MRBEAST_SODA_SRC, "/assets/shop/items/mrbeast_soda.webp");
   assert.equal(
     getCatalogItemImageSrc("conchita-of-gluttony-modified"),
     "/assets/catalog/equipment/conchita-of-gluttony-modified.webp",
+  );
+  assert.equal(
+    getCatalogItemImageSrc("old-tactical-sword-titanium-shield"),
+    "/assets/catalog/equipment/old-tactical-sword-titanium-shield.webp",
   );
   assert.equal(workshopPortrait("TEMPER", "QUOTED"), TEMPER_MOOD_ASSETS.balance);
   assert.equal(workshopPortrait("SUTURE", "REJECTED"), SUTURE_MOOD_ASSETS.blocked);

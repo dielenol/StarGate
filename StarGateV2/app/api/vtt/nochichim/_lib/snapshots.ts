@@ -5,7 +5,10 @@ import { findSessionById } from "@/lib/db/sessions";
 import { applyEquipmentAbilityOverrides } from "@/lib/equipment/equipment-ability-overrides";
 import { mergePublicEquipment } from "@/lib/equipment/public-equipment";
 import { notifyUser } from "@/lib/notifications/events";
-import { getConsumableItemImageSrc } from "@/lib/assets/catalog";
+import {
+  getCatalogItemImageSrc,
+  getConsumableItemImageSrc,
+} from "@/lib/assets/catalog";
 import {
   resolveConsumableOutcomes,
   type MrBeastSodaConsumptionOutcome,
@@ -35,6 +38,7 @@ import {
 } from "@stargate/shared-db";
 
 import { findTransactionalAgentCharacterByKey } from "./transactional-character";
+import { isNochichimPersonalConsumable } from "./inventory-policy";
 
 type SerializedDate = string | null;
 
@@ -48,6 +52,7 @@ export interface NochichimConsumableSnapshot {
   previewImage: string;
   note?: string;
   acquiredAt: SerializedDate;
+  inventoryScope: "PERSONAL" | "SHARED";
 }
 
 export const NOCHICHIM_SHARED_CONSUMABLE_PREFIX = "shared:";
@@ -93,6 +98,8 @@ export interface NochichimEquipmentSnapshot {
   category: "WEAPON" | "ARMOR";
   equippedSlot: "WEAPON" | "ARMOR";
   source: "stargate";
+  price: MasterItem["price"];
+  previewImage: string;
   damage?: string;
   description: string;
   effect: string;
@@ -169,6 +176,16 @@ function objectIdString(value: { toString(): string } | undefined): string {
 
 function dateToIso(value: Date | undefined): SerializedDate {
   return value instanceof Date ? value.toISOString() : null;
+}
+
+function equipmentPreviewImage(item: MasterItem): string {
+  const direct = item.previewImage?.trim();
+  if (direct) return direct;
+  return (
+    getCatalogItemImageSrc(item.slug ?? "") ??
+    getCatalogItemImageSrc(item.workshop?.blueprintRef?.slug ?? "") ??
+    ""
+  );
 }
 
 function finalStat(base: number, delta: number | undefined): number {
@@ -291,8 +308,7 @@ export async function loadCharacterConsumables(
     const item = itemMap.get(entry.itemId);
     if (
       !item ||
-      item.category !== "CONSUMABLE" ||
-      item.slug === CENSOR_3_CONSUMABLE_SLUG
+      !isNochichimPersonalConsumable(item)
     ) {
       return [];
     }
@@ -309,6 +325,7 @@ export async function loadCharacterConsumables(
           getConsumableItemImageSrc(item.slug ?? "") ?? item.previewImage ?? "",
         note: entry.note,
         acquiredAt: dateToIso(entry.acquiredAt),
+        inventoryScope: "PERSONAL" as const,
       },
     ];
   });
@@ -334,6 +351,7 @@ export async function loadCharacterConsumables(
           getConsumableItemImageSrc(item.slug ?? "") ?? item.previewImage ?? "",
         note: entry.note,
         acquiredAt: dateToIso(entry.acquiredAt),
+        inventoryScope: "SHARED" as const,
       },
     ];
   });
@@ -512,6 +530,8 @@ export async function loadCharacterEquippedState(
         category: item.category,
         equippedSlot: entry.equippedSlot,
         source: "stargate" as const,
+        price: item.price,
+        previewImage: equipmentPreviewImage(item),
         ...(item.damage ? { damage: item.damage } : {}),
         description: item.description ?? "",
         effect: item.effect ?? "",
@@ -933,6 +953,9 @@ export async function consumeCharacterConsumable(input: {
   }
   if (item.slug === CENSOR_3_CONSUMABLE_SLUG) {
     throw new Error("Consumable requires equipment action");
+  }
+  if (!isNochichimPersonalConsumable(item)) {
+    throw new Error("Consumable not found");
   }
 
   const result = await removeFromInventory(
