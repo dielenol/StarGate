@@ -70,6 +70,7 @@ export async function buildPricesResponse(): Promise<StockPricesResponse> {
       changePercent,
       lastUpdate,
       isSeeded: Boolean(row),
+      isTradingHalted: row?.isTradingHalted === true,
     };
   });
 

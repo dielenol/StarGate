@@ -20,7 +20,12 @@ import {
   lockCharacterInventoryItems,
   removeFromInventory,
 } from "./inventory.js";
-import { buyHolding, sellHolding } from "./stocks.js";
+import {
+  buyHolding,
+  claimTradableStockPrice,
+  sellHolding,
+  StockPriceTradeClaimError,
+} from "./stocks.js";
 
 const MAX_OFFER_LINES = 50;
 const MAX_ITEM_QUANTITY = 999;
@@ -60,6 +65,8 @@ export type PlayerTradeErrorCode =
   | "INSUFFICIENT_CREDITS"
   | "INSUFFICIENT_ITEMS"
   | "INSUFFICIENT_STOCKS"
+  | "STOCK_PRICE_NOT_FOUND"
+  | "STOCK_TRADING_HALTED"
   | "ITEM_NOT_TRANSFERABLE";
 
 export class PlayerTradeError extends Error {
@@ -404,6 +411,38 @@ async function transferOffer(
   }
 }
 
+async function claimTradableOfferStocks(
+  initiatorOffer: PlayerTradeOffer,
+  counterpartyOffer: PlayerTradeOffer,
+  session: ClientSession,
+): Promise<void> {
+  const tickers = Array.from(
+    new Set(
+      [...initiatorOffer.stocks, ...counterpartyOffer.stocks].map(
+        (stock) => stock.ticker,
+      ),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  for (const ticker of tickers) {
+    try {
+      await claimTradableStockPrice(ticker, session);
+    } catch (error) {
+      if (!(error instanceof StockPriceTradeClaimError)) throw error;
+      if (error.code === "STOCK_TRADING_HALTED") {
+        throw new PlayerTradeError(
+          "STOCK_TRADING_HALTED",
+          `${ticker} 종목은 현재 거래정지 상태입니다.`,
+        );
+      }
+      throw new PlayerTradeError(
+        "STOCK_PRICE_NOT_FOUND",
+        `${ticker} 종목의 운영 시세가 없어 거래할 수 없습니다.`,
+      );
+    }
+  }
+}
+
 async function settleTrade(
   trade: PlayerTrade,
   actor: { id: string; name: string },
@@ -416,6 +455,14 @@ async function settleTrade(
     throw new PlayerTradeError("EMPTY_TRADE", "거래할 자산이 없습니다.");
   }
   assertPlayerTradeOffersCompatible(trade.initiatorOffer, trade.counterpartyOffer);
+
+  // 모든 자산 mutation 전에 종목별 가격 문서를 정렬된 순서로 claim한다.
+  // 거래정지 변경과 같은 문서 write로 직렬화되며, 이후 실패 시 revision도 함께 rollback된다.
+  await claimTradableOfferStocks(
+    trade.initiatorOffer,
+    trade.counterpartyOffer,
+    session,
+  );
 
   const lockTargets = [
     {
@@ -556,6 +603,11 @@ export async function createOpenPlayerTrade(
   offer: PlayerTradeOffer,
   session: ClientSession,
 ): Promise<PlayerTrade> {
+  await claimTradableOfferStocks(
+    offer,
+    EMPTY_PLAYER_TRADE_OFFER,
+    session,
+  );
   const validated = await validateOwnedOffer(initiator, offer, session);
   await validateOwnedOffer(counterparty, EMPTY_PLAYER_TRADE_OFFER, session);
   const now = new Date();
@@ -630,6 +682,13 @@ export async function replacePlayerTradeOffer(
   const nextCounterparty =
     side === "counterparty" ? validated.offer : trade.counterpartyOffer;
   assertPlayerTradeOffersCompatible(nextInitiator, nextCounterparty);
+  // 상대 제안에 정지 종목이 있어도 각 참여자가 자기 제안에서 문제 종목을 제거할 수
+  // 있어야 한다. 저장하는 본인의 새 제안만 claim하고, 양측 전체는 confirm/settle에서 막는다.
+  await claimTradableOfferStocks(
+    validated.offer,
+    EMPTY_PLAYER_TRADE_OFFER,
+    session,
+  );
 
   const offerField =
     side === "initiator" ? "initiatorOffer" : "counterpartyOffer";
@@ -693,6 +752,11 @@ export async function confirmPlayerTrade(
   const col = await playerTradesCol();
 
   if (!otherConfirmed) {
+    await claimTradableOfferStocks(
+      trade.initiatorOffer,
+      trade.counterpartyOffer,
+      session,
+    );
     const updated = await col.findOneAndUpdate(
       { _id: trade._id, status: "OPEN", revision: expectedRevision },
       {

@@ -9,6 +9,7 @@ import type {
   PlayerTradeAssets,
   PlayerTradeDto,
   PlayerTradeOffer,
+  PlayerTradeStockAvailability,
   TradeAction,
 } from "@/types/trade";
 
@@ -68,8 +69,14 @@ interface TradeCardProps {
     action: TradeAction,
     options?: { onSuccess?: () => void },
   ) => void;
+  stockAvailability: PlayerTradeStockAvailability[];
   trade: PlayerTradeDto;
 }
+
+type StockAvailabilityMap = ReadonlyMap<
+  string,
+  PlayerTradeStockAvailability
+>;
 
 function categoryLabel(category: ItemCategory | null): string {
   return category === null ? "분류 없음" : CATEGORY_LABEL[category];
@@ -105,6 +112,25 @@ function summarizeOffer(offer: PlayerTradeOffer): string {
     ...offer.stocks.map((stock) => `${stock.ticker} ${stock.shares}주`),
   );
   return parts.length > 0 ? parts.join(" · ") : "등록된 자산 없음";
+}
+
+function getStockAvailabilityLabel(
+  availability: PlayerTradeStockAvailability | undefined,
+): "시세 미등록" | "거래정지" | null {
+  if (!availability?.isSeeded) return "시세 미등록";
+  return availability.isTradingHalted ? "거래정지" : null;
+}
+
+function getUnavailableOfferStocks(
+  offer: PlayerTradeOffer,
+  availabilityByTicker: StockAvailabilityMap,
+): Array<{ ticker: string; label: "시세 미등록" | "거래정지" }> {
+  return offer.stocks.flatMap((stock) => {
+    const label = getStockAvailabilityLabel(
+      availabilityByTicker.get(stock.ticker),
+    );
+    return label ? [{ ticker: stock.ticker, label }] : [];
+  });
 }
 
 function TradeItemVisual({
@@ -161,11 +187,13 @@ function TradeItemVisual({
 
 function OfferManifest({
   assets,
+  availabilityByTicker,
   confirmed,
   label,
   offer,
 }: {
   assets: PlayerTradeAssets;
+  availabilityByTicker: StockAvailabilityMap;
   confirmed: boolean;
   label: string;
   offer: PlayerTradeOffer;
@@ -229,15 +257,37 @@ function OfferManifest({
               </div>
             );
           })}
-          {offer.stocks.map((stock) => (
-            <div key={stock.ticker} className={styles.tradeOfferToken}>
-              <span className={styles.tradeOfferToken__mark}>
-                {stock.ticker.slice(0, 2)}
-              </span>
-              <span>{stock.ticker}</span>
-              <strong>{stock.shares}주</strong>
-            </div>
-          ))}
+          {offer.stocks.map((stock) => {
+            const availabilityLabel = getStockAvailabilityLabel(
+              availabilityByTicker.get(stock.ticker),
+            );
+            return (
+              <div
+                key={stock.ticker}
+                className={[
+                  styles.tradeOfferToken,
+                  availabilityLabel
+                    ? styles.tradeOfferTokenUnavailable
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <span className={styles.tradeOfferToken__mark}>
+                  {stock.ticker.slice(0, 2)}
+                </span>
+                <span>
+                  {stock.ticker}
+                  {availabilityLabel ? (
+                    <em className={styles.tradeOfferToken__availability}>
+                      {availabilityLabel}
+                    </em>
+                  ) : null}
+                </span>
+                <strong>{stock.shares}주</strong>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
@@ -277,6 +327,9 @@ function OfferEditor({
   );
   const selectedStocks = assets.stocks.filter(
     (stock) => (stockShares[stock.ticker] ?? 0) > 0,
+  );
+  const hasUnavailableSelectedStock = selectedStocks.some(
+    (stock) => !stock.isSeeded || stock.isTradingHalted,
   );
   const selectedCreditAmount = Math.max(0, Number(credits) || 0);
   const assetLineCount =
@@ -503,16 +556,26 @@ function OfferEditor({
               <div className={styles.stockGrid}>
                 {assets.stocks.map((stock) => {
                   const shares = stockShares[stock.ticker] ?? 0;
+                  const availabilityLabel = !stock.isSeeded
+                    ? "시세 미등록"
+                    : stock.isTradingHalted
+                      ? "거래정지"
+                      : null;
                   return (
-                    <article key={stock.ticker} className={[styles.stockCard, shares > 0 ? styles.stockCardSelected : ""].filter(Boolean).join(" ")}>
+                    <article key={stock.ticker} className={[styles.stockCard, shares > 0 ? styles.stockCardSelected : "", availabilityLabel ? styles.stockCardHalted : ""].filter(Boolean).join(" ")}>
                       <div className={styles.stockCard__mark} aria-hidden>{stock.ticker.slice(0, 2)}</div>
                       <div className={styles.stockCard__body}>
-                        <strong>{stock.name}</strong>
+                        <strong>
+                          {stock.name}
+                          {availabilityLabel ? (
+                            <em className={styles.stockCard__halted}>{availabilityLabel}</em>
+                          ) : null}
+                        </strong>
                         <span>{stock.ticker} · 보유 {stock.shares.toLocaleString()}주</span>
                         <div className={styles.quantityControl} aria-label={`${stock.ticker} 전달 주식 수`}>
-                          <button type="button" aria-label={`${stock.ticker} 수량 감소`} disabled={shares <= 0} onClick={() => setStockQuantity(stock.ticker, shares - 1, stock.shares)}>−</button>
-                          <input aria-label={`${stock.ticker} 주식 수량`} type="number" min={0} max={stock.shares} step={1} value={shares} onChange={(event) => setStockQuantity(stock.ticker, Number(event.target.value), stock.shares)} />
-                          <button type="button" aria-label={`${stock.ticker} 수량 증가`} disabled={shares >= stock.shares} onClick={() => setStockQuantity(stock.ticker, shares + 1, stock.shares)}>+</button>
+                          <button type="button" aria-label={`${stock.ticker} 수량 감소`} disabled={Boolean(availabilityLabel) || shares <= 0} onClick={() => setStockQuantity(stock.ticker, shares - 1, stock.shares)}>−</button>
+                          <input aria-label={`${stock.ticker} 주식 수량`} type="number" min={0} max={stock.shares} step={1} value={shares} disabled={Boolean(availabilityLabel)} onChange={(event) => setStockQuantity(stock.ticker, Number(event.target.value), stock.shares)} />
+                          <button type="button" aria-label={`${stock.ticker} 수량 증가`} disabled={Boolean(availabilityLabel) || shares >= stock.shares} onClick={() => setStockQuantity(stock.ticker, shares + 1, stock.shares)}>+</button>
                         </div>
                       </div>
                     </article>
@@ -653,7 +716,14 @@ function OfferEditor({
                   {stock.ticker.slice(0, 2)}
                 </span>
                 <span className={styles.offerLedgerSlot__body}>
-                  <span>{stock.name}</span>
+                  <span>
+                    {stock.name}
+                    {!stock.isSeeded
+                      ? " · 시세 미등록"
+                      : stock.isTradingHalted
+                        ? " · 거래정지"
+                        : ""}
+                  </span>
                   <strong>
                     {stock.ticker} · {stockShares[stock.ticker]}주
                   </strong>
@@ -672,6 +742,11 @@ function OfferEditor({
             ))}
           </ul>
         )}
+        {hasUnavailableSelectedStock ? (
+          <p className={styles.caution} role="alert">
+            거래 불가 종목을 전송 구성에서 제거해야 저장하거나 체결할 수 있습니다.
+          </p>
+        ) : null}
         {kind === "GIFT" ? <p className={styles.caution}>주의: 즉시 전달은 상대 승인 없이 완료되며 취소할 수 없습니다.</p> : <p className={styles.summaryHint}>교환방은 양측이 현재 구성을 확정하면 체결됩니다.</p>}
         <button
           type="button"
@@ -681,6 +756,7 @@ function OfferEditor({
           disabled={
             busy ||
             submitDisabled ||
+            hasUnavailableSelectedStock ||
             (requireAssets && assetLineCount === 0)
           }
           onClick={submit}
@@ -703,6 +779,7 @@ const TradeCard = memo(function TradeCard({
   errorMessage,
   meUserId,
   onUpdate,
+  stockAvailability,
   trade,
 }: TradeCardProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -727,6 +804,40 @@ const TradeCard = memo(function TradeCard({
     (isInitiator
       ? trade.counterpartyConfirmedRevision
       : trade.initiatorConfirmedRevision) === trade.revision;
+  const availabilityByTicker = useMemo<StockAvailabilityMap>(
+    () =>
+      new Map(
+        stockAvailability.map((availability) => [
+          availability.ticker,
+          availability,
+        ]),
+      ),
+    [stockAvailability],
+  );
+  const unavailableMyStocks = getUnavailableOfferStocks(
+    myOffer,
+    availabilityByTicker,
+  );
+  const unavailableOtherStocks = getUnavailableOfferStocks(
+    otherOffer,
+    availabilityByTicker,
+  );
+  const hasUnavailableOfferStock =
+    unavailableMyStocks.length > 0 || unavailableOtherStocks.length > 0;
+  const unavailableOfferSummary = [
+    unavailableMyStocks.length > 0
+      ? `내 제안: ${unavailableMyStocks
+          .map((stock) => `${stock.ticker} ${stock.label}`)
+          .join(", ")}`
+      : null,
+    unavailableOtherStocks.length > 0
+      ? `${other.characterCodename} 제안: ${unavailableOtherStocks
+          .map((stock) => `${stock.ticker} ${stock.label}`)
+          .join(", ")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const remoteRevisionDetected =
     isEditing &&
     editorDirty &&
@@ -775,6 +886,7 @@ const TradeCard = memo(function TradeCard({
       <div className={styles.exchangeBoard} aria-label="현재 양측 제안">
         <OfferManifest
           assets={assets}
+          availabilityByTicker={availabilityByTicker}
           confirmed={myConfirmed}
           label="내 제안"
           offer={myOffer}
@@ -784,11 +896,18 @@ const TradeCard = memo(function TradeCard({
         </span>
         <OfferManifest
           assets={assets}
+          availabilityByTicker={availabilityByTicker}
           confirmed={otherConfirmed}
           label={`${other.characterCodename} 제안`}
           offer={otherOffer}
         />
       </div>
+      {hasUnavailableOfferStock ? (
+        <p className={styles.tradeAvailabilityNotice} role="alert">
+          {unavailableOfferSummary}. 해당 종목을 제안한 참여자가 구성에서 제거해야
+          저장하거나 확정할 수 있습니다.
+        </p>
+      ) : null}
       {isEditing ? (
         <div id={`trade-editor-${trade.id}`} className={styles.tradeEditor}>
           <p className={styles.tradeCard__guide}>
@@ -851,7 +970,7 @@ const TradeCard = memo(function TradeCard({
         <button
           type="button"
           className={styles.primaryButton}
-          disabled={busy || myConfirmed}
+          disabled={busy || myConfirmed || hasUnavailableOfferStock}
           onClick={() =>
             onUpdate(trade.id, {
               action: "CONFIRM",
@@ -1129,6 +1248,7 @@ export default function TradesClient() {
                 }
                 meUserId={me.userId}
                 onUpdate={updateTrade}
+                stockAvailability={data.stockAvailability}
                 trade={trade}
               />
             ))}

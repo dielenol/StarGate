@@ -1,9 +1,10 @@
 /**
  * 주식 매수 / 매도 mutation hooks.
  *
- * - `useBuyStock`: POST /api/erp/stocks/buy — 시세 + 잔액 + 보유 3-step Saga.
- * - `useSellStock`: POST /api/erp/stocks/sell — 시세 + 보유 + 잔액 3-step Saga.
+ * - `useBuyStock`: POST /api/erp/stocks/buy — 시세 claim + 잔액 + 보유 transaction.
+ * - `useSellStock`: POST /api/erp/stocks/sell — 시세 claim + 보유 + 잔액 transaction.
  * - `useUpdateStockPrice`: POST /api/erp/admin/stocks/prices — GM 시세 조정.
+ * - `useUpdateStockTradingStatus`: POST /api/erp/admin/stocks/trading-status — GM 거래정지/재개.
  * - `useRunScheduledStockTick`: POST /api/erp/admin/stocks/tick — GM 정기 변동 수동 실행.
  *
  * 에러 — 서버 응답 `{ error, code }` 를 `StocksApiError` 로 wrap (UI 분기 가능).
@@ -20,9 +21,11 @@ import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
   StocksApiError,
   type StocksErrorCode,
+  type StockPricesResponse,
   isKnownStocksErrorCode,
   stocksKeys,
 } from "@/hooks/queries/useStocksQuery";
+import { tradeKeys } from "@/hooks/queries/useTradesQuery";
 /**
  * 자동 환불/복구가 발생한 에러 코드 — onSuccess 와 동일하게 holdings/credit 캐시를 무효화해야
  * UI 의 잔액/보유/ledger 가 실제 DB 상태와 일치한다. (실패는 했지만 ledger row 가 추가됨)
@@ -81,6 +84,19 @@ export interface UpdateStockPriceInput {
   price: number;
   eventText: string;
   operationId: string;
+}
+
+export interface UpdateStockTradingStatusInput {
+  ticker: string;
+  isTradingHalted: boolean;
+  operationId: string;
+}
+
+interface UpdateStockTradingStatusResponse {
+  item: {
+    ticker: string;
+    isTradingHalted: boolean;
+  };
 }
 
 interface UpdateStockPriceResponse {
@@ -179,6 +195,9 @@ export function useBuyStock() {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
     onError: (err) => {
+      if (err.code === "STOCK_TRADING_HALTED") {
+        queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
+      }
       // 자동 환불/복구가 발생한 케이스도 ledger/holdings 가 변경됐으므로 invalidate.
       if (err.code && REFUND_AFFECTING_CODES.has(err.code)) {
         queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
@@ -211,6 +230,9 @@ export function useSellStock() {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
     onError: (err) => {
+      if (err.code === "STOCK_TRADING_HALTED") {
+        queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
+      }
       if (err.code && REFUND_AFFECTING_CODES.has(err.code)) {
         queryClient.invalidateQueries({ queryKey: stocksKeys.holdings });
         queryClient.invalidateQueries({ queryKey: creditKeys.all });
@@ -242,6 +264,50 @@ export function useUpdateStockPrice() {
     },
     onSuccess: () => {
       invalidateStockMarketQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateStockTradingStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    UpdateStockTradingStatusResponse,
+    StocksApiError,
+    UpdateStockTradingStatusInput
+  >({
+    mutationFn: async (input) => {
+      const { operationId, ...payload } = input;
+      const res = await fetch("/api/erp/admin/stocks/trading-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationId,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) await throwStocksError(res);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData<StockPricesResponse>(
+        stocksKeys.prices,
+        (current) =>
+          current
+            ? {
+                items: current.items.map((item) =>
+                  item.ticker === data.item.ticker
+                    ? {
+                        ...item,
+                        isTradingHalted: data.item.isTradingHalted,
+                      }
+                    : item,
+                ),
+              }
+            : current,
+      );
+      queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
+      queryClient.invalidateQueries({ queryKey: tradeKeys.all });
     },
   });
 }

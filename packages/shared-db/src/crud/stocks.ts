@@ -40,6 +40,65 @@ export async function getStockPrice(
   return col.findOne({ ticker }, { session: options.session });
 }
 
+export class StockPriceTradeClaimError extends Error {
+  readonly code: "PRICE_NOT_FOUND" | "STOCK_TRADING_HALTED";
+
+  constructor(code: "PRICE_NOT_FOUND" | "STOCK_TRADING_HALTED") {
+    super(code);
+    this.name = "StockPriceTradeClaimError";
+    this.code = code;
+  }
+}
+
+/**
+ * 매매 transaction 안에서 체결 가격을 claim한다.
+ *
+ * 거래 가능한 가격 문서에만 tradeRevision write를 발생시켜 거래정지 변경과 같은
+ * stock_prices 문서에서 직렬화한다. 이후 매매가 실패하면 transaction rollback과 함께
+ * revision 증가도 취소된다. session 없는 호출은 허용하지 않는다.
+ */
+export async function claimTradableStockPrice(
+  ticker: string,
+  session: ClientSession,
+): Promise<StockPrice> {
+  const col = await stockPricesCol();
+  const claimed = await col.findOneAndUpdate(
+    { ticker, isTradingHalted: { $ne: true } },
+    { $inc: { tradeRevision: 1 } },
+    { returnDocument: "after", session },
+  );
+  if (claimed) return claimed;
+
+  const existing = await col.findOne({ ticker }, { session });
+  throw new StockPriceTradeClaimError(
+    existing ? "STOCK_TRADING_HALTED" : "PRICE_NOT_FOUND",
+  );
+}
+
+export interface SetStockTradingHaltedResult {
+  price: StockPrice;
+  previousIsTradingHalted: boolean;
+}
+
+/** GM 개별 종목 거래정지 상태 변경. 미시드 종목은 null을 반환하며 생성하지 않는다. */
+export async function setStockTradingHalted(
+  ticker: string,
+  isTradingHalted: boolean,
+  session: ClientSession,
+): Promise<SetStockTradingHaltedResult | null> {
+  const col = await stockPricesCol();
+  const previous = await col.findOneAndUpdate(
+    { ticker },
+    { $set: { isTradingHalted } },
+    { returnDocument: "before", session },
+  );
+  if (!previous) return null;
+  return {
+    price: { ...previous, isTradingHalted },
+    previousIsTradingHalted: previous.isTradingHalted === true,
+  };
+}
+
 /**
  * 가격 문서가 없으면 initialPrice 로 생성, 있으면 그대로 반환 (멱등).
  *

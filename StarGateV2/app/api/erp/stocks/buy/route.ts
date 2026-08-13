@@ -1,11 +1,10 @@
 /**
  * POST /api/erp/stocks/buy — 주식 매수 (시세 조회 + 잔액 차감 + 보유 적재).
  *
- * 트랜잭션 정책 — **보상(Saga) 패턴** (mongo session 미도입, shop/buy 와 동일):
- * - 본 라우트는 3 단계 (getStockPrice → addCredit → buyHolding) 가 모두 성공해야 정상.
- * - 후속 단계 실패 시 이전 단계를 best-effort 보상 (잔액 환불 ledger).
- * - mongo session 미사용 이유는 shop/buy 와 동일 (단일 봇 + 낮은 mutation 빈도).
- * - 보상 실패는 console.error 로 로깅 (운영자 알람 → 수동 정정).
+ * 트랜잭션 정책:
+ * - 시세 claim → 잔액 차감 → 보유 적재를 하나의 Mongo transaction으로 커밋한다.
+ * - 시세 claim은 거래정지 변경과 같은 가격 문서 write로 직렬화된다.
+ * - 후속 단계 실패 시 시세 revision, 잔액, 보유, 멱등 operation이 함께 rollback된다.
  *
  * 본인 메인 캐릭에 한해 매수 가능. 1회 shares 1~50 (tia_bot 동일).
  * 즉시 체결. 가격 변동은 본 라우트와 무관 (M3-A 시점에서는 봇 중지로 가격 변동 없음).
@@ -19,7 +18,11 @@ import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
-import { buyHolding, getStockPrice } from "@/lib/db/stocks";
+import {
+  buyHolding,
+  claimTradableStockPrice,
+  StockPriceTradeClaimError,
+} from "@/lib/db/stocks";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
@@ -167,25 +170,11 @@ export async function POST(request: Request) {
   }
   const ownerName = owner.discordUsername ?? owner.displayName;
 
-  /* ── Saga: getStockPrice → addCredit → buyHolding ── */
-
-  // Step 1: 시세 조회 — 시드 미적재 종목 거부 (운영자 안내 코드).
-  const priceDoc = await getStockPrice(ticker);
-  if (!priceDoc) {
-    return NextResponse.json(
-      {
-        error:
-          "주식 시세 시드가 없습니다 (운영자에게 seed:stocks 실행을 요청하세요).",
-        code: "PRICE_NOT_FOUND",
-      },
-      { status: 500 },
-    );
-  }
-  const price = priceDoc.price;
-  const totalCost = roundStockValue(price * shares);
-
   const characterId = String(mainChar._id);
-  const committed: { balance: number | null } = { balance: null };
+  const committed: { balance: number | null; totalCost: number | null } = {
+    balance: null,
+    totalCost: null,
+  };
   let response: NextResponse;
   try {
     response = await executeEconomicOperation({
@@ -194,6 +183,9 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       payload: { ticker, shares },
       run: async (mongoSession) => {
+        const priceDoc = await claimTradableStockPrice(ticker, mongoSession);
+        const price = priceDoc.price;
+        const totalCost = roundStockValue(price * shares);
         const creditTx = await addCredit({
           characterId,
           characterCodename: mainChar.codename,
@@ -212,6 +204,7 @@ export async function POST(request: Request) {
           session: mongoSession,
         });
         committed.balance = creditTx.balance;
+        committed.totalCost = totalCost;
         const body: BuyResponse = {
           purchase: { ticker, name: catalogItem.name, shares, price, totalCost },
           balance: creditTx.balance,
@@ -221,6 +214,25 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    if (err instanceof StockPriceTradeClaimError) {
+      if (err.code === "STOCK_TRADING_HALTED") {
+        return NextResponse.json(
+          {
+            error: "현재 이 종목의 거래가 정지되어 있습니다.",
+            code: err.code,
+          },
+          { status: 423 },
+        );
+      }
+      return NextResponse.json(
+        {
+          error:
+            "주식 시세 시드가 없습니다 (운영자에게 seed:stocks 실행을 요청하세요).",
+          code: err.code,
+        },
+        { status: 500 },
+      );
+    }
     if (err instanceof Error && err.message.includes("음수 잔액")) {
       return NextResponse.json({ error: "잔액이 부족합니다.", code: "INSUFFICIENT_BALANCE" }, { status: 400 });
     }
@@ -230,14 +242,14 @@ export async function POST(request: Request) {
     );
   }
 
-  if (committed.balance !== null) {
+  if (committed.balance !== null && committed.totalCost !== null) {
     void notifyUser({
       userId: ownerId,
       type: "CREDIT_RECEIVED",
       title: "주식 매수로 크레딧이 사용되었습니다",
       message: [
         `${mainChar.codename} · ${catalogItem.name} ${shares}주`,
-        formatSignedAmount(-totalCost, "CR"),
+        formatSignedAmount(-committed.totalCost, "CR"),
         `현재 잔액 ${committed.balance.toLocaleString()} CR`,
       ].join(" · "),
       link: "/erp/stock",

@@ -59,6 +59,7 @@ export type StocksErrorCode =
   | "MAIN_CHARACTER_INTEGRITY"
   | "PRICE_NOT_FOUND"
   | "MARKET_CLOSED"
+  | "STOCK_TRADING_HALTED"
   | "INSUFFICIENT_BALANCE"
   | "INSUFFICIENT_SHARES"
   | "REFUND_FAILED"
@@ -71,6 +72,7 @@ const STOCKS_ERROR_CODES: ReadonlySet<StocksErrorCode> = new Set([
   "MAIN_CHARACTER_INTEGRITY",
   "PRICE_NOT_FOUND",
   "MARKET_CLOSED",
+  "STOCK_TRADING_HALTED",
   "INSUFFICIENT_BALANCE",
   "INSUFFICIENT_SHARES",
   "REFUND_FAILED",
@@ -111,6 +113,8 @@ export interface StockPriceItem {
   lastUpdate: string;
   /** stock_prices row exists. false means catalog fallback only and trading is disabled. */
   isSeeded: boolean;
+  /** true면 해당 종목만 매수/매도 불가. */
+  isTradingHalted: boolean;
 }
 
 export interface StockPricesResponse {
@@ -266,7 +270,9 @@ function retryOwnedStockRead(failureCount: number, error: Error): boolean {
 }
 
 async function fetchStockPrices(): Promise<StockPricesResponse> {
-  const res = await fetch("/api/erp/stocks/prices");
+  // 시세/거래정지는 TanStack Query를 클라이언트 캐시 SSOT로 사용한다. 브라우저 HTTP
+  // cache가 GM 상태 변경 직후 이전 값을 되돌리지 않도록 항상 서버에서 재검증한다.
+  const res = await fetch("/api/erp/stocks/prices", { cache: "no-store" });
   if (!res.ok) await parseStocksError(res);
   return res.json();
 }

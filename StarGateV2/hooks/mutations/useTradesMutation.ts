@@ -11,7 +11,7 @@ import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import { stocksKeys } from "@/hooks/queries/useStocksQuery";
-import { tradeKeys } from "@/hooks/queries/useTradesQuery";
+import { TradesApiError, tradeKeys } from "@/hooks/queries/useTradesQuery";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
 
 interface TradeMutationResponse {
@@ -33,11 +33,38 @@ interface UpdateTradeVariables {
 async function readTradeResponse(response: Response): Promise<TradeMutationResponse> {
   const body = (await response.json().catch(() => ({}))) as Partial<
     TradeMutationResponse
-  > & { error?: string };
+  > & { error?: string; code?: string };
   if (!response.ok || !body.trade) {
-    throw new Error(body.error ?? "거래 처리에 실패했습니다.");
+    throw new TradesApiError(
+      body.error ?? "거래 처리에 실패했습니다.",
+      response.status,
+      body.code,
+    );
   }
   return body as TradeMutationResponse;
+}
+
+function useRefreshTradeAvailability() {
+  const queryClient = useQueryClient();
+  return async (error: Error) => {
+    if (
+      !(error instanceof TradesApiError) ||
+      (error.code !== "STOCK_TRADING_HALTED" &&
+        error.code !== "STOCK_PRICE_NOT_FOUND")
+    ) {
+      return;
+    }
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: tradeKeys.all,
+        refetchType: "active",
+      }),
+      queryClient.invalidateQueries({
+        queryKey: stocksKeys.prices,
+        refetchType: "active",
+      }),
+    ]);
+  };
 }
 
 function useInvalidateTradeAssets() {
@@ -60,6 +87,7 @@ function useInvalidateTradeAssets() {
 
 export function useCreateTradeMutation() {
   const invalidate = useInvalidateTradeAssets();
+  const refreshAvailability = useRefreshTradeAvailability();
   return useMutation({
     mutationFn: async (variables: CreateTradeVariables) => {
       const response = await fetch("/api/erp/trades", {
@@ -76,11 +104,13 @@ export function useCreateTradeMutation() {
       return readTradeResponse(response);
     },
     onSuccess: invalidate,
+    onError: refreshAvailability,
   });
 }
 
 export function useUpdateTradeMutation() {
   const invalidate = useInvalidateTradeAssets();
+  const refreshAvailability = useRefreshTradeAvailability();
   return useMutation({
     mutationFn: async (variables: UpdateTradeVariables) => {
       const response = await fetch(
@@ -100,5 +130,6 @@ export function useUpdateTradeMutation() {
       return readTradeResponse(response);
     },
     onSuccess: invalidate,
+    onError: refreshAvailability,
   });
 }

@@ -7,6 +7,7 @@ import {
   type RunScheduledStockTickResponse,
   useRunScheduledStockTick,
   useUpdateStockPrice,
+  useUpdateStockTradingStatus,
 } from "@/hooks/mutations/useStocksMutation";
 import {
   type StockAdminHoldingsResponse,
@@ -88,9 +89,12 @@ export default function StockAdminClient({
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useUpdateStockPrice();
+  const tradingStatusMutation = useUpdateStockTradingStatus();
   const tickMutation = useRunScheduledStockTick();
   const forceTickOperationIdRef = useRef<string | null>(null);
   const priceOperationRef =
+    useRef<RetainedIdempotencyOperation | null>(null);
+  const tradingStatusOperationRef =
     useRef<RetainedIdempotencyOperation | null>(null);
 
   const pricePreview = useMemo(() => {
@@ -244,6 +248,39 @@ export default function StockAdminClient({
     );
   }
 
+  function handleTradingStatusChange(isTradingHalted: boolean) {
+    if (!selected) return;
+    const operation = retainIdempotencyOperation(
+      tradingStatusOperationRef.current,
+      "stock-trading-status",
+      JSON.stringify([selected.ticker, isTradingHalted]),
+    );
+    tradingStatusOperationRef.current = operation;
+    tradingStatusMutation.mutate(
+      {
+        ticker: selected.ticker,
+        isTradingHalted,
+        operationId: operation.key,
+      },
+      {
+        onSuccess: () => {
+          tradingStatusOperationRef.current = clearRetainedIdempotencyOperation(
+            tradingStatusOperationRef.current,
+            operation.key,
+          );
+          setError(null);
+          setMessage(
+            isTradingHalted
+              ? `${selected.ticker} 거래를 정지했습니다.`
+              : `${selected.ticker} 거래를 재개했습니다.`,
+          );
+        },
+        onError: (err) =>
+          handleMutationError(err, "거래 상태 변경에 실패했습니다."),
+      },
+    );
+  }
+
   return (
     <>
       <PageHead
@@ -280,7 +317,12 @@ export default function StockAdminClient({
                     <StockLogo ticker={item.ticker} size="sm" />
                     <span>
                       <strong>{item.ticker}</strong>
-                      <span>{item.name}</span>
+                      <span>
+                        {item.name}
+                        {item.isTradingHalted ? (
+                          <em className={styles.haltedBadge}>거래정지</em>
+                        ) : null}
+                      </span>
                     </span>
                   </span>
                   <span className={styles.priceRow__quote}>
@@ -341,6 +383,48 @@ export default function StockAdminClient({
                   {selected.name} ({selected.ticker})
                 </div>
               </label>
+              <div className={styles.tradingStatus}>
+                <div>
+                  <span>개별 종목 거래 상태</span>
+                  <strong
+                    className={
+                      selected.isTradingHalted
+                        ? styles.tradingStatus__halted
+                        : styles.tradingStatus__open
+                    }
+                  >
+                    {!selected.isSeeded
+                      ? "시세 미등록"
+                      : selected.isTradingHalted
+                        ? "거래정지"
+                        : "거래 가능"}
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  className={
+                    selected.isTradingHalted
+                      ? styles.resumeBtn
+                      : styles.haltBtn
+                  }
+                  onClick={() =>
+                    handleTradingStatusChange(!selected.isTradingHalted)
+                  }
+                  disabled={
+                    tradingStatusMutation.isPending ||
+                    mutation.isPending ||
+                    !selected.isSeeded
+                  }
+                >
+                  {!selected.isSeeded
+                    ? "시세 등록 필요"
+                    : tradingStatusMutation.isPending
+                    ? "변경 중..."
+                    : selected.isTradingHalted
+                      ? "거래 재개"
+                      : "거래 정지"}
+                </button>
+              </div>
               <label className={styles.field}>
                 <span>변경 가격</span>
                 <input
@@ -421,7 +505,11 @@ export default function StockAdminClient({
               <button
                 type="submit"
                 className={styles.submit}
-                disabled={mutation.isPending || !selectedTicker}
+                disabled={
+                  mutation.isPending ||
+                  tradingStatusMutation.isPending ||
+                  !selectedTicker
+                }
               >
                 {mutation.isPending ? "변경 중..." : "주가 변경"}
               </button>

@@ -1,10 +1,10 @@
 /**
  * POST /api/erp/stocks/sell — 주식 매도 (보유 차감 + 잔액 적립).
  *
- * 트랜잭션 정책 — **보상(Saga) 패턴** (mongo session 미도입, stocks/buy 와 거울):
- * - 본 라우트는 3 단계 (getStockPrice → sellHolding → addCredit) 가 모두 성공해야 정상.
- * - sellHolding 이 atomic 부족 거절(ok=false) 일 땐 상태 미변 → 보상 불필요.
- * - addCredit 실패 시 buyHolding 으로 holding 복구 (보상). 복구 실패는 console.error.
+ * 트랜잭션 정책:
+ * - 시세 claim → 보유 차감 → 잔액 적립을 하나의 Mongo transaction으로 커밋한다.
+ * - 시세 claim은 거래정지 변경과 같은 가격 문서 write로 직렬화된다.
+ * - 후속 단계 실패 시 시세 revision, 보유, 잔액, 멱등 operation이 함께 rollback된다.
  *
  * 본인 메인 캐릭에 한해 매도 가능. 1회 shares 1~50 (매수와 동일한 한도).
  * 즉시 체결. 가격 변동은 본 라우트와 무관 (M3-A 시점에서는 봇 중지).
@@ -18,7 +18,11 @@ import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
-import { getStockPrice, sellHolding } from "@/lib/db/stocks";
+import {
+  claimTradableStockPrice,
+  sellHolding,
+  StockPriceTradeClaimError,
+} from "@/lib/db/stocks";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
@@ -163,25 +167,14 @@ export async function POST(request: Request) {
   }
   const ownerName = owner.discordUsername ?? owner.displayName;
 
-  /* ── Saga: getStockPrice → sellHolding → addCredit ── */
-
-  // Step 1: 시세 조회 — 시드 미적재 거부.
-  const priceDoc = await getStockPrice(ticker);
-  if (!priceDoc) {
-    return NextResponse.json(
-      {
-        error:
-          "주식 시세 시드가 없습니다 (운영자에게 seed:stocks 실행을 요청하세요).",
-        code: "PRICE_NOT_FOUND",
-      },
-      { status: 500 },
-    );
-  }
-  const price = priceDoc.price;
-  const totalProceeds = roundStockValue(price * shares);
-
   const characterId = String(mainChar._id);
-  const committed: { notification: { balance: number; profit: number } | null } = {
+  const committed: {
+    notification: {
+      balance: number;
+      profit: number;
+      totalProceeds: number;
+    } | null;
+  } = {
     notification: null,
   };
   let response: NextResponse;
@@ -192,6 +185,9 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       payload: { ticker, shares },
       run: async (mongoSession) => {
+        const priceDoc = await claimTradableStockPrice(ticker, mongoSession);
+        const price = priceDoc.price;
+        const totalProceeds = roundStockValue(price * shares);
         const sellResult = await sellHolding(characterId, ticker, shares, {
           session: mongoSession,
         });
@@ -212,7 +208,11 @@ export async function POST(request: Request) {
           allowNegative: true,
           session: mongoSession,
         });
-        committed.notification = { balance: creditTx.balance, profit };
+        committed.notification = {
+          balance: creditTx.balance,
+          profit,
+          totalProceeds,
+        };
         const body: SellResponse = {
           sale: { ticker, name: catalogItem.name, shares, price, totalProceeds, profit },
           balance: creditTx.balance,
@@ -222,6 +222,25 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    if (err instanceof StockPriceTradeClaimError) {
+      if (err.code === "STOCK_TRADING_HALTED") {
+        return NextResponse.json(
+          {
+            error: "현재 이 종목의 거래가 정지되어 있습니다.",
+            code: err.code,
+          },
+          { status: 423 },
+        );
+      }
+      return NextResponse.json(
+        {
+          error:
+            "주식 시세 시드가 없습니다 (운영자에게 seed:stocks 실행을 요청하세요).",
+          code: err.code,
+        },
+        { status: 500 },
+      );
+    }
     const message = err instanceof Error ? err.message : "매도 실패";
     if (message === "INSUFFICIENT_SHARES") {
       return NextResponse.json({ error: "보유 주식이 부족합니다.", code: message }, { status: 400 });
@@ -230,7 +249,7 @@ export async function POST(request: Request) {
   }
 
   if (committed.notification) {
-    const { balance } = committed.notification;
+    const { balance, totalProceeds } = committed.notification;
     void notifyUser({
       userId: ownerId,
       type: "CREDIT_RECEIVED",

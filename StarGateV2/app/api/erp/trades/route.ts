@@ -5,6 +5,7 @@ import type { ClientSession } from "mongodb";
 import type {
   PlayerTradeOffer,
   PlayerTradeParticipant,
+  PlayerTradeStockAvailability,
   TradesResponse,
 } from "@/types/trade";
 
@@ -21,7 +22,7 @@ import {
   listCharacterInventoryEntries,
   prepareCharacterInventoryItemLocks,
 } from "@/lib/db/inventory";
-import { getHoldings } from "@/lib/db/stocks";
+import { getHoldings, getStockPrices } from "@/lib/db/stocks";
 import {
   assertPlayerTradeCounterpartyAccess,
   createAndSettleGift,
@@ -96,10 +97,14 @@ function tradeErrorResult(error: unknown): {
       ? 404
       : error.code === "TRADE_FORBIDDEN"
         ? 403
-        : error.code === "TRADE_REVISION_CONFLICT" ||
-            error.code === "TRADE_NOT_OPEN"
-          ? 409
-          : 400;
+        : error.code === "STOCK_TRADING_HALTED"
+          ? 423
+          : error.code === "STOCK_PRICE_NOT_FOUND"
+            ? 409
+            : error.code === "TRADE_REVISION_CONFLICT" ||
+                error.code === "TRADE_NOT_OPEN"
+              ? 409
+              : 400;
   return { status, body: { error: error.message, code: error.code } };
 }
 
@@ -128,6 +133,7 @@ export async function GET(request: Request) {
       counterparties: [],
       trades: [],
       assets: { credits: 0, items: [], stocks: [] },
+      stockAvailability: [],
     };
     return jsonWithETag(request, response);
   }
@@ -144,14 +150,16 @@ export async function GET(request: Request) {
         counterparties,
         trades: trades.map(serializePlayerTrade),
         assets: { credits: 0, items: [], stocks: [] },
+        stockAvailability: [],
       };
       return jsonWithETag(request, response);
     }
 
-    const [balance, inventoryResult, holdings] = await Promise.all([
+    const [balance, inventoryResult, holdings, prices] = await Promise.all([
       getCharacterBalance(me.characterId),
       listCharacterInventoryEntries(me.characterId),
       getHoldings(me.characterId),
+      getStockPrices(),
     ]);
     const items = inventoryResult.entries
       .filter(
@@ -173,16 +181,44 @@ export async function GET(request: Request) {
         description: entry.description,
         previewImage: entry.previewImage,
       }));
-    const stocks = holdings.map((holding) => ({
-      ticker: holding.ticker,
-      name: findStockByTicker(holding.ticker)?.name ?? holding.ticker,
-      shares: holding.shares,
-    }));
+    const priceByTicker = new Map(prices.map((price) => [price.ticker, price]));
+    const stocks = holdings.map((holding) => {
+      const price = priceByTicker.get(holding.ticker);
+      return {
+        ticker: holding.ticker,
+        name: findStockByTicker(holding.ticker)?.name ?? holding.ticker,
+        shares: holding.shares,
+        isSeeded: Boolean(price),
+        isTradingHalted: price?.isTradingHalted === true,
+      };
+    });
+    const serializedTrades = trades.map(serializePlayerTrade);
+    const openOfferTickers = Array.from(
+      new Set(
+        serializedTrades
+          .filter((trade) => trade.status === "OPEN")
+          .flatMap((trade) => [
+            ...trade.initiatorOffer.stocks,
+            ...trade.counterpartyOffer.stocks,
+          ])
+          .map((stock) => stock.ticker),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+    const stockAvailability: PlayerTradeStockAvailability[] =
+      openOfferTickers.map((ticker) => {
+        const price = priceByTicker.get(ticker);
+        return {
+          ticker,
+          isSeeded: Boolean(price),
+          isTradingHalted: price?.isTradingHalted === true,
+        };
+      });
     const response: TradesResponse = {
       me,
       counterparties,
-      trades: trades.map(serializePlayerTrade),
+      trades: serializedTrades,
       assets: { credits: balance, items, stocks },
+      stockAvailability,
     };
     return jsonWithETag(request, response);
   } catch (error) {

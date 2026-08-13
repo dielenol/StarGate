@@ -30,6 +30,8 @@ interface PriceItem {
   lastUpdate: string;
   /** stock_prices row 존재 여부. false 면 catalog basePrice fallback. */
   isSeeded: boolean;
+  /** 개별 종목 거래정지. 기존/미시드 문서는 false. */
+  isTradingHalted: boolean;
 }
 
 interface PricesResponse {
@@ -65,6 +67,7 @@ export async function GET() {
         changePercent,
         lastUpdate,
         isSeeded: Boolean(row),
+        isTradingHalted: row?.isTradingHalted === true,
       };
     });
 

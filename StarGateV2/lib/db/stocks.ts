@@ -15,6 +15,9 @@ export {
   // stock_prices
   getStockPrices,
   getStockPrice,
+  claimTradableStockPrice,
+  setStockTradingHalted,
+  StockPriceTradeClaimError,
   ensureStockPrice,
   ensureStockPrices,
   updateStockPrice,

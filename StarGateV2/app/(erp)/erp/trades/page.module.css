@@ -483,6 +483,11 @@
   background: color-mix(in srgb, var(--gold) 10%, var(--bg-2));
 }
 
+.stockCardHalted {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--line));
+  background: color-mix(in srgb, var(--danger) 7%, var(--bg-2));
+}
+
 .stockCard:hover {
   transform: translateY(-1px);
 }
@@ -501,6 +506,20 @@
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.stockCard__halted {
+  display: inline-flex;
+  margin-left: 7px;
+  border: 1px solid color-mix(in srgb, var(--danger) 62%, transparent);
+  border-radius: 999px;
+  padding: 1px 6px;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.35;
+  vertical-align: middle;
 }
 
 .stockCard__body > span {
@@ -825,6 +844,11 @@
   background: var(--bg-1);
 }
 
+.tradeOfferTokenUnavailable {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--line));
+  background: color-mix(in srgb, var(--danger) 7%, var(--bg-1));
+}
+
 .tradeOfferToken__art,
 .tradeOfferToken__mark {
   display: grid;
@@ -854,6 +878,16 @@
   white-space: nowrap;
 }
 
+.tradeOfferToken__availability {
+  display: block;
+  margin-top: 2px;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .tradeOfferToken > strong {
   color: var(--ink-0);
   font-family: var(--font-mono);
@@ -862,6 +896,14 @@
 }
 
 .tradeCard__guide { margin: 0 0 4px; }
+.tradeAvailabilityNotice {
+  margin: 12px 0 0;
+  border-left: 3px solid var(--danger);
+  padding-left: 9px;
+  color: var(--danger);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .tradeEditor { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 14px; }
 .tradeCard .offerEditor { margin-top: 12px; }
 .remoteRevisionNotice {

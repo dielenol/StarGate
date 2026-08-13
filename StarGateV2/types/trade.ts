@@ -47,7 +47,15 @@ export interface PlayerTradeAssets {
     ticker: string;
     name: string;
     shares: number;
+    isSeeded: boolean;
+    isTradingHalted: boolean;
   }>;
+}
+
+export interface PlayerTradeStockAvailability {
+  ticker: string;
+  isSeeded: boolean;
+  isTradingHalted: boolean;
 }
 
 export interface TradesResponse {
@@ -55,6 +63,8 @@ export interface TradesResponse {
   counterparties: PlayerTradeParticipant[];
   trades: PlayerTradeDto[];
   assets: PlayerTradeAssets;
+  /** OPEN 거래 양측 제안에 포함된 종목 상태. ETag 수렴에도 포함된다. */
+  stockAvailability: PlayerTradeStockAvailability[];
 }
 
 export type TradeAction =

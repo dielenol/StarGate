@@ -735,6 +735,11 @@ export default function StockListClient({
                           <span className={styles.stockRow__name}>
                             {item.name}
                           </span>
+                          {item.isTradingHalted ? (
+                            <span className={styles.stockRow__halted}>
+                              거래정지
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       <div className={styles.stockRow__sparkline}>

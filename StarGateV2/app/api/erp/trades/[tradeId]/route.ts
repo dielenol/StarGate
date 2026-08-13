@@ -68,10 +68,14 @@ function tradeErrorResult(error: unknown): {
       ? 404
       : error.code === "TRADE_FORBIDDEN"
         ? 403
-        : error.code === "TRADE_REVISION_CONFLICT" ||
-            error.code === "TRADE_NOT_OPEN"
-          ? 409
-          : 400;
+        : error.code === "STOCK_TRADING_HALTED"
+          ? 423
+          : error.code === "STOCK_PRICE_NOT_FOUND"
+            ? 409
+            : error.code === "TRADE_REVISION_CONFLICT" ||
+                error.code === "TRADE_NOT_OPEN"
+              ? 409
+              : 400;
   return { status, body: { error: error.message, code: error.code } };
 }
 

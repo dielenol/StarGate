@@ -234,11 +234,13 @@ export default function StockTradeClient({
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const isMarketOpen = marketEnabled;
   const isPriceSeeded = currentPrice?.isSeeded ?? false;
+  const isTradingHalted = currentPrice?.isTradingHalted ?? false;
   // account read가 실패하거나 캐릭터 identity가 바뀐 상태에서는 매수·매도 모두 잠근다.
   const canTrade =
     hasMainCharacter &&
     isMarketOpen &&
     isPriceSeeded &&
+    !isTradingHalted &&
     balance !== null &&
     !ledgerQuery.isError;
   const sellDisabled = !canTrade || !holding || holding.shares === 0;
@@ -612,6 +614,13 @@ export default function StockTradeClient({
         <Box className={styles.notice}>
           현재 주식 거래가 일시 중지되어 있습니다. 시세와 보유 내역은 계속
           조회할 수 있습니다.
+        </Box>
+      ) : null}
+
+      {hasMainCharacter && isPriceSeeded && isTradingHalted ? (
+        <Box className={styles.notice}>
+          이 종목은 운영자에 의해 거래정지되었습니다. 시세와 보유 내역은 계속
+          조회할 수 있으며, 거래재개 후 매수·매도가 가능합니다.
         </Box>
       ) : null}
 
@@ -1117,7 +1126,7 @@ export default function StockTradeClient({
                     type="button"
                     className={sharedStyles.tradeCard__qtyBtn}
                     onClick={() => adjustQty(-1)}
-                    disabled={tradeShares <= 0 || isTradePending}
+                    disabled={!canTrade || tradeShares <= 0 || isTradePending}
                     aria-label="수량 1 감소"
                   >
                     −
@@ -1134,14 +1143,14 @@ export default function StockTradeClient({
                       setQtyInput(raw);
                     }}
                     placeholder="0"
-                    disabled={isTradePending}
+                    disabled={!canTrade || isTradePending}
                     aria-label="주문 수량"
                   />
                   <button
                     type="button"
                     className={sharedStyles.tradeCard__qtyBtn}
                     onClick={() => adjustQty(1)}
-                    disabled={isTradePending}
+                    disabled={!canTrade || isTradePending}
                     aria-label="수량 1 증가"
                   >
                     +
@@ -1159,6 +1168,7 @@ export default function StockTradeClient({
                     onClick={() => applyQuickRatio(q.ratio)}
                     disabled={
                       isTradePending ||
+                      !canTrade ||
                       (effectiveTab === "buy" && displayPrice <= 0) ||
                       (effectiveTab === "sell" && heldShares === 0)
                     }

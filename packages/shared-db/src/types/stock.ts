@@ -14,6 +14,10 @@ export interface StockPrice {
   prevPrice: number;
   eventText: string;
   lastUpdate: string;
+  /** 개별 종목 거래정지. 기존 문서의 필드 누락은 false로 해석한다. */
+  isTradingHalted?: boolean;
+  /** 매매 claim과 거래정지 변경을 같은 문서 write로 직렬화하는 revision. */
+  tradeRevision?: number;
 }
 
 export type CreateStockPriceInput = Omit<StockPrice, "_id">;
