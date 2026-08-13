@@ -20,8 +20,6 @@ const MAX_PER_CELL = 3;
 const CARD_WIDTH = 640;
 const VIEWPORT_PADDING = 24;
 const DEVICE_SCALE_FACTOR = 1;
-/** 셀 제목 길이 한도 (초과 시 …) */
-const MAX_TITLE_LEN = 12;
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
 /* ── Puppeteer 직렬 큐 ──
@@ -102,12 +100,6 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function truncateTitle(s: string): string {
-  const t = s.trim();
-  if (t.length <= MAX_TITLE_LEN) return t;
-  return `${t.slice(0, MAX_TITLE_LEN - 1)}…`;
-}
-
 function sessionsByDay(
   sessions: TrpgSession[],
 ): Map<number, TrpgSession[]> {
@@ -152,7 +144,7 @@ function buildCalendarCells(
     const entries = shown
       .map(
         (s) =>
-          `<div class="entry"><span class="t">${escapeHtml(s.startTime)}</span><span class="ti">${escapeHtml(truncateTitle(s.title))}</span></div>`,
+          `<div class="entry"><span class="t">${escapeHtml(s.startTime)}</span><span class="ti">${escapeHtml(s.title.trim())}</span></div>`,
       )
       .join("");
     const more =
@@ -179,7 +171,7 @@ function buildCalendarCells(
   return cells.join("");
 }
 
-function buildHtml(params: {
+export function buildTrpgCalendarHtml(params: {
   year: number;
   month: number;
   sessions: TrpgSession[];
@@ -303,9 +295,8 @@ function buildHtml(params: {
   .entry .ti {
     min-width: 0;
     color: #e5e7ee;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .more {
     color: #9aa0aa;
@@ -346,7 +337,7 @@ export async function renderTrpgCalendarPng(
 ): Promise<Buffer | null> {
   if (!isResultCardImageEnabled()) return null;
 
-  const html = buildHtml(params);
+  const html = buildTrpgCalendarHtml(params);
 
   return enqueue(async () => {
     let page = null;
