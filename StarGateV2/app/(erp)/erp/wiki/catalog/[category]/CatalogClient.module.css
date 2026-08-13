@@ -169,6 +169,19 @@
   min-width: 0;
 }
 
+/*
+ * 전체 카탈로그는 카드 수가 많아 화면 밖 항목의 첫 style/layout/paint 비용이 크다.
+ * 항목은 DOM에 그대로 남겨 검색, 브라우저 찾기와 보조기술의 문서 순서를 보존한다.
+ * contain-intrinsic-block-size 는 아직 렌더하지 않은 카드가 grid에서 차지할 높이를
+ * 미리 제공해 스크롤 중 레이아웃 점프를 줄인다.
+ */
+@supports (content-visibility: auto) {
+  .catalog__item {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 330px;
+  }
+}
+
 /* Card */
 
 .card {

@@ -248,13 +248,16 @@ export default function CatalogClient({ category, initialItems }: Props) {
       {filtered.length === 0 ? (
         <p className={styles.catalog__empty}>조건에 맞는 품목이 없습니다.</p>
       ) : (
-        <ul className={styles.catalog__grid}>
+        <ul
+          className={styles.catalog__grid}
+          data-render-strategy="defer-offscreen"
+        >
           {filtered.map((item) => {
             const imageSrc = itemImageSrc(item);
             const CategoryIcon = ITEM_CATEGORY_ICONS[item.category];
             const itemTone = categoryTone(item.category);
             return (
-              <li key={itemId(item)}>
+              <li key={itemId(item)} className={styles.catalog__item}>
                 <Link
                   href={itemDetailHref(item)}
                   className={styles.card}

@@ -577,7 +577,7 @@ export default function CharactersClient({
               : "등록된 캐릭터가 없습니다."}
         </div>
       ) : (
-        <div className={styles.grid}>
+        <div className={styles.grid} data-render-strategy="defer-offscreen">
           {displayedAgents.map((c) => {
             const id = String(c._id);
             const subLine = getCharacterRoleLine(c);

@@ -153,6 +153,17 @@
   /* sealed avatar + redacted name only */
 }
 
+/*
+ * 조직 drill-down의 카드는 순서와 DOM을 유지한다. 화면 밖 카드만 첫 layout/paint를
+ * 건너뛰고, intrinsic 높이로 목록 길이를 안정적으로 계산한다.
+ */
+@supports (content-visibility: auto) {
+  .card {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 190px;
+  }
+}
+
 .deceasedStamp {
   position: absolute;
   z-index: 3;

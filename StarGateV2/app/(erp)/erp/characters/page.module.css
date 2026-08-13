@@ -218,6 +218,17 @@
   outline-offset: 3px;
 }
 
+/*
+ * 목록 전체를 DOM에 유지해 검색/브라우저 찾기/링크 탐색 순서는 바꾸지 않는다.
+ * 화면 밖 카드의 첫 렌더만 지연하고, 고정 intrinsic 높이로 스크롤 중 jump를 방지한다.
+ */
+@supports (content-visibility: auto) {
+  .cardLink {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 340px;
+  }
+}
+
 /* ---------- card (form__box 자매 — 더블 보더) ---------- */
 .card {
   --card-pattern: repeating-linear-gradient(

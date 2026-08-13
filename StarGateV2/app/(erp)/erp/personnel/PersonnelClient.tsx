@@ -795,7 +795,7 @@ export default function PersonnelClient({
   };
 
   const renderCards = (members: CharacterListItemDto[]) => (
-    <div className={styles.cardGrid}>
+    <div className={styles.cardGrid} data-render-strategy="defer-offscreen">
       {members.map((c) => {
         const usesAgentLevels = characterUsesAgentLevels(c);
         const isDeceased = isDeceasedPersonnel(c);
