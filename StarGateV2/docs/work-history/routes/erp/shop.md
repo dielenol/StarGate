@@ -174,3 +174,11 @@
 - 검증: 집중 테스트 32/32, shared-db 거래 테스트 4/4, worker 테스트 95/95, seed 계약 11/11, 자산 테스트 11/11, 대상 ESLint, `pnpm typecheck`, 프로덕션 `pnpm build`, `git diff --check`, 독립 critical risk review
 - 관련 커밋: `0b8dac36`
 - 운영 경계: 라이브 DB의 시드·인덱스·페이백 수령과 복권 사용은 실행하지 않았다. 배포 후 GM 운영 기반 준비와 모호 기간 구매자 조정이 필요하며, 격리 replica-set MongoDB 동시성 테스트와 인증 브라우저 QA는 미실행이다.
+
+## 2026-08-13 · 성능 최적화 · 복권 서버 경계 분리
+
+- `node:crypto` 기반 복권 추첨을 `server-only` 모듈로 분리해 편의점 클라이언트 엔트리에서 서버 전용 의존성을 제거했다.
+- 프로덕션 빌드의 route 엔트리 gzip 합은 `227,598B → 96,003B`로 줄었고, 복권 확률·보상·transaction 전 단일 추첨 의미는 유지했다.
+- 검증: 복권 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 빌드 manifest의 `node:crypto`·`randomInt` 0건, 인증 로컬 브라우저 콘솔 오류 0건
+- 관련 커밋: `ae4c7cc4`
+- 운영 경계: 구매·복권·재고 등 라이브 mutation은 실행하지 않았다.

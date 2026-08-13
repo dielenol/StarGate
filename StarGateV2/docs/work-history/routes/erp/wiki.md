@@ -45,3 +45,10 @@
 - Lore Explorer에서 `개럿 클라이맥` 검색이 신규 Dossier와 `MINI06` 보고서·mirror의 정규 링크를 함께 반환하며 degraded 안내가 없는 것을 확인했다.
 - 검증: wiki DB exact 재조회, report/mirror path·alt·caption parity, mirror hero와 본문 이미지 broken 0, 인증된 상세·검색 결과·가로 넘침·콘솔 오류 0, 미인증 wiki `307`·검색 API `401`
 - 관련 적용 소스 커밋: `44e73cd3`, `1ffb0ba9`
+
+## 2026-08-13 · 성능 최적화 · RSC 초기 조회 재사용
+
+- RSC가 제공한 목록·통합 검색 결과를 30초 bootstrap 동안 재사용해 마운트 직후 같은 API와 DB 조회를 반복하지 않게 했다.
+- 서버 조회 실패로 만든 빈 seed만 즉시 stale 처리해 클라이언트 복구 재시도는 유지하고, realtime·mutation invalidation은 계속 즉시 갱신한다.
+- 검증: Query 런타임·wiki·realtime 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 로컬 브라우저에서 `/api/erp/wiki` 마운트 재호출·콘솔 오류 0건
+- 관련 커밋: `c488f832`

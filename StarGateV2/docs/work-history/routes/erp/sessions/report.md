@@ -152,3 +152,10 @@
 - 보고서와 `mini06-neved` mirror는 같은 장면 12개를 사용하며, 현장 전원의 200,000 크레딧 즉시 지급은 정사 문장으로만 보존하고 경제 원장은 변경하지 않았다.
 - 검증: staging run `seed-payload:b538040a-301c-4d9f-a288-84f49b37f55a` 2/2, publication run `seed-payload:e558d44d-70d0-4420-8279-afeeec1f55fb` 15/15, DB exact 재조회, 인증된 목록·상세·역참조, 이미지 parity·broken 0·가로 넘침·콘솔 오류 0, 미인증 상세 `307`
 - 관련 적용 소스 커밋: `44e73cd3`, `1ffb0ba9`
+
+## 2026-08-13 · 성능 최적화 · RSC 초기 조회 재사용
+
+- 서버가 제공한 보고서 목록을 30초 bootstrap 동안 재사용해 마운트 직후 `/api/erp/session-reports`를 다시 호출하지 않게 했다.
+- 서버 조회 실패로 만든 빈 목록은 즉시 stale 처리해 자동 복구를 유지하고, realtime·mutation invalidation은 계속 즉시 갱신한다.
+- 검증: Query 런타임·realtime 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 로컬 브라우저에서 마운트 재호출·콘솔 오류 0건
+- 관련 커밋: `c488f832`

@@ -70,3 +70,11 @@
 - 사죄 복권 모달에 전용 아트와 `2등 이상 당첨 확률 10배` 안내를 표시하고, 선택한 복권 종류를 서버 추첨과 인벤토리 캐시 갱신까지 유지한다.
 - 검증: 복권·인벤토리 집중 테스트 32/32, 대상 ESLint, `pnpm typecheck`, 프로덕션 `pnpm build`, `git diff --check`, 독립 critical risk review. 라이브 복권 소모와 인증 브라우저 QA는 미실행.
 - 관련 커밋: `0b8dac36`
+
+## 2026-08-13 · 성능 최적화 · 복권 서버 경계 분리
+
+- 복권 slug·표시 정보를 쓰는 인벤토리 클라이언트가 `node:crypto` 추첨 구현까지 따라오지 않도록 서버 추첨 모듈을 분리했다.
+- 프로덕션 빌드의 route 엔트리 gzip 합은 `214,446B → 82,591B`로 줄었고, 복권 사용·보상 로직은 변경하지 않았다.
+- 검증: 복권 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 빌드 manifest의 `node:crypto`·`randomInt` 0건
+- 관련 커밋: `ae4c7cc4`
+- 운영 경계: 라이브 복권 사용·인벤토리 mutation은 실행하지 않았다.
