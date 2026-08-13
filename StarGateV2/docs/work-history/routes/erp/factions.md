@@ -54,3 +54,11 @@
 - 검증: 외부 조직 테스트 1건, 아이콘 감사 113종·37 route, master JS syntax, `pnpm typecheck`, 대상 ESLint, critical risk review
 - 관련 커밋: `cabc04ba`
 - 운영 경계: 게라쉬모프 Dossier repair와 브라우저 확인은 별도 live 승인·적용 뒤 진행한다.
+
+## 2026-08-13 · 조직도 보강 · 갈로글라·욤스비킹 분기
+
+- 군부 산하 외부 조직에 `GALLOGLA / 갈로글라`와 `JOMSVIKING / 욤스비킹`을 추가하고 신원조회와 같은 정적 조직 정의를 공유했다.
+- 두 조직은 기존 군부 아이콘을 사용하며 독립 faction·institution·우호도 DB 레코드는 만들지 않는다. 현재 미등록 우호도와 전용 접선 경로를 표시한다.
+- 검증: 외부 조직 테스트 2건, 아이콘 감사 113종·37 route, `pnpm typecheck`, 대상 ESLint, 인증된 1280px 세력 카드·접선 패널·가로 넘침·콘솔 오류 확인, critical risk review
+- 관련 구현 커밋: `1ffb0ba9`
+- 운영 경계: 신규 인물 Dossier와 보고서 payload는 live에 적용하지 않았다.

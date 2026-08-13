@@ -142,3 +142,11 @@
 - 비공개 `IRMA_KOCH`·`DOCTOR_ZENO`와 기존 `WHITE_ROSE_R`은 이번 publication에서 수정하지 않았다.
 - 검증: 16개 Dossier DB exact 재조회, appearance 16·관계 객체 8·personality 7 중복 0, 인증된 상세 3개 탭과 정규 링크 확인
 - 관련 적용 소스 커밋: `1acea89c`
+
+## 2026-08-13 · 로어 동기화 준비 · 갈로글라·욤스비킹 인물
+
+- 신원조회 조직도에 `GALLOGLA / 갈로글라`와 `JOMSVIKING / 욤스비킹`을 `MILITARY` 산하 외부 군사조직으로 추가했다. 두 조직은 MANUS 섹터나 별도 faction·institution DB 레코드가 아니다.
+- 네베드 미니세션에서 확인된 개럿·사이먼·코너 등 외부 무등급 공개 Dossier 11건의 create-only payload를 준비했다. `SIMON_OCALLAHAN`·`NOSTER`만 사망 증거 3필드를 저장하고 나머지 9명은 생사를 추정하지 않으며, 모두 공용 미상 인물 초상을 사용한다.
+- 검증: spec↔payload adapter parity 11/11, live read-only dry-run 11건 `예상 insert`, NPC·public prose·visual·coverage 검사, 외부 조직 테스트 2건, `pnpm typecheck`, 대상 ESLint, 인증된 1280px 조직도·가로 넘침·콘솔 오류 확인, critical risk review
+- 관련 구현 커밋: `1ffb0ba9`
+- 운영 경계: 신규 Dossier와 보고서 staging/publication은 live에 적용하지 않았다. exact 운영 승인 뒤 신규 11건 생성·재조회 → staging → publication 순서로 실행한다.
