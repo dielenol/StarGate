@@ -4,7 +4,7 @@ import type { CreateSharedInventoryInput } from "@/types/inventory";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth/config";
-import { requireRole } from "@/lib/auth/rbac";
+import { hasRole, requireRole } from "@/lib/auth/rbac";
 import {
   EconomicOperationConflictError,
   executeEconomicOperationResult,
@@ -16,6 +16,7 @@ import {
   SHARED_INVENTORY_SCOPE,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { redactInternalInventoryNote } from "@/lib/inventory/note-visibility";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 
 const MAX_GRANT_QUANTITY = 999;
@@ -32,7 +33,12 @@ export async function GET() {
 
   try {
     const inventory = await listSharedInventory();
-    return NextResponse.json({ inventory });
+    const revealInternalNotes = hasRole(session.user.role, "V");
+    return NextResponse.json({
+      inventory: inventory.map((entry) =>
+        redactInternalInventoryNote(entry, revealInternalNotes),
+      ),
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "공용 인벤토리 조회 실패";

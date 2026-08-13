@@ -133,6 +133,7 @@ export default async function AdminCharacterInventoryPage({
         characterId={characterId}
         initialResponse={inventoryResponse}
         canRemove={role === "GM"}
+        revealInternalNotes
       />
     </>
   );

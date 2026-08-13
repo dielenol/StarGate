@@ -9,7 +9,7 @@ import { readIdempotencyKey } from "@/lib/api/idempotency";
 import { canViewPersonalInventory } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { getOwnedDataViewerId } from "@/lib/auth/guest";
-import { requireRole } from "@/lib/auth/rbac";
+import { hasRole, requireRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
   EconomicOperationConflictError,
@@ -24,6 +24,7 @@ import {
   serializeCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { redactInternalInventoryNote } from "@/lib/inventory/note-visibility";
 import { notifyUser } from "@/lib/notifications/events";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 
@@ -81,14 +82,20 @@ export async function GET(
 
     const { inventory, entries } =
       await listCharacterInventoryEntries(characterId);
+    const revealInternalNotes = hasRole(session.user.role, "V");
+    const visibleEntries = entries.map((entry) =>
+      redactInternalInventoryNote(entry, revealInternalNotes),
+    );
     const equipped = Object.fromEntries(
-      entries
+      visibleEntries
         .filter((entry) => entry.equippedSlot)
         .map((entry) => [entry.equippedSlot, entry]),
     );
     return NextResponse.json({
-      inventory: serializeCharacterInventory(inventory),
-      entries,
+      inventory: serializeCharacterInventory(inventory).map((entry) =>
+        redactInternalInventoryNote(entry, revealInternalNotes),
+      ),
+      entries: visibleEntries,
       equipped,
     });
   } catch (err) {

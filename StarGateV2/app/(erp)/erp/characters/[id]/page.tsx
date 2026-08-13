@@ -15,6 +15,7 @@ import {
   listCharacterInventoryEntries,
   serializeCharacterInventory,
 } from "@/lib/db/inventory";
+import { redactInternalInventoryNote } from "@/lib/inventory/note-visibility";
 import { isValidObjectId } from "@/lib/db/utils";
 import {
   filterCharacterForGuest,
@@ -91,12 +92,18 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   };
   if (!session.user.isGuest) {
     const inventoryResult = await listCharacterInventoryEntries(id);
-    const visibleInventoryEntries = canManageEquipment
+    const revealInternalNotes = hasRole(role, "V");
+    const visibleInventoryEntries = (canManageEquipment
       ? inventoryResult.entries
-      : inventoryResult.entries.filter((entry) => entry.equippedSlot);
+      : inventoryResult.entries.filter((entry) => entry.equippedSlot)
+    ).map((entry) =>
+      redactInternalInventoryNote(entry, revealInternalNotes),
+    );
     initialInventory = {
       inventory: canManageEquipment
-        ? serializeCharacterInventory(inventoryResult.inventory)
+        ? serializeCharacterInventory(inventoryResult.inventory).map((entry) =>
+            redactInternalInventoryNote(entry, revealInternalNotes),
+          )
         : [],
       entries: visibleInventoryEntries,
       equipped: Object.fromEntries(

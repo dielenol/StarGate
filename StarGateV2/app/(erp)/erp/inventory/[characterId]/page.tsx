@@ -20,6 +20,7 @@ import {
   serializeCharacterInventory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { redactInternalInventoryNote } from "@/lib/inventory/note-visibility";
 
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Button from "@/components/ui/Button/Button";
@@ -91,11 +92,16 @@ export default async function CharacterInventoryPage({
     listSharedInventory().catch(() => []),
   ]);
   sharedInventory = sharedResult;
+  const visibleEntries = personalResult.entries.map((entry) =>
+    redactInternalInventoryNote(entry),
+  );
   inventoryResponse = {
-    inventory: serializeCharacterInventory(personalResult.inventory),
-    entries: personalResult.entries,
+    inventory: serializeCharacterInventory(personalResult.inventory).map(
+      (entry) => redactInternalInventoryNote(entry),
+    ),
+    entries: visibleEntries,
     equipped: Object.fromEntries(
-      personalResult.entries
+      visibleEntries
         .filter((entry) => entry.equippedSlot)
         .map((entry) => [entry.equippedSlot, entry]),
     ),
@@ -151,7 +157,9 @@ export default async function CharacterInventoryPage({
     previewImage: masterByItemId.get(entry.itemId)?.previewImage,
   });
 
-  const sharedEntries = sharedInventory.map(toClientEntry);
+  const sharedEntries = sharedInventory
+    .map((entry) => redactInternalInventoryNote(entry))
+    .map(toClientEntry);
 
   return (
     <>

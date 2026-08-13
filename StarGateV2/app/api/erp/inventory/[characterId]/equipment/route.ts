@@ -11,6 +11,7 @@ import type { EquipmentSlot } from "@/types/inventory";
 
 import { canManageCharacterEquipment } from "@/lib/auth/access-policy";
 import { getActiveSession } from "@/lib/auth/active-session";
+import { hasRole } from "@/lib/auth/rbac";
 import { findCharacterById } from "@/lib/db/characters";
 import {
   equipCharacterInventoryItem,
@@ -19,6 +20,7 @@ import {
   normalizedInventoryCategory,
 } from "@/lib/db/inventory";
 import { isValidObjectId } from "@/lib/db/utils";
+import { redactInternalInventoryNote } from "@/lib/inventory/note-visibility";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface RouteContext {
@@ -111,6 +113,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const mongoSession = client.startSession();
     let result;
     let characterCodename = character.codename;
+    let viewerRole = session.user.role;
     try {
       result = await mongoSession.withTransaction(async () => {
         if (!ObjectId.isValid(session.user.id)) {
@@ -141,6 +144,7 @@ export async function PUT(request: Request, context: RouteContext) {
           throw new EquipmentAccessChangedError();
         }
         characterCodename = transactionCharacter.codename;
+        viewerRole = transactionViewer.role;
         return equipCharacterInventoryItem(characterId, itemId, slot, {
           session: mongoSession,
         });
@@ -181,8 +185,12 @@ export async function PUT(request: Request, context: RouteContext) {
     });
 
     const { entries } = await listCharacterInventoryEntries(characterId);
+    const revealInternalNotes = hasRole(viewerRole, "V");
+    const visibleEntries = entries.map((entry) =>
+      redactInternalInventoryNote(entry, revealInternalNotes),
+    );
     const equipped = Object.fromEntries(
-      entries
+      visibleEntries
         .filter((entry) => entry.equippedSlot)
         .map((entry) => [entry.equippedSlot, entry]),
     );
@@ -191,7 +199,8 @@ export async function PUT(request: Request, context: RouteContext) {
       success: true,
       slot,
       previousItemId: result.previousItemId,
-      equippedItem: entries.find((entry) => entry.itemId === itemId) ?? null,
+      equippedItem:
+        visibleEntries.find((entry) => entry.itemId === itemId) ?? null,
       equipped,
     });
   } catch (error) {

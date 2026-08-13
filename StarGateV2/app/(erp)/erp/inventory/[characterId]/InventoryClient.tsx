@@ -39,6 +39,7 @@ import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { formatDate } from "@/lib/format/date";
 import { getConsumableItemImageSrc } from "@/lib/assets/catalog";
+import { visibleInventoryNote } from "@/lib/inventory/note-visibility";
 import { MRBEAST_LOTTERY_SLUG } from "@/lib/shop/mrbeast-lottery";
 
 import styles from "./page.module.css";
@@ -55,6 +56,7 @@ interface InventoryClientProps {
   filteredEmptyText?: string;
   canRemove?: boolean;
   canUseMrBeastLottery?: boolean;
+  revealInternalNotes?: boolean;
 }
 
 type InventoryTab = "ALL" | "EQUIPMENT" | "CONSUMABLE" | "OTHER";
@@ -120,14 +122,18 @@ function formatQuantity(value: number): string {
   return value.toLocaleString();
 }
 
-function matchesQuery(entry: InventoryClientEntry, query: string): boolean {
+function matchesQuery(
+  entry: InventoryClientEntry,
+  query: string,
+  revealInternalNotes: boolean,
+): boolean {
   if (!query) return true;
 
   const searchable = [
     entry.itemName,
     categoryLabel(entry.category),
     entry.effect,
-    entry.note,
+    visibleInventoryNote(entry.note, revealInternalNotes),
     entry.slug,
   ]
     .filter(Boolean)
@@ -204,6 +210,7 @@ export default function InventoryClient({
   filteredEmptyText = "이 카테고리에 보유 아이템이 없습니다.",
   canRemove = false,
   canUseMrBeastLottery = false,
+  revealInternalNotes = false,
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState<InventoryTab>("ALL");
   const [query, setQuery] = useState("");
@@ -375,9 +382,9 @@ export default function InventoryClient({
       entries.filter(
         (entry) =>
           matchesTab(entry.category, activeTab) &&
-          matchesQuery(entry, normalizedQuery),
+          matchesQuery(entry, normalizedQuery, revealInternalNotes),
       ),
-    [entries, activeTab, normalizedQuery],
+    [entries, activeTab, normalizedQuery, revealInternalNotes],
   );
 
   const filteredQuantity = useMemo(
@@ -596,6 +603,10 @@ export default function InventoryClient({
           {filteredEntries.map((entry) => {
             const tone = categoryTone(entry.category);
             const isConsumable = entry.category === "CONSUMABLE";
+            const visibleNote = visibleInventoryNote(
+              entry.note,
+              revealInternalNotes,
+            );
             const isMrBeastLottery =
               canUseMrBeastLottery &&
               variant === "personal" &&
@@ -653,10 +664,10 @@ export default function InventoryClient({
                   {entry.effect ? (
                     <div className={styles.slot__effect}>{entry.effect}</div>
                   ) : null}
-                  {entry.note ? (
-                    <div className={styles.slot__note}>{entry.note}</div>
+                  {visibleNote ? (
+                    <div className={styles.slot__note}>{visibleNote}</div>
                   ) : null}
-                  {isConsumable && !entry.effect && !entry.note ? (
+                  {isConsumable && !entry.effect && !visibleNote ? (
                     <div className={styles.slot__note}>효과 정보 미등록</div>
                   ) : null}
                   {isEquippable || canRemove || isMrBeastLottery ? (
