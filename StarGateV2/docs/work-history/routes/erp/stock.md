@@ -101,3 +101,11 @@
 - 검증: core 21건, scheduled tick 복구 8건, worker 95건, core `typecheck`, `git diff --check`, critical risk review
 - 관련 커밋: `b54bf3c3`
 - 운영 경계: 라이브 STM 시세·이력·공시와 배포는 아직 변경하지 않았다.
+
+## 2026-08-13 · 기능 추가 · GM 예약 공시 적용
+
+- GM이 예약한 종목별 등락률과 사유를 지정일 12:00 KST 정기 틱의 가격·append-only 이력·Discord 시장 공시에 정확히 한 번 반영하도록 했다.
+- 예약 공시는 당일 랜덤 변동과 소다 판매량 보정보다 우선하며, 특별 공시에 가려진 소다 영향은 소진하지 않고 다음 일반 정기 틱으로 이월한다. GM 강제 재실행은 예약을 소비하지 않는다.
+- 검증: 실제 MongoDB 7 replica set 경쟁·rollback 1건, core 21건, 예약·틱 16건, worker 95건, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
+- 관련 커밋: `bd751a90`
+- 운영 경계: 라이브 예약 생성·취소와 시세·이력·Discord 공시 mutation은 실행하지 않았다.

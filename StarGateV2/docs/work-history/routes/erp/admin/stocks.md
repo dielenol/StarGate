@@ -28,3 +28,11 @@
 - 검증: core 21건, scheduled tick 복구 8건, worker 95건, core `typecheck`, `git diff --check`, critical risk review
 - 관련 커밋: `b54bf3c3`
 - 운영 경계: 라이브 STM 시세·이력·공시와 배포는 아직 변경하지 않았다.
+
+## 2026-08-13 · 기능 추가 · 일회성 정기 공시 예약
+
+- GM이 종목, 정기 공시일, 변동률, 공시 등급과 사유를 지정해 일회성 이벤트를 예약하고 적용 전 취소할 수 있게 했다. 예약가 미리보기와 예약·처리 이력도 같은 운영 화면에 배치했다.
+- 예약 생성·취소·감사 기록과 정기 틱의 이벤트 claim을 멱등 transaction으로 연결했다. 12:00 KST 직전 생성과 정기 틱의 경쟁은 같은 시세 문서 write fence로 직렬화하고, 12시 전 non-force 실행은 이력을 만들기 전에 거부한다.
+- 검증: 실제 MongoDB 7 replica set 경쟁·rollback 1건, core 21건, 예약·틱 16건, worker 95건, `pnpm typecheck`, 전체 `pnpm lint`, production build, GM 인증 Chrome 화면·배치 확인, critical risk review
+- 관련 커밋: `bd751a90`
+- 운영 경계: 라이브 예약 생성·취소와 시세 mutation은 실행하지 않았다.
