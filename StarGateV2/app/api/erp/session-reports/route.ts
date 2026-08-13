@@ -23,6 +23,7 @@ import { notifyActiveUsers } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { getClient } from "@/lib/db/client";
 import { readJsonObjectBody } from "@/lib/api/json-body";
+import { buildClientSessionReportList } from "@/lib/format/session-report-list";
 
 export async function GET() {
   const session = await auth();
@@ -40,7 +41,7 @@ export async function GET() {
   try {
     const reports = await listVisibleSessionReports(session.user.role);
     return NextResponse.json(
-      { reports },
+      { reports: buildClientSessionReportList(reports) },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch {

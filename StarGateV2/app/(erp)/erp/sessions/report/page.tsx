@@ -1,32 +1,18 @@
 import { redirect } from "next/navigation";
 
-import type {
-  ClientSessionReport,
-  SessionReport,
-} from "@/types/session-report";
-
 import { getActiveSession } from "@/lib/auth/active-session";
 import { isMemberErpViewer } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { listVisibleSessionReports } from "@/lib/db/session-reports";
+import {
+  buildClientSessionReportList,
+  type ClientSessionReportListItem,
+} from "@/lib/format/session-report-list";
 
 import Button from "@/components/ui/Button/Button";
 import PageHead from "@/components/ui/PageHead/PageHead";
 
 import ReportsClient from "./ReportsClient";
-
-function serializeDate(value: Date | string): string {
-  return value instanceof Date ? value.toISOString() : value;
-}
-
-function serializeReport(report: SessionReport): ClientSessionReport {
-  return {
-    ...report,
-    _id: report._id?.toString() ?? "",
-    createdAt: serializeDate(report.createdAt),
-    updatedAt: serializeDate(report.updatedAt),
-  };
-}
 
 export default async function SessionReportListPage() {
   const session = await getActiveSession();
@@ -36,12 +22,12 @@ export default async function SessionReportListPage() {
   }
 
   const isGmOrAbove = hasRole(session.user.role, "V");
-  let reports: ClientSessionReport[] = [];
+  let reports: ClientSessionReportListItem[] = [];
   let initialReportsUpdatedAt: number | undefined;
   if (isMemberErpViewer(session.user)) {
     try {
-      reports = (await listVisibleSessionReports(session.user.role)).map(
-        serializeReport,
+      reports = buildClientSessionReportList(
+        await listVisibleSessionReports(session.user.role),
       );
     } catch {
       initialReportsUpdatedAt = 0;

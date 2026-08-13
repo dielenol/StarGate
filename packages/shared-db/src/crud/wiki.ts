@@ -172,6 +172,9 @@ export async function listWikiPageSummaries(
   ];
   const listFilters = [...baseFilters];
   const category = options.category?.trim();
+  const query = options.query?.trim();
+  const canReuseRowsForRecent =
+    !category && !query && !options.cursor && limit >= 5;
   if (category) listFilters.push({ category });
   if (options.cursor) {
     const cursor = decodeCursor(options.cursor);
@@ -226,12 +229,14 @@ export async function listWikiPageSummaries(
             { $sort: { _id: 1 } },
           ])
           .toArray(),
-        col
-          .find(publicFilter)
-          .project<WikiPageSummarySource>(projection)
-          .sort({ updatedAt: -1, _id: -1 })
-          .limit(5)
-          .toArray(),
+        canReuseRowsForRecent
+          ? Promise.resolve([] as WikiPageSummarySource[])
+          : col
+              .find(publicFilter)
+              .project<WikiPageSummarySource>(projection)
+              .sort({ updatedAt: -1, _id: -1 })
+              .limit(5)
+              .toArray(),
       ] as const);
   const [rows, [totalCount, facetRows, recentRows]] = await Promise.all([
     rowsPromise,
@@ -241,13 +246,18 @@ export async function listWikiPageSummaries(
   const hasMore = rows.length > limit;
   const visibleRows = hasMore ? rows.slice(0, limit) : rows;
   const lastPage = visibleRows.at(-1);
+  // 기본 첫 페이지는 visibility와 updatedAt/_id 정렬이 recent와 완전히 같다.
+  // 이미 읽은 rows를 재사용해 동일 본문 5건을 다시 읽는 쿼리를 제거한다.
+  const recentSource = canReuseRowsForRecent
+    ? visibleRows.slice(0, 5)
+    : recentRows;
   return {
     pages: visibleRows.map(toWikiPageSummary),
     facets: facetRows.map((facet) => ({
       category: facet._id || "미분류",
       count: facet.count,
     })),
-    recent: recentRows.map(toWikiPageSummary),
+    recent: recentSource.map(toWikiPageSummary),
     totalCount,
     nextCursor: hasMore && lastPage ? encodeCursor(lastPage) : null,
   };

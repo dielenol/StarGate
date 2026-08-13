@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useMemo } from "react";
+import type { CSSProperties } from "react";
 
-import type { ClientSessionReport } from "@/types/session-report";
+import type { ClientSessionReportListItem } from "@/lib/format/session-report-list";
 
 import { useSessionReports } from "@/hooks/queries/useSessionReportsQuery";
 
 import { formatDate } from "@/lib/format/date";
 import {
-  buildOperationReportNumbering,
   formatOperationReportTitle,
   formatShortReporterName,
 } from "@/lib/format/session-report";
@@ -22,15 +21,8 @@ import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 import styles from "./page.module.css";
 
 interface Props {
-  initialReports: ClientSessionReport[];
+  initialReports: ClientSessionReportListItem[];
   initialReportsUpdatedAt?: number;
-}
-
-interface MapPoint {
-  x: number;
-  y: number;
-  label: string;
-  precision: "confirmed" | "estimated";
 }
 
 interface PinCardLayout {
@@ -77,76 +69,6 @@ function getPinLineStyle(layout: PinCardLayout) {
   };
 }
 
-function normalizeReportText(report: ClientSessionReport): string {
-  return [
-    report.sessionId,
-    report.sessionTitle,
-    report.summary,
-    ...report.highlights,
-  ]
-    .join(" ")
-    .toLowerCase();
-}
-
-function getCoordinate(value: number): number {
-  return Math.min(100, Math.max(0, value));
-}
-
-function getReportMapPoint(
-  report: ClientSessionReport,
-  index: number,
-): MapPoint {
-  const text = normalizeReportText(report);
-
-  if (
-    typeof report.mapX === "number" &&
-    typeof report.mapY === "number" &&
-    Number.isFinite(report.mapX) &&
-    Number.isFinite(report.mapY)
-  ) {
-    return {
-      x: getCoordinate(report.mapX),
-      y: getCoordinate(report.mapY),
-      label: report.locationLabel?.trim() || "위치 미분류",
-      precision: report.mapPrecision ?? "estimated",
-    };
-  }
-
-  if (
-    report.sessionId === "NOSB-S1E1-ORDER" ||
-    text.includes("한반도") ||
-    text.includes("한국") ||
-    text.includes("korea")
-  ) {
-    return {
-      x: 81.55,
-      y: 42.0,
-      label: "한반도 남부",
-      precision: "confirmed",
-    };
-  }
-
-  if (
-    text.includes("맨해튼") ||
-    text.includes("new york") ||
-    text.includes("manhattan")
-  ) {
-    return {
-      x: 27.5,
-      y: 40.4,
-      label: "미국 맨해튼",
-      precision: "confirmed",
-    };
-  }
-
-  return {
-    x: 18 + ((index * 17) % 62),
-    y: 58 + ((index * 7) % 16),
-    label: "위치 미분류",
-    precision: "estimated",
-  };
-}
-
 export default function ReportsClient({
   initialReports,
   initialReportsUpdatedAt,
@@ -156,28 +78,24 @@ export default function ReportsClient({
     initialDataUpdatedAt: initialReportsUpdatedAt,
   });
 
-  const numberedReports = useMemo(
-    () => buildOperationReportNumbering(reports),
-    [reports],
-  );
-
   return (
     <Box className={styles.mapBox} data-pixel-font="ui">
       <PanelTitle
-        right={<span className={styles.mono}>{numberedReports.length} 건</span>}
+        right={<span className={styles.mono}>{reports.length} 건</span>}
       >
         OPERATION REPORT MAP
       </PanelTitle>
 
-      {numberedReports.length === 0 ? (
+      {reports.length === 0 ? (
         <div className={styles.empty}>작성된 작전 보고서가 없습니다.</div>
       ) : (
         <div className={styles.mapStage} role="list">
           <div className={styles.mapOverlay} aria-hidden />
-          {numberedReports.map(({ report, series, number }, index) => {
-            const id = String(report._id);
-            const point = getReportMapPoint(report, index);
-            const reportNumber = number;
+          {reports.map((report) => {
+            const id = report._id;
+            const point = report.mapPoint;
+            const reportNumber = report.number;
+            const { series } = report;
             const pinLayout = getPinCardLayout(reportNumber);
             const reporterName = formatShortReporterName(report.gmName);
             const displayTitle = formatOperationReportTitle(

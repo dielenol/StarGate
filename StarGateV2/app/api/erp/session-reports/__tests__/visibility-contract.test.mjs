@@ -31,6 +31,7 @@ test("보고서 본문·목록·역링크 소비자는 서버에서 viewer role�
   assert.match(source.detailPage, /listVisibleSessionReportRefs\(session\.user\.role\)/u);
   assert.match(source.editPage, /findVisibleReportById\(id, session\.user\.role\)/u);
   assert.match(source.listApi, /listVisibleSessionReports\(session\.user\.role\)/u);
+  assert.match(source.listApi, /buildClientSessionReportList\(reports\)/u);
 
   const getHandler = source.detailApi.slice(
     source.detailApi.indexOf("export async function GET"),

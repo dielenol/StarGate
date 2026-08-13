@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
+import type { ClientSessionReportListItem } from "@/lib/format/session-report-list";
 import type { ClientSessionReport } from "@/types/session-report";
 
 export const sessionReportKeys = {
@@ -11,7 +12,7 @@ export const sessionReportKeys = {
 const REPORT_LIST_STALE_TIME_MS = 30 * 1000;
 const REPORT_STALE_TIME_MS = 20 * 60 * 1000;
 
-async function fetchSessionReports(): Promise<ClientSessionReport[]> {
+async function fetchSessionReports(): Promise<ClientSessionReportListItem[]> {
   const res = await fetch("/api/erp/session-reports", { cache: "no-store" });
   if (!res.ok) throw new Error("세션 리포트를 불러올 수 없습니다.");
   const data = await res.json();
@@ -34,7 +35,7 @@ async function fetchSessionReportById(
 }
 
 export function useSessionReports(options?: {
-  initialData?: ClientSessionReport[];
+  initialData?: ClientSessionReportListItem[];
   initialDataUpdatedAt?: number;
 }) {
   return useQuery({

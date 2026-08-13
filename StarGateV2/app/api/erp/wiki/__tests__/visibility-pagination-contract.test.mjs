@@ -21,6 +21,19 @@ test("wiki 목록 API는 V+만 private을 포함하고 cursor 요약 조회를 �
   assert.doesNotMatch(route, /listWikiPages\(/u);
 });
 
+test("wiki 기본 첫 페이지는 동일 정렬 rows에서 최근 5건을 재사용한다", async () => {
+  const crud = await source("../packages/shared-db/src/crud/wiki.ts");
+
+  assert.match(
+    crud,
+    /canReuseRowsForRecent\s*=\s*[\s\S]*!category\s*&&\s*!query\s*&&\s*!options\.cursor\s*&&\s*limit >= 5/u,
+  );
+  assert.match(
+    crud,
+    /canReuseRowsForRecent\s*\?\s*visibleRows\.slice\(0, 5\)\s*:\s*recentRows/u,
+  );
+});
+
 test("wiki 상세 API와 RSC는 동일한 visibility-aware 조회를 사용한다", async () => {
   const [api, page] = await Promise.all([
     source("app/api/erp/wiki/[id]/route.ts"),
