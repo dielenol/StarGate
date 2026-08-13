@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -46,4 +47,35 @@ test("갈로글라와 욤스비킹을 내부 섹터가 아닌 군부 외부 하�
     ).length,
     2,
   );
+});
+
+test("갈로글라와 욤스비킹에 군부 공용 표식 대신 전용 아이콘과 SVG mirror를 사용한다", () => {
+  const source = readFileSync(
+    new URL(
+      "../../app/(erp)/erp/personnel/_components/OrgIcon.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  for (const code of ["GALLOGLA", "JOMSVIKING"]) {
+    assert.match(source, new RegExp(`${code}: "${code}"`));
+
+    const body = source.match(
+      new RegExp(code + ": \\{[\\s\\S]*?body: `([^`]+)`"),
+    )?.[1];
+    assert.ok(body, `${code} inline icon body를 찾을 수 있어야 한다`);
+
+    const mirror = readFileSync(
+      new URL(
+        `../../public/assets/svg/org_extorg_${code.toLowerCase()}.svg`,
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    assert.equal(
+      mirror.replace(/^<svg[^>]*>/, "").replace(/<\/svg>\s*$/, ""),
+      body,
+    );
+  }
 });

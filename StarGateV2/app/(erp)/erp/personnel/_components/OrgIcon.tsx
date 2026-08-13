@@ -65,6 +65,8 @@ export type OrgIconCode =
   | "USA"
   | "RUSSIA"
   | "NOGA"
+  | "GALLOGLA"
+  | "JOMSVIKING"
   | "GOLDEN_DAWN"
   | "AHNENERBE";
 
@@ -140,8 +142,8 @@ const EXTERNAL_SUB_ORG_ICON_MAP: Record<string, OrgIconCode> = {
   USA: "USA",
   RUSSIA: "RUSSIA",
   NOGA: "NOGA",
-  GALLOGLA: "MILITARY",
-  JOMSVIKING: "MILITARY",
+  GALLOGLA: "GALLOGLA",
+  JOMSVIKING: "JOMSVIKING",
   GOLDEN_DAWN: "GOLDEN_DAWN",
   AHNENERBE: "AHNENERBE",
 };
@@ -256,6 +258,14 @@ const ICONS: Record<OrgIconCode, IconPath> = {
   NOGA: {
     /* NOGA (Novus Ordo Great Again) — 군부(MILITARY) 도상에서 꺾쇠를 1단으로 줄인 파생형. 군부 계열 하위 조직 표식. */
     body: `<path d="M12 2.5l1.4 2.8 3.1.4-2.2 2.2.5 3.1L12 9.5l-2.8 1.5.5-3.1-2.2-2.2 3.1-.4L12 2.5z"/><path d="M4 16l8-4 8 4"/>`,
+  },
+  GALLOGLA: {
+    /* 갈로글라 — 켈트 매듭 원환 위에 놓인 장병도끼. 전사 공동체와 중장 보병 전통을 함께 나타낸다. */
+    body: `<circle cx="8" cy="16" r="4"/><path d="M5.2 13.2l5.6 5.6M10.8 13.2l-5.6 5.6"/><path d="M5 21L18.2 7.8"/><path d="M15.2 5.2c2.3-1.8 4.4-2.1 6.1-1.2-.2 2.5-1.5 4.4-4.1 5.6z"/>`,
+  },
+  JOMSVIKING: {
+    /* 욤스비킹 — 사분 원형 방패와 비스듬한 창. 북방 전사 결사와 원정 전통을 상징한다. */
+    body: `<circle cx="10" cy="13.5" r="7"/><circle cx="10" cy="13.5" r="2"/><path d="M3 13.5h14M10 6.5v14"/><path d="M14.8 8.7l5.4-5.4"/><path d="M17.4 3.7l3.4-.5-.5 3.4z"/>`,
   },
   GOLDEN_DAWN: {
     /* 황금여명회 — 지평선 위로 떠오르는 황금 여명(반원 태양 + 광선) 컬트 문장. */
