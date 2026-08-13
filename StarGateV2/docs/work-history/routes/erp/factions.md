@@ -62,3 +62,10 @@
 - 검증: 외부 조직 테스트 2건, 아이콘 감사 113종·37 route, `pnpm typecheck`, 대상 ESLint, 인증된 1280px 세력 카드·접선 패널·가로 넘침·콘솔 오류 확인, critical risk review
 - 관련 구현 커밋: `1ffb0ba9`
 - 운영 경계: 신규 인물 Dossier와 보고서 payload는 live에 적용하지 않았다.
+
+## 2026-08-13 · 조직도 보강 · 갈로글라·욤스비킹 전용 문장
+
+- 갈로글라와 욤스비킹 조직 노드가 군부 공용 표식 대신 각각 켈트 매듭·장병도끼와 원형 방패·창 문장을 사용하도록 분리했다.
+- 신원조회와 세력도가 같은 `OrgIcon` 매핑을 공유하며 공개 SVG mirror와 NOVUS 아이콘 마스터도 동기화했다.
+- 검증: 외부 조직·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, master JS syntax, `npx tsc --noEmit`, 대상 ESLint, 인증된 신원조회 실제 렌더 확인
+- 관련 구현 커밋: `ba3d8973`

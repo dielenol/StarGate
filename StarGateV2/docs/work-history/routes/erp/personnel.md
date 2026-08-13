@@ -150,3 +150,10 @@
 - 검증: spec↔payload adapter parity 11/11, live read-only dry-run 11건 `예상 insert`, NPC·public prose·visual·coverage 검사, 외부 조직 테스트 2건, `pnpm typecheck`, 대상 ESLint, 인증된 1280px 조직도·가로 넘침·콘솔 오류 확인, critical risk review
 - 관련 구현 커밋: `1ffb0ba9`
 - 운영 경계: 신규 Dossier와 보고서 staging/publication은 live에 적용하지 않았다. exact 운영 승인 뒤 신규 11건 생성·재조회 → staging → publication 순서로 실행한다.
+
+## 2026-08-13 · 조직도 보강 · 외부 전사 조직 전용 문장
+
+- 군부 공용 표식을 재사용하던 갈로글라와 욤스비킹에 각각 켈트 매듭·장병도끼, 원형 방패·창 문장을 적용했다.
+- 조직도 inline 아이콘과 공개 SVG mirror, NOVUS 아이콘 마스터를 같은 도형으로 동기화했다.
+- 검증: 외부 조직·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, master JS syntax, `npx tsc --noEmit`, 대상 ESLint, 인증된 1280px 신원조회 실제 렌더·가로 넘침·콘솔 오류 확인
+- 관련 구현 커밋: `ba3d8973`
