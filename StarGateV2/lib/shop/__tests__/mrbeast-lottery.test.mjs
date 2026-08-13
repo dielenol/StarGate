@@ -214,7 +214,10 @@ test("캐릭터 귀속 복권은 거래 생성과 정산 양쪽에서 거부된�
     new URL("packages/shared-db/src/crud/trades.ts", REPO_ROOT),
     "utf8",
   );
-  assert.match(trades, /NON_TRANSFERABLE_ITEM_SLUGS = new Set\(\["mrbeast_lottery"\]\)/);
+  assert.match(
+    trades,
+    /NON_TRANSFERABLE_ITEM_SLUGS = new Set\(\[[\s\S]*"mrbeast_lottery"[\s\S]*"mrbeast_apology_lottery"[\s\S]*\]\)/,
+  );
   assert.match(
     trades,
     /master\.isPublic === false[\s\S]*!isPlayerTradeItemSlugTransferable\(master\.slug\)[\s\S]*"ITEM_NOT_TRANSFERABLE"/,
@@ -365,7 +368,7 @@ test("종료·EVENT_ID·소유자 변경 뒤에도 global pending을 현재 소�
   assert.doesNotMatch(startPost, /config\.enabled/);
   assert.match(
     startPost,
-    /payload: \{ action: "start-or-resume", expectedCharacterId \}/,
+    /payload: \{ action: "start-or-resume", expectedCharacterId, ticketSlug \}/,
   );
 });
 

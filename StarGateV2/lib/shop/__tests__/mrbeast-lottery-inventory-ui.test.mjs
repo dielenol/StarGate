@@ -56,7 +56,7 @@ test("복권 사용은 화면 캐릭터를 서버 mutation과 캐시 무효화�
   );
   assert.match(
     route,
-    /payload: \{ action: "start-or-resume", expectedCharacterId \}/,
+    /payload: \{ action: "start-or-resume", expectedCharacterId, ticketSlug \}/,
   );
   assert.match(
     mutations,

@@ -20,6 +20,7 @@ import {
 } from "@/lib/db/inventory";
 import {
   drawMrBeastLotteryPrize,
+  isMrBeastLotteryTicketSlug,
   MRBEAST_LOTTERY_SLUG,
 } from "@/lib/shop/mrbeast-lottery";
 
@@ -27,6 +28,7 @@ const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 
 interface StartLotteryBody {
   expectedCharacterId?: unknown;
+  ticketSlug?: unknown;
 }
 
 function lotteryErrorResponse(error: MrBeastLotteryError): NextResponse {
@@ -72,6 +74,10 @@ export async function GET() {
           active: config.active,
           eventId: config.eventId,
           availableTickets: 0,
+          ticketCounts: {
+            mrbeast_lottery: 0,
+            mrbeast_apology_lottery: 0,
+          },
           pendingClaim: null,
           recentWinners,
         },
@@ -86,6 +92,10 @@ export async function GET() {
         active: config.active,
         eventId: config.eventId,
         availableTickets: 0,
+        ticketCounts: {
+          mrbeast_lottery: 0,
+          mrbeast_apology_lottery: 0,
+        },
         pendingClaim: null,
         recentWinners,
       }, {
@@ -100,12 +110,20 @@ export async function GET() {
     // 기존 PENDING은 인프라 readiness와 무관하게 복구한다. 신규 사용 경로만 fail closed.
     if (!state.pendingClaim && (state.active || state.availableTickets > 0)) {
       await assertMrBeastLotteryIndexesReady();
-      const ticketMaster = await findMasterItemBySlug(MRBEAST_LOTTERY_SLUG);
-      if (!isMrBeastLotteryTicketMasterReady(ticketMaster)) {
-        throw new MrBeastLotteryError(
-          "LOTTERY_MISCONFIGURED",
-          "복권 마스터 아이템 설정이 누락되었거나 안전 조건과 다릅니다.",
-        );
+      const requiredTicketSlugs = new Set<string>();
+      if (state.active) requiredTicketSlugs.add(MRBEAST_LOTTERY_SLUG);
+      for (const [ticketSlug, count] of Object.entries(state.ticketCounts)) {
+        if (count > 0) requiredTicketSlugs.add(ticketSlug);
+      }
+      for (const ticketSlug of requiredTicketSlugs) {
+        if (!isMrBeastLotteryTicketSlug(ticketSlug)) continue;
+        const ticketMaster = await findMasterItemBySlug(ticketSlug);
+        if (!isMrBeastLotteryTicketMasterReady(ticketMaster, ticketSlug)) {
+          throw new MrBeastLotteryError(
+            "LOTTERY_MISCONFIGURED",
+            "복권 마스터 아이템 설정이 누락되었거나 안전 조건과 다릅니다.",
+          );
+        }
       }
     }
 
@@ -148,6 +166,18 @@ export async function POST(request: Request) {
     typeof body?.expectedCharacterId === "string"
       ? body.expectedCharacterId.trim()
       : "";
+  const ticketSlug = isMrBeastLotteryTicketSlug(body?.ticketSlug)
+    ? body.ticketSlug
+    : MRBEAST_LOTTERY_SLUG;
+  if (body?.ticketSlug !== undefined && !isMrBeastLotteryTicketSlug(body.ticketSlug)) {
+    return NextResponse.json(
+      {
+        error: "지원하지 않는 복권 종류입니다.",
+        code: "LOTTERY_CLAIM_INVALID",
+      },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
   if (!ObjectId.isValid(expectedCharacterId)) {
     return NextResponse.json(
       {
@@ -194,8 +224,8 @@ export async function POST(request: Request) {
       );
     }
     await assertMrBeastLotteryIndexesReady();
-    const ticketMaster = await findMasterItemBySlug(MRBEAST_LOTTERY_SLUG);
-    if (!isMrBeastLotteryTicketMasterReady(ticketMaster)) {
+    const ticketMaster = await findMasterItemBySlug(ticketSlug);
+    if (!isMrBeastLotteryTicketMasterReady(ticketMaster, ticketSlug)) {
       throw new MrBeastLotteryError(
         "LOTTERY_MISCONFIGURED",
         "복권 마스터 아이템 설정이 누락되었거나 안전 조건과 다릅니다.",
@@ -210,7 +240,7 @@ export async function POST(request: Request) {
       requestId,
       domain: "shop-mrbeast-lottery-claim",
       actorId: session.user.id,
-      payload: { action: "start-or-resume", expectedCharacterId },
+      payload: { action: "start-or-resume", expectedCharacterId, ticketSlug },
       run: async (mongoSession) => {
         const result = await startOrResumeMrBeastLotteryClaim({
           characterId,
@@ -219,6 +249,7 @@ export async function POST(request: Request) {
           ownerId: session.user.id,
           ownerName: session.user.displayName,
           ticketItemId,
+          ticketSlug,
           claimId: fixedClaimId,
           bucket: fixedBucket,
           session: mongoSession,

@@ -225,7 +225,7 @@ function LotteryAdminFormBody({
     setFormError(null);
     onClearConflict();
     const confirmed = window.confirm(
-      "운영 DB에 복권 전용 안전장치 5개와 숨김 복권 아이템을 준비합니다. 이벤트는 자동으로 켜지지 않습니다. 계속할까요?",
+      "운영 DB에 복권·페이백 안전장치 6개와 숨김 복권 아이템 2종을 준비합니다. 이벤트는 자동으로 켜지지 않습니다. 계속할까요?",
     );
     if (!confirmed) return;
     await preparationMutation.mutateAsync().catch(() => undefined);
@@ -313,13 +313,13 @@ function LotteryAdminFormBody({
         </div>
         <div className={styles.readiness__checks}>
           <span>
-            중복 지급·사용 방지 DB 인덱스 5개{" "}
+            중복 지급·사용·페이백 조회 DB 인덱스 6개{" "}
             <strong>
               {config.readiness.indexesReady ? "정상" : "확인 필요"}
             </strong>
           </span>
           <span>
-            인벤토리 표시용 비공개 복권 아이템{" "}
+            인벤토리 표시용 비공개 복권 아이템 2종{" "}
             <strong>
               {config.readiness.masterItemReady ? "정상" : "확인 필요"}
             </strong>
@@ -327,7 +327,8 @@ function LotteryAdminFormBody({
         </div>
         <p className={styles.readiness__description}>
           두 항목은 중복 당첨과 잘못된 아이템 판매를 막는 안전장치입니다.
-          미리보기에는 필요하지 않으며 실제 이벤트 활성화에만 필요합니다.
+          미리보기에는 필요하지 않으며 실제 이벤트 활성화와 사죄 보상 수령에
+          필요합니다.
         </p>
         {config.readiness.issues.length ? (
           <ul>

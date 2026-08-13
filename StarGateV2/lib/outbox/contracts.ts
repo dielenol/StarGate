@@ -114,6 +114,8 @@ export interface ShopProductLaunchWebhookPayload {
 export interface MrBeastLotteryWinnerWebhookPayload {
   claimId: string;
   eventId: string;
+  /** 과거 outbox에는 없으므로 worker는 미지정 시 기존 복권 이름으로 폴백한다. */
+  lotteryName?: string;
   character: {
     id: string;
     codename: string;

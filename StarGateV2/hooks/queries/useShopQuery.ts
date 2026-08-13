@@ -3,6 +3,7 @@
  *
  * - `useShopCatalog`: GET /api/erp/shop/catalog — 전체 품목 + 일자별 재고 + 영업 여부.
  * - `useShopInventory`: GET /api/erp/shop/inventory — 본인 메인 캐릭의 보유 편의점 아이템.
+ * - `useShopPayback`: GET /api/erp/shop/payback — 미스터비스트 소다 사죄 보상 상태.
  *
  * 에러 분기 — `ShopApiError.code` 로 클라이언트가 분기 가능 (creditKeys 와 동일 패턴).
  */
@@ -24,6 +25,7 @@ export const shopKeys = {
   catalog: ["shop", "catalog"] as const,
   inventory: ["shop", "inventory"] as const,
   lottery: ["shop", "lottery"] as const,
+  payback: ["shop", "payback"] as const,
   lotteryAdmin: ["shop", "lottery", "admin"] as const,
 };
 
@@ -47,7 +49,9 @@ export type ShopErrorCode =
   | "LOTTERY_PREPARATION_FAILED"
   | "NO_LOTTERY_TICKET"
   | "LOTTERY_CLAIM_NOT_FOUND"
-  | "LOTTERY_CLAIM_INVALID";
+  | "LOTTERY_CLAIM_INVALID"
+  | "PAYBACK_NOT_ELIGIBLE"
+  | "PAYBACK_INTEGRITY_ERROR";
 
 export class ShopApiError extends Error {
   readonly status: number;
@@ -105,8 +109,19 @@ export interface ShopLotteryStateResponse {
   active: boolean;
   eventId: string | null;
   availableTickets: number;
+  ticketCounts: {
+    mrbeast_lottery: number;
+    mrbeast_apology_lottery: number;
+  };
   pendingClaim: MrBeastLotteryPendingClaimDto | null;
   recentWinners: MrBeastLotteryWinnerDto[];
+}
+
+export interface ShopPaybackResponse {
+  status: "ELIGIBLE" | "INELIGIBLE" | "CLAIMED";
+  purchasedQuantity: number;
+  rewardQuantity: number;
+  claimedAt: string | null;
 }
 
 export interface ShopLotteryAdminConfigResponse {
@@ -156,6 +171,12 @@ async function fetchShopInventory(): Promise<ShopInventoryResponse> {
 
 async function fetchShopLotteryState(): Promise<ShopLotteryStateResponse> {
   const res = await fetch("/api/erp/shop/lottery", { cache: "no-store" });
+  if (!res.ok) await parseShopError(res);
+  return res.json();
+}
+
+async function fetchShopPayback(): Promise<ShopPaybackResponse> {
+  const res = await fetch("/api/erp/shop/payback", { cache: "no-store" });
   if (!res.ok) await parseShopError(res);
   return res.json();
 }
@@ -245,6 +266,26 @@ export function useShopLotteryState(options?: { enabled?: boolean }) {
         err instanceof ShopApiError &&
         (err.code === "LOTTERY_DISABLED" ||
           err.code === "LOTTERY_MISCONFIGURED" ||
+          err.code === "MAIN_CHARACTER_INTEGRITY")
+      ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+}
+
+export function useShopPayback(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: shopKeys.payback,
+    queryFn: fetchShopPayback,
+    staleTime: LOTTERY_STALE_TIME_MS,
+    enabled: options?.enabled,
+    refetchOnWindowFocus: true,
+    retry: (failureCount, err) => {
+      if (
+        err instanceof ShopApiError &&
+        (err.code === "NO_MAIN_CHARACTER" ||
           err.code === "MAIN_CHARACTER_INTEGRITY")
       ) {
         return false;

@@ -11,6 +11,7 @@ import {
 } from "@/hooks/queries/useCreditsQuery";
 import {
   type ShopOpenMode,
+  useClaimMrBeastSodaPayback,
   useCheckoutShopCart,
   useRequestShopReorder,
   useStartMrBeastLotteryClaim,
@@ -23,6 +24,7 @@ import {
   type ShopErrorCode,
   useShopCatalog,
   useShopLotteryState,
+  useShopPayback,
 } from "@/hooks/queries/useShopQuery";
 
 import Box from "@/components/ui/Box/Box";
@@ -39,7 +41,9 @@ import {
 } from "@/components/icons";
 
 import type { DialogueBeepOptions } from "@/lib/audio/dialogue-beep-engine";
+import type { MrBeastLotteryTicketSlug } from "@/lib/shop/mrbeast-lottery";
 import {
+  MRBEAST_APOLOGY_LOTTERY_SRC,
   MRBEAST_LOTTERY_SRC,
   MRBEAST_SODA_POSTER_SRC,
   MRBEAST_SODA_SRC,
@@ -53,6 +57,10 @@ import {
   retainIdempotencyOperation,
   type RetainedIdempotencyOperation,
 } from "@/lib/query/idempotency";
+import {
+  MRBEAST_APOLOGY_LOTTERY_SLUG,
+  MRBEAST_LOTTERY_SLUG,
+} from "@/lib/shop/mrbeast-lottery";
 import {
   TIA_DIALOGUE_LINES,
   TIA_IDLE_LINES,
@@ -132,7 +140,13 @@ const ERROR_MESSAGE: Record<ShopErrorCode, string> = {
   NO_LOTTERY_TICKET: "사용할 수 있는 미스터비스트 복권이 없습니다.",
   LOTTERY_CLAIM_NOT_FOUND: "이어갈 복권을 찾을 수 없습니다.",
   LOTTERY_CLAIM_INVALID: "복권 상태를 확인할 수 없습니다.",
+  PAYBACK_NOT_ELIGIBLE: "누적 소다 구매량이 페이백 기준에 미달합니다.",
+  PAYBACK_INTEGRITY_ERROR: "소다 구매 기록의 정합성을 확인할 수 없습니다.",
 };
+
+function getLotteryTicketShortName(slug: MrBeastLotteryTicketSlug): string {
+  return slug === MRBEAST_APOLOGY_LOTTERY_SLUG ? "사죄 복권" : "복권";
+}
 
 interface Props {
   initialCatalog: ShopCatalogResponse;
@@ -162,9 +176,13 @@ export default function ShopClient({
   const lotteryQuery = useShopLotteryState({
     enabled: mainCharacter !== null && !mainCharacterError,
   });
+  const paybackQuery = useShopPayback({
+    enabled: mainCharacter !== null && !mainCharacterError,
+  });
   const checkoutMutation = useCheckoutShopCart();
   const reorderMutation = useRequestShopReorder();
   const startLotteryMutation = useStartMrBeastLotteryClaim();
+  const claimPaybackMutation = useClaimMrBeastSodaPayback();
   const openModeMutation = useSetShopOpenMode();
 
   const [activeTab, setActiveTab] = useState<ShopTabValue>("ALL");
@@ -193,7 +211,27 @@ export default function ShopClient({
     useRef<RetainedCheckoutOperation | null>(null);
   const catalog = catalogQuery.data ?? initialCatalog;
   const lotteryState = lotteryQuery.data;
+  const paybackState = paybackQuery.data;
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
+  const selectedLotteryTicketSlug: MrBeastLotteryTicketSlug =
+    lotteryState?.pendingClaim?.ticketSlug ??
+    ((lotteryState?.ticketCounts?.mrbeast_apology_lottery ?? 0) > 0
+      ? MRBEAST_APOLOGY_LOTTERY_SLUG
+      : MRBEAST_LOTTERY_SLUG);
+  const selectedLotteryTicketCount =
+    lotteryState?.ticketCounts?.[selectedLotteryTicketSlug] ??
+    (selectedLotteryTicketSlug === MRBEAST_LOTTERY_SLUG
+      ? (lotteryState?.availableTickets ?? 0)
+      : 0);
+  const selectedLotteryTicketName = getLotteryTicketShortName(
+    selectedLotteryTicketSlug,
+  );
+  const showPaybackSection =
+    hasMainCharacter &&
+    (paybackQuery.isPending ||
+      paybackQuery.isError ||
+      paybackState?.status === "ELIGIBLE" ||
+      paybackState?.status === "CLAIMED");
 
   const {
     mood: tiaMood,
@@ -612,7 +650,7 @@ export default function ShopClient({
     if (
       !mainCharacter ||
       !lotteryState?.enabled ||
-      lotteryState.availableTickets < 1 ||
+      selectedLotteryTicketCount < 1 ||
       startLotteryMutation.isPending
     ) {
       return;
@@ -623,6 +661,7 @@ export default function ShopClient({
       {
         actionId: crypto.randomUUID(),
         expectedCharacterId: mainCharacter.id,
+        ticketSlug: selectedLotteryTicketSlug,
       },
       {
         onSuccess: (response) => {
@@ -630,6 +669,36 @@ export default function ShopClient({
         },
         onError: (error) => {
           setErrorMessage(describeShopError(error));
+        },
+      },
+    );
+  }
+
+  function handleClaimPayback() {
+    if (
+      !mainCharacter ||
+      paybackState?.status !== "ELIGIBLE" ||
+      claimPaybackMutation.isPending
+    ) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setNotice(null);
+    claimPaybackMutation.mutate(
+      {
+        actionId: crypto.randomUUID(),
+        expectedCharacterId: mainCharacter.id,
+      },
+      {
+        onSuccess: (response) => {
+          setNotice({
+            tone: "success",
+            text: `미스터비스트 사죄 보상 수령 완료 · 사죄 복권 ${response.rewardQuantity.toLocaleString()}장 지급`,
+          });
+        },
+        onError: (error) => {
+          setErrorMessage(error.message);
         },
       },
     );
@@ -806,21 +875,21 @@ export default function ShopClient({
                 onClick={handleOpenLottery}
                 disabled={
                   !lotteryState.pendingClaim &&
-                  (lotteryState.availableTickets < 1 ||
+                  (selectedLotteryTicketCount < 1 ||
                     startLotteryMutation.isPending)
                 }
               >
                 <span>
                   {lotteryState.pendingClaim
-                    ? "복권 이어하기"
-                    : "복권"}
+                    ? `${selectedLotteryTicketName} 이어하기`
+                    : selectedLotteryTicketName}
                 </span>
                 <strong>
                   {startLotteryMutation.isPending
                     ? "준비 중"
                     : lotteryState.pendingClaim
                       ? "진행 중"
-                      : `${lotteryState.availableTickets}장`}
+                      : `${selectedLotteryTicketCount}장`}
                 </strong>
               </button>
             ) : null}
@@ -880,6 +949,93 @@ export default function ShopClient({
                 <span>판매 1개당 STM +0.10%p</span>
                 <strong>0등 100,000 CR</strong>
               </div>
+            </div>
+          </section>
+        ) : null}
+
+        {showPaybackSection ? (
+          <section
+            className={styles.paybackSection}
+            aria-labelledby="mrbeast-payback-title"
+            aria-busy={
+              paybackQuery.isPending || claimPaybackMutation.isPending
+            }
+          >
+            <div className={styles.paybackSection__copy}>
+              <span className={styles.paybackSection__eyebrow}>
+                APOLOGY PAYBACK
+              </span>
+              <h2 id="mrbeast-payback-title">미스터비스트 소다 사죄 보상</h2>
+              {paybackQuery.isPending ? (
+                <p role="status">누적 구매 기록과 보상 수량을 확인하고 있습니다.</p>
+              ) : paybackQuery.isError ? (
+                <p role="alert">{paybackQuery.error.message}</p>
+              ) : paybackState ? (
+                <>
+                  <p>
+                    2026년 7월 31일~8월 13일(KST) 누적 소다 구매 기록에 따라
+                    특별 사죄 복권을 지급합니다.
+                  </p>
+                  <div className={styles.paybackSection__facts}>
+                    <span>
+                      <small>누적 구매</small>
+                      <strong>
+                        {paybackState.purchasedQuantity.toLocaleString()}개
+                      </strong>
+                    </span>
+                    <span>
+                      <small>지급 보상</small>
+                      <strong>
+                        사죄 복권 {paybackState.rewardQuantity.toLocaleString()}장
+                      </strong>
+                    </span>
+                    <span>
+                      <small>정산 기준</small>
+                      <strong>소다 10개마다 3장</strong>
+                    </span>
+                  </div>
+                </>
+              ) : null}
+            </div>
+            <div className={styles.paybackSection__action}>
+              <Image
+                src={MRBEAST_APOLOGY_LOTTERY_SRC}
+                alt=""
+                width={112}
+                height={112}
+              />
+              {paybackQuery.isPending ? (
+                <span className={styles.paybackSection__state}>
+                  정산 확인 중
+                </span>
+              ) : paybackQuery.isError ? (
+                <button
+                  type="button"
+                  className={styles.paybackSection__button}
+                  onClick={() => void paybackQuery.refetch()}
+                  disabled={paybackQuery.isFetching}
+                >
+                  {paybackQuery.isFetching ? "다시 확인 중" : "다시 확인"}
+                </button>
+              ) : paybackState?.status === "ELIGIBLE" ? (
+                <button
+                  type="button"
+                  className={styles.paybackSection__button}
+                  onClick={handleClaimPayback}
+                  disabled={claimPaybackMutation.isPending}
+                >
+                  {claimPaybackMutation.isPending
+                    ? "보상 수령 중"
+                    : `사죄 복권 ${paybackState.rewardQuantity.toLocaleString()}장 받기`}
+                </button>
+              ) : paybackState?.status === "CLAIMED" ? (
+                <span
+                  className={`${styles.paybackSection__state} ${styles["paybackSection__state--claimed"]}`}
+                  role="status"
+                >
+                  보상 수령 완료
+                </span>
+              ) : null}
             </div>
           </section>
         ) : null}

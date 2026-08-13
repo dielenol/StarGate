@@ -521,6 +521,10 @@ function buildMrBeastLotteryWinner(
   env: Environment,
 ): DiscordWebhookPayload {
   const character = record(payload.character, "character");
+  const lotteryName =
+    typeof payload.lotteryName === "string" && payload.lotteryName.trim()
+      ? text(payload.lotteryName, "lotteryName", 100)
+      : "미스터비스트 복권";
   const tier = text(payload.tier, "tier", 20);
   const tierPresentation: Record<string, { label: string; color: number }> = {
     second: { label: "2등", color: 0x5ea3c5 },
@@ -538,11 +542,11 @@ function buildMrBeastLotteryWinner(
 
   return basePayload(
     "띠아",
-    `🎉 미스터비스트 복권 ${presentation.label} 당첨!`,
+    `🎉 ${lotteryName} ${presentation.label} 당첨!`,
     isoTimestamp(payload.revealedAt),
     {
       url: SHOP_URL,
-      description: `${text(character.codename, "character.codename", 100)} 요원이 미스터비스트 복권 ${presentation.label}에 당첨됐어요!`,
+      description: `${text(character.codename, "character.codename", 100)} 요원이 ${lotteryName} ${presentation.label}에 당첨됐어요!`,
       color: presentation.color,
       fields: [
         {
@@ -565,7 +569,7 @@ function buildMrBeastLotteryWinner(
           value: `[띠아 편의점으로 가기](${SHOP_URL})`,
         },
       ],
-      footer: "미스터비스트 복권 고액 당첨 공지",
+      footer: `${lotteryName} 고액 당첨 공지`,
       avatarUrl: env.DISCORD_WEBHOOK_SHOP_AVATAR_URL?.trim(),
     },
   );

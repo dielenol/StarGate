@@ -7,10 +7,14 @@ import {
 
 import type {
   MrBeastLotteryConfig,
+  MrBeastLotteryTicketSlug,
   MrBeastLotteryTier,
 } from "@/lib/shop/mrbeast-lottery";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
-import { MRBEAST_LOTTERY_SRC } from "@/lib/assets/shop";
+import {
+  MRBEAST_APOLOGY_LOTTERY_SRC,
+  MRBEAST_LOTTERY_SRC,
+} from "@/lib/assets/shop";
 
 import {
   addCredit,
@@ -23,9 +27,12 @@ import {
 
 import {
   getMrBeastLotteryPrize,
+  getMrBeastLotteryTicketDefinition,
+  getMrBeastLotteryTicketSlugForPrizeTableVersion,
   isMrBeastLotteryActive,
   isMrBeastLotteryAnnouncementCandidate,
   isSafeMrBeastLotteryEventId,
+  MRBEAST_APOLOGY_LOTTERY_SLUG,
   MRBEAST_LOTTERY_PRIZE_TABLE_VERSION,
   MRBEAST_LOTTERY_SLUG,
 } from "@/lib/shop/mrbeast-lottery";
@@ -35,6 +42,8 @@ import { enqueueMrBeastLotteryWinnerWebhook } from "@/lib/outbox/integration";
 
 const LOTTERY_CLAIMS_COLLECTION = "mrbeast_lottery_claims";
 const LOTTERY_ENTITLEMENTS_COLLECTION = "mrbeast_lottery_entitlements";
+const SHOP_DAILY_PURCHASE_COUNTERS_COLLECTION =
+  "shop_daily_purchase_counters";
 const LOTTERY_CONFIG_COLLECTION = "shop_runtime_state";
 const LOTTERY_CONFIG_ID = "mrbeast-lottery";
 const CHARACTERS_COLLECTION = "characters";
@@ -51,6 +60,7 @@ export type MrBeastLotteryErrorCode =
 export interface MrBeastLotteryPendingClaimDto {
   claimId: string;
   eventId: string;
+  ticketSlug: MrBeastLotteryTicketSlug;
   createdAt: string;
 }
 
@@ -72,6 +82,7 @@ export interface MrBeastLotteryStateDto {
   active: boolean;
   eventId: string | null;
   availableTickets: number;
+  ticketCounts: Record<MrBeastLotteryTicketSlug, number>;
   pendingClaim: MrBeastLotteryPendingClaimDto | null;
   recentWinners: MrBeastLotteryWinnerDto[];
 }
@@ -137,6 +148,7 @@ interface MrBeastLotteryClaim {
   label: string;
   reward: number;
   prizeTableVersion: string;
+  ticketSlug?: MrBeastLotteryTicketSlug;
   createdAt: Date;
   revealedAt?: Date;
   creditTransactionId?: string;
@@ -150,6 +162,7 @@ interface MrBeastLotteryEntitlement {
   sourceRequestId: string;
   ordinal: number;
   prizeTableVersion: string;
+  ticketSlug?: MrBeastLotteryTicketSlug;
   status: "AVAILABLE" | "CLAIMED";
   grantedAt: Date;
   claimId?: string;
@@ -322,7 +335,10 @@ export async function fenceActiveMrBeastLotteryConfigForGrant(input: {
 }
 
 export interface RequiredLotteryIndex {
-  collection: typeof LOTTERY_CLAIMS_COLLECTION | typeof LOTTERY_ENTITLEMENTS_COLLECTION;
+  collection:
+    | typeof LOTTERY_CLAIMS_COLLECTION
+    | typeof LOTTERY_ENTITLEMENTS_COLLECTION
+    | typeof SHOP_DAILY_PURCHASE_COUNTERS_COLLECTION;
   name: string;
   key: ReadonlyArray<readonly [string, 1 | -1]>;
   unique: boolean;
@@ -330,6 +346,17 @@ export interface RequiredLotteryIndex {
 }
 
 export const REQUIRED_LOTTERY_INDEXES: readonly RequiredLotteryIndex[] = [
+  {
+    collection: SHOP_DAILY_PURCHASE_COUNTERS_COLLECTION,
+    name: "shop_daily_purchase_counters_userId_slug_kstDate",
+    key: [
+      ["userId", 1],
+      ["slug", 1],
+      ["kstDate", 1],
+    ],
+    unique: false,
+    partialFilterExpression: null,
+  },
   {
     collection: LOTTERY_CLAIMS_COLLECTION,
     name: "mrbeast_lottery_claims_pending_character_global_unique",
@@ -407,10 +434,15 @@ async function validateMrBeastLotteryIndexes(): Promise<void> {
   const db = await getDb();
   let claimIndexes: IndexDescriptionInfo[];
   let entitlementIndexes: IndexDescriptionInfo[];
+  let dailyPurchaseCounterIndexes: IndexDescriptionInfo[];
   try {
-    [claimIndexes, entitlementIndexes] = await Promise.all([
+    [claimIndexes, entitlementIndexes, dailyPurchaseCounterIndexes] = await Promise.all([
       db.collection(LOTTERY_CLAIMS_COLLECTION).listIndexes().toArray(),
       db.collection(LOTTERY_ENTITLEMENTS_COLLECTION).listIndexes().toArray(),
+      db
+        .collection(SHOP_DAILY_PURCHASE_COUNTERS_COLLECTION)
+        .listIndexes()
+        .toArray(),
     ]);
   } catch (error) {
     console.error("[mrbeast-lottery] index readiness lookup failed", error);
@@ -423,6 +455,7 @@ async function validateMrBeastLotteryIndexes(): Promise<void> {
   const indexesByCollection = {
     [LOTTERY_CLAIMS_COLLECTION]: claimIndexes,
     [LOTTERY_ENTITLEMENTS_COLLECTION]: entitlementIndexes,
+    [SHOP_DAILY_PURCHASE_COUNTERS_COLLECTION]: dailyPurchaseCounterIndexes,
   };
   const invalid = REQUIRED_LOTTERY_INDEXES.find(
     (requirement) =>
@@ -469,14 +502,18 @@ export function isMrBeastLotteryTicketMasterReady(master: {
   previewImage?: string;
   isAvailable?: boolean;
   isPublic?: boolean;
-} | null | undefined): boolean {
+} | null | undefined, ticketSlug: MrBeastLotteryTicketSlug = MRBEAST_LOTTERY_SLUG): boolean {
+  const expectedImage =
+    ticketSlug === MRBEAST_APOLOGY_LOTTERY_SLUG
+      ? MRBEAST_APOLOGY_LOTTERY_SRC
+      : MRBEAST_LOTTERY_SRC;
   return (
     Boolean(master?._id) &&
-    master?.slug === MRBEAST_LOTTERY_SLUG &&
+    master?.slug === ticketSlug &&
     master.category === "CONSUMABLE" &&
     Number(master.price) === 0 &&
     preferOptimizedPublicImagePath(master.previewImage ?? "") ===
-      MRBEAST_LOTTERY_SRC &&
+      expectedImage &&
     master.isAvailable === false &&
     master.isPublic === false
   );
@@ -501,16 +538,24 @@ export async function getMrBeastLotteryReadiness(
   }
 
   try {
-    const master = await findMasterItemBySlug(MRBEAST_LOTTERY_SLUG);
-    masterItemReady = isMrBeastLotteryTicketMasterReady(master);
+    const [master, apologyMaster] = await Promise.all([
+      findMasterItemBySlug(MRBEAST_LOTTERY_SLUG),
+      findMasterItemBySlug(MRBEAST_APOLOGY_LOTTERY_SLUG),
+    ]);
+    masterItemReady =
+      isMrBeastLotteryTicketMasterReady(master, MRBEAST_LOTTERY_SLUG) &&
+      isMrBeastLotteryTicketMasterReady(
+        apologyMaster,
+        MRBEAST_APOLOGY_LOTTERY_SLUG,
+      );
     if (!masterItemReady) {
       issues.push(
-        "비공개 복권 마스터 아이템이 canonical 안전 조건과 다릅니다.",
+        "비공개 복권 마스터 아이템 2종이 canonical 안전 조건과 다릅니다.",
       );
     }
   } catch (error) {
     console.error("[mrbeast-lottery] master item readiness lookup failed", error);
-    issues.push("복권 마스터 아이템 준비 상태를 확인할 수 없습니다.");
+    issues.push("복권 마스터 아이템 2종의 준비 상태를 확인할 수 없습니다.");
   }
 
   return {
@@ -567,6 +612,7 @@ function serializePendingClaim(
   return {
     claimId: claim._id.toHexString(),
     eventId: claim.eventId,
+    ticketSlug: requireStoredTicketSlug(claim),
     createdAt: claim.createdAt.toISOString(),
   };
 }
@@ -612,13 +658,57 @@ function serializeWinner(
   };
 }
 
+function resolveStoredTicketSlug(
+  document: Pick<MrBeastLotteryEntitlement, "ticketSlug" | "prizeTableVersion">,
+): MrBeastLotteryTicketSlug | null {
+  const versionSlug = getMrBeastLotteryTicketSlugForPrizeTableVersion(
+    document.prizeTableVersion,
+  );
+  if (document.ticketSlug && document.ticketSlug !== versionSlug) return null;
+  return document.ticketSlug ?? versionSlug ?? null;
+}
+
+function requireStoredTicketSlug(
+  document: Pick<MrBeastLotteryEntitlement, "ticketSlug" | "prizeTableVersion">,
+): MrBeastLotteryTicketSlug {
+  const ticketSlug = resolveStoredTicketSlug(document);
+  if (!ticketSlug) {
+    throw new MrBeastLotteryError(
+      "LOTTERY_MISCONFIGURED",
+      "저장된 복권 종류와 확률표의 정합성을 확인할 수 없습니다.",
+    );
+  }
+  return ticketSlug;
+}
+
+function availableEntitlementFilter(
+  characterId: string,
+  ticketSlug: MrBeastLotteryTicketSlug,
+): Record<string, unknown> {
+  const prizeTableVersion =
+    getMrBeastLotteryTicketDefinition(ticketSlug).prizeTableVersion;
+  return {
+    characterId,
+    status: "AVAILABLE",
+    ...(ticketSlug === MRBEAST_LOTTERY_SLUG
+      ? {
+          $or: [
+            { ticketSlug },
+            { ticketSlug: { $exists: false }, prizeTableVersion },
+          ],
+        }
+      : { ticketSlug }),
+  };
+}
+
 async function countAvailableEntitlements(
   characterId: string,
+  ticketSlug: MrBeastLotteryTicketSlug,
   session: ClientSession,
 ): Promise<number> {
   const entitlements = await entitlementsCol();
   return entitlements.countDocuments(
-    { characterId, status: "AVAILABLE" },
+    availableEntitlementFilter(characterId, ticketSlug),
     { session },
   );
 }
@@ -668,13 +758,16 @@ async function reconcileTicketInventoryMirror(input: {
   characterId: string;
   characterCodename: string;
   ticketItemId: string;
+  ticketSlug: MrBeastLotteryTicketSlug;
   acquiredAt: Date;
   session: ClientSession;
 }): Promise<number> {
   const available = await countAvailableEntitlements(
     input.characterId,
+    input.ticketSlug,
     input.session,
   );
+  const ticket = getMrBeastLotteryTicketDefinition(input.ticketSlug);
   const inventory = await characterInventoryCol();
   if (available === 0) {
     await inventory.deleteOne(
@@ -690,7 +783,7 @@ async function reconcileTicketInventoryMirror(input: {
       $set: {
         quantity: available,
         characterCodename: input.characterCodename,
-        itemName: "미스터비스트 복권",
+        itemName: ticket.name,
       },
       $setOnInsert: {
         acquiredAt: input.acquiredAt,
@@ -723,38 +816,90 @@ export async function grantMrBeastLotteryTicketsForPurchase(input: {
   }
 
   const eventId = requireActiveEvent(input.config);
+  return grantMrBeastLotteryTickets({
+    eventId,
+    ticketSlug: MRBEAST_LOTTERY_SLUG,
+    prizeTableVersion: input.config.prizeTableVersion,
+    characterId: input.characterId,
+    characterCodename: input.characterCodename,
+    ticketItemId: input.ticketItemId,
+    sourceRequestId: input.sourceRequestId,
+    quantity: input.quantity,
+    acquiredAt: input.acquiredAt,
+    note: `이벤트 ${eventId} · 미스터비스트 소다 구매 보너스`,
+    session: input.session,
+  });
+}
+
+export async function grantMrBeastLotteryTickets(input: {
+  eventId: string;
+  ticketSlug: MrBeastLotteryTicketSlug;
+  prizeTableVersion: string;
+  characterId: string;
+  characterCodename: string;
+  ticketItemId: string;
+  sourceRequestId: string;
+  quantity: number;
+  acquiredAt: Date;
+  note: string;
+  session: ClientSession;
+}): Promise<number> {
+  if (!Number.isSafeInteger(input.quantity) || input.quantity < 1) {
+    throw new Error("Lottery ticket grant quantity must be a positive integer");
+  }
+  if (!input.session.inTransaction()) {
+    throw new Error("Lottery tickets must be granted in an economic transaction");
+  }
+  const ticket = getMrBeastLotteryTicketDefinition(input.ticketSlug);
+  if (
+    input.prizeTableVersion !== ticket.prizeTableVersion ||
+    getMrBeastLotteryTicketSlugForPrizeTableVersion(
+      input.prizeTableVersion,
+    ) !== input.ticketSlug
+  ) {
+    throw new Error("Lottery ticket prize table does not match its ticket slug");
+  }
   const entitlements = await entitlementsCol();
-  await entitlements.insertMany(
-    Array.from({ length: input.quantity }, (_, ordinal) => ({
-      _id: new ObjectId(),
-      eventId,
-      characterId: input.characterId,
-      sourceRequestId: input.sourceRequestId,
-      ordinal,
-      prizeTableVersion: input.config.prizeTableVersion,
-      status: "AVAILABLE" as const,
-      grantedAt: input.acquiredAt,
-    })),
-    { session: input.session },
-  );
+  // 대량 역사 보상도 MongoDB 단일 명령 크기 제한을 넘지 않게 분할한다.
+  for (let offset = 0; offset < input.quantity; offset += 500) {
+    const batchSize = Math.min(500, input.quantity - offset);
+    await entitlements.insertMany(
+      Array.from({ length: batchSize }, (_, index) => ({
+        _id: new ObjectId(),
+        eventId: input.eventId,
+        characterId: input.characterId,
+        sourceRequestId: input.sourceRequestId,
+        ordinal: offset + index,
+        prizeTableVersion: input.prizeTableVersion,
+        ticketSlug: input.ticketSlug,
+        status: "AVAILABLE" as const,
+        grantedAt: input.acquiredAt,
+      })),
+      { session: input.session },
+    );
+  }
 
   // character_inventory는 표시용 mirror다. 경제 권리 판정은 entitlement만 사용한다.
-  await addToInventory(
-    {
-      characterId: input.characterId,
-      characterCodename: input.characterCodename,
-      itemId: input.ticketItemId,
-      itemName: "미스터비스트 복권",
-      quantity: input.quantity,
-      acquiredAt: input.acquiredAt,
-      note: `이벤트 ${eventId} · 미스터비스트 소다 구매 보너스`,
-    },
-    { session: input.session },
-  );
+  // shared inventory mutation 상한(999)을 넘는 역사 보상도 안전하게 분할한다.
+  for (let offset = 0; offset < input.quantity; offset += 999) {
+    await addToInventory(
+      {
+        characterId: input.characterId,
+        characterCodename: input.characterCodename,
+        itemId: input.ticketItemId,
+        itemName: ticket.name,
+        quantity: Math.min(999, input.quantity - offset),
+        acquiredAt: input.acquiredAt,
+        note: input.note,
+      },
+      { session: input.session },
+    );
+  }
   await reconcileTicketInventoryMirror({
     characterId: input.characterId,
     characterCodename: input.characterCodename,
     ticketItemId: input.ticketItemId,
+    ticketSlug: input.ticketSlug,
     acquiredAt: input.acquiredAt,
     session: input.session,
   });
@@ -765,18 +910,30 @@ export async function getMrBeastLotteryState(
   config: MrBeastLotteryConfig,
   characterId: string,
 ): Promise<MrBeastLotteryStateDto> {
-  const [availableTickets, pendingClaim, recentWinners] = await Promise.all([
-    entitlementsCol().then((collection) =>
-      collection.countDocuments({ characterId, status: "AVAILABLE" }),
-    ),
-    claimsCol().then((collection) =>
-      collection.findOne(
-        { characterId, status: "PENDING" },
-        { sort: { createdAt: 1, _id: 1 } },
+  const [normalTickets, apologyTickets, pendingClaim, recentWinners] =
+    await Promise.all([
+      entitlementsCol().then((collection) =>
+        collection.countDocuments(
+          availableEntitlementFilter(characterId, MRBEAST_LOTTERY_SLUG),
+        ),
       ),
-    ),
-    listRecentMrBeastLotteryWinners(),
-  ]);
+      entitlementsCol().then((collection) =>
+        collection.countDocuments(
+          availableEntitlementFilter(
+            characterId,
+            MRBEAST_APOLOGY_LOTTERY_SLUG,
+          ),
+        ),
+      ),
+      claimsCol().then((collection) =>
+        collection.findOne(
+          { characterId, status: "PENDING" },
+          { sort: { createdAt: 1, _id: 1 } },
+        ),
+      ),
+      listRecentMrBeastLotteryWinners(),
+    ]);
+  const availableTickets = normalTickets + apologyTickets;
 
   return {
     enabled:
@@ -784,6 +941,10 @@ export async function getMrBeastLotteryState(
     active: config.active,
     eventId: config.eventId,
     availableTickets,
+    ticketCounts: {
+      [MRBEAST_LOTTERY_SLUG]: normalTickets,
+      [MRBEAST_APOLOGY_LOTTERY_SLUG]: apologyTickets,
+    },
     pendingClaim: pendingClaim ? serializePendingClaim(pendingClaim) : null,
     recentWinners,
   };
@@ -838,6 +999,7 @@ export async function startOrResumeMrBeastLotteryClaim(input: {
   ownerId: string;
   ownerName: string;
   ticketItemId: string;
+  ticketSlug: MrBeastLotteryTicketSlug;
   claimId: string;
   bucket: number;
   session: ClientSession;
@@ -880,6 +1042,7 @@ export async function startOrResumeMrBeastLotteryClaim(input: {
       resumed: true,
       availableTickets: await countAvailableEntitlements(
         input.characterId,
+        requireStoredTicketSlug(existing),
         input.session,
       ),
     };
@@ -887,7 +1050,7 @@ export async function startOrResumeMrBeastLotteryClaim(input: {
 
   const entitlements = await entitlementsCol();
   const candidate = await entitlements.findOne(
-    { characterId: input.characterId, status: "AVAILABLE" },
+    availableEntitlementFilter(input.characterId, input.ticketSlug),
     {
       session: input.session,
       sort: { grantedAt: 1, _id: 1 },
@@ -903,6 +1066,9 @@ export async function startOrResumeMrBeastLotteryClaim(input: {
   let prize;
   try {
     // 알 수 없는 과거 버전은 entitlement를 CLAIMED로 바꾸기 전에 fail closed한다.
+    if (resolveStoredTicketSlug(candidate) !== input.ticketSlug) {
+      throw new Error("Lottery entitlement kind does not match requested ticket");
+    }
     prize = getMrBeastLotteryPrize(
       input.bucket,
       candidate.prizeTableVersion,
@@ -953,6 +1119,7 @@ export async function startOrResumeMrBeastLotteryClaim(input: {
     characterId: input.characterId,
     characterCodename: input.characterCodename,
     ticketItemId: input.ticketItemId,
+    ticketSlug: input.ticketSlug,
     acquiredAt: claimedAt,
     session: input.session,
   });
@@ -972,6 +1139,7 @@ export async function startOrResumeMrBeastLotteryClaim(input: {
     label: prize.label,
     reward: prize.reward,
     prizeTableVersion: entitlement.prizeTableVersion,
+    ticketSlug: input.ticketSlug,
     createdAt: claimedAt,
   };
   await collection.insertOne(claim, { session: input.session });
@@ -1056,6 +1224,9 @@ export async function revealMrBeastLotteryClaim(input: {
 
   let balanceAfter: number | undefined;
   let creditTransactionId: string | undefined;
+  const ticket = getMrBeastLotteryTicketDefinition(
+    requireStoredTicketSlug(revealed),
+  );
   if (revealed.reward > 0) {
     const credit = await addCredit({
       characterId: revealed.characterId,
@@ -1064,12 +1235,13 @@ export async function revealMrBeastLotteryClaim(input: {
       ownerName: revealed.ownerName,
       amount: revealed.reward,
       type: "EVENT_REWARD",
-      description: `미스터비스트 복권 ${revealed.label} 보상`,
+      description: `${ticket.name} ${revealed.label} 보상`,
       metadata: {
         eventId: revealed.eventId,
         claimId: revealed._id.toHexString(),
         tier: revealed.tier,
         prizeTableVersion: revealed.prizeTableVersion,
+        ticketSlug: ticket.slug,
       },
       createdById: SYSTEM_USER_ID_SENTINEL,
       createdByName: LOTTERY_EVENT_ACTOR_NAME,
@@ -1107,7 +1279,7 @@ export async function revealMrBeastLotteryClaim(input: {
       userId: completed.ownerId,
       dedupeKey: `mrbeast-lottery-result:${completed._id.toHexString()}`,
       type: completed.reward > 0 ? "CREDIT_RECEIVED" : "SYSTEM",
-      title: `미스터비스트 복권 ${completed.label}`,
+      title: `${ticket.name} ${completed.label}`,
       message:
         completed.reward > 0
           ? `${completed.characterCodename} · +${completed.reward.toLocaleString()} CR`
@@ -1131,6 +1303,7 @@ export async function revealMrBeastLotteryClaim(input: {
           id: completed.characterId,
           codename: completed.characterCodename,
         },
+        lotteryName: ticket.name,
         tier: completed.tier,
         label: completed.label,
         reward: completed.reward,

@@ -39,6 +39,7 @@ export const SHOP_ITEM_IMAGE_BY_SLUG = {
   force_core: shopItem("force_core"),
   vf_blood: shopItem("vf_blood"),
   mrbeast_soda: shopItem("mrbeast_soda"),
+  mrbeast_apology_lottery: shopItem("mrbeast_apology_lottery"),
 } as const satisfies Record<string, string>;
 
 export const TIA_PROFILE_SRC = shopHud("tia-profile");
@@ -56,6 +57,8 @@ export const MRBEAST_SODA_POSTER_SRC = shopEvent(
   "mrbeast-soda-lottery-poster",
 );
 export const MRBEAST_LOTTERY_SRC = shopEvent("mrbeast-lottery-transparent");
+export const MRBEAST_APOLOGY_LOTTERY_SRC =
+  SHOP_ITEM_IMAGE_BY_SLUG.mrbeast_apology_lottery;
 export const MRBEAST_SODA_SRC = SHOP_ITEM_IMAGE_BY_SLUG.mrbeast_soda;
 
 export function getShopItemImageSrc(slug: string): string | undefined {

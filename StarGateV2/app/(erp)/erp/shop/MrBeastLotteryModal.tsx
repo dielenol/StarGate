@@ -12,18 +12,25 @@ import {
 
 import { useRevealMrBeastLotteryClaim } from "@/hooks/mutations/useShopMutation";
 
-import { MRBEAST_LOTTERY_SRC } from "@/lib/assets/shop";
+import {
+  MRBEAST_APOLOGY_LOTTERY_SRC,
+  MRBEAST_LOTTERY_SRC,
+} from "@/lib/assets/shop";
 import type {
   MrBeastLotteryPendingClaimDto,
   MrBeastLotteryRevealDto,
 } from "@/lib/db/mrbeast-lottery";
+import {
+  MRBEAST_APOLOGY_LOTTERY_NAME,
+  MRBEAST_APOLOGY_LOTTERY_SLUG,
+  MRBEAST_LOTTERY_NAME,
+} from "@/lib/shop/mrbeast-lottery";
 
 import styles from "./MrBeastLotteryModal.module.css";
 
 const SCRATCH_REVEAL_THRESHOLD = 0.65;
 const SCRATCH_SAMPLE_STEP = 8;
 const SCRATCH_BRUSH_SIZE = 46;
-const LOTTERY_IMAGE_SRC = MRBEAST_LOTTERY_SRC;
 
 interface Props {
   claim: MrBeastLotteryPendingClaimDto;
@@ -60,6 +67,15 @@ export default function MrBeastLotteryModal({ claim, onClose }: Props) {
   const completedRef = useRef(false);
 
   const revealMutation = useRevealMrBeastLotteryClaim();
+
+  const isApologyLottery =
+    claim.ticketSlug === MRBEAST_APOLOGY_LOTTERY_SLUG;
+  const lotteryName = isApologyLottery
+    ? MRBEAST_APOLOGY_LOTTERY_NAME
+    : MRBEAST_LOTTERY_NAME;
+  const lotteryImageSrc = isApologyLottery
+    ? MRBEAST_APOLOGY_LOTTERY_SRC
+    : MRBEAST_LOTTERY_SRC;
 
   const [coverage, setCoverage] = useState(0);
   const [result, setResult] = useState<MrBeastLotteryRevealDto | null>(null);
@@ -231,15 +247,19 @@ export default function MrBeastLotteryModal({ claim, onClose }: Props) {
       >
         <header className={styles.header}>
           <div>
-            <span className={styles.eyebrow}>LIMITED EVENT</span>
-            <h2 id={titleId}>미스터비스트 스크래치 복권</h2>
+            <span className={styles.eyebrow}>
+              {isApologyLottery
+                ? "APOLOGY SPECIAL · 2등 이상 당첨 확률 10배"
+                : "LIMITED EVENT"}
+            </span>
+            <h2 id={titleId}>{lotteryName}</h2>
           </div>
           <button
             type="button"
             className={styles.closeButton}
             onClick={() => onClose(result !== null)}
             disabled={revealMutation.isPending}
-            aria-label="복권 닫기 — 진행 중인 복권은 다시 열 수 있습니다"
+            aria-label={`${lotteryName} 닫기 — 진행 중인 복권은 다시 열 수 있습니다`}
           >
             X
           </button>
@@ -253,7 +273,7 @@ export default function MrBeastLotteryModal({ claim, onClose }: Props) {
         <div className={`${styles.card} ${tierClass}`}>
           <div className={styles.card__art} aria-hidden>
             <Image
-              src={LOTTERY_IMAGE_SRC}
+              src={lotteryImageSrc}
               alt=""
               fill
               sizes="(max-width: 640px) 90vw, 600px"
@@ -301,7 +321,7 @@ export default function MrBeastLotteryModal({ claim, onClose }: Props) {
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerEnd}
             onPointerCancel={handlePointerEnd}
-            aria-label={`복권 긁기 영역, ${Math.round(coverage * 100)}% 완료`}
+            aria-label={`${lotteryName} 긁기 영역, ${Math.round(coverage * 100)}% 완료`}
           />
         </div>
 

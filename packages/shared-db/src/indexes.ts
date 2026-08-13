@@ -670,6 +670,11 @@ export async function ensureAllIndexes(): Promise<void> {
       { status: 1, updatedAt: 1 },
       { name: "economic_operations_status_updatedAt" },
     ),
+    /* ── MrBeast soda purchase history (apology payback read path) ── */
+    db.collection("shop_daily_purchase_counters").createIndex(
+      { userId: 1, slug: 1, kstDate: 1 },
+      { name: "shop_daily_purchase_counters_userId_slug_kstDate" },
+    ),
     /* ── MrBeast soda lottery (activation prerequisite; not auto-run) ── */
     db.collection("mrbeast_lottery_claims").createIndexes([
       {

@@ -651,3 +651,43 @@ test("미스터비스트 복권 2등 이상은 편의점 채널에 고액 당첨
   assert.equal(requests[0].body.embeds[0].fields[2].value, "+800 CR");
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
 });
+
+test("사죄 복권 당첨 공지는 새 이름을 쓰고 과거 payload는 기존 이름으로 호환한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "MRBEAST_LOTTERY_WINNER_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      DISCORD_WEBHOOK_SHOP_URL:
+        "https://discord.com/api/webhooks/shop/token",
+    },
+    {
+      async fetchImpl(_url, init) {
+        requests.push(init?.body ? JSON.parse(String(init.body)) : null);
+        return Response.json({ id: "22345678901234567" });
+      },
+      async findCharacter() {
+        return { isPublic: true };
+      },
+    },
+  );
+
+  await registry.get("MRBEAST_LOTTERY_WINNER_WEBHOOK").deliver(
+    outboxEvent("MRBEAST_LOTTERY_WINNER_WEBHOOK", {
+      claimId: "claim-apology",
+      eventId: "mrbeast-soda-apology-payback-v1",
+      lotteryName: "미스터비스트 사죄의 마음",
+      character: { id: "character-1", codename: "JTEST" },
+      tier: "second",
+      label: "2등",
+      reward: 800,
+      revealedAt: new Date().toISOString(),
+    }),
+  );
+
+  assert.equal(
+    requests[0].embeds[0].title,
+    "🎉 미스터비스트 사죄의 마음 2등 당첨!",
+  );
+  assert.match(requests[0].embeds[0].description, /사죄의 마음/);
+});

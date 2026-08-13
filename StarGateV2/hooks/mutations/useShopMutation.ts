@@ -22,12 +22,17 @@ import {
   shopKeys,
   type ShopCatalogResponse,
   type ShopLotteryAdminConfigResponse,
+  type ShopPaybackResponse,
 } from "@/hooks/queries/useShopQuery";
 import type {
   MrBeastLotteryPendingClaimDto,
   MrBeastLotteryRevealDto,
 } from "@/lib/db/mrbeast-lottery";
 import { createIdempotencyKey } from "@/lib/query/idempotency";
+import {
+  MRBEAST_LOTTERY_SLUG,
+  type MrBeastLotteryTicketSlug,
+} from "@/lib/shop/mrbeast-lottery";
 import type { MrBeastSodaConsumptionOutcome } from "@/lib/shop/mrbeast-soda-consumption";
 
 /* ── 입력/응답 타입 ── */
@@ -81,6 +86,11 @@ export interface StartMrBeastLotteryResponse {
   claim: MrBeastLotteryPendingClaimDto;
   resumed: boolean;
   availableTickets: number;
+}
+
+export interface ClaimMrBeastSodaPaybackInput {
+  actionId: string;
+  expectedCharacterId: string;
 }
 
 export type ShopOpenMode = "auto" | "open" | "closed";
@@ -308,7 +318,11 @@ export function useStartMrBeastLotteryClaim() {
   return useMutation<
     StartMrBeastLotteryResponse,
     ShopApiError,
-    { actionId: string; expectedCharacterId: string }
+    {
+      actionId: string;
+      expectedCharacterId: string;
+      ticketSlug?: MrBeastLotteryTicketSlug;
+    }
   >({
     mutationFn: async (input) => {
       const res = await fetch("/api/erp/shop/lottery", {
@@ -322,6 +336,7 @@ export function useStartMrBeastLotteryClaim() {
         },
         body: JSON.stringify({
           expectedCharacterId: input.expectedCharacterId,
+          ticketSlug: input.ticketSlug ?? MRBEAST_LOTTERY_SLUG,
         }),
       });
       if (!res.ok) await throwShopError(res);
@@ -333,6 +348,44 @@ export function useStartMrBeastLotteryClaim() {
       queryClient.invalidateQueries({
         queryKey: inventoryKeys.byCharacter(input.expectedCharacterId),
       });
+    },
+  });
+}
+
+export function useClaimMrBeastSodaPayback() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ShopPaybackResponse,
+    ShopApiError,
+    ClaimMrBeastSodaPaybackInput
+  >({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/erp/shop/payback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": createIdempotencyKey(
+            "shop-mrbeast-soda-payback",
+            input,
+          ),
+        },
+        body: JSON.stringify({
+          expectedCharacterId: input.expectedCharacterId,
+        }),
+      });
+      if (!res.ok) await throwShopError(res);
+      return res.json();
+    },
+    onSuccess: (result, input) => {
+      queryClient.setQueryData(shopKeys.payback, result);
+      queryClient.invalidateQueries({ queryKey: shopKeys.payback });
+      queryClient.invalidateQueries({ queryKey: shopKeys.lottery });
+      queryClient.invalidateQueries({ queryKey: shopKeys.inventory });
+      queryClient.invalidateQueries({
+        queryKey: inventoryKeys.byCharacter(input.expectedCharacterId),
+      });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });
 }

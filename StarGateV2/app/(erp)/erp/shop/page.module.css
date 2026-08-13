@@ -489,6 +489,167 @@
   box-shadow: 0 0 16px rgba(255, 57, 135, 0.18);
 }
 
+.paybackSection {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 330px);
+  gap: clamp(14px, 2vw, 24px);
+  align-items: center;
+  margin-bottom: 10px;
+  padding: clamp(14px, 2vw, 20px);
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255, 94, 178, 0.2), transparent 32%),
+    linear-gradient(125deg, rgba(24, 10, 36, 0.97), rgba(9, 25, 50, 0.97));
+  border: 1px solid rgba(255, 124, 196, 0.62);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+    0 12px 28px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.paybackSection::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 10px 10px;
+  opacity: 0.18;
+}
+
+.paybackSection__copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.paybackSection__eyebrow {
+  width: max-content;
+  padding: 4px 8px;
+  color: #271020;
+  background: #ff91c7;
+  border: 2px solid #271020;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  transform: rotate(-1deg);
+}
+
+.paybackSection__copy h2 {
+  color: #fff;
+  font-size: clamp(22px, 2.4vw, 34px);
+  line-height: 1.1;
+  text-shadow: 2px 2px 0 #271020;
+}
+
+.paybackSection__copy > p {
+  max-width: 680px;
+  color: #f0deed;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.paybackSection__copy > p[role="alert"] {
+  color: #ffb7c6;
+}
+
+.paybackSection__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.paybackSection__facts span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: rgba(5, 9, 24, 0.64);
+  border: 1px solid rgba(255, 145, 199, 0.35);
+  border-radius: var(--radius-sm);
+}
+
+.paybackSection__facts small {
+  color: #d9a9c8;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.paybackSection__facts strong {
+  color: #fff4b5;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.paybackSection__action {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  background: rgba(5, 9, 24, 0.66);
+  border: 1px solid rgba(255, 229, 122, 0.3);
+  border-radius: var(--radius-sm);
+}
+
+.paybackSection__action img {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(255, 94, 178, 0.3));
+}
+
+.paybackSection__button,
+.paybackSection__state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.paybackSection__button {
+  color: #271020;
+  background: linear-gradient(135deg, #fff1a7, #ff91c7);
+  border: 1px solid #fff1a7;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(255, 145, 199, 0.2);
+}
+
+.paybackSection__button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fff8d1, #ffb7db);
+}
+
+.paybackSection__button:disabled {
+  color: #b594a8;
+  background: rgba(56, 38, 53, 0.82);
+  border-color: rgba(255, 145, 199, 0.24);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.paybackSection__state {
+  color: #edcfe2;
+  border: 1px solid rgba(255, 145, 199, 0.32);
+}
+
+.paybackSection__state--claimed {
+  color: #baf2cf;
+  background: rgba(43, 128, 82, 0.18);
+  border-color: rgba(98, 222, 149, 0.42);
+}
+
 .lotteryWinners {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1384,6 +1545,23 @@
 
   .lotteryPromotion__items > strong {
     align-self: center;
+  }
+
+  .paybackSection {
+    grid-template-columns: 1fr;
+  }
+
+  .paybackSection__facts {
+    grid-template-columns: 1fr;
+  }
+
+  .paybackSection__action {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .paybackSection__action img {
+    width: 76px;
+    height: 76px;
   }
 
   .lotteryWinners {

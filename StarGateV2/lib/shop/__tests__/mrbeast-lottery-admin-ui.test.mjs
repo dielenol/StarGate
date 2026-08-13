@@ -72,7 +72,11 @@ test("GM만 복권 운영 기반을 멱등 준비하고 관리자 상태를 다�
   assert.match(setup, /scheduleGmAdminAudit/);
   assert.match(setup, /initialReadiness\.ready &&/);
   assert.match(setup, /previousOperation\.status === "READY"/);
-  assert.match(setup, /isMrBeastLotteryTicketMasterReady\(preparedMaster\)/);
+  assert.match(
+    setup,
+    /isMrBeastLotteryTicketMasterReady\([\s\S]*preparedMaster,[\s\S]*definition\.slug/,
+  );
+  assert.match(setup, /MRBEAST_APOLOGY_LOTTERY_SLUG/);
   assert.match(setup, /consumable-mrbeast-lottery-2026-07-31\.json/);
   assert.match(setup, /LOTTERY_MASTER_ITEM_ID/);
   assert.match(seed, /"isAvailable": false/);
@@ -101,7 +105,8 @@ test("GM 모달은 KST 기간·준비 상태·버전 충돌을 명시한다", as
   assert.match(component, /error\.status === 409/);
   assert.match(component, /config\.readiness\.indexesReady/);
   assert.match(component, /config\.readiness\.masterItemReady/);
-  assert.match(component, /중복 지급·사용 방지 DB 인덱스 5개/);
+  assert.match(component, /중복 지급·사용·페이백 조회 DB 인덱스 6개/);
+  assert.match(component, /실제 이벤트 활성화와 사죄 보상 수령에/);
   assert.match(component, /운영 기반 한 번에 준비/);
   assert.match(component, /상태 다시 확인/);
   assert.match(component, /window\.confirm/);

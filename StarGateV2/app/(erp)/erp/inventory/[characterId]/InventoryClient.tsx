@@ -40,7 +40,11 @@ import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { formatDate } from "@/lib/format/date";
 import { getConsumableItemImageSrc } from "@/lib/assets/catalog";
 import { visibleInventoryNote } from "@/lib/inventory/note-visibility";
-import { MRBEAST_LOTTERY_SLUG } from "@/lib/shop/mrbeast-lottery";
+import {
+  MRBEAST_APOLOGY_LOTTERY_SLUG,
+  MRBEAST_LOTTERY_SLUG,
+  type MrBeastLotteryTicketSlug,
+} from "@/lib/shop/mrbeast-lottery";
 
 import styles from "./page.module.css";
 
@@ -233,7 +237,7 @@ export default function InventoryClient({
   const entries = inventoryQuery.data?.entries ?? initialEntries;
   const SectionIcon = SECTION_ICONS[variant];
 
-  function handleUseMrBeastLottery() {
+  function handleUseMrBeastLottery(ticketSlug: MrBeastLotteryTicketSlug) {
     if (!canUseMrBeastLottery || !characterId) return;
 
     const lotteryState = lotteryQuery.data;
@@ -258,6 +262,7 @@ export default function InventoryClient({
       {
         actionId: crypto.randomUUID(),
         expectedCharacterId: characterId,
+        ticketSlug,
       },
       {
         onSuccess: (response) => setLotteryClaim(response.claim),
@@ -396,7 +401,9 @@ export default function InventoryClient({
     TAB_DEFS.find((tab) => tab.value === activeTab)?.label ?? "전체";
   const hasQuery = normalizedQuery.length > 0;
   const hasMrBeastLotteryEntry = entries.some(
-    (entry) => entry.slug === MRBEAST_LOTTERY_SLUG,
+    (entry) =>
+      entry.slug === MRBEAST_LOTTERY_SLUG ||
+      entry.slug === MRBEAST_APOLOGY_LOTTERY_SLUG,
   );
   const pendingLotteryClaim = lotteryQuery.data?.pendingClaim ?? null;
   const lotteryStatusError =
@@ -483,7 +490,9 @@ export default function InventoryClient({
           <button
             type="button"
             className={styles.equipButton}
-            onClick={handleUseMrBeastLottery}
+            onClick={() =>
+              handleUseMrBeastLottery(pendingLotteryClaim.ticketSlug)
+            }
           >
             복권 이어하기
           </button>
@@ -610,7 +619,8 @@ export default function InventoryClient({
             const isMrBeastLottery =
               canUseMrBeastLottery &&
               variant === "personal" &&
-              entry.slug === MRBEAST_LOTTERY_SLUG;
+              (entry.slug === MRBEAST_LOTTERY_SLUG ||
+                entry.slug === MRBEAST_APOLOGY_LOTTERY_SLUG);
             const isEquippable =
               variant === "personal" &&
               Boolean(characterId) &&
@@ -680,9 +690,15 @@ export default function InventoryClient({
                             startLotteryMutation.isPending ||
                             (!pendingLotteryClaim &&
                               (lotteryQuery.isPending ||
-                                (lotteryQuery.data?.availableTickets ?? 0) < 1))
+                                (lotteryQuery.data?.ticketCounts?.[
+                                  entry.slug as MrBeastLotteryTicketSlug
+                                ] ?? 0) < 1))
                           }
-                          onClick={handleUseMrBeastLottery}
+                          onClick={() =>
+                            handleUseMrBeastLottery(
+                              entry.slug as MrBeastLotteryTicketSlug,
+                            )
+                          }
                         >
                           {startLotteryMutation.isPending
                             ? "준비 중"

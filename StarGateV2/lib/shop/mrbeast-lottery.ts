@@ -2,9 +2,44 @@ import { randomInt } from "node:crypto";
 
 export const MRBEAST_SODA_SLUG = "mrbeast_soda";
 export const MRBEAST_LOTTERY_SLUG = "mrbeast_lottery";
+export const MRBEAST_LOTTERY_NAME = "미스터비스트 복권";
 export const MRBEAST_LOTTERY_PRIZE_TABLE_VERSION = "mrbeast-lottery-v1";
+export const MRBEAST_APOLOGY_LOTTERY_SLUG = "mrbeast_apology_lottery";
+export const MRBEAST_APOLOGY_LOTTERY_NAME = "미스터비스트 사죄의 마음";
+export const MRBEAST_APOLOGY_LOTTERY_PRIZE_TABLE_VERSION =
+  "mrbeast-apology-lottery-v1";
 export const MRBEAST_LOTTERY_TOTAL_BUCKETS = 1_000_000;
 export const MRBEAST_LOTTERY_REVEAL_THRESHOLD = 0.65;
+
+export type MrBeastLotteryTicketSlug =
+  | typeof MRBEAST_LOTTERY_SLUG
+  | typeof MRBEAST_APOLOGY_LOTTERY_SLUG;
+
+export type MrBeastLotteryPrizeTableVersion =
+  | typeof MRBEAST_LOTTERY_PRIZE_TABLE_VERSION
+  | typeof MRBEAST_APOLOGY_LOTTERY_PRIZE_TABLE_VERSION;
+
+const MRBEAST_LOTTERY_TICKET_DEFINITIONS = {
+  [MRBEAST_LOTTERY_SLUG]: {
+    slug: MRBEAST_LOTTERY_SLUG,
+    name: MRBEAST_LOTTERY_NAME,
+    prizeTableVersion: MRBEAST_LOTTERY_PRIZE_TABLE_VERSION,
+  },
+  [MRBEAST_APOLOGY_LOTTERY_SLUG]: {
+    slug: MRBEAST_APOLOGY_LOTTERY_SLUG,
+    name: MRBEAST_APOLOGY_LOTTERY_NAME,
+    prizeTableVersion: MRBEAST_APOLOGY_LOTTERY_PRIZE_TABLE_VERSION,
+  },
+} as const satisfies Readonly<
+  Record<
+    MrBeastLotteryTicketSlug,
+    {
+      slug: MrBeastLotteryTicketSlug;
+      name: string;
+      prizeTableVersion: MrBeastLotteryPrizeTableVersion;
+    }
+  >
+>;
 
 export const MRBEAST_LOTTERY_TIERS = [
   "blank",
@@ -107,11 +142,93 @@ export const MRBEAST_LOTTERY_PRIZES: readonly MrBeastLotteryPrize[] = [
   },
 ] as const;
 
+export const MRBEAST_APOLOGY_LOTTERY_PRIZES: readonly MrBeastLotteryPrize[] = [
+  {
+    tier: "blank",
+    label: "꽝",
+    bucketCount: 9_990,
+    reward: 0,
+    cumulativeExclusiveMax: 9_990,
+  },
+  {
+    tier: "fifth",
+    label: "5등",
+    bucketCount: 450_000,
+    reward: 40,
+    cumulativeExclusiveMax: 459_990,
+  },
+  {
+    tier: "fourth",
+    label: "4등",
+    bucketCount: 350_000,
+    reward: 60,
+    cumulativeExclusiveMax: 809_990,
+  },
+  {
+    tier: "third",
+    label: "3등",
+    bucketCount: 90_000,
+    reward: 80,
+    cumulativeExclusiveMax: 899_990,
+  },
+  {
+    tier: "second",
+    label: "2등",
+    bucketCount: 99_000,
+    reward: 800,
+    cumulativeExclusiveMax: 998_990,
+  },
+  {
+    tier: "first",
+    label: "1등",
+    bucketCount: 1_000,
+    reward: 10_000,
+    cumulativeExclusiveMax: 999_990,
+  },
+  {
+    tier: "zeroth",
+    label: "0등",
+    bucketCount: 10,
+    reward: 100_000,
+    cumulativeExclusiveMax: 1_000_000,
+  },
+] as const;
+
 export const MRBEAST_LOTTERY_PRIZE_TABLES = {
   [MRBEAST_LOTTERY_PRIZE_TABLE_VERSION]: MRBEAST_LOTTERY_PRIZES,
+  [MRBEAST_APOLOGY_LOTTERY_PRIZE_TABLE_VERSION]:
+    MRBEAST_APOLOGY_LOTTERY_PRIZES,
 } as const satisfies Readonly<
   Record<string, readonly MrBeastLotteryPrize[]>
 >;
+
+export function isMrBeastLotteryTicketSlug(
+  value: unknown,
+): value is MrBeastLotteryTicketSlug {
+  return (
+    typeof value === "string" &&
+    Object.hasOwn(MRBEAST_LOTTERY_TICKET_DEFINITIONS, value)
+  );
+}
+
+export function getMrBeastLotteryTicketDefinition(
+  slug: MrBeastLotteryTicketSlug,
+): (typeof MRBEAST_LOTTERY_TICKET_DEFINITIONS)[MrBeastLotteryTicketSlug] {
+  return MRBEAST_LOTTERY_TICKET_DEFINITIONS[slug];
+}
+
+export function getMrBeastLotteryTicketSlugForPrizeTableVersion(
+  prizeTableVersion: string,
+): MrBeastLotteryTicketSlug | undefined {
+  for (const definition of Object.values(
+    MRBEAST_LOTTERY_TICKET_DEFINITIONS,
+  )) {
+    if (definition.prizeTableVersion === prizeTableVersion) {
+      return definition.slug;
+    }
+  }
+  return undefined;
+}
 
 export function isMrBeastLotteryActive(
   config: Pick<

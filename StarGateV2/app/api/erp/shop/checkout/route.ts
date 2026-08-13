@@ -39,6 +39,10 @@ import {
   prepareMrBeastSodaDailyPurchaseCounter,
 } from "@/lib/db/mrbeast-soda-daily-limit";
 import {
+  fenceMrBeastSodaPayback,
+  prepareMrBeastSodaPaybackAnchor,
+} from "@/lib/db/mrbeast-soda-payback";
+import {
   incrementMrBeastSodaStockImpactDemand,
   prepareMrBeastSodaStockImpactDemand,
   MrBeastSodaStockImpactDemandError,
@@ -55,6 +59,7 @@ import {
   MRBEAST_SODA_DAILY_PURCHASE_LIMIT,
   MrBeastSodaDailyLimitError,
 } from "@/lib/shop/mrbeast-soda-daily-limit";
+import { isMrBeastSodaApologyPaybackDateEligible } from "@/lib/shop/mrbeast-soda-payback";
 import { getShopOpenState } from "@/lib/shop/open-state";
 import { ensureDailyStockRefresh } from "@/lib/shop/refresh-stock";
 import { loadRuntimeShopCatalog } from "@/lib/shop/runtime-catalog";
@@ -230,6 +235,9 @@ export async function POST(request: Request) {
           slug: MRBEAST_SODA_SLUG,
         })
       : null;
+  const sodaPaybackPurchaseEligible =
+    sodaDailyPurchaseKey !== null &&
+    isMrBeastSodaApologyPaybackDateEligible(sodaDailyPurchaseKey.kstDate);
   const sodaStockImpactWindow = resolveMrBeastSodaStockImpactWindow({
     eventId: lotteryConfig.eventId,
     configVersion: lotteryConfig.version,
@@ -349,6 +357,9 @@ export async function POST(request: Request) {
     if (sodaDailyPurchaseKey) {
       await prepareMrBeastSodaDailyPurchaseCounter(sodaDailyPurchaseKey);
     }
+    if (sodaPaybackPurchaseEligible) {
+      await prepareMrBeastSodaPaybackAnchor(session.user.id);
+    }
     if (sodaStockImpactKey) {
       await prepareMrBeastSodaStockImpactDemand(sodaStockImpactKey);
     }
@@ -391,6 +402,12 @@ export async function POST(request: Request) {
           ownerId: session.user.id,
           session: mongoSession,
         });
+        if (sodaPaybackPurchaseEligible) {
+          await fenceMrBeastSodaPayback({
+            userId: session.user.id,
+            session: mongoSession,
+          });
+        }
         if (sodaDailyPurchaseKey) {
           await incrementMrBeastSodaDailyPurchaseCounter({
             key: sodaDailyPurchaseKey,

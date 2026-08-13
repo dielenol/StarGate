@@ -19,16 +19,28 @@ import {
   type RequiredLotteryIndex,
 } from "@/lib/db/mrbeast-lottery";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
-import { MRBEAST_LOTTERY_SLUG } from "@/lib/shop/mrbeast-lottery";
+import {
+  MRBEAST_APOLOGY_LOTTERY_SLUG,
+  MRBEAST_LOTTERY_SLUG,
+} from "@/lib/shop/mrbeast-lottery";
+import apologyLotteryMasterItemSeed from "@/scripts/seed-payloads/consumable-mrbeast-apology-lottery-2026-08-13.json";
 import lotteryMasterItemSeed from "@/scripts/seed-payloads/consumable-mrbeast-lottery-2026-07-31.json";
 
 const LOTTERY_INFRASTRUCTURE_ID = "mrbeast-lottery-infrastructure-v1";
 const LOTTERY_MASTER_ITEM_ID = new ObjectId("6d7262656173746c6f747465");
+const APOLOGY_LOTTERY_MASTER_ITEM_ID = new ObjectId(
+  "6d72626561737461706f6c6f",
+);
 const PREPARATION_LEASE_MS = 5 * 60 * 1000;
 const PREPARATION_HEARTBEAT_MS = 60 * 1000;
 
 const LOTTERY_MASTER_ITEM_CANONICAL = Object.fromEntries(
   Object.entries(lotteryMasterItemSeed.payload).filter(
+    ([key]) => key !== "createdAt" && key !== "updatedAt",
+  ),
+) as Record<string, unknown>;
+const APOLOGY_LOTTERY_MASTER_ITEM_CANONICAL = Object.fromEntries(
+  Object.entries(apologyLotteryMasterItemSeed.payload).filter(
     ([key]) => key !== "createdAt" && key !== "updatedAt",
   ),
 ) as Record<string, unknown>;
@@ -233,7 +245,7 @@ async function recordPreparationFailure(input: {
 }
 
 /**
- * GM이 이벤트를 처음 열기 전에 한 번 실행하는 재시작 가능한 준비 작업.
+ * GM이 복권 또는 페이백을 운영하기 전에 실행하는 재시작 가능한 준비 작업.
  * 기존 인덱스를 삭제하거나 교체하지 않으며, 이미 READY면 DB를 변경하지 않는다.
  */
 export async function prepareMrBeastLotteryInfrastructure(input: {
@@ -286,26 +298,46 @@ export async function prepareMrBeastLotteryInfrastructure(input: {
     try {
       await mongoSession.withTransaction(async () => {
         const now = new Date();
-        const preparedMaster = await (await masterItemsCol()).findOneAndUpdate(
-          { slug: MRBEAST_LOTTERY_SLUG },
+        const masterItems = await masterItemsCol();
+        const masterDefinitions = [
           {
-            $set: {
-              ...LOTTERY_MASTER_ITEM_CANONICAL,
-              updatedAt: now,
-            } as Partial<MasterItem>,
-            $setOnInsert: {
-              _id: LOTTERY_MASTER_ITEM_ID,
-              createdAt: now,
+            slug: MRBEAST_LOTTERY_SLUG,
+            _id: LOTTERY_MASTER_ITEM_ID,
+            canonical: LOTTERY_MASTER_ITEM_CANONICAL,
+          },
+          {
+            slug: MRBEAST_APOLOGY_LOTTERY_SLUG,
+            _id: APOLOGY_LOTTERY_MASTER_ITEM_ID,
+            canonical: APOLOGY_LOTTERY_MASTER_ITEM_CANONICAL,
+          },
+        ] as const;
+        for (const definition of masterDefinitions) {
+          const preparedMaster = await masterItems.findOneAndUpdate(
+            { slug: definition.slug },
+            {
+              $set: {
+                ...definition.canonical,
+                updatedAt: now,
+              } as Partial<MasterItem>,
+              $setOnInsert: {
+                _id: definition._id,
+                createdAt: now,
+              },
             },
-          },
-          {
-            upsert: true,
-            returnDocument: "after",
-            session: mongoSession,
-          },
-        );
-        if (!isMrBeastLotteryTicketMasterReady(preparedMaster)) {
-          throw new Error("LOTTERY_MASTER_ITEM_PREPARATION_FAILED");
+            {
+              upsert: true,
+              returnDocument: "after",
+              session: mongoSession,
+            },
+          );
+          if (
+            !isMrBeastLotteryTicketMasterReady(
+              preparedMaster,
+              definition.slug,
+            )
+          ) {
+            throw new Error("LOTTERY_MASTER_ITEM_PREPARATION_FAILED");
+          }
         }
 
         const completedAt = new Date();
@@ -343,7 +375,7 @@ export async function prepareMrBeastLotteryInfrastructure(input: {
           {
             action: "미스터비스트 복권 운영 기반 준비",
             actor: input.actor,
-            summary: "복권 전용 인덱스 5개와 비공개 마스터 아이템 준비",
+            summary: "복권·페이백 인덱스 6개와 비공개 마스터 아이템 2종 준비",
             target: "띠아 편의점 미스터비스트 복권",
             timestamp: completedAt,
           },
