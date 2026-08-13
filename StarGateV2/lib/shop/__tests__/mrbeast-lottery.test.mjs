@@ -252,8 +252,10 @@ test("checkout은 PURCHASE 수량만큼 entitlement와 표시 mirror를 같은 s
 });
 
 test("claim은 FIFO entitlement 하나를 원자 claim하고 callback retry에도 결과를 재추첨하지 않는다", async () => {
-  const [route, database, indexes] = await Promise.all([
+  const [route, draw, lottery, database, indexes] = await Promise.all([
     readWeb("app/api/erp/shop/lottery/route.ts"),
+    readWeb("lib/shop/mrbeast-lottery-draw.ts"),
+    readWeb("lib/shop/mrbeast-lottery.ts"),
     readWeb("lib/db/mrbeast-lottery.ts"),
     readFile(
       new URL("packages/shared-db/src/indexes.ts", REPO_ROOT),
@@ -264,6 +266,20 @@ test("claim은 FIFO entitlement 하나를 원자 claim하고 callback retry에�
   const drawIndex = route.indexOf("const fixedBucket =");
   const operationIndex = route.indexOf("executeEconomicOperation({");
   assert.ok(drawIndex >= 0 && drawIndex < operationIndex);
+  assert.match(route, /mrbeast-lottery-draw/);
+  assert.match(draw, /import "server-only"/);
+  assert.match(draw, /from "node:crypto"/);
+  assert.match(draw, /drawMrBeastLotteryPrize/);
+  assert.match(
+    draw,
+    /const bucket = drawBucket\(MRBEAST_LOTTERY_TOTAL_BUCKETS\)/,
+  );
+  assert.match(
+    draw,
+    /prize: getMrBeastLotteryPrize\(bucket, prizeTableVersion\)/,
+  );
+  assert.doesNotMatch(lottery, /node:crypto/);
+  assert.doesNotMatch(lottery, /drawMrBeastLotteryPrize/);
   assert.doesNotMatch(
     route.slice(operationIndex),
     /drawMrBeastLotteryPrize/,

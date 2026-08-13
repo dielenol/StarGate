@@ -19,10 +19,10 @@ import {
   prepareCharacterInventoryItemLocks,
 } from "@/lib/db/inventory";
 import {
-  drawMrBeastLotteryPrize,
   isMrBeastLotteryTicketSlug,
   MRBEAST_LOTTERY_SLUG,
 } from "@/lib/shop/mrbeast-lottery";
+import { drawMrBeastLotteryPrize } from "@/lib/shop/mrbeast-lottery-draw";
 
 const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 

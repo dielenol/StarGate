@@ -1,5 +1,3 @@
-import { randomInt } from "node:crypto";
-
 export const MRBEAST_SODA_SLUG = "mrbeast_soda";
 export const MRBEAST_LOTTERY_SLUG = "mrbeast_lottery";
 export const MRBEAST_LOTTERY_NAME = "미스터비스트 복권";
@@ -373,17 +371,6 @@ export function resolveMrBeastLotteryPrizeTable(
     );
   }
   return prizes;
-}
-
-export function drawMrBeastLotteryPrize(
-  drawBucket: (exclusiveMax: number) => number = randomInt,
-  prizeTableVersion: string = MRBEAST_LOTTERY_PRIZE_TABLE_VERSION,
-): { bucket: number; prize: MrBeastLotteryPrize } {
-  const bucket = drawBucket(MRBEAST_LOTTERY_TOTAL_BUCKETS);
-  return {
-    bucket,
-    prize: getMrBeastLotteryPrize(bucket, prizeTableVersion),
-  };
 }
 
 export function isMrBeastLotteryAnnouncementCandidate(
