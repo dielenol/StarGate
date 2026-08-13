@@ -77,19 +77,18 @@ test("사죄 보상 UI는 영업·이벤트 상태와 독립적으로 모든 조
   assert.match(client, /paybackQuery\.isPending/);
   assert.match(client, /paybackQuery\.isError/);
   assert.match(client, /paybackQuery\.refetch\(\)/);
+  assert.match(client, /const showPaybackSection = hasMainCharacter;/);
   assert.match(client, /paybackState\?\.status === "ELIGIBLE"/);
   assert.match(client, /paybackState\?\.status === "CLAIMED"/);
+  assert.match(client, /paybackState\?\.status === "INELIGIBLE"/);
+  assert.match(client, /보상 대상 아님/);
+  assert.match(client, /현재 계정은 지급 기준인 소다 10개에 도달하지 않아/);
+  assert.match(client, /GM 운영 준비 확인/);
+  assert.match(client, /onClick=\{\(\) => setLotteryAdminOpen\(true\)\}/);
   assert.match(client, /보상 수령 완료/);
   assert.match(client, /disabled=\{claimPaybackMutation\.isPending\}/);
   assert.match(client, /paybackQuery\.error\.message/);
   assert.match(client, /setErrorMessage\(error\.message\)/);
-  assert.doesNotMatch(
-    client.slice(
-      client.indexOf("const showPaybackSection"),
-      client.indexOf("const {", client.indexOf("const showPaybackSection")),
-    ),
-    /INELIGIBLE/,
-  );
   assert.match(styles, /\.paybackSection \{[\s\S]*z-index: 3/);
   assert.match(
     styles,

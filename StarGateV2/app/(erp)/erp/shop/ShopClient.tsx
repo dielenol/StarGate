@@ -230,12 +230,7 @@ export default function ShopClient({
   const selectedLotteryTicketName = getLotteryTicketShortName(
     selectedLotteryTicketSlug,
   );
-  const showPaybackSection =
-    hasMainCharacter &&
-    (paybackQuery.isPending ||
-      paybackQuery.isError ||
-      paybackState?.status === "ELIGIBLE" ||
-      paybackState?.status === "CLAIMED");
+  const showPaybackSection = hasMainCharacter;
 
   const {
     mood: tiaMood,
@@ -1003,6 +998,15 @@ export default function ShopClient({
                       <strong>소다 10개마다 3장</strong>
                     </span>
                   </div>
+                  {paybackState.status === "INELIGIBLE" ? (
+                    <p role="status">
+                      현재 계정은 지급 기준인 소다 10개에 도달하지 않아 받을
+                      보상이 없습니다.
+                      {isGM
+                        ? " GM은 운영 준비 상태를 별도로 확인할 수 있습니다."
+                        : null}
+                    </p>
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -1043,6 +1047,18 @@ export default function ShopClient({
                   role="status"
                 >
                   보상 수령 완료
+                </span>
+              ) : paybackState?.status === "INELIGIBLE" && isGM ? (
+                <button
+                  type="button"
+                  className={styles.paybackSection__button}
+                  onClick={() => setLotteryAdminOpen(true)}
+                >
+                  GM 운영 준비 확인
+                </button>
+              ) : paybackState?.status === "INELIGIBLE" ? (
+                <span className={styles.paybackSection__state} role="status">
+                  보상 대상 아님
                 </span>
               ) : null}
             </div>
