@@ -60,7 +60,7 @@ export function queryKeysForRealtimeResources(
   resources: readonly RealtimeResource[],
 ): QueryKey[] {
   const seen = new Set<string>();
-  return resources
+  const queryKeys = resources
     .flatMap((resource) => REALTIME_RESOURCE_QUERY_KEYS[resource])
     .filter((queryKey) => {
       const signature = JSON.stringify(queryKey);
@@ -68,4 +68,15 @@ export function queryKeysForRealtimeResources(
       seen.add(signature);
       return true;
     });
+
+  return queryKeys.filter(
+    (queryKey) =>
+      !queryKeys.some(
+        (candidate) =>
+          candidate.length < queryKey.length &&
+          candidate.every((segment, segmentIndex) =>
+            Object.is(segment, queryKey[segmentIndex]),
+          ),
+      ),
+  );
 }

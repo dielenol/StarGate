@@ -81,8 +81,12 @@ test("Lore Explorer는 index와 기존 컬렉션 fallback을 함께 제공한다
   assert.match(search, /findPersonnelCandidates\(characterRealNameSearchFields/u);
   assert.match(search, /for \(const result of \[\.\.\.indexed, \.\.\.fallback\]\)/u);
   assert.match(search, /merged\.set\(result\.href, result\)/u);
-  assert.match(hook, /staleTime:\s*0/u);
-  assert.match(hook, /refetchOnMount:\s*"always"/u);
+  assert.match(hook, /INITIAL_LORE_SEARCH_STALE_TIME_MS/u);
+  assert.match(
+    hook,
+    /staleTime:\s*options\?\.initialData\s*\?\s*INITIAL_LORE_SEARCH_STALE_TIME_MS\s*:\s*0/u,
+  );
+  assert.doesNotMatch(hook, /refetchOnMount:\s*"always"/u);
   assert.match(client, /nextQuery\.trim\(\)\.slice\(0, 120\)/u);
   assert.match(searchBar, /maxLength=\{120\}/u);
 });

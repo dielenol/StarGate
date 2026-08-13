@@ -8,6 +8,7 @@ export const sessionReportKeys = {
   byId: (id: string) => ["session-reports", "id", id] as const,
 };
 
+const REPORT_LIST_STALE_TIME_MS = 30 * 1000;
 const REPORT_STALE_TIME_MS = 20 * 60 * 1000;
 
 async function fetchSessionReports(): Promise<ClientSessionReport[]> {
@@ -34,13 +35,14 @@ async function fetchSessionReportById(
 
 export function useSessionReports(options?: {
   initialData?: ClientSessionReport[];
+  initialDataUpdatedAt?: number;
 }) {
   return useQuery({
     queryKey: sessionReportKeys.all,
     queryFn: fetchSessionReports,
-    staleTime: REPORT_STALE_TIME_MS,
-    refetchOnMount: "always",
+    staleTime: REPORT_LIST_STALE_TIME_MS,
     initialData: options?.initialData,
+    initialDataUpdatedAt: options?.initialDataUpdatedAt,
   });
 }
 

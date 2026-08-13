@@ -39,6 +39,8 @@ export const loreSearchKeys = {
   search: (query: string) => [...wikiKeys.all, "lore-search", query] as const,
 };
 
+const INITIAL_LORE_SEARCH_STALE_TIME_MS = 30 * 1000;
+
 async function fetchLoreSearch(query: string): Promise<LoreSearchResponseClient> {
   const response = await fetch(
     `/api/erp/lore/search?q=${encodeURIComponent(query)}`,
@@ -60,11 +62,9 @@ export function useLoreSearch(
     queryFn: () => fetchLoreSearch(normalized),
     enabled: normalized.length >= 2,
     initialData: options?.initialData,
-    // report/character/catalog mutations live in separate query-key families.
-    // Treat explorer data as immediately stale so returning to the page always
-    // re-reads the live SSOT/fallback instead of keeping a 10-minute snapshot.
-    staleTime: 0,
-    refetchOnMount: "always",
+    // SSR 검색 결과는 짧은 bootstrap 동안만 재사용하고, client-only 검색은
+    // 즉시 stale 처리한다. mutation/realtime은 wiki prefix로 바로 무효화한다.
+    staleTime: options?.initialData ? INITIAL_LORE_SEARCH_STALE_TIME_MS : 0,
     refetchOnWindowFocus: true,
   });
 }

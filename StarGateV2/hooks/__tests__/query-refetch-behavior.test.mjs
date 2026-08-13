@@ -54,6 +54,11 @@ const CREDITS_LIKE = {
   refetchOnWindowFocus: true,
 };
 
+const RSC_LIST_LIKE = {
+  queryKey: ["wiki", "list", {}],
+  staleTime: 30 * 1000,
+};
+
 test("Q-1: initialData + staleTime → 구독(마운트) 시 queryFn 미호출", async () => {
   const client = makeClient();
   const { fn, stats } = makeCountingFetcher();
@@ -183,5 +188,75 @@ test("Q-5: staleTime 경과 후 재구독 → 기본 refetchOnMount(true) 가 �
     "stale 해진 캐시는 재마운트에서 기본 refetchOnMount 로 자가 교정",
   );
   stop2();
+  client.clear();
+});
+
+test("Q-6: RSC 목록 initialData는 마운트 중복 조회 없이 invalidation으로 최신화된다", async () => {
+  const client = makeClient();
+  const { fn, stats } = makeCountingFetcher({ pages: ["fresh"] });
+  const observer = new QueryObserver(client, {
+    ...RSC_LIST_LIKE,
+    queryFn: fn,
+    initialData: { pages: ["seed"] },
+  });
+  const unsubscribe = observer.subscribe(() => {});
+  await tick();
+
+  assert.equal(stats.calls, 0, "RSC 목록을 마운트 직후 다시 읽지 않아야 함");
+  await client.invalidateQueries({ queryKey: ["wiki"] });
+  await tick();
+  assert.equal(stats.calls, 1, "realtime/mutation invalidation은 즉시 재조회해야 함");
+  assert.deepEqual(observer.getCurrentResult().data, { pages: ["fresh"] });
+
+  unsubscribe();
+  client.clear();
+});
+
+test("Q-7: 검색 RSC seed는 bootstrap 동안 fresh이고 seed가 없으면 즉시 조회한다", async () => {
+  const client = makeClient();
+  const seeded = makeCountingFetcher({ results: ["fresh"] });
+  const seededObserver = new QueryObserver(client, {
+    queryKey: ["wiki", "lore-search", "검색어"],
+    queryFn: seeded.fn,
+    staleTime: 30 * 1000,
+    initialData: { results: ["seed"] },
+  });
+  const stopSeeded = seededObserver.subscribe(() => {});
+  await tick();
+  assert.equal(seeded.stats.calls, 0);
+  stopSeeded();
+
+  const unseeded = makeCountingFetcher({ results: ["live"] });
+  const unseededObserver = new QueryObserver(client, {
+    queryKey: ["wiki", "lore-search", "다른검색어"],
+    queryFn: unseeded.fn,
+    staleTime: 0,
+  });
+  const stopUnseeded = unseededObserver.subscribe(() => {});
+  await tick();
+  assert.equal(unseeded.stats.calls, 1);
+
+  stopUnseeded();
+  client.clear();
+});
+
+test("Q-8: 서버 조회 실패 seed는 즉시 stale 처리해 마운트에서 복구한다", async () => {
+  const client = makeClient();
+  const { fn, stats } = makeCountingFetcher({ pages: ["recovered"] });
+  const observer = new QueryObserver(client, {
+    ...RSC_LIST_LIKE,
+    queryFn: fn,
+    initialData: { pages: [] },
+    initialDataUpdatedAt: 0,
+  });
+  const unsubscribe = observer.subscribe(() => {});
+  await tick();
+
+  assert.equal(stats.calls, 1);
+  assert.deepEqual(observer.getCurrentResult().data, {
+    pages: ["recovered"],
+  });
+
+  unsubscribe();
   client.clear();
 });

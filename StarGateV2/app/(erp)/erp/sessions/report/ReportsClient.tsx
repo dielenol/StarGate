@@ -23,6 +23,7 @@ import styles from "./page.module.css";
 
 interface Props {
   initialReports: ClientSessionReport[];
+  initialReportsUpdatedAt?: number;
 }
 
 interface MapPoint {
@@ -146,9 +147,13 @@ function getReportMapPoint(
   };
 }
 
-export default function ReportsClient({ initialReports }: Props) {
+export default function ReportsClient({
+  initialReports,
+  initialReportsUpdatedAt,
+}: Props) {
   const { data: reports = [] } = useSessionReports({
     initialData: initialReports,
+    initialDataUpdatedAt: initialReportsUpdatedAt,
   });
 
   const numberedReports = useMemo(

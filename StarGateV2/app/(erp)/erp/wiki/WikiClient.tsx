@@ -54,6 +54,7 @@ import styles from "./page.module.css";
 interface Props {
   /** 서버 초기 로드 — 본문 전문 없이 첫 page/facet/recent만 Query 캐시에 시드한다. */
   initialWiki: WikiPageSummaryConnectionClient;
+  initialWikiUpdatedAt?: number;
   initialLore?: LoreSearchResponseClient;
   categories: string[];
   currentCategory?: string;
@@ -132,6 +133,7 @@ function tagsForSummary(page: WikiPageSummaryClient): string[] {
 
 export default function WikiClient({
   initialWiki,
+  initialWikiUpdatedAt,
   initialLore,
   categories,
   currentCategory,
@@ -166,6 +168,9 @@ export default function WikiClient({
     {
       enabled: !activeQueryTrimmed,
       initialData: canUseInitialWiki ? initialWiki : undefined,
+      initialDataUpdatedAt: canUseInitialWiki
+        ? initialWikiUpdatedAt
+        : undefined,
     },
   );
   const loreQuery = useLoreSearch(activeQueryTrimmed, {

@@ -13,6 +13,7 @@ export const wikiKeys = {
   byId: (id: string) => ["wiki", "id", id] as const,
 };
 
+const WIKI_LIST_STALE_TIME_MS = 30 * 1000;
 const WIKI_STALE_TIME_MS = 30 * 60 * 1000;
 
 async function fetchWikiPages(params?: {
@@ -52,6 +53,7 @@ export function useWikiPages(
   options?: {
     enabled?: boolean;
     initialData?: WikiPageSummaryConnectionClient;
+    initialDataUpdatedAt?: number;
   },
 ) {
   return useInfiniteQuery({
@@ -60,12 +62,12 @@ export function useWikiPages(
       fetchWikiPages({ ...params, cursor: pageParam, limit: 20 }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    staleTime: WIKI_STALE_TIME_MS,
+    staleTime: WIKI_LIST_STALE_TIME_MS,
     enabled: options?.enabled ?? true,
-    refetchOnMount: "always",
     initialData: options?.initialData
       ? { pages: [options.initialData], pageParams: [null] }
       : undefined,
+    initialDataUpdatedAt: options?.initialDataUpdatedAt,
   });
 }
 

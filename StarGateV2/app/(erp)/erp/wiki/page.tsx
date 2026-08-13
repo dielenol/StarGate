@@ -69,6 +69,7 @@ export default async function WikiListPage({
     nextCursor: null,
   };
   let initialLore: LoreSearchResponseClient | undefined;
+  let initialWikiUpdatedAt: number | undefined;
 
   try {
     const [wiki, lore] = await Promise.all([
@@ -89,6 +90,7 @@ export default async function WikiListPage({
     initialLore = lore ? serializeLoreSearch(lore) : undefined;
   } catch {
     // 조회 실패 시 비어 있는 탐색 화면을 렌더하고 클라이언트 Query가 재시도한다.
+    initialWikiUpdatedAt = 0;
   }
 
   const categories = sortWikiCategories(
@@ -98,6 +100,7 @@ export default async function WikiListPage({
   return (
     <WikiClient
       initialWiki={initialWiki}
+      initialWikiUpdatedAt={initialWikiUpdatedAt}
       initialLore={initialLore}
       categories={categories}
       currentCategory={category}

@@ -36,11 +36,17 @@ export default async function SessionReportListPage() {
   }
 
   const isGmOrAbove = hasRole(session.user.role, "V");
-  const reports = isMemberErpViewer(session.user)
-    ? (
-        await listVisibleSessionReports(session.user.role).catch(() => [])
-      ).map(serializeReport)
-    : [];
+  let reports: ClientSessionReport[] = [];
+  let initialReportsUpdatedAt: number | undefined;
+  if (isMemberErpViewer(session.user)) {
+    try {
+      reports = (await listVisibleSessionReports(session.user.role)).map(
+        serializeReport,
+      );
+    } catch {
+      initialReportsUpdatedAt = 0;
+    }
+  }
 
   return (
     <>
@@ -59,7 +65,10 @@ export default async function SessionReportListPage() {
           ) : null
         }
       />
-      <ReportsClient initialReports={reports} />
+      <ReportsClient
+        initialReports={reports}
+        initialReportsUpdatedAt={initialReportsUpdatedAt}
+      />
     </>
   );
 }
