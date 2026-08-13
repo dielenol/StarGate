@@ -17,9 +17,10 @@ import { isResultCardImageEnabled } from "../config.js";
 
 /** 한 셀에 표시할 최대 세션 — 초과 시 "+N more" */
 const MAX_PER_CELL = 3;
+/** Discord에서 원본 확대 시 선명하도록 640px 레이아웃을 2배 해상도로 캡처한다. */
 const CARD_WIDTH = 640;
 const VIEWPORT_PADDING = 24;
-const DEVICE_SCALE_FACTOR = 1;
+const DEVICE_SCALE_FACTOR = 2;
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
 /* ── Puppeteer 직렬 큐 ──
