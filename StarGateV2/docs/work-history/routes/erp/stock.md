@@ -109,3 +109,11 @@
 - 검증: 실제 MongoDB 7 replica set 경쟁·rollback 1건, core 21건, 예약·틱 16건, worker 95건, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
 - 관련 커밋: `bd751a90`
 - 운영 경계: 라이브 예약 생성·취소와 시세·이력·Discord 공시 mutation은 실행하지 않았다.
+
+## 2026-08-13 · 기능 추가 · 개별 종목 거래정지 표시
+
+- 정지된 종목을 주식 목록에 배지로 표시하고, 기존 문서에 상태 필드가 없으면 거래 가능으로 호환되도록 응답을 정규화했다.
+- 매수·매도 API가 transaction 안에서 거래 가능한 시세를 먼저 claim해 정지와 동시에 요청된 주문도 선커밋 순서에 따라 체결 또는 `STOCK_TRADING_HALTED`로 거부하도록 했다.
+- 검증: 주식·거래 집중 테스트 64건 통과, replica-set 통합 테스트 1건 환경 부재 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
+- 관련 커밋: `f75fd2ea`
+- 운영 경계: 라이브 종목 거래 상태·시세·보유량·거래는 변경하지 않았다.

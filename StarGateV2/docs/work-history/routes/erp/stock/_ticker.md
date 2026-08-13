@@ -20,3 +20,11 @@
 - 검증: ticker 원장·identity·실패 상태 계약 테스트, JTEST `BPE` 최근 체결과 DB oracle 일치, `explain` 13개 문서·키 검사, critical risk review
 - 관련 커밋: `c39f7c34`
 - 운영 경계: 라이브 매수·매도 mutation은 실행하지 않았다.
+
+## 2026-08-13 · 기능 추가 · 거래정지 주문 잠금
+
+- 정지 종목 상세에 운영 안내를 표시하고 수량 입력·빠른 비율·매수·매도 조작을 잠그되 시세와 보유 내역 조회는 유지했다.
+- 오래 열린 화면에서 주문이 `423`으로 거부되면 시세 Query를 즉시 무효화해 최신 정지 상태로 수렴하며, 서버 transaction을 최종 권한으로 유지했다.
+- 검증: 주식·거래 집중 테스트 64건 통과, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
+- 관련 커밋: `f75fd2ea`
+- 운영 경계: 라이브 매수·매도와 종목 거래 상태는 변경하지 않았다.

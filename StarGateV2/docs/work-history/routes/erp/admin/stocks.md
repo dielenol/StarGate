@@ -36,3 +36,11 @@
 - 검증: 실제 MongoDB 7 replica set 경쟁·rollback 1건, core 21건, 예약·틱 16건, worker 95건, `pnpm typecheck`, 전체 `pnpm lint`, production build, GM 인증 Chrome 화면·배치 확인, critical risk review
 - 관련 커밋: `bd751a90`
 - 운영 경계: 라이브 예약 생성·취소와 시세 mutation은 실행하지 않았다.
+
+## 2026-08-13 · 기능 추가 · 개별 종목 거래정지
+
+- GM이 운영 시세가 등록된 종목을 개별 거래정지하거나 재개하고 현재 상태를 목록과 조정 패널에서 확인할 수 있게 했다.
+- 상태 변경과 GM 감사 outbox를 하나의 멱등 transaction으로 묶고, 매매·자산 교환과 같은 시세 문서 write로 직렬화해 정지 직전 체결 경쟁의 순서를 보장했다.
+- 검증: 주식·거래 집중 테스트 64건 통과, replica-set 통합 테스트 1건 환경 부재 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
+- 관련 커밋: `f75fd2ea`
+- 운영 경계: 라이브 종목 거래 상태·시세·보유량·거래는 변경하지 않았다.
