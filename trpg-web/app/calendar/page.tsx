@@ -20,6 +20,7 @@ import { auth } from "@/lib/auth/config";
 import { yearMonthFromDateKey } from "@/lib/calendar/date-key";
 import { currentKstYearMonth } from "@/lib/calendar/month";
 import { getGoogleCalendarConnectionView } from "@/lib/db/google-calendar-connections";
+import { toTrpgMemberViews } from "@/lib/discord/avatar";
 import { TRPG_GUILD_ID } from "@/lib/env";
 import { isGoogleCalendarEnabled } from "@/lib/google-calendar/config";
 import type { GoogleCalendarConnectionView } from "@/lib/google-calendar/types";
@@ -93,12 +94,10 @@ export default async function CalendarPage({
   ]);
 
   const initialSessions: TrpgSessionView[] = rawSessions.map(toTrpgSessionView);
-  const initialMembers: TrpgMemberView[] = rawMembers.map((m) => ({
-    discordUserId: m.discordUserId,
-    displayName: m.displayName,
-    discordUsername: m.discordUsername,
-    avatarUrl: m.discordAvatarUrl ?? null,
-  }));
+  const initialMembers: TrpgMemberView[] = toTrpgMemberViews(rawMembers, {
+    currentUserDiscordId: session.user.discordUserId,
+    currentUserAvatarUrl: session.user.image,
+  });
 
   return (
     <CalendarClient

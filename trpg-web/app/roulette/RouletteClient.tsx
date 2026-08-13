@@ -14,6 +14,7 @@ import Link from "next/link";
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTrpgMembers } from "@/hooks/queries/useTrpgMembers";
+import { getDiscordDefaultAvatarUrl } from "@/lib/discord/avatar";
 import {
   createRouletteRace,
   getRouletteCourse,
@@ -34,12 +35,18 @@ import {
   type RouletteWinnerMode,
 } from "@/lib/roulette/engine";
 import { drawRouletteScene } from "@/lib/roulette/renderer";
+import {
+  canvasToPngBlob,
+  createRouletteResultCanvas,
+} from "@/lib/roulette/result-image";
 
 import styles from "./styles.module.css";
 
 const MAX_FRAME_DELTA_SECONDS = 0.05;
+const OVERTIME_SIMULATION_SECONDS = 20;
 
 type RacePhase = "ready" | "running" | "finished";
+type CopyState = "idle" | "copying" | "success" | "error";
 
 interface RouletteClientProps {
   currentUserDiscordId: string;
@@ -49,6 +56,7 @@ interface RouletteClientProps {
 
 interface MemberAvatarProps {
   avatarUrl: string | null;
+  discordUserId: string;
   name: string;
   variant?: "member" | "winner";
   meaningful?: boolean;
@@ -60,6 +68,7 @@ function getInitial(name: string): string {
 
 function MemberAvatar({
   avatarUrl,
+  discordUserId,
   name,
   variant = "member",
   meaningful = false,
@@ -85,6 +94,12 @@ function MemberAvatar({
         height={size}
         sizes={`${size}px`}
         unoptimized
+        onError={(event) => {
+          const fallbackAvatarUrl = getDiscordDefaultAvatarUrl(discordUserId);
+          if (event.currentTarget.src !== fallbackAvatarUrl) {
+            event.currentTarget.src = fallbackAvatarUrl;
+          }
+        }}
       />
     </span>
   );
@@ -95,6 +110,12 @@ function createBrowserSeed(): number {
     return crypto.getRandomValues(new Uint32Array(1))[0];
   }
   return Date.now() >>> 0;
+}
+
+function getSimulationRate(totalBalls: number, elapsedSeconds: number): number {
+  const loadRate = totalBalls > 64 ? 2.5 : totalBalls > 32 ? 1.75 : 1;
+  const overtimeRate = elapsedSeconds > OVERTIME_SIMULATION_SECONDS ? 2 : 1;
+  return loadRate * overtimeRate;
 }
 
 export function RouletteClient({
@@ -126,6 +147,7 @@ export function RouletteClient({
   const [winners, setWinners] = useState<RouletteParticipant[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastSeed, setLastSeed] = useState<number | null>(null);
+  const [copyState, setCopyState] = useState<CopyState>("idle");
 
   const course = getRouletteCourse(courseId);
   const memberById = useMemo(
@@ -185,6 +207,12 @@ export function RouletteClient({
     (_, index) => index + 1,
   );
   const totalBalls = selectedParticipants.length * ballsPerParticipant;
+  const maxBallsForSelection = Math.min(
+    ROULETTE_MAX_BALLS_PER_PARTICIPANT,
+    selectedParticipants.length > 0
+      ? Math.floor(ROULETTE_MAX_TOTAL_BALLS / selectedParticipants.length)
+      : ROULETTE_MAX_BALLS_PER_PARTICIPANT,
+  );
   const previewMarbles = useMemo(
     () =>
       selectedParticipants.flatMap((participant) =>
@@ -241,6 +269,7 @@ export function RouletteClient({
     raceRef.current = null;
     setWinners([]);
     setLastSeed(null);
+    setCopyState("idle");
     setPhase("ready");
     renderCanvas();
   }, [renderCanvas, stopAnimation]);
@@ -291,6 +320,12 @@ export function RouletteClient({
         loadedAvatarUrlsRef.current.set(participant.id, participant.avatarUrl!);
         renderCanvas();
       };
+      avatar.onerror = () => {
+        const fallbackAvatarUrl = getDiscordDefaultAvatarUrl(participant.id);
+        if (avatar.src !== fallbackAvatarUrl) {
+          avatar.src = fallbackAvatarUrl;
+        }
+      };
       avatar.src = participant.avatarUrl;
     }
 
@@ -327,6 +362,7 @@ export function RouletteClient({
   function prepareForConfigurationChange() {
     if (phase !== "ready") clearRace();
     setErrorMessage(null);
+    setCopyState("idle");
   }
 
   function handleParticipantToggle(discordUserId: string) {
@@ -384,6 +420,12 @@ export function RouletteClient({
 
   function handleBallsPerParticipantChange(nextBallCount: number) {
     if (phase === "running" || nextBallCount === ballsPerParticipant) return;
+    if (
+      nextBallCount < ROULETTE_MIN_BALLS_PER_PARTICIPANT ||
+      nextBallCount > ROULETTE_MAX_BALLS_PER_PARTICIPANT
+    ) {
+      return;
+    }
     if (selectedParticipants.length * nextBallCount > ROULETTE_MAX_TOTAL_BALLS) {
       setErrorMessage(
         `전체 마블은 최대 ${ROULETTE_MAX_TOTAL_BALLS}개까지 사용할 수 있습니다.`,
@@ -413,6 +455,7 @@ export function RouletteClient({
     raceRef.current = race;
     setErrorMessage(null);
     setWinners([]);
+    setCopyState("idle");
     setLastSeed(seed);
     setPhase("running");
 
@@ -425,7 +468,8 @@ export function RouletteClient({
         MAX_FRAME_DELTA_SECONDS,
       );
       previousTime = currentTime;
-      accumulator += frameDelta;
+      accumulator +=
+        frameDelta * getSimulationRate(totalBalls, race.elapsedSeconds);
 
       while (accumulator >= ROULETTE_FIXED_STEP_SECONDS && !race.done) {
         stepRouletteRace(race, ROULETTE_FIXED_STEP_SECONDS);
@@ -464,6 +508,35 @@ export function RouletteClient({
     animationFrameRef.current = requestAnimationFrame(animate);
   }
 
+  async function handleCopyResult() {
+    const sourceCanvas = canvasRef.current;
+    const race = raceRef.current;
+    if (!sourceCanvas || !race || winners.length === 0) return;
+
+    if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+      setCopyState("error");
+      return;
+    }
+
+    setCopyState("copying");
+    try {
+      const resultCanvas = createRouletteResultCanvas({
+        sourceCanvas,
+        course,
+        race,
+        winners,
+        avatarImages: avatarImagesRef.current,
+      });
+      const pngBlob = canvasToPngBlob(resultCanvas);
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": pngBlob }),
+      ]);
+      setCopyState("success");
+    } catch {
+      setCopyState("error");
+    }
+  }
+
   const phaseLabel =
     phase === "running"
       ? "낙하 진행 중"
@@ -481,10 +554,10 @@ export function RouletteClient({
             ← 세션 캘린더
           </Link>
           <div>
-            <p className={styles.roulette__eyebrow}>DISCORD MARBLE ROULETTE</p>
-            <h1>마블 룰렛</h1>
+            <p className={styles.roulette__eyebrow}>DACHE ROULETTE</p>
+            <h1>다채 룰렛</h1>
             <p className={styles.roulette__subtitle}>
-              길드원을 선택하고 프로필 마블을 출발시키세요.
+              길드원을 선택하고 Discord 프로필 마블을 출발시키세요.
             </p>
           </div>
         </div>
@@ -600,42 +673,52 @@ export function RouletteClient({
                   </select>
                 </label>
 
-                <label className={styles.roulette__setting}>
-                  <span>1인당 마블</span>
-                  <select
-                    value={ballsPerParticipant}
-                    onChange={(event) =>
-                      handleBallsPerParticipantChange(Number(event.target.value))
-                    }
-                  >
-                    {Array.from(
-                      {
-                        length:
-                          ROULETTE_MAX_BALLS_PER_PARTICIPANT -
-                          ROULETTE_MIN_BALLS_PER_PARTICIPANT +
-                          1,
-                      },
-                      (_, index) =>
-                        index + ROULETTE_MIN_BALLS_PER_PARTICIPANT,
-                    ).map((count) => (
-                      <option
-                        key={count}
-                        value={count}
-                        disabled={
-                          selectedParticipants.length * count >
-                          ROULETTE_MAX_TOTAL_BALLS
-                        }
-                      >
-                        {count}개
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className={styles.roulette__setting}>
+                  <span>1인당 마블 수</span>
+                  <div className={styles.roulette__stepper}>
+                    <button
+                      type="button"
+                      aria-label="1인당 마블 수 줄이기"
+                      onClick={() =>
+                        handleBallsPerParticipantChange(
+                          ballsPerParticipant - 1,
+                        )
+                      }
+                      disabled={
+                        phase === "running" ||
+                        ballsPerParticipant <=
+                          ROULETTE_MIN_BALLS_PER_PARTICIPANT
+                      }
+                    >
+                      −
+                    </button>
+                    <output aria-live="polite">
+                      <strong>{ballsPerParticipant}</strong>
+                      <small>개</small>
+                    </output>
+                    <button
+                      type="button"
+                      aria-label="1인당 마블 수 늘리기"
+                      onClick={() =>
+                        handleBallsPerParticipantChange(
+                          ballsPerParticipant + 1,
+                        )
+                      }
+                      disabled={
+                        phase === "running" ||
+                        ballsPerParticipant >= maxBallsForSelection
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <p className={styles.roulette__setting_note}>
-                참가자별 마블 수를 늘리면 당첨 기회도 함께 늘어납니다. 전체
-                마블은 최대 {ROULETTE_MAX_TOTAL_BALLS}개입니다.
+                −/+ 버튼으로 1인당 최대 {ROULETTE_MAX_BALLS_PER_PARTICIPANT}
+                개까지 늘릴 수 있습니다. 전체 마블은 최대 {ROULETTE_MAX_TOTAL_BALLS}
+                개입니다.
               </p>
             </fieldset>
           </section>
@@ -703,6 +786,7 @@ export function RouletteClient({
                   >
                     <MemberAvatar
                       avatarUrl={member.avatarUrl}
+                      discordUserId={member.discordUserId}
                       name={member.displayName}
                     />
                     <span className={styles.roulette__member_identity}>
@@ -842,6 +926,7 @@ export function RouletteClient({
                       </span>
                       <MemberAvatar
                         avatarUrl={winner.avatarUrl}
+                        discordUserId={winner.id}
                         name={winner.name}
                         variant="winner"
                         meaningful
@@ -850,9 +935,43 @@ export function RouletteClient({
                     </li>
                   ))}
                 </ol>
-                <button type="button" onClick={clearRace}>
-                  다시 추첨하기
-                </button>
+                <div className={styles.roulette__winner_actions}>
+                  <button
+                    className={styles.roulette__winner_copy}
+                    type="button"
+                    onClick={handleCopyResult}
+                    disabled={copyState === "copying"}
+                  >
+                    {copyState === "copying"
+                      ? "PNG 만드는 중…"
+                      : copyState === "success"
+                        ? "클립보드 복사 완료"
+                        : "결과 PNG 복사"}
+                  </button>
+                  <button
+                    className={styles.roulette__winner_retry}
+                    type="button"
+                    onClick={clearRace}
+                  >
+                    다시 추첨하기
+                  </button>
+                </div>
+                {copyState === "success" ? (
+                  <p
+                    className={`${styles.roulette__copy_status} ${styles.roulette__copy_status_success}`}
+                    aria-live="polite"
+                  >
+                    결과 이미지를 PNG로 클립보드에 넣었습니다.
+                  </p>
+                ) : copyState === "error" ? (
+                  <p
+                    className={`${styles.roulette__copy_status} ${styles.roulette__copy_status_error}`}
+                    role="alert"
+                  >
+                    이미지 복사에 실패했습니다. 브라우저의 클립보드 권한을
+                    확인해 주세요.
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </div>

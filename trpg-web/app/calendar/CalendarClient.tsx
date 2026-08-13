@@ -277,7 +277,7 @@ export function CalendarClient({
           </button>
           <Link className={styles.calendar__roulette} href="/roulette">
             <span aria-hidden="true">●</span>
-            마블 룰렛
+            다채 룰렛
           </Link>
           <button
             className={`${styles["calendar__mine-toggle"]} ${

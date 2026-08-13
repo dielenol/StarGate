@@ -46,6 +46,12 @@ test("four courses expose distinct rotating obstacle layouts", () => {
     ROULETTE_COURSES.map((course) => course.spinners.length),
     [2, 3, 4, 5],
   );
+  assert.ok(
+    ROULETTE_COURSES.every((course) =>
+      course.spinners.every((spinner) => spinner.halfLength >= 80),
+    ),
+    "rotating obstacles should span a meaningful part of every course",
+  );
 });
 
 test("spinner geometry rotates deterministically over elapsed time", () => {
@@ -123,16 +129,16 @@ test("last-arrival winners follow reverse unique finish order on every course", 
 test("multiple marbles create unique ball IDs and repeat participant entries", () => {
   const participants = makeParticipants(4);
   const race = createRouletteRace(participants, 91, {
-    ballsPerParticipant: 5,
+    ballsPerParticipant: 10,
     winnerCount: 2,
   });
 
-  assert.equal(race.balls.length, 20);
-  assert.equal(new Set(race.balls.map((ball) => ball.ballId)).size, 20);
+  assert.equal(race.balls.length, 40);
+  assert.equal(new Set(race.balls.map((ball) => ball.ballId)).size, 40);
   for (const participant of participants) {
     assert.equal(
       race.balls.filter((ball) => ball.id === participant.id).length,
-      5,
+      10,
     );
   }
 });
@@ -195,7 +201,7 @@ test("race rejects unsupported participant and draw settings", () => {
   assert.throws(
     () =>
       createRouletteRace(makeParticipants(3), 1, {
-        ballsPerParticipant: 6,
+        ballsPerParticipant: 11,
       }),
     RangeError,
   );

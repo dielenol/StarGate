@@ -350,6 +350,65 @@
   box-shadow: 0 0 0 3px var(--accent-soft-3);
 }
 
+.roulette__stepper {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 38px minmax(52px, 1fr) 38px;
+  overflow: hidden;
+  background: var(--control-bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.roulette__stepper button {
+  color: var(--accent-text-strong);
+  background: var(--accent-soft-2);
+  border: 0;
+  font-size: 18px;
+  font-weight: 800;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.roulette__stepper button:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.roulette__stepper button:last-child {
+  border-left: 1px solid var(--border);
+}
+
+.roulette__stepper button:hover:not(:disabled) {
+  color: #fff;
+  background: var(--accent);
+}
+
+.roulette__stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.roulette__stepper output {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text);
+}
+
+.roulette__stepper output strong {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.roulette__stepper output small {
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 700;
+}
+
 .roulette__setting_note {
   margin-top: 10px;
   color: var(--text-dim);
@@ -592,7 +651,7 @@
 }
 
 .roulette__actions button,
-.roulette__winner button {
+.roulette__winner_actions button {
   min-height: 43px;
   border-radius: 10px;
   font-size: 12px;
@@ -606,11 +665,12 @@
 }
 
 .roulette__actions button:active:not(:disabled),
-.roulette__winner button:active {
+.roulette__winner_actions button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.roulette__actions button:disabled {
+.roulette__actions button:disabled,
+.roulette__winner_actions button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
@@ -827,18 +887,50 @@
   font-weight: 850;
 }
 
-.roulette__winner button {
-  width: 100%;
-  flex: 0 0 auto;
+.roulette__winner_actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.roulette__winner_copy {
+  color: var(--accent-text-strong);
+  background: var(--accent-soft-3);
+  border: 1px solid var(--accent-border);
+}
+
+.roulette__winner_copy:hover:not(:disabled) {
+  color: #fff;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.roulette__winner_retry {
   color: #fff;
   background: var(--accent);
   border: 1px solid var(--accent);
 }
 
-.roulette__winner button:hover {
+.roulette__winner_retry:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
   transform: translateY(-1px);
+}
+
+.roulette__copy_status {
+  margin: -5px 2px 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.roulette__copy_status_success {
+  color: var(--success);
+}
+
+.roulette__copy_status_error {
+  color: var(--danger);
 }
 
 .roulette__status {
@@ -883,9 +975,10 @@
 .roulette__course:focus-visible,
 .roulette__member:focus-visible,
 .roulette__mode_toggle button:focus-visible,
+.roulette__stepper button:focus-visible,
 .roulette__selection_actions button:focus-visible,
 .roulette__actions button:focus-visible,
-.roulette__winner button:focus-visible {
+.roulette__winner_actions button:focus-visible {
   outline: 2px solid var(--accent-border-strong);
   outline-offset: 2px;
 }
@@ -929,6 +1022,7 @@
   .roulette__course,
   .roulette__member,
   .roulette__mode_toggle button,
+  .roulette__stepper button,
   .roulette__actions button {
     transition: none;
   }
@@ -1022,6 +1116,10 @@
   .roulette__winner {
     width: 88%;
     padding: 14px;
+  }
+
+  .roulette__winner_actions {
+    grid-template-columns: 1fr;
   }
 
   .roulette__winner_list li {

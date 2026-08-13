@@ -8,17 +8,19 @@ import "@/lib/db/init";
 
 import { NextResponse } from "next/server";
 
-import { listActiveTrpgGuildMembers } from "@stargate/shared-db";
+import {
+  findUsersByDiscordIds,
+  listActiveTrpgGuildMembers,
+} from "@stargate/shared-db";
 
 import { auth } from "@/lib/auth/config";
+import {
+  toTrpgMemberViews,
+  type TrpgMemberView,
+} from "@/lib/discord/avatar";
 import { TRPG_GUILD_ID } from "@/lib/env";
 
-export interface TrpgMemberView {
-  discordUserId: string;
-  displayName: string;
-  discordUsername: string;
-  avatarUrl: string | null;
-}
+export type { TrpgMemberView } from "@/lib/discord/avatar";
 
 export async function GET() {
   const session = await auth();
@@ -28,13 +30,14 @@ export async function GET() {
 
   try {
     const members = await listActiveTrpgGuildMembers(TRPG_GUILD_ID);
-
-    const payload: TrpgMemberView[] = members.map((m) => ({
-      discordUserId: m.discordUserId,
-      displayName: m.displayName,
-      discordUsername: m.discordUsername,
-      avatarUrl: m.discordAvatarUrl ?? null,
-    }));
+    const linkedUsers = await findUsersByDiscordIds(
+      members.map((member) => member.discordUserId),
+    ).catch(() => []);
+    const payload: TrpgMemberView[] = toTrpgMemberViews(members, {
+      linkedUsers,
+      currentUserDiscordId: session.user.discordUserId,
+      currentUserAvatarUrl: session.user.image,
+    });
 
     return NextResponse.json(payload);
   } catch (err) {
