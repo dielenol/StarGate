@@ -38,3 +38,10 @@
 - Lore Explorer에서 `NOSB-S1E6-TURNING-POINT-PART1` 쿼리가 보고서·mirror·마지막 대대·관련 Dossier의 정규 링크를 `sourceMode: hybrid`, `degradedSources: []`로 반환한다.
 - 검증: 기존 위키 5건의 세션 표식·보고서 링크·공개 상태, 원시 `[[...]]` token 0, revision snapshot 5건, 미인증 검색 API `401`
 - 관련 적용 소스 커밋: `1acea89c`
+
+## 2026-08-13 · 라이브 적용 · MINI06 wiki mirror와 검색 그래프
+
+- `mini06-neved` operation-report mirror를 비공개 staging 뒤 공개로 전환하고, 보고서와 동일한 본문·구조화 참조·장면 12개를 연결했다.
+- Lore Explorer에서 `개럿 클라이맥` 검색이 신규 Dossier와 `MINI06` 보고서·mirror의 정규 링크를 함께 반환하며 degraded 안내가 없는 것을 확인했다.
+- 검증: wiki DB exact 재조회, report/mirror path·alt·caption parity, mirror hero와 본문 이미지 broken 0, 인증된 상세·검색 결과·가로 넘침·콘솔 오류 0, 미인증 wiki `307`·검색 API `401`
+- 관련 적용 소스 커밋: `44e73cd3`, `1ffb0ba9`

@@ -145,3 +145,10 @@
 - 검증: 번호 테스트 9건, personality 테스트 8건, NPC·성격·시각·공개 문구·report/mirror parity·전체 lore static audit, live read-only dry-run staging 2건과 publication 15건, `pnpm typecheck`, `pnpm lint`, 자산 audit·테스트 11건, critical risk review
 - 관련 커밋: `44e73cd3`
 - 후속 작업: 별도 live 승인 뒤 V/private staging → DB 재조회 → fresh U/public publication dry-run·실행 → 역할별 보고서·mirror·Dossier·이미지 consumer 검증을 진행한다. 신규 NPC 후보 14건과 경제 원장 보정은 필요한 사용자 결정을 별도로 받는다.
+
+## 2026-08-13 · 라이브 적용 · MINI06 전사의 탄생
+
+- `NOSB-MINI-NEVED`를 `V`로 staging한 뒤 모든 인증 역할 `U`로 공개하고, 보고 순번 `MINI06`과 personnel 22건·wiki 2건·catalog 1건의 구조화 참조를 반영했다.
+- 보고서와 `mini06-neved` mirror는 같은 장면 12개를 사용하며, 현장 전원의 200,000 크레딧 즉시 지급은 정사 문장으로만 보존하고 경제 원장은 변경하지 않았다.
+- 검증: staging run `seed-payload:b538040a-301c-4d9f-a288-84f49b37f55a` 2/2, publication run `seed-payload:e558d44d-70d0-4420-8279-afeeec1f55fb` 15/15, DB exact 재조회, 인증된 목록·상세·역참조, 이미지 parity·broken 0·가로 넘침·콘솔 오류 0, 미인증 상세 `307`
+- 관련 적용 소스 커밋: `44e73cd3`, `1ffb0ba9`

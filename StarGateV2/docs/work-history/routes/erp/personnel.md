@@ -157,3 +157,10 @@
 - 조직도 inline 아이콘과 공개 SVG mirror, NOVUS 아이콘 마스터를 같은 도형으로 동기화했다.
 - 검증: 외부 조직·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, master JS syntax, `npx tsc --noEmit`, 대상 ESLint, 인증된 1280px 신원조회 실제 렌더·가로 넘침·콘솔 오류 확인
 - 관련 구현 커밋: `ba3d8973`
+
+## 2026-08-13 · 라이브 적용 · 네베드 미니세션 외부 인물
+
+- 개럿·사이먼·코너 등 공개 외부 Dossier 11건을 생성해 갈로글라 9명·욤스비킹 2명으로 분류했다. 외부 인물에는 agentLevel을 저장하지 않았고 사이먼·노스터만 사망 archive에 배치했다.
+- 기존 공개 Dossier 11건에는 `NOSB-MINI-NEVED` 세션 출현과 event/tag를, 네베드·샌드맨에는 불변 성격 관찰을 각각 1회 반영했다.
+- 검증: create run `seed-payload:7c6c66b6-9568-49ba-ba8e-017b3f79e645` 11/11, publication run `seed-payload:e558d44d-70d0-4420-8279-afeeec1f55fb` 15/15, DB exact 재조회, 인증된 조직도·신규/사망 Dossier·보고서 역링크·가로 넘침·콘솔 오류 확인
+- 관련 적용 소스 커밋: `1ffb0ba9`, `ba3d8973`

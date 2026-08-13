@@ -25,21 +25,21 @@ source: stargate-lore
 - 시각 자료: 1035x503 장면 프레임 97개와 대화 아바타를 분리 판독했다. 그중 서사의 시작·핵심 증거·대결·회복·현재 시점 쿠키를 대표하는 원본 장면 12개만 보고서와 mirror에 같은 순서로 사용한다.
 - 공개 기획 노트 `389c1528d29e80969a35c669726ac003`의 인물·시나리오·AI 요약·메모를 보조 근거로 확인했다. 노트의 `코너가 개럿을 조종했다`는 추가 폭로는 실제 플레이에 나오지 않았으므로 정사 사실로 확정하지 않는다.
 - 원본 종료 표제가 `노부스 오르도 / 키아나 미니세션 / 전사의 탄생 / 끝.`으로 일치하므로 최종 회차명은 `전사의 탄생`이다.
-- 공개 정책: 신규 보고서는 `minRole: V`, mirror는 `isPublic: false`로 staging하고 별도 승인 뒤 같은 publication transaction에서 보고서 `U`, mirror 공개, 기존 공개 Dossier 링크를 반영한다.
+- 공개 정책: 신규 보고서를 `minRole: V`, mirror를 `isPublic: false`로 staging한 뒤 별도 승인된 publication transaction에서 보고서 `U`, mirror 공개, 기존 공개 Dossier 링크를 반영했다.
 
 ## Canonical Anchor
 
 - Session ID: `NOSB-MINI-NEVED`
 - Report number: `MINI06`
 - Report title: `작전 보고서 MINI06: 전사의 탄생`
-- Report minimum role: `V` staging; `U` publication candidate
+- Report minimum role: `U` published
 - Wiki mirror slug: `mini06-neved`
 - 진행일: `2026-07-30` ~ `2026-08-03`
 - 작전지: 미확인 도심, 노부스 오르도 치료실, 아일랜드 갈로글라 한너 클랜 공동체의 기억 공간
 - 지도 좌표: 아일랜드 작전권 기준 `[47.7, 31.8]`, `estimated`; 정확한 공동체 위치는 로그에 수치로 제시되지 않았다.
 - 주요 대상: 키아나 오 캘러핸, 데이비드 오 캘러핸, 악몽 줄루, ALPANO-3001, 갈로글라, 욤스비킹, 개럿 클라이맥
 - 보고서 기록자: `NOVUS ORDO 사무국 기록통제실 연구원 M. Keane`
-- 현재 상태: 저장소 payload·자산 준비 단계이며 live DB에는 미적용
+- 현재 상태: live DB 적용·독립 재조회·인증 브라우저 소비 경로 검증 완료
 
 ## Structured Digest
 
@@ -61,17 +61,17 @@ source: stargate-lore
 
 | subject | source evidence | target surface | action | status |
 |---|---|---|---|---|
-| 전·후편 전체 기록 | 두 보존본의 연속 시각과 종료 표제 | `session_reports.NOSB-MINI-NEVED`, `wiki_pages.mini06-neved` | 하나의 `MINI06` 보고서와 mirror로 병합; 12개 시각 자료 parity | payload-ready |
-| 보고서 번호·지도 카드 | 종료 표제 `전사의 탄생`, 아일랜드 갈로글라 기억 작전 | `lib/format/session-report.ts`, report map | `MINI06` preset·제목 fallback·지도 카드 배치 추가 | implementation-ready |
+| 전·후편 전체 기록 | 두 보존본의 연속 시각과 종료 표제 | `session_reports.NOSB-MINI-NEVED`, `wiki_pages.mini06-neved` | 하나의 `MINI06` 보고서와 mirror로 병합; 12개 시각 자료 parity | applied |
+| 보고서 번호·지도 카드 | 종료 표제 `전사의 탄생`, 아일랜드 갈로글라 기억 작전 | `lib/format/session-report.ts`, report map | `MINI06` preset·제목 fallback·지도 카드 배치 추가 | applied |
 | 악몽 줄루 | 도심 습격, 기억 침입, 검은 토끼·점액 파편 | 기존 `wiki_pages.zulu`, report | 기존 wiki 본문은 미변경하고 구조화 참조와 보고서 서술만 추가 | reviewed-no-action |
 | 노부스 오르도 | ALPANO-3001 운용, 보상 지급, 갈로글라·욤스비킹 동맹 쿠키 | 기존 `wiki_pages.novus-ordo`, report | 기존 wiki 본문은 미변경하고 구조화 참조와 보고서 서술만 추가 | reviewed-no-action |
 | ALPANO-3001 | 다인 기억 다이브 장치와 치료 운용 | report | 정식 자산 번호·보관·재사용 조건이 부족해 전용 wiki/catalog 미생성 | candidate-only |
-| 갈로글라·욤스비킹 | 기억 속 적대와 현재 시점 동맹 선언 | `MILITARY` external sub-org, report | `GALLOGLA`·`JOMSVIKING`을 MANUS 섹터가 아닌 군부 외부 하위 조직으로 정적 분류; faction/institution DB row는 미생성 | implementation-ready |
-| 개럿 클라이맥 | 사이먼 살해, 야수화, 제압 후 현재 생존·섹터 B 경호 | report, `GARRETT_CLIMAC` | 공개·외부 무등급 Dossier create-only payload, generic unknown portrait, confirmed source-side relations | payload-ready |
-| 사이먼 오 캘러핸 | 키아나의 선대 전사·교사, 개럿에게 피살 | report, `SIMON_OCALLAHAN` | 공개·외부 무등급 Dossier와 `DECEASED` 상태 확정, generic unknown portrait | payload-ready |
-| 코너·스벤·네린·엔다·에바·로니·노스터 | 가족·지도자·증언자·피해자 역할 | report, NPC Dossiers | 공개·외부 무등급 Dossier 7건; 노스터만 `DECEASED`, 나머지 미확인 생존 상태는 구조화하지 않음 | payload-ready |
+| 갈로글라·욤스비킹 | 기억 속 적대와 현재 시점 동맹 선언 | `MILITARY` external sub-org, report | `GALLOGLA`·`JOMSVIKING`을 MANUS 섹터가 아닌 군부 외부 하위 조직으로 정적 분류; faction/institution DB row는 미생성 | applied |
+| 개럿 클라이맥 | 사이먼 살해, 야수화, 제압 후 현재 생존·섹터 B 경호 | report, `GARRETT_CLIMAC` | 공개·외부 무등급 Dossier create-only payload, generic unknown portrait, confirmed source-side relations | applied |
+| 사이먼 오 캘러핸 | 키아나의 선대 전사·교사, 개럿에게 피살 | report, `SIMON_OCALLAHAN` | 공개·외부 무등급 Dossier와 `DECEASED` 상태 확정, generic unknown portrait | applied |
+| 코너·스벤·네린·엔다·에바·로니·노스터 | 가족·지도자·증언자·피해자 역할 | report, NPC Dossiers | 공개·외부 무등급 Dossier 7건; 노스터만 `DECEASED`, 나머지 미확인 생존 상태는 구조화하지 않음 | applied |
 | 굿 닥터·닥터 박 | 치료 및 기억 다이브 지원 | report, NPC candidates | 정확한 정규 신원·직책·소속·등급 매칭 불가로 미생성 | blocked |
-| 욤스·갈 무직 | 포로와 비밀 협력자·경비 역할 | report, `YOMS`·`GAL_MUJIK` | 화자명을 별칭·안정 식별자로 보존하고 각각 `JOMSVIKING`·`GALLOGLA` 공개 Dossier 생성 | payload-ready |
+| 욤스·갈 무직 | 포로와 비밀 협력자·경비 역할 | report, `YOMS`·`GAL_MUJIK` | 화자명을 별칭·안정 식별자로 보존하고 각각 `JOMSVIKING`·`GALLOGLA` 공개 Dossier 생성 | applied |
 | `soda` | 시스템 기록상 크로노스가 1개 사용 | report, `master_items.soda`, economy candidate | 소비 사실은 보고서에 기록; 인벤토리 수량 차감은 exact baseline과 별도 승인 전 미실행 | approval-required |
 | 200,000 크레딧 보상 | 현장 기록상 이 자리에 있던 전원에게 즉시 지급 완료 | report only | 정사 서술만 보존하고 사용자 지시에 따라 ERP 원장 보정·후속 확인·경제 mutation을 영구 제외 | reviewed-no-action |
 | 필스너·적외선 조명·세포 억제제·야수화 주사 | 조사·증거 확인·전투 수습 중 사용 | report | 정식 catalog identity·소유권·잔량·회수 상태 불충분으로 catalog/inventory 미변경 | reviewed-no-action |
@@ -82,18 +82,18 @@ source: stargate-lore
 
 | source name | canonical target | action | status |
 |---|---|---|---|
-| 키아나 오 캘러핸 / 네베드 | `네베드` | 기억 치료 대상, 갈로글라 전사 선택, 악몽 극복 | ready-for-publication |
-| 데이비드 오 캘러핸 | `SANDMAN` | 누나의 기억 다이브와 코너 저지, 끝까지 손을 놓지 않음 | ready-for-publication |
-| 오틸리아 발트만 | `OTILIA` | 기억 조사·가족사 확인·현장 수습 | ready-for-publication |
-| 이동식 | `LEE DONGSIK` | 기억 공간 조사와 개럿 제압 | ready-for-publication |
-| 마리아 | `MARIA` | 적외선 조명 확보, 기억 조사, 악몽 파편 회수 | ready-for-publication |
-| 크로노스 | `TIME` | 기억 공간 조사, 소다 1개 사용 | ready-for-publication |
-| 시유 / 타이거 | `TIGER298` | 기억 공간 조사와 키아나 구조 | ready-for-publication |
-| 발레리아 아젠트 | `AEGIS` | 기억 공간 조사와 개럿 전투 | ready-for-publication |
-| 휘트모어 핀치 | `PIPETTE` | 기억 다이브 지원과 악몽 파편 봉인 | ready-for-publication |
-| 미스터 오드 | `MR_ODD` | 임무 통제와 200,000 크레딧 즉시 지급 | ready-for-publication |
-| 케이시 레이서 | `CASEY_RACER` | 과거 쿠키에서 욤스 회수 연락망으로 언급 | ready-for-publication |
-| 개럿·사이먼·코너·네린·엔다·에바·로니·노스터·욤스·스벤·갈 무직 | `GARRETT_CLIMAC`·`SIMON_OCALLAHAN`·`CONNOR_OCALLAHAN`·`NERIN_OCALLAHAN`·`ENDA_CLIMAC`·`EVA_HANNER`·`RONNIE_KEANE`·`NOSTER`·`YOMS`·`SVEN_TROELBEIN`·`GAL_MUJIK` | 신규 공개 Dossier 11건, report/mirror 정규 링크와 source-side 관계·세션 출현 추가 | ready-for-apply |
+| 키아나 오 캘러핸 / 네베드 | `네베드` | 기억 치료 대상, 갈로글라 전사 선택, 악몽 극복 | applied |
+| 데이비드 오 캘러핸 | `SANDMAN` | 누나의 기억 다이브와 코너 저지, 끝까지 손을 놓지 않음 | applied |
+| 오틸리아 발트만 | `OTILIA` | 기억 조사·가족사 확인·현장 수습 | applied |
+| 이동식 | `LEE DONGSIK` | 기억 공간 조사와 개럿 제압 | applied |
+| 마리아 | `MARIA` | 적외선 조명 확보, 기억 조사, 악몽 파편 회수 | applied |
+| 크로노스 | `TIME` | 기억 공간 조사, 소다 1개 사용 | applied |
+| 시유 / 타이거 | `TIGER298` | 기억 공간 조사와 키아나 구조 | applied |
+| 발레리아 아젠트 | `AEGIS` | 기억 공간 조사와 개럿 전투 | applied |
+| 휘트모어 핀치 | `PIPETTE` | 기억 다이브 지원과 악몽 파편 봉인 | applied |
+| 미스터 오드 | `MR_ODD` | 임무 통제와 200,000 크레딧 즉시 지급 | applied |
+| 케이시 레이서 | `CASEY_RACER` | 과거 쿠키에서 욤스 회수 연락망으로 언급 | applied |
+| 개럿·사이먼·코너·네린·엔다·에바·로니·노스터·욤스·스벤·갈 무직 | `GARRETT_CLIMAC`·`SIMON_OCALLAHAN`·`CONNOR_OCALLAHAN`·`NERIN_OCALLAHAN`·`ENDA_CLIMAC`·`EVA_HANNER`·`RONNIE_KEANE`·`NOSTER`·`YOMS`·`SVEN_TROELBEIN`·`GAL_MUJIK` | 신규 공개 Dossier 11건, report/mirror 정규 링크와 source-side 관계·세션 출현 추가 | applied |
 | 굿 닥터·닥터 박 | no canonical target | 화자명과 기능만 report prose에 보존; 정규 신원·부서가 매칭되지 않아 Dossier 미생성 | blocked |
 
 ## Relationship Narrative Candidates
@@ -103,12 +103,12 @@ source: stargate-lore
 | `네베드` | `SANDMAN` | 데이비드가 기억 다이브와 현실에서 누나의 손을 끝까지 놓지 않음 | confirmed | 기존 양측 가족 관계가 이미 있어 새 relation 미추가; session appearance로만 보존 | reviewed-no-action |
 | `네베드` | `MARIA` | 마리아가 기억 조사와 악몽 파편 회수에 참여 | confirmed | 별도 지속 관계로 확장할 근거가 부족해 session appearance로만 보존 | reviewed-no-action |
 | `SANDMAN` | `CASEY_RACER` | 과거 쿠키에서 데이비드가 욤스를 케이시 측 회수자에게 넘김 | confirmed | 기존 양측 협력 관계가 있어 새 relation 미추가 | reviewed-no-action |
-| `GARRETT_CLIMAC` | `네베드` | 강제 약혼·가스라이팅·인질·살해 시도 뒤 현재 사진 보관 | confirmed | Garrett source-side relation | ready-for-apply |
-| `GARRETT_CLIMAC` | `SIMON_OCALLAHAN` | 사이먼 살해와 키아나 추격 | confirmed | Garrett/Simon source-side relations | ready-for-apply |
-| `CONNOR_OCALLAHAN` | `SANDMAN` | 코너가 진입을 막고 데이비드가 대치해 현장팀 진입 시간을 벌음 | confirmed | Connor source-side relation | ready-for-apply |
-| `CONNOR_OCALLAHAN` | `SVEN_TROELBEIN` | 과거 적대 뒤 현재 노부스 오르도 산하 동맹 선언 | confirmed | Connor/Sven source-side relations | ready-for-apply |
-| `GAL_MUJIK` | `SANDMAN`·`YOMS` | 데이비드와 함께 부상한 욤스를 회수망으로 인계 | confirmed | Gal source-side relations | ready-for-apply |
-| `YOMS` | `네베드` | 키아나가 성인식에서 살해를 거부하고 쇠사슬만 절단 | confirmed | Yoms source-side relation | ready-for-apply |
+| `GARRETT_CLIMAC` | `네베드` | 강제 약혼·가스라이팅·인질·살해 시도 뒤 현재 사진 보관 | confirmed | Garrett source-side relation | applied |
+| `GARRETT_CLIMAC` | `SIMON_OCALLAHAN` | 사이먼 살해와 키아나 추격 | confirmed | Garrett/Simon source-side relations | applied |
+| `CONNOR_OCALLAHAN` | `SANDMAN` | 코너가 진입을 막고 데이비드가 대치해 현장팀 진입 시간을 벌음 | confirmed | Connor source-side relation | applied |
+| `CONNOR_OCALLAHAN` | `SVEN_TROELBEIN` | 과거 적대 뒤 현재 노부스 오르도 산하 동맹 선언 | confirmed | Connor/Sven source-side relations | applied |
+| `GAL_MUJIK` | `SANDMAN`·`YOMS` | 데이비드와 함께 부상한 욤스를 회수망으로 인계 | confirmed | Gal source-side relations | applied |
+| `YOMS` | `네베드` | 키아나가 성인식에서 살해를 거부하고 쇠사슬만 절단 | confirmed | Yoms source-side relation | applied |
 
 ## Economy And Stock Decision
 
@@ -122,30 +122,30 @@ source: stargate-lore
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `네베드` | 키아나 오 캘러핸(기존 ERP 신원) | 네베드(기존 ERP) | 요원 / 기억 치료 대상 / 갈로글라 전사 선택 | 세션 화자와 기존 실명·가족 관계 일치 | 기존 `NOVUS_ORDO` 소속 보존 | 기억 다이브와 갈로글라 과거 회상; 정규 보직 불변 | `G` 유지(개인 서사와 전사 선택은 오르도 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존; 컷신 재사용 없음 | 기존 공개 보존 | 기존 신상 보존 | 세션 출현과 자기결정 성격 관찰만 additive 반영 | ready-for-apply |
-| `SANDMAN` | 데이비드 오 캘러핸(기존 ERP 신원) | 샌드맨(기존 ERP) | 뉴 더블린 감독관 유지 / 기억 다이브 지원자 | 세션 실명·누나 관계와 기존 Dossier 일치 | 기존 `NOVUS_ORDO` 소속 보존 | 누나 구조와 코너 저지는 임시 행동 | `G` 유지(감독관 직책은 기존 반영 상태이며 이번 가족 구조는 추가 지휘권 변동이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 출현과 보호적 위험 감수 관찰만 additive 반영 | ready-for-apply |
-| `OTILIA` | 오틸리아 발트만(기존 ERP 신원) | 기존 ERP 별칭 보존 | 과학자 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | ALPANO 기억 다이브 일시 참가 | `G` 유지(일시 치료 참여는 정규 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | ready-for-apply |
-| `LEE DONGSIK` | 이동식(기존 ERP 신원) | 기존 ERP 별칭 보존 | 현장 요원 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `U` 유지(현장 참가가 정규 직책·접근 권한을 바꾸지 않음) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | ready-for-apply |
-| `MARIA` | 마리아(기존 ERP 신원) | 기존 ERP 별칭 보존 | 현장 요원 / 기억 조사·파편 회수 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브와 사후 회수 일시 참가 | `H` 유지(회수 행동은 정규 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | ready-for-apply |
-| `TIME` | 크로노스(기존 ERP 신원) | 기존 ERP 별칭 보존 | 현장 요원 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `G` 유지(현장 참가와 소다 사용은 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영; 인벤토리 별도 승인 | ready-for-apply |
-| `TIGER298` | 시유(기존 ERP 신원) | 타이거(기존 ERP) | 현장 요원 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `J` 유지(현장 참가가 정규 직책·접근 권한을 바꾸지 않음) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | ready-for-apply |
-| `AEGIS` | 발레리아 아젠트(기존 ERP 신원) | 아젠트(기존 ERP) | 현장 요원 / 기억 조사·전투 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `J` 유지(현장 전투는 정규 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | ready-for-apply |
-| `PIPETTE` | 휘트모어 핀치(기존 ERP 신원) | 피펫(기존 ERP) | 과학자 / 기억 다이브·파편 봉인 지원 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | ALPANO 보조와 사후 봉인 | `J` 유지(실험 지원은 정규 보직·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | ready-for-apply |
-| `MR_ODD` | Mr. 오드(기존 ERP 신원) | 기존 ERP 별칭 보존 | 임무 통제 / 보상 지급 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 세션 사후 통제 | `M` 유지(보상 지급은 기존 통제 역할이며 보직·권한 변동이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영; credit ledger 후속 작업 제외 | ready-for-apply |
-| `CASEY_RACER` | Casey Racer(기존 ERP 신원) | 기존 ERP 별칭 보존 | 욤스비킹 연락망 / 과거 쿠키 회수자 | 세션 실명과 기존 David 협력 관계 일치 | 기존 외부 소속 보존 | 과거 욤스 회수 연락 | 외부 인원이라 agentLevel 미저장 | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | ready-for-apply |
-| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 갈로글라 청년 전사대장, 강제 약혼자, 현재 섹터 B 경호원 | 실명·가족사·범행·현재 쿠키 생존 확인 | `MILITARY / GALLOGLA` | 섹터 B 경호 역할은 확인, 정식 고용 주체 미확인 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 남성, 도리스의 아들, 얼굴 흉터·야수화 이력 확인 | 키아나·사이먼 관계와 세션 출현 반영 | ready-for-apply |
-| `SIMON_OCALLAHAN` | 사이먼 오 캘러핸 (`Simon O'Callahan`) | 별칭 없음 | 갈로글라 전사 / 키아나의 선대·교사 | 공개 기획 노트와 기억 로그 일치 | `MILITARY / GALLOGLA` | 사망자; 현재 파견 없음 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 남성, 당시 20세·188cm; `DECEASED` 확정 | 키아나 보호·개럿 피살 관계 반영 | ready-for-apply |
-| `CONNOR_OCALLAHAN` | 코너 오 캘러핸 (`Connor O'Callahan`) | 별칭 없음 | 갈로글라 지도자 / 키아나·데이비드의 부친 | 로그 가족 호칭과 현재 동맹 장면 | `MILITARY / GALLOGLA` | 욤스비킹과 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 가족 관계 확인; 배후 조종설은 미확인 | David 대치·Sven 동맹 관계 반영 | ready-for-apply |
-| `NERIN_OCALLAHAN` | 네린 오 캘러핸 (`Nerin O'Callahan`) | 별칭 없음 | 키아나·데이비드의 모친 | 로그 가족 호칭 | `MILITARY / GALLOGLA` | 기억 속 주민 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | 자녀 관계와 세션 출현 반영 | ready-for-apply |
-| `ENDA_CLIMAC` | 엔다 클라이맥 (`Enda Climac`) | 별칭 없음 | 은퇴한 전설적 전사 / 개럿의 조모 | 실명·89세·가족 호칭 확인 | `MILITARY / GALLOGLA` | 은퇴 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 당시 89세, 도리스의 모친; 현재 상태 미확인 | Garrett 가족·Kiana 후계 관계 반영 | ready-for-apply |
-| `EVA_HANNER` | 에바 한너 (`Eva Hanner`) | 별칭 없음 | 갈로글라 한너 클랜 지도자 | 성인식 회의와 로그 호칭 | `MILITARY / GALLOGLA` | 클랜 지도부 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | 세션 출현만 반영 | ready-for-apply |
-| `RONNIE_KEANE` | 로니 킨 (`Ronnie Keane`) | 별칭 없음 | 사냥꾼 / 사이먼 사망 증언자 | 로그 실명·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | Simon 증언 관계와 세션 출현 반영 | ready-for-apply |
-| `NOSTER` | 노스터 (기록명; 전체 법적 이름 미확인) | 별칭 없음 | 양조업자 / 야수화 주사 절도 피해자 | 로그 호칭·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 후 피살 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 전체 법적 이름 미확인; `DECEASED` 확정 | Garrett 증언 관계와 세션 출현 반영 | ready-for-apply |
+| `네베드` | 키아나 오 캘러핸(기존 ERP 신원) | 네베드(기존 ERP) | 요원 / 기억 치료 대상 / 갈로글라 전사 선택 | 세션 화자와 기존 실명·가족 관계 일치 | 기존 `NOVUS_ORDO` 소속 보존 | 기억 다이브와 갈로글라 과거 회상; 정규 보직 불변 | `G` 유지(개인 서사와 전사 선택은 오르도 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존; 컷신 재사용 없음 | 기존 공개 보존 | 기존 신상 보존 | 세션 출현과 자기결정 성격 관찰만 additive 반영 | applied |
+| `SANDMAN` | 데이비드 오 캘러핸(기존 ERP 신원) | 샌드맨(기존 ERP) | 뉴 더블린 감독관 유지 / 기억 다이브 지원자 | 세션 실명·누나 관계와 기존 Dossier 일치 | 기존 `NOVUS_ORDO` 소속 보존 | 누나 구조와 코너 저지는 임시 행동 | `G` 유지(감독관 직책은 기존 반영 상태이며 이번 가족 구조는 추가 지휘권 변동이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 출현과 보호적 위험 감수 관찰만 additive 반영 | applied |
+| `OTILIA` | 오틸리아 발트만(기존 ERP 신원) | 기존 ERP 별칭 보존 | 과학자 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | ALPANO 기억 다이브 일시 참가 | `G` 유지(일시 치료 참여는 정규 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
+| `LEE DONGSIK` | 이동식(기존 ERP 신원) | 기존 ERP 별칭 보존 | 현장 요원 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `U` 유지(현장 참가가 정규 직책·접근 권한을 바꾸지 않음) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
+| `MARIA` | 마리아(기존 ERP 신원) | 기존 ERP 별칭 보존 | 현장 요원 / 기억 조사·파편 회수 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브와 사후 회수 일시 참가 | `H` 유지(회수 행동은 정규 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
+| `TIME` | 크로노스(기존 ERP 신원) | 기존 ERP 별칭 보존 | 현장 요원 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `G` 유지(현장 참가와 소다 사용은 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영; 인벤토리 별도 승인 | applied |
+| `TIGER298` | 시유(기존 ERP 신원) | 타이거(기존 ERP) | 현장 요원 / 기억 조사 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `J` 유지(현장 참가가 정규 직책·접근 권한을 바꾸지 않음) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
+| `AEGIS` | 발레리아 아젠트(기존 ERP 신원) | 아젠트(기존 ERP) | 현장 요원 / 기억 조사·전투 참여 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 기억 다이브 일시 참가 | `J` 유지(현장 전투는 정규 직책·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
+| `PIPETTE` | 휘트모어 핀치(기존 ERP 신원) | 피펫(기존 ERP) | 과학자 / 기억 다이브·파편 봉인 지원 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | ALPANO 보조와 사후 봉인 | `J` 유지(실험 지원은 정규 보직·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
+| `MR_ODD` | Mr. 오드(기존 ERP 신원) | 기존 ERP 별칭 보존 | 임무 통제 / 보상 지급 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 세션 사후 통제 | `M` 유지(보상 지급은 기존 통제 역할이며 보직·권한 변동이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영; credit ledger 후속 작업 제외 | applied |
+| `CASEY_RACER` | Casey Racer(기존 ERP 신원) | 기존 ERP 별칭 보존 | 욤스비킹 연락망 / 과거 쿠키 회수자 | 세션 실명과 기존 David 협력 관계 일치 | 기존 외부 소속 보존 | 과거 욤스 회수 연락 | 외부 인원이라 agentLevel 미저장 | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
+| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 갈로글라 청년 전사대장, 강제 약혼자, 현재 섹터 B 경호원 | 실명·가족사·범행·현재 쿠키 생존 확인 | `MILITARY / GALLOGLA` | 섹터 B 경호 역할은 확인, 정식 고용 주체 미확인 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 남성, 도리스의 아들, 얼굴 흉터·야수화 이력 확인 | 키아나·사이먼 관계와 세션 출현 반영 | applied |
+| `SIMON_OCALLAHAN` | 사이먼 오 캘러핸 (`Simon O'Callahan`) | 별칭 없음 | 갈로글라 전사 / 키아나의 선대·교사 | 공개 기획 노트와 기억 로그 일치 | `MILITARY / GALLOGLA` | 사망자; 현재 파견 없음 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 남성, 당시 20세·188cm; `DECEASED` 확정 | 키아나 보호·개럿 피살 관계 반영 | applied |
+| `CONNOR_OCALLAHAN` | 코너 오 캘러핸 (`Connor O'Callahan`) | 별칭 없음 | 갈로글라 지도자 / 키아나·데이비드의 부친 | 로그 가족 호칭과 현재 동맹 장면 | `MILITARY / GALLOGLA` | 욤스비킹과 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 가족 관계 확인; 배후 조종설은 미확인 | David 대치·Sven 동맹 관계 반영 | applied |
+| `NERIN_OCALLAHAN` | 네린 오 캘러핸 (`Nerin O'Callahan`) | 별칭 없음 | 키아나·데이비드의 모친 | 로그 가족 호칭 | `MILITARY / GALLOGLA` | 기억 속 주민 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | 자녀 관계와 세션 출현 반영 | applied |
+| `ENDA_CLIMAC` | 엔다 클라이맥 (`Enda Climac`) | 별칭 없음 | 은퇴한 전설적 전사 / 개럿의 조모 | 실명·89세·가족 호칭 확인 | `MILITARY / GALLOGLA` | 은퇴 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 당시 89세, 도리스의 모친; 현재 상태 미확인 | Garrett 가족·Kiana 후계 관계 반영 | applied |
+| `EVA_HANNER` | 에바 한너 (`Eva Hanner`) | 별칭 없음 | 갈로글라 한너 클랜 지도자 | 성인식 회의와 로그 호칭 | `MILITARY / GALLOGLA` | 클랜 지도부 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | 세션 출현만 반영 | applied |
+| `RONNIE_KEANE` | 로니 킨 (`Ronnie Keane`) | 별칭 없음 | 사냥꾼 / 사이먼 사망 증언자 | 로그 실명·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | Simon 증언 관계와 세션 출현 반영 | applied |
+| `NOSTER` | 노스터 (기록명; 전체 법적 이름 미확인) | 별칭 없음 | 양조업자 / 야수화 주사 절도 피해자 | 로그 호칭·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 후 피살 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 전체 법적 이름 미확인; `DECEASED` 확정 | Garrett 증언 관계와 세션 출현 반영 | applied |
 | `GOOD_DOCTOR` | 신원 미확인 | 굿 닥터(로그 호칭) | 치료실 의료진 | 치료 장면 화자명 | 정규 소속 미확인 | 키아나 치료 | 정규 직책·접근 권한 미확인 | 고해상도 Dossier 초상 미확정 | 사용자 공개 결정 필요 | 실명·성별·부서 미확인 | treatment prose candidate | blocked |
 | `DOCTOR_PARK` | 신원 미확인 | 닥터 박(로그 호칭) | 기억 다이브 지원 의료진 | 후반 기억 다이브 화자명 | 정규 소속 미확인 | ALPANO 지원 | 정규 직책·접근 권한 미확인 | 고해상도 Dossier 초상 미확정 | 사용자 공개 결정 필요 | 실명·부서 미확인 | memory-dive prose candidate | blocked |
-| `YOMS` | 욤스 (기록명; 실명 미확인) | 별칭 없음 | 욤스비킹 포로·정보원 | 포로 장면 화자명 | `MILITARY / JOMSVIKING` | 갈로글라 포로, 이후 회수 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 실명·직위·현재 상태 미확인 | Kiana 구조·Gal 회수 관계 반영 | ready-for-apply |
-| `SVEN_TROELBEIN` | 스벤 트로엘베인 (`Sven Troelbein`) | 별칭 없음 | 욤스비킹 지도자 | 현재 쿠키 동맹 선언 | `MILITARY / JOMSVIKING` | 노부스 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 추가 신상 미확인 | Connor 동맹 관계 반영 | ready-for-apply |
-| `GAL_MUJIK` | 갈 무직 (기록명; 실명 미확인) | 별칭 없음 | 갈로글라 경비 / 비밀 협력자 | 성인식 우회로·과거 쿠키 화자명 | `MILITARY / GALLOGLA` | 욤스 회수 지원 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 실명·직위 상세·현재 상태 미확인 | David 협력·Yoms 회수 관계 반영 | ready-for-apply |
+| `YOMS` | 욤스 (기록명; 실명 미확인) | 별칭 없음 | 욤스비킹 포로·정보원 | 포로 장면 화자명 | `MILITARY / JOMSVIKING` | 갈로글라 포로, 이후 회수 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 실명·직위·현재 상태 미확인 | Kiana 구조·Gal 회수 관계 반영 | applied |
+| `SVEN_TROELBEIN` | 스벤 트로엘베인 (`Sven Troelbein`) | 별칭 없음 | 욤스비킹 지도자 | 현재 쿠키 동맹 선언 | `MILITARY / JOMSVIKING` | 노부스 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 추가 신상 미확인 | Connor 동맹 관계 반영 | applied |
+| `GAL_MUJIK` | 갈 무직 (기록명; 실명 미확인) | 별칭 없음 | 갈로글라 경비 / 비밀 협력자 | 성인식 우회로·과거 쿠키 화자명 | `MILITARY / GALLOGLA` | 욤스 회수 지원 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 실명·직위 상세·현재 상태 미확인 | David 협력·Yoms 회수 관계 반영 | applied |
 | `NIGHTMARE_FRAGMENT` | 인물 대상 아님 | 검은 토끼 / 검은 점액 | 악몽 줄루 파편 | 기억·현실 장면 변형과 피펫 식별 | 줄루 개체 | 마리아 회수·피펫 봉인 | 인물 권한등급 해당 없음 | Dossier 초상 대상 아님 | 인물 공개 여부 해당 없음 | 인간 신상 대상 아님 | report prose only | blocked |
 
 ## Story-Driven Role/Level Review
@@ -161,8 +161,8 @@ source: stargate-lore
 
 | observation id | codename | sessionId | trait | evidence kind | evidence | source label | confidence | persistence |
 |---|---|---|---|---|---|---|---|---|
-| `NOSB-MINI-NEVED:NEVED:self-directed-protection` | `네베드` | `NOSB-MINI-NEVED` | 강요된 역할을 자기 선택으로 재정의 | dialogue / action | `전사는 죽이는 사람이 아니라, 지키는 사람이야.`; 욤스의 쇠사슬만 끊고 살해를 거부한 뒤 개럿의 강요와 가스라이팅을 거부함; `이제는 저만의 길을 찾을 시간이 온 것이겠죠.` | 작전 보고서 MINI06: 전사의 탄생 | confirmed | ready-for-apply |
-| `NOSB-MINI-NEVED:SANDMAN:protective-risk-taking` | `SANDMAN` | `NOSB-MINI-NEVED` | 가족 보호를 위한 위험 감수 | dialogue / action | `꼭 누나를 구해주세요!`; 코너를 붙잡아 현장팀이 키아나에게 갈 시간을 벌고 기억 다이브 종료까지 손을 놓지 않음 | 작전 보고서 MINI06: 전사의 탄생 | confirmed | ready-for-apply |
+| `NOSB-MINI-NEVED:NEVED:self-directed-protection` | `네베드` | `NOSB-MINI-NEVED` | 강요된 역할을 자기 선택으로 재정의 | dialogue / action | `전사는 죽이는 사람이 아니라, 지키는 사람이야.`; 욤스의 쇠사슬만 끊고 살해를 거부한 뒤 개럿의 강요와 가스라이팅을 거부함; `이제는 저만의 길을 찾을 시간이 온 것이겠죠.` | 작전 보고서 MINI06: 전사의 탄생 | confirmed | applied |
+| `NOSB-MINI-NEVED:SANDMAN:protective-risk-taking` | `SANDMAN` | `NOSB-MINI-NEVED` | 가족 보호를 위한 위험 감수 | dialogue / action | `꼭 누나를 구해주세요!`; 코너를 붙잡아 현장팀이 키아나에게 갈 시간을 벌고 기억 다이브 종료까지 손을 놓지 않음 | 작전 보고서 MINI06: 전사의 탄생 | confirmed | applied |
 
 ## Visual Asset Ledger
 
@@ -199,7 +199,7 @@ source: stargate-lore
 3. staging 적용·독립 재조회 뒤 `nosb-mini-neved-publication.json`을 fresh dry-run한다.
 4. publication 파일은 mirror 공개 → 보고서 `U` → 기존 공개 Dossier 11건 세션 출현 → 성격 관찰 2건 순으로 한 transaction에서 처리한다. 첫 두 envelope는 staging의 제목·본문·시각 자료·참조·지도·기록자 전 필드를 exact CAS하고, Dossier filter는 같은 sessionId appearance의 선행 삽입을 차단하며 exact appearance·event id·tag postcondition만 재실행 no-op으로 인정한다. payload 대상 Dossier의 apply-ready 검증은 `nosb-mini-neved-npc-apply.md` focused 원장을 사용한다.
 5. 각 파일의 domain transaction과 `lore_sources`·`lore_ingestion_runs` 감사는 runner 계약을 따른다. 보고서에는 `provenanceSourceIds`가 연결되고, 구조화 참조 무결성 확인 과정에서 기존 related wiki·personnel·catalog target의 `__sessionReportReferenceLockAt`가 갱신될 수 있다. 파일 간 원자성은 없고, 실패 audit은 domain rollback 뒤 남을 수 있다.
-6. 이번 패스에서는 저장소 준비·read-only 검증만 수행하며 live execute는 별도 exact 승인 전 금지한다.
+6. 사용자 exact 승인에 따라 위 순서대로 live execute를 완료했다. 각 단계는 fresh dry-run과 독립 재조회를 거쳤고 세 domain transaction이 모두 성공했다.
 7. `TIME` 소다 차감은 별도 경제 operation 후보로 유지한다. 200,000 크레딧은 사용자 지시에 따라 후속 조사와 ERP ledger mutation 대상에서 완전히 제외한다.
 
 ## Verification Record
@@ -207,15 +207,19 @@ source: stargate-lore
 - 두 보존본 385쪽을 텍스트 추출하고 실제 기록 시각·종료 표제로 하나의 세션 identity를 확정했다.
 - 대표 페이지 6, 36, 151, 195, 236, 278의 렌더를 원문 레이아웃과 대조했고, 97개 대형 장면 프레임과 대화 아바타를 분리 검토했다.
 - 공개 기획 노트의 인물·시나리오·AI 요약·메모·추가 폭로를 대조해 실제 플레이 미등장 내용은 후보로 분리했다.
-- live `stargate` read-only dry-run에서 신규 codename 11건이 모두 0건이며 create-only `예상 insert`임을 확인했다. 보고서·mirror는 아직 0건이고, 신규 Dossier 생성 전 staging dry-run은 새 personnel target 11건만 `missing`으로 차단돼 실행 순서 gate가 작동했다.
+- live `stargate`에서 신규 Dossier 11건을 create-only transaction으로 생성했다. run `seed-payload:7c6c66b6-9568-49ba-ba8e-017b3f79e645`가 11/11 성공했고, 재조회 결과 `GALLOGLA` 9건·`JOMSVIKING` 2건·공개 11건·agentLevel 저장 0건이며 `SIMON_OCALLAHAN`·`NOSTER`만 `DECEASED`였다.
+- V/private staging은 run `seed-payload:b538040a-301c-4d9f-a288-84f49b37f55a`에서 2/2 성공했다. 보고서 `NOSB-MINI-NEVED`는 `minRole: V`, mirror `mini06-neved`는 비공개로 재조회한 뒤 publication을 fresh dry-run했다.
+- U/public publication은 run `seed-payload:e558d44d-70d0-4420-8279-afeeec1f55fb`에서 15/15 성공했다. 보고서 `minRole: U`, mirror 공개, 기존 Dossier appearance 11건, 성격 관찰 2건을 독립 재조회했고 세 payload의 경제 collection은 0건이었다.
 - 11개 spec↔payload adapter parity, 외부 agentLevel 미저장, `SIMON_OCALLAHAN`·`NOSTER`만 갖는 사망 증거 3필드 완전성을 확인했다.
-- NPC ready·personality·visual/report-mirror·coverage/static/public prose 검증, 조직 분기 테스트 2건, 아이콘 감사 113종·37 route, 대상 ESLint, `pnpm typecheck`, `git diff --check`를 통과했다.
-- 인증된 `http://localhost:43849` 데스크톱 브라우저에서 `/erp/personnel`과 `/erp/factions`의 `GALLOGLA`·`JOMSVIKING` 군부 하위 카드, 갈로글라·욤스비킹 접선 경로를 확인했다. 두 화면 모두 1280px viewport에서 문서 가로 넘침과 콘솔 오류가 없었다.
+- NPC ready·personality·visual/report-mirror·coverage/static/public prose 검증, 조직 분기·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, 대상 ESLint, `pnpm typecheck`, `git diff --check`를 통과했다.
+- 인증된 `http://localhost:43849` 데스크톱 브라우저에서 `/erp/personnel`과 `/erp/factions`의 `GALLOGLA`·`JOMSVIKING` 전용 문장과 조직 카드를 확인했다. active headcount는 사망자 archive를 제외해 갈로글라 7명·욤스비킹 2명이며, 신규 11명 Dossier·사망 표식·보고서 역링크가 정상이고 가로 넘침·콘솔 오류가 없었다.
+- 보고서와 mirror는 같은 12개 경로·alt·caption을 사용했다. 보고서 이미지는 natural `1035×503` / rendered `662×322`, mirror는 infobox hero natural `299×145` / rendered `167×126`과 본문 natural `1035×503` / rendered `732×356`, 모두 `object-fit: contain`, 투명 backdrop, broken 0건이었다.
+- Lore Explorer에서 `개럿 클라이맥` 검색이 Dossier·보고서·mirror의 exact href를 반환했고 degraded 안내가 없었다. 인증 브라우저 역할 `M`에서 `U` 보고서를 열람했으며, 비인증 report·wiki·Dossier는 `307`, 검색 API는 `401`이었다. exact `U` 계정 브라우저 확인은 수행하지 않았다.
 
 ## Remaining Decisions
 
 - `TIME`의 `soda` 1개 차감은 exact live baseline·장착 여부·감사 operation을 확인하고 별도 승인받는다.
 - 200,000 크레딧은 정사 서술만 유지하며 수령자 확인·ledger backfill·알림 등 후속 경제 작업을 하지 않는다.
 - `ALPANO-3001`, 크루아던·카다던의 전용 wiki/catalog 승격은 식별자·공개 범위 결정 뒤 진행한다. 갈로글라·욤스비킹은 정적 외부 하위 조직으로 분류하되 별도 faction/institution DB row는 만들지 않는다.
+- 굿 닥터·닥터 박은 로그 호칭과 치료 기능만 확인됐고 정규 실명·부서가 매칭되지 않아 Dossier 생성을 보류한다.
 - 코너의 배후 조종설은 플레이 로그에 직접 등장하거나 사용자가 정사로 승인하기 전 내부 후보로 유지한다.
-- 신규 공개 Dossier 11건 생성, V staging과 U publication live 적용, DB 재조회, 역할별 report→wiki/personnel/catalog 및 역참조, 조직 카드·이미지 consumer 검증은 별도 운영 승인 뒤 수행한다.
