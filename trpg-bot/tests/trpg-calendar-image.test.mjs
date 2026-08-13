@@ -25,7 +25,7 @@ const { buildTrpgCalendarHtml } = await import(
 );
 
 test(
-  "월간 캘린더는 확대용 1280px 원본 PNG로 렌더링한다",
+  "월간 캘린더는 확대용 1920px 가로형 원본 PNG로 렌더링한다",
   { timeout: 45_000 },
   async (context) => {
     try {
@@ -46,7 +46,14 @@ test(
         const png = await renderTrpgCalendarPng({
           year: 2026,
           month: 8,
-          sessions: [{ date: "2026-08-13", startTime: "20:00", title: "긴 한글 세션 제목 확대 확인" }],
+          sessions: [
+            { date: "2026-08-13", startTime: "20:00", title: "머더 미스터리 장편 시나리오: 사라진 별의 마지막 목격자" },
+            { date: "2026-08-14", startTime: "20:00", title: "인면수심 IV 2회차" },
+            { date: "2026-08-16", startTime: "14:00", title: "검은 숲 2팀" },
+            { date: "2026-08-17", startTime: "18:00", title: "호텔 시어사이드: 위기상황긴급대처피난요령" },
+            { date: "2026-08-20", startTime: "20:30", title: "송사리 미니" },
+            { date: "2026-08-27", startTime: "19:30", title: "호텔 시어사이드: 직원강령위급대응요령안내지침-1부" },
+          ],
           todayDay: 13,
         });
         if (!png) throw new Error("PNG render returned null");
@@ -73,9 +80,10 @@ test(
     );
     const result = JSON.parse(stdout.trim());
 
-    assert.equal(result.width, 1280);
-    assert.ok(result.height > 0);
+    assert.equal(result.width, 1920);
+    assert.ok(result.width / result.height > 1.7);
     assert.ok(result.bytes > 0);
+    assert.ok(result.bytes < 8 * 1024 * 1024);
   },
 );
 
@@ -94,6 +102,7 @@ test("월간 캘린더는 긴 제목을 축약하지 않고 줄바꿈한다", ()
     todayDay: 13,
   });
 
+  assert.match(html, /\.card\s*\{[\s\S]*?width:\s*1920px/);
   assert.ok(html.includes(longTitle));
   assert.doesNotMatch(html, new RegExp(`${longTitle.slice(0, 11)}…`));
   assert.match(html, /white-space:\s*normal/);

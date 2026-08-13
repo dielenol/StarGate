@@ -17,10 +17,10 @@ import { isResultCardImageEnabled } from "../config.js";
 
 /** 한 셀에 표시할 최대 세션 — 초과 시 "+N more" */
 const MAX_PER_CELL = 3;
-/** Discord에서 원본 확대 시 선명하도록 640px 레이아웃을 2배 해상도로 캡처한다. */
-const CARD_WIDTH = 640;
+/** Discord 원본 확대에서 날짜 칸 자체가 넓게 보이도록 가로형 레이아웃으로 렌더링한다. */
+const CARD_WIDTH = 1920;
 const VIEWPORT_PADDING = 24;
-const DEVICE_SCALE_FACTOR = 2;
+const DEVICE_SCALE_FACTOR = 1;
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
 /* ── Puppeteer 직렬 큐 ──
@@ -202,7 +202,7 @@ export function buildTrpgCalendarHtml(params: {
   }
   .card {
     width: ${CARD_WIDTH}px;
-    padding: 16px 14px 14px 14px;
+    padding: 28px 26px 26px;
     background: #1f2029;
     border: 1px solid #2f303a;
     border-radius: 12px;
@@ -210,32 +210,32 @@ export function buildTrpgCalendarHtml(params: {
   .head {
     display: flex;
     align-items: baseline;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 16px;
+    margin-bottom: 20px;
   }
   .title {
-    font-size: 18px;
+    font-size: 38px;
     font-weight: 700;
     letter-spacing: -0.01em;
   }
   .sub {
-    font-size: 11px;
+    font-size: 20px;
     color: #9aa0aa;
   }
   .grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 3px;
+    gap: 5px;
     background: #11121a;
-    padding: 3px;
+    padding: 5px;
     border-radius: 8px;
     border: 1px solid #2f303a;
   }
   .wd {
     min-width: 0;
     text-align: center;
-    font-size: 11px;
-    padding: 5px 0;
+    font-size: 20px;
+    padding: 10px 0;
     color: #9aa0aa;
     background: #161721;
     border-radius: 4px;
@@ -244,14 +244,14 @@ export function buildTrpgCalendarHtml(params: {
   .wd:nth-child(7) { color: #76aaff; }
   .cell {
     min-width: 0;
-    min-height: 76px;
+    min-height: 120px;
     background: #181923;
     border-radius: 4px;
-    padding: 4px;
-    font-size: 10px;
+    padding: 8px;
+    font-size: 20px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 5px;
   }
   .cell.empty {
     background: #131420;
@@ -266,7 +266,7 @@ export function buildTrpgCalendarHtml(params: {
   }
   .d {
     font-weight: 600;
-    font-size: 12px;
+    font-size: 24px;
     color: #d5d7de;
   }
   .cell.today .d {
@@ -275,22 +275,22 @@ export function buildTrpgCalendarHtml(params: {
   .entries {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 5px;
   }
   .entry {
     min-width: 0;
     display: flex;
-    gap: 3px;
+    gap: 7px;
     align-items: baseline;
     background: rgba(255,255,255,0.05);
     border-radius: 3px;
-    padding: 2px 3px;
-    line-height: 1.2;
+    padding: 6px 9px;
+    line-height: 1.35;
   }
   .entry .t {
     color: #9ec0ff;
     font-weight: 600;
-    font-size: 9px;
+    font-size: 18px;
     flex-shrink: 0;
   }
   .entry .ti {
@@ -301,8 +301,8 @@ export function buildTrpgCalendarHtml(params: {
   }
   .more {
     color: #9aa0aa;
-    font-size: 10px;
-    padding-left: 4px;
+    font-size: 18px;
+    padding-left: 8px;
   }
 </style>
 </head>
