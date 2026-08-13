@@ -61,3 +61,10 @@
 - 작전 보고서·운영 식별자·소유자 메타·개인 연구 원장이 게스트 응답에 섞이지 않도록 경계를 고정했다.
 - 검증: 게스트 공개 경계 집중 테스트 24건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 실제 Auth.js 게스트 API/RSC 통합, 데스크톱·390×844 브라우저 확인, critical risk review
 - 관련 커밋: `2df03010`
+
+## 2026-08-13 · 성능 최적화 · 초기 hydration과 LCP
+
+- 공용 날짜·시각 포맷을 KST로 고정해 Vercel UTC SSR과 한국 브라우저 사이의 알림 시각 불일치 및 대시보드 전체 client 재생성을 제거했다.
+- 첫 화면 캐릭터 hero 이미지를 eager 로드해 실제 LCP 후보가 lazy 로드되던 경고를 해소했다.
+- 검증: 운영 JTEST 직접 진입 1.85~2.20초 기준선 측정, UTC 개발 서버에서 `03:59 → 12:59` hydration mismatch 재현 후 새 SSR 탭 콘솔 오류·경고 0건, 집중 테스트 7건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
+- 관련 커밋: `9a80b2f2`

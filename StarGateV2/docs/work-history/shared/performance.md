@@ -27,3 +27,10 @@
 - 응답 배열 소스 7곳 정렬 보조 키 — ETag 플랩 차단 겸 표시 순서 결정화.
 - 검증: 계약/단위 테스트 12건(realtime 9 + http-cache 5 중 12 green), 전 스위트 회귀 없음, `pnpm lint`, `pnpm typecheck`, `pnpm build`
 - 관련 커밋: `c10bc33`, `1b3bf56`, `0390f80`
+
+## 2026-08-13 · 성능 최적화 · 사용자 의도 기반 ERP prefetch
+
+- ERP 사이드바의 viewport 자동 prefetch를 끄고 pointer hover·keyboard focus 시의 수동 prefetch만 유지해 첫 화면이 방문하지 않은 route 자산을 선행 로드하지 않게 했다.
+- 운영 JTEST `/erp`에서 화면 표시 후 5초 동안 추가되던 script 12개·stylesheet 8개(원문 합계 약 528KB)를 기준선으로 확인했다.
+- 검증: prefetch·hero 이미지 계약 테스트, UTC KST 포맷 경계 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`
+- 관련 커밋: `9a80b2f2`
