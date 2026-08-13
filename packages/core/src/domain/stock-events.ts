@@ -14,10 +14,30 @@ export interface StockEventRoll {
   percent: number;
 }
 
+export interface ScheduledStockMarketEvent {
+  date: string;
+  executeAt: Date;
+  ticker: string;
+  priceMultiplier: number;
+  tier: Extract<StockEventTier, "shock">;
+  text: string;
+}
+
 export type StockPriceDirection = "up" | "down";
 
 const SCENARIO_CHANCE = 0.24;
 const SHOCK_CHANCE = 0.06;
+
+const SCHEDULED_STOCK_MARKET_EVENTS: readonly ScheduledStockMarketEvent[] = [
+  {
+    date: "2026-08-14",
+    executeAt: new Date("2026-08-14T03:00:00.000Z"),
+    ticker: "STM",
+    priceMultiplier: 0.5,
+    tier: "shock",
+    text: "노부스오르도 감사팀·미국 식약청, 미스터비스트 소다 함량 미달·불법 원료 적발",
+  },
+];
 
 const EVENTS_BY_TICKER: Record<string, StockMarketEvent[]> = {
   TWS: [
@@ -111,6 +131,20 @@ function isDirectionMatch(
   direction: StockPriceDirection,
 ): boolean {
   return direction === "up" ? event.maxPercent > 0 : event.minPercent < 0;
+}
+
+/** 날짜와 종목이 모두 일치하는 정기 틱에서만 적용되는 1회성 스토리 이벤트. */
+export function findScheduledStockMarketEvent(
+  date: string,
+  ticker: string,
+  now: Date,
+): ScheduledStockMarketEvent | undefined {
+  return SCHEDULED_STOCK_MARKET_EVENTS.find(
+    (event) =>
+      event.date === date &&
+      event.ticker === ticker &&
+      now.getTime() >= event.executeAt.getTime(),
+  );
 }
 
 export function rollStockMarketEvent(

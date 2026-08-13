@@ -11,6 +11,7 @@ import type {
 
 import { STOCK_CATALOG } from "../domain/stock-catalog.js";
 import {
+  findScheduledStockMarketEvent,
   rollStockMarketEvent,
   type StockEventTier,
   type StockPriceDirection,
@@ -140,9 +141,26 @@ function replayRandom(samples: readonly number[]): () => number {
 function calculateScheduledMutation(
   current: StockPrice,
   meta: (typeof STOCK_CATALOG)[number],
+  scheduledEventDate: string | undefined,
+  now: Date,
   randomSamples: readonly number[],
   stockImpact: { soldQuantity: number; eventIds: string[] } | undefined,
 ) {
+  const scheduledEvent = scheduledEventDate
+    ? findScheduledStockMarketEvent(scheduledEventDate, meta.ticker, now)
+    : undefined;
+  if (scheduledEvent) {
+    const nextPrice = normalizeStockPrice(
+      current.price * scheduledEvent.priceMultiplier,
+    );
+    const percent = changePercent(current.price, nextPrice);
+    return {
+      price: nextPrice,
+      eventText: `${scheduledEvent.text} ${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`,
+      eventTier: scheduledEvent.tier,
+    };
+  }
+
   const random = replayRandom(randomSamples);
   const direction = rollDirection(random);
   const routinePercent = calculateRoutinePercent(
@@ -221,9 +239,13 @@ export async function applyScheduledStockTick(
       ? `stocks.tick.manual:${today}:${forceRunId}:${meta.ticker}`
       : `stocks.tick:${today}:${meta.ticker}`;
     const randomSamples = collectRandomSamples(random);
+    const hasScheduledEvent =
+      !options.force &&
+      findScheduledStockMarketEvent(today, meta.ticker, now) !== undefined;
     const loadStockImpact =
       options.sodaStockImpactEnabled === true &&
       !options.force &&
+      !hasScheduledEvent &&
       meta.ticker === MRBEAST_SODA_STOCK_IMPACT_TICKER
         ? (session: Parameters<typeof consumeStockImpact>[0]["session"]) =>
             consumeStockImpact({
@@ -243,6 +265,8 @@ export async function applyScheduledStockTick(
         calculateScheduledMutation(
           current,
           meta,
+          options.force ? undefined : today,
+          now,
           randomSamples,
           stockImpact,
         ),

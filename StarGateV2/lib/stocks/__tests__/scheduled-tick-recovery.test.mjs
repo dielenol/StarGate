@@ -224,6 +224,7 @@ test("GM force tick은 소다 판매량을 조기 소비하지 않는다", async
     {
       force: true,
       operationId: "gm-manual-test",
+      now: new Date("2026-08-14T03:00:00.000Z"),
       sodaStockImpactEnabled: true,
     },
     {
@@ -268,6 +269,11 @@ test("GM force tick은 소다 판매량을 조기 소비하지 않는다", async
       (result) => !result.eventText.includes("미스터비스트"),
     ),
   );
+  assert.ok(
+    summary.results.every(
+      (result) => !result.eventText.includes("미국 식약청"),
+    ),
+  );
 });
 
 test("backfill gate가 닫혀 있으면 자동 tick도 소다 판매량을 소비하지 않는다", async () => {
@@ -309,4 +315,104 @@ test("backfill gate가 닫혀 있으면 자동 tick도 소다 판매량을 소�
     },
   );
   assert.equal(consumeCalls, 0);
+});
+
+test("2026-08-14 STM 정기 공시는 직전가를 절반으로 만들고 규제 적발 사유를 남긴다", async () => {
+  let consumeCalls = 0;
+  const summary = await applyScheduledStockTick(
+    {
+      now: new Date("2026-08-14T03:00:00.000Z"),
+      sodaStockImpactEnabled: true,
+    },
+    {
+      random: () => 0.5,
+      consumeStockImpact: async () => {
+        consumeCalls += 1;
+        return { soldQuantity: 50, eventIds: ["mrbeast-2026"] };
+      },
+      applyMutation: async (input) => {
+        const currentPrice = input.ticker === "STM" ? 5.4 : input.initialPrice;
+        const current = {
+          ticker: input.ticker,
+          price: currentPrice,
+          prevPrice: currentPrice,
+          eventText: "seed",
+          lastUpdate: input.initialLastUpdateKst,
+        };
+        const context = input.loadContext
+          ? await input.loadContext({ inTransaction: () => true })
+          : undefined;
+        const mutation = input.calculate(current, context);
+        return {
+          applied: true,
+          initialized: false,
+          price: { ...current, ...mutation },
+          history: {
+            operationKey: input.operationKey,
+            ticker: input.ticker,
+            prevPrice: current.price,
+            price: mutation.price,
+            eventText: mutation.eventText,
+            eventTier: mutation.eventTier,
+            source: "scheduled",
+            createdAt: new Date(),
+          },
+        };
+      },
+    },
+  );
+
+  const stm = summary.results.find((result) => result.ticker === "STM");
+  assert.equal(summary.date, "2026-08-14");
+  assert.equal(summary.slot, "2026-08-14 12:00");
+  assert.equal(stm.previousPrice, 5.4);
+  assert.equal(stm.price, 2.7);
+  assert.equal(stm.changePercent, -50);
+  assert.equal(stm.eventTier, "shock");
+  assert.match(stm.eventText, /감사팀·미국 식약청/);
+  assert.match(stm.eventText, /소다 함량 미달·불법 원료 적발 -50\.00%/);
+  assert.equal(
+    consumeCalls,
+    0,
+    "예약 충격 날의 미반영 판매량은 다음 정기 틱으로 이월해야 한다",
+  );
+});
+
+test("2026-08-14 12:00 KST 전 수동 정기 실행은 STM 예약 충격을 조기 적용하지 않는다", async () => {
+  const summary = await applyScheduledStockTick(
+    { now: new Date("2026-08-14T02:59:59.999Z") },
+    {
+      random: () => 0.5,
+      applyMutation: async (input) => {
+        const currentPrice = input.ticker === "STM" ? 5.4 : input.initialPrice;
+        const current = {
+          ticker: input.ticker,
+          price: currentPrice,
+          prevPrice: currentPrice,
+          eventText: "seed",
+          lastUpdate: input.initialLastUpdateKst,
+        };
+        const mutation = input.calculate(current, undefined);
+        return {
+          applied: true,
+          initialized: false,
+          price: { ...current, ...mutation },
+          history: {
+            operationKey: input.operationKey,
+            ticker: input.ticker,
+            prevPrice: current.price,
+            price: mutation.price,
+            eventText: mutation.eventText,
+            eventTier: mutation.eventTier,
+            source: "scheduled",
+            createdAt: new Date(),
+          },
+        };
+      },
+    },
+  );
+
+  const stm = summary.results.find((result) => result.ticker === "STM");
+  assert.notEqual(stm.changePercent, -50);
+  assert.doesNotMatch(stm.eventText, /미국 식약청/);
 });
