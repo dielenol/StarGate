@@ -20,12 +20,12 @@ import { getActiveSession } from "@/lib/auth/active-session";
 import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
-import { getCharacterBalance } from "@/lib/db/credits";
 import { STOCK_CATALOG } from "@/lib/stocks/catalog";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
 
 import type {
   StockHoldingsResponse,
+  StockBalanceResponse,
   StockMarketIndexHistoryResponse,
   StockMarketWireResponse,
   StockPricesResponse,
@@ -34,6 +34,7 @@ import type {
 
 import {
   buildHoldingsResponse,
+  buildStockBalanceResponse,
   buildMarketIndexHistoryResponse,
   buildMarketWireResponse,
   buildPricesResponse,
@@ -92,38 +93,44 @@ export default async function StockPage() {
     initialMarketWire,
     initialMarketIndexHistory,
   ] = await Promise.all([
-      buildSparklinesResponse(SPARKLINE_DAYS).catch(
-        (): StockSparklinesResponse => ({ items: [], days: SPARKLINE_DAYS }),
-      ),
-      mainCharacterId
-        ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
-            (): StockHoldingsResponse => ({
-              items: [],
-              hasMainCharacter: true,
-            }),
-          )
-        : Promise.resolve<StockHoldingsResponse>({
+    buildSparklinesResponse(SPARKLINE_DAYS).catch(
+      (): StockSparklinesResponse => ({ items: [], days: SPARKLINE_DAYS }),
+    ),
+    mainCharacterId
+      ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
+          (): StockHoldingsResponse => ({
             items: [],
-            hasMainCharacter: false,
+            hasMainCharacter: true,
           }),
-      mainCharacterId
-        ? getCharacterBalance(mainCharacterId).catch(() => 0)
-        : Promise.resolve(0),
-      // marketWire 는 어떤 선행 결과에도 의존하지 않음 — 같은 배치에서 병렬 로드.
-      buildMarketWireResponse(7, 12).catch(
-        (): StockMarketWireResponse => ({
+        )
+      : Promise.resolve<StockHoldingsResponse>({
           items: [],
-          days: 7,
-          limit: 12,
+          hasMainCharacter: false,
         }),
-      ),
-      buildMarketIndexHistoryResponse(MARKET_INDEX_HISTORY_DAYS).catch(
-        (): StockMarketIndexHistoryResponse => ({
-          points: [],
-          days: MARKET_INDEX_HISTORY_DAYS,
+    mainCharacterId
+      ? buildStockBalanceResponse(mainCharacterId).catch(
+          (): StockBalanceResponse | undefined => undefined,
+        )
+      : Promise.resolve<StockBalanceResponse>({
+          balance: 0,
+          characterId: null,
+          hasMainCharacter: false,
         }),
-      ),
-    ]);
+    // marketWire 는 어떤 선행 결과에도 의존하지 않음 — 같은 배치에서 병렬 로드.
+    buildMarketWireResponse(7, 12).catch(
+      (): StockMarketWireResponse => ({
+        items: [],
+        days: 7,
+        limit: 12,
+      }),
+    ),
+    buildMarketIndexHistoryResponse(MARKET_INDEX_HISTORY_DAYS).catch(
+      (): StockMarketIndexHistoryResponse => ({
+        points: [],
+        days: MARKET_INDEX_HISTORY_DAYS,
+      }),
+    ),
+  ]);
 
   return (
     <StockListClient

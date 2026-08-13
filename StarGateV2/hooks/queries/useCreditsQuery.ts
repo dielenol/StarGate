@@ -4,7 +4,27 @@ import type { CreditTransaction } from "@/types/credit";
 
 export const creditKeys = {
   all: ["credits"] as const,
+  full: ["credits", "full"] as const,
+  balance: (characterId: string) =>
+    ["credits", "balance", characterId] as const,
 };
+
+export interface CreditBalanceResponse {
+  balance: number;
+  characterId: string | null;
+  hasMainCharacter: boolean;
+}
+
+function isExpectedCreditCharacter(
+  data: CreditBalanceResponse | undefined,
+  characterId: string | null,
+): data is CreditBalanceResponse {
+  return (
+    characterId !== null &&
+    data?.hasMainCharacter === true &&
+    data.characterId === characterId
+  );
+}
 
 /**
  * GET /api/erp/credits 응답 (성공 케이스).
@@ -55,12 +75,37 @@ async function fetchCredits(): Promise<CreditsResponse> {
   return res.json();
 }
 
+async function fetchCreditBalance(
+  expectedCharacterId: string,
+): Promise<CreditBalanceResponse> {
+  const res = await fetch("/api/erp/credits/balance", { cache: "no-store" });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      code?: CreditsErrorCode;
+    };
+    throw new CreditsApiError(
+      body.error ?? "크레딧 잔액을 불러올 수 없습니다.",
+      res.status,
+      body.code,
+    );
+  }
+  const data = (await res.json()) as CreditBalanceResponse;
+  if (!data.hasMainCharacter || data.characterId !== expectedCharacterId) {
+    throw new CreditsApiError(
+      "메인 캐릭터 정보가 변경되었습니다. 페이지를 새로고침해 주세요.",
+      409,
+    );
+  }
+  return data;
+}
+
 export function useCredits(options?: {
   enabled?: boolean;
   initialData?: CreditsResponse;
 }) {
   return useQuery({
-    queryKey: creditKeys.all,
+    queryKey: creditKeys.full,
     queryFn: fetchCredits,
     staleTime: 5 * 60 * 1000,
     enabled: options?.enabled,
@@ -69,6 +114,35 @@ export function useCredits(options?: {
     // 메인 캐릭 미등록 / 정합성 위반은 사용자 인풋으로는 자동 회복 불가 → 재시도 비활성.
     retry: (failureCount, err) => {
       if (err instanceof CreditsApiError && (err.status === 404 || err.status === 409)) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+}
+
+export function useCreditBalance(
+  characterId: string | null,
+  options?: { initialData?: CreditBalanceResponse },
+) {
+  const initialData = isExpectedCreditCharacter(
+    options?.initialData,
+    characterId,
+  )
+    ? options.initialData
+    : undefined;
+  return useQuery({
+    queryKey: creditKeys.balance(characterId ?? "missing"),
+    queryFn: () => fetchCreditBalance(characterId!),
+    staleTime: 5 * 60 * 1000,
+    enabled: characterId !== null,
+    initialData,
+    refetchOnWindowFocus: true,
+    retry: (failureCount, err) => {
+      if (
+        err instanceof CreditsApiError &&
+        (err.status === 404 || err.status === 409)
+      ) {
         return false;
       }
       return failureCount < 2;

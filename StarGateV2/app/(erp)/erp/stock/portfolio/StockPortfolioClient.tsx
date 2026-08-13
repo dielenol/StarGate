@@ -16,15 +16,18 @@ import { useMemo } from "react";
 import Link from "next/link";
 
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
-import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
+  useStockBalance,
   useStockHoldings,
   useStockPrices,
+  useStockRealizedProfit,
 } from "@/hooks/queries/useStocksQuery";
 
 import type {
+  StockBalanceResponse,
   StockHoldingsResponse,
   StockPricesResponse,
+  StockRealizedProfitResponse,
 } from "@/hooks/queries/useStocksQuery";
 
 import Box from "@/components/ui/Box/Box";
@@ -64,7 +67,8 @@ function directionMod(direction: Direction, baseClass: string): string {
 interface Props {
   initialPrices: StockPricesResponse;
   initialHoldings: StockHoldingsResponse;
-  initialBalance: number;
+  initialBalance?: StockBalanceResponse;
+  initialRealizedProfit?: StockRealizedProfitResponse;
   mainCharacter: { id: string; codename: string } | null;
   mainCharacterError: string | null;
 }
@@ -75,12 +79,19 @@ export default function StockPortfolioClient({
   initialPrices,
   initialHoldings,
   initialBalance,
+  initialRealizedProfit,
   mainCharacter,
   mainCharacterError,
 }: Props) {
   const pricesQuery = useStockPrices({ initialData: initialPrices });
   const holdingsQuery = useStockHoldings({ initialData: initialHoldings });
-  const creditsQuery = useCredits();
+  const balanceQuery = useStockBalance(mainCharacter?.id ?? null, {
+    initialData: initialBalance,
+  });
+  const realizedProfitQuery = useStockRealizedProfit(
+    mainCharacter?.id ?? null,
+    { initialData: initialRealizedProfit },
+  );
 
   const holdings = holdingsQuery.data ?? initialHoldings;
   const prices = pricesQuery.data ?? initialPrices;
@@ -89,10 +100,9 @@ export default function StockPortfolioClient({
     return buildStockMarketIndexSnapshot(prices.items);
   }, [prices.items]);
 
-  const balance = useMemo(() => {
-    if (creditsQuery.data) return creditsQuery.data.balance;
-    return initialBalance;
-  }, [creditsQuery.data, initialBalance]);
+  const balance = balanceQuery.isError
+    ? null
+    : (balanceQuery.data?.balance ?? initialBalance?.balance ?? null);
 
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
 
@@ -117,18 +127,17 @@ export default function StockPortfolioClient({
   }, [holdings.items]);
 
   const summaryDirection = profitDirection(summary.totalPL);
-  const totalAsset = roundStockValue(summary.totalEval + balance);
-  const realizedProfit = useMemo(() => {
-    const rows = creditsQuery.data?.transactions ?? [];
-    return roundStockValue(
-      rows.reduce((sum, tx) => {
-        if (tx.type !== "STOCK_SELL") return sum;
-        const profit = tx.metadata?.profit;
-        return sum + (typeof profit === "number" ? profit : 0);
-      }, 0),
-    );
-  }, [creditsQuery.data?.transactions]);
-  const realizedDirection = profitDirection(realizedProfit);
+  const totalAsset =
+    balance === null ? null : roundStockValue(summary.totalEval + balance);
+  const realizedProfitData =
+    realizedProfitQuery.isError
+      ? null
+      : (realizedProfitQuery.data ?? initialRealizedProfit ?? null);
+  const realizedProfit =
+    realizedProfitData?.countedSales === realizedProfitData?.totalSales
+      ? (realizedProfitData?.realizedProfit ?? null)
+      : null;
+  const realizedDirection = profitDirection(realizedProfit ?? 0);
   const allocationRows = useMemo(() => {
     if (summary.totalEval <= 0) return [];
     return holdings.items
@@ -198,7 +207,11 @@ export default function StockPortfolioClient({
             <span className={styles.tossHeader__metaItem}>
               <span className={styles.tossHeader__metaLabel}>총자산</span>
               <span className={styles.tossHeader__metaValue}>
-                ¤ {formatStockValue(totalAsset)}
+                {totalAsset === null
+                  ? balanceQuery.isError
+                    ? "조회 실패"
+                    : "조회 중"
+                  : `¤ ${formatStockValue(totalAsset)}`}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>
@@ -229,14 +242,23 @@ export default function StockPortfolioClient({
                   styles.tossHeader__metaValue,
                 )}
               >
-                {realizedProfit > 0 ? "+" : ""}¤{" "}
-                {formatStockValue(realizedProfit)}
+                {realizedProfit === null
+                  ? realizedProfitQuery.isError
+                    ? "조회 실패"
+                    : realizedProfitData
+                      ? "원장 확인 필요"
+                      : "조회 중"
+                  : `${realizedProfit > 0 ? "+" : ""}¤ ${formatStockValue(realizedProfit)}`}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>
               <span className={styles.tossHeader__metaLabel}>잔액</span>
               <span className={styles.tossHeader__metaValue}>
-                ¤ {formatStockValue(balance)}
+                {balance === null
+                  ? balanceQuery.isError
+                    ? "조회 실패"
+                    : "조회 중"
+                  : `¤ ${formatStockValue(balance)}`}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>

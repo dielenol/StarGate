@@ -19,19 +19,22 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
-import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
   useBuyStock,
   useSellStock,
 } from "@/hooks/mutations/useStocksMutation";
 import {
+  type StockBalanceResponse,
   type StockHistoryResponse,
   type StockHoldingItem,
   type StockHoldingsResponse,
+  type StockLedgerResponse,
   type StockPriceItem,
   type StockPricesResponse,
+  useStockBalance,
   useStockHistory,
   useStockHoldings,
+  useStockLedger,
   useStockPrices,
 } from "@/hooks/queries/useStocksQuery";
 
@@ -127,8 +130,9 @@ interface Props {
   ticker: string;
   initialPrices: StockPricesResponse;
   initialHoldings: StockHoldingsResponse;
-  initialBalance: number;
+  initialBalance?: StockBalanceResponse;
   initialHistory: StockHistoryResponse;
+  initialLedger?: StockLedgerResponse;
   mainCharacter: { id: string; codename: string } | null;
   mainCharacterError: string | null;
   marketEnabled: boolean;
@@ -142,6 +146,7 @@ export default function StockTradeClient({
   initialHoldings,
   initialBalance,
   initialHistory,
+  initialLedger,
   mainCharacter,
   mainCharacterError,
   marketEnabled,
@@ -149,7 +154,12 @@ export default function StockTradeClient({
   /* 6. 쿼리 */
   const pricesQuery = useStockPrices({ initialData: initialPrices });
   const holdingsQuery = useStockHoldings({ initialData: initialHoldings });
-  const creditsQuery = useCredits();
+  const balanceQuery = useStockBalance(mainCharacter?.id ?? null, {
+    initialData: initialBalance,
+  });
+  const ledgerQuery = useStockLedger(mainCharacter?.id ?? null, ticker, {
+    initialData: initialLedger,
+  });
   const watchlist = useStockWatchlist();
   const alertRules = useStockAlertRules();
 
@@ -185,10 +195,10 @@ export default function StockTradeClient({
   const holdings = holdingsQuery.data ?? initialHoldings;
   const history = historyQuery.data ?? { items: [] };
 
-  const balance = useMemo(() => {
-    if (creditsQuery.data) return creditsQuery.data.balance;
-    return initialBalance;
-  }, [creditsQuery.data, initialBalance]);
+  const balance = balanceQuery.isError
+    ? null
+    : (balanceQuery.data?.balance ?? initialBalance?.balance ?? null);
+  const balanceForTrade = balance ?? 0;
 
   const currentPrice: StockPriceItem | undefined = useMemo(() => {
     return prices.items.find((p) => p.ticker === ticker);
@@ -224,7 +234,13 @@ export default function StockTradeClient({
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
   const isMarketOpen = marketEnabled;
   const isPriceSeeded = currentPrice?.isSeeded ?? false;
-  const canTrade = hasMainCharacter && isMarketOpen && isPriceSeeded;
+  // account read가 실패하거나 캐릭터 identity가 바뀐 상태에서는 매수·매도 모두 잠근다.
+  const canTrade =
+    hasMainCharacter &&
+    isMarketOpen &&
+    isPriceSeeded &&
+    balance !== null &&
+    !ledgerQuery.isError;
   const sellDisabled = !canTrade || !holding || holding.shares === 0;
 
   /* ── Hero 표시값 ── */
@@ -277,7 +293,9 @@ export default function StockTradeClient({
   const effectiveTab: TradeTab =
     tradeTab === "sell" && heldShares === 0 ? "buy" : tradeTab;
 
-  const insufficientBalance = effectiveTab === "buy" && tradeTotal > balance;
+  const insufficientBalance =
+    effectiveTab === "buy" &&
+    (balance === null || tradeTotal > balanceForTrade);
   const insufficientShares =
     effectiveTab === "sell" && tradeShares > heldShares;
   const exceedsMaxShares = tradeShares > MAX_ORDER_SHARES;
@@ -318,7 +336,7 @@ export default function StockTradeClient({
         kind: "buy" as const,
         projectedShares,
         projectedAvgPrice,
-        projectedBalance: roundStockValue(balance - tradeTotal),
+        projectedBalance: roundStockValue(balanceForTrade - tradeTotal),
         projectedExposurePercent:
           projectedPortfolioEvaluation > 0
             ? (projectedTickerEvaluation / projectedPortfolioEvaluation) * 100
@@ -337,7 +355,7 @@ export default function StockTradeClient({
     return {
       kind: "sell" as const,
       projectedShares,
-      projectedBalance: roundStockValue(balance + tradeTotal),
+      projectedBalance: roundStockValue(balanceForTrade + tradeTotal),
       realizedProfit: roundStockValue((displayPrice - heldAvgPrice) * tradeShares),
       projectedExposurePercent:
         projectedPortfolioEvaluation > 0
@@ -345,7 +363,7 @@ export default function StockTradeClient({
           : 0,
     };
   }, [
-    balance,
+    balanceForTrade,
     displayPrice,
     effectiveTab,
     heldAvgPrice,
@@ -405,7 +423,7 @@ export default function StockTradeClient({
   function applyQuickRatio(ratio: number) {
     if (effectiveTab === "buy") {
       if (displayPrice <= 0) return;
-      const max = Math.floor(balance / displayPrice);
+      const max = Math.floor(balanceForTrade / displayPrice);
       const next = Math.min(
         MAX_ORDER_SHARES,
         Math.max(0, Math.floor(max * ratio)),
@@ -529,15 +547,9 @@ export default function StockTradeClient({
     });
   }, [history.items]);
 
-  const stockTransactions = useMemo(() => {
-    const rows = creditsQuery.data?.transactions ?? [];
-    return rows
-      .filter((tx) => {
-        if (tx.type !== "STOCK_BUY" && tx.type !== "STOCK_SELL") return false;
-        return tx.metadata?.ticker === ticker;
-      })
-      .slice(0, 5);
-  }, [creditsQuery.data?.transactions, ticker]);
+  const stockTransactions = ledgerQuery.isError
+    ? []
+    : (ledgerQuery.data?.items ?? initialLedger?.items ?? []);
 
   if (!meta) {
     // server 가 notFound() 처리해 도달 불가 — defensive.
@@ -934,7 +946,11 @@ export default function StockTradeClient({
           <div className={sharedStyles.walletCard}>
             <Eyebrow>WALLET</Eyebrow>
             <div className={sharedStyles.walletCard__amount}>
-              ¤ {formatStockValue(balance)}
+              {balance === null
+                ? balanceQuery.isError
+                  ? "조회 실패"
+                  : "조회 중"
+                : `¤ ${formatStockValue(balance)}`}
             </div>
             {hasMainCharacter ? (
               <div className={sharedStyles.walletCard__agent}>
@@ -1178,9 +1194,21 @@ export default function StockTradeClient({
                       .join(" ")}
                   >
                     <span>
-                      {insufficientBalance ? "잔액 부족" : "주문 가능 잔액"}
+                      {balance === null
+                        ? balanceQuery.isError
+                          ? "잔액 조회 실패"
+                          : "잔액 확인 중"
+                        : insufficientBalance
+                          ? "잔액 부족"
+                          : "주문 가능 잔액"}
                     </span>
-                    <span>¤ {formatStockValue(balance)}</span>
+                    <span>
+                      {balance === null
+                        ? balanceQuery.isError
+                          ? "다시 시도해 주세요"
+                          : "잔액 확인 중"
+                        : `¤ ${formatStockValue(balance)}`}
+                    </span>
                   </div>
                 ) : (
                   <div
@@ -1432,7 +1460,15 @@ export default function StockTradeClient({
             <div className={sharedStyles.railCard__head}>
               <span>주문내역</span>
             </div>
-            {stockTransactions.length === 0 ? (
+            {hasMainCharacter && ledgerQuery.isPending && !initialLedger ? (
+              <div className={sharedStyles.railCard__empty} role="status">
+                최근 체결 내역을 불러오는 중입니다.
+              </div>
+            ) : ledgerQuery.isError ? (
+              <div className={sharedStyles.railCard__empty} role="alert">
+                체결 내역을 불러오지 못했습니다.
+              </div>
+            ) : stockTransactions.length === 0 ? (
               <div className={sharedStyles.railCard__empty}>
                 체결 내역 없음
                 <div className={sharedStyles.railCard__emptyHint}>
@@ -1467,7 +1503,7 @@ export default function StockTradeClient({
                   const isBuy = tx.type === "STOCK_BUY";
                   return (
                     <li
-                      key={String(tx._id)}
+                      key={tx.id}
                       className={sharedStyles.tradeHistory__item}
                     >
                       <div className={sharedStyles.tradeHistory__top}>

@@ -12,10 +12,7 @@ import {
   personnelKeys,
 } from "@/hooks/queries/useCharactersQuery";
 import { characterChangeLogsKeys } from "@/hooks/queries/useCharacterChangeLogs";
-import {
-  type CreditsResponse,
-  creditKeys,
-} from "@/hooks/queries/useCreditsQuery";
+import { creditKeys } from "@/hooks/queries/useCreditsQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
@@ -229,10 +226,7 @@ export function usePurchaseEquipmentShopItem() {
       if (!res.ok) await throwEquipmentShopError(res);
       return res.json();
     },
-    onSuccess: async (data) => {
-      queryClient.setQueryData<CreditsResponse>(creditKeys.all, (current) =>
-        current ? { ...current, balance: data.balance } : current,
-      );
+    onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog }),
         queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),

@@ -33,6 +33,18 @@ const NAV_CONFIG = new URL(
   "../../../components/erp/nav-config.ts",
   import.meta.url,
 );
+const ACHERON_PAGE = new URL(
+  "../../../app/(erp)/erp/equipment-shop/acheron/page.tsx",
+  import.meta.url,
+);
+const LAB_PAGE = new URL(
+  "../../../app/(erp)/erp/equipment-shop/lab/page.tsx",
+  import.meta.url,
+);
+const EQUIPMENT_CLIENT = new URL(
+  "../../../app/(erp)/erp/equipment-shop/EquipmentShopClient.tsx",
+  import.meta.url,
+);
 
 test("병기부 준비중 화면은 GM·JTEST·로컬 미리보기에서 실제 페이지를 연다", async () => {
   const access = await readFile(EQUIPMENT_ACCESS, "utf8");
@@ -86,5 +98,24 @@ test("전략 장비 보급소만 일반 사용자에게 기본 개방한다", as
   assert.match(
     strategicBlock,
     /href: "\/erp\/equipment-shop\/strategic"/,
+  );
+});
+
+test("아케론 SSR 카탈로그는 현재 구역 품목만 직렬화한다", async () => {
+  const source = await readFile(ACHERON_PAGE, "utf8");
+
+  assert.match(source, /catalogZone: "acheron"/);
+});
+
+test("연구소는 판매 카탈로그를 조회하거나 hydration payload에 넣지 않는다", async () => {
+  const [page, client] = await Promise.all([
+    readFile(LAB_PAGE, "utf8"),
+    readFile(EQUIPMENT_CLIENT, "utf8"),
+  ]);
+
+  assert.match(page, /includeCatalog: false/);
+  assert.match(
+    client,
+    /enabled:\s*mode === "hub" \|\|[\s\S]*initialZone === "towaski"[\s\S]*initialZone === "acheron"[\s\S]*initialZone === "strategic"/,
   );
 });

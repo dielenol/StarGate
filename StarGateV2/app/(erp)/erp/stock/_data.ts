@@ -20,16 +20,24 @@ import {
   listStockPriceHistoryBulk,
   listStockPriceHistoryRowsBulk,
 } from "@/lib/db/stocks";
+import { getCharacterBalance } from "@/lib/db/credits";
+import {
+  getStockRealizedProfitSummary,
+  listRecentStockLedger,
+} from "@/lib/db/stock-account";
 import { buildStockMarketIndexHistory } from "@/lib/stocks/market-index";
 import { findStockByTicker, STOCK_CATALOG } from "@/lib/stocks/catalog";
 import { roundStockValue } from "@/lib/stocks/pricing";
 
 import type {
   StockHistoryResponse,
+  StockBalanceResponse,
   StockHoldingsResponse,
+  StockLedgerResponse,
   StockMarketIndexHistoryResponse,
   StockMarketWireResponse,
   StockPricesResponse,
+  StockRealizedProfitResponse,
   StockSparklinesResponse,
 } from "@/hooks/queries/useStocksQuery";
 
@@ -127,6 +135,54 @@ export async function buildHoldingsResponse(
   }
 
   return { items, hasMainCharacter: true };
+}
+
+/* ── stock account read models ── */
+
+/** 현재 캐릭터 잔액만 직렬화한다. 전체 credit ledger는 읽지 않는다. */
+export async function buildStockBalanceResponse(
+  characterId: string,
+): Promise<StockBalanceResponse> {
+  return {
+    balance: await getCharacterBalance(characterId),
+    characterId,
+    hasMainCharacter: true,
+  };
+}
+
+/** ticker별 최근 주식 원장 5건을 클라이언트 전용 DTO로 직렬화한다. */
+export async function buildStockLedgerResponse(
+  characterId: string,
+  ticker: string,
+): Promise<StockLedgerResponse> {
+  const rows = await listRecentStockLedger(characterId, ticker, 5);
+  return {
+    items: rows.map((row) => ({
+      id: String(row._id),
+      type: row.type,
+      amount: row.amount,
+      balance: row.balance,
+      ...(row.metadata ? { metadata: row.metadata } : {}),
+      createdAt: row.createdAt.toISOString(),
+    })),
+    characterId,
+    ticker,
+    hasMainCharacter: true,
+  };
+}
+
+/** 모든 STOCK_SELL의 숫자 metadata.profit 합계를 반환한다. */
+export async function buildStockRealizedProfitResponse(
+  characterId: string,
+): Promise<StockRealizedProfitResponse> {
+  const summary = await getStockRealizedProfitSummary(characterId);
+  return {
+    realizedProfit: roundStockValue(summary.realizedProfit),
+    countedSales: summary.countedSales,
+    totalSales: summary.totalSales,
+    characterId,
+    hasMainCharacter: true,
+  };
 }
 
 /* ── history (단일 종목) ── */

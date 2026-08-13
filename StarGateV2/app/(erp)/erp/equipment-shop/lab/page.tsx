@@ -13,7 +13,10 @@ export default async function EquipmentShopLabPage() {
     return <EquipmentShopComingSoon />;
   }
 
-  const data = await loadEquipmentShopPageData({ requireGm: false });
+  const data = await loadEquipmentShopPageData({
+    requireGm: false,
+    includeCatalog: false,
+  });
 
   return <EquipmentShopClient {...data} mode="zone" initialZone="lab" />;
 }

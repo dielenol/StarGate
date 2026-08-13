@@ -16,6 +16,7 @@ export default async function EquipmentShopAcheronPage() {
   const data = await loadEquipmentShopPageData({
     requireGm: false,
     includeResearch: false,
+    catalogZone: "acheron",
   });
 
   return <EquipmentShopClient {...data} mode="zone" initialZone="acheron" />;

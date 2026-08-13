@@ -18,13 +18,14 @@ import { getActiveSession } from "@/lib/auth/active-session";
 import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { resolvePlayerServiceAvailability } from "@/lib/auth/player-service-test-access";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
-import { getCharacterBalance } from "@/lib/db/credits";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
 
 import type {
+  StockBalanceResponse,
   StockHistoryResponse,
   StockHoldingsResponse,
+  StockLedgerResponse,
   StockPricesResponse,
 } from "@/hooks/queries/useStocksQuery";
 
@@ -33,6 +34,8 @@ import {
   buildHistoryResponse,
   buildHoldingsResponse,
   buildPricesResponse,
+  buildStockBalanceResponse,
+  buildStockLedgerResponse,
 } from "../_data";
 import StockTradeClient from "./StockTradeClient";
 
@@ -89,25 +92,42 @@ export default async function StockTradePage({ params }: Props) {
     (): StockPricesResponse => ({ items: [] }),
   );
 
-  const [initialHoldings, initialBalance, initialHistory] = await Promise.all([
-    mainCharacterId
-      ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
-          (): StockHoldingsResponse => ({
+  const [initialHoldings, initialBalance, initialHistory, initialLedger] =
+    await Promise.all([
+      mainCharacterId
+        ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
+            (): StockHoldingsResponse => ({
+              items: [],
+              hasMainCharacter: true,
+            }),
+          )
+        : Promise.resolve<StockHoldingsResponse>({
             items: [],
-            hasMainCharacter: true,
+            hasMainCharacter: false,
           }),
-        )
-      : Promise.resolve<StockHoldingsResponse>({
-          items: [],
-          hasMainCharacter: false,
-        }),
-    mainCharacterId
-      ? getCharacterBalance(mainCharacterId).catch(() => 0)
-      : Promise.resolve(0),
-    buildHistoryResponse(ticker, INITIAL_HISTORY_DAYS).catch(
-      (): StockHistoryResponse => ({ items: [] }),
-    ),
-  ]);
+      mainCharacterId
+        ? buildStockBalanceResponse(mainCharacterId).catch(
+            (): StockBalanceResponse | undefined => undefined,
+          )
+        : Promise.resolve<StockBalanceResponse>({
+            balance: 0,
+            characterId: null,
+            hasMainCharacter: false,
+          }),
+      buildHistoryResponse(ticker, INITIAL_HISTORY_DAYS).catch(
+        (): StockHistoryResponse => ({ items: [] }),
+      ),
+      mainCharacterId
+        ? buildStockLedgerResponse(mainCharacterId, ticker).catch(
+            (): StockLedgerResponse | undefined => undefined,
+          )
+        : Promise.resolve<StockLedgerResponse>({
+            items: [],
+            characterId: null,
+            ticker,
+            hasMainCharacter: false,
+          }),
+    ]);
 
   return (
     <StockTradeClient
@@ -116,6 +136,7 @@ export default async function StockTradePage({ params }: Props) {
       initialHoldings={initialHoldings}
       initialBalance={initialBalance}
       initialHistory={initialHistory}
+      initialLedger={initialLedger}
       mainCharacter={
         mainCharacter && mainCharacterId
           ? { id: mainCharacterId, codename: mainCharacter.codename }

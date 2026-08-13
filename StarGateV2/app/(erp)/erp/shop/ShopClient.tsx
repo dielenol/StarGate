@@ -5,10 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ShopPageGroup } from "@stargate/shared-db/types";
 
-import {
-  type CreditsResponse,
-  useCredits,
-} from "@/hooks/queries/useCreditsQuery";
+import { useCreditBalance } from "@/hooks/queries/useCreditsQuery";
 import {
   type ShopOpenMode,
   useClaimMrBeastSodaPayback,
@@ -151,8 +148,7 @@ function getLotteryTicketShortName(slug: MrBeastLotteryTicketSlug): string {
 interface Props {
   initialCatalog: ShopCatalogResponse;
   mainCharacter: { id: string; codename: string } | null;
-  initialBalance: number;
-  initialCredits: CreditsResponse | undefined;
+  initialBalance?: number;
   mainCharacterError: string | null;
   isGM: boolean;
   initialPendingReorderCount: number;
@@ -166,13 +162,21 @@ export default function ShopClient({
   initialCatalog,
   mainCharacter,
   initialBalance,
-  initialCredits,
   mainCharacterError,
   isGM,
   initialPendingReorderCount,
 }: Props) {
   const catalogQuery = useShopCatalog({ initialData: initialCatalog });
-  const creditsQuery = useCredits({ initialData: initialCredits });
+  const balanceQuery = useCreditBalance(mainCharacter?.id ?? null, {
+    initialData:
+      mainCharacter && initialBalance !== undefined
+        ? {
+            balance: initialBalance,
+            characterId: mainCharacter.id,
+            hasMainCharacter: true,
+          }
+        : undefined,
+  });
   const lotteryQuery = useShopLotteryState({
     enabled: mainCharacter !== null && !mainCharacterError,
   });
@@ -262,9 +266,11 @@ export default function ShopClient({
   });
 
   const balance = useMemo(() => {
-    if (creditsQuery.data) return creditsQuery.data.balance;
-    return initialBalance;
-  }, [creditsQuery.data, initialBalance]);
+    if (balanceQuery.isError) return null;
+    if (balanceQuery.data) return balanceQuery.data.balance;
+    return initialBalance ?? null;
+  }, [balanceQuery.data, balanceQuery.isError, initialBalance]);
+  const balanceStatus = balanceQuery.isError ? "조회 실패" : "조회 중";
 
   const catalogBySlug = useMemo(() => {
     const map = new Map<string, ShopCatalogEntry>();
@@ -303,7 +309,7 @@ export default function ShopClient({
   const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
   const cartTotal = cartLines.reduce((sum, line) => sum + line.total, 0);
   const cartHasStockIssue = cartLines.some((line) => line.stockIssue);
-  const cartOverBalance = cartTotal > balance;
+  const cartOverBalance = balance !== null && cartTotal > balance;
   const shopStatusLabel = catalog.forceClosed
     ? "GM 강제 종료"
     : catalog.forceOpen
@@ -315,6 +321,7 @@ export default function ShopClient({
   const canUseShop = hasMainCharacter && catalog.isOpen;
   const canCheckout =
     canUseShop &&
+    balance !== null &&
     cartLines.length > 0 &&
     !cartHasStockIssue &&
     !cartOverBalance &&
@@ -862,7 +869,9 @@ export default function ShopClient({
             </div>
             <div className={styles.statChip}>
               <span>잔액</span>
-              <strong>{formatCredits(balance)}</strong>
+              <strong>
+                {balance === null ? balanceStatus : formatCredits(balance)}
+              </strong>
             </div>
             <div className={styles.statChip}>
               <span>카트</span>
@@ -1399,7 +1408,9 @@ export default function ShopClient({
                   <strong
                     className={cartOverBalance ? styles.dangerText : undefined}
                   >
-                    {formatCredits(balance - cartTotal)}
+                    {balance === null
+                      ? balanceStatus
+                      : formatCredits(balance - cartTotal)}
                   </strong>
                 </div>
               </div>
@@ -1407,6 +1418,10 @@ export default function ShopClient({
               {cartHasStockIssue ? (
                 <div className={styles.cartWarning}>
                   재고가 부족한 상품이 있습니다.
+                </div>
+              ) : balanceQuery.isError ? (
+                <div className={styles.cartWarning}>
+                  잔액을 불러오지 못했습니다. 다시 시도해 주세요.
                 </div>
               ) : cartOverBalance ? (
                 <div className={styles.cartWarning}>잔액이 부족합니다.</div>
@@ -1423,6 +1438,8 @@ export default function ShopClient({
                   ? "영업 종료"
                   : checkoutMutation.isPending
                     ? "결제 중"
+                    : balance === null
+                      ? balanceStatus
                     : "한번에 결제"}
               </button>
             </section>

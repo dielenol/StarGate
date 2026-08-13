@@ -1073,6 +1073,18 @@
   min-width: 0;
 }
 
+.licenseTestLoading {
+  display: grid;
+  min-height: 320px;
+  place-items: center;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--gold-dim) 58%, var(--line));
+  border-radius: var(--radius-sm);
+  background: rgba(5, 8, 9, 0.78);
+  color: var(--ink-2);
+  text-align: center;
+}
+
 .salesLayout,
 .labLayout {
   display: grid;

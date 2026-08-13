@@ -7,10 +7,7 @@ import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-acces
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
 import { listRecentEquipmentShopActivity } from "@/lib/db/equipment-shop-activity";
-import {
-  getCharacterBalance,
-  listCreditTransactions,
-} from "@/lib/db/credits";
+import { getCharacterBalance } from "@/lib/db/credits";
 import {
   listEquipmentResearchContributionRankings,
   listEquipmentResearchContributions,
@@ -55,13 +52,10 @@ import {
   buildGuestEquipmentResearchOverviewResponse,
 } from "@/lib/equipment-shop/guest-research";
 
-import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type {
   EquipmentResearchOverviewResponse,
   EquipmentShopCatalogResponse,
 } from "@/hooks/queries/useEquipmentShopQuery";
-
-const INITIAL_LEDGER_LIMIT = 50;
 
 interface MainCharacterStats {
   hp: number;
@@ -81,8 +75,7 @@ export interface EquipmentShopPageData {
     stats: MainCharacterStats | null;
     hasBasicFirearmLicense: boolean;
   } | null;
-  initialBalance: number;
-  initialCredits: CreditsResponse | undefined;
+  initialBalance?: number;
   mainCharacterError: string | null;
   isGM: boolean;
   playerServiceTestAccess: boolean;
@@ -232,7 +225,6 @@ export async function loadEquipmentShopPageData(
     initialCatalog,
     initialResearch,
     initialBalance,
-    initialLedger,
     hasBasicFirearmLicense,
   ] =
     await Promise.all([
@@ -296,32 +288,16 @@ export async function loadEquipmentShopPageData(
           contributionRankings: [],
         }),
       mainCharacterId
-        ? getCharacterBalance(mainCharacterId).catch(() => 0)
-        : Promise.resolve(0),
-      mainCharacterId
-        ? listCreditTransactions(mainCharacterId, INITIAL_LEDGER_LIMIT).catch(
-            () => [],
+        ? getCharacterBalance(mainCharacterId).catch(
+            (): number | undefined => undefined,
           )
-        : Promise.resolve([]),
+        : Promise.resolve(0),
       licenseAccessPromise
         .then((access) =>
           access.ownedLicenseSlugs.has(TOWASKI_BASIC_FIREARM_LICENSE_SLUG),
         )
         .catch(() => false),
     ]);
-
-  const initialCredits: CreditsResponse | undefined =
-    mainCharacter && mainCharacterId
-      ? {
-          transactions: initialLedger.map((t) => ({
-            ...t,
-            _id: t._id?.toString() as unknown as typeof t._id,
-          })),
-          balance: initialBalance,
-          characterId: mainCharacterId,
-          characterCodename: mainCharacter.codename,
-        }
-      : undefined;
 
   return {
     initialCatalog,
@@ -345,7 +321,6 @@ export async function loadEquipmentShopPageData(
         }
       : null,
     initialBalance,
-    initialCredits,
     mainCharacterError,
     isGM,
     playerServiceTestAccess,

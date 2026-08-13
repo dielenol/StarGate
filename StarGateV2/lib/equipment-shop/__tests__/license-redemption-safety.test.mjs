@@ -312,7 +312,11 @@ test("equipment shop purchases one item at a time without cart controls", async 
     mutations,
     /body: JSON\.stringify\(\{[\s\S]*key: input\.key,[\s\S]*quantity: 1,[\s\S]*expectedUnitPrice: input\.expectedUnitPrice,[\s\S]*purchaseZone: input\.zone/,
   );
-  assert.match(mutations, /setQueryData<CreditsResponse>[\s\S]*data\.balance/);
+  assert.doesNotMatch(mutations, /setQueryData<CreditBalanceResponse>/);
+  assert.match(
+    mutations,
+    /invalidateQueries\(\{ queryKey: creditKeys\.all \}\)/,
+  );
   assert.match(client, /purchaseLockRef\.current/);
   assert.match(client, /purchaseMutation\.isPending \|\| towaskiLicenseTestBusy/);
   assert.doesNotMatch(client, /type CartState/);
@@ -397,7 +401,8 @@ test("catalog query cache is isolated by scope and character", async () => {
 test("catalog license access is resolved from the authenticated main character", async () => {
   const route = await readFile(CATALOG_ROUTE, "utf8");
 
-  assert.match(route, /findMainCharacterByOwner\(session\.user\.id\)/);
+  assert.match(route, /const ownerId = getOwnedDataViewerId\(session\.user\)/);
+  assert.match(route, /findMainCharacterByOwner\(ownerId\)/);
   assert.match(route, /listTowaskiLicenseAccess/);
   assert.match(route, /applyEquipmentShopLicenseContext/);
   assert.doesNotMatch(route, /const mainAgent =/);

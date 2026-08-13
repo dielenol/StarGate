@@ -12,14 +12,20 @@ import { redirect } from "next/navigation";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
-import { getCharacterBalance } from "@/lib/db/credits";
 
 import type {
+  StockBalanceResponse,
   StockHoldingsResponse,
   StockPricesResponse,
+  StockRealizedProfitResponse,
 } from "@/hooks/queries/useStocksQuery";
 
-import { buildHoldingsResponse, buildPricesResponse } from "../_data";
+import {
+  buildHoldingsResponse,
+  buildPricesResponse,
+  buildStockBalanceResponse,
+  buildStockRealizedProfitResponse,
+} from "../_data";
 import StockPortfolioClient from "./StockPortfolioClient";
 
 export const metadata = {
@@ -56,28 +62,47 @@ export default async function StockPortfolioPage() {
     (): StockPricesResponse => ({ items: [] }),
   );
 
-  const [initialHoldings, initialBalance] = await Promise.all([
-    mainCharacterId
-      ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
-          (): StockHoldingsResponse => ({
+  const [initialHoldings, initialBalance, initialRealizedProfit] =
+    await Promise.all([
+      mainCharacterId
+        ? buildHoldingsResponse(mainCharacterId, initialPrices).catch(
+            (): StockHoldingsResponse => ({
+              items: [],
+              hasMainCharacter: true,
+            }),
+          )
+        : Promise.resolve<StockHoldingsResponse>({
             items: [],
-            hasMainCharacter: true,
+            hasMainCharacter: false,
           }),
-        )
-      : Promise.resolve<StockHoldingsResponse>({
-          items: [],
-          hasMainCharacter: false,
-        }),
-    mainCharacterId
-      ? getCharacterBalance(mainCharacterId).catch(() => 0)
-      : Promise.resolve(0),
-  ]);
+      mainCharacterId
+        ? buildStockBalanceResponse(mainCharacterId).catch(
+            (): StockBalanceResponse | undefined => undefined,
+          )
+        : Promise.resolve<StockBalanceResponse>({
+            balance: 0,
+            characterId: null,
+            hasMainCharacter: false,
+          }),
+      mainCharacterId
+        ? buildStockRealizedProfitResponse(mainCharacterId).catch(
+            (): StockRealizedProfitResponse | undefined => undefined,
+          )
+        : Promise.resolve<StockRealizedProfitResponse>({
+            realizedProfit: 0,
+            countedSales: 0,
+            totalSales: 0,
+            characterId: null,
+            hasMainCharacter: false,
+          }),
+    ]);
 
   return (
     <StockPortfolioClient
       initialPrices={initialPrices}
       initialHoldings={initialHoldings}
       initialBalance={initialBalance}
+      initialRealizedProfit={initialRealizedProfit}
       mainCharacter={
         mainCharacter && mainCharacterId
           ? { id: mainCharacterId, codename: mainCharacter.codename }

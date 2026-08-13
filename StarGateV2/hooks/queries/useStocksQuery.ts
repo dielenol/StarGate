@@ -16,6 +16,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import {
+  creditKeys,
+  type CreditBalanceResponse,
+  useCreditBalance,
+} from "@/hooks/queries/useCreditsQuery";
 import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 /* ── Query keys ── */
 
@@ -31,6 +36,20 @@ export const stocksKeys = {
   marketWire: (days: number, limit: number) =>
     ["stocks", "market-wire", days, limit] as const,
   sparklines: (days: number) => ["stocks", "sparklines", days] as const,
+};
+
+/**
+ * 주식 화면이 소비하는 크레딧 파생 read model.
+ *
+ * `creditKeys.all` 아래에 두어 기존 크레딧 mutation/realtime의 prefix invalidation을
+ * 그대로 받되, 전체 CreditsResponse와 서로 다른 query key/response shape를 사용한다.
+ */
+export const stockAccountKeys = {
+  all: [...creditKeys.all, "stocks"] as const,
+  ledger: (characterId: string, ticker: string) =>
+    [...creditKeys.all, "stocks", "ledger", characterId, ticker] as const,
+  realizedProfit: (characterId: string) =>
+    [...creditKeys.all, "stocks", "realized-profit", characterId] as const,
 };
 
 /* ── 에러 타입 ── */
@@ -196,6 +215,37 @@ export interface StockSparklinesResponse {
   days: number;
 }
 
+export type StockBalanceResponse = CreditBalanceResponse;
+
+export interface StockLedgerItem {
+  id: string;
+  type: "STOCK_BUY" | "STOCK_SELL";
+  amount: number;
+  balance: number;
+  metadata?: {
+    ticker?: string;
+    shares?: number;
+    price?: number;
+    profit?: number;
+  };
+  createdAt: string;
+}
+
+export interface StockLedgerResponse {
+  items: StockLedgerItem[];
+  characterId: string | null;
+  ticker: string;
+  hasMainCharacter: boolean;
+}
+
+export interface StockRealizedProfitResponse {
+  realizedProfit: number;
+  countedSales: number;
+  totalSales: number;
+  characterId: string | null;
+  hasMainCharacter: boolean;
+}
+
 /* ── Fetchers ── */
 
 async function parseStocksError(res: Response): Promise<never> {
@@ -208,6 +258,11 @@ async function parseStocksError(res: Response): Promise<never> {
     res.status,
     isKnownStocksErrorCode(body.code) ? body.code : undefined,
   );
+}
+
+function retryOwnedStockRead(failureCount: number, error: Error): boolean {
+  if (error instanceof StocksApiError && error.status === 409) return false;
+  return failureCount < 2;
 }
 
 async function fetchStockPrices(): Promise<StockPricesResponse> {
@@ -268,6 +323,39 @@ async function fetchStockMarketWire(
   return res.json();
 }
 
+async function fetchStockLedger(
+  ticker: string,
+  expectedCharacterId: string,
+): Promise<StockLedgerResponse> {
+  const res = await fetch(
+    `/api/erp/stocks/ledger?ticker=${encodeURIComponent(ticker)}`,
+  );
+  if (!res.ok) await parseStocksError(res);
+  const data = (await res.json()) as StockLedgerResponse;
+  if (!data.hasMainCharacter || data.characterId !== expectedCharacterId) {
+    throw new StocksApiError(
+      "메인 캐릭터 정보가 변경되었습니다. 페이지를 새로고침해 주세요.",
+      409,
+    );
+  }
+  return data;
+}
+
+async function fetchStockRealizedProfit(
+  expectedCharacterId: string,
+): Promise<StockRealizedProfitResponse> {
+  const res = await fetch("/api/erp/stocks/realized-profit");
+  if (!res.ok) await parseStocksError(res);
+  const data = (await res.json()) as StockRealizedProfitResponse;
+  if (!data.hasMainCharacter || data.characterId !== expectedCharacterId) {
+    throw new StocksApiError(
+      "메인 캐릭터 정보가 변경되었습니다. 페이지를 새로고침해 주세요.",
+      409,
+    );
+  }
+  return data;
+}
+
 /* ── Hooks ── */
 
 const PRICES_STALE_MS = 60 * 1000;
@@ -277,6 +365,7 @@ const HISTORY_STALE_MS = 15 * 60 * 1000;
 const MARKET_INDEX_HISTORY_STALE_MS = 60 * 1000;
 const MARKET_WIRE_STALE_MS = 60 * 1000;
 const SPARKLINES_STALE_MS = 10 * 60 * 1000;
+const STOCK_ACCOUNT_STALE_MS = 5 * 60 * 1000;
 const MARKET_REFETCH_INTERVAL_MS = 60 * 1000;
 
 export function useStockPrices(options?: {
@@ -306,10 +395,7 @@ export function useStockHoldings(options?: {
     initialData: options?.initialData,
     refetchOnWindowFocus: true,
     // 메인 캐릭 정합성 위반은 사용자 인풋으로 회복 불가 → 재시도 비활성.
-    retry: (failureCount, err) => {
-      if (err instanceof StocksApiError && err.status === 409) return false;
-      return failureCount < 2;
-    },
+    retry: retryOwnedStockRead,
   });
 }
 
@@ -406,5 +492,56 @@ export function useStockMarketWire(
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     initialData: options?.initialData,
+  });
+}
+
+export function useStockBalance(
+  characterId: string | null,
+  options?: { initialData?: StockBalanceResponse },
+) {
+  return useCreditBalance(characterId, options);
+}
+
+export function useStockLedger(
+  characterId: string | null,
+  ticker: string,
+  options?: { initialData?: StockLedgerResponse },
+) {
+  const initialData =
+    characterId !== null &&
+    options?.initialData?.hasMainCharacter === true &&
+    options.initialData.characterId === characterId &&
+    options.initialData.ticker === ticker
+      ? options.initialData
+      : undefined;
+  return useQuery({
+    queryKey: stockAccountKeys.ledger(characterId ?? "missing", ticker),
+    queryFn: () => fetchStockLedger(ticker, characterId!),
+    staleTime: STOCK_ACCOUNT_STALE_MS,
+    enabled: characterId !== null && ticker.length > 0,
+    initialData,
+    refetchOnWindowFocus: true,
+    retry: retryOwnedStockRead,
+  });
+}
+
+export function useStockRealizedProfit(
+  characterId: string | null,
+  options?: { initialData?: StockRealizedProfitResponse },
+) {
+  const initialData =
+    characterId !== null &&
+    options?.initialData?.hasMainCharacter === true &&
+    options.initialData.characterId === characterId
+      ? options.initialData
+      : undefined;
+  return useQuery({
+    queryKey: stockAccountKeys.realizedProfit(characterId ?? "missing"),
+    queryFn: () => fetchStockRealizedProfit(characterId!),
+    staleTime: STOCK_ACCOUNT_STALE_MS,
+    enabled: characterId !== null,
+    initialData,
+    refetchOnWindowFocus: true,
+    retry: retryOwnedStockRead,
   });
 }

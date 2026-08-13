@@ -428,13 +428,20 @@ function ownedNpcFallbackFilter(ownerId: string): Filter<Character> {
   };
 }
 
+export class MainCharacterIntegrityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MainCharacterIntegrityError";
+  }
+}
+
 function mainCharacterIntegrityError(
   ownerId: string,
   docs: Pick<Character, "codename">[],
   label: string,
-): Error {
+): MainCharacterIntegrityError {
   const codenames = docs.map((d) => d.codename).join(", ");
-  return new Error(
+  return new MainCharacterIntegrityError(
     `findMainCharacterByOwner: owner=${ownerId} has ${docs.length} ${label} (${codenames}). ` +
       `1인 1 MAIN 정책 위반 — 운영자 정리 필요.`
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,10 +15,7 @@ import {
   useState,
 } from "react";
 
-import {
-  type CreditsResponse,
-  useCredits,
-} from "@/hooks/queries/useCreditsQuery";
+import { useCreditBalance } from "@/hooks/queries/useCreditsQuery";
 import { useNpcDialogue } from "@/hooks/useNpcDialogue";
 import {
   type EquipmentResearchScope,
@@ -179,8 +177,16 @@ import {
 
 import ShopItemIcon from "../shop/ShopItemIcon";
 
-import TowaskiLicenseTest from "./TowaskiLicenseTest";
 import styles from "./page.module.css";
+
+const TowaskiLicenseTest = dynamic(() => import("./TowaskiLicenseTest"), {
+  ssr: false,
+  loading: () => (
+    <div className={styles.licenseTestLoading} role="status">
+      사격 시험 장비를 불러오는 중입니다.
+    </div>
+  ),
+});
 
 type ArmoryZone = "lab" | "towaski" | "acheron" | "strategic" | "custom";
 type ArmoryDestination = ArmoryZone | "simulator";
@@ -769,8 +775,7 @@ interface Props {
     stats: MainCharacterStats | null;
     hasBasicFirearmLicense: boolean;
   } | null;
-  initialBalance: number;
-  initialCredits: CreditsResponse | undefined;
+  initialBalance?: number;
   mainCharacterError: string | null;
   isGM: boolean;
   playerServiceTestAccess: boolean;
@@ -1445,7 +1450,6 @@ export default function EquipmentShopClient({
   viewerUserId,
   mainCharacter,
   initialBalance,
-  initialCredits,
   mainCharacterError,
   isGM,
   playerServiceTestAccess,
@@ -1461,14 +1465,27 @@ export default function EquipmentShopClient({
         ? initialZone
         : "all",
     characterId: mainCharacter?.id ?? null,
-    enabled: initialZone !== "custom",
+    enabled:
+      mode === "hub" ||
+      initialZone === "towaski" ||
+      initialZone === "acheron" ||
+      initialZone === "strategic",
   });
   const researchQuery = useEquipmentResearch({
     initialData: initialResearch,
     characterId: mainCharacter?.id ?? null,
     enabled: mode === "hub" || initialZone === "lab",
   });
-  const creditsQuery = useCredits({ initialData: initialCredits });
+  const balanceQuery = useCreditBalance(mainCharacter?.id ?? null, {
+    initialData:
+      mainCharacter && initialBalance !== undefined
+        ? {
+            balance: initialBalance,
+            characterId: mainCharacter.id,
+            hasMainCharacter: true,
+          }
+        : undefined,
+  });
   const characterInventoryQuery = useCharacterInventory(
     mainCharacter?.id ?? "",
     {
@@ -2002,9 +2019,11 @@ export default function EquipmentShopClient({
   );
 
   const balance = useMemo(() => {
-    if (creditsQuery.data) return creditsQuery.data.balance;
-    return initialBalance;
-  }, [creditsQuery.data, initialBalance]);
+    if (balanceQuery.isError) return null;
+    if (balanceQuery.data) return balanceQuery.data.balance;
+    return initialBalance ?? null;
+  }, [balanceQuery.data, balanceQuery.isError, initialBalance]);
+  const balanceStatus = balanceQuery.isError ? "조회 실패" : "조회 중";
 
   const towaskiItems = useMemo(() => {
     return catalog.items.filter(
@@ -2109,6 +2128,7 @@ export default function EquipmentShopClient({
       selectedHasBasicPurchaseAccess &&
       selectedItem.licenseOwned !== true &&
       !selectedLicenseBlocked &&
+      balance !== null &&
       selectedItem.price <= balance &&
       !purchaseMutation.isPending;
 
@@ -2550,7 +2570,10 @@ export default function EquipmentShopClient({
       : activeZone === "towaski"
         ? [
             { label: "반출 요원", value: assignedAgent },
-            { label: "보유 크레딧", value: formatCredits(balance) },
+            {
+              label: "보유 크레딧",
+              value: balance === null ? balanceStatus : formatCredits(balance),
+            },
             {
               label: "화기 자격",
               value: isGM
@@ -2569,13 +2592,21 @@ export default function EquipmentShopClient({
         : activeZone === "acheron"
           ? [
               { label: "제작 대상", value: assignedAgent },
-              { label: "보유 크레딧", value: formatCredits(balance) },
+              {
+                label: "보유 크레딧",
+                value:
+                  balance === null ? balanceStatus : formatCredits(balance),
+              },
               { label: "등록 품목", value: `${acheronItemCount}종` },
             ]
           : activeZone === "strategic"
             ? [
                 { label: "보급 대상", value: assignedAgent },
-                { label: "보유 크레딧", value: formatCredits(balance) },
+                {
+                  label: "보유 크레딧",
+                  value:
+                    balance === null ? balanceStatus : formatCredits(balance),
+                },
                 { label: "보급 품목", value: `${strategicItemCount}종` },
               ]
             : [
@@ -2864,6 +2895,14 @@ export default function EquipmentShopClient({
       return;
     }
 
+    if (balance === null) {
+      setErrorMessage(
+        balanceQuery.isError
+          ? "잔액을 불러오지 못했습니다. 다시 시도해 주세요."
+          : "잔액을 확인하고 있습니다.",
+      );
+      return;
+    }
     if (item.price > balance) {
       setErrorMessage("잔액이 부족합니다.");
       playTowaskiIfActive("blocked", TOWASKI_DIALOGUE_LINES.checkoutError);
@@ -2877,6 +2916,7 @@ export default function EquipmentShopClient({
       playStrategicIfActive("blocked", STRATEGIC_DIALOGUE_LINES.insufficient);
       return;
     }
+    if (!mainCharacter) return;
 
     purchaseLockRef.current = true;
     const isLicenseItem = isTowaskiLicenseCatalogItem(item);
@@ -2896,7 +2936,11 @@ export default function EquipmentShopClient({
       buildStrategicDispatchLine(item),
     );
     purchaseMutation.mutate(
-      { key: item.key, zone: item.zone, expectedUnitPrice: item.price },
+      {
+        key: item.key,
+        zone: item.zone,
+        expectedUnitPrice: item.price,
+      },
       {
         onSuccess: (res) => {
           setNotice({
@@ -3032,6 +3076,7 @@ export default function EquipmentShopClient({
           ),
       ) &&
       !researchDataUnavailable &&
+      balance !== null &&
       balance >= cost &&
       !startResearchMutation.isPending
     );
@@ -3150,6 +3195,15 @@ export default function EquipmentShopClient({
     if (!hasMainCharacter) {
       setErrorMessage("대표 캐릭터가 없어 팀 연구에 기여할 수 없습니다.");
       playSutureIfActive("blocked", nextSutureBlockedLine("noAgent"));
+      return;
+    }
+    if (balance === null) {
+      setErrorMessage(
+        balanceQuery.isError
+          ? "잔액을 불러오지 못했습니다. 다시 시도해 주세요."
+          : "잔액을 확인하고 있습니다.",
+      );
+      playSutureIfActive("blocked", nextSutureBlockedLine("contribution"));
       return;
     }
     if (balance < chargePreview) {
@@ -3733,6 +3787,7 @@ export default function EquipmentShopClient({
                     hasBasicPurchaseAccess &&
                     !item.licenseOwned &&
                     !licenseBlocked &&
+                    balance !== null &&
                     item.price <= balance &&
                     !purchaseMutation.isPending;
 
@@ -3831,6 +3886,8 @@ export default function EquipmentShopClient({
                                 ? "기본 화기 필요"
                               : licenseBlocked
                                 ? `${item.licenseRequirement?.label ?? "라이센스"} 필요`
+                            : balance === null
+                              ? balanceStatus
                             : item.price > balance
                               ? "잔액 부족"
                               : "즉시 반출"}
@@ -3959,7 +4016,9 @@ export default function EquipmentShopClient({
                     <strong>
                       {selectedIsLicenseItem
                         ? "응시료 없음 · 크레딧 차감 없음"
-                        : `결제 후 ${formatCredits(balance - selectedItem.price)}`}
+                        : balance === null
+                          ? balanceStatus
+                          : `결제 후 ${formatCredits(balance - selectedItem.price)}`}
                     </strong>
                   </div>
                   <button
@@ -4000,6 +4059,8 @@ export default function EquipmentShopClient({
                             ? "기본 화기 필요"
                           : selectedLicenseBlocked
                             ? `${selectedItem.licenseRequirement?.label ?? "라이센스"} 필요`
+                        : balance === null
+                          ? balanceStatus
                         : selectedItem.price > balance
                           ? "잔액 부족"
                           : "1개 즉시 반출"}
@@ -4008,15 +4069,16 @@ export default function EquipmentShopClient({
                     <button
                       type="button"
                       className={styles.quoteAction}
-                      onClick={() =>
+                      onClick={() => {
+                        if (balance === null) return;
                         quoteMutation.mutate({
                           key: selectedItem.key,
                           simulatePlayerRules: true,
                           basicLicenseOverride: effectiveHasBasicLicense,
                           balanceOverride: balance,
-                        })
-                      }
-                      disabled={quoteMutation.isPending}
+                        });
+                      }}
+                      disabled={quoteMutation.isPending || balance === null}
                     >
                       {quoteMutation.isPending ? "판정 중" : "GM 구매 드라이런"}
                     </button>
@@ -4151,6 +4213,7 @@ export default function EquipmentShopClient({
       selectedResearchUnlocked &&
       selectedTeamRemainingCost > 0 &&
       selectedTeamChargePreview > 0 &&
+      balance !== null &&
       balance >= selectedTeamChargePreview &&
       hasMainCharacter &&
       !researchDataUnavailable &&
@@ -4223,6 +4286,10 @@ export default function EquipmentShopClient({
           ? "대표 캐릭터 지정이 필요합니다."
           : startResearchMutation.isPending
             ? "연구 시작 요청을 처리하고 있습니다."
+            : balance === null
+              ? balanceQuery.isError
+                ? "잔액을 불러오지 못했습니다. 다시 시도해 주세요."
+                : "잔액을 확인하고 있습니다."
             : balance < selectedResearchCost
               ? `${formatCredits(selectedResearchCost - balance)}이 부족합니다.`
               : null;
@@ -4242,6 +4309,10 @@ export default function EquipmentShopClient({
               ? "대표 캐릭터 지정이 필요합니다."
               : contributeResearchMutation.isPending
                 ? "기여 요청을 처리하고 있습니다."
+                : balance === null
+                  ? balanceQuery.isError
+                    ? "잔액을 불러오지 못했습니다. 다시 시도해 주세요."
+                    : "잔액을 확인하고 있습니다."
                 : balance < selectedTeamChargePreview
                   ? `${formatCredits(selectedTeamChargePreview - balance)}이 부족합니다.`
                   : null;
@@ -4275,7 +4346,9 @@ export default function EquipmentShopClient({
               </div>
               <div>
                 <span>운용 잔액</span>
-                <strong>{formatCredits(balance)}</strong>
+                <strong>
+                  {balance === null ? balanceStatus : formatCredits(balance)}
+                </strong>
               </div>
             </div>
           </div>
@@ -5263,7 +5336,8 @@ export default function EquipmentShopClient({
                       (material) =>
                         availableMaterialQuantity(material) >= material.quantity,
                     );
-                    const creditReady = balance >= quote.creditCost;
+                    const creditReady =
+                      balance !== null && balance >= quote.creditCost;
                     return (
                       <section className={styles.workshopQuote}>
                         <div className={styles.workshopNpcReply}>

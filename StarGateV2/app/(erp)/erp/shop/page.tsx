@@ -16,19 +16,13 @@ import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasPlayerServiceTestAccess } from "@/lib/auth/player-service-test-access";
 import { hasRole } from "@/lib/auth/rbac";
 import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner } from "@/lib/db/characters";
-import {
-  getCharacterBalance,
-  listCreditTransactions,
-} from "@/lib/db/credits";
+import { getCharacterBalance } from "@/lib/db/credits";
 import { countPendingShopReorderRequests } from "@/lib/shop/reorder-requests";
 
-import type { CreditsResponse } from "@/hooks/queries/useCreditsQuery";
 import type { ShopCatalogResponse } from "@/hooks/queries/useShopQuery";
 
 import { buildShopCatalogResponse } from "./_data";
 import ShopClient from "./ShopClient";
-
-const INITIAL_LEDGER_LIMIT = 50;
 
 export const metadata = {
   title: "편의점 — Stargate ERP",
@@ -67,9 +61,8 @@ export default async function ShopPage() {
   }
   const mainCharacterId = mainCharacter ? String(mainCharacter._id) : null;
 
-  // 카탈로그/잔액/ledger 병렬 fetch — 각각 독립적이므로 Promise.all + .catch() 폴백.
-  // ledger 는 useCredits 의 initialData 시드용 (페이지 진입 시 1회 fetch 절약).
-  const [initialCatalog, initialBalance, initialLedger, pendingReorderCount] =
+  // 카탈로그/잔액 병렬 fetch — 편의점은 원장을 표시하지 않으므로 읽지 않는다.
+  const [initialCatalog, initialBalance, pendingReorderCount] =
     await Promise.all([
       buildShopCatalogResponse(playerServiceTestAccess, {
         readOnly: session.user.isGuest,
@@ -84,32 +77,14 @@ export default async function ShopPage() {
         }),
       ),
       mainCharacterId
-        ? getCharacterBalance(mainCharacterId).catch(() => 0)
-        : Promise.resolve(0),
-      mainCharacterId
-        ? listCreditTransactions(mainCharacterId, INITIAL_LEDGER_LIMIT).catch(
-            () => [],
+        ? getCharacterBalance(mainCharacterId).catch(
+            (): number | undefined => undefined,
           )
-        : Promise.resolve([]),
+        : Promise.resolve(0),
       isGM
         ? countPendingShopReorderRequests().catch(() => 0)
         : Promise.resolve(0),
     ]);
-
-  // useCredits 가 받을 CreditsResponse — 메인 캐릭이 있을 때만 시드.
-  // Next.js 16: Server→Client prop 으로 ObjectId(toJSON 가진 객체) 전달 거부 → _id 를 hex string 으로 정규화.
-  const initialCredits: CreditsResponse | undefined =
-    mainCharacter && mainCharacterId
-      ? {
-          transactions: initialLedger.map((t) => ({
-            ...t,
-            _id: t._id?.toString() as unknown as typeof t._id,
-          })),
-          balance: initialBalance,
-          characterId: mainCharacterId,
-          characterCodename: mainCharacter.codename,
-        }
-      : undefined;
 
   return (
     <ShopClient
@@ -120,7 +95,6 @@ export default async function ShopPage() {
           : null
       }
       initialBalance={initialBalance}
-      initialCredits={initialCredits}
       mainCharacterError={mainCharacterError}
       isGM={isGM}
       initialPendingReorderCount={pendingReorderCount}

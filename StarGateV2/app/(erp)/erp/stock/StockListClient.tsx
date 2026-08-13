@@ -16,8 +16,8 @@ import { useCallback, useDeferredValue, useMemo, useRef, useState } from "react"
 
 import Link from "next/link";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
-import { useCredits } from "@/hooks/queries/useCreditsQuery";
 import {
+  type StockBalanceResponse,
   type StockHoldingsResponse,
   type StockMarketIndexHistoryPoint,
   type StockMarketIndexHistoryResponse,
@@ -26,6 +26,7 @@ import {
   type StockSparkline as StockSparklineDto,
   type StockSparklinesResponse,
   useStockHoldings,
+  useStockBalance,
   useStockMarketIndexHistory,
   useStockMarketWire,
   useStockPrices,
@@ -143,7 +144,7 @@ interface Props {
   initialPrices: StockPricesResponse;
   initialSparklines: StockSparklinesResponse;
   initialHoldings: StockHoldingsResponse;
-  initialBalance: number;
+  initialBalance?: StockBalanceResponse;
   initialMarketWire: StockMarketWireResponse;
   initialMarketIndexHistory: StockMarketIndexHistoryResponse;
   mainCharacter: { id: string; codename: string } | null;
@@ -175,7 +176,9 @@ export default function StockListClient({
     MARKET_INDEX_HISTORY_DAYS,
     { initialData: initialMarketIndexHistory },
   );
-  const creditsQuery = useCredits();
+  const balanceQuery = useStockBalance(mainCharacter?.id ?? null, {
+    initialData: initialBalance,
+  });
   const {
     tickers: watchedTickers,
     isWatched,
@@ -207,10 +210,9 @@ export default function StockListClient({
   const marketIndexHistory =
     marketIndexHistoryQuery.data ?? initialMarketIndexHistory;
 
-  const balance = useMemo(() => {
-    if (creditsQuery.data) return creditsQuery.data.balance;
-    return initialBalance;
-  }, [creditsQuery.data, initialBalance]);
+  const balance = balanceQuery.isError
+    ? null
+    : (balanceQuery.data?.balance ?? initialBalance?.balance ?? null);
 
   const sparklineByTicker = useMemo(() => {
     const map = new Map<string, StockSparklineDto["points"]>();
@@ -775,7 +777,11 @@ export default function StockListClient({
           <div className={styles.walletCard}>
             <Eyebrow>WALLET</Eyebrow>
             <div className={styles.walletCard__amount}>
-              ¤ {formatStockValue(balance)}
+              {balance === null
+                ? balanceQuery.isError
+                  ? "조회 실패"
+                  : "조회 중"
+                : `¤ ${formatStockValue(balance)}`}
             </div>
             {hasMainCharacter ? (
               <div className={styles.walletCard__agent}>
