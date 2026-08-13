@@ -17,17 +17,17 @@ assert.match(
 );
 assert.match(
   snapshots,
-  /inventoryScope: "PERSONAL" as const/,
+  /toNochichimInventorySnapshot\(entry, item, "PERSONAL"\)/,
   "personal consumables need an explicit inventory scope",
 );
 assert.match(
   snapshots,
-  /inventoryScope: "SHARED" as const/,
+  /toNochichimInventorySnapshot\(entry, item, "SHARED"\)/,
   "shared consumables need an explicit inventory scope",
 );
 assert.match(
   snapshots,
-  /item\.slug !== WHITE_ROSE_ASSISTANT_CALL_SLUG/,
+  /item\.slug === WHITE_ROSE_ASSISTANT_CALL_SLUG/,
   "only the sourced White Rose call ticket may enter this shared VTT path",
 );
 assert.match(

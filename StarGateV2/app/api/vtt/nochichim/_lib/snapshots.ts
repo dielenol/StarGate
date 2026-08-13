@@ -9,6 +9,7 @@ import {
   getCatalogItemImageSrc,
   getConsumableItemImageSrc,
 } from "@/lib/assets/catalog";
+import { normalizedInventoryCategory } from "@/lib/db/inventory";
 import {
   resolveConsumableOutcomes,
   type MrBeastSodaConsumptionOutcome,
@@ -35,6 +36,7 @@ import {
   type Character,
   type CharacterInventory,
   type MasterItem,
+  type SharedInventory,
 } from "@stargate/shared-db";
 
 import { findTransactionalAgentCharacterByKey } from "./transactional-character";
@@ -53,6 +55,23 @@ export interface NochichimConsumableSnapshot {
   note?: string;
   acquiredAt: SerializedDate;
   inventoryScope: "PERSONAL" | "SHARED";
+}
+
+export interface NochichimInventorySnapshot {
+  itemId: string;
+  slug?: string;
+  name: string;
+  category: MasterItem["category"];
+  description: string;
+  effect: string;
+  damage?: string;
+  quantity: number;
+  previewImage: string;
+  note?: string;
+  acquiredAt: SerializedDate;
+  inventoryScope: "PERSONAL" | "SHARED";
+  usable: boolean;
+  equippedSlot?: "WEAPON" | "ARMOR";
 }
 
 export const NOCHICHIM_SHARED_CONSUMABLE_PREFIX = "shared:";
@@ -158,7 +177,10 @@ export interface NochichimCharacterSnapshot extends NochichimCharacterListItem {
     equipment: NochichimEquipmentSnapshot[];
     equipmentActions: NochichimEquipmentActionSnapshot[];
   };
+  inventory: NochichimInventorySnapshot[];
+  sharedInventory: NochichimInventorySnapshot[];
   consumables: NochichimConsumableSnapshot[];
+  sharedConsumables: NochichimConsumableSnapshot[];
 }
 
 export interface NochichimConsumptionSessionContext {
@@ -186,6 +208,67 @@ function equipmentPreviewImage(item: MasterItem): string {
     getCatalogItemImageSrc(item.workshop?.blueprintRef?.slug ?? "") ??
     ""
   );
+}
+
+function inventoryPreviewImage(item: MasterItem): string {
+  const category = normalizedInventoryCategory(item);
+  return (
+    (category === "CONSUMABLE"
+      ? getConsumableItemImageSrc(item.slug ?? "")
+      : undefined) ?? equipmentPreviewImage(item)
+  );
+}
+
+type InventoryEntrySource = Pick<
+  CharacterInventory | SharedInventory,
+  "itemId" | "itemName" | "quantity" | "acquiredAt" | "note"
+> & Partial<Pick<CharacterInventory, "equippedSlot">>;
+
+function toNochichimInventorySnapshot(
+  entry: InventoryEntrySource,
+  item: MasterItem,
+  inventoryScope: "PERSONAL" | "SHARED",
+): NochichimInventorySnapshot {
+  const shared = inventoryScope === "SHARED";
+  const usable = shared
+    ? normalizedInventoryCategory(item) === "CONSUMABLE" &&
+      item.slug === WHITE_ROSE_ASSISTANT_CALL_SLUG
+    : isNochichimPersonalConsumable(item);
+  return {
+    itemId: shared
+      ? `${NOCHICHIM_SHARED_CONSUMABLE_PREFIX}${entry.itemId}`
+      : entry.itemId,
+    ...(item.slug ? { slug: item.slug } : {}),
+    name: item.name || entry.itemName,
+    category: normalizedInventoryCategory(item),
+    description: item.description ?? "",
+    effect: item.effect ?? "",
+    ...(item.damage ? { damage: item.damage } : {}),
+    quantity: entry.quantity,
+    previewImage: inventoryPreviewImage(item),
+    ...(entry.note ? { note: entry.note } : {}),
+    acquiredAt: dateToIso(entry.acquiredAt),
+    inventoryScope,
+    usable,
+    ...(entry.equippedSlot ? { equippedSlot: entry.equippedSlot } : {}),
+  };
+}
+
+function toNochichimConsumableSnapshot(
+  entry: NochichimInventorySnapshot,
+): NochichimConsumableSnapshot {
+  return {
+    itemId: entry.itemId,
+    ...(entry.slug ? { slug: entry.slug } : {}),
+    name: entry.name,
+    description: entry.description,
+    effect: entry.effect,
+    quantity: entry.quantity,
+    previewImage: entry.previewImage,
+    ...(entry.note ? { note: entry.note } : {}),
+    acquiredAt: entry.acquiredAt,
+    inventoryScope: entry.inventoryScope,
+  };
 }
 
 function finalStat(base: number, delta: number | undefined): number {
@@ -291,9 +374,7 @@ async function loadMasterItemMap(
   return new Map(items.map((item) => [objectIdString(item._id), item]));
 }
 
-export async function loadCharacterConsumables(
-  characterId: string,
-): Promise<NochichimConsumableSnapshot[]> {
+export async function loadCharacterInventorySnapshot(characterId: string) {
   const [inventory, sharedInventory] = await Promise.all([
     listCharacterInventory(characterId).then((entries) =>
       entries.filter((entry) => entry.quantity > 0),
@@ -303,59 +384,35 @@ export async function loadCharacterConsumables(
     ),
   ]);
   const itemMap = await loadMasterItemMap([...inventory, ...sharedInventory]);
-
-  const personal = inventory.flatMap((entry) => {
+  const personalInventory = inventory.flatMap((entry) => {
     const item = itemMap.get(entry.itemId);
-    if (
-      !item ||
-      !isNochichimPersonalConsumable(item)
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        itemId: entry.itemId,
-        slug: item.slug,
-        name: item.name || entry.itemName,
-        description: item.description ?? "",
-        effect: item.effect ?? "",
-        quantity: entry.quantity,
-        previewImage:
-          getConsumableItemImageSrc(item.slug ?? "") ?? item.previewImage ?? "",
-        note: entry.note,
-        acquiredAt: dateToIso(entry.acquiredAt),
-        inventoryScope: "PERSONAL" as const,
-      },
-    ];
+    return item
+      ? [toNochichimInventorySnapshot(entry, item, "PERSONAL")]
+      : [];
   });
-  const shared = sharedInventory.flatMap((entry) => {
+  const globalInventory = sharedInventory.flatMap((entry) => {
     const item = itemMap.get(entry.itemId);
-    if (
-      !item ||
-      item.category !== "CONSUMABLE" ||
-      item.slug !== WHITE_ROSE_ASSISTANT_CALL_SLUG
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        itemId: `${NOCHICHIM_SHARED_CONSUMABLE_PREFIX}${entry.itemId}`,
-        slug: item.slug,
-        name: item.name || entry.itemName,
-        description: item.description ?? "",
-        effect: item.effect ?? "",
-        quantity: entry.quantity,
-        previewImage:
-          getConsumableItemImageSrc(item.slug ?? "") ?? item.previewImage ?? "",
-        note: entry.note,
-        acquiredAt: dateToIso(entry.acquiredAt),
-        inventoryScope: "SHARED" as const,
-      },
-    ];
+    return item
+      ? [toNochichimInventorySnapshot(entry, item, "SHARED")]
+      : [];
   });
-  return [...personal, ...shared];
+  return {
+    inventory: personalInventory,
+    sharedInventory: globalInventory,
+    consumables: personalInventory
+      .filter((entry) => entry.usable)
+      .map(toNochichimConsumableSnapshot),
+    sharedConsumables: globalInventory
+      .filter((entry) => entry.usable)
+      .map(toNochichimConsumableSnapshot),
+  };
+}
+
+export async function loadCharacterConsumables(
+  characterId: string,
+): Promise<NochichimConsumableSnapshot[]> {
+  const snapshot = await loadCharacterInventorySnapshot(characterId);
+  return [...snapshot.consumables, ...snapshot.sharedConsumables];
 }
 
 export function nochichimSharedConsumableMasterItemId(
@@ -630,8 +687,8 @@ export async function loadCharacterSnapshot(
   if (!character) return null;
 
   const id = objectIdString(character._id);
-  const [consumables, equippedState] = await Promise.all([
-    loadCharacterConsumables(id),
+  const [inventoryState, equippedState] = await Promise.all([
+    loadCharacterInventorySnapshot(id),
     loadCharacterEquippedState(id),
   ]);
   const {
@@ -690,7 +747,15 @@ export async function loadCharacterSnapshot(
       equipment: structuredEquipment,
       equipmentActions,
     },
-    consumables,
+    inventory: inventoryState.inventory,
+    sharedInventory: inventoryState.sharedInventory,
+    // Keep the combined legacy field until every deployed VTT understands the
+    // explicit shared branch below.
+    consumables: [
+      ...inventoryState.consumables,
+      ...inventoryState.sharedConsumables,
+    ],
+    sharedConsumables: inventoryState.sharedConsumables,
   };
 }
 
