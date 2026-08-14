@@ -18,6 +18,21 @@ assert.match(
 );
 assert.match(
   snapshots,
+  /function isNochichimConsumableMasterItem\(item: MasterItem\)[\s\S]*category: normalizedInventoryCategory\(item\)/,
+  "the VTT usable projection must use the normalized inventory category",
+);
+assert.match(
+  snapshots,
+  /if \(!item \|\| normalizedInventoryCategory\(item\) !== "CONSUMABLE"\)/,
+  "the consume transaction must accept the same normalized consumable category as the snapshot",
+);
+assert.match(
+  snapshots,
+  /getCatalogItemImageSrc\(item\.slug \?\? ""\)[\s\S]*direct \?\?[\s\S]*previewImage: inventoryPreviewImage\(item\)/,
+  "the VTT snapshot must prefer deployable catalog assets over stale stored paths",
+);
+assert.match(
+  snapshots,
   /usable,[\s\S]*equippedSlot/,
   "inventory cards must distinguish safe consumable actions from equipped state",
 );

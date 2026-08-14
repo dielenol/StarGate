@@ -202,10 +202,10 @@ function dateToIso(value: Date | undefined): SerializedDate {
 
 function equipmentPreviewImage(item: MasterItem): string {
   const direct = item.previewImage?.trim();
-  if (direct) return direct;
   return (
     getCatalogItemImageSrc(item.slug ?? "") ??
     getCatalogItemImageSrc(item.workshop?.blueprintRef?.slug ?? "") ??
+    direct ??
     ""
   );
 }
@@ -217,6 +217,13 @@ function inventoryPreviewImage(item: MasterItem): string {
       ? getConsumableItemImageSrc(item.slug ?? "")
       : undefined) ?? equipmentPreviewImage(item)
   );
+}
+
+function isNochichimConsumableMasterItem(item: MasterItem): boolean {
+  return isNochichimPersonalConsumable({
+    category: normalizedInventoryCategory(item),
+    slug: item.slug,
+  });
 }
 
 type InventoryEntrySource = Pick<
@@ -233,7 +240,7 @@ function toNochichimInventorySnapshot(
   const usable = shared
     ? normalizedInventoryCategory(item) === "CONSUMABLE" &&
       item.slug === WHITE_ROSE_ASSISTANT_CALL_SLUG
-    : isNochichimPersonalConsumable(item);
+    : isNochichimConsumableMasterItem(item);
   return {
     itemId: shared
       ? `${NOCHICHIM_SHARED_CONSUMABLE_PREFIX}${entry.itemId}`
@@ -1013,13 +1020,13 @@ export async function consumeCharacterConsumable(input: {
     )
   ).get(input.itemId);
 
-  if (!item || item.category !== "CONSUMABLE") {
+  if (!item || normalizedInventoryCategory(item) !== "CONSUMABLE") {
     throw new Error("Consumable not found");
   }
   if (item.slug === CENSOR_3_CONSUMABLE_SLUG) {
     throw new Error("Consumable requires equipment action");
   }
-  if (!isNochichimPersonalConsumable(item)) {
+  if (!isNochichimConsumableMasterItem(item)) {
     throw new Error("Consumable not found");
   }
 

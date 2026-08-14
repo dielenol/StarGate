@@ -7,7 +7,7 @@ import test from "node:test";
 import sharp from "sharp";
 
 import {
-  EQUIPMENT_ITEM_IMAGE_BY_SLUG,
+  CATALOG_ITEM_IMAGE_BY_SLUG,
   getCatalogItemImageSrc,
 } from "../catalog.ts";
 import {
@@ -166,7 +166,7 @@ test("NPC·상점·카탈로그 레지스트리의 경로는 실제 배포 자�
   for (const assetPath of PUBLIC_ASSET_REGISTRY_PATHS) {
     await access(optimizedPublicUrl(assetPath));
   }
-  for (const assetPath of Object.values(EQUIPMENT_ITEM_IMAGE_BY_SLUG)) {
+  for (const assetPath of Object.values(CATALOG_ITEM_IMAGE_BY_SLUG)) {
     await access(optimizedPublicUrl(assetPath));
   }
 
@@ -179,6 +179,18 @@ test("NPC·상점·카탈로그 레지스트리의 경로는 실제 배포 자�
   assert.equal(
     getCatalogItemImageSrc("old-tactical-sword-titanium-shield"),
     "/assets/catalog/equipment/old-tactical-sword-titanium-shield.webp",
+  );
+  assert.equal(
+    getCatalogItemImageSrc("military-fragment-grenade"),
+    "/assets/catalog/equipment/military-fragment-grenade.webp",
+  );
+  assert.equal(
+    getCatalogItemImageSrc("conductor-corpse"),
+    "/assets/catalog/special/conductor-corpse.webp",
+  );
+  assert.equal(
+    getCatalogItemImageSrc("white-rose-assistant-call"),
+    "/assets/catalog/consumables/white-rose-assistant-call.webp",
   );
   assert.equal(workshopPortrait("TEMPER", "QUOTED"), TEMPER_MOOD_ASSETS.balance);
   assert.equal(workshopPortrait("SUTURE", "REJECTED"), SUTURE_MOOD_ASSETS.blocked);

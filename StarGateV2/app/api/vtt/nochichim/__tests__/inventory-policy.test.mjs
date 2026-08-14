@@ -28,4 +28,12 @@ test("노치찜 개인 소모품 투영은 재료와 전용 소비 원장을 제
     isNochichimPersonalConsumable({ category: "MATERIAL", slug: "force_core" }),
     false,
   );
+  assert.equal(
+    isNochichimPersonalConsumable({
+      category: "CONSUMABLE",
+      slug: "military-fragment-grenade",
+    }),
+    true,
+    "정규화된 군용 세열 수류탄은 직접 사용 가능한 개인 소모품이다",
+  );
 });
