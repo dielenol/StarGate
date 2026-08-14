@@ -459,6 +459,38 @@ test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", as
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
 });
 
+test("거래정지·냉각 긴급 공시는 가격 없이도 STOCK webhook으로 전달한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      DISCORD_WEBHOOK_STOCK_URL: "https://discord.com/api/webhooks/stock/token",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({ url: String(url), body: JSON.parse(String(init.body)) });
+        return Response.json({ id: "22345678901234567" });
+      },
+    },
+  );
+  for (const eventKind of ["HALT", "RESUME", "COOLDOWN", "COOLDOWN_RELEASE", "SHOCK_DISCLOSURE"]) {
+    await registry.get("STOCK_MANUAL_INTERVENTION_WEBHOOK").deliver(
+      outboxEvent("STOCK_MANUAL_INTERVENTION_WEBHOOK", {
+        eventKind,
+        ticker: "NVS",
+        eventText: "시장 안전 조치",
+        actor: { displayName: "GM", role: "GM" },
+        occurredAt: new Date().toISOString(),
+      }),
+    );
+  }
+  assert.deepEqual(
+    requests.map((request) => request.body.embeds[0].title),
+    ["긴급 거래정지 공시", "거래재개 공시", "변동성 냉각 공시", "변동성 냉각 해제", "NOVEX 충격 공시"],
+  );
+});
+
 test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노출하지 않는다", async () => {
   const requests = [];
   const registry = createDiscordIntegrationOutboxHandlers(

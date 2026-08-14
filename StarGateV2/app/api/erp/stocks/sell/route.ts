@@ -19,15 +19,19 @@ import { executeEconomicOperation } from "@/lib/api/economic-operation";
 import { findMainCharacterLiteByOwner as findMainCharacterByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
 import {
-  claimTradableStockPrice,
   sellHolding,
-  StockPriceTradeClaimError,
 } from "@/lib/db/stocks";
 import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import { roundStockValue } from "@/lib/stocks/pricing";
+import {
+  claimStockPriceForTrade,
+  recordSystemStockOrderFlow,
+  StockTradeAvailabilityError,
+  stockTradeAvailabilityMessage,
+} from "@/lib/stocks/trading";
 
 /* ── 상수 ── */
 
@@ -185,7 +189,12 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       payload: { ticker, shares },
       run: async (mongoSession) => {
-        const priceDoc = await claimTradableStockPrice(ticker, mongoSession);
+        const occurredAt = new Date();
+        const priceDoc = await claimStockPriceForTrade(
+          ticker,
+          mongoSession,
+          occurredAt,
+        );
         const price = priceDoc.price;
         const totalProceeds = roundStockValue(price * shares);
         const sellResult = await sellHolding(characterId, ticker, shares, {
@@ -208,6 +217,16 @@ export async function POST(request: Request) {
           allowNegative: true,
           session: mongoSession,
         });
+        await recordSystemStockOrderFlow({
+          operationKey: requestId,
+          characterId,
+          ticker,
+          side: "SELL",
+          shares,
+          price,
+          occurredAt,
+          session: mongoSession,
+        });
         committed.notification = {
           balance: creditTx.balance,
           profit,
@@ -222,23 +241,13 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    if (err instanceof StockPriceTradeClaimError) {
-      if (err.code === "STOCK_TRADING_HALTED") {
-        return NextResponse.json(
-          {
-            error: "현재 이 종목의 거래가 정지되어 있습니다.",
-            code: err.code,
-          },
-          { status: 423 },
-        );
-      }
+    if (err instanceof StockTradeAvailabilityError) {
       return NextResponse.json(
         {
-          error:
-            "주식 시세 시드가 없습니다 (운영자에게 seed:stocks 실행을 요청하세요).",
+          error: stockTradeAvailabilityMessage(err.code),
           code: err.code,
         },
-        { status: 500 },
+        { status: err.code === "PRICE_NOT_FOUND" ? 500 : 423 },
       );
     }
     const message = err instanceof Error ? err.message : "매도 실패";
@@ -252,7 +261,7 @@ export async function POST(request: Request) {
     const { balance, totalProceeds } = committed.notification;
     void notifyUser({
       userId: ownerId,
-      type: "CREDIT_RECEIVED",
+      type: "STOCK",
       title: "주식 매도로 크레딧이 적립되었습니다",
       message: [
         `${mainChar.codename} · ${catalogItem.name} ${shares}주`,

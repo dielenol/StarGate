@@ -27,10 +27,11 @@ import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
 export const stocksKeys = {
   all: ["stocks"] as const,
   prices: ["stocks", "prices"] as const,
+  marketState: ["stocks", "market-state"] as const,
   holdings: ["stocks", "holdings"] as const,
   adminHoldings: ["stocks", "admin-holdings"] as const,
-  history: (ticker: string, days: number) =>
-    ["stocks", "history", ticker, days] as const,
+  history: (ticker: string, range: number | StockHistoryRange) =>
+    ["stocks", "history", ticker, range] as const,
   marketIndexHistory: (days: number) =>
     ["stocks", "market-index-history", days] as const,
   marketWire: (days: number, limit: number) =>
@@ -59,7 +60,9 @@ export type StocksErrorCode =
   | "MAIN_CHARACTER_INTEGRITY"
   | "PRICE_NOT_FOUND"
   | "MARKET_CLOSED"
+  | "MARKET_OPENING_PENDING"
   | "STOCK_TRADING_HALTED"
+  | "STOCK_COOLING_DOWN"
   | "INSUFFICIENT_BALANCE"
   | "INSUFFICIENT_SHARES"
   | "REFUND_FAILED"
@@ -72,7 +75,9 @@ const STOCKS_ERROR_CODES: ReadonlySet<StocksErrorCode> = new Set([
   "MAIN_CHARACTER_INTEGRITY",
   "PRICE_NOT_FOUND",
   "MARKET_CLOSED",
+  "MARKET_OPENING_PENDING",
   "STOCK_TRADING_HALTED",
+  "STOCK_COOLING_DOWN",
   "INSUFFICIENT_BALANCE",
   "INSUFFICIENT_SHARES",
   "REFUND_FAILED",
@@ -115,10 +120,38 @@ export interface StockPriceItem {
   isSeeded: boolean;
   /** true면 해당 종목만 매수/매도 불가. */
   isTradingHalted: boolean;
+  /** 동적 적정가. 전환 전 문서는 현재가와 동일하게 직렬화한다. */
+  referencePrice: number;
+  /** 자동 냉각 종료 시각. 냉각 중이 아니면 null. */
+  cooldownUntil: string | null;
+  cooldownReason: string | null;
+  /** 정확한 산식은 숨기고 다음 회차에 반영될 방향/강도/거래량만 공개한다. */
+  flowSignal: StockOrderFlowSignal | null;
+}
+
+export type StockMarketStatus = "OPEN" | "CLOSED" | "OPENING_PENDING";
+
+export interface StockOrderFlowSignal {
+  direction: "BUY" | "SELL" | "BALANCED";
+  strength: "WEAK" | "MODERATE" | "STRONG";
+  volume: number;
+}
+
+export interface StockMarketStateItem {
+  status: StockMarketStatus;
+  reason: string;
+  asOf: string;
+  opensAt: string | null;
+  closesAt: string | null;
+  nextPriceSlotAt: string | null;
+  delayed: boolean;
+  pendingSlotKeys: string[];
+  earlyCloseAt: string | null;
 }
 
 export interface StockPricesResponse {
   items: StockPriceItem[];
+  market: StockMarketStateItem;
 }
 
 export interface StockHoldingItem {
@@ -161,11 +194,35 @@ export interface StockAdminHoldingsResponse {
   generatedAt: string;
 }
 
+export type StockHistoryRange = "1d" | "1w" | "1m" | "3m" | "1y" | "all";
+
 export interface StockHistoryItem {
   price: number;
   prevPrice: number;
+  referencePrice?: number;
   eventText?: string;
-  source: "scheduled" | "trade" | "gm-event";
+  source:
+    | "scheduled"
+    | "trade"
+    | "gm-event"
+    | "disclosure"
+    | "corporate-action"
+    | "dividend"
+    | "split";
+  slotKey?: string;
+  /** 같은 경제 시각의 배당락→분할→가격 회차 순번. */
+  effectiveSequence?: number;
+  mergedSlotKeys?: string[];
+  delayed?: boolean;
+  basePercent?: number;
+  flowPercent?: number;
+  disclosurePercent?: number;
+  disclosureIds?: string[];
+  markers?: Array<{
+    type: "SLOT" | "DISCLOSURE" | "DIVIDEND" | "SPLIT";
+    id?: string;
+    label: string;
+  }>;
   /** ISO 8601. 클라이언트에서 new Date() 로 파싱. */
   createdAt: string;
 }
@@ -181,7 +238,8 @@ export interface StockMarketWireItem {
   prevPrice: number;
   changePercent: number;
   eventText: string;
-  source: "scheduled" | "trade" | "gm-event";
+  source: StockHistoryItem["source"];
+  effectiveSequence?: number;
   createdAt: string;
 }
 
@@ -291,10 +349,13 @@ async function fetchStockAdminHoldings(): Promise<StockAdminHoldingsResponse> {
 
 async function fetchStockHistory(
   ticker: string,
-  days: number,
+  range: number | StockHistoryRange,
 ): Promise<StockHistoryResponse> {
+  const rangeParam =
+    typeof range === "number" ? `days=${range}` : `range=${range}`;
   const res = await fetch(
-    `/api/erp/stocks/history?ticker=${encodeURIComponent(ticker)}&days=${days}`,
+    `/api/erp/stocks/history?ticker=${encodeURIComponent(ticker)}&${rangeParam}`,
+    { cache: "no-store" },
   );
   if (!res.ok) await parseStocksError(res);
   return res.json();
@@ -303,7 +364,9 @@ async function fetchStockHistory(
 async function fetchStockSparklines(
   days: number,
 ): Promise<StockSparklinesResponse> {
-  const res = await fetch(`/api/erp/stocks/sparklines?days=${days}`);
+  const res = await fetch(`/api/erp/stocks/sparklines?days=${days}`, {
+    cache: "no-store",
+  });
   if (!res.ok) await parseStocksError(res);
   return res.json();
 }
@@ -311,7 +374,9 @@ async function fetchStockSparklines(
 async function fetchStockMarketIndexHistory(
   days: number,
 ): Promise<StockMarketIndexHistoryResponse> {
-  const res = await fetch(`/api/erp/stocks/index-history?days=${days}`);
+  const res = await fetch(`/api/erp/stocks/index-history?days=${days}`, {
+    cache: "no-store",
+  });
   if (!res.ok) await parseStocksError(res);
   return res.json();
 }
@@ -324,7 +389,9 @@ async function fetchStockMarketWire(
     days: String(days),
     limit: String(limit),
   });
-  const res = await fetch(`/api/erp/stocks/wire?${params.toString()}`);
+  const res = await fetch(`/api/erp/stocks/wire?${params.toString()}`, {
+    cache: "no-store",
+  });
   if (!res.ok) await parseStocksError(res);
   return res.json();
 }
@@ -421,14 +488,17 @@ export function useStockHistory(
   options?: {
     initialData?: StockHistoryResponse;
     enabled?: boolean;
-    /** 조회 일수. 1~30. 기본 30 (기존 호출처 호환). */
+    /** 조회 일수. 1~365. 기본 30 (기존 호출처 호환). */
     days?: number;
+    /** NOVEX 2.0 차트 범위. 지정하면 days보다 우선한다. */
+    range?: StockHistoryRange;
   },
 ) {
-  const days = options?.days ?? 30;
+  const range =
+    options?.range ?? (options?.days === 0 ? "all" : options?.days) ?? 30;
   return useQuery({
-    queryKey: stocksKeys.history(ticker, days),
-    queryFn: () => fetchStockHistory(ticker, days),
+    queryKey: stocksKeys.history(ticker, range),
+    queryFn: () => fetchStockHistory(ticker, range),
     staleTime: HISTORY_STALE_MS,
     initialData: options?.initialData,
     // ticker 비어 있으면 호출 안 함. 호출자가 명시적으로 disable 하고 싶을 때도 활용.

@@ -1,11 +1,21 @@
 import {
+  applyStockMarketRoundTransaction,
   applyScheduledStockPriceMutation,
   claimPendingStockScheduledEvent,
+  createAutomaticStockDisclosureQueue,
   consumeMrBeastSodaStockImpactDemand,
+  closeStockMarketWithoutRound,
+  getStockMarketCalendarException,
+  getScheduledStockDisclosureQueueStatsForDate,
+  getStockPrices,
+  listPendingStockFlowAggregates,
+  listStockDisclosures,
+  listRegularSessionStartsForStockMarket,
   listScheduledStockPriceHistoryRange,
   type ApplyScheduledStockPriceMutationResult,
 } from "@stargate/shared-db";
 import type {
+  StockInvestmentSeason,
   StockPrice,
   StockPriceHistory,
 } from "@stargate/shared-db/types";
@@ -23,6 +33,20 @@ import {
   MRBEAST_SODA_STOCK_IMPACT_TICKER,
 } from "../domain/mrbeast-soda-stock-impact.js";
 import { kstDateTag, kstNowTag } from "../domain/kst-time.js";
+import {
+  calculateNovexPrice,
+  buildNovexAutoDisclosureQueue,
+  enumerateNovexSlotsAfter,
+  latestDueNovexSlot,
+  isNovexRegularSessionDate,
+  nextNovexMarketActionAt,
+  NOVEX_REGULAR_SESSION_TITLE,
+  novexKstDate,
+  novexSeasonDateRangeForStart,
+  parseNovexSlotKey,
+  resolveNovexTradingWindow,
+  shouldDeferNovexRoundForEarlyClose,
+} from "../domain/novex-market.js";
 
 const UP_DIRECTION_CHANCE = 0.55;
 
@@ -67,8 +91,12 @@ export interface ScheduledStockTickResult {
 export interface ScheduledStockTickSummary {
   date: string;
   slot: string;
+  mergedSlotKeys?: string[];
   sourceRevision?: string;
   results: ScheduledStockTickResult[];
+  marketStateChanged?: boolean;
+  skipDiscord?: boolean;
+  warning?: "REGULAR_SESSION_MISSING" | "REGULAR_SESSION_AMBIGUOUS";
 }
 
 export class ScheduledStockTickNotDueError extends Error {
@@ -81,6 +109,386 @@ export class ScheduledStockTickNotDueError extends Error {
     this.date = date;
     this.executeAt = executeAt;
   }
+}
+
+export interface ApplyNovexStockMarketTickOptions {
+  now?: Date;
+  /** 인증된 수동 복구가 실행할 명시적 KST 회차. 생략하면 현재까지 최신 due 회차. */
+  slotKey?: string;
+  random?: () => number;
+}
+
+export class NovexStockTickNotDueError extends Error {
+  constructor(readonly executeAt: Date) {
+    super(`NOVEX_STOCK_TICK_NOT_DUE:${executeAt.toISOString()}`);
+    this.name = "NovexStockTickNotDueError";
+  }
+}
+
+/** NOVEX_V2_ENABLED는 명시적인 true에서만 켜진다. */
+export function isNovexV2Enabled(value: string | undefined): boolean {
+  return value?.trim().toLowerCase() === "true";
+}
+
+export type NovexV2Mode = "disabled" | "shadow" | "enabled";
+export function resolveNovexV2Mode(input: {
+  mode?: string;
+  legacyEnabled?: string;
+}): NovexV2Mode {
+  const normalized = input.mode?.trim().toLowerCase();
+  if (normalized === "enabled" || normalized === "shadow" || normalized === "disabled") {
+    return normalized;
+  }
+  return isNovexV2Enabled(input.legacyEnabled) ? "enabled" : "disabled";
+}
+
+/** 종가 브리핑은 23시 회차만, 다음 개장(09시) 전 복구분까지만 허용한다. */
+export function shouldSkipNovexClosingBriefing(
+  slotKey: string,
+  now: Date,
+): boolean {
+  if (!slotKey.endsWith("23:00")) return true;
+  return now.getTime() >= nextNovexMarketActionAt(slotKey, true).getTime();
+}
+
+function seededNovexRandom(seed: string): () => number {
+  let value = [...seed].reduce((hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16_777_619), 2_166_136_261) >>> 0;
+  return () => {
+    value += 0x6d2b79f5;
+    let next = value;
+    next = Math.imul(next ^ (next >>> 15), next | 1);
+    next ^= next + Math.imul(next ^ (next >>> 7), next | 61);
+    return ((next ^ (next >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+async function ensureNextDayNovexAutoQueue(date: string, now: Date): Promise<void> {
+  const tomorrow = novexKstDate(new Date(new Date(`${date}T00:00:00+09:00`).getTime() + 24 * 60 * 60 * 1000));
+  const nowDate = novexKstDate(now);
+  if (nowDate > tomorrow) return;
+  const nowParts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Seoul",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(now)
+      .map((part) => [part.type, part.value]),
+  );
+  const currentMinutes =
+    Number(nowParts.hour ?? 0) * 60 + Number(nowParts.minute ?? 0);
+  const slotHours = [9, 13, 18, 23].filter(
+    (hour) => nowDate < tomorrow || hour * 60 > currentMinutes,
+  ) as Array<9 | 13 | 18 | 23>;
+  if (slotHours.length === 0) return;
+  const existing = await getScheduledStockDisclosureQueueStatsForDate(tomorrow);
+  await createAutomaticStockDisclosureQueue(buildNovexAutoDisclosureQueue({
+    kstDate: tomorrow,
+    tickers: STOCK_CATALOG.map((stock) => stock.ticker),
+    existingCount: existing.count,
+    existingShockCount: existing.shockCount,
+    slotHours,
+    random: seededNovexRandom(tomorrow),
+    now,
+  }));
+}
+
+async function ensureRemainingNovexAutoQueue(
+  date: string,
+  currentHour: number,
+  now: Date,
+): Promise<void> {
+  const slotHours = remainingNovexAutoQueueHours(date, currentHour, now);
+  if (slotHours.length === 0) return;
+  const existing = await getScheduledStockDisclosureQueueStatsForDate(date);
+  await createAutomaticStockDisclosureQueue(buildNovexAutoDisclosureQueue({
+    kstDate: date,
+    tickers: STOCK_CATALOG.map((stock) => stock.ticker),
+    existingCount: existing.count,
+    existingShockCount: existing.shockCount,
+    slotHours,
+    random: seededNovexRandom(date),
+    now,
+  }));
+}
+
+export function remainingNovexAutoQueueHours(
+  date: string,
+  currentHour: number,
+  now: Date,
+): Array<9 | 13 | 18 | 23> {
+  return ([9, 13, 18, 23] as const).filter((hour) =>
+    hour > currentHour &&
+    new Date(
+      `${date}T${String(hour).padStart(2, "0")}:00:00+09:00`,
+    ).getTime() > now.getTime(),
+  );
+}
+
+interface NovexSeasonActivationCandidate {
+  slotKey: string;
+  season: StockInvestmentSeason;
+}
+
+export function selectNovexSeasonActivationForMergedSlots(
+  candidates: readonly NovexSeasonActivationCandidate[],
+  mergedSlotKeys: readonly string[],
+): StockInvestmentSeason | undefined {
+  const merged = new Set(mergedSlotKeys);
+  return [...candidates]
+    .filter((candidate) => merged.has(candidate.slotKey))
+    .sort((left, right) => right.slotKey.localeCompare(left.slotKey))[0]
+    ?.season;
+}
+
+async function buildNovexSeasonActivation(
+  kstDate: string,
+  slotKey: string,
+  now: Date,
+): Promise<StockInvestmentSeason | undefined> {
+  const seasonDates = novexSeasonDateRangeForStart(kstDate);
+  if (!slotKey.endsWith("09:00") || !seasonDates) {
+    return undefined;
+  }
+  const endDate = seasonDates.endsOn;
+  const start = new Date(`${endDate}T00:00:00+09:00`);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  const [exception, sessionStarts] = await Promise.all([
+    getStockMarketCalendarException(endDate),
+    listRegularSessionStartsForStockMarket({
+      title: NOVEX_REGULAR_SESSION_TITLE,
+      start,
+      end,
+    }),
+  ]);
+  const window = resolveNovexTradingWindow({
+    kstDate: endDate,
+    regularSessionStarts: sessionStarts,
+    exception,
+  });
+  return {
+    _id: `novex-season:${kstDate}`,
+    startsAt: parseNovexSlotKey(slotKey),
+    endsAt: window.closesAt,
+    status: "ACTIVE",
+    createdAt: now,
+  };
+}
+
+async function buildNovexSeasonActivationCandidates(
+  targetSlotKey: string,
+  now: Date,
+): Promise<NovexSeasonActivationCandidate[]> {
+  const targetAt = parseNovexSlotKey(targetSlotKey);
+  const dates = new Set<string>();
+  // enumerateNovexSlotsAfter의 128회 guard(최대 약 32일) 안에서 가능한 모든
+  // 격주 시즌 시작일을 미리 준비하고, 실제 선택은 transaction 병합 결과로 한다.
+  for (let offset = 0; offset <= 32; offset += 1) {
+    const date = novexKstDate(
+      new Date(targetAt.getTime() - offset * 24 * 60 * 60 * 1000),
+    );
+    if (novexSeasonDateRangeForStart(date)) dates.add(date);
+  }
+  const candidates = await Promise.all(
+    [...dates].map(async (date) => {
+      const slotKey = `${date} 09:00`;
+      if (parseNovexSlotKey(slotKey).getTime() > targetAt.getTime()) {
+        return undefined;
+      }
+      const season = await buildNovexSeasonActivation(date, slotKey, now);
+      return season ? { slotKey, season } : undefined;
+    }),
+  );
+  return candidates.filter(
+    (candidate): candidate is NovexSeasonActivationCandidate =>
+      candidate !== undefined,
+  );
+}
+
+/** shadow rollout용 read-only 계산. 가격·수급·공시·시장 상태를 변경하지 않는다. */
+export async function previewNovexStockMarketTick(
+  options: ApplyNovexStockMarketTickOptions = {},
+): Promise<ScheduledStockTickSummary> {
+  const now = options.now ?? new Date();
+  const slotKey = options.slotKey ?? latestDueNovexSlot(now);
+  if (!slotKey) throw new NovexStockTickNotDueError(new Date(`${novexKstDate(now)}T09:00:00+09:00`));
+  const date = slotKey.slice(0, 10);
+  const [prices, flows, disclosures] = await Promise.all([
+    getStockPrices(),
+    listPendingStockFlowAggregates(),
+    listStockDisclosures({ now, limit: 500 }),
+  ]);
+  const flowMap = new Map(flows.map((flow) => [flow.ticker, flow]));
+  const random = options.random ?? seededNovexRandom(slotKey);
+  const results = prices.map((current) => {
+    const disclosure = disclosures.find((row) =>
+      row.status === "SCHEDULED" &&
+      row.kind === "PRICE" &&
+      (row.slotKey === slotKey || (row.publishAt?.getTime() ?? Number.POSITIVE_INFINITY) <= now.getTime()) &&
+      row.effects.some((effect) => effect.scope === "MARKET" || effect.ticker === current.ticker),
+    );
+    const calculated = calculateNovexPrice({
+      current,
+      flowPercent: flowMap.get(current.ticker)?.percent ?? 0,
+      disclosure,
+      random,
+      now,
+    });
+    return {
+      ticker: current.ticker,
+      previousPrice: current.price,
+      price: calculated.price,
+      changePercent: calculated.finalPercent * 100,
+      eventText: `[shadow] ${calculated.eventText}`,
+      eventTier: calculated.eventTier,
+      status: "updated" as const,
+    };
+  });
+  return { date, slot: slotKey, results, skipDiscord: true };
+}
+
+/**
+ * 09·13·18·23 가격 회차 실행. 누락 회차는 최신 회차 하나로 합치며 Mongo transaction
+ * 하나가 9종목·수급·공시·history·시장 상태를 함께 확정한다.
+ */
+export async function applyNovexStockMarketTick(
+  options: ApplyNovexStockMarketTickOptions = {},
+): Promise<ScheduledStockTickSummary> {
+  const now = options.now ?? new Date();
+  const slotKey = options.slotKey ?? latestDueNovexSlot(now);
+  if (!slotKey) {
+    throw new NovexStockTickNotDueError(
+      new Date(`${novexKstDate(now)}T09:00:00+09:00`),
+    );
+  }
+  const slotAt = parseNovexSlotKey(slotKey);
+  if (slotAt.getTime() > now.getTime()) throw new NovexStockTickNotDueError(slotAt);
+  const date = slotKey.slice(0, 10);
+  const dayStart = new Date(`${date}T00:00:00+09:00`);
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  await ensureRemainingNovexAutoQueue(
+    date,
+    Number(slotKey.slice(11, 13)),
+    now,
+  );
+  const [exception, regularSessionStarts] = await Promise.all([
+    getStockMarketCalendarException(date),
+    listRegularSessionStartsForStockMarket({
+      title: NOVEX_REGULAR_SESSION_TITLE,
+      start: dayStart,
+      end: dayEnd,
+    }),
+  ]);
+  const window = resolveNovexTradingWindow({
+    kstDate: date,
+    regularSessionStarts,
+    exception,
+  });
+  const random = options.random ?? Math.random;
+  const samples = new Map(
+    STOCK_CATALOG.map((stock) => [stock.ticker, random()]),
+  );
+  const deferForEarlyClose = shouldDeferNovexRoundForEarlyClose(
+    slotKey,
+    window.closesAt,
+  );
+  const closeAfterRound =
+    !deferForEarlyClose && slotAt.getTime() >= window.closesAt.getTime();
+  const seasonActivationCandidates =
+    await buildNovexSeasonActivationCandidates(slotKey, now);
+
+  // 조기폐장 뒤의 일요일 잔여 회차는 가격을 굴리지 않는다. 월요일 09시에 병합된다.
+  if (deferForEarlyClose) {
+    const tomorrow = novexKstDate(new Date(dayStart.getTime() + 24 * 60 * 60 * 1000));
+    await closeStockMarketWithoutRound({
+      tradingDate: date,
+      opensAt: window.opensAt,
+      closesAt: window.closesAt,
+      nextOpenAt: new Date(`${tomorrow}T09:00:00+09:00`),
+      closureReason: window.closureReason,
+      finalizeSeason: isNovexRegularSessionDate(date),
+      now,
+    });
+    if (slotKey.endsWith("23:00")) await ensureNextDayNovexAutoQueue(date, now);
+    return {
+      date,
+      slot: slotKey,
+      results: [],
+      marketStateChanged: true,
+      skipDiscord: true,
+      warning: window.warning,
+    };
+  }
+
+  const outcome = await applyStockMarketRoundTransaction({
+    slotKey,
+    resolveMergedSlotKeys: (lastCompletedSlotKey) =>
+      enumerateNovexSlotsAfter(lastCompletedSlotKey, slotKey),
+    delayed: now.getTime() > slotAt.getTime() + 60_000,
+    now,
+    tradingDate: date,
+    opensAt: window.opensAt,
+    closesAt: window.closesAt,
+    nextSlotAt: nextNovexMarketActionAt(slotKey, closeAfterRound),
+    closeAfterRound,
+    closureReason: closeAfterRound ? window.closureReason : undefined,
+    season: {
+      resolveActivation: (mergedSlotKeys) =>
+        selectNovexSeasonActivationForMergedSlots(
+          seasonActivationCandidates,
+          mergedSlotKeys,
+        ),
+      endsAt: isNovexRegularSessionDate(date) ? window.closesAt : undefined,
+      finalize: closeAfterRound && isNovexRegularSessionDate(date),
+    },
+    seeds: STOCK_CATALOG.map((stock) => ({ ticker: stock.ticker, price: stock.basePrice })),
+    calculate(current, context) {
+      const calculated = calculateNovexPrice({
+        current,
+        flowPercent: context.flow.percent,
+        disclosure: context.disclosure,
+        structuralDisclosurePercent: context.structuralDisclosurePercent,
+        random: () => samples.get(current.ticker) ?? 0.5,
+        now,
+      });
+      return {
+        price: calculated.price,
+        referencePrice: calculated.referencePrice,
+        eventText: calculated.eventText,
+        eventTier: calculated.eventTier,
+        basePercent: calculated.basePercent,
+        flowPercent: calculated.flowPercent,
+        disclosurePercent: calculated.disclosurePercent,
+        cooldownUntil: calculated.cooldownUntil,
+        cooldownReason: calculated.cooldownReason,
+        pendingBasePercent: calculated.pendingBasePercent,
+        consumeFlow: calculated.consumeFlow,
+      };
+    },
+  });
+  if (slotKey.endsWith("23:00")) await ensureNextDayNovexAutoQueue(date, now);
+
+  return {
+    date,
+    slot: slotKey,
+    mergedSlotKeys:
+      outcome.histories[0]?.mergedSlotKeys ?? outcome.state.mergedSlotKeys,
+    sourceRevision: outcome.histories
+      .map((history) => `${history.ticker}:${history.price}:${history.createdAt.toISOString()}`)
+      .join("|"),
+    results: outcome.histories.map((history) => ({
+      ticker: history.ticker,
+      previousPrice: history.prevPrice,
+      price: history.price,
+      changePercent: changePercent(history.prevPrice, history.price),
+      eventText: history.eventText ?? "정기 변동",
+      eventTier: history.eventTier ?? "routine",
+      status: outcome.applied ? "updated" : "skipped",
+    })),
+    skipDiscord: shouldSkipNovexClosingBriefing(slotKey, now),
+    warning: window.warning,
+  };
 }
 
 function randomMagnitude(random: () => number): number {

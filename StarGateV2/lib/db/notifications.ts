@@ -8,6 +8,7 @@ export {
   listUserNotifications,
   countUnread,
   createNotification,
+  createNotificationOnce,
   createNotificationsBulk,
   markAsRead,
   markAllAsRead,

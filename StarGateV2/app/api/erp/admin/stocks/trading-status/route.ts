@@ -14,7 +14,10 @@ import {
   executeEconomicOperationResult,
 } from "@/lib/db/execute-economic-operation";
 import { setStockTradingHalted } from "@/lib/db/stocks";
-import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
+import {
+  enqueueGmAdminAudit,
+  enqueueStockManualInterventionWebhook,
+} from "@/lib/outbox/integration";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 
 interface TradingStatusBody {
@@ -121,6 +124,24 @@ export async function POST(request: Request) {
               session: dbSession,
               dedupeKey: `stock-trading-status:${requestId}:audit`,
             },
+          );
+          await enqueueStockManualInterventionWebhook(
+            {
+              eventKind: isTradingHalted ? "HALT" : "RESUME",
+              ticker,
+              previousPrice: result.price.price,
+              price: result.price.price,
+              eventText: isTradingHalted
+                ? "시장감시실 결정에 따라 개별 종목 거래를 정지합니다."
+                : "시장감시실 결정에 따라 개별 종목 거래를 재개합니다.",
+              actor: {
+                displayName: session.user.displayName,
+                role: session.user.role,
+              },
+              occurredAt,
+            },
+            `stock-trading-status:${requestId}:public-notice`,
+            { session: dbSession },
           );
 
           return {

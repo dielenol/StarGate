@@ -214,6 +214,75 @@ export interface IndexEnsureOptions {
   onEnsured?: (index: { collection: string; name: string }) => void;
 }
 
+/** NOVEX 2.0 신규 컬렉션의 영속 계약. 실제 TTL 제거/backfill은 별도 migration이다. */
+export const NOVEX_INDEX_DEFINITIONS: Record<string, IndexDescription[]> = {
+  stock_market_state: [
+    { key: { updatedAt: -1 }, name: "stock_market_state_updatedAt" },
+  ],
+  stock_order_flow: [
+    { key: { operationKey: 1 }, name: "stock_order_flow_operationKey_unique", unique: true },
+    { key: { consumedSlotKey: 1, occurredAt: 1 }, name: "stock_order_flow_pending" },
+  ],
+  stock_disclosures: [
+    { key: { status: 1, publishAt: 1 }, name: "stock_disclosures_status_publishAt" },
+    { key: { status: 1, slotKey: 1, source: 1 }, name: "stock_disclosures_status_slot_source" },
+  ],
+  stock_disclosure_effect_fences: [
+    { key: { revision: 1 }, name: "stock_disclosure_effect_fences_revision" },
+  ],
+  stock_market_preferences: [
+    { key: { userId: 1 }, name: "stock_market_preferences_user_unique", unique: true },
+  ],
+  stock_market_calendar_exceptions: [
+    { key: { kstDate: 1 }, name: "stock_market_calendar_kstDate_unique", unique: true },
+  ],
+  stock_corporate_actions: [
+    { key: { status: 1, recordSlotKey: 1, exDateSlotKey: 1, executeSlotKey: 1 }, name: "stock_corporate_actions_status_slot" },
+    {
+      key: { ticker: 1, recordSlotKey: 1 },
+      name: "stock_corporate_actions_dividend_ticker_slot_unique",
+      unique: true,
+      partialFilterExpression: { type: "DIVIDEND", status: "SCHEDULED" },
+    },
+    {
+      key: { ticker: 1, executeSlotKey: 1 },
+      name: "stock_corporate_actions_split_ticker_slot_unique",
+      unique: true,
+      partialFilterExpression: { type: "SPLIT", status: "SCHEDULED" },
+    },
+  ],
+  stock_dividend_entitlements: [
+    { key: { actionId: 1, characterId: 1 }, name: "stock_dividend_entitlements_action_character_unique", unique: true },
+    { key: { creditRequestId: 1 }, name: "stock_dividend_entitlements_creditRequest_unique", unique: true },
+    { key: { status: 1, createdAt: 1 }, name: "stock_dividend_entitlements_status_createdAt" },
+  ],
+  stock_investment_seasons: [
+    { key: { status: 1, startsAt: 1, endsAt: 1 }, name: "stock_investment_seasons_status_window" },
+    {
+      key: { status: 1 },
+      name: "stock_investment_seasons_single_active_unique",
+      unique: true,
+      partialFilterExpression: { status: "ACTIVE" },
+    },
+  ],
+  stock_season_performance: [
+    { key: { seasonId: 1, characterId: 1 }, name: "stock_season_performance_season_character_unique", unique: true },
+    { key: { seasonId: 1, eligible: 1, rank: 1 }, name: "stock_season_performance_rank" },
+    { key: { seasonId: 1, eligible: 1, linkedReturn: -1 }, name: "stock_season_performance_leaderboard" },
+  ],
+  stock_season_flows: [
+    { key: { operationKey: 1 }, name: "stock_season_flows_operationKey_unique", unique: true },
+    { key: { evaluatedSlotKey: 1, occurredAt: 1, characterId: 1 }, name: "stock_season_flows_pending" },
+  ],
+};
+
+export async function ensureNovexIndexes(inputDb?: Db): Promise<void> {
+  const db = inputDb ?? await getDb();
+  await Promise.all(Object.entries(NOVEX_INDEX_DEFINITIONS).map(([collection, definitions]) =>
+    db.collection(collection).createIndexes(definitions),
+  ));
+}
+
 export const BUREAUCRAT_VOTE_INDEX_DEFINITIONS: IndexDescription[] = [
   {
     key: { requestKey: 1 },
@@ -538,6 +607,8 @@ export async function ensureAllIndexes(): Promise<void> {
     ensureSessionReportIndexes(db),
     ensureBureaucratVoteIndexes(db),
     ensureResearchLabIndexes(db),
+    // NOVEX 신규 index는 라이브 승인 전 broad ensureAllIndexes에 포함하지 않는다.
+    // `ensureNovexIndexes`/`applyNovex2Migration`의 명시적 전환 경로에서만 생성한다.
 
     /* ── character_change_logs (감사 로그) ── */
     ensureChangeLogsIndexes(db),
@@ -1056,16 +1127,10 @@ export async function ensureAllIndexes(): Promise<void> {
       { name: "stock_scheduled_events_status_executeAt_ticker" },
     ),
 
-    /* ── stock_price_history (M1: 30일 가격 시계열) ──
-     * TTL 30일. ticker 별 차트 조회는 (ticker, createdAt desc) 복합 인덱스로 최적화.
+    /* ── stock_price_history (NOVEX 영구 가격 시계열) ──
+     * 레거시 TTL 제거는 별도 migration에서 승인 후 수행한다.
      */
     db.collection("stock_price_history").createIndexes([
-      {
-        key: { createdAt: 1 },
-        name: "stock_price_history_ttl",
-        // 30 일 = 30 * 24 * 60 * 60.
-        expireAfterSeconds: 30 * 24 * 60 * 60,
-      },
       {
         key: { ticker: 1, createdAt: -1 },
         name: "stock_price_history_ticker_createdAt",

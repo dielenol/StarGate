@@ -62,6 +62,9 @@ import RangeToggle, {
   type RangeKey,
 } from "../RangeToggle";
 import StockIndexBanner from "../StockIndexBanner";
+import MarketStatusPanel, { type MarketStatusView } from "../MarketStatusPanel";
+import StockDisclosureTimeline from "../StockDisclosureTimeline";
+import StockMarketPreferencesPanel from "../StockMarketPreferencesPanel";
 import { ChartSkeleton, type ChartPoint } from "../StockHistoryChart";
 import StockTabs from "../StockTabs";
 import WatchlistRailCard from "../WatchlistRailCard";
@@ -121,6 +124,9 @@ type TradeTab = "buy" | "sell";
 function eventSourceLabel(source: ChartPoint["source"]): string {
   if (source === "gm-event") return "GM 공시";
   if (source === "trade") return "체결";
+  if (source === "dividend") return "배당락";
+  if (source === "split") return "액면분할";
+  if (source === "disclosure" || source === "auto-news") return "공시";
   return "정기 변동";
 }
 
@@ -192,6 +198,7 @@ export default function StockTradeClient({
   });
 
   const prices = pricesQuery.data ?? initialPrices;
+  const market = (prices as StockPricesResponse & { market?: MarketStatusView }).market;
   const holdings = holdingsQuery.data ?? initialHoldings;
   const history = historyQuery.data ?? { items: [] };
 
@@ -228,19 +235,29 @@ export default function StockTradeClient({
       price: row.price,
       eventText: row.eventText ?? "",
       source: row.source,
+      slotKey: row.slotKey,
+      disclosureTitle:
+        row.disclosureIds && row.disclosureIds.length > 0
+          ? row.eventText
+          : undefined,
     }));
   }, [history.items]);
 
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
-  const isMarketOpen = marketEnabled;
+  const isMarketOpen = marketEnabled && market?.status === "OPEN";
   const isPriceSeeded = currentPrice?.isSeeded ?? false;
   const isTradingHalted = currentPrice?.isTradingHalted ?? false;
+  const cooldownUntil = currentPrice?.cooldownUntil ?? null;
+  // 서버가 만료 시 null 로 정리한 cooldownUntil 을 거래 판정 SSOT로 사용한다.
+  // render 중 현재 시각을 읽지 않아 React purity 및 클라이언트/서버 차이를 피한다.
+  const isCoolingDown = Boolean(cooldownUntil);
   // account read가 실패하거나 캐릭터 identity가 바뀐 상태에서는 매수·매도 모두 잠근다.
   const canTrade =
     hasMainCharacter &&
     isMarketOpen &&
     isPriceSeeded &&
     !isTradingHalted &&
+    !isCoolingDown &&
     balance !== null &&
     !ledgerQuery.isError;
   const sellDisabled = !canTrade || !holding || holding.shares === 0;
@@ -383,7 +400,8 @@ export default function StockTradeClient({
       .filter((row) => row.eventText?.trim())
       .sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
+          (b.effectiveSequence ?? 0) - (a.effectiveSequence ?? 0),
       )
       .slice(0, 6)
       .map((row) => {
@@ -408,7 +426,6 @@ export default function StockTradeClient({
   const activeAlertReasons = currentPrice
     ? evaluateStockAlert(alertRule, currentPrice)
     : [];
-
   /* ── 핸들러 ── */
 
   function parseOptionalPositive(value: string): number | undefined {
@@ -528,7 +545,8 @@ export default function StockTradeClient({
 
   const historyRows = useMemo(() => {
     const sorted = [...history.items].sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
+        (b.effectiveSequence ?? 0) - (a.effectiveSequence ?? 0);
     });
     const limited = sorted.slice(0, HISTORY_TABLE_LIMIT);
     return limited.map((row, i) => {
@@ -575,6 +593,8 @@ export default function StockTradeClient({
         <StockTabs />
       </div>
 
+      {alertRules.novexEnabled ? <MarketStatusPanel market={market} /> : null}
+
       <Link href="/erp/stock" className={styles.backLink}>
         <LinkPendingProbe />
         <span className={styles.backLink__arrow} aria-hidden="true">
@@ -612,8 +632,9 @@ export default function StockTradeClient({
 
       {hasMainCharacter && isPriceSeeded && !isMarketOpen ? (
         <Box className={styles.notice}>
-          현재 주식 거래가 일시 중지되어 있습니다. 시세와 보유 내역은 계속
-          조회할 수 있습니다.
+          {market?.status === "OPENING_PENDING"
+            ? "09시 가격 확정이 완료되면 거래가 시작됩니다. 시세와 보유 내역은 계속 조회할 수 있습니다."
+            : "현재 시장이 폐장되어 있습니다. 시세와 보유 내역은 계속 조회할 수 있습니다."}
         </Box>
       ) : null}
 
@@ -621,6 +642,14 @@ export default function StockTradeClient({
         <Box className={styles.notice}>
           이 종목은 운영자에 의해 거래정지되었습니다. 시세와 보유 내역은 계속
           조회할 수 있으며, 거래재개 후 매수·매도가 가능합니다.
+        </Box>
+      ) : null}
+
+      {hasMainCharacter && isPriceSeeded && isCoolingDown ? (
+        <Box className={styles.notice}>
+          이 종목은 급등락 이후 자동 냉각 중입니다.
+          {currentPrice?.cooldownReason ? ` ${currentPrice.cooldownReason}` : ""}
+          {cooldownUntil ? ` · 재개 예정 ${new Date(cooldownUntil).toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit" })}` : ""}
         </Box>
       ) : null}
 
@@ -922,6 +951,10 @@ export default function StockTradeClient({
             )}
           </div>
 
+          {alertRules.novexEnabled ? (
+            <StockDisclosureTimeline ticker={ticker} />
+          ) : null}
+
           {/* 종목 정보 카드 (현재가/기준가/이벤트) */}
           <div className={sharedStyles.detailInfo}>
             <div className={sharedStyles.detailInfo__head}>
@@ -973,76 +1006,80 @@ export default function StockTradeClient({
             ) : null}
           </div>
 
-          <div className={sharedStyles.alertRules}>
-            <div className={sharedStyles.alertRules__head}>
-              <span>브라우저 조건 표시</span>
-              <button
-                type="button"
-                onClick={() => alertRules.clearRule(ticker)}
-                disabled={!hasStockAlertRule(alertRule)}
-              >
-                초기화
-              </button>
-            </div>
-            <label className={sharedStyles.alertRules__field}>
-              <span>목표가 이하</span>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={alertRule.belowPrice ?? ""}
-                onChange={(e) =>
-                  updateAlertRule({
-                    ...alertRule,
-                    belowPrice: parseOptionalPositive(e.target.value),
-                  })
-                }
-                placeholder="예: 4.50"
-              />
-            </label>
-            <label className={sharedStyles.alertRules__field}>
-              <span>등락률 절대값</span>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={alertRule.movePercent ?? ""}
-                onChange={(e) =>
-                  updateAlertRule({
-                    ...alertRule,
-                    movePercent: parseOptionalPositive(e.target.value),
-                  })
-                }
-                placeholder="예: 10"
-              />
-            </label>
-            <label className={sharedStyles.alertRules__check}>
-              <input
-                type="checkbox"
-                checked={alertRule.eventOnly === true}
-                onChange={(e) =>
-                  updateAlertRule({
-                    ...alertRule,
-                    eventOnly: e.target.checked,
-                  })
-                }
-              />
-              <span>공시 발생 시 표시</span>
-            </label>
-            {activeAlertReasons.length > 0 ? (
-              <ul className={sharedStyles.alertRules__active}>
-                {activeAlertReasons.map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
-            ) : (
-              <div className={sharedStyles.alertRules__empty}>
-                {hasStockAlertRule(alertRule)
-                  ? "현재 충족된 조건 없음 · 이 브라우저에서만 확인"
-                  : "조건을 설정하면 이 브라우저의 목록 브리핑에 표시됩니다."}
+          {alertRules.novexEnabled ? (
+            <StockMarketPreferencesPanel ticker={ticker} />
+          ) : (
+            <div className={sharedStyles.alertRules}>
+              <div className={sharedStyles.alertRules__head}>
+                <span>브라우저 조건 표시</span>
+                <button
+                  type="button"
+                  onClick={() => alertRules.clearRule(ticker)}
+                  disabled={!hasStockAlertRule(alertRule)}
+                >
+                  초기화
+                </button>
               </div>
-            )}
-          </div>
+              <label className={sharedStyles.alertRules__field}>
+                <span>목표가 이하</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={alertRule.belowPrice ?? ""}
+                  onChange={(event) =>
+                    updateAlertRule({
+                      ...alertRule,
+                      belowPrice: parseOptionalPositive(event.target.value),
+                    })
+                  }
+                  placeholder="예: 4.50"
+                />
+              </label>
+              <label className={sharedStyles.alertRules__field}>
+                <span>등락률 절대값</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={alertRule.movePercent ?? ""}
+                  onChange={(event) =>
+                    updateAlertRule({
+                      ...alertRule,
+                      movePercent: parseOptionalPositive(event.target.value),
+                    })
+                  }
+                  placeholder="예: 10"
+                />
+              </label>
+              <label className={sharedStyles.alertRules__check}>
+                <input
+                  type="checkbox"
+                  checked={alertRule.eventOnly === true}
+                  onChange={(event) =>
+                    updateAlertRule({
+                      ...alertRule,
+                      eventOnly: event.target.checked,
+                    })
+                  }
+                />
+                <span>공시 발생 시 표시</span>
+              </label>
+              {activeAlertReasons.length > 0 ? (
+                <ul className={sharedStyles.alertRules__active}>
+                  {activeAlertReasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div className={sharedStyles.alertRules__empty}>
+                  {hasStockAlertRule(alertRule)
+                    ? "현재 충족된 조건 없음 · 이 브라우저에서만 확인"
+                    : "조건을 설정하면 이 브라우저의 목록 브리핑에 표시됩니다."}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 매수/매도 폼 카드 */}
           {hasMainCharacter ? (

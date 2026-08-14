@@ -28,6 +28,7 @@ export const CREDIT_TYPE_META: Record<
   TRANSFER: { label: "이체", tone: "default" },
   STOCK_BUY: { label: "주식 매수", tone: "info" },
   STOCK_SELL: { label: "주식 매도", tone: "info" },
+  STOCK_DIVIDEND: { label: "주식 배당", tone: "success" },
   OP_GRANT: { label: "작전풀 지급", tone: "gold" },
   OP_DEDUCT: { label: "작전풀 차감", tone: "danger" },
   MIGRATION: { label: "마이그레이션 (1회성)", tone: "info" },

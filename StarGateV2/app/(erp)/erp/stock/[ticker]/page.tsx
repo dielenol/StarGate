@@ -26,7 +26,6 @@ import type {
   StockHistoryResponse,
   StockHoldingsResponse,
   StockLedgerResponse,
-  StockPricesResponse,
 } from "@/hooks/queries/useStocksQuery";
 
 import { INITIAL_RANGE, RANGE_TO_DAYS } from "../RangeToggle";
@@ -34,6 +33,7 @@ import {
   buildHistoryResponse,
   buildHoldingsResponse,
   buildPricesResponse,
+  buildStockPricesFallback,
   buildStockBalanceResponse,
   buildStockLedgerResponse,
 } from "../_data";
@@ -88,8 +88,8 @@ export default async function StockTradePage({ params }: Props) {
   const mainCharacterId = mainCharacter ? String(mainCharacter._id) : null;
 
   // prices 먼저 — buildHoldingsResponse 가 같은 데이터를 재사용해 중복 read 회피.
-  const initialPrices = await buildPricesResponse().catch(
-    (): StockPricesResponse => ({ items: [] }),
+  const initialPrices = await buildPricesResponse().catch(() =>
+    buildStockPricesFallback(),
   );
 
   const [initialHoldings, initialBalance, initialHistory, initialLedger] =

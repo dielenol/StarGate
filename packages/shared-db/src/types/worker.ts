@@ -63,6 +63,7 @@ export const INTEGRATION_OUTBOX_KINDS = [
   "PLAYER_TRADE_DM",
   "RESEARCH_LAB_DM",
   "WORKFLOW_STATUS_WEBHOOK",
+  "STOCK_MARKET_RECOVERY_REQUEST",
 ] as const;
 
 export type IntegrationOutboxKind =

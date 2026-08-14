@@ -286,6 +286,18 @@ initServerless({ uri: preflightUri, dbName, maxPoolSize: 5 });
 try {
   const db = await getDb();
   const now = new Date();
+  let forbiddenStockHistoryTtlIndexes: string[] = [];
+  try {
+    forbiddenStockHistoryTtlIndexes = (
+      await db.collection("stock_price_history").listIndexes().toArray()
+    )
+      .filter((index) => typeof index.expireAfterSeconds === "number")
+      .map((index) => index.name)
+      .filter((name): name is string => typeof name === "string")
+      .sort();
+  } catch (error) {
+    if (!isNamespaceMissing(error)) throw error;
+  }
   const indexResults = [];
   for (const required of WORKER_REQUIRED_INDEXES) {
     try {
@@ -428,6 +440,9 @@ try {
     (result) => result.duplicateGroups !== 0,
   );
   const blockers = [
+    ...forbiddenStockHistoryTtlIndexes.map(
+      (name) => `forbidden_ttl_index:stock_price_history.${name}`,
+    ),
     ...invalidIndexes.map(
       (result) =>
         `invalid_index:${result.collection}.${result.name}:${result.issues.join(",")}`,
@@ -445,6 +460,7 @@ try {
         checkedAt: now.toISOString(),
         dbName,
         indexes: indexResults,
+        forbiddenStockHistoryTtlIndexes,
         ttlImpacts,
         duplicates: duplicateResults,
         explains: explainResults,

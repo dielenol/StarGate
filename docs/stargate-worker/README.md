@@ -77,11 +77,21 @@ Dokploy Application Job은 동일 이미지에서 다음 명령을 실행한다.
 | 작업 | KST | 명령 |
 |---|---:|---|
 | 편의점 재고 | 매일 11:00 | `node dist/cli/run-job.js shop.refresh` |
-| 주식 변동 | 매일 12:00 | `node dist/cli/run-job.js stocks.tick` |
+| NOVEX 주식 회차 | 매일 09:00·13:00·18:00·23:00 | `node dist/cli/run-job.js stocks.tick` |
 | 일일 수당 | 매일 12:00 | `node dist/cli/run-job.js credits.daily-allowance` |
 | ERP 세션 알림 | 매일 21:00 | `node dist/cli/run-job.js sessions.erp-reminders` |
 
-외부 job 실행 HTTP API는 만들지 않는다. 동일 `(jobName, slotKey)` 실행권은 `scheduled_job_runs` unique/lease가 보장하고 장기 handler는 heartbeat로 lease를 갱신한다. 최종 attempt에서 프로세스가 종료돼도 active sweeper가 만료 lease를 `DEAD`로 전환한다. `slotKey`는 KST `YYYY-MM-DD`다. 네 job은 각각 편의점 품목별 날짜 조건, 주식 ticker별 operation key와 transaction, 수당 캐릭터별 일자 ledger, ERP 알림 `dedupeKey`를 추가 불변 조건으로 사용한다.
+외부 job 실행 HTTP API는 만들지 않는다. 동일 `(jobName, slotKey)` 실행권은 `scheduled_job_runs` unique/lease가 보장하고 장기 handler는 heartbeat로 lease를 갱신한다. 최종 attempt에서 프로세스가 종료돼도 active sweeper가 만료 lease를 `DEAD`로 전환한다. `stocks.tick`의 `slotKey`는 KST `YYYY-MM-DD HH:mm`, 나머지 일일 job은 기존 `YYYY-MM-DD`를 유지한다. 네 job은 각각 편의점 품목별 날짜 조건, 주식 회차·ticker별 operation key와 transaction, 수당 캐릭터별 일자 ledger, ERP 알림 `dedupeKey`를 추가 불변 조건으로 사용한다.
+
+### NOVEX 2.0 주식 엔진
+
+- `NOVEX_V2_MODE=disabled|shadow|enabled`가 전환 SSOT다. 기본값은 `disabled`이며 `shadow`는 기존 가격 엔진을 계속 확정하면서 NOVEX 가격·수급·공시 계산만 읽기 전용으로 비교한다.
+- `enabled`에서 09시 회차가 성공해야 개장한다. 거래 시간은 KST 09:00 이상 23:00 미만이고, 23시 회차 실패와 무관하게 시간 경계에서 폐장한다.
+- 13·18시 지연은 직전 가격으로 거래를 유지하고, 다음 회차 전 재시도한다. 오래된 회차는 다음 성공 회차의 `mergedSlotKeys`에 병합한다.
+- `2026-08-23`을 기준으로 격주 일요일의 `노부스 오르도 - 정규 세션` 일정 하나를 조기 폐장 시각으로 사용한다. 일정이 없거나 복수면 운영 경고를 남기고 18시에 폐장하며, GM 날짜 예외가 우선한다.
+- 조기 폐장 뒤 남은 수급·공시·회차는 월요일 09시에 합치고 일요일 23시 Discord 종가 장부는 갱신하지 않는다.
+- 정상 Discord 장부는 23시 desired-state 한 회차만 갱신한다. 충격 공시, 수동 정지·재개, 자동 냉각·해제는 durable outbox로 즉시 처리한다.
+- `/api/cron/stocks/tick`은 `CRON_SECRET`으로 인증된 수동 복구 경로일 뿐 자동 실행 owner가 아니다.
 
 ## 실시간 계약
 
@@ -125,7 +135,7 @@ StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
 
 실제 값은 저장소에 기록하지 않는다. 전체 목록은 [`stargate-worker/.env.example`](../../stargate-worker/.env.example)을 따른다.
 
-- worker: `WORKER_MODE`, `WORKER_REPLICA_COUNT=1`, `WORKER_HOST`, `WORKER_PORT`, `WORKER_POLL_INTERVAL_MS`, `WORKER_CONSUMERS=all`, `WORKER_CONSUMERS_ALLOW_PARTIAL=false`, `WORKER_OUTBOX_KINDS=all`, `WORKER_OUTBOX_ALLOW_PARTIAL=false`
+- worker: `WORKER_MODE`, `NOVEX_V2_MODE=disabled|shadow|enabled`, `WORKER_REPLICA_COUNT=1`, `WORKER_HOST`, `WORKER_PORT`, `WORKER_POLL_INTERVAL_MS`, `WORKER_CONSUMERS=all`, `WORKER_CONSUMERS_ALLOW_PARTIAL=false`, `WORKER_OUTBOX_KINDS=all`, `WORKER_OUTBOX_ALLOW_PARTIAL=false`
 - MongoDB: `MONGODB_URI`, `MONGODB_DB_NAME`, `MONGODB_MAX_POOL_SIZE`
 - realtime: `REALTIME_TICKET_SECRET`, `REALTIME_TICKET_ISSUER`, `REALTIME_TICKET_AUDIENCE`, `REALTIME_ALLOWED_ORIGINS`, `REALTIME_MAX_PAYLOAD_BYTES`, `REALTIME_MAX_CONNECTIONS`, `REALTIME_MAX_CONNECTIONS_PER_USER`
 - web realtime client: `REALTIME_CLIENT_MODE=off|observe|primary`
@@ -155,7 +165,7 @@ cd StarGateV2
 pnpm db:preflight-worker-indexes
 ```
 
-마지막 명령은 대상 MongoDB를 읽기만 하며 필수 인덱스의 이름·key 순서·unique·partial·TTL 옵션, 중복 그룹 수, due query 실행계획을 출력한다. 문서 키나 payload는 출력하지 않고 blocker가 있으면 종료 코드 2를 반환한다. 정확한 순서는 `read-only 검사 → 별도 승인 → one-shot 적용 → exact spec 재검사 → writer 배포`다. Docker 빌드 컨텍스트는 저장소 루트, Dockerfile은 `stargate-worker/Dockerfile`이다.
+마지막 명령은 대상 MongoDB를 읽기만 하며 필수 인덱스의 이름·key 순서·unique·partial·TTL 옵션, 금지된 `stock_price_history` TTL, 중복 그룹 수, due query 실행계획을 출력한다. 가격 이력은 TTL 없는 영구 `createdAt` 인덱스를 요구한다. 문서 키나 payload는 출력하지 않고 blocker가 있으면 종료 코드 2를 반환한다. 정확한 순서는 `read-only 검사 → 별도 승인 → one-shot 적용 → exact spec 재검사 → writer 배포`다. Docker 빌드 컨텍스트는 저장소 루트, Dockerfile은 `stargate-worker/Dockerfile`이다.
 
 ## 운영 권한 경계
 

@@ -49,6 +49,9 @@ export interface PlayerTradeAssets {
     shares: number;
     isSeeded: boolean;
     isTradingHalted: boolean;
+    isCoolingDown: boolean;
+    cooldownUntil: string | null;
+    marketStatus: import("@/hooks/queries/useStocksQuery").StockMarketStatus;
   }>;
 }
 
@@ -56,6 +59,9 @@ export interface PlayerTradeStockAvailability {
   ticker: string;
   isSeeded: boolean;
   isTradingHalted: boolean;
+  isCoolingDown: boolean;
+  cooldownUntil: string | null;
+  marketStatus: import("@/hooks/queries/useStocksQuery").StockMarketStatus;
 }
 
 export interface TradesResponse {
@@ -65,6 +71,7 @@ export interface TradesResponse {
   assets: PlayerTradeAssets;
   /** OPEN 거래 양측 제안에 포함된 종목 상태. ETag 수렴에도 포함된다. */
   stockAvailability: PlayerTradeStockAvailability[];
+  market: import("@/hooks/queries/useStocksQuery").StockMarketStateItem;
 }
 
 export type TradeAction =

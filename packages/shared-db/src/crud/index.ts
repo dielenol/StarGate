@@ -19,6 +19,7 @@ export * from "./change-logs.js";
 export * from "./credit-pools.js";
 export * from "./shop.js";
 export * from "./stocks.js";
+export * from "./stock-market.js";
 export * from "./stock-promotions.js";
 export * from "./stock-scheduled-events.js";
 export * from "./trades.js";

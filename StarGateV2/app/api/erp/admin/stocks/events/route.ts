@@ -20,6 +20,7 @@ import {
 } from "@/lib/db/stock-scheduled-events";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
 import {
   getNextStockScheduledEventDate,
   normalizeStockScheduledEventChangePercent,
@@ -128,6 +129,12 @@ export async function POST(request: Request) {
   const access = await requireGm();
   if ("response" in access) return access.response;
   const { session } = access;
+  if (isNovexV2Enabled()) {
+    return NextResponse.json(
+      { error: "NOVEX 2.0에서는 공시 센터에서 회차 공시를 예약해야 합니다." },
+      { status: 409 },
+    );
+  }
 
   const requestId = readIdempotencyKey(request);
   if (!requestId) {

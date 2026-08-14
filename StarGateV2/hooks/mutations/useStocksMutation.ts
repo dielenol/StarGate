@@ -195,7 +195,12 @@ export function useBuyStock() {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
     onError: (err) => {
-      if (err.code === "STOCK_TRADING_HALTED") {
+      if (
+        err.code === "STOCK_TRADING_HALTED" ||
+        err.code === "STOCK_COOLING_DOWN" ||
+        err.code === "MARKET_CLOSED" ||
+        err.code === "MARKET_OPENING_PENDING"
+      ) {
         queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
       }
       // 자동 환불/복구가 발생한 케이스도 ledger/holdings 가 변경됐으므로 invalidate.
@@ -230,7 +235,12 @@ export function useSellStock() {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
     onError: (err) => {
-      if (err.code === "STOCK_TRADING_HALTED") {
+      if (
+        err.code === "STOCK_TRADING_HALTED" ||
+        err.code === "STOCK_COOLING_DOWN" ||
+        err.code === "MARKET_CLOSED" ||
+        err.code === "MARKET_OPENING_PENDING"
+      ) {
         queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
       }
       if (err.code && REFUND_AFFECTING_CODES.has(err.code)) {
@@ -295,6 +305,7 @@ export function useUpdateStockTradingStatus() {
         (current) =>
           current
             ? {
+                ...current,
                 items: current.items.map((item) =>
                   item.ticker === data.item.ticker
                     ? {

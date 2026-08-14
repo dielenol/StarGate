@@ -23,4 +23,7 @@ export interface StockScheduledEvent {
   cancelledAt?: Date;
   appliedAt?: Date;
   appliedOperationKey?: string;
+  /** NOVEX 전환 시 생성된 대응 공시. 어느 엔진이 먼저 소비해도 상대를 함께 종결한다. */
+  migratedDisclosureId?: string;
+  migratedAt?: Date;
 }

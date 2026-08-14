@@ -584,7 +584,7 @@ export async function getAllHoldings(): Promise<StockHolding[]> {
  *
  * - createdAt 은 기본 now이며 transaction retry에서 동일 시각이 필요하면 options로 고정한다.
  * - source 분류는 호출자가 결정 ("scheduled" | "trade" | "gm-event").
- * - TTL 인덱스가 30 일 후 자동 만료.
+ * - 영구 보관. 레거시 TTL 제거는 별도 NOVEX migration에서 수행한다.
  */
 export async function recordStockPriceHistory(
   input: CreateStockPriceHistoryInput,
@@ -602,22 +602,63 @@ export async function recordStockPriceHistory(
 /**
  * 특정 ticker 의 최근 N 일 가격 시계열을 createdAt 오름차순으로 반환 (차트 X축 정합).
  *
- * - days: 조회 기간 (기본 30 일, TTL 와 동일).
+ * - days: 조회 기간. null이면 전체 기간.
  * - 인덱스: `{ ticker: 1, createdAt: -1 }` 활용 (sort reverse 는 mongo 가 처리).
- * - limit(500) 안전벨트: 차트는 30~100 포인트로 충분. 30일치라도 GM 폭주
- *   이벤트가 분당 단위로 쌓이는 비정상 상황에서 응답 비대를 차단한다.
+ * - limit(10,000) 안전벨트: 4회/일 기준 전체 장기 차트도 수년간 지원한다.
  */
 export async function listStockPriceHistory(
   ticker: string,
-  days: number = 30,
+  days: number | null = 30,
 ): Promise<StockPriceHistory[]> {
   const col = await stockPriceHistoryCol();
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  return col
-    .find({ ticker, createdAt: { $gte: since } })
+  const since = days === null
+    ? null
+    : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const filter = days === null
+    ? { ticker }
+    : { ticker, createdAt: { $gte: since! } };
+  const rows = await col
+    .find(filter)
     .sort({ createdAt: 1 })
-    .limit(500)
+    .limit(10_000)
     .toArray();
+  const chronological = rows
+    .filter((row) => !since || stockPriceHistoryEffectiveAt(row) >= since.getTime())
+    .sort(compareStockPriceHistoryEconomicOrder);
+  return adjustStockPriceHistoryForSplits(chronological);
+}
+
+function stockPriceHistoryEffectiveAt(row: StockPriceHistory): number {
+  return (row.effectiveAt ?? row.createdAt).getTime();
+}
+
+function compareStockPriceHistoryEconomicOrder(
+  left: StockPriceHistory,
+  right: StockPriceHistory,
+): number {
+  return stockPriceHistoryEffectiveAt(left) - stockPriceHistoryEffectiveAt(right) ||
+    (left.effectiveSequence ?? 0) - (right.effectiveSequence ?? 0) ||
+    left.createdAt.getTime() - right.createdAt.getTime();
+}
+
+function adjustStockPriceHistoryForSplits(
+  rows: readonly StockPriceHistory[],
+): StockPriceHistory[] {
+  let cumulative = 1;
+  const adjusted = new Array<StockPriceHistory>(rows.length);
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    const row = rows[index]!;
+    adjusted[index] = {
+      ...row,
+      adjustedPrice: row.price / cumulative,
+      adjustedReferencePrice: row.referencePrice === undefined
+        ? undefined
+        : row.referencePrice / cumulative,
+      cumulativeSplitFactor: cumulative,
+    };
+    if (row.splitFactor) cumulative *= row.splitFactor;
+  }
+  return adjusted;
 }
 
 /**
@@ -689,22 +730,27 @@ export async function listStockPriceHistoryBulk(
   const col = await stockPriceHistoryCol();
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-  const result = await col
-    .aggregate<{ _id: string; points: Array<{ ts: Date; price: number }> }>([
-      { $match: { ticker: { $in: tickers }, createdAt: { $gte: since } } },
-      { $sort: { createdAt: 1 } },
-      {
-        $group: {
-          _id: "$ticker",
-          points: {
-            $push: { ts: "$createdAt", price: "$price" },
-          },
-        },
-      },
-    ])
+  const rows = await col
+    .find({ ticker: { $in: tickers }, createdAt: { $gte: since } })
+    .sort({ ticker: 1, createdAt: 1 })
     .toArray();
-
-  return result.map((row) => ({ ticker: row._id, points: row.points }));
+  const grouped = new Map<string, StockPriceHistory[]>();
+  for (const row of rows) {
+    const group = grouped.get(row.ticker) ?? [];
+    group.push(row);
+    grouped.set(row.ticker, group);
+  }
+  return [...grouped].map(([ticker, group]) => ({
+    ticker,
+    points: adjustStockPriceHistoryForSplits(
+      group
+        .filter((row) => stockPriceHistoryEffectiveAt(row) >= since.getTime())
+        .sort(compareStockPriceHistoryEconomicOrder),
+    ).map((row) => ({
+      ts: row.effectiveAt ?? row.createdAt,
+      price: row.adjustedPrice ?? row.price,
+    })),
+  }));
 }
 
 /**
@@ -729,9 +775,22 @@ export async function listStockPriceHistoryRowsBulk(
   if (tickers.length === 0) return [];
   const col = await stockPriceHistoryCol();
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  return col
+  const rows = await col
     .find({ ticker: { $in: tickers }, createdAt: { $gte: since } })
     .sort({ createdAt: 1 })
     .limit(500 * tickers.length)
     .toArray();
+  const grouped = new Map<string, StockPriceHistory[]>();
+  for (const row of rows) {
+    const group = grouped.get(row.ticker) ?? [];
+    group.push(row);
+    grouped.set(row.ticker, group);
+  }
+  return [...grouped.values()]
+    .flatMap((group) => adjustStockPriceHistoryForSplits(
+      group
+        .filter((row) => stockPriceHistoryEffectiveAt(row) >= since.getTime())
+        .sort(compareStockPriceHistoryEconomicOrder),
+    ))
+    .sort(compareStockPriceHistoryEconomicOrder);
 }

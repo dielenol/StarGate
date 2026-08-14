@@ -22,6 +22,7 @@ import {
   enqueueStockManualInterventionWebhook,
 } from "@/lib/outbox/integration";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
 import {
   MAX_STOCK_PRICE,
   MIN_STOCK_PRICE,
@@ -59,6 +60,16 @@ export async function POST(request: Request) {
     requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (isNovexV2Enabled()) {
+    return NextResponse.json(
+      {
+        error:
+          "NOVEX 2.0에서는 공시 센터에서 가격 효과를 회차에 예약해야 합니다.",
+      },
+      { status: 409 },
+    );
   }
 
   const requestId = readIdempotencyKey(request);

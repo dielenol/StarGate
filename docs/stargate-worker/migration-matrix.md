@@ -25,12 +25,12 @@
 | 기존 진입점 | 기능 | 목표 | 상태 | 컷오버 증거 |
 |---|---|---|---|---|
 | `/api/cron/shop/refresh` | 편의점 일일 재고 | `shop.refresh` | CUTOVER | Dokploy job이 정기 owner, 웹 route는 인증된 수동 복구 |
-| `/api/cron/stocks/tick?job=stocks` | 주식 일일 변동 | `stocks.tick` | CUTOVER | 날짜·ticker당 가격/history 1회, 웹 route는 명시 job 수동 복구 |
+| `/api/cron/stocks/tick?job=stocks` | NOVEX 09·13·18·23시 회차 | `stocks.tick` | CODE_READY | KST 분 slot·9종목 transaction·누락 병합, 웹 route는 명시 job 수동 복구. 7일 shadow와 별도 cron/flag 승인 뒤 CUTOVER |
 | `/api/cron/stocks/tick?job=daily-allowance` | 일일 직급 수당 | `credits.daily-allowance` | CUTOVER | 캐릭터·일자당 ledger 1건, 웹 route는 명시 job 수동 복구 |
 | `/api/cron/sessions/reminders` | ERP 세션 알림 | `sessions.erp-reminders` | CUTOVER | Dokploy job이 정기 owner, 웹 route는 인증된 수동 복구 |
 | 삭제된 공방 DM cron route | 아메리 DM drain | 상시 consumer | RETIRED | worker consumer만 lease/재시도/nonce를 소유 |
 
-네 CLI 이름과 KST slot 계약, `scheduled_job_runs` coordinator, 도메인 operation 연결까지 구현되어 있다. 정기 owner는 Dokploy worker 하나이며 남은 `/api/cron/*` route는 Vercel schedule이 아닌 인증된 수동 복구 진입점이다. 주식/수당 복구 route는 `job`을 지정하지 않으면 mutation하지 않는다.
+네 CLI 이름과 KST slot 계약, `scheduled_job_runs` coordinator, 도메인 operation 연결까지 구현되어 있다. 주식만 `YYYY-MM-DD HH:mm`, 나머지는 `YYYY-MM-DD` key를 사용한다. 정기 owner는 Dokploy worker 하나이며 남은 `/api/cron/*` route는 Vercel schedule이 아닌 인증된 수동 복구 진입점이다. 주식/수당 복구 route는 `job`을 지정하지 않으면 mutation하지 않는다.
 
 ## 비대화형 외부 전달
 

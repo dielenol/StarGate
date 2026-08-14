@@ -24,6 +24,7 @@ test("예약 생성·취소는 경제 operation과 GM 감사 outbox를 같은 tr
       route,
       /executeEconomicOperationResult[\s\S]*run: async \(dbSession\)[\s\S]*enqueueGmAdminAudit[\s\S]*session: dbSession/,
     );
+    assert.match(route, /isNovexV2Enabled\(\)[\s\S]*status: 409/);
   }
   assert.match(createRoute, /listScheduledStockMarketEvents\(\)[\s\S]*builtInConflict/);
   assert.match(
@@ -60,6 +61,14 @@ test("예약 lifecycle은 ticker/date 결정 ID와 PENDING 조건부 claim·canc
   assert.match(
     database,
     /cancelStockScheduledEvent[\s\S]*status: "PENDING"[\s\S]*status: "CANCELLED"[\s\S]*session: input\.session/,
+  );
+  assert.match(
+    database,
+    /reactivateMigratedDisclosure[\s\S]*fenceMigratedDisclosure[\s\S]*status: "SCHEDULED"/,
+  );
+  assert.match(
+    database,
+    /cancelMigratedDisclosure[\s\S]*fenceMigratedDisclosure[\s\S]*status: "CANCELLED"/,
   );
   assert.match(
     database,

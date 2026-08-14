@@ -3,6 +3,7 @@ import type { UserPublic } from "@/types/user";
 
 import {
   createNotification,
+  createNotificationOnce,
   createNotificationsBulk,
 } from "@/lib/db/notifications";
 import { listUsers } from "@/lib/db/users";
@@ -31,7 +32,11 @@ export async function notifyUser(
   input: CreateNotificationInput,
 ): Promise<void> {
   try {
-    await createNotification(input);
+    if (input.dedupeKey) {
+      await createNotificationOnce({ ...input, dedupeKey: input.dedupeKey });
+    } else {
+      await createNotification(input);
+    }
   } catch (error) {
     console.warn("[notifications] create failed", {
       userId: input.userId,

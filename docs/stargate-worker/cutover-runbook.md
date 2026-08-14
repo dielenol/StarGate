@@ -12,6 +12,8 @@
 - [ ] Dokploy schedule과 웹 수동 복구 실행이 겹치지 않도록 owner 표를 작성했다.
 - [ ] rollback 담당자와 관찰 시간을 정했다.
 - [ ] secret 값이 저장소, 로그, 스크린샷에 노출되지 않았음을 확인했다.
+- [ ] `pnpm migrate:novex-2` read-only 결과의 대상 DB, TTL 유무, 적정가 backfill 수, 레거시 PENDING 공시 수, 누락 index와 `planSha256`을 기록했다.
+- [ ] 정규 일요일 일정 없음·복수·정상 1건과 월요일 09시 병합을 합성 리플레이했다.
 
 ### 승인 게이트 0 — writer 배포 전 index
 
@@ -19,8 +21,8 @@
 
 1. read-only preflight를 실행해 중복과 현재 index spec을 기록한다.
 2. 누락·불일치 index가 있으면 대상 DB, 생성할 정확한 spec, 예상 lock/부하를 제시해 별도 승인을 받는다. 기존 동명 index의 spec이 다르면 one-shot은 교체하거나 drop하지 않고 mutation 전에 실패한다.
-3. preflight의 `ttlImpacts`에서 30일 초과 `stock_price_history` 건수와 `wouldBeginDeletion`을 확인한다. TTL index가 누락됐고 삭제 대상이 있으면 예상 삭제량을 별도로 승인받고 `WORKER_INDEX_TTL_PURGE_CONFIRM`에 그 건수를 정확히 지정한다.
-4. 승인된 경우에만 대상 DB 이름을 `MONGODB_DB_NAME` 또는 `DB_NAME`에 명시하고 같은 값을 `WORKER_INDEX_TARGET_DB`에 지정한 뒤 `pnpm db:ensure-worker-indexes` one-shot을 실행한다. 두 DB 변수가 충돌하거나 확인값이 없으면 실행은 mutation 전에 실패한다. 이 명령은 preflight와 같은 20개 worker 필수 index만 생성하며 다른 index를 생성·삭제·교체하지 않는다. TTL index는 마지막에 생성한다.
+3. preflight의 `forbiddenStockHistoryTtlIndexes`가 빈 배열인지 확인한다. 값이 있으면 일반 worker index 적용을 중단하고, 아래 NOVEX 2.0 전환 절차에서 TTL 제거의 정확한 전→후를 별도 승인받는다.
+4. NOVEX 전환 뒤에만 대상 DB 이름을 `MONGODB_DB_NAME` 또는 `DB_NAME`에 명시하고 같은 값을 `WORKER_INDEX_TARGET_DB`에 지정한 뒤 `pnpm db:ensure-worker-indexes` one-shot을 실행한다. 두 DB 변수가 충돌하거나 확인값이 없으면 실행은 mutation 전에 실패한다. 이 명령은 preflight와 같은 worker 필수 index만 생성하며 다른 index를 생성·삭제·교체하지 않고, `stock_price_history`에는 TTL 없는 영구 `createdAt` index만 요구한다.
 5. 여러 컬렉션의 index 생성은 원자적이지 않다. 중간 실패 시 추가 mutation을 중단하고 read-only preflight를 다시 실행해 생성된 항목과 남은 blocker를 확인한 뒤 재시도 승인을 받는다.
 6. read-only preflight를 다시 실행해 blocker 0건과 exact spec 일치를 확인한다.
 7. 그 뒤에만 `integration_outbox` writer가 포함된 StarGateV2와 worker 코드를 배포한다.
@@ -204,13 +206,27 @@ Dokploy timezone을 `Asia/Seoul`로 확인하고 다음 schedule을 등록한다
 | Job | Cron |
 |---|---|
 | shop.refresh | `0 11 * * *` |
-| stocks.tick | `0 12 * * *` |
+| stocks.tick | `0 9,13,18,23 * * *` |
 | credits.daily-allowance | `0 12 * * *` |
 | sessions.erp-reminders | `0 21 * * *` |
 
 기존 `/api/cron/*` route에는 Vercel schedule owner가 없다. 인증된 수동 복구 진입점으로만 유지하며 `/api/cron/stocks/tick`은 `job=stocks`, `job=daily-allowance`, `job=all` 중 하나를 명시하지 않으면 mutation하지 않는다. legacy owner flag와 기본 활성화 helper는 제거했다.
 
 각 job은 replica set 기반 staging에서 동일 `(jobName, slotKey)` 동시 호출 100개 중 실행권 1건, 실제 mutation 1회임을 먼저 확인한다. 수동 복구를 사용할 때도 실행 대상과 현재 slot 완료 여부를 읽기 전용으로 확인하고 별도 운영 승인을 받은 뒤 호출한다. 어떤 시점에도 같은 job의 schedule owner는 하나만 둔다.
+
+`stocks.tick`만 KST 분 단위 slot key를 사용한다. 13·18시 실패 run은 다음 회차 전까지 같은 slot으로 재시도하고, 다음 회차가 도래하면 새 회차 한 건이 누락 slot을 병합한다. 다른 일일 job의 날짜 key는 변경하지 않는다.
+
+### NOVEX 2.0 전환 순서
+
+1. Web과 worker를 `NOVEX_V2_MODE=disabled`로 배포한다. 이 단계에서 신규 writer와 scheduler는 활성화하지 않는다.
+2. `pnpm migrate:novex-2`를 읽기 전용으로 실행해 전환 전 상태와 `planSha256`을 기록한다.
+3. TTL 제거, `referencePrice` backfill, 신규 index, 레거시 PENDING 공시 변환의 정확한 전→후와 비원자적 index 적용 위험을 제시해 별도 승인을 받는다.
+4. 승인된 경우에만 `--apply --yes --target-db <DB> --expected-plan <SHA256>`를 모두 지정한다. 적용 후 동일 검사를 재실행해 TTL 없음, backfill 0건, 누락 index 0개, 미변환 PENDING 0건을 확인한다.
+5. Dokploy만 `NOVEX_V2_MODE=shadow`로 최소 7일 운영한다. 기존 가격 엔진은 계속 운영하고 NOVEX 가격·수급·자동 뉴스 preview와 정규 일요일 합성 리플레이만 비교하며, NOVEX 시장 상태와 경제 원장은 쓰지 않는다.
+6. blocker 0건과 별도 승인을 받은 뒤 Web·worker flag와 Dokploy cron을 함께 `enabled`/`0 9,13,18,23 * * *`로 전환한다. Vercel에는 자동 schedule을 추가하지 않는다.
+7. 첫 09시 회차의 9종목 history, market state, 공시, 수급 소비가 한 transaction으로 확정됐는지 읽기 전용으로 확인한 뒤 개장을 선언한다.
+
+TTL/index/data migration, Dokploy cron, Web·worker 기능 플래그는 서로 다른 라이브 mutation이다. 한 단계의 승인을 다음 단계 승인으로 재사용하지 않는다.
 
 ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다음 KST 일자부터 새 dedupeKey를 적용한다. Registra/TRPG Discord reminder 필드는 수정하거나 소비하지 않는다.
 
@@ -220,6 +236,7 @@ ERP 세션 알림은 마지막 old 21:00 실행 직후 old owner를 끄고 다�
 
 - Dokploy schedule 생성/활성화
 - `WORKER_MODE=active` 설정
+- `NOVEX_V2_MODE=shadow|enabled`와 `stocks.tick` 4회 cron 변경
 - 수동 복구 route 호출 또는 Dokploy schedule owner 변경
 - 운영 크레딧/재고/주식/알림 mutation
 

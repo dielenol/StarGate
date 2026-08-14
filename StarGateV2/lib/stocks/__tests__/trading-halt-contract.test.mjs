@@ -43,7 +43,7 @@ const playerTradeClient = read(
 test("stock_prices는 migration 없이 거래정지와 매매 revision을 선택 필드로 수용한다", () => {
   assert.match(sharedType, /isTradingHalted\?: boolean/);
   assert.match(sharedType, /tradeRevision\?: number/);
-  assert.match(pricesRoute, /isTradingHalted: row\?\.isTradingHalted === true/);
+  assert.match(pricesRoute, /buildPricesResponse/);
   assert.match(serverData, /isTradingHalted: row\?\.isTradingHalted === true/);
   assert.match(queryHook, /isTradingHalted: boolean/);
 });
@@ -78,16 +78,16 @@ test("매수와 매도는 transaction 밖 가격 read 없이 claim 후 경제 mu
   ]) {
     assert.doesNotMatch(source, /getStockPrice/);
     const runIndex = source.indexOf("run: async (mongoSession)");
-    const claimIndex = source.indexOf(
-      "await claimTradableStockPrice(ticker, mongoSession)",
-      runIndex,
-    );
+    const claimIndex = source.indexOf("await claimStockPriceForTrade(", runIndex);
     const mutationIndex = source.indexOf(economicMutation, claimIndex);
     assert.ok(runIndex >= 0, `${label} economic transaction 누락`);
     assert.ok(claimIndex > runIndex, `${label} transaction 내부 claim 누락`);
     assert.ok(mutationIndex > claimIndex, `${label} claim 전 경제 mutation 금지`);
-    assert.match(source, /err instanceof StockPriceTradeClaimError/);
-    assert.match(source, /code: err\.code[\s\S]*status: 423/);
+    assert.match(source, /err instanceof StockTradeAvailabilityError/);
+    assert.match(
+      source,
+      /status: err\.code === "PRICE_NOT_FOUND" \? 500 : 423/,
+    );
   }
 });
 
@@ -110,7 +110,8 @@ test("GM 거래상태 API는 멱등 transaction 안에서 상태와 감사 outbo
   assert.match(statusRoute.slice(statusIndex), /dbSession/);
   assert.match(statusRoute.slice(auditIndex), /session: dbSession/);
   assert.match(statusRoute, /if \(!result\) throw new StockTradingStatusTargetError/);
-  assert.doesNotMatch(statusRoute, /Webhook|Discord/i);
+  assert.match(statusRoute, /enqueueStockManualInterventionWebhook/);
+  assert.doesNotMatch(statusRoute, /discord\.com\/api|fetch\([^)]*webhook/i);
 });
 
 test("query와 세 UI는 개별 거래정지 상태 및 stale 423 복구 흐름을 연결한다", () => {
@@ -124,10 +125,15 @@ test("query와 세 UI는 개별 거래정지 상태 및 stale 423 복구 흐름�
     mutationHook,
     /useUpdateStockTradingStatus[\s\S]*setQueryData<StockPricesResponse>[\s\S]*isTradingHalted: data\.item\.isTradingHalted[\s\S]*invalidateQueries\(\{ queryKey: stocksKeys\.prices \}\)/,
   );
-  const haltedInvalidations = mutationHook.match(
-    /err\.code === "STOCK_TRADING_HALTED"[\s\S]{0,160}stocksKeys\.prices/g,
-  );
-  assert.equal(haltedInvalidations?.length, 2, "buy/sell stale 423 prices invalidation 누락");
+  for (const hookName of ["useBuyStock", "useSellStock"]) {
+    const start = mutationHook.indexOf(`export function ${hookName}`);
+    const next = mutationHook.indexOf("\nexport function", start + 1);
+    const block = mutationHook.slice(start, next === -1 ? undefined : next);
+    assert.match(block, /err\.code === "STOCK_TRADING_HALTED"/);
+    assert.match(block, /err\.code === "STOCK_COOLING_DOWN"/);
+    assert.match(block, /err\.code === "MARKET_CLOSED"/);
+    assert.match(block, /queryKey: stocksKeys\.prices/);
+  }
   assert.match(adminClient, /useUpdateStockTradingStatus/);
   assert.match(
     adminClient,
@@ -167,7 +173,7 @@ test("플레이어 자산 교환도 모든 종목을 자산 mutation 전에 clai
   );
   assert.match(
     playerTradeCrud,
-    /await claimTradableStockPrice\(ticker, session\)/,
+    /await claimCompatibleTradableStockPrice\([\s\S]*ticker,[\s\S]*now,[\s\S]*session,[\s\S]*novexV2Enabled/,
   );
   assert.match(
     playerTradeCrud,
@@ -176,7 +182,7 @@ test("플레이어 자산 교환도 모든 종목을 자산 mutation 전에 clai
   for (const route of [playerTradeCreateRoute, playerTradeActionRoute]) {
     assert.match(
       route,
-      /error\.code === "STOCK_TRADING_HALTED"[\s\S]{0,80}\? 423/,
+      /error\.code === "STOCK_TRADING_HALTED" \|\|[\s\S]{0,250}error\.code === "MARKET_OPENING_PENDING"[\s\S]{0,80}\? 423/,
     );
   }
 });

@@ -28,7 +28,6 @@ import type {
   StockBalanceResponse,
   StockMarketIndexHistoryResponse,
   StockMarketWireResponse,
-  StockPricesResponse,
   StockSparklinesResponse,
 } from "@/hooks/queries/useStocksQuery";
 
@@ -38,6 +37,7 @@ import {
   buildMarketIndexHistoryResponse,
   buildMarketWireResponse,
   buildPricesResponse,
+  buildStockPricesFallback,
   buildSparklinesResponse,
 } from "./_data";
 import StockListClient from "./StockListClient";
@@ -82,8 +82,8 @@ export default async function StockPage() {
   const mainCharacterId = mainCharacter ? String(mainCharacter._id) : null;
 
   // prices 먼저 fetch — buildHoldingsResponse 가 같은 데이터를 재사용해 중복 read 회피.
-  const initialPrices = await buildPricesResponse().catch(
-    (): StockPricesResponse => ({ items: [] }),
+  const initialPrices = await buildPricesResponse().catch(() =>
+    buildStockPricesFallback(),
   );
 
   const [

@@ -2,35 +2,30 @@
  * GET /api/erp/stocks/history?ticker=&days= — 종목별 가격 시계열 (차트용).
  *
  * - ticker: STOCK_CATALOG 검증 (미존재 → 400).
- * - days: 1~30 정수 (기본 30, TTL 과 동일).
+ * - days: 1~365 정수 (기본 30), 또는 range=1d|1w|1m|3m|1y|all.
  * - 응답 items 는 createdAt 오름차순 (chart X 축 정합).
  *   빈 배열 가능 (시드 미적재 / 신규 종목).
  *
- * 캐시: private 120s + SWR 300s — history 는 거의 변동 없음.
+ * 캐시: 사용자별 영구 이력 범위를 다루므로 no-store.
  */
 
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { listStockPriceHistory } from "@/lib/db/stocks";
+import { buildHistoryResponse } from "@/app/(erp)/erp/stock/_data";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 
 const DEFAULT_DAYS = 30;
 const MIN_DAYS = 1;
-const MAX_DAYS = 30;
-
-interface HistoryItem {
-  price: number;
-  prevPrice: number;
-  eventText?: string;
-  source: "scheduled" | "trade" | "gm-event";
-  /** ISO 8601 — 클라이언트에서 new Date() 로 파싱. */
-  createdAt: string;
-}
-
-interface HistoryResponse {
-  items: HistoryItem[];
-}
+const MAX_DAYS = 365;
+const RANGE_DAYS = {
+  "1d": 1,
+  "1w": 7,
+  "1m": 30,
+  "3m": 90,
+  "1y": 365,
+  all: null,
+} as const;
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -53,10 +48,20 @@ export async function GET(request: Request) {
     );
   }
 
-  // days 가 누락되면 DEFAULT_DAYS, 정수 1~30 외의 값은 400.
-  let days = DEFAULT_DAYS;
+  // range가 있으면 NOVEX 범위를 우선한다. 기존 days 호출은 1~365 호환.
+  let days: number | null = DEFAULT_DAYS;
+  const range = url.searchParams.get("range");
+  if (range !== null) {
+    if (!(range in RANGE_DAYS)) {
+      return NextResponse.json(
+        { error: "range는 1d|1w|1m|3m|1y|all 중 하나여야 합니다." },
+        { status: 400 },
+      );
+    }
+    days = RANGE_DAYS[range as keyof typeof RANGE_DAYS];
+  }
   const daysParam = url.searchParams.get("days");
-  if (daysParam !== null) {
+  if (range === null && daysParam !== null) {
     const parsed = Number.parseInt(daysParam, 10);
     if (!Number.isInteger(parsed) || parsed < MIN_DAYS || parsed > MAX_DAYS) {
       return NextResponse.json(
@@ -68,18 +73,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const rows = await listStockPriceHistory(ticker, days);
-    const items: HistoryItem[] = rows.map((r) => ({
-      price: r.price,
-      prevPrice: r.prevPrice,
-      eventText: r.eventText,
-      source: r.source,
-      createdAt: r.createdAt.toISOString(),
-    }));
-    const response: HistoryResponse = { items };
-    return NextResponse.json(response, {
+    return NextResponse.json(await buildHistoryResponse(ticker, days), {
       headers: {
-        "Cache-Control": "private, max-age=900, stale-while-revalidate=3600",
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (err) {

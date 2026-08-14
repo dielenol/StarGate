@@ -179,7 +179,10 @@ test("100 concurrent scheduled runs apply one ticker/date operation each", async
   const summaries = await Promise.all(
     Array.from({ length: 100 }, () =>
       applyScheduledStockTick(
-        { sodaStockImpactEnabled: true },
+        {
+          sodaStockImpactEnabled: true,
+          now: new Date("2026-08-15T03:00:00.000Z"),
+        },
         {
           applyMutation,
           claimScheduledEvent: async () => null,
@@ -280,7 +283,7 @@ test("GM force tick은 소다 판매량을 조기 소비하지 않는다", async
 test("backfill gate가 닫혀 있으면 자동 tick도 소다 판매량을 소비하지 않는다", async () => {
   let consumeCalls = 0;
   await applyScheduledStockTick(
-    {},
+    { now: new Date("2026-08-15T03:00:00.000Z") },
     {
       claimScheduledEvent: async () => null,
       consumeStockImpact: async () => {

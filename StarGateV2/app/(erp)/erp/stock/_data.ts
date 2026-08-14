@@ -20,6 +20,10 @@ import {
   listStockPriceHistoryBulk,
   listStockPriceHistoryRowsBulk,
 } from "@/lib/db/stocks";
+import {
+  getStockMarketSnapshot,
+  listPendingStockFlowSignals,
+} from "@/lib/db/stock-market";
 import { getCharacterBalance } from "@/lib/db/credits";
 import {
   getStockRealizedProfitSummary,
@@ -27,6 +31,11 @@ import {
 } from "@/lib/db/stock-account";
 import { buildStockMarketIndexHistory } from "@/lib/stocks/market-index";
 import { findStockByTicker, STOCK_CATALOG } from "@/lib/stocks/catalog";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
+import {
+  serializeStockFlowSignal,
+  serializeStockMarketState,
+} from "@/lib/stocks/novex";
 import { roundStockValue } from "@/lib/stocks/pricing";
 
 import type {
@@ -48,8 +57,18 @@ import type {
  * stock_prices 미적재 ticker 는 catalog basePrice 로 fallback.
  */
 export async function buildPricesResponse(): Promise<StockPricesResponse> {
-  const prices = await getStockPrices();
+  const now = new Date();
+  const novexEnabled = isNovexV2Enabled();
+  const [snapshot, flowSignals, legacyPrices] = await Promise.all([
+    novexEnabled ? getStockMarketSnapshot(now) : Promise.resolve(null),
+    novexEnabled ? listPendingStockFlowSignals() : Promise.resolve([]),
+    novexEnabled ? Promise.resolve([]) : getStockPrices(),
+  ]);
+  const prices = snapshot?.prices ?? legacyPrices;
   const priceByTicker = new Map(prices.map((p) => [p.ticker, p]));
+  const flowByTicker = new Map(
+    flowSignals.map((signal) => [signal.ticker, signal]),
+  );
 
   const items: StockPricesResponse["items"] = STOCK_CATALOG.map((meta) => {
     const row = priceByTicker.get(meta.ticker);
@@ -71,10 +90,33 @@ export async function buildPricesResponse(): Promise<StockPricesResponse> {
       lastUpdate,
       isSeeded: Boolean(row),
       isTradingHalted: row?.isTradingHalted === true,
+      referencePrice: row?.referencePrice ?? price,
+      cooldownUntil:
+        row?.cooldownUntil && row.cooldownUntil > now
+          ? row.cooldownUntil.toISOString()
+          : null,
+      cooldownReason:
+        row?.cooldownUntil && row.cooldownUntil > now
+          ? (row.cooldownReason ?? "급격한 가격 변동")
+          : null,
+      flowSignal: serializeStockFlowSignal(flowByTicker.get(meta.ticker)),
     };
   });
 
-  return { items };
+  return {
+    items,
+    market: serializeStockMarketState(snapshot?.state ?? null, now),
+  };
+}
+
+/** SSR 가격 조회 실패 시에도 클라이언트가 동일한 시장 계약을 받게 한다. */
+export function buildStockPricesFallback(
+  now = new Date(),
+): StockPricesResponse {
+  return {
+    items: [],
+    market: serializeStockMarketState(null, now),
+  };
 }
 
 /* ── holdings ── */
@@ -190,20 +232,56 @@ export async function buildStockRealizedProfitResponse(
 
 /**
  * 단일 종목 가격 시계열 빌더 (history API 와 동일 형식).
- * - days: 1~30. 호출자 책임으로 검증된 값을 넘긴다 (페이지 default 30).
+ * - days: 1~365 또는 전체(null). 호출자 책임으로 검증된 값을 넘긴다.
  */
 export async function buildHistoryResponse(
   ticker: string,
-  days: number = 30,
+  days: number | null = 30,
 ): Promise<StockHistoryResponse> {
   const rows = await listStockPriceHistory(ticker, days);
-  const items: StockHistoryResponse["items"] = rows.map((r) => ({
-    price: r.price,
-    prevPrice: r.prevPrice,
+  const items: StockHistoryResponse["items"] = rows.map((r) => {
+    const cumulativeSplitFactor = r.cumulativeSplitFactor ?? 1;
+    const price = r.adjustedPrice ?? r.price / cumulativeSplitFactor;
+    const prevPrice =
+      r.prevPrice /
+      (cumulativeSplitFactor * (r.splitFactor ?? 1));
+    return {
+    price,
+    prevPrice,
     eventText: r.eventText,
     source: r.source,
-    createdAt: r.createdAt.toISOString(),
-  }));
+    effectiveSequence: r.effectiveSequence,
+    referencePrice:
+      r.adjustedReferencePrice ??
+      (r.referencePrice === undefined
+        ? undefined
+        : r.referencePrice / cumulativeSplitFactor),
+    slotKey: r.slotKey,
+    mergedSlotKeys: r.mergedSlotKeys,
+    delayed: r.delayed,
+    basePercent: r.basePercent,
+    flowPercent: r.flowPercent,
+    disclosurePercent: r.disclosurePercent,
+    disclosureIds: r.disclosureIds,
+    markers: [
+      ...(r.slotKey
+        ? [{ type: "SLOT" as const, label: `가격 회차 ${r.slotKey}` }]
+        : []),
+      ...((r.disclosureIds ?? []).map((id) => ({
+        type: "DISCLOSURE" as const,
+        id,
+        label: "공시",
+      }))),
+      ...(r.source === "dividend"
+        ? [{ type: "DIVIDEND" as const, label: "배당락" }]
+        : []),
+      ...(r.source === "split"
+        ? [{ type: "SPLIT" as const, label: "액면분할" }]
+        : []),
+    ],
+    createdAt: (r.effectiveAt ?? r.createdAt).toISOString(),
+  };
+  });
   return { items };
 }
 
@@ -240,24 +318,31 @@ export async function buildMarketWireResponse(
 
   const items: StockMarketWireResponse["items"] = rows
     .map((row) => {
+      const cumulativeSplitFactor = row.cumulativeSplitFactor ?? 1;
+      const price = row.adjustedPrice ?? row.price / cumulativeSplitFactor;
+      const prevPrice =
+        row.prevPrice /
+        (cumulativeSplitFactor * (row.splitFactor ?? 1));
       const changePercent =
-        row.prevPrice > 0
-          ? ((row.price - row.prevPrice) / row.prevPrice) * 100
+        prevPrice > 0
+          ? ((price - prevPrice) / prevPrice) * 100
           : 0;
       return {
         ticker: row.ticker,
         name: nameByTicker.get(row.ticker) ?? row.ticker,
-        price: row.price,
-        prevPrice: row.prevPrice,
+        price,
+        prevPrice,
         changePercent,
         eventText: row.eventText ?? "공시 문구 미등록",
         source: row.source,
-        createdAt: row.createdAt.toISOString(),
+        effectiveSequence: row.effectiveSequence,
+        createdAt: (row.effectiveAt ?? row.createdAt).toISOString(),
       };
     })
     .sort(
       (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
+        (b.effectiveSequence ?? 0) - (a.effectiveSequence ?? 0),
     )
     .slice(0, safeLimit);
 
@@ -294,9 +379,11 @@ export async function buildMarketIndexHistoryResponse(
   const points = buildStockMarketIndexHistory(
     historyRows.map((row) => ({
       ticker: row.ticker,
-      price: row.price,
-      prevPrice: row.prevPrice,
-      createdAt: row.createdAt,
+      price: row.adjustedPrice ?? row.price,
+      prevPrice:
+        row.prevPrice /
+        ((row.cumulativeSplitFactor ?? 1) * (row.splitFactor ?? 1)),
+      createdAt: row.effectiveAt ?? row.createdAt,
     })),
     currentQuotes,
   );

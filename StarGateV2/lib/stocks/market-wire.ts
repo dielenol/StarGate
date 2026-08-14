@@ -492,6 +492,9 @@ export async function notifyScheduledStockMarketWire(
   summary: ScheduledStockTickSummary,
   dependencies: ScheduledStockMarketWireDependencies = scheduledStockMarketWireDependencies,
 ): Promise<MarketWireResult> {
+  // NOVEX 2.0은 정상 장중 회차를 ERP에만 공개하고 23시 종가만 Discord
+  // desired-state 장부를 갱신한다. 정규 세션 조기 폐장 일요일도 skipDiscord다.
+  if (summary.skipDiscord === true) return { status: "skipped-no-change" };
   try {
     const canonicalSummary = dependencies.rebuild
       ? await dependencies.rebuild(summary)

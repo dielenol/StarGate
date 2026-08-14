@@ -31,10 +31,12 @@ import {
   retainIdempotencyOperation,
   type RetainedIdempotencyOperation,
 } from "@/lib/query/idempotency";
+import type { NovexV2Mode } from "@/lib/stocks/market";
 
 import MarketWirePanel from "../../stock/MarketWirePanel";
 import { StockLogo } from "../../stock/_logos";
 import StockScheduledEventsPanel from "./StockScheduledEventsPanel";
+import StockNovexOperationsPanels from "./StockNovexOperationsPanels";
 import { ARROW, priceDirection } from "../../stock/_helpers";
 import styles from "./page.module.css";
 
@@ -52,12 +54,14 @@ interface Props {
   initialPrices: StockPricesResponse;
   initialMarketWire: StockMarketWireResponse;
   initialHoldings: StockAdminHoldingsResponse;
+  novexMode: NovexV2Mode;
 }
 
 export default function StockAdminClient({
   initialPrices,
   initialMarketWire,
   initialHoldings,
+  novexMode,
 }: Props) {
   const pricesQuery = useStockPrices({ initialData: initialPrices });
   const holdingsQuery = useStockAdminHoldings({ initialData: initialHoldings });
@@ -339,39 +343,52 @@ export default function StockAdminClient({
             <span>시세 조정</span>
             <span>{selectedTicker}</span>
           </div>
-          <div className={styles.actionRow}>
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={() =>
-                tickMutation.mutate(
-                  { force: false },
-                  {
-                    onSuccess: handleTickSuccess,
-                    onError: (err) =>
-                      handleMutationError(
-                        err,
-                        "정기 변동 실행에 실패했습니다.",
-                      ),
-                  },
-                )
-              }
-              disabled={tickMutation.isPending || mutation.isPending}
-            >
-              {tickMutation.isPending ? "실행 중..." : "오늘 정기 변동 실행"}
-            </button>
-            <button
-              type="button"
-              className={styles.ghostBtn}
-              onClick={runForcedTick}
-              disabled={tickMutation.isPending || mutation.isPending}
-            >
-              강제 재실행
-            </button>
-          </div>
+          {novexMode === "enabled" ? (
+            <p className={styles.opsHint}>
+              NOVEX 회차 복구는 아래 운영 패널에서 정확한 회차 키를 지정해
+              실행합니다.
+            </p>
+          ) : (
+            <div className={styles.actionRow}>
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={() =>
+                  tickMutation.mutate(
+                    { force: false },
+                    {
+                      onSuccess: handleTickSuccess,
+                      onError: (err) =>
+                        handleMutationError(
+                          err,
+                          "정기 변동 실행에 실패했습니다.",
+                        ),
+                    },
+                  )
+                }
+                disabled={tickMutation.isPending || mutation.isPending}
+              >
+                {tickMutation.isPending
+                  ? "실행 중..."
+                  : "오늘 정기 변동 실행"}
+              </button>
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={runForcedTick}
+                disabled={tickMutation.isPending || mutation.isPending}
+              >
+                강제 재실행
+              </button>
+            </div>
+          )}
           <div className={styles.scheduleNote}>
             <span>정기 크론</span>
-            <strong>매일 12:00 KST</strong>
+            <strong>
+              {novexMode === "enabled"
+                ? "매일 09:00 · 13:00 · 18:00 · 23:00 KST"
+                : "매일 12:00 KST"}
+            </strong>
             <span>Dokploy worker가 정기 실행을 단독 소유합니다.</span>
           </div>
           {selected ? (
@@ -431,6 +448,7 @@ export default function StockAdminClient({
                   min={MIN_STOCK_PRICE}
                   step={0.01}
                   value={priceInput}
+                  disabled={novexMode === "enabled"}
                   onChange={(e) => {
                     const next = e.target.value
                       .replace(/[^\d.]/g, "")
@@ -446,6 +464,7 @@ export default function StockAdminClient({
                   <button
                     key={percent}
                     type="button"
+                    disabled={novexMode === "enabled"}
                     onClick={() => applyPercentMove(percent)}
                     className={
                       percent < 0
@@ -464,6 +483,7 @@ export default function StockAdminClient({
                   type="text"
                   maxLength={80}
                   value={eventText}
+                  disabled={novexMode === "enabled"}
                   onChange={(e) => setEventText(e.target.value)}
                   placeholder="예: 기업 실적 발표"
                 />
@@ -473,6 +493,7 @@ export default function StockAdminClient({
                   <button
                     key={template}
                     type="button"
+                    disabled={novexMode === "enabled"}
                     onClick={() => applyEventTemplate(template)}
                   >
                     {template}
@@ -507,10 +528,15 @@ export default function StockAdminClient({
                 disabled={
                   mutation.isPending ||
                   tradingStatusMutation.isPending ||
+                  novexMode === "enabled" ||
                   !selectedTicker
                 }
               >
-                {mutation.isPending ? "변경 중..." : "주가 변경"}
+                {novexMode === "enabled"
+                  ? "공시 센터에서 회차 예약"
+                  : mutation.isPending
+                    ? "변경 중..."
+                    : "주가 변경"}
               </button>
             </form>
           ) : (
@@ -518,7 +544,11 @@ export default function StockAdminClient({
           )}
         </section>
 
-        <StockScheduledEventsPanel stocks={prices.items} />
+        {novexMode === "enabled" ? (
+          <StockNovexOperationsPanels stocks={prices.items} />
+        ) : (
+          <StockScheduledEventsPanel stocks={prices.items} />
+        )}
 
         <section className={[styles.panel, styles.holdingsPanel].join(" ")}>
           <div className={styles.panel__head}>

@@ -13,12 +13,13 @@ import {
   isDesiredStateRevisionCurrent,
 } from "../dist/jobs/desired-state.js";
 
-test("예약 작업 slot key는 KST 일자와 작업 이름으로 고정된다", () => {
-  const requestedAt = new Date("2026-07-26T15:30:00.000Z");
+test("주식 작업 slot key만 최신 KST 가격 회차까지 포함한다", () => {
+  const requestedAt = new Date("2026-07-27T04:30:00.000Z");
   assert.equal(
     buildScheduledJobSlotKey("stocks.tick", requestedAt),
-    "2026-07-27",
+    "2026-07-27 13:00",
   );
+  assert.equal(buildScheduledJobSlotKey("shop.refresh", requestedAt), "2026-07-27");
 });
 
 test("알 수 없는 예약 작업은 dispatch 전에 거부한다", () => {

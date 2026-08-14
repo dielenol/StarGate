@@ -25,6 +25,7 @@ import {
   enqueuePlayerTradeDiscordDm,
   enqueueWorkflowStatusWebhook,
 } from "@/lib/outbox/integration";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
 
 interface TradeActionBody {
   trade?: ReturnType<typeof serializePlayerTrade>;
@@ -68,7 +69,10 @@ function tradeErrorResult(error: unknown): {
       ? 404
       : error.code === "TRADE_FORBIDDEN"
         ? 403
-        : error.code === "STOCK_TRADING_HALTED"
+        : error.code === "STOCK_TRADING_HALTED" ||
+            error.code === "STOCK_COOLING_DOWN" ||
+            error.code === "MARKET_CLOSED" ||
+            error.code === "MARKET_OPENING_PENDING"
           ? 423
           : error.code === "STOCK_PRICE_NOT_FOUND"
             ? 409
@@ -176,6 +180,10 @@ export async function PATCH(
         actorId: session.user.id,
         payload: { tradeId, ...action },
         run: async (dbSession) => {
+          const marketOptions = {
+            now: new Date(),
+            novexV2Enabled: isNovexV2Enabled(),
+          };
           if (action.action === "SET_OFFER") {
             const trade = await replacePlayerTradeOffer(
               tradeId,
@@ -183,6 +191,7 @@ export async function PATCH(
               action.expectedRevision,
               action.offer,
               dbSession,
+              marketOptions,
             );
             const serialized = serializePlayerTrade(trade);
             await enqueueTradeWorkflow({
@@ -232,6 +241,7 @@ export async function PATCH(
             action.expectedRevision,
             { id: session.user.id, name: session.user.displayName },
             dbSession,
+            marketOptions,
           );
           const serialized = serializePlayerTrade(result.trade);
           if (result.completed) {

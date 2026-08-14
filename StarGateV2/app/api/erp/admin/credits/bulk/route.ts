@@ -478,10 +478,13 @@ async function processTarget(args: ProcessArgs): Promise<BulkGrantResultItem> {
         characterId: targetCharacterId,
         ticker: stockTicker ?? "",
         shares: finalAmount,
+        requestId,
+        actorId: session.id,
       });
       await notifyUser({
         userId: targetOwnerId,
-        type: "SYSTEM",
+        dedupeKey: `stock-reward:${requestId}:notification`,
+        type: "STOCK",
         title: "주식 보상이 지급되었습니다",
         message: appendDescription(
           [

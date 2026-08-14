@@ -101,6 +101,29 @@ export type {
   CreateStockPriceInput,
   CreateStockHoldingInput,
   CreateStockPriceHistoryInput,
+  StockMarketStatus,
+  StockMarketClosureReason,
+  StockMarketState,
+  StockMarketSnapshot,
+  StockMarketCalendarException,
+  StockOrderFlowSide,
+  StockOrderFlow,
+  StockFlowStrength,
+  StockFlowSignal,
+  StockDisclosureStatus,
+  StockDisclosureKind,
+  StockDisclosureEffect,
+  StockDisclosure,
+  StockAlertKind,
+  StockMarketAlertRule,
+  StockMarketPreference,
+  StockCorporateActionStatus,
+  StockDividendAction,
+  StockSplitAction,
+  StockCorporateAction,
+  StockDividendEntitlement,
+  StockInvestmentSeason,
+  StockSeasonPerformance,
   StockScheduledEvent,
   StockScheduledEventActor,
   StockScheduledEventStatus,
@@ -234,6 +257,7 @@ export {
   RESEARCH_CLAIM_WINDOW_MS,
   RESEARCH_CLAIM_REMINDER_LEAD_MS,
   RESEARCH_REPEAT_CREDIT_COST,
+  STOCK_MARKET_STATE_ID,
 } from "./types/index.js";
 
 /* ── Client ── */
@@ -355,13 +379,33 @@ export {
   ensureSessionReportIndexes,
   ensureBureaucratVoteIndexes,
   ensureResearchLabIndexes,
+  ensureNovexIndexes,
   findLoreUniqueIndexConflicts,
   LORE_INDEX_DEFINITIONS,
   SESSION_REPORT_INDEX_DEFINITIONS,
   BUREAUCRAT_VOTE_INDEX_DEFINITIONS,
   RESEARCH_LAB_INDEX_DEFINITIONS,
+  NOVEX_INDEX_DEFINITIONS,
 } from "./indexes.js";
 export { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
+export {
+  inspectNovex2Migration,
+  applyNovex2Migration,
+  migrateLegacyPendingStockDisclosures,
+  legacyPendingEventContentHash,
+  nextNovexSlotAfter,
+  novex2MigrationPlanFingerprint,
+} from "./migrations/novex-2-transition.js";
+export type {
+  NormalizedIndexSpec,
+  Novex2IndexPlanSpec,
+  Novex2LegacyPendingEventSpec,
+  Novex2MigrationPlan,
+  Novex2MigrationResult,
+  Novex2ReferencePriceBackfillSpec,
+  Novex2TtlIndexSpec,
+  Novex2UniqueIndexCheck,
+} from "./migrations/novex-2-transition.js";
 
 /* ── Utils ── */
 

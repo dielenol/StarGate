@@ -27,12 +27,66 @@ const WORKER_JOBS = new URL(
   "../../../../stargate-worker/src/jobs/default-handlers.ts",
   import.meta.url,
 );
+const RECOVERY_ROUTE = new URL(
+  "../../../app/api/erp/admin/stocks/recovery/route.ts",
+  import.meta.url,
+);
+const STOCK_PREFERENCES_ROUTE = new URL(
+  "../../../app/api/erp/stocks/preferences/route.ts",
+  import.meta.url,
+);
+const STOCK_PREFERENCES_MUTATION = new URL(
+  "../../../hooks/mutations/useStockMarketPreferencesMutation.ts",
+  import.meta.url,
+);
+const STOCK_TRADE_CLIENT = new URL(
+  "../../../app/(erp)/erp/stock/[ticker]/StockTradeClient.tsx",
+  import.meta.url,
+);
+const STOCK_DATA_BUILDERS = new URL(
+  "../../../app/(erp)/erp/stock/_data.ts",
+  import.meta.url,
+);
+const STOCK_QUERY_HOOKS = new URL(
+  "../../../hooks/queries/useStocksQuery.ts",
+  import.meta.url,
+);
+const NOVEX_ADMIN_MUTATION_ROUTES = [
+  "../../../app/api/erp/admin/stocks/disclosures/route.ts",
+  "../../../app/api/erp/admin/stocks/disclosures/[disclosureId]/route.ts",
+  "../../../app/api/erp/admin/stocks/calendar/route.ts",
+  "../../../app/api/erp/admin/stocks/corporate-actions/route.ts",
+  "../../../app/api/erp/admin/stocks/corporate-actions/[actionId]/route.ts",
+].map((path) => new URL(path, import.meta.url));
 
 test("the worker scheduled tick applies prices before requesting the canonical wire batch", async () => {
   const source = await readFile(WORKER_JOBS, "utf8");
+  const jobStart = source.indexOf('jobName: "stocks.tick"');
+  const applyStart = source.indexOf("const applied =", jobStart);
+  const wireStart = source.indexOf("requestStockMarketWireState(", applyStart);
+  assert.ok(jobStart >= 0 && applyStart > jobStart && wireStart > applyStart);
+  const stockJob = source.slice(jobStart, wireStart);
+  assert.match(stockJob, /applyNovexStockMarketTick/);
+  assert.match(stockJob, /previewNovexStockMarketTick/);
+  assert.match(stockJob, /applyScheduledStockTick/);
+});
+
+test("economic history sequence survives the API DTO and newest-first UI ordering", async () => {
+  const [data, hooks, client] = await Promise.all([
+    readFile(STOCK_DATA_BUILDERS, "utf8"),
+    readFile(STOCK_QUERY_HOOKS, "utf8"),
+    readFile(STOCK_TRADE_CLIENT, "utf8"),
+  ]);
+  assert.match(data, /effectiveSequence: r\.effectiveSequence/);
+  assert.match(data, /effectiveSequence: row\.effectiveSequence/);
   assert.match(
-    source,
-    /jobName: "stocks\.tick"[\s\S]*applyScheduledStockTick\(\{[\s\S]*requestStockMarketWireState\(/,
+    data,
+    /\(b\.effectiveSequence \?\? 0\) - \(a\.effectiveSequence \?\? 0\)/,
+  );
+  assert.match(hooks, /effectiveSequence\?: number/);
+  assert.match(
+    client,
+    /\(b\.effectiveSequence \?\? 0\) - \(a\.effectiveSequence \?\? 0\)/,
   );
 });
 
@@ -42,6 +96,20 @@ test("the web tick route is an explicit manual recovery endpoint", async () => {
   assert.match(source, /requestedJob !== "stocks"/);
   assert.match(source, /owner: "manual-recovery"/);
   assert.doesNotMatch(source, /LEGACY_CRON_|owner.*vercel/);
+});
+
+test("GM recovery atomically queues worker ownership instead of mutating prices in the API", async () => {
+  const source = await readFile(RECOVERY_ROUTE, "utf8");
+  const operation = source.indexOf("executeEconomicOperationResult");
+  const request = source.indexOf(
+    "await enqueueStockMarketRecoveryRequest(",
+    operation,
+  );
+  const audit = source.indexOf("await enqueueGmAdminAudit(", request);
+  assert.ok(operation >= 0 && request > operation && audit > request);
+  assert.doesNotMatch(source, /applyNovexStockMarketTick/);
+  assert.doesNotMatch(source, /notifyScheduledStockMarketWire/);
+  assert.match(source, /status: 202/);
 });
 
 test("the web producer only persists the scheduled wire desired state", async () => {
@@ -154,5 +222,51 @@ test("forced scheduled ticks reuse one operation id until success", async () => 
   assert.match(
     client,
     /tickMutation\.mutate\([\s\S]*\{ force: true, operationId \}[\s\S]*forceTickOperationIdRef\.current = null/,
+  );
+});
+
+test("disabled or shadow NOVEX preserves browser preferences without server migration", async () => {
+  const [route, mutation, detail] = await Promise.all([
+    readFile(STOCK_PREFERENCES_ROUTE, "utf8"),
+    readFile(STOCK_PREFERENCES_MUTATION, "utf8"),
+    readFile(STOCK_TRADE_CLIENT, "utf8"),
+  ]);
+
+  assert.match(route, /novexEnabled: isNovexV2Enabled\(\)/);
+  const putStart = route.indexOf("export async function PUT");
+  const enabledGuard = route.indexOf("if (!isNovexV2Enabled())", putStart);
+  const operationStart = route.indexOf("executeEconomicOperationResult", enabledGuard);
+  assert.ok(putStart >= 0 && enabledGuard > putStart && operationStart > enabledGuard);
+  assert.match(route.slice(enabledGuard, operationStart), /status: 409/);
+
+  const migrationEffect = mutation.indexOf("useEffect(() =>");
+  const enabledCheck = mutation.indexOf("!query.data.novexEnabled", migrationEffect);
+  const migrateMutation = mutation.indexOf("update.mutate", enabledCheck);
+  assert.ok(
+    migrationEffect >= 0 && enabledCheck > migrationEffect && migrateMutation > enabledCheck,
+  );
+
+  assert.match(detail, /alertRules\.novexEnabled \? \(/);
+  assert.match(detail, /브라우저 조건 표시/);
+  assert.match(detail, /<StockMarketPreferencesPanel ticker=\{ticker\} \/>/);
+});
+
+test("NOVEX writers are server-gated and legacy manual price bypass closes after enablement", async () => {
+  const [routes, legacyPrice, adminClient] = await Promise.all([
+    Promise.all(NOVEX_ADMIN_MUTATION_ROUTES.map((route) => readFile(route, "utf8"))),
+    readFile(ADMIN_PRICE_ROUTE, "utf8"),
+    readFile(STOCK_ADMIN_CLIENT, "utf8"),
+  ]);
+  for (const route of routes) {
+    assert.match(route, /requireRole\([\s\S]*"GM"/);
+    assert.match(route, /if \(!isNovexV2Enabled\(\)\)[\s\S]*status: 409/);
+  }
+  assert.match(
+    legacyPrice,
+    /requireRole\([\s\S]*if \(isNovexV2Enabled\(\)\)[\s\S]*status: 409/,
+  );
+  assert.match(
+    adminClient,
+    /novexMode === "enabled" \? \([\s\S]*<StockNovexOperationsPanels[\s\S]*<StockScheduledEventsPanel/,
   );
 });

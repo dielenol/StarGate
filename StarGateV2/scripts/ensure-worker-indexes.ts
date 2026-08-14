@@ -151,6 +151,16 @@ try {
       await listIndexes(db, collection),
     );
   }
+  const forbiddenStockHistoryTtlIndexes = (
+    indexesByCollection.get("stock_price_history") ?? []
+  ).filter((index) => typeof index.expireAfterSeconds === "number");
+  if (forbiddenStockHistoryTtlIndexes.length > 0) {
+    throw new Error(
+      `NOVEX migration must remove stock_price_history TTL indexes before worker index apply: ${forbiddenStockHistoryTtlIndexes
+        .map((index) => index.name)
+        .join(",")}`,
+    );
+  }
 
   const pending = [];
   const alreadyPresent = [];

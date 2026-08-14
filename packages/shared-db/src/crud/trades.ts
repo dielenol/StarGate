@@ -22,10 +22,14 @@ import {
 } from "./inventory.js";
 import {
   buyHolding,
-  claimTradableStockPrice,
   sellHolding,
   StockPriceTradeClaimError,
 } from "./stocks.js";
+import {
+  claimCompatibleTradableStockPrice,
+  recordStockSeasonFlow,
+  StockMarketTradeClaimError,
+} from "./stock-market.js";
 
 const MAX_OFFER_LINES = 50;
 const MAX_ITEM_QUANTITY = 999;
@@ -67,7 +71,15 @@ export type PlayerTradeErrorCode =
   | "INSUFFICIENT_STOCKS"
   | "STOCK_PRICE_NOT_FOUND"
   | "STOCK_TRADING_HALTED"
+  | "MARKET_CLOSED"
+  | "MARKET_OPENING_PENDING"
+  | "STOCK_COOLING_DOWN"
   | "ITEM_NOT_TRANSFERABLE";
+
+export interface PlayerTradeMarketOptions {
+  now?: Date;
+  novexV2Enabled?: boolean;
+}
 
 export class PlayerTradeError extends Error {
   constructor(
@@ -329,6 +341,8 @@ async function transferOffer(
   validated: ValidatedOffer,
   actor: { id: string; name: string },
   session: ClientSession,
+  marketPrices: ReadonlyMap<string, number>,
+  recordSeasonFlows: boolean,
 ): Promise<void> {
   const offer = validated.offer;
   if (offer.credits > 0) {
@@ -408,6 +422,35 @@ async function transferOffer(
       validated.stockAvgPrices.get(stock.ticker) ?? sold.avgPrice,
       { session },
     );
+    if (recordSeasonFlows) {
+      const marketPrice = marketPrices.get(stock.ticker);
+      if (marketPrice === undefined) {
+        throw new PlayerTradeError("STOCK_PRICE_NOT_FOUND", `${stock.ticker} 종목의 운영 시세가 없습니다.`);
+      }
+      const occurredAt = new Date();
+      await recordStockSeasonFlow({
+        operationKey: `${tradeId}:season:${label}:${stock.ticker}:out`,
+        characterId: from.characterId,
+        ticker: stock.ticker,
+        kind: "TRANSFER_OUT",
+        shares: stock.shares,
+        marketPrice,
+        externalAmount: -stock.shares * marketPrice,
+        returnAmount: 0,
+        occurredAt,
+      }, session);
+      await recordStockSeasonFlow({
+        operationKey: `${tradeId}:season:${label}:${stock.ticker}:in`,
+        characterId: to.characterId,
+        ticker: stock.ticker,
+        kind: "TRANSFER_IN",
+        shares: stock.shares,
+        marketPrice,
+        externalAmount: stock.shares * marketPrice,
+        returnAmount: 0,
+        occurredAt,
+      }, session);
+    }
   }
 }
 
@@ -415,7 +458,8 @@ async function claimTradableOfferStocks(
   initiatorOffer: PlayerTradeOffer,
   counterpartyOffer: PlayerTradeOffer,
   session: ClientSession,
-): Promise<void> {
+  options: PlayerTradeMarketOptions = {},
+): Promise<Map<string, number>> {
   const tickers = Array.from(
     new Set(
       [...initiatorOffer.stocks, ...counterpartyOffer.stocks].map(
@@ -423,11 +467,25 @@ async function claimTradableOfferStocks(
       ),
     ),
   ).sort((a, b) => a.localeCompare(b));
+  const now = options.now ?? new Date();
 
+  const prices = new Map<string, number>();
   for (const ticker of tickers) {
     try {
-      await claimTradableStockPrice(ticker, session);
+      const claimed = await claimCompatibleTradableStockPrice(
+        ticker,
+        now,
+        session,
+        { novexV2Enabled: options.novexV2Enabled === true },
+      );
+      prices.set(ticker, claimed.price);
     } catch (error) {
+      if (error instanceof StockMarketTradeClaimError) {
+        if (error.code === "PRICE_NOT_FOUND") {
+          throw new PlayerTradeError("STOCK_PRICE_NOT_FOUND", `${ticker} 종목의 운영 시세가 없어 거래할 수 없습니다.`);
+        }
+        throw new PlayerTradeError(error.code, `${ticker} 종목을 현재 거래할 수 없습니다.`);
+      }
       if (!(error instanceof StockPriceTradeClaimError)) throw error;
       if (error.code === "STOCK_TRADING_HALTED") {
         throw new PlayerTradeError(
@@ -441,12 +499,14 @@ async function claimTradableOfferStocks(
       );
     }
   }
+  return prices;
 }
 
 async function settleTrade(
   trade: PlayerTrade,
   actor: { id: string; name: string },
   session: ClientSession,
+  options: PlayerTradeMarketOptions = {},
 ): Promise<{
   initiatorOffer: PlayerTradeOffer;
   counterpartyOffer: PlayerTradeOffer;
@@ -458,10 +518,11 @@ async function settleTrade(
 
   // 모든 자산 mutation 전에 종목별 가격 문서를 정렬된 순서로 claim한다.
   // 거래정지 변경과 같은 문서 write로 직렬화되며, 이후 실패 시 revision도 함께 rollback된다.
-  await claimTradableOfferStocks(
+  const marketPrices = await claimTradableOfferStocks(
     trade.initiatorOffer,
     trade.counterpartyOffer,
     session,
+    options,
   );
 
   const lockTargets = [
@@ -510,6 +571,8 @@ async function settleTrade(
     initiatorValidated,
     actor,
     session,
+    marketPrices,
+    options.novexV2Enabled === true,
   );
   await transferOffer(
     tradeId,
@@ -519,6 +582,8 @@ async function settleTrade(
     counterpartyValidated,
     actor,
     session,
+    marketPrices,
+    options.novexV2Enabled === true,
   );
   return {
     initiatorOffer: initiatorValidated.offer,
@@ -602,11 +667,13 @@ export async function createOpenPlayerTrade(
   counterparty: PlayerTradeParticipant,
   offer: PlayerTradeOffer,
   session: ClientSession,
+  options: PlayerTradeMarketOptions = {},
 ): Promise<PlayerTrade> {
   await claimTradableOfferStocks(
     offer,
     EMPTY_PLAYER_TRADE_OFFER,
     session,
+    options,
   );
   const validated = await validateOwnedOffer(initiator, offer, session);
   await validateOwnedOffer(counterparty, EMPTY_PLAYER_TRADE_OFFER, session);
@@ -632,6 +699,7 @@ export async function createAndSettleGift(
   offer: PlayerTradeOffer,
   actor: { id: string; name: string },
   session: ClientSession,
+  options: PlayerTradeMarketOptions = {},
 ): Promise<PlayerTrade> {
   if (!hasAssets(offer)) {
     throw new PlayerTradeError("EMPTY_TRADE", "전달할 자산이 없습니다.");
@@ -649,7 +717,7 @@ export async function createAndSettleGift(
     createdAt: now,
     updatedAt: now,
   };
-  const settled = await settleTrade(trade, actor, session);
+  const settled = await settleTrade(trade, actor, session, options);
   const completed: PlayerTrade = {
     ...trade,
     status: "COMPLETED",
@@ -667,6 +735,7 @@ export async function replacePlayerTradeOffer(
   expectedRevision: number,
   offer: PlayerTradeOffer,
   session: ClientSession,
+  options: PlayerTradeMarketOptions = {},
 ): Promise<PlayerTrade> {
   const trade = await findPlayerTradeById(id, { session });
   assertOpenTrade(trade, userId, expectedRevision);
@@ -688,6 +757,7 @@ export async function replacePlayerTradeOffer(
     validated.offer,
     EMPTY_PLAYER_TRADE_OFFER,
     session,
+    options,
   );
 
   const offerField =
@@ -727,6 +797,7 @@ export async function confirmPlayerTrade(
   expectedRevision: number,
   actor: { id: string; name: string },
   session: ClientSession,
+  options: PlayerTradeMarketOptions = {},
 ): Promise<{ trade: PlayerTrade; completed: boolean; confirmed: boolean }> {
   const trade = await findPlayerTradeById(id, { session });
   assertOpenTrade(trade, userId, expectedRevision);
@@ -756,6 +827,7 @@ export async function confirmPlayerTrade(
       trade.initiatorOffer,
       trade.counterpartyOffer,
       session,
+      options,
     );
     const updated = await col.findOneAndUpdate(
       { _id: trade._id, status: "OPEN", revision: expectedRevision },
@@ -776,7 +848,7 @@ export async function confirmPlayerTrade(
     return { trade: updated, completed: false, confirmed: true };
   }
 
-  const settled = await settleTrade(trade, actor, session);
+  const settled = await settleTrade(trade, actor, session, options);
   const completedAt = new Date();
   const completed = await col.findOneAndUpdate(
     { _id: trade._id, status: "OPEN", revision: expectedRevision },

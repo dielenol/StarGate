@@ -56,6 +56,15 @@ test("Mongo 컬렉션 변경은 공개 데이터 없이 Query resource로만 매
     }),
     null,
   );
+  assert.deepEqual(
+    mapRealtimeChange({
+      collectionName: "stock_season_flows",
+      operationType: "insert",
+      documentId: "season-flow-id",
+      updatedFields: [],
+    }),
+    { resources: ["stocks"] },
+  );
 });
 
 test("role/status 변경은 해당 사용자의 재인증을 요구한다", () => {

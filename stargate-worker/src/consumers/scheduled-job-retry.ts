@@ -52,17 +52,22 @@ export class ScheduledJobRetryConsumer implements DueWorkConsumerPort {
     if (mode !== "active" || signal.aborted) return summary;
 
     const now = this.dependencies.now?.() ?? new Date();
-    const currentSlotKey = buildScheduledJobSlotKey(
+    const currentDailySlotKey = buildScheduledJobSlotKey(
       "shop.refresh",
       now,
     );
+    const currentStockSlotKey = buildScheduledJobSlotKey("stocks.tick", now);
     const jobNames = [...SCHEDULED_JOB_NAMES];
-    summary.dead = await (
-      this.dependencies.expireStale ?? expireStaleScheduledJobRuns
-    )({
+    const expire = this.dependencies.expireStale ?? expireStaleScheduledJobRuns;
+    summary.dead = await expire({
       now,
-      currentSlotKey,
-      jobNames,
+      currentSlotKey: currentDailySlotKey,
+      jobNames: jobNames.filter((jobName) => jobName !== "stocks.tick"),
+    });
+    summary.dead += await expire({
+      now,
+      currentSlotKey: currentStockSlotKey,
+      jobNames: ["stocks.tick"],
     });
     const runs = await (
       this.dependencies.findDue ?? findDueScheduledJobRuns
@@ -70,7 +75,6 @@ export class ScheduledJobRetryConsumer implements DueWorkConsumerPort {
       now,
       limit:
         this.dependencies.maxBatchSize ?? SCHEDULED_JOB_NAMES.length,
-      slotKey: currentSlotKey,
       jobNames,
     });
     const errors: unknown[] = [];
@@ -79,14 +83,17 @@ export class ScheduledJobRetryConsumer implements DueWorkConsumerPort {
     for (const run of runs) {
       if (signal.aborted) break;
       if (!isScheduledJobName(run.jobName)) continue;
-      if (run.slotKey !== currentSlotKey) continue;
+      const expectedSlotKey = run.jobName === "stocks.tick"
+        ? currentStockSlotKey
+        : currentDailySlotKey;
+      if (run.slotKey !== expectedSlotKey) continue;
 
       try {
         const result = await this.coordinator.executeOnce({
           jobName: run.jobName,
           slotKey: run.slotKey,
           requestedAt:
-            run.jobName === "sessions.erp-reminders"
+            run.jobName === "sessions.erp-reminders" || run.jobName === "stocks.tick"
               ? now
               : run.startedAt,
           mode: "active",

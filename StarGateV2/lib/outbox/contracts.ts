@@ -142,6 +142,13 @@ export interface PlayerTradeDiscordDmInput {
 }
 
 export interface StockManualInterventionNotice {
+  eventKind?:
+    | "PRICE"
+    | "HALT"
+    | "RESUME"
+    | "SHOCK_DISCLOSURE"
+    | "COOLDOWN"
+    | "COOLDOWN_RELEASE";
   ticker: string;
   previousPrice: number;
   price: number;

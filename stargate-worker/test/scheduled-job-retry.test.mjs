@@ -20,7 +20,7 @@ function dueRun(jobName, slotKey, startedAt) {
   };
 }
 
-test("현재 KST slot의 due 작업만 원래 요청 시각으로 다시 실행한다", async () => {
+test("현재 KST 주식 slot 재시도는 실제 재시도 시각과 원본 slot fence를 유지한다", async () => {
   const now = new Date("2099-01-02T03:30:00.000Z");
   const startedAt = new Date("2099-01-02T03:00:00.000Z");
   let receivedContext;
@@ -39,20 +39,24 @@ test("현재 KST slot의 due 작업만 원래 요청 시각으로 다시 실행�
     {
       now: () => now,
       async expireStale(input) {
+        if (input.jobNames.includes("stocks.tick")) {
+          assert.equal(input.currentSlotKey, "2099-01-02 09:00");
+          return 0;
+        }
         assert.equal(input.currentSlotKey, "2099-01-02");
         return 2;
       },
       async findDue(input) {
         assert.equal(input.maxAttempts, undefined);
         assert.equal(input.limit, 4);
-        assert.equal(input.slotKey, "2099-01-02");
+        assert.equal(input.slotKey, undefined);
         assert.deepEqual(input.jobNames, [
           "shop.refresh",
           "stocks.tick",
           "credits.daily-allowance",
           "sessions.erp-reminders",
         ]);
-        return [dueRun("stocks.tick", "2099-01-02", startedAt)];
+        return [dueRun("stocks.tick", "2099-01-02 09:00", startedAt)];
       },
     },
   );
@@ -64,8 +68,8 @@ test("현재 KST slot의 due 작업만 원래 요청 시각으로 다시 실행�
 
   assert.deepEqual(receivedContext, {
     jobName: "stocks.tick",
-    slotKey: "2099-01-02",
-    requestedAt: startedAt,
+    slotKey: "2099-01-02 09:00",
+    requestedAt: now,
     mode: "active",
   });
   assert.deepEqual(result, {
@@ -94,8 +98,8 @@ test("이전 KST slot이 조회 경쟁으로 섞여도 경제 handler를 실행�
     },
     {
       now: () => now,
-      async expireStale() {
-        return 1;
+      async expireStale(input) {
+        return input.jobNames.includes("stocks.tick") ? 0 : 1;
       },
       async findDue() {
         return [
@@ -159,6 +163,113 @@ test("세션 알림 재시도는 지난 창 대신 실제 재시도 시각을 �
   assert.equal(requestedAt, now);
 });
 
+test("NOVEX handler는 retry context의 실제 now와 명시 slotKey를 tick에 전달한다", async () => {
+  const previousMode = process.env.NOVEX_V2_MODE;
+  process.env.NOVEX_V2_MODE = "enabled";
+  let options;
+  try {
+    const handlers = createDefaultScheduledJobHandlers({
+      async applyNovexTick(input) {
+        options = input;
+        return {
+          date: "2099-01-02",
+          slot: input.slotKey,
+          results: [],
+          skipDiscord: true,
+        };
+      },
+      async processDividendPayouts() {
+        return { paid: 0, totalAmount: 0, drained: true };
+      },
+    });
+    const now = new Date("2099-01-02T05:00:00.000Z");
+    await handlers.require("stocks.tick").execute({
+      jobName: "stocks.tick",
+      slotKey: "2099-01-02 13:00",
+      requestedAt: now,
+      mode: "active",
+      signal: new AbortController().signal,
+    });
+    assert.deepEqual(options, { now, slotKey: "2099-01-02 13:00" });
+  } finally {
+    if (previousMode === undefined) delete process.env.NOVEX_V2_MODE;
+    else process.env.NOVEX_V2_MODE = previousMode;
+  }
+});
+
+test("NOVEX shadow는 신규 산식을 읽기 전용 계산하면서 legacy 시세를 계속 확정한다", async () => {
+  const previousMode = process.env.NOVEX_V2_MODE;
+  process.env.NOVEX_V2_MODE = "shadow";
+  const calls = [];
+  try {
+    const handlers = createDefaultScheduledJobHandlers({
+      async previewNovexTick(input) {
+        calls.push(`preview:${input.slotKey}`);
+        return {
+          date: "2099-01-02",
+          slot: input.slotKey,
+          results: [{ ticker: "NVS", status: "updated" }],
+          skipDiscord: true,
+        };
+      },
+      async applyLegacyStockTick() {
+        calls.push("legacy");
+        return {
+          date: "2099-01-02",
+          slot: "2099-01-02 12:00",
+          results: [{ ticker: "NVS", status: "updated" }],
+          skipDiscord: true,
+        };
+      },
+      async rebuildStockTickSummary() {
+        return null;
+      },
+    });
+    const summary = await handlers.require("stocks.tick").execute({
+      jobName: "stocks.tick",
+      slotKey: "2099-01-02 13:00",
+      requestedAt: new Date("2099-01-02T04:00:00Z"),
+      mode: "active",
+      signal: new AbortController().signal,
+    });
+    assert.deepEqual(calls, ["preview:2099-01-02 13:00", "legacy"]);
+    assert.equal(summary.novexMode, "shadow");
+    assert.equal(summary.shadowUpdated, 1);
+    assert.equal(summary.mutated, true);
+  } finally {
+    if (previousMode === undefined) delete process.env.NOVEX_V2_MODE;
+    else process.env.NOVEX_V2_MODE = previousMode;
+  }
+});
+
+test("정규 일요일 일정 누락·중복 warning은 scheduled job summary에 보존된다", async () => {
+  const previousMode = process.env.NOVEX_V2_MODE;
+  process.env.NOVEX_V2_MODE = "enabled";
+  try {
+    for (const warning of ["REGULAR_SESSION_MISSING", "REGULAR_SESSION_AMBIGUOUS"]) {
+      const handlers = createDefaultScheduledJobHandlers({
+        async applyNovexTick(input) {
+          return { date: "2099-01-04", slot: input.slotKey, results: [], skipDiscord: true, warning };
+        },
+        async processDividendPayouts() {
+          return { paid: 0, totalAmount: 0, drained: true };
+        },
+      });
+      const summary = await handlers.require("stocks.tick").execute({
+        jobName: "stocks.tick",
+        slotKey: "2099-01-04 18:00",
+        requestedAt: new Date("2099-01-04T09:01:00Z"),
+        mode: "active",
+        signal: new AbortController().signal,
+      });
+      assert.equal(summary.warning, warning);
+    }
+  } finally {
+    if (previousMode === undefined) delete process.env.NOVEX_V2_MODE;
+    else process.env.NOVEX_V2_MODE = previousMode;
+  }
+});
+
 test("한 예약 작업 재시도가 실패해도 같은 batch를 마친 뒤 health 오류를 낸다", async () => {
   const now = new Date("2099-01-02T03:30:00.000Z");
   const executed = [];
@@ -185,7 +296,7 @@ test("한 예약 작업 재시도가 실패해도 같은 batch를 마친 뒤 hea
       async findDue() {
         return [
           dueRun("shop.refresh", "2099-01-02", now),
-          dueRun("stocks.tick", "2099-01-02", now),
+          dueRun("stocks.tick", "2099-01-02 09:00", now),
         ];
       },
     },

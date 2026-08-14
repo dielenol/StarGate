@@ -474,6 +474,112 @@
   letter-spacing: 0.08em;
 }
 
+/* ── NOVEX 2.0 시장 상태 / 공시 / 시즌 ── */
+
+.marketStatus,
+.disclosureTimeline,
+.seasonBoard {
+  margin-bottom: var(--gap);
+  padding: 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.marketStatus--open { border-color: var(--gold-dim); }
+.marketStatus--pending { border-color: var(--line-strong); }
+.marketStatus--closed { border-color: color-mix(in oklab, var(--danger) 42%, var(--line)); }
+
+.marketStatus__head,
+.disclosureTimeline__head,
+.seasonBoard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.marketStatus__head span,
+.disclosureTimeline__head span,
+.seasonBoard__head span {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: .12em;
+}
+
+.marketStatus__head strong,
+.seasonBoard__head > strong {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: .08em;
+}
+
+.marketStatus--closed .marketStatus__head strong { color: var(--danger); }
+.marketStatus__reason { margin: 8px 0 0; color: var(--ink-1); font-size: var(--font-size-sm); line-height: 1.5; }
+.marketStatus__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.marketStatus__detail { display: grid; gap: 3px; min-width: 0; padding: 9px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.marketStatus__detail span { color: var(--ink-3); font-size: var(--font-size-xs); }
+.marketStatus__detail strong { overflow: hidden; color: var(--ink-0); font-family: var(--font-mono); font-size: var(--font-size-sm); text-overflow: ellipsis; white-space: nowrap; }
+.marketStatus__delay { margin-top: 10px; padding: 8px 10px; color: var(--gold); background: color-mix(in oklab, var(--gold) 10%, transparent); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); font-size: var(--font-size-xs); }
+.marketStatus__empty,
+.disclosureTimeline__empty,
+.seasonBoard__empty { margin: 10px 0 0; color: var(--ink-3); font-size: var(--font-size-sm); line-height: 1.5; }
+
+.disclosureTimeline__head h2,
+.seasonBoard__head h2 { margin: 3px 0 0; color: var(--ink-0); font-size: var(--font-size-md); }
+.disclosureTimeline__list,
+.seasonBoard__list { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.disclosureTimeline__item { padding: 10px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.disclosureTimeline__meta { display: flex; justify-content: space-between; gap: 8px; color: var(--ink-3); font-family: var(--font-mono); font-size: var(--font-size-xs); }
+.disclosureTimeline__meta strong { color: var(--gold); font-size: var(--font-size-xs); }
+.disclosureTimeline__target { margin-top: 6px; color: var(--ink-1); font-family: var(--font-mono); font-size: var(--font-size-xs); letter-spacing: .06em; }
+.disclosureTimeline__headline { display: block; margin-top: 6px; color: var(--ink-0); font-size: var(--font-size-sm); }
+.disclosureTimeline__item p { margin: 6px 0 0; color: var(--ink-1); font-size: var(--font-size-sm); line-height: 1.55; white-space: pre-wrap; }
+.disclosureTimeline__teaser { color: var(--ink-3) !important; }
+.disclosureTimeline__effects { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
+.disclosureTimeline__effects li { padding: 3px 6px; color: var(--gold); background: color-mix(in oklab, var(--gold) 9%, transparent); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--font-size-xs); }
+.disclosureTimeline__error,
+.seasonBoard__error { margin-top: 10px; color: var(--danger); font-size: var(--font-size-sm); }
+
+.seasonBoard__list li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 8px; border-bottom: 1px solid var(--line); }
+.seasonBoard__list li:last-child { border-bottom: 0; }
+.seasonBoard__list li > span { color: var(--gold); font-family: var(--font-mono); font-size: var(--font-size-sm); }
+.seasonBoard__list li > strong { overflow: hidden; color: var(--ink-0); font-size: var(--font-size-sm); text-overflow: ellipsis; white-space: nowrap; }
+.seasonBoard__list li > em { color: var(--gold); font-family: var(--font-mono); font-size: var(--font-size-sm); font-style: normal; }
+.seasonBoard__return--down { color: var(--danger) !important; }
+.seasonBoard__list li > small { grid-column: 2 / -1; color: var(--ink-3); font-size: var(--font-size-xs); }
+.seasonBoard__mine { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: var(--font-size-xs); line-height: 1.5; }
+
+.preferences { padding: 14px; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.preferences__head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.preferences__head span { color: var(--ink-2); font-family: var(--font-mono); font-size: var(--font-size-xs); letter-spacing: .1em; }
+.preferences__head h2 { margin: 3px 0 0; color: var(--ink-0); font-size: var(--font-size-md); }
+.preferences button { min-height: 34px; border: 1px solid var(--gold-dim); background: var(--bg-2); border-radius: var(--radius-sm); color: var(--gold); font-size: var(--font-size-xs); cursor: pointer; }
+.preferences button:disabled { cursor: not-allowed; opacity: .55; }
+.preferences button:hover:not(:disabled), .preferences button:focus-visible { outline: none; border-color: var(--gold); background: color-mix(in oklab, var(--gold) 10%, var(--bg-2)); }
+.preferences > p { margin: 10px 0 0; color: var(--ink-3); font-size: var(--font-size-xs); line-height: 1.5; }
+.preferences__success { color: var(--success) !important; }
+.preferences__error { color: var(--danger) !important; }
+.preferences__actions { display: grid; gap: 8px; margin-top: 12px; }
+.preferences__actions label { display: grid; grid-template-columns: 60px minmax(0, 1fr) 42px; gap: 6px; align-items: center; color: var(--ink-2); font-size: var(--font-size-xs); }
+.preferences__actions input { min-width: 0; min-height: 34px; border: 1px solid var(--line); background: var(--bg-2); border-radius: var(--radius-sm); color: var(--ink-0); font-size: var(--font-size-xs); padding: 0 8px; }
+.preferences__actions input:focus { outline: 2px solid var(--gold-dim); outline-offset: 1px; }
+.preferences__disclosure { padding: 0 8px; }
+.preferences__list { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.preferences__list li { display: flex; justify-content: space-between; gap: 8px; align-items: center; color: var(--ink-1); font-size: var(--font-size-xs); }
+.preferences__list button { min-height: 26px; padding: 0 7px; color: var(--ink-2); border-color: var(--line); }
+
+.stockRow__cooldown,
+.stockRow__flow { color: var(--gold); font-family: var(--font-mono); font-size: var(--font-size-xs); letter-spacing: .04em; }
+.stockRow__cooldown { margin-left: 5px; }
+.stockRow__flow { display: block; margin-top: 3px; color: var(--ink-2); text-align: right; }
+
+@container stock-page (max-width: 680px) {
+  .marketStatus__grid { grid-template-columns: 1fr; }
+}
+
 @container stock-page (max-width: 1100px) {
   .marketBrief {
     grid-template-columns: repeat(3, minmax(0, 1fr));

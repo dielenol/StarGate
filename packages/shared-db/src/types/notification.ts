@@ -6,6 +6,7 @@ export type NotificationType =
   | "CREDIT_RECEIVED"
   | "CONSUMABLE_USED"
   | "REPORT_PUBLISHED"
+  | "STOCK"
   | "SYSTEM";
 
 export interface Notification {

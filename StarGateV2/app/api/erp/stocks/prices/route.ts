@@ -13,30 +13,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth/config";
-import { getStockPrices } from "@/lib/db/stocks";
-import { STOCK_CATALOG } from "@/lib/stocks/catalog";
-
-interface PriceItem {
-  ticker: string;
-  name: string;
-  basePrice: number;
-  description: string;
-  price: number;
-  prevPrice: number;
-  eventText: string;
-  /** 정수 / 소수 모두 허용. 음수면 하락. prevPrice=0 fallback 시 0. */
-  changePercent: number;
-  /** KST 'YYYY-MM-DD HH:mm' 또는 빈 문자열(시드 fallback). */
-  lastUpdate: string;
-  /** stock_prices row 존재 여부. false 면 catalog basePrice fallback. */
-  isSeeded: boolean;
-  /** 개별 종목 거래정지. 기존/미시드 문서는 false. */
-  isTradingHalted: boolean;
-}
-
-interface PricesResponse {
-  items: PriceItem[];
-}
+import { buildPricesResponse } from "@/app/(erp)/erp/stock/_data";
 
 export async function GET() {
   const session = await auth();
@@ -45,36 +22,9 @@ export async function GET() {
   }
 
   try {
-    const prices = await getStockPrices();
-    const priceByTicker = new Map(prices.map((p) => [p.ticker, p]));
-
-    const items: PriceItem[] = STOCK_CATALOG.map((meta) => {
-      const row = priceByTicker.get(meta.ticker);
-      const price = row?.price ?? meta.basePrice;
-      const prevPrice = row?.prevPrice ?? meta.basePrice;
-      const eventText = row?.eventText ?? "";
-      const lastUpdate = row?.lastUpdate ?? "";
-      const changePercent =
-        prevPrice > 0 ? ((price - prevPrice) / prevPrice) * 100 : 0;
-      return {
-        ticker: meta.ticker,
-        name: meta.name,
-        basePrice: meta.basePrice,
-        description: meta.description,
-        price,
-        prevPrice,
-        eventText,
-        changePercent,
-        lastUpdate,
-        isSeeded: Boolean(row),
-        isTradingHalted: row?.isTradingHalted === true,
-      };
-    });
-
-    const response: PricesResponse = { items };
-    return NextResponse.json(response, {
+    return NextResponse.json(await buildPricesResponse(), {
       headers: {
-        "Cache-Control": "private, max-age=60, stale-while-revalidate=180",
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (err) {

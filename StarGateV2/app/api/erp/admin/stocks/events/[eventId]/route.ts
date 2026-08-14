@@ -13,6 +13,7 @@ import {
   StockScheduledEventNotFoundError,
 } from "@/lib/db/stock-scheduled-events";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
 
 interface RouteContext {
   params: Promise<{ eventId: string }>;
@@ -33,6 +34,12 @@ export async function DELETE(request: Request, context: RouteContext) {
     requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (isNovexV2Enabled()) {
+    return NextResponse.json(
+      { error: "NOVEX 2.0에서는 레거시 예약 이벤트를 변경할 수 없습니다." },
+      { status: 409 },
+    );
   }
 
   const requestId = readIdempotencyKey(request);

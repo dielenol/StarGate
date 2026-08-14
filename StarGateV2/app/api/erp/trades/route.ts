@@ -24,6 +24,9 @@ import {
 } from "@/lib/db/inventory";
 import { getHoldings, getStockPrices } from "@/lib/db/stocks";
 import {
+  getStockMarketSnapshot,
+} from "@/lib/db/stock-market";
+import {
   assertPlayerTradeCounterpartyAccess,
   createAndSettleGift,
   createOpenPlayerTrade,
@@ -39,6 +42,8 @@ import {
   enqueueWorkflowStatusWebhook,
 } from "@/lib/outbox/integration";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
+import { serializeStockMarketState } from "@/lib/stocks/novex";
 
 interface CreateTradeBody {
   kind?: "GIFT" | "EXCHANGE";
@@ -97,7 +102,10 @@ function tradeErrorResult(error: unknown): {
       ? 404
       : error.code === "TRADE_FORBIDDEN"
         ? 403
-        : error.code === "STOCK_TRADING_HALTED"
+        : error.code === "STOCK_TRADING_HALTED" ||
+            error.code === "STOCK_COOLING_DOWN" ||
+            error.code === "MARKET_CLOSED" ||
+            error.code === "MARKET_OPENING_PENDING"
           ? 423
           : error.code === "STOCK_PRICE_NOT_FOUND"
             ? 409
@@ -127,6 +135,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const now = new Date();
+  const market = serializeStockMarketState(null, now);
   if (session.user.isGuest) {
     const response: TradesResponse = {
       me: null,
@@ -134,6 +144,7 @@ export async function GET(request: Request) {
       trades: [],
       assets: { credits: 0, items: [], stocks: [] },
       stockAvailability: [],
+      market,
     };
     return jsonWithETag(request, response);
   }
@@ -151,16 +162,24 @@ export async function GET(request: Request) {
         trades: trades.map(serializePlayerTrade),
         assets: { credits: 0, items: [], stocks: [] },
         stockAvailability: [],
+        market,
       };
       return jsonWithETag(request, response);
     }
 
-    const [balance, inventoryResult, holdings, prices] = await Promise.all([
+    const [balance, inventoryResult, holdings, priceSnapshot] = await Promise.all([
       getCharacterBalance(me.characterId),
       listCharacterInventoryEntries(me.characterId),
       getHoldings(me.characterId),
-      getStockPrices(),
+      isNovexV2Enabled()
+        ? getStockMarketSnapshot(now).then(async (snapshot) => ({
+            state: snapshot?.state ?? null,
+            prices: snapshot?.prices ?? (await getStockPrices()),
+          }))
+        : getStockPrices().then((prices) => ({ state: null, prices })),
     ]);
+    const prices = priceSnapshot.prices;
+    const serializedMarket = serializeStockMarketState(priceSnapshot.state, now);
     const items = inventoryResult.entries
       .filter(
         (entry) =>
@@ -190,6 +209,10 @@ export async function GET(request: Request) {
         shares: holding.shares,
         isSeeded: Boolean(price),
         isTradingHalted: price?.isTradingHalted === true,
+        isCoolingDown:
+          price?.cooldownUntil !== undefined && price.cooldownUntil > now,
+        cooldownUntil: price?.cooldownUntil?.toISOString() ?? null,
+        marketStatus: serializedMarket.status,
       };
     });
     const serializedTrades = trades.map(serializePlayerTrade);
@@ -211,6 +234,10 @@ export async function GET(request: Request) {
           ticker,
           isSeeded: Boolean(price),
           isTradingHalted: price?.isTradingHalted === true,
+          isCoolingDown:
+            price?.cooldownUntil !== undefined && price.cooldownUntil > now,
+          cooldownUntil: price?.cooldownUntil?.toISOString() ?? null,
+          marketStatus: serializedMarket.status,
         };
       });
     const response: TradesResponse = {
@@ -219,6 +246,7 @@ export async function GET(request: Request) {
       trades: serializedTrades,
       assets: { credits: balance, items, stocks },
       stockAvailability,
+      market: serializedMarket,
     };
     return jsonWithETag(request, response);
   } catch (error) {
@@ -307,6 +335,10 @@ export async function POST(request: Request) {
         actorId: session.user.id,
         payload: { kind: body.kind, targetUserId: body.targetUserId, offer },
         run: async (dbSession) => {
+          const marketOptions = {
+            now: new Date(),
+            novexV2Enabled: isNovexV2Enabled(),
+          };
           await assertPlayerTradeCounterpartyAccess(
             session.user.id,
             counterparty.userId,
@@ -320,12 +352,14 @@ export async function POST(request: Request) {
                   offer,
                   { id: session.user.id, name: session.user.displayName },
                   dbSession,
+                  marketOptions,
                 )
               : await createOpenPlayerTrade(
                   me,
                   counterparty,
                   offer,
                   dbSession,
+                  marketOptions,
                 );
           const serialized = serializePlayerTrade(trade);
           await enqueuePlayerTradeDiscordDm({

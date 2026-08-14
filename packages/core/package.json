@@ -70,6 +70,10 @@
       "types": "./dist/domain/stock-pricing.d.ts",
       "import": "./dist/domain/stock-pricing.js"
     },
+    "./domain/novex-market": {
+      "types": "./dist/domain/novex-market.d.ts",
+      "import": "./dist/domain/novex-market.js"
+    },
     "./operations/daily-allowance": {
       "types": "./dist/operations/daily-allowance.d.ts",
       "import": "./dist/operations/daily-allowance.js"
@@ -89,6 +93,10 @@
     "./operations/stocks-tick": {
       "types": "./dist/operations/stocks-tick.d.ts",
       "import": "./dist/operations/stocks-tick.js"
+    },
+    "./operations/stock-dividends": {
+      "types": "./dist/operations/stock-dividends.d.ts",
+      "import": "./dist/operations/stock-dividends.js"
     }
   },
   "scripts": {

@@ -21,10 +21,12 @@ export * from "./domain/stock-catalog.js";
 export * from "./domain/stock-events.js";
 export * from "./domain/stock-market-wire.js";
 export * from "./domain/stock-pricing.js";
+export * from "./domain/novex-market.js";
 export * from "./operations/daily-allowance.js";
 export * from "./operations/session-reminders.js";
 export * from "./operations/shop-refresh.js";
 export * from "./operations/stocks-tick.js";
+export * from "./operations/stock-dividends.js";
 
 export {
   SCHEDULED_JOB_NAMES,

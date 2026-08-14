@@ -52,6 +52,8 @@
     "migrate:towaski-license-renewals": "node --experimental-strip-types scripts/backfill-towaski-license-renewals.ts",
     "migrate:workshop-dm-outbox": "node --experimental-strip-types scripts/backfill-workshop-discord-dm-outbox.ts",
     "backfill:mrbeast-soda-stock-impact": "pnpm --filter @stargate/core build && node --env-file-if-exists=.env.local --experimental-strip-types scripts/backfill-mrbeast-soda-stock-impact.ts",
+    "premigrate:novex-2": "pnpm --filter @stargate/shared-db build",
+    "migrate:novex-2": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/migrate-novex-2.ts",
     "sync:research-discord": "pnpm --filter @stargate/shared-db exec tsx ../../StarGateV2/scripts/sync-research-discord-cards.ts"
   },
   "engines": {

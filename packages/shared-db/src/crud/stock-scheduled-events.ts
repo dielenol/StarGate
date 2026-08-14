@@ -7,8 +7,11 @@ import type {
   StockScheduledEventStatus,
   StockScheduledEventTier,
 } from "../types/stock-scheduled-event.js";
+import type { StockDisclosure } from "../types/stock-market.js";
 
 const COLLECTION = "stock_scheduled_events";
+const DISCLOSURES_COLLECTION = "stock_disclosures";
+const DISCLOSURE_FENCES_COLLECTION = "stock_disclosure_effect_fences";
 
 interface StockPriceScheduleFence {
   ticker: string;
@@ -18,6 +21,128 @@ interface StockPriceScheduleFence {
 async function scheduledEventsCol(): Promise<Collection<StockScheduledEvent>> {
   const db = await getDb();
   return db.collection<StockScheduledEvent>(COLLECTION);
+}
+
+async function fenceMigratedDisclosure(
+  disclosure: StockDisclosure,
+  session: ClientSession,
+): Promise<void> {
+  if (!disclosure.slotKey || !disclosure.publishAt) {
+    throw new Error(
+      `MIGRATED_STOCK_DISCLOSURE_SLOT_MISSING:${disclosure._id}`,
+    );
+  }
+  const db = await getDb();
+  await db.collection<{ _id: string; revision: number }>(
+    DISCLOSURE_FENCES_COLLECTION,
+  ).updateOne(
+    { _id: disclosure.slotKey },
+    { $inc: { revision: 1 } },
+    { upsert: true, session },
+  );
+}
+
+function effectiveNow(requestedAt: Date): Date {
+  return new Date(Math.max(requestedAt.getTime(), Date.now()));
+}
+
+async function reactivateMigratedDisclosure(
+  event: StockScheduledEvent,
+  requestedAt: Date,
+  session: ClientSession,
+): Promise<void> {
+  if (!event.migratedDisclosureId) return;
+  const db = await getDb();
+  const disclosures = db.collection<StockDisclosure>(DISCLOSURES_COLLECTION);
+  const disclosure = await disclosures.findOne(
+    { _id: event.migratedDisclosureId },
+    { session },
+  );
+  if (!disclosure) {
+    throw new Error(
+      `MIGRATED_STOCK_DISCLOSURE_NOT_FOUND:${event.migratedDisclosureId}`,
+    );
+  }
+  await fenceMigratedDisclosure(disclosure, session);
+  const now = effectiveNow(requestedAt);
+  if (!disclosure.publishAt || disclosure.publishAt.getTime() <= now.getTime()) {
+    throw new StockScheduledEventCreationError("CUTOFF_REACHED");
+  }
+  const saved = await disclosures.findOneAndUpdate(
+    {
+      _id: disclosure._id,
+      status: { $in: ["CANCELLED", "SCHEDULED"] },
+      publishAt: { $gt: now },
+    },
+    {
+      $set: {
+        title: `${event.ticker} 예약 공시`,
+        body: event.eventText,
+        kind: "PRICE",
+        status: "SCHEDULED",
+        source: "GM",
+        effects: [
+          {
+            scope: "TICKER",
+            ticker: event.ticker,
+            changePercent: event.changePercent,
+            structural: false,
+          },
+        ],
+        shock: event.eventTier === "shock",
+        updatedAt: now,
+      },
+      $unset: { cancelledAt: "", publishedAt: "" },
+    },
+    { returnDocument: "after", session },
+  );
+  if (!saved) {
+    throw new StockScheduledEventConflictError("APPLIED");
+  }
+}
+
+async function cancelMigratedDisclosure(
+  event: StockScheduledEvent,
+  requestedAt: Date,
+  session: ClientSession,
+): Promise<Date> {
+  if (!event.migratedDisclosureId) return requestedAt;
+  const db = await getDb();
+  const disclosures = db.collection<StockDisclosure>(DISCLOSURES_COLLECTION);
+  const disclosure = await disclosures.findOne(
+    { _id: event.migratedDisclosureId },
+    { session },
+  );
+  if (!disclosure) {
+    throw new Error(
+      `MIGRATED_STOCK_DISCLOSURE_NOT_FOUND:${event.migratedDisclosureId}`,
+    );
+  }
+  if (disclosure.status === "CANCELLED") return requestedAt;
+  if (disclosure.status !== "SCHEDULED") {
+    throw new StockScheduledEventConflictError("APPLIED");
+  }
+  await fenceMigratedDisclosure(disclosure, session);
+  const now = effectiveNow(requestedAt);
+  const cancelled = await disclosures.updateOne(
+    {
+      _id: disclosure._id,
+      status: "SCHEDULED",
+      publishAt: { $gt: now },
+    },
+    {
+      $set: {
+        status: "CANCELLED",
+        cancelledAt: now,
+        updatedAt: now,
+      },
+    },
+    { session },
+  );
+  if (cancelled.modifiedCount !== 1) {
+    throw new StockScheduledEventConflictError("APPLIED");
+  }
+  return now;
 }
 
 export function stockScheduledEventId(kstDate: string, ticker: string): string {
@@ -137,7 +262,10 @@ export async function createStockScheduledEvent(
     },
     { returnDocument: "after", session },
   );
-  if (reactivated) return reactivated;
+  if (reactivated) {
+    await reactivateMigratedDisclosure(reactivated, input.now, session);
+    return reactivated;
+  }
 
   const existing = await col.findOne({ _id: id }, { session });
   if (existing) throw new StockScheduledEventConflictError(existing.status);
@@ -181,7 +309,7 @@ export async function claimPendingStockScheduledEvent(input: {
   session: ClientSession;
 }): Promise<StockScheduledEvent | null> {
   const col = await scheduledEventsCol();
-  return col.findOneAndUpdate(
+  const claimed = await col.findOneAndUpdate(
     {
       _id: stockScheduledEventId(input.kstDate, input.ticker),
       status: "PENDING",
@@ -197,6 +325,29 @@ export async function claimPendingStockScheduledEvent(input: {
     },
     { returnDocument: "after", session: input.session },
   );
+  if (claimed?.migratedDisclosureId) {
+    const db = await getDb();
+    const disclosures = db.collection<StockDisclosure>(DISCLOSURES_COLLECTION);
+    const disclosure = await disclosures.findOne(
+      { _id: claimed.migratedDisclosureId },
+      { session: input.session },
+    );
+    if (disclosure?.status === "SCHEDULED") {
+      await fenceMigratedDisclosure(disclosure, input.session);
+    }
+    await disclosures.updateOne(
+      { _id: claimed.migratedDisclosureId, status: "SCHEDULED" },
+      {
+        $set: {
+          status: "CANCELLED",
+          cancelledAt: input.now,
+          updatedAt: input.now,
+        },
+      },
+      { session: input.session },
+    );
+  }
+  return claimed;
 }
 
 export async function cancelStockScheduledEvent(input: {
@@ -206,14 +357,27 @@ export async function cancelStockScheduledEvent(input: {
   session: ClientSession;
 }): Promise<StockScheduledEvent> {
   const col = await scheduledEventsCol();
+  const current = await col.findOne(
+    { _id: input.eventId },
+    { session: input.session },
+  );
+  if (!current) throw new StockScheduledEventNotFoundError();
+  if (current.status !== "PENDING") {
+    throw new StockScheduledEventConflictError(current.status);
+  }
+  const cancelledAt = await cancelMigratedDisclosure(
+    current,
+    input.now,
+    input.session,
+  );
   const cancelled = await col.findOneAndUpdate(
     { _id: input.eventId, status: "PENDING" },
     {
       $set: {
         status: "CANCELLED",
         cancelledBy: input.actor,
-        cancelledAt: input.now,
-        updatedAt: input.now,
+        cancelledAt,
+        updatedAt: cancelledAt,
       },
     },
     { returnDocument: "after", session: input.session },

@@ -8,6 +8,7 @@ import {
   applyScheduledStockTick,
   ScheduledStockTickNotDueError,
 } from "@/lib/stocks/scheduled-tick";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 
 interface PostBody {
@@ -25,6 +26,16 @@ export async function POST(request: Request) {
     requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (isNovexV2Enabled()) {
+    return NextResponse.json(
+      {
+        error:
+          "NOVEX 2.0 회차는 Idempotency-Key와 회차 키를 요구하는 지연 회차 복구 API를 사용해야 합니다.",
+      },
+      { status: 409 },
+    );
   }
 
   const body = (await request.json().catch(() => ({}))) as PostBody;
@@ -54,7 +65,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof ScheduledStockTickNotDueError) {
       return NextResponse.json(
-        { error: "정기 틱은 당일 12:00 KST 이후에만 실행할 수 있습니다." },
+        { error: "레거시 정기 틱은 당일 12:00 KST 이후에만 실행할 수 있습니다." },
         { status: 409 },
       );
     }

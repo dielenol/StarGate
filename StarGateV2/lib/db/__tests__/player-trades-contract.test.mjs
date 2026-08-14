@@ -58,7 +58,7 @@ test("거래 도메인 오류는 transaction 밖에서 4xx로 변환한다", () 
 test("동일 revision 양측 확정만 정산하고 CAS로 완료 상태를 기록한다", () => {
   assert.match(
     crud,
-    /otherConfirmed[\s\S]*settleTrade\(trade, actor, session\)/,
+    /otherConfirmed[\s\S]*settleTrade\(trade, actor, session, options\)/,
   );
   assert.match(
     crud,
@@ -165,6 +165,17 @@ test("credit ledger 파생 키와 전체 자산 Query invalidation을 보장한�
   ]) {
     assert.match(mutations, new RegExp(key.replace(".", "\\.")));
   }
+});
+
+test("NOVEX가 비활성화된 거래는 시즌 원장을 쓰지 않는다", () => {
+  assert.match(
+    crud,
+    /if \(recordSeasonFlows\) \{[\s\S]*recordStockSeasonFlow/,
+  );
+  assert.equal(
+    crud.match(/options\.novexV2Enabled === true/g)?.length,
+    3,
+  );
 });
 
 test("새 거래 제출은 렌더 전 빠른 중복 클릭도 동기 차단한다", () => {

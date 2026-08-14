@@ -38,7 +38,11 @@ export interface ChartPoint {
   ts: string;
   price: number;
   eventText: string;
-  source: "scheduled" | "trade" | "gm-event";
+  source: "scheduled" | "trade" | "gm-event" | "auto-news" | "disclosure" | "corporate-action" | "dividend" | "split";
+  /** NOVEX 2.0 가격 회차 식별자. 툴팁에서만 노출한다. */
+  slotKey?: string;
+  /** 공시 마커용 공개 제목. 가격 이유(eventText)와 별도일 수 있다. */
+  disclosureTitle?: string;
 }
 
 /* ── KST 라벨 포맷팅 ── */
@@ -92,6 +96,7 @@ export function ChartSkeleton() {
 function eventMarkerColor(source: ChartPoint["source"]): string {
   if (source === "gm-event") return "var(--danger)";
   if (source === "trade") return "var(--info)";
+  if (source === "auto-news" || source === "disclosure" || source === "corporate-action" || source === "dividend" || source === "split") return "var(--gold)";
   return "var(--gold)";
 }
 
@@ -104,7 +109,9 @@ export default function StockHistoryChart({
 }: Props) {
   // 같은 페이지에 sparkline AreaChart 가 다수 존재 → useId() 로 gradient id 충돌 방지.
   const safeGradientId = useGradientId("g");
-  const eventPoints = data.filter((point) => point.eventText.trim());
+  const eventPoints = data.filter(
+    (point) => point.eventText.trim() || point.disclosureTitle?.trim(),
+  );
   const showAverageLine =
     typeof averagePrice === "number" && Number.isFinite(averagePrice) && averagePrice > 0;
   const showBaseLine =
@@ -181,9 +188,9 @@ export default function StockHistoryChart({
                 typeof value === "number"
                   ? `¤ ${formatStockValue(value)}`
                   : String(value);
-              return point?.eventText
-                ? [`${v} · ${point.eventText}`, "가격"]
-                : [v, "가격"];
+              const marker = point?.eventText || point?.disclosureTitle;
+              const slot = point?.slotKey ? ` · ${point.slotKey} 회차` : "";
+              return marker ? [`${v} · ${marker}${slot}`, "가격"] : [v, "가격"];
             }}
           />
           {showBaseLine ? (

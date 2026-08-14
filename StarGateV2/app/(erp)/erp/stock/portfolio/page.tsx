@@ -16,13 +16,13 @@ import { findMainCharacterDisplayLiteByOwnerCached as findMainCharacterByOwner }
 import type {
   StockBalanceResponse,
   StockHoldingsResponse,
-  StockPricesResponse,
   StockRealizedProfitResponse,
 } from "@/hooks/queries/useStocksQuery";
 
 import {
   buildHoldingsResponse,
   buildPricesResponse,
+  buildStockPricesFallback,
   buildStockBalanceResponse,
   buildStockRealizedProfitResponse,
 } from "../_data";
@@ -58,8 +58,8 @@ export default async function StockPortfolioPage() {
 
   // prices 를 먼저 fetch — buildHoldingsResponse 가 같은 데이터를 재사용하여
   // SSR 중 stock_prices 컬렉션 중복 read 방지.
-  const initialPrices = await buildPricesResponse().catch(
-    (): StockPricesResponse => ({ items: [] }),
+  const initialPrices = await buildPricesResponse().catch(() =>
+    buildStockPricesFallback(),
   );
 
   const [initialHoldings, initialBalance, initialRealizedProfit] =

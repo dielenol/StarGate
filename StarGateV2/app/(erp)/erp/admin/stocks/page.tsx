@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
+import { getNovexV2Mode } from "@/lib/stocks/market";
 
 import { buildMarketWireResponse, buildPricesResponse } from "../../stock/_data";
 import { buildStockAdminHoldingsResponse } from "./_data";
@@ -34,6 +35,7 @@ export default async function StockAdminPage() {
       initialPrices={initialPrices}
       initialMarketWire={initialMarketWire}
       initialHoldings={initialHoldings}
+      novexMode={getNovexV2Mode()}
     />
   );
 }

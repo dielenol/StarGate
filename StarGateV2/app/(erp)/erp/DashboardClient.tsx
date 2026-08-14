@@ -154,6 +154,7 @@ const NOTIFICATION_TAG: Record<
   CONSUMABLE_USED: { label: "소모품", tone: "info" },
   ROLE_CHANGE: { label: "역할", tone: "info" },
   CREDIT_RECEIVED: { label: "크레딧", tone: "success" },
+  STOCK: { label: "주식", tone: "gold" },
   REPORT_PUBLISHED: { label: "리포트", tone: "gold" },
   SYSTEM: { label: "시스템", tone: "default" },
 };

@@ -222,7 +222,11 @@ function webhookUrlFor(
   kind: IntegrationOutboxKind,
   env: Environment,
 ): string {
-  if (kind === "PLAYER_TRADE_DM" || kind === "RESEARCH_LAB_DM") {
+  if (
+    kind === "PLAYER_TRADE_DM" ||
+    kind === "RESEARCH_LAB_DM" ||
+    kind === "STOCK_MARKET_RECOVERY_REQUEST"
+  ) {
     throw new IntegrationOutboxConfigurationError(
       `${kind}은 Discord webhook route가 아닙니다.`,
     );
@@ -580,22 +584,43 @@ function buildStockManualIntervention(
 ): DiscordWebhookPayload {
   const actor = record(payload.actor, "actor");
   const ticker = text(payload.ticker, "ticker", 20);
-  const previousPrice = numberValue(payload.previousPrice, "previousPrice");
-  const price = numberValue(payload.price, "price");
+  const eventKind = payload.eventKind === undefined
+    ? "PRICE"
+    : text(payload.eventKind, "eventKind", 30);
+  if (!["PRICE", "HALT", "RESUME", "COOLDOWN", "COOLDOWN_RELEASE", "SHOCK_DISCLOSURE"].includes(eventKind)) {
+    throw new Error("지원하지 않는 주식 긴급 공시 eventKind입니다.");
+  }
+  const previousPrice = eventKind === "PRICE"
+    ? numberValue(payload.previousPrice, "previousPrice")
+    : typeof payload.previousPrice === "number" ? payload.previousPrice : undefined;
+  const price = eventKind === "PRICE"
+    ? numberValue(payload.price, "price")
+    : typeof payload.price === "number" ? payload.price : undefined;
   const percent =
-    previousPrice > 0
+    previousPrice !== undefined && price !== undefined && previousPrice > 0
       ? ((price - previousPrice) / previousPrice) * 100
       : 0;
   const signedPercent = `${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`;
   const stock = findStockByTicker(ticker);
+  const presentation = {
+    PRICE: { title: "재무기구 특별 시세 공시", description: "시장감시실장 승인에 따른 수동 조정 내역입니다.", state: "수동 가격 조정", color: price! > previousPrice! ? 0x2fbf71 : price! < previousPrice! ? 0xd95f5f : 0xc5a059 },
+    HALT: { title: "긴급 거래정지 공시", description: "해당 종목의 모든 플레이어 거래가 즉시 정지되었습니다.", state: "거래정지", color: 0xd95f5f },
+    RESUME: { title: "거래재개 공시", description: "시장감시실 확인을 거쳐 해당 종목 거래가 재개되었습니다.", state: "거래재개", color: 0x2fbf71 },
+    COOLDOWN: { title: "변동성 냉각 공시", description: "급격한 가격 변동으로 10분 자동 냉각이 적용되었습니다.", state: "자동 냉각", color: 0xf0a33b },
+    COOLDOWN_RELEASE: { title: "변동성 냉각 해제", description: "자동 냉각이 종료되었습니다. 수동 거래정지와 시장 운영 상태는 별도로 적용됩니다.", state: "냉각 해제", color: 0x2fbf71 },
+    SHOCK_DISCLOSURE: { title: "NOVEX 충격 공시", description: "시장에 중대한 영향을 주는 공시가 공개되었습니다.", state: "충격 공시", color: 0xd95f5f },
+  }[eventKind]!;
+  const stateValue = eventKind === "PRICE" && previousPrice !== undefined && price !== undefined
+    ? `${previousPrice.toLocaleString("ko-KR")} CR → ${price.toLocaleString("ko-KR")} CR · ${signedPercent}`
+    : presentation.state;
   return basePayload(
     "재무기구 시장감시실",
-    "재무기구 특별 시세 공시",
+    presentation.title,
     isoTimestamp(payload.occurredAt),
     {
       url: "https://www.ordonet.co.kr/erp/stock",
-      description: "시장감시실장 승인에 따른 수동 조정 내역입니다.",
-      color: price > previousPrice ? 0x2fbf71 : price < previousPrice ? 0xd95f5f : 0xc5a059,
+      description: presentation.description,
+      color: presentation.color,
       fields: [
         {
           name: "대상 종목",
@@ -603,12 +628,12 @@ function buildStockManualIntervention(
           inline: true,
         },
         {
-          name: "조정 가격",
-          value: `${previousPrice.toLocaleString("ko-KR")} CR → ${price.toLocaleString("ko-KR")} CR · ${signedPercent}`,
+          name: eventKind === "PRICE" ? "조정 가격" : "시장 상태",
+          value: stateValue,
           inline: true,
         },
         {
-          name: "조정 사유",
+          name: eventKind === "PRICE" ? "조정 사유" : "공시 사유",
           value: text(payload.eventText, "eventText"),
         },
         {
@@ -736,6 +761,8 @@ function buildWebhookPayload(
       throw new Error("PLAYER_TRADE_DM은 webhook payload가 아닙니다.");
     case "RESEARCH_LAB_DM":
       throw new Error("RESEARCH_LAB_DM은 webhook payload가 아닙니다.");
+    case "STOCK_MARKET_RECOVERY_REQUEST":
+      throw new Error("STOCK_MARKET_RECOVERY_REQUEST는 webhook payload가 아닙니다.");
   }
 }
 
@@ -818,6 +845,9 @@ function researchLabDmContent(
 }
 
 function enabledKinds(env: Environment): IntegrationOutboxKind[] {
+  const discordKinds = INTEGRATION_OUTBOX_KINDS.filter(
+    (kind) => kind !== "STOCK_MARKET_RECOVERY_REQUEST",
+  );
   const raw = env.WORKER_OUTBOX_KINDS?.trim();
   if (!raw) {
     throw new IntegrationOutboxConfigurationError(
@@ -825,9 +855,9 @@ function enabledKinds(env: Environment): IntegrationOutboxKind[] {
     );
   }
   if (raw.toLowerCase() === "all") {
-    return [...INTEGRATION_OUTBOX_KINDS];
+    return [...discordKinds];
   }
-  const allowed = new Set<string>(INTEGRATION_OUTBOX_KINDS);
+  const allowed = new Set<string>(discordKinds);
   const values = [...new Set(raw.split(",").map((value) => value.trim()))]
     .filter(Boolean)
     .map(
@@ -842,10 +872,10 @@ function enabledKinds(env: Environment): IntegrationOutboxKind[] {
   );
   if (
     env.WORKER_OUTBOX_ALLOW_PARTIAL?.trim().toLowerCase() !== "true" &&
-    values.length !== INTEGRATION_OUTBOX_KINDS.length
+    values.length !== discordKinds.length
   ) {
     const configured = new Set(values);
-    const missing = INTEGRATION_OUTBOX_KINDS.filter(
+    const missing = discordKinds.filter(
       (kind) => !configured.has(kind),
     );
     throw new IntegrationOutboxConfigurationError(
@@ -869,6 +899,7 @@ export function createDiscordIntegrationOutboxHandlers(
   const handlers: IntegrationOutboxDeliveryHandler[] = [];
 
   for (const kind of enabledKinds(env)) {
+    if (kind === "STOCK_MARKET_RECOVERY_REQUEST") continue;
     if (kind === "RESEARCH_LAB_DM") {
       const botToken = env.REGISTRAR_DISCORD_BOT_TOKEN?.trim();
       if (!botToken) {

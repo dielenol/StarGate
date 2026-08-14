@@ -3,17 +3,23 @@ import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbea
 
 import { grantDailyCreditAllowances } from "@/lib/credits/daily-allowance";
 import { notifyScheduledStockMarketWire } from "@/lib/stocks/market-wire";
-import { applyScheduledStockTick } from "@/lib/stocks/scheduled-tick";
+import { isNovexV2Enabled } from "@/lib/stocks/market";
+import {
+  applyNovexStockMarketTick,
+  applyScheduledStockTick,
+} from "@/lib/stocks/scheduled-tick";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function runScheduledStockTick() {
-  const summary = await applyScheduledStockTick({
-    sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
-      process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
-    ),
-  });
+  const summary = isNovexV2Enabled()
+    ? await applyNovexStockMarketTick()
+    : await applyScheduledStockTick({
+        sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
+          process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
+        ),
+      });
   const marketWire = await notifyScheduledStockMarketWire(summary);
   if (marketWire.status === "failed") {
     throw new Error(marketWire.error ?? "Discord 정기 공시 교체에 실패했습니다.");

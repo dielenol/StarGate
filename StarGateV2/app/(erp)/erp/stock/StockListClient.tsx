@@ -46,6 +46,9 @@ import { formatStockValue } from "@/lib/stocks/pricing";
 import StockHoverPreview from "./StockHoverPreview";
 import StockIndexBanner from "./StockIndexBanner";
 import MarketWirePanel from "./MarketWirePanel";
+import MarketStatusPanel, { type MarketStatusView } from "./MarketStatusPanel";
+import StockDisclosureTimeline from "./StockDisclosureTimeline";
+import StockSeasonLeaderboard from "./StockSeasonLeaderboard";
 import StockSparkline from "./StockSparkline";
 import StockTabs from "./StockTabs";
 import WatchlistRailCard from "./WatchlistRailCard";
@@ -205,6 +208,7 @@ export default function StockListClient({
 
   /* 11. 파생 — 시세 / 보유 / sparkline 룩업 */
   const prices = pricesQuery.data ?? initialPrices;
+  const market = (prices as StockPricesResponse & { market?: MarketStatusView }).market;
   const holdings = holdingsQuery.data ?? initialHoldings;
   const marketWire = marketWireQuery.data ?? initialMarketWire;
   const marketIndexHistory =
@@ -407,10 +411,12 @@ export default function StockListClient({
 
       <div className={styles.tabsRow}>
         <StockTabs />
-        <Tag tone={marketEnabled ? "gold" : "danger"}>
-          {marketEnabled ? "거래 가능" : "거래 중지"}
+        <Tag tone={market?.status === "OPEN" && marketEnabled ? "gold" : "danger"}>
+          {market?.status === "OPEN" && marketEnabled ? "거래 가능" : "거래 제한"}
         </Tag>
       </div>
+
+      {alertRules.novexEnabled ? <MarketStatusPanel market={market} /> : null}
 
       {/* 메인 캐릭터 안내 */}
       {!hasMainCharacter ? (
@@ -739,6 +745,10 @@ export default function StockListClient({
                             <span className={styles.stockRow__halted}>
                               거래정지
                             </span>
+                          ) : item.cooldownUntil ? (
+                            <span className={styles.stockRow__cooldown}>
+                              냉각 중
+                            </span>
                           ) : null}
                         </div>
                       </div>
@@ -760,6 +770,20 @@ export default function StockListClient({
                         >
                           {ARROW[direction]} {item.changePercent.toFixed(2)}%
                         </span>
+                        {item.flowSignal ? (
+                          <span className={styles.stockRow__flow}>
+                            {item.flowSignal.direction === "BUY"
+                              ? "매수"
+                              : item.flowSignal.direction === "SELL"
+                                ? "매도"
+                                : "균형"}{" "}
+                            {item.flowSignal.strength === "WEAK"
+                              ? "약함"
+                              : item.flowSignal.strength === "MODERATE"
+                                ? "보통"
+                                : "강함"}
+                          </span>
+                        ) : null}
                       </div>
                     </Link>
                   </li>
@@ -799,6 +823,8 @@ export default function StockListClient({
           </div>
 
           <WatchlistRailCard items={watchedItems} />
+
+          {alertRules.novexEnabled ? <StockSeasonLeaderboard /> : null}
 
           <div className={styles.railCard}>
             <div className={styles.railCard__head}>
@@ -875,6 +901,10 @@ export default function StockListClient({
             marketIndex={marketIndex}
             compact
           />
+
+          {alertRules.novexEnabled ? (
+            <StockDisclosureTimeline limit={6} />
+          ) : null}
         </aside>
       </div>
     </div>

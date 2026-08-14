@@ -211,6 +211,30 @@ export async function enqueueStockManualInterventionWebhook(
   );
 }
 
+export async function enqueueStockMarketRecoveryRequest(
+  payload: {
+    slotKey: string;
+    requestedAt: Date;
+    actor: { id: string; displayName: string; role: string };
+  },
+  dedupeKey: string,
+  options: { session?: ClientSession } = {},
+): Promise<void> {
+  await enqueueDelivery(
+    {
+      kind: "STOCK_MARKET_RECOVERY_REQUEST",
+      dedupeKey,
+      partitionKey: "stock-market:recovery",
+      partitionOrderAt: payload.requestedAt,
+      payload: {
+        ...payload,
+        requestedAt: payload.requestedAt.toISOString(),
+      },
+    },
+    options,
+  );
+}
+
 export async function enqueuePlayerTradeDiscordDm(
   payload: PlayerTradeDiscordDmInput,
   options: { session?: ClientSession } = {},

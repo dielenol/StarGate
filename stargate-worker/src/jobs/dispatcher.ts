@@ -4,6 +4,7 @@ import {
   type ScheduledJobExecutionResult,
   type ScheduledJobName,
 } from "@stargate/core";
+import { latestDueNovexSlot, novexKstDate, novexSlotKey } from "@stargate/core/domain/novex-market";
 
 import type { WorkerMode } from "../config.js";
 import type { ScheduledJobCoordinatorPort } from "./port.js";
@@ -39,11 +40,20 @@ function kstDateKey(date: Date): string {
   return `${value.year}-${value.month}-${value.day}`;
 }
 
+function kstMinuteKey(date: Date): string {
+  const due = latestDueNovexSlot(date);
+  if (due) return due;
+  const yesterday = new Date(date.getTime() - 24 * 60 * 60 * 1000);
+  return novexSlotKey(novexKstDate(yesterday), 23);
+}
+
 export function buildScheduledJobSlotKey(
-  _jobName: ScheduledJobName,
+  jobName: ScheduledJobName,
   requestedAt: Date,
 ): string {
-  return kstDateKey(requestedAt);
+  return jobName === "stocks.tick"
+    ? kstMinuteKey(requestedAt)
+    : kstDateKey(requestedAt);
 }
 
 export function parseScheduledJobName(value: string): ScheduledJobName {

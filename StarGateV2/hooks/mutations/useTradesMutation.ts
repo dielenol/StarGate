@@ -50,7 +50,10 @@ function useRefreshTradeAvailability() {
     if (
       !(error instanceof TradesApiError) ||
       (error.code !== "STOCK_TRADING_HALTED" &&
-        error.code !== "STOCK_PRICE_NOT_FOUND")
+        error.code !== "STOCK_PRICE_NOT_FOUND" &&
+        error.code !== "STOCK_COOLING_DOWN" &&
+        error.code !== "MARKET_CLOSED" &&
+        error.code !== "MARKET_OPENING_PENDING")
     ) {
       return;
     }

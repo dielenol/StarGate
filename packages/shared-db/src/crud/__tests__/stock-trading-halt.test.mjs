@@ -38,6 +38,7 @@ test(
     const trades = db.collection("player_trades");
     const users = db.collection("users");
     const characters = db.collection("characters");
+    const marketState = db.collection("stock_market_state");
     const client = await getClient();
 
     t.after(async () => {
@@ -379,5 +380,66 @@ test(
     } finally {
       await sequentialSession.endSession();
     }
+
+    const novexNow = new Date("2026-08-14T12:00:00.000Z");
+    const closedGift = await seedScenario("NOVEX_CLOSED");
+    await marketState.replaceOne(
+      { _id: "novex" },
+      {
+        _id: "novex",
+        status: "CLOSED",
+        tradingDate: "2026-08-14",
+        opensAt: new Date("2026-08-14T00:00:00.000Z"),
+        closesAt: new Date("2026-08-14T14:00:00.000Z"),
+        delayed: false,
+        tradeRevision: 0,
+        updatedAt: novexNow,
+      },
+      { upsert: true },
+    );
+    const closedSession = client.startSession();
+    try {
+      await assert.rejects(
+        closedSession.withTransaction(() => createAndSettleGift(
+          closedGift.initiator,
+          closedGift.counterparty,
+          closedGift.offer,
+          closedGift.actor,
+          closedSession,
+          { novexV2Enabled: true, now: novexNow },
+        )),
+        (error) => error instanceof PlayerTradeError && error.code === "MARKET_CLOSED",
+      );
+    } finally {
+      await closedSession.endSession();
+    }
+    await assertUnmoved(closedGift);
+
+    const coolingGift = await seedScenario("NOVEX_COOLING");
+    await marketState.updateOne(
+      { _id: "novex" },
+      { $set: { status: "OPEN", opensAt: new Date("2026-08-14T00:00:00.000Z"), closesAt: new Date("2026-08-14T14:00:00.000Z") } },
+    );
+    await prices.updateOne(
+      { ticker: coolingGift.ticker },
+      { $set: { cooldownUntil: new Date(novexNow.getTime() + 10 * 60 * 1000) } },
+    );
+    const coolingSession = client.startSession();
+    try {
+      await assert.rejects(
+        coolingSession.withTransaction(() => createAndSettleGift(
+          coolingGift.initiator,
+          coolingGift.counterparty,
+          coolingGift.offer,
+          coolingGift.actor,
+          coolingSession,
+          { novexV2Enabled: true, now: novexNow },
+        )),
+        (error) => error instanceof PlayerTradeError && error.code === "STOCK_COOLING_DOWN",
+      );
+    } finally {
+      await coolingSession.endSession();
+    }
+    await assertUnmoved(coolingGift);
   },
 );

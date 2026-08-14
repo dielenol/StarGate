@@ -18,6 +18,15 @@ export interface StockPrice {
   isTradingHalted?: boolean;
   /** 매매 claim과 거래정지 변경을 같은 문서 write로 직렬화하는 revision. */
   tradeRevision?: number;
+  /** 동일 ticker 기업행동 예약을 transaction 안에서 직렬화하는 revision. */
+  corporateActionRevision?: number;
+  /** NOVEX 2.0 동적 적정가. 전환 전 문서는 price를 적정가로 해석한다. */
+  referencePrice?: number;
+  /** 급격한 변동 뒤 자동 냉각 종료 시각. 수동 거래정지와 독립 상태다. */
+  cooldownUntil?: Date;
+  cooldownReason?: string;
+  /** GM exact override 때 다음 회차로 넘긴 기본 변동 기여도. */
+  pendingBasePercent?: number;
 }
 
 export type CreateStockPriceInput = Omit<StockPrice, "_id">;
@@ -47,7 +56,7 @@ export type CreateStockHoldingInput = Omit<StockHolding, "_id">;
  * 주식 가격 변동 시계열 로그 (ticker × event).
  *
  * - StockPrice 가 "현재 스냅샷" 이라면 본 컬렉션은 차트/이력 표시용 append-only.
- * - createdAt 기준 TTL 30 일 (`expireAfterSeconds: 30 * 24 * 60 * 60`).
+ * - createdAt 기준 영구 보관. 기존 TTL은 NOVEX 전환 migration에서 제거한다.
  * - source: 가격 변동 사유 분류.
  *   - "scheduled": tia_bot 스케줄 갱신.
  *   - "trade": 매매로 인한 가격 변동.
@@ -63,7 +72,29 @@ export interface StockPriceHistory {
   prevPrice: number;
   eventText?: string;
   eventTier?: "routine" | "scenario" | "shock";
-  source: "scheduled" | "trade" | "gm-event";
+  source: "scheduled" | "trade" | "gm-event" | "dividend" | "split";
+  /** NOVEX 가격 회차 키(KST `YYYY-MM-DD HH:mm`). */
+  slotKey?: string;
+  /**
+   * 경제적으로 가격이 유효해진 시각. 지연 회차·기업행동은 실제 insert 시각과
+   * 다를 수 있으며, 필드가 없는 레거시 문서는 createdAt을 사용한다.
+   */
+  effectiveAt?: Date;
+  /** 같은 effectiveAt에서 배당락(10) → 분할(20) → 가격 회차(30) 순서를 보존한다. */
+  effectiveSequence?: number;
+  /** 지연 실행에서 하나로 합쳐진 원본 회차들. */
+  mergedSlotKeys?: string[];
+  delayed?: boolean;
+  referencePrice?: number;
+  basePercent?: number;
+  flowPercent?: number;
+  disclosurePercent?: number;
+  disclosureIds?: string[];
+  splitFactor?: number;
+  /** 조회 시 이후 액면분할을 누적 반영한 차트용 보정값. DB 원문에는 없을 수 있다. */
+  adjustedPrice?: number;
+  adjustedReferencePrice?: number;
+  cumulativeSplitFactor?: number;
   createdAt: Date;
 }
 

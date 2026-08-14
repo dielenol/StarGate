@@ -26,6 +26,7 @@ export const CREDIT_TRANSACTION_TYPES = [
   "TRANSFER",
   "STOCK_BUY",
   "STOCK_SELL",
+  "STOCK_DIVIDEND",
   "OP_GRANT",
   "OP_DEDUCT",
   "MIGRATION",
@@ -93,6 +94,7 @@ export const BOT_ONLY_CREDIT_TYPES = [
   "OP_GRANT",
   "OP_DEDUCT",
   "MIGRATION",
+  "STOCK_DIVIDEND",
 ] as const satisfies readonly CreditTransactionType[];
 export type BotOnlyCreditType = (typeof BOT_ONLY_CREDIT_TYPES)[number];
 

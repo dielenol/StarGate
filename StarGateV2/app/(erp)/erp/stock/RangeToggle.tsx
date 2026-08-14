@@ -1,28 +1,30 @@
 "use client";
 
 /**
- * 차트 시간 범위 토글 (1D / 1W / 1M / ALL).
+ * 차트 시간 범위 토글 (1D / 1W / 1M / 3M / 1Y / ALL).
  *
- * - history API 의 days 파라미터는 1~30 만 허용 → ALL 도 30 일 매핑.
- *   (TTL 30 일 = "보유 가능한 모든" 데이터.)
+ * - NOVEX 2.0 이력은 영구 보관한다. 서버 API 는 range 값에 맞춰 필요한
+ *   기간을 조회하며 ALL 은 전체 이력을 요청하는 0일 sentinel 이다.
  * - role="tablist" + aria-selected 로 a11y. 키보드는 native button 으로 충분.
  */
 
 import styles from "./page.module.css";
 
-export type RangeKey = "1D" | "1W" | "1M" | "ALL";
+export type RangeKey = "1D" | "1W" | "1M" | "3M" | "1Y" | "ALL";
 
 export const RANGE_TO_DAYS: Record<RangeKey, number> = {
   "1D": 1,
   "1W": 7,
   "1M": 30,
-  ALL: 30,
+  "3M": 90,
+  "1Y": 365,
+  ALL: 0,
 };
 
 /** 종목 상세 진입 시 기본 range — 서버 initialHistory 시드 days 와 동기화. */
 export const INITIAL_RANGE: RangeKey = "1M";
 
-const RANGES: RangeKey[] = ["1D", "1W", "1M", "ALL"];
+const RANGES: RangeKey[] = ["1D", "1W", "1M", "3M", "1Y", "ALL"];
 
 interface Props {
   value: RangeKey;

@@ -640,10 +640,13 @@ async function processRewardOperation(args: {
         characterId: participant.characterId,
         ticker: reward.stockTicker ?? "",
         shares: reward.amount,
+        requestId,
+        actorId: session.id,
       });
       await notifyUser({
         userId: participant.ownerId,
-        type: "SYSTEM",
+        dedupeKey: `stock-reward:${requestId}:notification`,
+        type: "STOCK",
         title: "세션 주식 보상이 지급되었습니다",
         message: appendDescription(
           [

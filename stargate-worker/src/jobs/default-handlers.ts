@@ -3,9 +3,13 @@ import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbea
 import { runSessionReminderNotifications } from "@stargate/core/operations/session-reminders";
 import { ensureDailyStockRefresh } from "@stargate/core/operations/shop-refresh";
 import {
+  applyNovexStockMarketTick,
   applyScheduledStockTick,
+  previewNovexStockMarketTick,
+  resolveNovexV2Mode,
   rebuildScheduledStockTickSummary,
 } from "@stargate/core/operations/stocks-tick";
+import { processPendingStockDividendPayouts } from "@stargate/core/operations/stock-dividends";
 
 import {
   requestDailyShopRestockState,
@@ -42,6 +46,11 @@ export function createDefaultScheduledJobHandlers(
   dependencies: {
     grantAllowances?: typeof grantDailyCreditAllowances;
     sendSessionReminders?: typeof runSessionReminderNotifications;
+    applyNovexTick?: typeof applyNovexStockMarketTick;
+    previewNovexTick?: typeof previewNovexStockMarketTick;
+    applyLegacyStockTick?: typeof applyScheduledStockTick;
+    rebuildStockTickSummary?: typeof rebuildScheduledStockTickSummary;
+    processDividendPayouts?: typeof processPendingStockDividendPayouts;
   } = {},
 ): ScheduledJobHandlerRegistry {
   return new ScheduledJobHandlerRegistry([
@@ -72,22 +81,62 @@ export function createDefaultScheduledJobHandlers(
       jobName: "stocks.tick",
       async execute(context) {
         context.signal.throwIfAborted();
-        const applied = await applyScheduledStockTick({
-          now: context.requestedAt,
-          sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
-            process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
-          ),
+        const novexMode = resolveNovexV2Mode({
+          mode: process.env.NOVEX_V2_MODE,
+          legacyEnabled: process.env.NOVEX_V2_ENABLED,
         });
+        let shadowPreview:
+          | Awaited<ReturnType<typeof previewNovexStockMarketTick>>
+          | undefined;
+        let shadowError: string | undefined;
+        if (novexMode === "shadow") {
+          try {
+            shadowPreview = await (
+              dependencies.previewNovexTick ?? previewNovexStockMarketTick
+            )({
+              now: context.requestedAt,
+              slotKey: context.slotKey,
+            });
+          } catch (error) {
+            shadowError = error instanceof Error ? error.message : String(error);
+          }
+        }
+        const applied = novexMode === "enabled"
+          ? await (dependencies.applyNovexTick ?? applyNovexStockMarketTick)({
+            now: context.requestedAt,
+            slotKey: context.slotKey,
+          })
+          : await (dependencies.applyLegacyStockTick ?? applyScheduledStockTick)({
+            now: context.requestedAt,
+            sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
+              process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
+            ),
+          });
         context.signal.throwIfAborted();
-        const result =
-          (await rebuildScheduledStockTickSummary(applied.date)) ??
-          applied;
+        const result = novexMode === "enabled"
+          ? applied
+          : (await (
+              dependencies.rebuildStockTickSummary ??
+              rebuildScheduledStockTickSummary
+            )(applied.date)) ?? applied;
         context.signal.throwIfAborted();
-        const announcement = await requestStockMarketWireState(
-          result,
-          context.requestedAt,
+        const announcement =
+          !result.skipDiscord && result.slot.endsWith("23:00")
+            ? await requestStockMarketWireState(result, context.requestedAt)
+            : false;
+        const dividends = novexMode === "enabled"
+          ? await (dependencies.processDividendPayouts ?? processPendingStockDividendPayouts)()
+          : { paid: 0, totalAmount: 0, errors: 0, drained: true };
+        const dividendErrors = dividends.errors ?? 0;
+        context.signal.throwIfAborted();
+        throwIfScheduledJobPartiallyFailed(
+          "stocks.tick",
+          (dividends.drained ? 0 : 1) + dividendErrors,
+          {
+            dividendErrors,
+            dividendQueueRemaining: dividends.drained ? 0 : 1,
+          },
         );
-        context.signal.throwIfAborted();
         const updated = result.results.filter(
           (item) => item.status === "updated",
         ).length;
@@ -101,7 +150,22 @@ export function createDefaultScheduledJobHandlers(
           initialized,
           skipped: result.results.length - updated - initialized,
           announcement,
-          mutated: updated + initialized > 0,
+          dividendsPaid: dividends.paid,
+          dividendsAmount: dividends.totalAmount,
+          dividendErrors,
+          ...(result.warning ? { warning: result.warning } : {}),
+          ...(shadowPreview
+            ? {
+                shadowSlot: shadowPreview.slot,
+                shadowUpdated: shadowPreview.results.filter(
+                  (item) => item.status === "updated",
+                ).length,
+              }
+            : {}),
+          ...(shadowError ? { shadowError } : {}),
+          novexMode,
+          mutated:
+            result.marketStateChanged === true || updated + initialized > 0,
         };
       },
     },

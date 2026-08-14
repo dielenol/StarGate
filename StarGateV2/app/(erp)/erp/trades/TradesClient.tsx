@@ -116,15 +116,21 @@ function summarizeOffer(offer: PlayerTradeOffer): string {
 
 function getStockAvailabilityLabel(
   availability: PlayerTradeStockAvailability | undefined,
-): "시세 미등록" | "거래정지" | null {
+): "시세 미등록" | "거래정지" | "자동 냉각" | "시장 준비 중" | "시장 폐장" | null {
   if (!availability?.isSeeded) return "시세 미등록";
-  return availability.isTradingHalted ? "거래정지" : null;
+  if (availability.marketStatus === "OPENING_PENDING") return "시장 준비 중";
+  if (availability.marketStatus === "CLOSED") return "시장 폐장";
+  if (availability.isTradingHalted) return "거래정지";
+  return availability.isCoolingDown ? "자동 냉각" : null;
 }
 
 function getUnavailableOfferStocks(
   offer: PlayerTradeOffer,
   availabilityByTicker: StockAvailabilityMap,
-): Array<{ ticker: string; label: "시세 미등록" | "거래정지" }> {
+): Array<{
+  ticker: string;
+  label: NonNullable<ReturnType<typeof getStockAvailabilityLabel>>;
+}> {
   return offer.stocks.flatMap((stock) => {
     const label = getStockAvailabilityLabel(
       availabilityByTicker.get(stock.ticker),
@@ -329,7 +335,11 @@ function OfferEditor({
     (stock) => (stockShares[stock.ticker] ?? 0) > 0,
   );
   const hasUnavailableSelectedStock = selectedStocks.some(
-    (stock) => !stock.isSeeded || stock.isTradingHalted,
+    (stock) =>
+      !stock.isSeeded ||
+      stock.marketStatus !== "OPEN" ||
+      stock.isTradingHalted ||
+      stock.isCoolingDown,
   );
   const selectedCreditAmount = Math.max(0, Number(credits) || 0);
   const assetLineCount =
@@ -558,8 +568,14 @@ function OfferEditor({
                   const shares = stockShares[stock.ticker] ?? 0;
                   const availabilityLabel = !stock.isSeeded
                     ? "시세 미등록"
+                    : stock.marketStatus === "OPENING_PENDING"
+                      ? "시장 준비 중"
+                      : stock.marketStatus === "CLOSED"
+                        ? "시장 폐장"
                     : stock.isTradingHalted
                       ? "거래정지"
+                      : stock.isCoolingDown
+                        ? "자동 냉각"
                       : null;
                   return (
                     <article key={stock.ticker} className={[styles.stockCard, shares > 0 ? styles.stockCardSelected : "", availabilityLabel ? styles.stockCardHalted : ""].filter(Boolean).join(" ")}>
@@ -720,9 +736,15 @@ function OfferEditor({
                     {stock.name}
                     {!stock.isSeeded
                       ? " · 시세 미등록"
-                      : stock.isTradingHalted
-                        ? " · 거래정지"
-                        : ""}
+                      : stock.marketStatus === "OPENING_PENDING"
+                        ? " · 시장 준비 중"
+                        : stock.marketStatus === "CLOSED"
+                          ? " · 시장 폐장"
+                          : stock.isTradingHalted
+                            ? " · 거래정지"
+                            : stock.isCoolingDown
+                              ? " · 자동 냉각"
+                              : ""}
                   </span>
                   <strong>
                     {stock.ticker} · {stockShares[stock.ticker]}주

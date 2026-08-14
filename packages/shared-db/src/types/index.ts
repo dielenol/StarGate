@@ -164,6 +164,36 @@ export type {
 } from "./stock.js";
 
 export type {
+  StockMarketStatus,
+  StockMarketClosureReason,
+  StockMarketState,
+  StockMarketSnapshot,
+  StockMarketCalendarException,
+  StockOrderFlowSide,
+  StockOrderFlow,
+  StockFlowStrength,
+  StockFlowSignal,
+  StockDisclosureStatus,
+  StockDisclosureKind,
+  StockDisclosureEffect,
+  StockDisclosure,
+  StockAlertKind,
+  StockMarketAlertRule,
+  StockMarketPreference,
+  StockCorporateActionStatus,
+  StockDividendAction,
+  StockSplitAction,
+  StockCorporateAction,
+  StockDividendEntitlement,
+  StockInvestmentSeason,
+  StockSeasonFlowKind,
+  StockSeasonFlow,
+  StockSeasonPerformance,
+  StockSeasonLeaderboardEntry,
+} from "./stock-market.js";
+export { STOCK_MARKET_STATE_ID } from "./stock-market.js";
+
+export type {
   StockScheduledEvent,
   StockScheduledEventActor,
   StockScheduledEventStatus,

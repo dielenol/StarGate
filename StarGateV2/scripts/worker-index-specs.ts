@@ -42,9 +42,8 @@ export const WORKER_REQUIRED_INDEXES: readonly RequiredIndexSpec[] = [
   },
   {
     collection: "stock_price_history",
-    name: "stock_price_history_ttl",
+    name: "stock_price_history_createdAt",
     key: { createdAt: 1 },
-    expireAfterSeconds: 30 * 24 * 60 * 60,
   },
   {
     collection: "scheduled_job_runs",
