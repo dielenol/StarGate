@@ -52,3 +52,12 @@
 - 검증: 실제 MongoDB 7 replica set 경쟁·rollback·105개 대기 예약 조회 2건, 예약·틱 집중 테스트 16건, `pnpm typecheck`, 전체 `pnpm lint`, production build, GM 인증 로컬 브라우저 렌더링·오류 확인, critical risk review
 - 관련 커밋: `e89e2065`
 - 운영 경계: 라이브 예약·시세 mutation과 신규 인덱스 적용은 실행하지 않았다.
+
+## 2026-08-14 · 기능 확장 · NOVEX 운영 센터
+
+- GM이 초안·예약·공개·취소 공시와 날짜별 조기 폐장 예외, 배당·정방향 액면분할, 지연 회차 복구 요청을 한 화면에서 운영할 수 있게 했다.
+- 모든 신규 mutation에 GM RBAC·Idempotency-Key·감사 outbox를 적용하고, enabled 전에는 쓰기를 막아 shadow 계산과 운영 전환을 분리했다.
+- 기존 PENDING 예약의 공시 변환, 적정가 backfill, 가격 이력 TTL 제거와 신규 인덱스를 정확한 계획 해시로 확인·적용하는 승인형 migration 도구와 runbook을 추가했다.
+- 검증: GM route·멱등·회차 경쟁 계약, `pnpm typecheck`, 전체 `pnpm lint`, production build, 인증 로컬 관리자 화면 확인, critical risk review
+- 관련 커밋: `fb012220`
+- 운영 경계: migration·인덱스·플래그·Dokploy cron·공시·기업행동·복구 요청을 라이브에 실행하지 않았다.

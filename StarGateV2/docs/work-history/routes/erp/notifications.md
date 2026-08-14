@@ -27,3 +27,11 @@
 - 알림 목록/요약 GET에 ETag/304 도입 — 전 ERP 페이지 공통 60초 폴링에서 데이터 불변 시 응답 바디 0B.
 - 검증: http-cache 단위 테스트, `pnpm build`
 - 관련 커밋: `0390f80`
+
+## 2026-08-14 · 기능 추가 · 주식 개인 알림
+
+- 관심종목의 목표가 하향 돌파·회차 등락·공시와 시즌 순위를 새 `STOCK` ERP 알림으로 표시하고 Discord DM과 분리했다.
+- 목표가는 재상승 뒤 재무장하고, 등락은 회차별 한 번, 공시는 공시 ID별 한 번만 생성되도록 dedupe했다.
+- 검증: 알림 crossing·재무장·동시 설정 저장 계약, worker 대상 Query invalidation, `pnpm typecheck`, 전체 `pnpm lint`, production build, 인증 로컬 알림 화면 확인
+- 관련 커밋: `fb012220`
+- 운영 경계: 라이브 개인 알림과 Discord 메시지는 생성하지 않았다.

@@ -16,3 +16,10 @@
 - exact key 중복 제거, resource 순서와 기존 prefix invalidation 계약은 유지했다.
 - 검증: realtime Query key·client 계약 및 Query 런타임 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 커밋: `c488f832`
+
+## 2026-08-14 · 기능 확장 · NOVEX Query 동기화
+
+- 시장 상태·공시·계정 설정·기업행동·시즌·성과·시즌 원장 변경을 기존 `stocks` prefix로 묶고, 가격·보유량 변경은 거래 화면도 함께 무효화한다.
+- realtime 연결 장애에서는 기존 fallback polling을 유지하고, 사용자별 설정·알림 데이터는 대상 사용자에게만 전달한다.
+- 검증: worker realtime 101건 전체 테스트와 웹 Query·거래 계약 테스트
+- 관련 커밋: `fb012220`

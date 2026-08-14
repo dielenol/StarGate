@@ -8,3 +8,12 @@
 - worker 전용 인덱스 적용 범위를 필수 항목으로 제한하고 DB·TTL 영향을 fail-closed preflight로 확인하도록 했다.
 - 검증: core 계약, lease 복구, outbox, realtime, socket, scheduled job과 worker 인덱스 테스트를 보강했다.
 - 관련 커밋: `430e310`, `745de5f`, `d3b5ff1`
+
+## 2026-08-14 · 기능 확장 · NOVEX 회차·복구 소유권
+
+- `stargate-worker`가 KST 09·13·18·23시 가격 회차, 다음 회차 전 재시도, 오래된 slot 병합과 정규 일요일 조기 폐장·월요일 이월을 담당하도록 했다.
+- 웹 cron은 인증된 수동 복구 진입점으로 유지하고, `disabled|shadow|enabled` 모드와 durable 복구 outbox로 계산·실행·운영 전환을 분리했다.
+- 23시 장부와 충격 공시·정지·냉각 Discord 전달은 desired-state·partition 순서·멱등 키로 수렴시키고, 늦게 복구된 종가 브리핑은 생략한다.
+- 검증: core 31건, worker 101건, production build, index preflight 계약, critical risk review
+- 관련 커밋: `fb012220`
+- 운영 경계: Dokploy 일정·worker/Web 플래그·라이브 outbox와 Discord 상태는 변경하지 않았다.

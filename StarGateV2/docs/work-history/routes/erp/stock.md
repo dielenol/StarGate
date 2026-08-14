@@ -117,3 +117,12 @@
 - 검증: 주식·거래 집중 테스트 64건 통과, replica-set 통합 테스트 1건 환경 부재 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
 - 관련 커밋: `f75fd2ea`
 - 운영 경계: 라이브 종목 거래 상태·시세·보유량·거래는 변경하지 않았다.
+
+## 2026-08-14 · 기능 확장 · NOVEX 2.0 시장 화면
+
+- KST 09·13·18·23시 가격 회차와 개폐장·조기 폐장·지연 상태, 종목별 수동 정지·자동 냉각과 수급 방향·강도를 시세 화면에 표시했다.
+- 공개 전 제한 정보와 공개 후 전문을 구분한 공시 타임라인, 계정 기반 관심종목·조건 알림, 격주 시즌 순위와 `1일·1주·1개월·3개월·1년·전체` 차트 범위를 연결했다.
+- 기능 플래그가 비활성·shadow일 때는 기존 거래와 브라우저 설정을 보존하고, enabled 뒤에만 서버 설정 이전과 신규 시장 정책을 적용한다.
+- 검증: shared NOVEX 결정 테스트 13건 통과·replica 전용 2건 skip, core 31건, worker 101건, 웹 주식·거래·인덱스 계약 68건, `pnpm typecheck`, 전체 `pnpm lint`, production build 100페이지, 인증 로컬 화면 확인, critical risk review
+- 관련 커밋: `fb012220`
+- 운영 경계: 라이브 TTL·인덱스·적정가 backfill·기능 플래그·Dokploy 일정·시장 데이터는 변경하지 않았다.

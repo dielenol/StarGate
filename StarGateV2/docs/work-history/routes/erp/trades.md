@@ -63,3 +63,11 @@
 - 검증: 주식·거래 집중 테스트 64건 통과, replica-set 통합 테스트 1건 환경 부재 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
 - 관련 커밋: `f75fd2ea`
 - 운영 경계: 라이브 플레이어 거래·보유량·크레딧·Discord DM은 변경하지 않았다.
+
+## 2026-08-14 · 안전성 확장 · 시장 상태·냉각 거래 차단
+
+- 즉시 선물과 양측 교환의 제안 저장·첫 확정·최종 정산이 시장 개장, 종목 수동 정지, 자동 냉각을 자산 mutation 전 같은 transaction에서 검사하도록 확장했다.
+- 진행 중 제안은 종목별 거래 가능 상태를 응답·ETag에 포함해 문제 종목을 제안자가 제거할 수 있고, 양측 제안이 모두 유효할 때만 확정할 수 있다.
+- 검증: 거래·주식·멱등 계약 34건, worker realtime 테스트, replica 경쟁 테스트 환경 부재 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
+- 관련 커밋: `fb012220`
+- 운영 경계: 라이브 거래·선물·보유량·크레딧·DM은 변경하지 않았다.
