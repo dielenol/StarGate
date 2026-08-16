@@ -110,6 +110,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 - [`/erp/equipment-shop/acheron`](routes/erp/equipment-shop/acheron.md)
 - [`/erp/credits`](routes/erp/credits.md)
 - [`/erp/factions`](routes/erp/factions.md)
+- [`/erp/gallery`](routes/erp/gallery.md)
 - [`/erp/inventory/[characterId]`](routes/erp/inventory/_characterId.md)
 - [`/erp/notifications`](routes/erp/notifications.md)
 - [`/erp/research`](routes/erp/research.md)
