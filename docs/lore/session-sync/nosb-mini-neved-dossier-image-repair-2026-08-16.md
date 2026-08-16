@@ -14,15 +14,15 @@ source: user-provided
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `SIMON_OCALLAHAN` | 사이먼 오 캘러핸 (`Simon O'Callahan`) | 별칭 없음 | 갈로글라 전사 / 키아나의 선대·교사 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 사망자; 현재 파견 없음 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Simon-O-Callahan-profile.webp` | 기존 공개 보존 | 기존 신상·사망 상태 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `CONNOR_OCALLAHAN` | 코너 오 캘러핸 (`Connor O'Callahan`) | 별칭 없음 | 갈로글라 지도자 / 오 캘러핸 가주 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 욤스비킹 동맹 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Connor-O-Callahan-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `NERIN_OCALLAHAN` | 네린 오 캘러핸 (`Nerin O'Callahan`) | 별칭 없음 | 갈로글라 공동체 주민 / 오 캘러핸 가문 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 기억 속 주민 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Nerin-O-Callahan-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 갈로글라 청년 전사대장 / 현 섹터 B 경호원 보존 | 기존 ERP codename 보존 | 이번 이미지 payload에서는 기존 `MILITARY / GALLOGLA` 보존 | 기존 섹터 B 경호 기록 보존; 소속 정정은 별도 live 확인 대상 | 외부 분류 상태의 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Garrett-Climac-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `ENDA_CLIMAC` | 엔다 클라이맥 (`Enda Climac`) | 별칭 없음 | 은퇴한 갈로글라 전사 / 클라이맥 원로 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 은퇴 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Enda-Climac-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `EVA_HANNER` | 에바 한너 (`Eva Hanner`) | 별칭 없음 | 갈로글라 한너 클랜 지도자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 클랜 지도 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Eva-Hanner-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `SVEN_TROELBEIN` | 스벤 트로엘베인 (`Sven Troelbein`) | 별칭 없음 | 욤스비킹 지도자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / JOMSVIKING` 보존 | 기존 갈로글라·오르도 동맹 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Sven-Troelbein-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `YOMS` | 욤스 (기록명; 실명 미확인) | 별칭 없음 | 욤스비킹 포로·정보원 / 회수 생존자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / JOMSVIKING` 보존 | 기존 포로·회수 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Yoms-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
-| `GAL_MUJIK` | 갈 무직 (기록명; 실명 미확인) | 별칭 없음 | 갈로글라 경비 / 욤스 회수 협력자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 비밀 회수 지원 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Gal-Mujik-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | ready-for-apply |
+| `SIMON_OCALLAHAN` | 사이먼 오 캘러핸 (`Simon O'Callahan`) | 별칭 없음 | 갈로글라 전사 / 키아나의 선대·교사 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 사망자; 현재 파견 없음 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Simon-O-Callahan-profile.webp` | 기존 공개 보존 | 기존 신상·사망 상태 보존 | 기존 서술·관계 보존 | applied |
+| `CONNOR_OCALLAHAN` | 코너 오 캘러핸 (`Connor O'Callahan`) | 별칭 없음 | 갈로글라 지도자 / 오 캘러핸 가주 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 욤스비킹 동맹 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Connor-O-Callahan-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
+| `NERIN_OCALLAHAN` | 네린 오 캘러핸 (`Nerin O'Callahan`) | 별칭 없음 | 갈로글라 공동체 주민 / 오 캘러핸 가문 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 기억 속 주민 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Nerin-O-Callahan-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
+| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 갈로글라 청년 전사대장 / 현 섹터 B 경호원 보존 | 기존 ERP codename 보존 | 이미지 payload는 기존 소속을 보존했고 별도 승인 payload로 `NOVUS_ORDO / MANUS / SECTOR_B` 정정 완료 | 기존 섹터 B 경호 기록 보존; 현재 정규 배치는 별도 원장에 기록 | agentLevel 미저장 유지 | 사용자 지정 `/assets/npcs/Garrett-Climac-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
+| `ENDA_CLIMAC` | 엔다 클라이맥 (`Enda Climac`) | 별칭 없음 | 은퇴한 갈로글라 전사 / 클라이맥 원로 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 은퇴 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Enda-Climac-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
+| `EVA_HANNER` | 에바 한너 (`Eva Hanner`) | 별칭 없음 | 갈로글라 한너 클랜 지도자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 클랜 지도 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Eva-Hanner-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
+| `SVEN_TROELBEIN` | 스벤 트로엘베인 (`Sven Troelbein`) | 별칭 없음 | 욤스비킹 지도자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / JOMSVIKING` 보존 | 기존 갈로글라·오르도 동맹 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Sven-Troelbein-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
+| `YOMS` | 욤스 (기록명; 실명 미확인) | 별칭 없음 | 욤스비킹 포로·정보원 / 회수 생존자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / JOMSVIKING` 보존 | 기존 포로·회수 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Yoms-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
+| `GAL_MUJIK` | 갈 무직 (기록명; 실명 미확인) | 별칭 없음 | 갈로글라 경비 / 욤스 회수 협력자 보존 | 기존 ERP codename 보존 | 기존 `MILITARY / GALLOGLA` 보존 | 기존 비밀 회수 지원 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Gal-Mujik-profile.webp` | 기존 공개 보존 | 기존 신상 보존 | 기존 서술·관계 보존 | applied |
 
 ## Visual Asset Ledger
 
@@ -45,4 +45,15 @@ source: user-provided
 - fields: `previewImage`, `lore.mainImage`, `updatedAt`
 - CAS baseline: 두 이미지 필드가 모두 `/assets/npcs/Unknown-Person-profile.webp`인 기존 NPC만 수정
 - not touched: 조직·권한·인적 정보·관계·세션 출현·보고서·wiki·catalog·credits·inventory·stocks
-- live status: 사용자에게 전후 값과 부작용을 제시한 뒤 최종 확인 대기
+- live status: 사용자 최종 승인 후 2026-08-16 적용 및 독립 재조회·브라우저 검증 완료
+
+## Live Execution Record
+
+- DB: `stargate`
+- run id: `seed-payload:d02760c4-8346-46e4-ae31-734727988f60`
+- atomic result: 9개 대상 모두 `previewImage`와 `lore.mainImage` 갱신, 9/9 commit
+- DB postcondition: 동일 payload dry-run 재조회에서 9개 모두 `unchanged`; 신원·소속·권한·공개 여부·인적 정보·관계·세션 출현 보존 확인
+- Dossier card: 9/9 지정 asset 로드, natural 51×69, rendered 50×50, `object-fit: cover`
+- Dossier detail: 9/9 지정 asset 로드, natural 320×426, rendered 238×317, `object-fit: cover`
+- browser health: 최종 상세 페이지의 깨진 이미지 0건, 애플리케이션 콘솔 오류 0건. Chrome 확장 프로그램의 Vue Devtools 중복 경고는 앱 오류에서 제외
+- Garrett current affiliation: 이미지 payload와 분리된 승인 payload로 정정했으며 세부 실행 기록은 `nosb-mini-neved-garrett-sector-b-affiliation-repair-2026-08-16.md`에 보존

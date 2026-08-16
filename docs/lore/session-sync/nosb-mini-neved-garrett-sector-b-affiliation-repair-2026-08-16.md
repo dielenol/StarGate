@@ -14,7 +14,7 @@ MINI06 현재 시점 기록에서 개럿 클라이맥은 섹터 B 경호원으�
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 표시 역할 유지: 갈로글라 청년 전사대장(과거) / 섹터 B 경호원(현재); MINI06 현재 기록과 사용자 확정 | 기존 ERP codename와 MINI06 인물 식별 보존 | `MILITARY / GALLOGLA` → `NOVUS_ORDO / MANUS / SECTOR_B`; 사용자 이동 지시 | 섹터 B 경호를 현재 정규 배치로 반영; 별도 파견 없음 | agentLevel 미등록 유지(소속 필드 정정 영향 검토: 사용자가 미설정 유지를 확정했고 경호 보직만으로 내부 접근 권한을 추론하지 않음) | 사용자 지정 `/assets/npcs/Garrett-Climac-profile.webp` | 기존 공개 유지 | 남성·연령/신장/체중 미상·얼굴 흉터·생존 상태 보존 | 현재 소속 문장과 역할 상세만 정정; 키아나·사이먼 관계와 세션 출현 보존 | ready-for-apply |
+| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 표시 역할 유지: 갈로글라 청년 전사대장(과거) / 섹터 B 경호원(현재); MINI06 현재 기록과 사용자 확정 | 기존 ERP codename와 MINI06 인물 식별 보존 | `MILITARY / GALLOGLA` → `NOVUS_ORDO / MANUS / SECTOR_B`; 사용자 이동 지시 | 섹터 B 경호를 현재 정규 배치로 반영; 별도 파견 없음 | agentLevel 미등록 유지(소속 필드 정정 영향 검토: 사용자가 미설정 유지를 확정했고 경호 보직만으로 내부 접근 권한을 추론하지 않음) | 사용자 지정 `/assets/npcs/Garrett-Climac-profile.webp` | 기존 공개 유지 | 남성·연령/신장/체중 미상·얼굴 흉터·생존 상태 보존 | 현재 소속 문장과 역할 상세만 정정; 키아나·사이먼 관계와 세션 출현 보존 | applied |
 
 ## Apply Scope
 
@@ -25,4 +25,16 @@ MINI06 현재 시점 기록에서 개럿 클라이맥은 섹터 B 경호원으�
 - additive context: 갈로글라는 과거 소속·역할과 검색 태그에 보존
 - synchronized prose: `lore.background`, `lore.roleDetail`, `lore.loreTags`, `loreMd`
 - not touched: 역할 표시문·신원·공개 여부·인적 정보·관계·세션 출현·성격 관찰·credits·inventory·shop·stocks
-- live status: 사용자 exact 승인 확보; 검증 및 committed-source gate 통과 후 실행
+- live status: 사용자 exact 승인 후 2026-08-16 적용 및 독립 재조회·브라우저 검증 완료
+
+## Live Execution Record
+
+- DB: `stargate`
+- run id: `seed-payload:18796a12-fbfb-4f00-a54d-3d799c568117`
+- character id: `6a7d3fb81071f594447b1ebd`
+- atomic result: `GARRETT_CLIMAC` 1/1 commit
+- DB postcondition: `factionCode = NOVUS_ORDO`, `institutionCode = MANUS`, `department = SECTOR_B`, `agentLevel` 없음, `personnelVisible = true`, 관계 2건·세션 출현 1건 보존
+- independent reread: 동일 payload dry-run에서 `unchanged`
+- Dossier route: 조직 검색 결과가 `group=MANUS&sub=SECTOR_B`로 연결되고 상세 breadcrumb·신원 소속이 `브라보 섹터`로 표시됨
+- Dossier image: `/assets/npcs/Garrett-Climac-profile.webp` 정상 로드, 상세 natural 320×426 / rendered 238×317 / `object-fit: cover`
+- browser health: 깨진 이미지 0건, 애플리케이션 콘솔 오류 0건. Chrome 확장 프로그램의 Vue Devtools 중복 경고는 앱 오류에서 제외
