@@ -14,11 +14,11 @@ source: user-provided
 
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `RONNIE_KEANE` | 로니 킨 (`Ronnie Keane`) | 별칭 없음 | 갈로글라 공동체 사냥꾼 / 사이먼 사망 증언자 보존 | 기존 ERP codename과 durable spec 보존 | `MILITARY / GALLOGLA` 보존 | 없음; 공동체 정규 역할 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Ronnie-Keane-profile.webp` | `true` 보존 | 기존 성별·나이·신장·체중 미상 보존 | 기존 서술·관계·사건 링크 보존 | ready-for-apply |
-| `NOSTER` | 노스터 (`Noster`; 성명 전체 미확인) | 별칭 없음 | 갈로글라 공동체 양조업자 / 야수화 주사 절도 증언자 보존 | 기존 ERP codename과 durable spec 보존 | `MILITARY / GALLOGLA` 보존 | 없음; 공동체 정규 역할 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Noster-profile.webp` | `true` 보존 | 기존 성별·나이·신장·체중 미상 및 `DECEASED` 상태 보존 | 기존 서술·관계·사건 링크 보존 | ready-for-apply |
-| `DOCTOR_ZENO` | 제노 (`Zeno`; 닥터는 직함) | 별칭 없음 | 연구 기구 사무차장 / 프로젝트 데드 핸드 직접 지휘자 보존 | 기존 ERP codename과 durable spec 보존 | `NOVUS_ORDO / SECRETARIAT / RESEARCH` 보존 | 없음; 사무차장 정규 직무 보존 | `V` 보존 | 사용자 지정 `/assets/npcs/Doctor-Zeno-profile.webp` | `true` 보존 | 기존 성별·나이·신장·체중 미기록 보존 | 기존 서술·관계·성격 관찰·사건 링크 보존 | ready-for-apply |
-| `PUTIN` | 블라디미르 푸틴 (`Vladimir Putin`) | 별칭 없음 | 러시아 연방 대통령 / 섹터 C 국영화 지시권자 보존 | 기존 ERP codename과 durable spec 보존 | `MILITARY / RUSSIA` 보존 | 섹터 C에는 후방 지시권자로만 기록 | 외부 인원이라 agentLevel 미저장 보존 | `/assets/npcs/Unknown-Person-profile.webp` 유지 | `true` 보존 | 기존 신상 미기록 보존 | 사용자가 당분간 초상 미지정을 명시; 기존 서술·관계 보존 | ready-for-apply |
-| `WHITE_ROSE_R` | R (실명 미확인) | 별칭 없음 | 화이트로즈 수장(자칭) / 레짐 체인지 제안자 보존 | 기존 교신 식별명과 ERP codename 보존 | `CIVIL / WHITE_ROSE` 보존 | 섹터 C 긴급 교신 개입 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | `/assets/npcs/Unknown-Person-profile.webp` 유지 | `true` 보존 | 기존 성별·나이·신장·체중 미상 보존 | 사용자가 당분간 초상 미지정을 명시; 기존 서술·관계 보존 | ready-for-apply |
+| `RONNIE_KEANE` | 로니 킨 (`Ronnie Keane`) | 별칭 없음 | 갈로글라 공동체 사냥꾼 / 사이먼 사망 증언자 보존 | 기존 ERP codename과 durable spec 보존 | `MILITARY / GALLOGLA` 보존 | 없음; 공동체 정규 역할 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Ronnie-Keane-profile.webp` | `true` 보존 | 기존 성별·나이·신장·체중 미상 보존 | 기존 서술·관계·사건 링크 보존 | applied |
+| `NOSTER` | 노스터 (`Noster`; 성명 전체 미확인) | 별칭 없음 | 갈로글라 공동체 양조업자 / 야수화 주사 절도 증언자 보존 | 기존 ERP codename과 durable spec 보존 | `MILITARY / GALLOGLA` 보존 | 없음; 공동체 정규 역할 보존 | 외부 인원이라 agentLevel 미저장 보존 | 사용자 지정 `/assets/npcs/Noster-profile.webp` | `true` 보존 | 기존 성별·나이·신장·체중 미상 및 `DECEASED` 상태 보존 | 기존 서술·관계·사건 링크 보존 | applied |
+| `DOCTOR_ZENO` | 제노 (`Zeno`; 닥터는 직함) | 별칭 없음 | 연구 기구 사무차장 / 프로젝트 데드 핸드 직접 지휘자 보존 | 기존 ERP codename과 durable spec 보존 | `NOVUS_ORDO / SECRETARIAT / RESEARCH` 보존 | 없음; 사무차장 정규 직무 보존 | `V` 보존 | 사용자 지정 `/assets/npcs/Doctor-Zeno-profile.webp` | `true` 보존 | 기존 성별·나이·신장·체중 미기록 보존 | 기존 서술·관계·성격 관찰·사건 링크 보존 | applied |
+| `PUTIN` | 블라디미르 푸틴 (`Vladimir Putin`) | 별칭 없음 | 러시아 연방 대통령 / 섹터 C 국영화 지시권자 보존 | 기존 ERP codename과 durable spec 보존 | `MILITARY / RUSSIA` 보존 | 섹터 C에는 후방 지시권자로만 기록 | 외부 인원이라 agentLevel 미저장 보존 | `/assets/npcs/Unknown-Person-profile.webp` 유지 | `true` 보존 | 기존 신상 미기록 보존 | 사용자가 당분간 초상 미지정을 명시; 기존 서술·관계 보존 | applied |
+| `WHITE_ROSE_R` | R (실명 미확인) | 별칭 없음 | 화이트로즈 수장(자칭) / 레짐 체인지 제안자 보존 | 기존 교신 식별명과 ERP codename 보존 | `CIVIL / WHITE_ROSE` 보존 | 섹터 C 긴급 교신 개입 기록 보존 | 외부 인원이라 agentLevel 미저장 보존 | `/assets/npcs/Unknown-Person-profile.webp` 유지 | `true` 보존 | 기존 성별·나이·신장·체중 미상 보존 | 사용자가 당분간 초상 미지정을 명시; 기존 서술·관계 보존 | applied |
 
 ## Visual Asset Ledger
 
@@ -40,10 +40,16 @@ source: user-provided
 - fields: `previewImage`, `lore.mainImage`, `updatedAt`
 - CAS baseline: 기존 신원·조직·공개·등급·사망 상태와 두 이미지 필드의 placeholder 값을 모두 만족하는 NPC만 수정
 - not touched: `PUTIN`, `WHITE_ROSE_R`, 다른 NPC, 신원·조직·권한·인적 정보·생사·서술·관계·세션 출현·보고서·wiki·catalog·credits·inventory·stocks
-- live status: 별도 최종 확인 전이므로 pending; repository asset/spec/payload만 준비
+- live status: 사용자 승인 후 2026-08-16 적용 및 DB 재조회·Dossier 카드/상세 렌더 검증 완료
 
 ## Live Execution Record
 
 - DB: `stargate`
-- status: pending separate confirmation
-- postcondition: pending live execution and Dossier card/detail verification
+- run id: `seed-payload:89fea895-fe19-4ea0-99a1-03a33f967807`
+- atomic result: `RONNIE_KEANE`, `NOSTER`, `DOCTOR_ZENO` 3건 모두 `previewImage`와 `lore.mainImage` 갱신, 3/3 commit
+- DB postcondition: 동일 payload 재실행 dry-run에서 3건 모두 `unchanged`; 독립 재조회에서 소속·권한·공개·생사·관계·세션 출현·성격 관찰 보존 확인
+- explicit no-image postcondition: `PUTIN`, `WHITE_ROSE_R`의 두 이미지 필드는 모두 `/assets/npcs/Unknown-Person-profile.webp` 유지
+- Dossier card: 3/3 지정 asset 로드, natural 51×69, rendered 50×50, `object-fit: cover`, backdrop `rgb(21, 21, 26)`
+- Dossier detail: 3/3 지정 asset 로드, natural 320×426, rendered 238×317, `object-fit: cover`, transparent frame backdrop
+- browser health: 갈로글라 카드, 연구 기구 카드, 세 상세 Dossier 총 5개 라우트의 깨진 이미지 0건; 애플리케이션 출처 콘솔 오류 0건
+- browser exclusion: Chrome 확장 프로그램의 Vue Devtools 중복 설치 경고 7건은 애플리케이션 오류에서 제외
