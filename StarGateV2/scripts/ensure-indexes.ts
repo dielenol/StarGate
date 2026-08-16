@@ -6,8 +6,11 @@ import {
   close,
   ensureAllIndexes,
   getClient,
+  getDb,
   initServerless,
 } from "@stargate/shared-db";
+
+import { ensureGalleryIndexes } from "../lib/gallery/indexes.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "..");
@@ -79,6 +82,7 @@ initServerless({ uri: indexUri, dbName, maxPoolSize: 5 });
 try {
   console.log(`Ensuring MongoDB indexes for database "${dbName}"...`);
   await ensureAllIndexes();
+  await ensureGalleryIndexes(await getDb());
   console.log(`MongoDB indexes are up to date for database "${dbName}".`);
 } finally {
   const client = await getClient().catch(() => null);

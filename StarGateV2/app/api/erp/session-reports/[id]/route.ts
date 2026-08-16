@@ -27,6 +27,11 @@ import { isValidObjectId } from "@/lib/db/utils";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { getClient } from "@/lib/db/client";
 import { readJsonObjectBody } from "@/lib/api/json-body";
+import {
+  GallerySessionHasActiveFanartError,
+  hasActiveGalleryFanartForSession,
+  lockGallerySessionLinkGuard,
+} from "@/lib/db/gallery";
 
 export async function GET(
   _request: Request,
@@ -260,6 +265,29 @@ export async function DELETE(
     try {
       await mongoSession.withTransaction(async () => {
         deleted = false;
+        const report = await findReportById(id, { session: mongoSession });
+        if (
+          !report ||
+          !isExpectedUpdatedAtCurrent(
+            report.updatedAt,
+            expectedUpdatedAt.value,
+          )
+        ) {
+          return;
+        }
+        await lockGallerySessionLinkGuard(
+          report.sessionId,
+          mongoSession,
+        );
+        if (
+          await hasActiveGalleryFanartForSession(report.sessionId, {
+            session: mongoSession,
+          })
+        ) {
+          throw new GallerySessionHasActiveFanartError(
+            "연결된 팬아트가 있어 리포트를 삭제할 수 없습니다.",
+          );
+        }
         deleted = await deleteSessionReport(id, expectedUpdatedAt.value, {
           session: mongoSession,
         });
@@ -300,7 +328,14 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    if (error instanceof GallerySessionHasActiveFanartError) {
+      return NextResponse.json(
+        { error: error.message, code: "GALLERY_FANART_INBOUND" },
+        { status: 409 },
+      );
+    }
+    console.error("session report deletion failed", error);
     return NextResponse.json(
       { error: "리포트 삭제 실패" },
       { status: 500 },

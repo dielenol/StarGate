@@ -1,18 +1,40 @@
 import { redirect } from "next/navigation";
 
 import { getActiveSession } from "@/lib/auth/active-session";
+import { getGalleryFeedResponse } from "@/lib/gallery/service";
+import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
+import type { GalleryFeedResponse } from "@/types/gallery";
 
-import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
-import Tag from "@/components/ui/Tag/Tag";
 
-import styles from "./page.module.css";
+import GalleryClient from "./GalleryClient";
+
+function emptyGalleryFeed(isGuest: boolean): GalleryFeedResponse {
+  return {
+    items: [],
+    albums: [],
+    viewer: { isGuest, canUpload: false, canModerate: false },
+    storage: { uploadEnabled: false },
+    generatedAt: new Date(0).toISOString(),
+  };
+}
 
 export default async function GalleryPage() {
   const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  let initialData: GalleryFeedResponse;
+  let initialDataUpdatedAt = 0;
+
+  try {
+    const localPreview = await hasLocalErpPreviewAccess();
+    initialData = await getGalleryFeedResponse(session.user, { localPreview });
+    initialDataUpdatedAt = new Date(initialData.generatedAt).getTime();
+  } catch {
+    initialData = emptyGalleryFeed(Boolean(session.user.isGuest));
   }
 
   return (
@@ -23,20 +45,11 @@ export default async function GalleryPage() {
           { label: "GALLERY" },
         ]}
         title="갤러리"
-        right={<Tag tone="p2">P2 · 준비중</Tag>}
       />
-
-      <Box>
-        <div className={styles.placeholder}>
-          <div className={styles.placeholder__title}>GALLERY</div>
-          <p className={styles.placeholder__message}>
-            세션 앨범 · 팬아트 그리드는 현재 준비 중입니다.
-          </p>
-          <p className={styles.placeholder__hint}>
-            이미지 업로드 · 스토리지 연동이 먼저 필요합니다.
-          </p>
-        </div>
-      </Box>
+      <GalleryClient
+        initialData={initialData}
+        initialDataUpdatedAt={initialDataUpdatedAt}
+      />
     </div>
   );
 }

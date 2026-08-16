@@ -65,6 +65,15 @@ test("Mongo 컬렉션 변경은 공개 데이터 없이 Query resource로만 매
     }),
     { resources: ["stocks"] },
   );
+  assert.deepEqual(
+    mapRealtimeChange({
+      collectionName: "gallery_fanarts",
+      operationType: "insert",
+      documentId: "fanart-id",
+      updatedFields: [],
+    }),
+    { resources: ["gallery"] },
+  );
 });
 
 test("role/status 변경은 해당 사용자의 재인증을 요구한다", () => {

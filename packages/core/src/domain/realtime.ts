@@ -14,6 +14,7 @@ export const REALTIME_RESOURCES = [
   "trades",
   "sessions",
   "reports",
+  "gallery",
   "equipment-shop",
   "wiki",
   "factions",

@@ -4,7 +4,7 @@
  * 외부 라이브러리 없이 위키 본문에서 쓰는 안전한 subset만 처리한다.
  */
 
-import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { parseMarkdownImageLine } from "@/lib/markdown-images";
 
 export type MarkdownLinkKind = "wiki" | "catalog" | "personnel" | "report";
 
@@ -327,31 +327,17 @@ function processInline(line: string, context?: InlineContext): string {
     .join("");
 }
 
-function normalizeImageSrc(src: string): string | null {
-  const trimmed = src.trim();
-  if (trimmed.includes("..")) return null;
-  if (!/^\/assets\/[A-Za-z0-9/_ .%()-]+\.(webp|png|jpe?g|gif|avif)$/i.test(trimmed)) {
-    return null;
-  }
-  return trimmed;
-}
-
 function cssUrlForImage(src: string): string {
   return encodeURI(src).replace(/"/g, "%22");
 }
 
 function renderImage(line: string): string | null {
-  const imageMatch = line.match(/^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/);
-  if (!imageMatch) return null;
+  const image = parseMarkdownImageLine(line);
+  if (!image) return null;
 
-  const normalizedSrc = normalizeImageSrc(imageMatch[2]);
-  if (!normalizedSrc) return null;
-
-  // /assets/ 로컬 경로만 webp 사이드카로 rewrite (helper 가 외부/기타 경로는 그대로 통과).
-  const src = preferOptimizedPublicImagePath(normalizedSrc);
-
-  const alt = escapeHtml(imageMatch[1].trim());
-  const caption = escapeHtml((imageMatch[3] ?? imageMatch[1]).trim());
+  const src = image.src;
+  const alt = escapeHtml(image.alt);
+  const caption = escapeHtml(image.caption);
   const captionHtml = caption ? `<figcaption>${caption}</figcaption>` : "";
   const figureStyle = ` style="--wiki-render-image: url(&quot;${escapeHtml(cssUrlForImage(src))}&quot;)"`;
 

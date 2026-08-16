@@ -1,33 +1,59 @@
-.placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 64px 20px;
-  text-align: center;
-}
-
-.placeholder__title {
-  color: var(--gold);
-  font-family: var(--font-mono);
-  font-size: 15px;
-  letter-spacing: 0.3em;
-}
-
-.placeholder__message {
-  max-width: 420px;
-  margin: 0;
-  color: var(--ink-1);
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.placeholder__hint {
-  max-width: 420px;
-  margin: 0;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
-}
+.gallery { display: grid; gap: 16px; }
+.toolbar { display: grid; gap: 16px; }
+.toolbar__heading { display: grid; gap: 5px; }
+.toolbar__heading span, .toolbar__count, .memberOnly__eyebrow { color: var(--ink-3); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.08em; }
+.toolbar__heading strong { color: var(--ink-1); font-size: 18px; }
+.toolbar__actions, .filters, .card__titleRow, .card__footer, .form__actions, .lightbox__navigation { display: flex; align-items: center; gap: 8px; }
+.toolbar__actions { justify-content: space-between; flex-wrap: wrap; }
+.toolbar__notice { margin: -4px 0 0; color: var(--ink-3); font-size: 14px; line-height: 1.5; }
+.filters { align-items: stretch; }
+.filters input { min-width: 0; flex: 1 1 260px; }
+.filters select, .field select, .field textarea { min-height: 38px; border: 1px solid var(--line-2); border-radius: 0; background: var(--paper-2); color: var(--ink-1); font: inherit; font-size: 14px; padding: 8px 10px; }
+.filters select { flex: 0 1 190px; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.card { overflow: hidden; min-width: 0; border: 1px solid var(--line-2); background: var(--paper-1); content-visibility: auto; contain-intrinsic-size: 0 340px; }
+.card__imageButton { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border: 0; background: var(--paper-3); cursor: zoom-in; }
+.card__image { object-fit: cover; transition: transform 160ms ease; }
+.card__imageButton:hover .card__image, .card__imageButton:focus-visible .card__image { transform: scale(1.035); }
+.card__imageButton:focus-visible, .card__actions button:focus-visible, .modal__close:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.card__kind, .card__hidden { position: absolute; top: 8px; padding: 4px 6px; background: rgb(10 14 18 / 84%); color: var(--paper-1); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.06em; }
+.card__kind { left: 8px; }
+.card__hidden { right: 8px; color: #f08a8a; }
+.card__body { display: grid; gap: 7px; padding: 12px; }
+.card__titleRow { justify-content: space-between; }
+.card__titleRow h2 { overflow: hidden; margin: 0; color: var(--ink-1); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.card__album, .lightbox__meta a { color: var(--gold); font-family: var(--font-mono); font-size: 14px; }
+.card__artist, .card__description { overflow: hidden; margin: 0; color: var(--ink-3); font-size: 14px; line-height: 1.45; }
+.card__artist { color: var(--ink-2); font-family: var(--font-mono); }
+.card__description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.card__footer { min-height: 24px; flex-wrap: wrap; }
+.card__actions { display: flex; gap: 7px; margin-left: auto; }
+.card__actions button { border: 0; background: none; color: var(--gold); cursor: pointer; font-size: 14px; padding: 2px; }
+.state, .memberOnly { display: grid; justify-items: center; gap: 10px; padding: 48px 20px; text-align: center; }
+.state strong, .memberOnly h2 { margin: 0; color: var(--ink-1); font-size: 17px; }
+.state p, .memberOnly p { max-width: 520px; margin: 0; color: var(--ink-3); font-size: 14px; line-height: 1.6; }
+.overlay { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(8 12 18 / 82%); }
+.dialog, .lightbox { position: relative; width: min(100%, 620px); max-height: min(90vh, 900px); overflow: auto; border: 1px solid var(--gold); background: var(--paper-1); box-shadow: 0 16px 52px rgb(0 0 0 / 42%); }
+.dialog { padding: 24px; }
+.dialog h2 { margin: 0; color: var(--ink-1); font-size: 18px; }
+.dialog__hint { margin: 7px 0 18px; color: var(--ink-3); font-size: 14px; line-height: 1.5; }
+.modal__close { position: absolute; top: 8px; right: 8px; z-index: 2; width: 32px; height: 32px; border: 0; background: var(--paper-2); color: var(--ink-1); cursor: pointer; font-size: 22px; }
+.form { display: grid; gap: 13px; }
+.field { display: grid; gap: 6px; color: var(--ink-1); }
+.field__label { font-size: 14px; }
+.field textarea { min-height: 88px; resize: vertical; }
+.form__preview { width: auto; max-width: 100%; height: auto; border: 1px solid var(--line-2); }
+.check { display: flex; gap: 8px; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+.check input { margin-top: 2px; }
+.form__error { margin: 0; color: #d26060; font-size: 14px; line-height: 1.45; }
+.form__actions { justify-content: flex-end; flex-wrap: wrap; margin-top: 5px; }
+.lightbox { width: min(100%, 1140px); background: var(--ink-0); }
+.lightbox__image { display: grid; place-items: center; max-height: calc(90vh - 154px); overflow: hidden; background: #05070a; }
+.lightbox__image img { width: auto; max-width: 100%; height: auto; max-height: calc(90vh - 154px); object-fit: contain; }
+.lightbox__meta { display: flex; justify-content: space-between; gap: 20px; padding: 16px 20px; background: var(--paper-1); }
+.lightbox__meta span, .lightbox__meta p { margin: 0 0 5px; color: var(--ink-3); font-size: 14px; line-height: 1.45; }
+.lightbox__meta h2 { margin: 0 0 7px; color: var(--ink-1); font-size: 18px; }
+.lightbox__navigation { align-self: end; flex: none; }
+@media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .grid { grid-template-columns: 1fr; } .filters, .lightbox__meta { flex-direction: column; } .filters input, .filters select { flex-basis: auto; width: 100%; } .toolbar__actions { align-items: flex-start; } .lightbox__navigation { align-self: stretch; } .lightbox__navigation > * { flex: 1; } .overlay { padding: 10px; } .dialog { padding: 20px 14px; } }
+@media (prefers-reduced-motion: reduce) { .card__image { transition: none; } }

@@ -37,6 +37,7 @@ export const COLLECTION_RESOURCE_MAP = {
   trpg_sessions: ["sessions"],
   trpg_session_notifications: ["sessions"],
   session_reports: ["reports"],
+  gallery_fanarts: ["gallery"],
   equipment_workshop_requests: ["equipment-shop"],
   equipment_workshop_blueprints: ["equipment-shop"],
   equipment_license_tests: ["equipment-shop"],

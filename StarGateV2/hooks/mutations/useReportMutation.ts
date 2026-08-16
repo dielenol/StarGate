@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { sessionReportKeys } from "@/hooks/queries/useSessionReportsQuery";
 import { loreSearchKeys } from "@/hooks/queries/useLoreSearchQuery";
+import { galleryKeys } from "@/hooks/queries/useGalleryQuery";
 import { throwMutationError } from "./StaleVersionApiError";
 
 interface ReportMutationBody {
@@ -54,6 +55,7 @@ export function useCreateReport() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sessionReportKeys.all });
       queryClient.invalidateQueries({ queryKey: loreSearchKeys.all });
+      queryClient.invalidateQueries({ queryKey: galleryKeys.all });
     },
   });
 }
@@ -87,6 +89,7 @@ export function useUpdateReport() {
         queryKey: sessionReportKeys.byId(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: loreSearchKeys.all });
+      queryClient.invalidateQueries({ queryKey: galleryKeys.all });
     },
   });
 }
@@ -109,6 +112,7 @@ export function useDeleteReport() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sessionReportKeys.all });
       queryClient.invalidateQueries({ queryKey: loreSearchKeys.all });
+      queryClient.invalidateQueries({ queryKey: galleryKeys.all });
     },
   });
 }

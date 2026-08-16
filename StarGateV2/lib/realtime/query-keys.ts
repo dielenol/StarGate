@@ -46,10 +46,12 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
   sessions: [["sessions"], ["dashboard"]],
   reports: [
     ["session-reports"],
+    ["gallery"],
     ["dashboard"],
     ["factions"],
     ["wiki", "lore-search"],
   ],
+  gallery: [["gallery"]],
   "equipment-shop": [["equipment-shop"]],
   wiki: [["wiki"], ["dashboard"], ["factions"], ["wiki", "lore-search"]],
   factions: [["factions"], ["wiki", "lore-search"]],
