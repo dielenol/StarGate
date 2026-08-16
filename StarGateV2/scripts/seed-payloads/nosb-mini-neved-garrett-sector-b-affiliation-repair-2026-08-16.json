@@ -1,0 +1,80 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "GARRETT_CLIMAC",
+      "type": "NPC",
+      "role": "갈로글라 청년 전사대장 / 현 섹터 B 경호원",
+      "factionCode": "MILITARY",
+      "institutionCode": {
+        "$exists": false
+      },
+      "department": "GALLOGLA",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "lore.background": "갈로글라 공동체의 청년 전사대장이자 도리스 클라이맥의 아들이다. 열여덟 살 키아나 오 캘러핸의 강제 약혼 상대로 지목됐으며, 사이먼 오 캘러핸을 살해하고 키아나를 강까지 추격했다. 야수화 주사액을 훔쳐 자신에게 투여했으나 현장팀에게 제압돼 인간으로 돌아왔다.\n\n현재 시점에는 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 정규 고용 주체와 보직 경위는 확인되지 않았다.",
+      "lore.roleDetail": "- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)\n- 과거 역할: 갈로글라 청년 전사대장\n- 현재 확인 역할: 섹터 B 경호원\n- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장\n- 생사 상태: 현재 시점 생존 확인",
+      "lore.loreTags": [
+        "군부",
+        "갈로글라",
+        "전사대장",
+        "섹터B",
+        "야수화",
+        "NOSB-MINI-NEVED",
+        "MINI06"
+      ]
+    },
+    "update": {
+      "$set": {
+        "factionCode": "NOVUS_ORDO",
+        "institutionCode": "MANUS",
+        "department": "SECTOR_B",
+        "lore.background": "갈로글라 공동체의 청년 전사대장이자 도리스 클라이맥의 아들이다. 열여덟 살 키아나 오 캘러핸의 강제 약혼 상대로 지목됐으며, 사이먼 오 캘러핸을 살해하고 키아나를 강까지 추격했다. 야수화 주사액을 훔쳐 자신에게 투여했으나 현장팀에게 제압돼 인간으로 돌아왔다.\n\n현재 시점에는 노부스 오르도 MANUS 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 갈로글라 시절 이후 섹터 B에 배치된 경위는 확인되지 않았다.",
+        "lore.roleDetail": "- 정규 소속: 노부스 오르도(NOVUS_ORDO) MANUS\n- 배치: 브라보 섹터(SECTOR_B)\n- 과거 소속·역할: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA) 청년 전사대장\n- 현재 역할: 섹터 B 경호원\n- 내부 권한등급: 미등록\n- 생사 상태: 현재 시점 생존 확인",
+        "lore.loreTags": [
+          "노부스오르도",
+          "MANUS",
+          "갈로글라",
+          "전사대장",
+          "섹터B",
+          "야수화",
+          "NOSB-MINI-NEVED",
+          "MINI06"
+        ],
+        "loreMd": "## 외형\n보존 기록에서 정확한 신체 정보는 확인되지 않았다. 사이먼의 반격으로 얼굴에 흉터가 남았고, 현재 시점에도 그 흔적이 확인된다.\n\n## 성격\n힘에 의한 질서를 주장하며 거짓말과 위협으로 키아나의 선택을 통제하려 했다. 자신의 계획이 저지되자 야수화 주사를 직접 사용하고 무력으로 뜻을 관철하려 했다.\n\n## 배경\n갈로글라 공동체의 청년 전사대장이자 도리스 클라이맥의 아들이다. 열여덟 살 키아나 오 캘러핸의 강제 약혼 상대로 지목됐으며, 사이먼 오 캘러핸을 살해하고 키아나를 강까지 추격했다. 야수화 주사액을 훔쳐 자신에게 투여했으나 현장팀에게 제압돼 인간으로 돌아왔다.\n\n현재 시점에는 노부스 오르도 MANUS 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 갈로글라 시절 이후 섹터 B에 배치된 경위는 확인되지 않았다.\n\n## 역할 상세\n- 정규 소속: 노부스 오르도(NOVUS_ORDO) MANUS\n- 배치: 브라보 섹터(SECTOR_B)\n- 과거 소속·역할: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA) 청년 전사대장\n- 현재 역할: 섹터 B 경호원\n- 내부 권한등급: 미등록\n- 생사 상태: 현재 시점 생존 확인\n\n## 이름 설명\n사무국 인명 대조 결과 영문 표기는 `Garrett Climac`으로 등록한다.\n\n## 관계 (참고)\n- `네베드` — 강제 약혼 상대이자 살해 시도 피해자\n- `SIMON_OCALLAHAN` — 개럿에게 살해된 갈로글라 전사\n"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "GARRETT_CLIMAC",
+      "type": "NPC",
+      "role": "갈로글라 청년 전사대장 / 현 섹터 B 경호원",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "MANUS",
+      "department": "SECTOR_B",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Garrett-Climac-profile.webp",
+      "lore.mainImage": "/assets/npcs/Garrett-Climac-profile.webp",
+      "lore.background": "갈로글라 공동체의 청년 전사대장이자 도리스 클라이맥의 아들이다. 열여덟 살 키아나 오 캘러핸의 강제 약혼 상대로 지목됐으며, 사이먼 오 캘러핸을 살해하고 키아나를 강까지 추격했다. 야수화 주사액을 훔쳐 자신에게 투여했으나 현장팀에게 제압돼 인간으로 돌아왔다.\n\n현재 시점에는 노부스 오르도 MANUS 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 갈로글라 시절 이후 섹터 B에 배치된 경위는 확인되지 않았다.",
+      "lore.roleDetail": "- 정규 소속: 노부스 오르도(NOVUS_ORDO) MANUS\n- 배치: 브라보 섹터(SECTOR_B)\n- 과거 소속·역할: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA) 청년 전사대장\n- 현재 역할: 섹터 B 경호원\n- 내부 권한등급: 미등록\n- 생사 상태: 현재 시점 생존 확인",
+      "lore.loreTags": [
+        "노부스오르도",
+        "MANUS",
+        "갈로글라",
+        "전사대장",
+        "섹터B",
+        "야수화",
+        "NOSB-MINI-NEVED",
+        "MINI06"
+      ]
+    }
+  }
+]

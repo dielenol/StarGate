@@ -10,16 +10,17 @@ gender: 남성
 age: 미상
 height: 미상
 weight: 미상
-factionCode: MILITARY
-department: GALLOGLA
+factionCode: NOVUS_ORDO
+institutionCode: MANUS
+department: SECTOR_B
 isPublic: true
-loreTags: [군부, 갈로글라, 전사대장, 섹터B, 야수화, NOSB-MINI-NEVED, MINI06]
+loreTags: [노부스오르도, MANUS, 갈로글라, 전사대장, 섹터B, 야수화, NOSB-MINI-NEVED, MINI06]
 appearsInEvents: [NOSB-MINI-NEVED]
 source: manual
 previewImage: /assets/npcs/Garrett-Climac-profile.webp
 mainImage: /assets/npcs/Garrett-Climac-profile.webp
 createdAt: 2026-08-03T00:00:00.000Z
-updatedAt: 2026-08-16T10:32:27.000Z
+updatedAt: 2026-08-16T10:59:24.000Z
 ---
 
 ## 외형
@@ -31,13 +32,14 @@ updatedAt: 2026-08-16T10:32:27.000Z
 ## 배경
 갈로글라 공동체의 청년 전사대장이자 도리스 클라이맥의 아들이다. 열여덟 살 키아나 오 캘러핸의 강제 약혼 상대로 지목됐으며, 사이먼 오 캘러핸을 살해하고 키아나를 강까지 추격했다. 야수화 주사액을 훔쳐 자신에게 투여했으나 현장팀에게 제압돼 인간으로 돌아왔다.
 
-현재 시점에는 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 정규 고용 주체와 보직 경위는 확인되지 않았다.
+현재 시점에는 노부스 오르도 MANUS 섹터 B 경호원으로 생존해 있으며 키아나의 사진을 보관하고 있다. 갈로글라 시절 이후 섹터 B에 배치된 경위는 확인되지 않았다.
 
 ## 역할 상세
-- 정규 분류: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA)
-- 과거 역할: 갈로글라 청년 전사대장
-- 현재 확인 역할: 섹터 B 경호원
-- 내부 권한등급: 외부 인원이므로 `agentLevel` 미저장
+- 정규 소속: 노부스 오르도(NOVUS_ORDO) MANUS
+- 배치: 브라보 섹터(SECTOR_B)
+- 과거 소속·역할: 외부 군부(MILITARY) 산하 갈로글라(GALLOGLA) 청년 전사대장
+- 현재 역할: 섹터 B 경호원
+- 내부 권한등급: 미등록
 - 생사 상태: 현재 시점 생존 확인
 
 ## 이름 설명
