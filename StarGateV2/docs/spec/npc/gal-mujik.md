@@ -15,10 +15,10 @@ isPublic: true
 loreTags: [군부, 갈로글라, 경비, 비밀협력자, 욤스회수, NOSB-MINI-NEVED, MINI06]
 appearsInEvents: [NOSB-MINI-NEVED]
 source: manual
-previewImage: /assets/npcs/Unknown-Person-profile.webp
-mainImage: /assets/npcs/Unknown-Person-profile.webp
+previewImage: /assets/npcs/Gal-Mujik-profile.webp
+mainImage: /assets/npcs/Gal-Mujik-profile.webp
 createdAt: 2026-08-03T00:00:00.000Z
-updatedAt: 2026-08-13T00:00:00.000Z
+updatedAt: 2026-08-16T10:32:27.000Z
 ---
 
 ## 외형

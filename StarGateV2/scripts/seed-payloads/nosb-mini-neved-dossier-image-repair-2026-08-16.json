@@ -1,0 +1,218 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "SIMON_OCALLAHAN",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Simon-O-Callahan-profile.webp",
+        "lore.mainImage": "/assets/npcs/Simon-O-Callahan-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "SIMON_OCALLAHAN",
+      "previewImage": "/assets/npcs/Simon-O-Callahan-profile.webp",
+      "lore.mainImage": "/assets/npcs/Simon-O-Callahan-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "CONNOR_OCALLAHAN",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Connor-O-Callahan-profile.webp",
+        "lore.mainImage": "/assets/npcs/Connor-O-Callahan-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "CONNOR_OCALLAHAN",
+      "previewImage": "/assets/npcs/Connor-O-Callahan-profile.webp",
+      "lore.mainImage": "/assets/npcs/Connor-O-Callahan-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "NERIN_OCALLAHAN",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Nerin-O-Callahan-profile.webp",
+        "lore.mainImage": "/assets/npcs/Nerin-O-Callahan-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "NERIN_OCALLAHAN",
+      "previewImage": "/assets/npcs/Nerin-O-Callahan-profile.webp",
+      "lore.mainImage": "/assets/npcs/Nerin-O-Callahan-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "GARRETT_CLIMAC",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Garrett-Climac-profile.webp",
+        "lore.mainImage": "/assets/npcs/Garrett-Climac-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "GARRETT_CLIMAC",
+      "previewImage": "/assets/npcs/Garrett-Climac-profile.webp",
+      "lore.mainImage": "/assets/npcs/Garrett-Climac-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "ENDA_CLIMAC",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Enda-Climac-profile.webp",
+        "lore.mainImage": "/assets/npcs/Enda-Climac-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "ENDA_CLIMAC",
+      "previewImage": "/assets/npcs/Enda-Climac-profile.webp",
+      "lore.mainImage": "/assets/npcs/Enda-Climac-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "EVA_HANNER",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Eva-Hanner-profile.webp",
+        "lore.mainImage": "/assets/npcs/Eva-Hanner-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "EVA_HANNER",
+      "previewImage": "/assets/npcs/Eva-Hanner-profile.webp",
+      "lore.mainImage": "/assets/npcs/Eva-Hanner-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "SVEN_TROELBEIN",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Sven-Troelbein-profile.webp",
+        "lore.mainImage": "/assets/npcs/Sven-Troelbein-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "SVEN_TROELBEIN",
+      "previewImage": "/assets/npcs/Sven-Troelbein-profile.webp",
+      "lore.mainImage": "/assets/npcs/Sven-Troelbein-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "YOMS",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Yoms-profile.webp",
+        "lore.mainImage": "/assets/npcs/Yoms-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "YOMS",
+      "previewImage": "/assets/npcs/Yoms-profile.webp",
+      "lore.mainImage": "/assets/npcs/Yoms-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "GAL_MUJIK",
+      "type": "NPC",
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Gal-Mujik-profile.webp",
+        "lore.mainImage": "/assets/npcs/Gal-Mujik-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "GAL_MUJIK",
+      "previewImage": "/assets/npcs/Gal-Mujik-profile.webp",
+      "lore.mainImage": "/assets/npcs/Gal-Mujik-profile.webp"
+    }
+  }
+]

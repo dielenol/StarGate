@@ -16,10 +16,10 @@ isPublic: true
 loreTags: [군부, 욤스비킹, 지도자, 갈로글라동맹, NOSB-MINI-NEVED, MINI06]
 appearsInEvents: [NOSB-MINI-NEVED]
 source: manual
-previewImage: /assets/npcs/Unknown-Person-profile.webp
-mainImage: /assets/npcs/Unknown-Person-profile.webp
+previewImage: /assets/npcs/Sven-Troelbein-profile.webp
+mainImage: /assets/npcs/Sven-Troelbein-profile.webp
 createdAt: 2026-08-03T00:00:00.000Z
-updatedAt: 2026-08-13T00:00:00.000Z
+updatedAt: 2026-08-16T10:32:27.000Z
 ---
 
 ## 외형

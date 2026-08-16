@@ -16,10 +16,10 @@ isPublic: true
 loreTags: [군부, 갈로글라, 은퇴전사, 클라이맥, 세포억제제, NOSB-MINI-NEVED, MINI06]
 appearsInEvents: [NOSB-MINI-NEVED]
 source: manual
-previewImage: /assets/npcs/Unknown-Person-profile.webp
-mainImage: /assets/npcs/Unknown-Person-profile.webp
+previewImage: /assets/npcs/Enda-Climac-profile.webp
+mainImage: /assets/npcs/Enda-Climac-profile.webp
 createdAt: 2026-08-03T00:00:00.000Z
-updatedAt: 2026-08-13T00:00:00.000Z
+updatedAt: 2026-08-16T10:32:27.000Z
 ---
 
 ## 외형
