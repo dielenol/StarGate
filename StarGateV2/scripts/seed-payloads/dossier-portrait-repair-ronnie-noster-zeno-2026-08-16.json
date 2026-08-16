@@ -1,0 +1,101 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "RONNIE_KEANE",
+      "type": "NPC",
+      "factionCode": "MILITARY",
+      "department": "GALLOGLA",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Ronnie-Keane-profile.webp",
+        "lore.mainImage": "/assets/npcs/Ronnie-Keane-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "RONNIE_KEANE",
+      "type": "NPC",
+      "factionCode": "MILITARY",
+      "department": "GALLOGLA",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Ronnie-Keane-profile.webp",
+      "lore.mainImage": "/assets/npcs/Ronnie-Keane-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "NOSTER",
+      "type": "NPC",
+      "factionCode": "MILITARY",
+      "department": "GALLOGLA",
+      "lifeStatus": "DECEASED",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Noster-profile.webp",
+        "lore.mainImage": "/assets/npcs/Noster-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "NOSTER",
+      "type": "NPC",
+      "factionCode": "MILITARY",
+      "department": "GALLOGLA",
+      "lifeStatus": "DECEASED",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Noster-profile.webp",
+      "lore.mainImage": "/assets/npcs/Noster-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "DOCTOR_ZENO",
+      "type": "NPC",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "department": "RESEARCH",
+      "agentLevel": "V",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "lore.mainImage": "/assets/npcs/Unknown-Person-profile.webp"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/npcs/Doctor-Zeno-profile.webp",
+        "lore.mainImage": "/assets/npcs/Doctor-Zeno-profile.webp"
+      },
+      "$currentDate": {
+        "updatedAt": true
+      }
+    },
+    "postcondition": {
+      "codename": "DOCTOR_ZENO",
+      "type": "NPC",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "SECRETARIAT",
+      "department": "RESEARCH",
+      "agentLevel": "V",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Doctor-Zeno-profile.webp",
+      "lore.mainImage": "/assets/npcs/Doctor-Zeno-profile.webp"
+    }
+  }
+]

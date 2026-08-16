@@ -19,12 +19,12 @@ isPublic: true
 loreTags: [연구기구, 사무차장, 프로젝트데드핸드, 마가렛, NOSB-S1E6-TURNING-POINT-PART1]
 appearsInEvents: [NOSB-S1E6-TURNING-POINT-PART1]
 source: session-log
-previewImage: /assets/npcs/Unknown-Person-profile.webp
-mainImage: /assets/npcs/Unknown-Person-profile.webp
+previewImage: /assets/npcs/Doctor-Zeno-profile.webp
+mainImage: /assets/npcs/Doctor-Zeno-profile.webp
 pixelCharacterImage:
 posterImage:
 createdAt: 2026-07-26T00:00:00.000Z
-updatedAt: 2026-08-12T00:00:00.000Z
+updatedAt: 2026-08-16T13:01:03.000Z
 ---
 
 ## 대사

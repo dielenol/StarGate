@@ -19,10 +19,10 @@ isPublic: true
 loreTags: [군부, 갈로글라, 양조업자, 야수화주사, 증언자, 사망, NOSB-MINI-NEVED, MINI06]
 appearsInEvents: [NOSB-MINI-NEVED]
 source: manual
-previewImage: /assets/npcs/Unknown-Person-profile.webp
-mainImage: /assets/npcs/Unknown-Person-profile.webp
+previewImage: /assets/npcs/Noster-profile.webp
+mainImage: /assets/npcs/Noster-profile.webp
 createdAt: 2026-08-03T00:00:00.000Z
-updatedAt: 2026-08-13T00:00:00.000Z
+updatedAt: 2026-08-16T13:01:03.000Z
 ---
 
 ## 외형

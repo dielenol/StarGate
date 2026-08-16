@@ -16,10 +16,10 @@ isPublic: true
 loreTags: [군부, 갈로글라, 사냥꾼, 사이먼증언, 기억조사, NOSB-MINI-NEVED, MINI06]
 appearsInEvents: [NOSB-MINI-NEVED]
 source: manual
-previewImage: /assets/npcs/Unknown-Person-profile.webp
-mainImage: /assets/npcs/Unknown-Person-profile.webp
+previewImage: /assets/npcs/Ronnie-Keane-profile.webp
+mainImage: /assets/npcs/Ronnie-Keane-profile.webp
 createdAt: 2026-08-03T00:00:00.000Z
-updatedAt: 2026-08-13T00:00:00.000Z
+updatedAt: 2026-08-16T13:01:03.000Z
 ---
 
 ## 외형
