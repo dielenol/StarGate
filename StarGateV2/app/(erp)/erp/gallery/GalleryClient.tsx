@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode, RefCallback } from "react";
 
 import {
   useDeleteGalleryFanart,
@@ -70,6 +70,10 @@ const CARD_RATIO_BOUNDS: Record<CardVariant, [number, number]> = {
   grid: [0.75, 2.4],
 };
 
+/** 아카이브 그리드 masonry 단위 — page.module.css 의 `grid-auto-rows` / `margin-bottom` 과 같은 값이어야 한다. */
+const GRID_ROW = 4;
+const GRID_GAP = 14;
+
 function cardFrameRatio(ratio: number | null, variant: CardVariant): string | null {
   if (ratio === null) return null;
   const [min, max] = CARD_RATIO_BOUNDS[variant];
@@ -78,6 +82,30 @@ function cardFrameRatio(ratio: number | null, variant: CardVariant): string | nu
 
 function imageRatio(image: { width: number | null; height: number | null }): number | null {
   return image.width && image.height ? image.width / image.height : null;
+}
+
+/**
+ * 아카이브 그리드는 세로 도판이 섞여 카드 높이가 크게 달라진다. 카드마다 실제 높이만큼
+ * grid row 를 점유하게 해(masonry) 행 단위로 생기던 빈 공간을 없앤다.
+ * 카드 높이는 `align-self: start` 라 점유 행 수와 무관하므로 되먹임이 생기지 않는다.
+ */
+function useMasonrySpan(
+  enabled: boolean,
+): [RefCallback<HTMLElement>, number | null] {
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  const [span, setSpan] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !node) return;
+    const observer = new ResizeObserver(() => {
+      const height = node.getBoundingClientRect().height;
+      if (height > 0) setSpan(Math.ceil((height + GRID_GAP) / GRID_ROW));
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [enabled, node]);
+
+  return [setNode, span];
 }
 
 function toMetadata(input: MetadataState): GalleryFanartMetadataInput {
@@ -276,7 +304,12 @@ function GalleryCard({ item, variant, album, deleteError, eager, isDeleting, onO
   const [naturalRatio, setNaturalRatio] = useState<number | null>(() => imageRatio(item.image));
   const imageSizes = variant === "current" ? "(max-width: 760px) 100vw, (max-width: 1100px) 62vw, 58vw" : variant === "support" ? "(max-width: 760px) 50vw, (max-width: 1100px) 34vw, 28vw" : "(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw";
   const frameRatio = cardFrameRatio(naturalRatio, variant);
-  return <article className={`${styles.card} ${styles[`card--${variant}`]}`} style={frameRatio ? ({ "--card-ratio": frameRatio } as CSSProperties) : undefined}><button className={styles.card__imageButton} onClick={onOpen} aria-label={`${item.title} 크게 보기`}><Image src={item.image.src} alt={item.image.alt} fill loading={eager ? "eager" : "lazy"} sizes={imageSizes} unoptimized={item.kind === "FANART"} className={styles.card__image} onLoad={(event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth > 0 && naturalHeight > 0) setNaturalRatio(naturalWidth / naturalHeight); }} /><span className={styles.card__scanline} aria-hidden="true" /><span className={styles.card__kind}>{item.kind === "SESSION" ? "SESSION" : "FAN ART"}</span>{fanart?.status === "HIDDEN" && <span className={styles.card__hidden}>숨김</span>}</button><div className={styles.card__body}><div className={styles.card__titleRow}><h2>{item.title}</h2>{album && <Link href={album.href} className={styles.card__album}>{album.reportNumber}</Link>}</div>{fanart && <p className={styles.card__artist}>ARTIST · {fanart.artistName}</p>}<p className={styles.card__description}>{item.description || "설명 없음"}</p>{deleteError && <p className={styles.form__error} role="alert">{deleteError}</p>}<div className={styles.card__footer}>{item.tags.slice(0, 3).map((tag) => <Tag key={tag} className={styles.card__tag}>{tag}</Tag>)}{fanart && (fanart.canEdit || fanart.canModerate || fanart.canDelete) && <span className={styles.card__actions}>{fanart.canEdit && <button onClick={onEdit}>편집</button>}{fanart.canModerate && <button onClick={onModerate}>관리</button>}{fanart.canDelete && <button onClick={onDelete} disabled={isDeleting}>{isDeleting ? "삭제 중…" : "삭제"}</button>}</span>}</div></div></article>;
+  const [masonryRef, masonrySpan] = useMasonrySpan(variant === "grid");
+  const frameStyle = {
+    ...(frameRatio ? { "--card-ratio": frameRatio } : {}),
+    ...(masonrySpan ? { "--card-span": String(masonrySpan) } : {}),
+  } as CSSProperties;
+  return <article ref={masonryRef} className={`${styles.card} ${styles[`card--${variant}`]}`} style={frameStyle}><button className={styles.card__imageButton} onClick={onOpen} aria-label={`${item.title} 크게 보기`}><Image src={item.image.src} alt={item.image.alt} fill loading={eager ? "eager" : "lazy"} sizes={imageSizes} unoptimized={item.kind === "FANART"} className={styles.card__image} onLoad={(event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth > 0 && naturalHeight > 0) setNaturalRatio(naturalWidth / naturalHeight); }} /><span className={styles.card__scanline} aria-hidden="true" /><span className={styles.card__kind}>{item.kind === "SESSION" ? "SESSION" : "FAN ART"}</span>{fanart?.status === "HIDDEN" && <span className={styles.card__hidden}>숨김</span>}</button><div className={styles.card__body}><div className={styles.card__titleRow}><h2>{item.title}</h2>{album && <Link href={album.href} className={styles.card__album}>{album.reportNumber}</Link>}</div>{fanart && <p className={styles.card__artist}>ARTIST · {fanart.artistName}</p>}<p className={styles.card__description}>{item.description || "설명 없음"}</p>{deleteError && <p className={styles.form__error} role="alert">{deleteError}</p>}<div className={styles.card__footer}>{item.tags.slice(0, 3).map((tag) => <Tag key={tag} className={styles.card__tag}>{tag}</Tag>)}{fanart && (fanart.canEdit || fanart.canModerate || fanart.canDelete) && <span className={styles.card__actions}>{fanart.canEdit && <button onClick={onEdit}>편집</button>}{fanart.canModerate && <button onClick={onModerate}>관리</button>}{fanart.canDelete && <button onClick={onDelete} disabled={isDeleting}>{isDeleting ? "삭제 중…" : "삭제"}</button>}</span>}</div></div></article>;
 }
 
 function Lightbox({ item, album, index, total, onClose, onPrevious, onNext }: { item: GalleryItemDto; album: GalleryAlbumDto | null; index: number; total: number; onClose: () => void; onPrevious: () => void; onNext: () => void }) {

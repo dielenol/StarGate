@@ -15,7 +15,7 @@
 .showcase__current { position: relative; min-width: 0; padding-top: 23px; }
 .showcase__label { position: absolute; z-index: 2; top: 0; left: 14px; padding: 5px 8px; border: 1px solid var(--gold); background: #0b0f15; color: var(--gold); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.12em; }
 .showcase__support { display: grid; align-content: start; gap: 14px; min-width: 0; }
-.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; grid-auto-rows: 4px; column-gap: 14px; row-gap: 0; }
 .card { position: relative; display: grid; min-width: 0; overflow: hidden; border: 1px solid var(--line); background: #080b10; box-shadow: 0 14px 32px rgb(0 0 0 / 12%); content-visibility: auto; contain-intrinsic-size: auto 340px; }
 .card--current { width: 100%; aspect-ratio: var(--card-ratio, 16 / 9); min-height: clamp(260px, 20vw, 380px); max-height: min(76vh, 720px); }
 .card--grid { width: 100%; aspect-ratio: var(--card-ratio, 16 / 9); min-height: 180px; max-height: 480px; }
@@ -40,6 +40,7 @@
 /* 오버레이는 큰 히어로 카드 전용. 보조·아카이브 카드는 카드가 작아 오버레이가 도판을 덮으므로
    이미지 아래 캡션 블록으로 둔다. */
 .card--support, .card--grid { aspect-ratio: auto; grid-template-rows: auto auto; min-height: 0; max-height: none; }
+.card--grid { margin-bottom: 14px; grid-row: span var(--card-span, 200); content-visibility: visible; contain-intrinsic-size: auto; }
 .card--support .card__imageButton, .card--grid .card__imageButton { position: relative; width: 100%; height: auto; aspect-ratio: var(--card-ratio, 16 / 9); max-height: 800px; }
 .card--support .card__imageButton::after, .card--grid .card__imageButton::after { display: none; }
 .card--support .card__body, .card--grid .card__body { position: relative; align-self: stretch; padding: 11px 12px 13px; background: #080b10; }
