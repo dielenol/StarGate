@@ -10,3 +10,12 @@
 - 검증: 갤러리 행동·계약 테스트 37/37, web realtime 10/10, core 계약 2/2, worker realtime 6/6, `pnpm typecheck`, 전체 `pnpm lint`, 102 route production build, 인증 로컬 1440/900/600px의 4/2/1열·검색·필터·lightbox 키보드/focus·가로 overflow·console 오류 0건, critical risk review
 - 관련 커밋: `11fc6e98`
 - 후속 작업: 운영 활성화 전 승인된 환경에서 private Blob 토큰과 갤러리 index를 적용하고 core/worker를 web보다 먼저 배포한다. 기존 `/assets/session-reports/**` 도판의 byte-level 비공개화는 자산 이전 정책과 함께 별도 진행한다.
+
+## 2026-08-17 · UI 개편 · 시네마틱 전시와 상세 보기
+
+- 검색·필터 결과의 첫 작품을 `CURRENT EXHIBIT`로 크게 배치하고 다음 두 작품을 보조 전시, 나머지를 4/2/1열 아카이브로 구성해 갤러리의 시각적 위계를 강화했다.
+- 카드의 흰 문서 패널을 없애고 이미지 위에 다크 HUD, 그라데이션, 미세한 스캔라인과 메타데이터를 겹쳐 NOVUS ERP의 기록 보관소 분위기로 통일했다.
+- 상세 보기를 대형 다크 이미지 스테이지와 메타 레일로 재설계하고, 모바일에서는 이미지와 정보가 자연스럽게 이어지는 전체 화면 구조로 전환했다.
+- 검색 결과가 한 작품일 때 탐색 버튼을 숨기고, 기존 화살표 키·Escape·focus trap·focus 복원·scroll lock과 팬아트 편집·관리·삭제 동작을 유지했다.
+- 검증: `pnpm typecheck`, 전체 `pnpm lint`, `git diff --check`, 인증 로컬 1440/900/600px의 전시·4/2/1열·단일/2개 검색 결과·상세 화면·키보드 탐색·focus 복원·가로 overflow·깨진 이미지·console 오류 0건, 읽기 전용 UI 리뷰
+- 관련 커밋: `19905785`
