@@ -2,19 +2,26 @@
 title: NOSB-MINI-5959-CONTAINMENT session sync coverage
 category: session-sync
 tags: [NOSB-MINI-5959-CONTAINMENT, MINI03, stargate-lore]
-updated: 2026-08-05
+updated: 2026-08-17
 source: stargate-lore-audit
 ---
 
 # NOSB-MINI-5959-CONTAINMENT Sync Coverage
 
-이 문서는 공개 로어가 아니라 기존 durable payload를 기준으로 재구성한 내부 동기화 감사다. 원본 세션 로그는 이번 재감사 입력에 포함되지 않았으므로, payload에 없는 사실이나 승인 이력을 새로 확정하지 않는다.
+이 문서는 공개 로어가 아니라 기존 durable payload와 2026-08-17에 다시 제공된 원본 세션 로그를 함께 대조한 내부 동기화 감사다. 당시 승인 이력에 없는 사실은 새로 확정하지 않는다.
 
 ## Session Coverage Identity
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-MINI-5959-CONTAINMENT` | `scripts/seed-payloads/nosb-mini-5959-containment-sync.json` | partial | historical-reconstruction |
+| `NOSB-MINI-5959-CONTAINMENT` | `scripts/seed-payloads/nosb-mini-5959-containment-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- 전체 교차 세션 결과는 [2026-08-17 원본 재대조 원장](nosb-source-reconciliation-2026-08-17.md)에 연결한다.
+- 보존본은 73쪽, SHA-256 `8a7c235612a35b439650245433d7b5d7d48f3abbf129c195f4e8d35a295bc69a`로 끝까지 추출·대표 렌더 대조했다.
+- source는 `available`이다. 역사적 base payload의 `reportNumber: "07"`은 잘못된 원시 값이며, 후속 durable cleanup과 현재 registry/live 표시는 `MINI03`이다. replay에서는 base 뒤의 번호 정규화 수리를 반드시 보존한다.
+- ERP의 `장밋빛 시냅스 격리 표본`은 승인된 정식 표본 설계다. 로그에서 현장팀이 사용한 PET병은 즉석 임시 격리 수단이므로 같은 물품·용기로 단정하거나 정식 표본의 provenance로 소급하지 않는다. 이 구분의 durable 대조가 남아 audit은 `partial`이다.
 
 ## Lorebook Coverage Matrix
 
@@ -31,7 +38,7 @@ source: stargate-lore-audit
 
 ## NPC Approval Ledger
 
-- skipped: source unavailable — historical ERIAN creation and participant-link decisions predate the current approval ledger; no new NPC apply is authorized by this reconstruction.
+- not-applicable: 원본은 재대조했지만 historical ERIAN creation과 참가자 링크 결정은 현재 approval ledger보다 앞선다. 이번 문서는 신규 NPC apply를 승인하지 않는다.
 
 ## Visual Asset Ledger
 
@@ -42,7 +49,7 @@ source: stargate-lore-audit
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — the durable payload contains no immutable personality observation envelope and the original session evidence is unavailable for safe reconstruction.
+- not-applicable: 원본은 이용 가능하지만 durable payload에 immutable personality observation envelope가 없으며, 이번 패스에서 신규 관찰을 승인하지 않았다.
 
 ## Graph And Audit Status
 

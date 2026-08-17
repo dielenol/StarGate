@@ -2,19 +2,26 @@
 title: NOSB-MINI-S1E1-NEW-DUBLIN session sync coverage
 category: session-sync
 tags: [NOSB-MINI-S1E1-NEW-DUBLIN, MINI01, stargate-lore]
-updated: 2026-08-07
+updated: 2026-08-17
 source: stargate-lore-audit
 ---
 
 # NOSB-MINI-S1E1-NEW-DUBLIN Sync Coverage
 
-이 문서는 기존 durable payload 묶음을 기준으로 재구성한 내부 감사다. 원본 세션 로그와 당시 승인 대화는 이번 입력에 없으므로, payload/spec에 없는 신원·관계·성격 판단을 새로 확정하지 않는다.
+이 문서는 기존 durable payload 묶음과 2026-08-17에 다시 제공된 원본 세션 로그를 함께 대조한 내부 감사다. 당시 승인 대화에 없는 신원·관계·성격 판단은 새로 확정하지 않는다.
 
 ## Session Coverage Identity
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-MINI-S1E1-NEW-DUBLIN` | `scripts/seed-payloads/nosb-mini-s1e1-new-dublin-sync.json` | partial | historical-reconstruction |
+| `NOSB-MINI-S1E1-NEW-DUBLIN` | `scripts/seed-payloads/nosb-mini-s1e1-new-dublin-sync.json` | partial | partial |
+
+## 2026-08-17 원본 대조
+
+- 전체 교차 세션 결과는 [2026-08-17 원본 재대조 원장](nosb-source-reconciliation-2026-08-17.md)에 연결한다.
+- 전편 보존본은 100쪽, SHA-256 `d00a1eac20c0ebafebc1e7bd7ee40cbb525d37b240b2d6a2495689071ffaf335`이며 원래 쪽수 기준 앞 `1–7`쪽과 뒤 `108–114`쪽이 빠져 있다. 후편 보존본은 44쪽, SHA-256 `27d3a885076634922bd0cb64d96fa488d13fed6adc5544d447a4fc03ef4615fd`로 끝 표제까지 확인했다.
+- 따라서 source와 audit 모두 `partial`을 유지한다. 현재 보존 구간에서 기존 보고서·wiki·catalog·인물 연결의 명백한 반증은 확인하지 않았지만, 누락 구간의 사건·참가자·대사는 완전 대조할 수 없다.
+- `ZULU_269`의 세션 참석은 제공 원본 구간에서 확인되지 않는다. 다만 사용자 제공 관련 로어에 기반한 후보이므로 자동 삭제하지 않고 `candidate-only / blocked`로 유지하며, 누락 원본 또는 사용자 확정 전에는 출현 링크를 새로 승인하지 않는다.
 
 ## Lorebook Coverage Matrix
 
@@ -46,7 +53,7 @@ source: stargate-lore-audit
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — existing prose cannot be converted into immutable observations without the original dialogue/description/action evidence and approval history.
+- not-applicable: 제공 원본 구간은 재대조했지만 이번 패스에서 기존 승인 이력을 대체할 신규 immutable personality observation을 확정하지 않는다. 누락된 전편 앞·뒤 구간 때문에 완전성도 주장하지 않는다.
 
 ## Graph And Audit Status
 

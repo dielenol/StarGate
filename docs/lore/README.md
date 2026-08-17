@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-08-12
+updated: 2026-08-17
 ---
 
 # StarGate 로어북
@@ -61,6 +61,7 @@ docs/lore/
 
 ### session-sync/
 
+- [2026-08-17 전체 원본 재대조 원장](session-sync/nosb-source-reconciliation-2026-08-17.md)
 - [NOSB MINI01 뉴 더블린 coverage](session-sync/nosb-mini-s1e1-new-dublin-coverage.md)
 - [NOSB MINI02 미니미니 유산 coverage](session-sync/nosb-mini-mini-legacy-coverage.md)
 - [NOSB MINI03 5959 사태 coverage](session-sync/nosb-mini-5959-containment-coverage.md)
@@ -80,6 +81,9 @@ docs/lore/
 - [NOSB S1E6 변곡점 1부 coverage](session-sync/nosb-s1e6-turning-point-part1-coverage.md)
 - [사망 인원 상태 동기화 검토](session-sync/personnel-deceased-status-2026-08-07-review.md)
 - [공개 신원조회 및 미상 초상 적용 원장](session-sync/public-personnel-release-2026-08-12-review.md)
+- [신원조회 잔여 초상 3종 연결 원장](session-sync/dossier-portrait-repair-ronnie-noster-zeno-2026-08-16.md)
+- [NOSB MINI06 신원조회 초상 교체 원장](session-sync/nosb-mini-neved-dossier-image-repair-2026-08-16.md)
+- [NOSB MINI06 GARRETT_CLIMAC 섹터 B 소속 정정 원장](session-sync/nosb-mini-neved-garrett-sector-b-affiliation-repair-2026-08-16.md)
 
 ### static target baseline
 

@@ -1,12 +1,18 @@
 # NOSB-S1E2-CHOICE 로어 동기화 커버리지
 
-Updated: 2026-08-05
+Updated: 2026-08-17
 
 ## Session Coverage Identity
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E2-CHOICE` | `scripts/seed-payloads/nosb-s1e2-choice-sync.json` | partial | historical-reconstruction |
+| `NOSB-S1E2-CHOICE` | `scripts/seed-payloads/nosb-s1e2-choice-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- 원본은 1개의 초장문 PDF 페이지이며 SHA-256은 `a98dc3d88f9abbf36bfe6a60140efae6070b2ad391863f7fbd8ea0c4be136d38`다. 판독 편의를 위해 A4 높이 상당 203개 가상 구간으로 나눠 201개 비어 있지 않은 구간을 대조했으며, 이를 실제 PDF 페이지 수로 환산하지 않는다.
+- 현재 등록된 보상·전리품은 별도 GM 보상표가 없으면 raw session source만으로 확정할 수 없어 `blocked`로 유지한다. 기존 행을 자동 삭제하거나 경제·인벤토리 상태를 변경하지 않는다.
+- historical 승인 상태는 이번 대조로 승격하지 않으며, 사실별 후보와 차단 항목은 [2026-08-17 통합 원본 대조](./nosb-source-reconciliation-2026-08-17.md)에서 관리한다.
 
 ## 소스 범위
 
@@ -102,12 +108,12 @@ Updated: 2026-08-05
 
 ## NPC Approval Ledger
 
-- skipped: source unavailable — the historical sync predates the exact approval-ledger contract and the original intake decisions are not available for safe reconstruction.
+- not-applicable: 원본은 확보했지만 historical intake decision은 남아 있지 않고, 이번 coverage pass에서 신규 NPC 필드를 적용하지 않았다. 후보와 차단 항목은 통합 원본 대조에서 관리한다.
 
 ## Visual Asset Ledger
 
-- skipped: source unavailable — historical report and entity visuals exist, but complete source-frame provenance and every consumer disposition cannot be reconstructed from the available note alone.
+- not-applicable: historical report/entity visuals는 유지하지만 이번 coverage pass에서 새 visual disposition을 적용하지 않았다. 원본 프레임 후보와 소비처 판정은 통합 원본 대조에서 관리한다.
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — no immutable personality observation ledger can be reconstructed without the original typed session evidence.
+- not-applicable: 원본 typed evidence는 확보했지만 이번 pass에서 immutable personality observation을 적용하지 않았다. 후보는 통합 원본 대조에서 관리한다.

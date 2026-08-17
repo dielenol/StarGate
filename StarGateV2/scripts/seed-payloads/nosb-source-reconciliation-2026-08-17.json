@@ -1,0 +1,400 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "sessionId": "NOSB-S1E2-CHOICE"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "ZULU-040 \"왕관\"",
+              "replacement": "ZULU-0040 \"왕관\""
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "slug": "s1e2-choice"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "ZULU-040 \"왕관\"",
+              "replacement": "ZULU-0040 \"왕관\""
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "sessionId": "NOSB-S1E2-MINI"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "존 오푸스는 노부스 오르도와 송사리를 부수겠다고 말했고",
+              "replacement": "존 오푸스는 송사리 호를 부수겠다고 말했고"
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "slug": "s1e2-mini"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "존 오푸스는 노부스 오르도와 송사리를 부수겠다고 말하며",
+              "replacement": "존 오푸스는 송사리 호를 부수겠다고 말하며"
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "sessionId": "NOSB-S1E3-PHANTOM"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": {
+                        "$replaceAll": {
+                          "input": "$summary",
+                          "find": "이 과거 장면은 이후 `지휘자`와 오틸리아의 오래된 관계, 그리고 광명회 실험 기록으로 이어진다.",
+                          "replacement": "이 과거 장면은 이후 `지휘자`로 활동한 실험체 88(크리스토프)과 오틸리아의 오래된 관계, 그리고 광명회 실험 기록으로 이어진다."
+                        }
+                      },
+                      "find": "오틸리아는 그를 `크리스`라고 불렀다.",
+                      "replacement": "오틸리아는 과거 그를 `크리스`라고 불렀고, 현재 전장에서는 `크리스토프`라고 호명했다."
+                    }
+                  },
+                  "find": "해쉬 테거는 정신파괴물질을 사용해 지휘자와 연결된 실험체 88의 정신을 완전히 무너뜨렸다.",
+                  "replacement": "해쉬 테거는 정신파괴물질을 사용해 지휘자의 가면 아래 동일 인물인 실험체 88의 정신을 완전히 무너뜨렸다."
+                }
+              },
+              "find": "지휘자와 실험체 88 축은 제압되었고,",
+              "replacement": "지휘자는 가면을 잃은 뒤 실험체 88로 호명됐고, 오틸리아가 크리스토프라고 부른 동일 인물로 확인된 뒤 사망했으며,"
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "slug": "s1e3-phantom"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": {
+                    "$replaceAll": {
+                      "input": {
+                        "$replaceAll": {
+                          "input": "$content",
+                          "find": "S1E3 망령은 시드니 오페라 하우스 인질 사건, 황금여명회 지휘자의 생사박탈권 게임, 몬탁 프로젝트 도살견, 실험체 88의 과거가 결합된 작전 기록이다.",
+                          "replacement": "S1E3 망령은 시드니 오페라 하우스 인질 사건, 황금여명회 지휘자이자 실험체 88인 크리스토프의 생사박탈권 게임, 몬탁 프로젝트 도살견이 결합된 작전 기록이다."
+                        }
+                      },
+                      "find": "주요 결과: 지휘자 제압,",
+                      "replacement": "주요 결과: 지휘자(실험체 88) 사망,"
+                    }
+                  },
+                  "find": "작전은 과거 독일 극장 기록과 83년 전 실험실 기록을 통해 오틸리아, 지휘자, 실험체 88의 과거를 먼저 제시한다.",
+                  "replacement": "작전은 과거 독일 극장 기록과 83년 전 실험실 기록을 통해 오틸리아와 실험체 88(현 지휘자 크리스토프)의 과거를 먼저 제시한다."
+                }
+              },
+              "find": "최종 국면에서 지휘자는 제압되었고, 실험체 88은 탄호이저의 구절과 원죄에 대한 메시지를 남긴 뒤 굳어졌다.",
+              "replacement": "최종 국면에서 지휘자는 가면을 잃자 실험체 88로 호명되었고, 오틸리아가 크리스토프라고 부른 동일 인물로 확인됐다. 그는 탄호이저의 구절과 원죄에 대한 메시지를 남긴 뒤 몸이 굳었으며, 직후 기록은 그를 사망한 지휘자로 명시한다."
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "slug": "golden-dawn"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": {
+                "$replaceAll": {
+                  "input": "$content",
+                  "find": "최종전에서 현장팀은 축음기와 가면을 중심으로 한 정신 간섭성 전장을 돌파했다. 지휘자는 가면을 잃고 쓰러졌으며, 실험체 88과 연결된 과거 기록은 오틸리아와 광명회 실험사의 미해결 축으로 남았다.",
+                  "replacement": "최종전에서 현장팀은 축음기와 가면을 중심으로 한 정신 간섭성 전장을 돌파했다. 지휘자는 가면을 잃자 실험체 88로 호명됐고, 오틸리아가 크리스토프라고 부른 동일 인물로 확인됐다. 직후 기록은 그를 사망한 지휘자로 명시한다."
+                }
+              },
+              "find": "현재 본명과 조직 내 정식 계급은 미확정이다.",
+              "replacement": "이름은 크리스토프로 확인됐으며, 조직 내 정식 계급은 미확정이다."
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "source-reconciliation-visual-caption-repair",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART2"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "![광원화 검은 연기 반응 기록](/assets/session-reports/s1e4-prato/black-smoke-reaction.webp \"광원화 검은 연기 반응 기록\")",
+              "replacement": "![상부 보고를 시도하다 사망한 닥터 모스](/assets/session-reports/s1e4-prato/black-smoke-reaction.webp \"상부 보고를 시도하다 사망한 닥터 모스\")"
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "source-reconciliation-visual-caption-repair",
+    "filter": {
+      "slug": "s1e4-prato-part2"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "![광원화 검은 연기 반응 기록](/assets/session-reports/s1e4-prato/black-smoke-reaction.webp \"광원화 검은 연기 반응 기록\")",
+              "replacement": "![상부 보고를 시도하다 사망한 닥터 모스](/assets/session-reports/s1e4-prato/black-smoke-reaction.webp \"상부 보고를 시도하다 사망한 닥터 모스\")"
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "source-reconciliation-link-repair",
+    "filter": {
+      "sessionId": "NOSB-MINI-MINI-LEGACY"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "- [[스페이스 제로]]",
+              "replacement": "- 스페이스 33 (정식 개체 식별자 미확정)"
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "source-reconciliation-link-repair",
+    "filter": {
+      "slug": "mini04-hwayangyeonhwa"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "[[슬피 우는 것]]",
+              "replacement": "[[wiki:weeping-smoke-hwayangyeonhwa|슬피 우는 것]]"
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "session_reports",
+    "type": "source-reconciliation-graph-repair",
+    "filter": {
+      "sessionId": "NOSB-MINI-HWAYANGYEONHWA"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedWikiSlugs": "weeping-smoke-hwayangyeonhwa",
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "UNYEON",
+            "CLAIRVOYANCE"
+          ]
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-17T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "sessionId": "NOSB-S1E6-TURNING-POINT-PART1"
+    },
+    "update": [
+      {
+        "$set": {
+          "summary": {
+            "$replaceAll": {
+              "input": "$summary",
+              "find": "스타크 일로니손의 기자회견에서는 미국과 러시아의 규탄, 광원화 감염자 은폐 의혹과 NOGA 시위가 겹쳤고 총격과 화염병이 오가는 충돌로 번졌다.",
+              "replacement": "스타크 일로니손의 기자회견에서는 미국과 러시아의 규탄, 광원화 감염자 은폐 의혹과 NOGA 시위가 겹쳤다. NOGA 인원이 오르도 전투원의 총기를 붙잡고 흔드는 과정에서 총성이 시작됐고, NOGA의 화염병 투척 뒤 오르도 전투원이 기관총을 발사하며 기자회견장이 붕괴했다."
+            }
+          },
+          "highlights": {
+            "$map": {
+              "input": {
+                "$ifNull": [
+                  "$highlights",
+                  []
+                ]
+              },
+              "as": "highlight",
+              "in": {
+                "$replaceAll": {
+                  "input": "$$highlight",
+                  "find": "스타크의 기자회견은 NOGA 시위대의 총격과 화염병 충돌로 붕괴했다.",
+                  "replacement": "NOGA 인원이 오르도 전투원의 총기를 붙잡고 흔드는 과정에서 총성이 시작됐고, NOGA의 화염병 투척 뒤 오르도 전투원이 기관총을 발사하며 기자회견장이 붕괴했다."
+                }
+              }
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "source-reconciliation-prose-repair",
+    "filter": {
+      "slug": "s1e6-turning-point-part1"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$replaceAll": {
+              "input": "$content",
+              "find": "스타크의 기자회견은 NOGA 시위대의 총격과 화염병 충돌로 무너졌다.",
+              "replacement": "NOGA 인원이 오르도 전투원의 총기를 붙잡고 흔드는 과정에서 총성이 시작됐고, NOGA의 화염병 투척 뒤 오르도 전투원이 기관총을 발사하며 스타크의 기자회견장이 붕괴했다."
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "source-reconciliation-dossier-event-repair",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": [
+      {
+        "$set": {
+          "lore.sessionAppearances": {
+            "$map": {
+              "input": {
+                "$ifNull": [
+                  "$lore.sessionAppearances",
+                  []
+                ]
+              },
+              "as": "appearance",
+              "in": {
+                "$cond": [
+                  {
+                    "$eq": [
+                      "$$appearance.sessionId",
+                      "NOSB-S1E6-TURNING-POINT-PART1"
+                    ]
+                  },
+                  {
+                    "$mergeObjects": [
+                      "$$appearance",
+                      {
+                        "summary": "NOGA 인원이 오르도 전투원의 총기를 붙잡고 흔드는 과정에서 총성이 시작됐고, NOGA의 화염병 투척 뒤 오르도 전투원이 기관총을 발사하며 기자회견장이 붕괴했다. 요한 스미스가 제시한 집단 제거 가정을 거부했다."
+                      }
+                    ]
+                  },
+                  "$$appearance"
+                ]
+              }
+            }
+          },
+          "updatedAt": "2026-08-17T00:00:00.000Z"
+        }
+      }
+    ]
+  }
+]

@@ -2,7 +2,7 @@
 title: NOSB-MINI-NEVED session sync coverage
 category: session-sync
 tags: [NOSB-MINI-NEVED, MINI06, 전사의-탄생, 네베드, stargate-lore]
-updated: 2026-08-13
+updated: 2026-08-17
 source: stargate-lore
 ---
 
@@ -15,6 +15,13 @@ source: stargate-lore
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
 | `NOSB-MINI-NEVED` | `StarGateV2/scripts/seed-payloads/nosb-mini-neved-sync.json` | available | complete |
+
+## 2026-08-17 원본 대조
+
+- 전체 교차 세션 결과는 [2026-08-17 원본 재대조 원장](nosb-source-reconciliation-2026-08-17.md)에 연결한다.
+- 전편 보존본은 106쪽, SHA-256 `d5329448eb1ea94d131ce32230be41378caacb227916b44c4aaacc5542b765d2`, 후편 보존본은 279쪽, SHA-256 `1034c996ae38b209e21d65eada7e930159152f715782798435670c97fcd44ac0`로 다시 확인했다. source `available`, audit `complete` 판정은 유지한다.
+- 2026-08-16 후속 repair 뒤 신규 11 Dossier는 공용 미상 초상이 아니라 각각의 사용자 지정 초상을 사용한다. `GARRETT_CLIMAC`의 현재 정규 소속도 `NOVUS_ORDO / MANUS / SECTOR_B`로 정정된 최종 durable 상태를 아래 원장과 replay 순서에 반영한다.
+- Visual Asset Ledger의 기존 `source-frame crop = no`는 1035×503 원본 장면 전체를 사용했다는 뜻이다. 이번 재대조에서 ERP용 추가 crop이나 신규 보고서 이미지는 만들거나 승인하지 않았다.
 
 ## Source Profile
 
@@ -63,15 +70,16 @@ source: stargate-lore
 |---|---|---|---|---|
 | 전·후편 전체 기록 | 두 보존본의 연속 시각과 종료 표제 | `session_reports.NOSB-MINI-NEVED`, `wiki_pages.mini06-neved` | 하나의 `MINI06` 보고서와 mirror로 병합; 12개 시각 자료 parity | applied |
 | 보고서 번호·지도 카드 | 종료 표제 `전사의 탄생`, 아일랜드 갈로글라 기억 작전 | `lib/format/session-report.ts`, report map | `MINI06` preset·제목 fallback·지도 카드 배치 추가 | applied |
-| 악몽 줄루 | 도심 습격, 기억 침입, 검은 토끼·점액 파편 | 기존 `wiki_pages.zulu`, report | 기존 wiki 본문은 미변경하고 구조화 참조와 보고서 서술만 추가 | reviewed-no-action |
+| 악몽 줄루 | 도심 습격, 기억 침입 | 기존 `wiki_pages.zulu`, report | 기존 wiki 본문은 미변경하고 구조화 참조와 보고서 서술만 추가 | reviewed-no-action |
+| `NIGHTMARE_FRAGMENT` | 기억 속 검은 토끼와 현실의 검은 점액, 마리아 회수·피펫 봉인 | entity/visual candidate, report prose | 인물 원장 대상에서 제외하고 독립 개체·시각 자료 후보로만 추적; 별도 Dossier/crop/asset 미생성 | candidate-only |
 | 노부스 오르도 | ALPANO-3001 운용, 보상 지급, 갈로글라·욤스비킹 동맹 쿠키 | 기존 `wiki_pages.novus-ordo`, report | 기존 wiki 본문은 미변경하고 구조화 참조와 보고서 서술만 추가 | reviewed-no-action |
 | ALPANO-3001 | 다인 기억 다이브 장치와 치료 운용 | report | 정식 자산 번호·보관·재사용 조건이 부족해 전용 wiki/catalog 미생성 | candidate-only |
 | 갈로글라·욤스비킹 | 기억 속 적대와 현재 시점 동맹 선언 | `MILITARY` external sub-org, report | `GALLOGLA`·`JOMSVIKING`을 MANUS 섹터가 아닌 군부 외부 하위 조직으로 정적 분류; faction/institution DB row는 미생성 | applied |
-| 개럿 클라이맥 | 사이먼 살해, 야수화, 제압 후 현재 생존·섹터 B 경호 | report, `GARRETT_CLIMAC` | 공개·외부 무등급 Dossier create-only payload, generic unknown portrait, confirmed source-side relations | applied |
-| 사이먼 오 캘러핸 | 키아나의 선대 전사·교사, 개럿에게 피살 | report, `SIMON_OCALLAHAN` | 공개·외부 무등급 Dossier와 `DECEASED` 상태 확정, generic unknown portrait | applied |
-| 코너·스벤·네린·엔다·에바·로니·노스터 | 가족·지도자·증언자·피해자 역할 | report, NPC Dossiers | 공개·외부 무등급 Dossier 7건; 노스터만 `DECEASED`, 나머지 미확인 생존 상태는 구조화하지 않음 | applied |
+| 개럿 클라이맥 | 사이먼 살해, 야수화, 제압 후 현재 생존·섹터 B 경호 | report, `GARRETT_CLIMAC` | 공개 Dossier, 사용자 지정 초상, `NOVUS_ORDO / MANUS / SECTOR_B` 현재 소속, confirmed source-side relations | applied |
+| 사이먼 오 캘러핸 | 키아나의 선대 전사·교사, 개럿에게 피살 | report, `SIMON_OCALLAHAN` | 공개·외부 무등급 Dossier와 `DECEASED` 상태, 사용자 지정 초상 확정 | applied |
+| 코너·스벤·네린·엔다·에바·로니·노스터 | 가족·지도자·증언자·피해자 역할 | report, NPC Dossiers | 공개·외부 무등급 Dossier 7건과 각 사용자 지정 초상; 노스터만 `DECEASED`, 나머지 미확인 생존 상태는 구조화하지 않음 | applied |
 | 굿 닥터·닥터 박 | 치료 및 기억 다이브 지원 | report, NPC candidates | 정확한 정규 신원·직책·소속·등급 매칭 불가로 미생성 | blocked |
-| 욤스·갈 무직 | 포로와 비밀 협력자·경비 역할 | report, `YOMS`·`GAL_MUJIK` | 화자명을 별칭·안정 식별자로 보존하고 각각 `JOMSVIKING`·`GALLOGLA` 공개 Dossier 생성 | applied |
+| 욤스·갈 무직 | 포로와 비밀 협력자·경비 역할 | report, `YOMS`·`GAL_MUJIK` | 화자명을 별칭·안정 식별자로 보존하고 각각 `JOMSVIKING`·`GALLOGLA` 공개 Dossier와 사용자 지정 초상 유지 | applied |
 | `soda` | 시스템 기록상 크로노스가 1개 사용 | report, `master_items.soda`, economy candidate | 소비 사실은 보고서에 기록; 인벤토리 수량 차감은 exact baseline과 별도 승인 전 미실행 | approval-required |
 | 200,000 크레딧 보상 | 현장 기록상 이 자리에 있던 전원에게 즉시 지급 완료 | report only | 정사 서술만 보존하고 사용자 지시에 따라 ERP 원장 보정·후속 확인·경제 mutation을 영구 제외 | reviewed-no-action |
 | 필스너·적외선 조명·세포 억제제·야수화 주사 | 조사·증거 확인·전투 수습 중 사용 | report | 정식 catalog identity·소유권·잔량·회수 상태 불충분으로 catalog/inventory 미변경 | reviewed-no-action |
@@ -133,20 +141,19 @@ source: stargate-lore
 | `PIPETTE` | 휘트모어 핀치(기존 ERP 신원) | 피펫(기존 ERP) | 과학자 / 기억 다이브·파편 봉인 지원 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | ALPANO 보조와 사후 봉인 | `J` 유지(실험 지원은 정규 보직·접근 권한 변경이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
 | `MR_ODD` | Mr. 오드(기존 ERP 신원) | 기존 ERP 별칭 보존 | 임무 통제 / 보상 지급 | 세션 화자와 기존 Dossier 일치 | 기존 소속 보존 | 세션 사후 통제 | `M` 유지(보상 지급은 기존 통제 역할이며 보직·권한 변동이 아님) | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영; credit ledger 후속 작업 제외 | applied |
 | `CASEY_RACER` | Casey Racer(기존 ERP 신원) | 기존 ERP 별칭 보존 | 욤스비킹 연락망 / 과거 쿠키 회수자 | 세션 실명과 기존 David 협력 관계 일치 | 기존 외부 소속 보존 | 과거 욤스 회수 연락 | 외부 인원이라 agentLevel 미저장 | 기존 Dossier 초상 보존 | 기존 공개 보존 | 기존 신상 보존 | 세션 appearance만 additive 반영 | applied |
-| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 갈로글라 청년 전사대장, 강제 약혼자, 현재 섹터 B 경호원 | 실명·가족사·범행·현재 쿠키 생존 확인 | `MILITARY / GALLOGLA` | 섹터 B 경호 역할은 확인, 정식 고용 주체 미확인 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 남성, 도리스의 아들, 얼굴 흉터·야수화 이력 확인 | 키아나·사이먼 관계와 세션 출현 반영 | applied |
-| `SIMON_OCALLAHAN` | 사이먼 오 캘러핸 (`Simon O'Callahan`) | 별칭 없음 | 갈로글라 전사 / 키아나의 선대·교사 | 공개 기획 노트와 기억 로그 일치 | `MILITARY / GALLOGLA` | 사망자; 현재 파견 없음 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 남성, 당시 20세·188cm; `DECEASED` 확정 | 키아나 보호·개럿 피살 관계 반영 | applied |
-| `CONNOR_OCALLAHAN` | 코너 오 캘러핸 (`Connor O'Callahan`) | 별칭 없음 | 갈로글라 지도자 / 키아나·데이비드의 부친 | 로그 가족 호칭과 현재 동맹 장면 | `MILITARY / GALLOGLA` | 욤스비킹과 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 가족 관계 확인; 배후 조종설은 미확인 | David 대치·Sven 동맹 관계 반영 | applied |
-| `NERIN_OCALLAHAN` | 네린 오 캘러핸 (`Nerin O'Callahan`) | 별칭 없음 | 키아나·데이비드의 모친 | 로그 가족 호칭 | `MILITARY / GALLOGLA` | 기억 속 주민 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | 자녀 관계와 세션 출현 반영 | applied |
-| `ENDA_CLIMAC` | 엔다 클라이맥 (`Enda Climac`) | 별칭 없음 | 은퇴한 전설적 전사 / 개럿의 조모 | 실명·89세·가족 호칭 확인 | `MILITARY / GALLOGLA` | 은퇴 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 당시 89세, 도리스의 모친; 현재 상태 미확인 | Garrett 가족·Kiana 후계 관계 반영 | applied |
-| `EVA_HANNER` | 에바 한너 (`Eva Hanner`) | 별칭 없음 | 갈로글라 한너 클랜 지도자 | 성인식 회의와 로그 호칭 | `MILITARY / GALLOGLA` | 클랜 지도부 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | 세션 출현만 반영 | applied |
-| `RONNIE_KEANE` | 로니 킨 (`Ronnie Keane`) | 별칭 없음 | 사냥꾼 / 사이먼 사망 증언자 | 로그 실명·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 현재 상태 미확인 | Simon 증언 관계와 세션 출현 반영 | applied |
-| `NOSTER` | 노스터 (기록명; 전체 법적 이름 미확인) | 별칭 없음 | 양조업자 / 야수화 주사 절도 피해자 | 로그 호칭·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 후 피살 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 전체 법적 이름 미확인; `DECEASED` 확정 | Garrett 증언 관계와 세션 출현 반영 | applied |
+| `GARRETT_CLIMAC` | 개럿 클라이맥 (`Garrett Climac`) | 별칭 없음 | 갈로글라 청년 전사대장(과거), 강제 약혼자, 섹터 B 경호원(현재) | 실명·가족사·범행·현재 쿠키 생존과 사용자 소속 확정 | `NOVUS_ORDO / MANUS / SECTOR_B` | 갈로글라는 과거 소속·역할로 보존 | agentLevel 미등록 유지 | `/assets/npcs/Garrett-Climac-profile.webp` | 공개 | 남성, 도리스의 아들, 얼굴 흉터·야수화 이력 확인 | 키아나·사이먼 관계와 세션 출현 반영 | applied |
+| `SIMON_OCALLAHAN` | 사이먼 오 캘러핸 (`Simon O'Callahan`) | 별칭 없음 | 갈로글라 전사 / 키아나의 선대·교사 | 공개 기획 노트와 기억 로그 일치 | `MILITARY / GALLOGLA` | 사망자; 현재 파견 없음 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Simon-O-Callahan-profile.webp` | 공개 | 남성, 당시 20세·188cm; `DECEASED` 확정 | 키아나 보호·개럿 피살 관계 반영 | applied |
+| `CONNOR_OCALLAHAN` | 코너 오 캘러핸 (`Connor O'Callahan`) | 별칭 없음 | 갈로글라 지도자 / 키아나·데이비드의 부친 | 로그 가족 호칭과 현재 동맹 장면 | `MILITARY / GALLOGLA` | 욤스비킹과 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Connor-O-Callahan-profile.webp` | 공개 | 가족 관계 확인; 배후 조종설은 미확인 | David 대치·Sven 동맹 관계 반영 | applied |
+| `NERIN_OCALLAHAN` | 네린 오 캘러핸 (`Nerin O'Callahan`) | 별칭 없음 | 키아나·데이비드의 모친 | 로그 가족 호칭 | `MILITARY / GALLOGLA` | 기억 속 주민 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Nerin-O-Callahan-profile.webp` | 공개 | 현재 상태 미확인 | 자녀 관계와 세션 출현 반영 | applied |
+| `ENDA_CLIMAC` | 엔다 클라이맥 (`Enda Climac`) | 별칭 없음 | 은퇴한 전설적 전사 / 개럿의 조모 | 실명·89세·가족 호칭 확인 | `MILITARY / GALLOGLA` | 은퇴 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Enda-Climac-profile.webp` | 공개 | 당시 89세, 도리스의 모친; 현재 상태 미확인 | Garrett 가족·Kiana 후계 관계 반영 | applied |
+| `EVA_HANNER` | 에바 한너 (`Eva Hanner`) | 별칭 없음 | 갈로글라 한너 클랜 지도자 | 성인식 회의와 로그 호칭 | `MILITARY / GALLOGLA` | 클랜 지도부 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Eva-Hanner-profile.webp` | 공개 | 현재 상태 미확인 | 세션 출현만 반영 | applied |
+| `RONNIE_KEANE` | 로니 킨 (`Ronnie Keane`) | 별칭 없음 | 사냥꾼 / 사이먼 사망 증언자 | 로그 실명·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Ronnie-Keane-profile.webp` | 공개 | 현재 상태 미확인 | Simon 증언 관계와 세션 출현 반영 | applied |
+| `NOSTER` | 노스터 (기록명; 전체 법적 이름 미확인) | 별칭 없음 | 양조업자 / 야수화 주사 절도 피해자 | 로그 호칭·직업·증언 | `MILITARY / GALLOGLA` | 기억 속 조사 협조 후 피살 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Noster-profile.webp` | 공개 | 전체 법적 이름 미확인; `DECEASED` 확정 | Garrett 증언 관계와 세션 출현 반영 | applied |
 | `GOOD_DOCTOR` | 신원 미확인 | 굿 닥터(로그 호칭) | 치료실 의료진 | 치료 장면 화자명 | 정규 소속 미확인 | 키아나 치료 | 정규 직책·접근 권한 미확인 | 고해상도 Dossier 초상 미확정 | 사용자 공개 결정 필요 | 실명·성별·부서 미확인 | treatment prose candidate | blocked |
 | `DOCTOR_PARK` | 신원 미확인 | 닥터 박(로그 호칭) | 기억 다이브 지원 의료진 | 후반 기억 다이브 화자명 | 정규 소속 미확인 | ALPANO 지원 | 정규 직책·접근 권한 미확인 | 고해상도 Dossier 초상 미확정 | 사용자 공개 결정 필요 | 실명·부서 미확인 | memory-dive prose candidate | blocked |
-| `YOMS` | 욤스 (기록명; 실명 미확인) | 별칭 없음 | 욤스비킹 포로·정보원 | 포로 장면 화자명 | `MILITARY / JOMSVIKING` | 갈로글라 포로, 이후 회수 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 실명·직위·현재 상태 미확인 | Kiana 구조·Gal 회수 관계 반영 | applied |
-| `SVEN_TROELBEIN` | 스벤 트로엘베인 (`Sven Troelbein`) | 별칭 없음 | 욤스비킹 지도자 | 현재 쿠키 동맹 선언 | `MILITARY / JOMSVIKING` | 노부스 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 추가 신상 미확인 | Connor 동맹 관계 반영 | applied |
-| `GAL_MUJIK` | 갈 무직 (기록명; 실명 미확인) | 별칭 없음 | 갈로글라 경비 / 비밀 협력자 | 성인식 우회로·과거 쿠키 화자명 | `MILITARY / GALLOGLA` | 욤스 회수 지원 | 외부 인원이라 agentLevel 미저장 | 공용 미상 인물 초상 | 공개 | 실명·직위 상세·현재 상태 미확인 | David 협력·Yoms 회수 관계 반영 | applied |
-| `NIGHTMARE_FRAGMENT` | 인물 대상 아님 | 검은 토끼 / 검은 점액 | 악몽 줄루 파편 | 기억·현실 장면 변형과 피펫 식별 | 줄루 개체 | 마리아 회수·피펫 봉인 | 인물 권한등급 해당 없음 | Dossier 초상 대상 아님 | 인물 공개 여부 해당 없음 | 인간 신상 대상 아님 | report prose only | blocked |
+| `YOMS` | 욤스 (기록명; 실명 미확인) | 별칭 없음 | 욤스비킹 포로·정보원 | 포로 장면 화자명 | `MILITARY / JOMSVIKING` | 갈로글라 포로, 이후 회수 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Yoms-profile.webp` | 공개 | 실명·직위·현재 상태 미확인 | Kiana 구조·Gal 회수 관계 반영 | applied |
+| `SVEN_TROELBEIN` | 스벤 트로엘베인 (`Sven Troelbein`) | 별칭 없음 | 욤스비킹 지도자 | 현재 쿠키 동맹 선언 | `MILITARY / JOMSVIKING` | 노부스 오르도 산하 동맹 선언 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Sven-Troelbein-profile.webp` | 공개 | 추가 신상 미확인 | Connor 동맹 관계 반영 | applied |
+| `GAL_MUJIK` | 갈 무직 (기록명; 실명 미확인) | 별칭 없음 | 갈로글라 경비 / 비밀 협력자 | 성인식 우회로·과거 쿠키 화자명 | `MILITARY / GALLOGLA` | 욤스 회수 지원 | 외부 인원이라 agentLevel 미저장 | `/assets/npcs/Gal-Mujik-profile.webp` | 공개 | 실명·직위 상세·현재 상태 미확인 | David 협력·Yoms 회수 관계 반영 | applied |
 
 ## Story-Driven Role/Level Review
 
@@ -155,7 +162,7 @@ source: stargate-lore
 - `MR_ODD`: 작전 통제와 보상 지급은 기존 권한 범위이므로 `M` 유지.
 - 나머지 기존 오르도 인원: 기억 다이브 참여·조사·봉인은 세션 임무이고 지속 직책·승진·강등 근거가 없어 기존 등급 유지.
 - `CASEY_RACER`와 신규 갈로글라·욤스비킹 인물: 외부 인원이라 agentLevel을 추정하지 않는다.
-- `GARRETT_CLIMAC`: 현재 섹터 B 경호 역할은 확인되지만 노부스 오르도 정규 인사인지 외부 경호 계약인지 불명이다. `MILITARY / GALLOGLA` 외부 인물로 생성하며 agentLevel을 저장하지 않는다.
+- `GARRETT_CLIMAC`: 최초 생성 시 `MILITARY / GALLOGLA` 외부 인물로 보존했으나, 2026-08-16 사용자 확정 repair에서 현재 정규 소속을 `NOVUS_ORDO / MANUS / SECTOR_B`로 정정했다. 내부 접근 권한은 추정하지 않고 agentLevel 미등록을 유지한다.
 
 ## Personality Evidence Ledger
 
@@ -182,15 +189,26 @@ source: stargate-lore
 | `/assets/session-reports/neved/garrett-sector-b-cookie.webp` | 둘째 보존본 현재 쿠키 원본 | 1035×503 | no | report-cutscene | included | included | excluded: 전용 wiki 없음 | excluded: catalog 대상 아님 | excluded: 초상 재사용 금지 | 살아남은 개럿의 현재 섹터 B 배치를 보여 주는 전체 프레임 |
 | `source-only:first-large-frame-group` | 첫 보존본 미선정 장면 프레임 13개 | 1035×503 | no | candidate-only | candidate-only: 핵심 서사 12컷에 중복 | candidate-only: 보고서와 동일 사유 | excluded: 전용 wiki 없음 | excluded: 정식 catalog 대상 없음 | excluded: 대화 맥락 포함 컷신은 초상 아님 | 전수 검토했으나 중복·전환·배경 프레임이라 source-only 유지 |
 | `source-only:second-large-frame-group` | 둘째 보존본 미선정 장면 프레임 72개 | 1035×503 | no | candidate-only | candidate-only: 핵심 서사 12컷에 중복 | candidate-only: 보고서와 동일 사유 | excluded: 전용 wiki 없음 | excluded: 정식 catalog 대상 없음 | excluded: 대화 맥락 포함 컷신은 초상 아님 | 전수 검토했으나 중복·전환·보조 전투 프레임이라 source-only 유지 |
+| `source-only:nightmare-fragment` | 두 보존본의 검은 토끼·검은 점액 장면 | 1035×503 | not-applicable — 독립 crop 미생성 | candidate-only | candidate-only: 보고서 prose와 기존 선택 장면에만 포함 | candidate-only: report mirror와 동일 | candidate-only: 전용 개체 문서 미확정 | excluded: catalog 대상 아님 | excluded: 인물·Dossier 대상 아님 | `NIGHTMARE_FRAGMENT`를 NPC가 아닌 개체/시각 후보로 추적하며 ERP용 추가 crop·asset은 만들지 않음 |
 | `source-only:chat-avatar-58x57-group` | 두 보존본의 58x57 대화 아바타 633개 | 58×57 | no | candidate-only | excluded: 장면 맥락·해상도 부족 | excluded: 보고서와 동일 사유 | excluded: 개체 archive 아님 | excluded: catalog 대상 아님 | candidate-only: 저해상도라 Dossier 품질 기준 미달 | 화자 식별에만 사용하고 공개 자산으로 복제하지 않음 |
 | `source-only:chat-avatar-58x58-group` | 두 보존본의 58x58 대화 아바타 377개 | 58×58 | no | candidate-only | excluded: 장면 맥락·해상도 부족 | excluded: 보고서와 동일 사유 | excluded: 개체 archive 아님 | excluded: catalog 대상 아님 | candidate-only: 저해상도라 Dossier 품질 기준 미달 | 화자 식별에만 사용하고 공개 자산으로 복제하지 않음 |
-| `/assets/npcs/Unknown-Person-profile.webp` | 사용자 승인 공용 미상 인물 초상 | 1084×1451 | no | personnel-image | excluded: 인물별 장면이 아님 | excluded: 보고서와 동일 사유 | excluded: 개체 archive 아님 | excluded: catalog 대상 아님 | included: 신규 11 Dossier preview/main | 개별 고해상도 초상이 없는 공개 인물에 공용 placeholder 사용; 기존 공개 파일을 재사용하며 새 이미지 생성 없음 |
+| `/assets/npcs/Garrett-Climac-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `GARRETT_CLIMAC` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Simon-O-Callahan-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `SIMON_OCALLAHAN` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Connor-O-Callahan-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `CONNOR_OCALLAHAN` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Nerin-O-Callahan-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `NERIN_OCALLAHAN` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Enda-Climac-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `ENDA_CLIMAC` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Eva-Hanner-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `EVA_HANNER` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Ronnie-Keane-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `RONNIE_KEANE` preview/main | 사용자 1:1 지정과 잔여 초상 repair 적용·재조회 완료 |
+| `/assets/npcs/Noster-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `NOSTER` preview/main | 사용자 1:1 지정과 잔여 초상 repair 적용·재조회 완료 |
+| `/assets/npcs/Yoms-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `YOMS` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Sven-Troelbein-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `SVEN_TROELBEIN` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
+| `/assets/npcs/Gal-Mujik-profile.webp` | 2026-08-16 사용자 지정 초상 | 1024×1365 | no | personnel-image | excluded: 보고서용 아님 | excluded: report mirror용 아님 | excluded: 전용 wiki 요청 없음 | excluded: catalog 대상 아님 | included: `GAL_MUJIK` preview/main | 사용자 1:1 지정과 repair payload 적용·재조회 완료 |
 
 ## Visual Selection Summary
 
 - 보고서와 operation-report wiki mirror는 위 12개 `/assets/...` 경로를 동일한 순서·alt·caption으로 사용한다.
 - 모든 공개 파일은 원본 1035x503 프레임을 자르지 않고 WebP로 변환한다. 장면 프레임은 Dossier 초상이나 catalog 미리보기로 재사용하지 않는다.
-- 신규 생성 이미지와 외부 검색 이미지는 사용하지 않는다. 신규 Dossier 11건은 기존 사용자 승인 공용 미상 인물 초상을 사용한다.
+- 신규 생성 이미지와 외부 검색 이미지는 사용하지 않는다. 신규 Dossier 11건은 2026-08-16 repair 이후 위 11개 사용자 지정 초상을 각각 사용하며, `/assets/npcs/Unknown-Person-profile.webp`는 이 세션의 11명에 더 이상 사용하지 않는다.
 
 ## Execution Order And Replay Contract
 
@@ -200,7 +218,8 @@ source: stargate-lore
 4. publication 파일은 mirror 공개 → 보고서 `U` → 기존 공개 Dossier 11건 세션 출현 → 성격 관찰 2건 순으로 한 transaction에서 처리한다. 첫 두 envelope는 staging의 제목·본문·시각 자료·참조·지도·기록자 전 필드를 exact CAS하고, Dossier filter는 같은 sessionId appearance의 선행 삽입을 차단하며 exact appearance·event id·tag postcondition만 재실행 no-op으로 인정한다. payload 대상 Dossier의 apply-ready 검증은 `nosb-mini-neved-npc-apply.md` focused 원장을 사용한다.
 5. 각 파일의 domain transaction과 `lore_sources`·`lore_ingestion_runs` 감사는 runner 계약을 따른다. 보고서에는 `provenanceSourceIds`가 연결되고, 구조화 참조 무결성 확인 과정에서 기존 related wiki·personnel·catalog target의 `__sessionReportReferenceLockAt`가 갱신될 수 있다. 파일 간 원자성은 없고, 실패 audit은 domain rollback 뒤 남을 수 있다.
 6. 사용자 exact 승인에 따라 위 순서대로 live execute를 완료했다. 각 단계는 fresh dry-run과 독립 재조회를 거쳤고 세 domain transaction이 모두 성공했다.
-7. `TIME` 소다 차감은 별도 경제 operation 후보로 유지한다. 200,000 크레딧은 사용자 지시에 따라 후속 조사와 ERP ledger mutation 대상에서 완전히 제외한다.
+7. 최종 durable 상태를 재현할 때는 base/publication 뒤에 `StarGateV2/scripts/seed-payloads/nosb-mini-neved-dossier-image-repair-2026-08-16.json` → `StarGateV2/scripts/seed-payloads/dossier-portrait-repair-ronnie-noster-zeno-2026-08-16.json` → `StarGateV2/scripts/seed-payloads/nosb-mini-neved-garrett-sector-b-affiliation-repair-2026-08-16.json` 순으로 replay한다. 첫 repair는 9명, 둘째 repair는 이 세션의 `RONNIE_KEANE`·`NOSTER`와 별도 `DOCTOR_ZENO`, 셋째 repair는 `GARRETT_CLIMAC` 현재 소속을 다룬다. 세 파일의 기존 사용자 승인·CAS 범위를 그대로 보존하며 이 coverage 갱신이 새 실행 승인을 만들지는 않는다.
+8. `TIME` 소다 차감은 별도 경제 operation 후보로 유지한다. 200,000 크레딧은 사용자 지시에 따라 후속 조사와 ERP ledger mutation 대상에서 완전히 제외한다.
 
 ## Verification Record
 
@@ -210,9 +229,11 @@ source: stargate-lore
 - live `stargate`에서 신규 Dossier 11건을 create-only transaction으로 생성했다. run `seed-payload:7c6c66b6-9568-49ba-ba8e-017b3f79e645`가 11/11 성공했고, 재조회 결과 `GALLOGLA` 9건·`JOMSVIKING` 2건·공개 11건·agentLevel 저장 0건이며 `SIMON_OCALLAHAN`·`NOSTER`만 `DECEASED`였다.
 - V/private staging은 run `seed-payload:b538040a-301c-4d9f-a288-84f49b37f55a`에서 2/2 성공했다. 보고서 `NOSB-MINI-NEVED`는 `minRole: V`, mirror `mini06-neved`는 비공개로 재조회한 뒤 publication을 fresh dry-run했다.
 - U/public publication은 run `seed-payload:e558d44d-70d0-4420-8279-afeeec1f55fb`에서 15/15 성공했다. 보고서 `minRole: U`, mirror 공개, 기존 Dossier appearance 11건, 성격 관찰 2건을 독립 재조회했고 세 payload의 경제 collection은 0건이었다.
-- 11개 spec↔payload adapter parity, 외부 agentLevel 미저장, `SIMON_OCALLAHAN`·`NOSTER`만 갖는 사망 증거 3필드 완전성을 확인했다.
+- 2026-08-16 초상 repair는 9명 payload run `seed-payload:d02760c4-8346-46e4-ae31-734727988f60`과 잔여 초상 payload run `seed-payload:89fea895-fe19-4ea0-99a1-03a33f967807`에서 적용·재조회됐다. 그 결과 이 세션 신규 Dossier 11명은 각각 위 exact portrait를 사용하고 공용 미상 초상을 사용하지 않는다.
+- `GARRETT_CLIMAC` 현재 소속 repair는 run `seed-payload:18796a12-fbfb-4f00-a54d-3d799c568117`에서 적용·재조회됐고, 최종 값은 `NOVUS_ORDO / MANUS / SECTOR_B`, agentLevel 미등록이다.
+- 11개 spec↔payload adapter parity, 외부 인물 10건과 `GARRETT_CLIMAC`의 agentLevel 미등록, `SIMON_OCALLAHAN`·`NOSTER`만 갖는 사망 증거 3필드 완전성을 확인했다.
 - NPC ready·personality·visual/report-mirror·coverage/static/public prose 검증, 조직 분기·SVG parity 테스트 3건, 아이콘 감사 115종·37 route, 대상 ESLint, `pnpm typecheck`, `git diff --check`를 통과했다.
-- 인증된 `http://localhost:43849` 데스크톱 브라우저에서 `/erp/personnel`과 `/erp/factions`의 `GALLOGLA`·`JOMSVIKING` 전용 문장과 조직 카드를 확인했다. active headcount는 사망자 archive를 제외해 갈로글라 7명·욤스비킹 2명이며, 신규 11명 Dossier·사망 표식·보고서 역링크가 정상이고 가로 넘침·콘솔 오류가 없었다.
+- 인증된 `http://localhost:43849` 데스크톱 브라우저에서 `/erp/personnel`과 `/erp/factions`의 `GALLOGLA`·`JOMSVIKING` 전용 문장과 조직 카드를 확인했다. 당시 active headcount는 사망자 archive를 제외해 갈로글라 7명·욤스비킹 2명이었고, 이 수치는 `GARRETT_CLIMAC` 섹터 B 이동 전 검증 기록이므로 현재 집계 근거로 재사용하지 않는다. 신규 11명 Dossier·사망 표식·보고서 역링크가 정상이고 가로 넘침·콘솔 오류가 없었다.
 - 보고서와 mirror는 같은 12개 경로·alt·caption을 사용했다. 보고서 이미지는 natural `1035×503` / rendered `662×322`, mirror는 infobox hero natural `299×145` / rendered `167×126`과 본문 natural `1035×503` / rendered `732×356`, 모두 `object-fit: contain`, 투명 backdrop, broken 0건이었다.
 - Lore Explorer에서 `개럿 클라이맥` 검색이 Dossier·보고서·mirror의 exact href를 반환했고 degraded 안내가 없었다. 인증 브라우저 역할 `M`에서 `U` 보고서를 열람했으며, 비인증 report·wiki·Dossier는 `307`, 검색 API는 `401`이었다. exact `U` 계정 브라우저 확인은 수행하지 않았다.
 

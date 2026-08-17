@@ -2,19 +2,25 @@
 title: NOSB-S1E3-PHANTOM session sync coverage
 category: session-sync
 tags: [NOSB-S1E3-PHANTOM, S1E3, stargate-lore]
-updated: 2026-08-06
+updated: 2026-08-17
 source: stargate-lore-audit
 ---
 
 # NOSB-S1E3-PHANTOM Sync Coverage
 
-이 문서는 기존 durable sync와 관련 NPC/faction payload를 기준으로 재구성한 내부 감사다. 원본 세션 로그와 당시 승인 기록은 이번 입력에 없으므로, payload에 없는 신원·canon·성격 증거를 새로 만들지 않는다.
+이 문서는 기존 durable sync와 관련 NPC/faction payload를 기준으로 재구성한 내부 감사다. 2026-08-17 원본 세션 로그를 다시 확보했지만 당시 승인 기록은 남아 있지 않으므로, payload에 없는 신원·canon·성격 증거를 새로 만들지 않는다.
 
 ## Session Coverage Identity
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E3-PHANTOM` | `scripts/seed-payloads/nosb-s1e3-phantom-sync.json` | partial | historical-reconstruction |
+| `NOSB-S1E3-PHANTOM` | `scripts/seed-payloads/nosb-s1e3-phantom-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- 원본 246/246쪽을 재추출했으며 SHA-256은 `c2a38429a684699a2209c335a9bc3601e430f45b41cc760d26ff2d7e48c1c26c`다.
+- `CONDUCTOR`와 `EXPERIMENT_88`이 동일 인물이며 해당 세션에서 사망했다는 사실은 source-confirmed다. 다만 기존 두 Dossier의 identity merge는 stable key·역링크·historical approval 영향이 있어 별도 사용자 결정 전 `blocked`로 유지한다.
+- historical 승인 상태는 이번 대조로 승격하지 않으며, 나머지 후보와 차단 항목은 [2026-08-17 통합 원본 대조](./nosb-source-reconciliation-2026-08-17.md)에서 관리한다.
 
 ## Lorebook Coverage Matrix
 
@@ -47,7 +53,7 @@ source: stargate-lore-audit
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — historical prose and relation fields are not sufficient to reconstruct typed immutable observations without the original evidence.
+- not-applicable: 원본 typed evidence는 확보했지만 historical prose/relation을 immutable personality observation으로 새 적용하지 않았다. 후보는 통합 원본 대조에서 관리한다.
 
 ## Graph And Audit Status
 

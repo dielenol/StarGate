@@ -2,19 +2,26 @@
 title: NOSB-MINI-HWAYANGYEONHWA session sync coverage
 category: session-sync
 tags: [NOSB-MINI-HWAYANGYEONHWA, MINI04, stargate-lore]
-updated: 2026-08-05
+updated: 2026-08-17
 source: stargate-lore-audit
 ---
 
 # NOSB-MINI-HWAYANGYEONHWA Sync Coverage
 
-이 문서는 기존 sync payload와 후속 image-sync payload를 기준으로 재구성한 내부 감사다. 원본 세션 로그와 원본 이미지 provenance는 이번 입력에 없으므로 새로운 canon·성격 해석·NPC 승인을 만들지 않는다.
+이 문서는 기존 sync payload·후속 image-sync payload와 2026-08-17에 다시 제공된 원본 세션 로그를 함께 대조한 내부 감사다. 당시 승인 이력에 없는 canon·성격 해석·NPC 승인은 새로 만들지 않는다.
 
 ## Session Coverage Identity
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-MINI-HWAYANGYEONHWA` | `scripts/seed-payloads/nosb-mini-hwayangyeonhwa-sync.json` | partial | historical-reconstruction |
+| `NOSB-MINI-HWAYANGYEONHWA` | `scripts/seed-payloads/nosb-mini-hwayangyeonhwa-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- 전체 교차 세션 결과는 [2026-08-17 원본 재대조 원장](nosb-source-reconciliation-2026-08-17.md)에 연결한다.
+- 보존본은 111쪽, SHA-256 `584e057f3eb4673b627912318e72c644909714b6404db853ec2a5753a3de8418`로 끝까지 추출·대표 렌더 대조했다.
+- source는 `available`이다. 원본과 durable 링크의 대상 type 불일치를 바로잡는 typed-link correction은 aggregate 원장에서 `prepared`로 추적하며, 적용·재조회 전까지 audit은 `partial`이다.
+- 이 문서는 기존 report/mirror/entity 이미지와 참가자 링크의 승인 상태를 바꾸지 않으며, prepared correction 자체를 새 apply 승인으로 간주하지 않는다.
 
 ## Lorebook Coverage Matrix
 
@@ -42,7 +49,7 @@ source: stargate-lore-audit
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — no immutable personality observation envelope exists in the focused payload and the original dialogue/action evidence is unavailable.
+- not-applicable: 원본 대사·행동은 이용 가능하지만 focused payload에 immutable personality observation envelope가 없고, 이번 패스에서 신규 관찰을 승인하지 않았다.
 
 ## Graph And Audit Status
 

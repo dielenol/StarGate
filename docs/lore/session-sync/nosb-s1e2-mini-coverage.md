@@ -2,19 +2,25 @@
 title: NOSB-S1E2-MINI session sync coverage
 category: session-sync
 tags: [NOSB-S1E2-MINI, S1E2-MINI, stargate-lore]
-updated: 2026-08-05
+updated: 2026-08-17
 source: stargate-lore-audit
 ---
 
 # NOSB-S1E2-MINI Sync Coverage
 
-이 문서는 기존 durable sync·refresh·NPC payload를 기준으로 재구성한 내부 감사다. 원본 세션 로그와 당시 승인 기록은 이번 입력에 없으므로, 기록에 없는 NPC 필드·관계·성격을 추론하지 않는다.
+이 문서는 기존 durable sync·refresh·NPC payload를 기준으로 재구성한 내부 감사다. 2026-08-17 원본 세션 로그를 다시 확보했지만 당시 승인 기록은 남아 있지 않으므로, 기록에 없는 NPC 필드·관계·성격을 추론하지 않는다.
 
 ## Session Coverage Identity
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E2-MINI` | `scripts/seed-payloads/nosb-s1e2-mini-sync.json` | partial | historical-reconstruction |
+| `NOSB-S1E2-MINI` | `scripts/seed-payloads/nosb-s1e2-mini-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- 원본 153/153쪽을 재추출했으며 SHA-256은 `0635bf7866d9557930d6186fc9bb76873ae2aa3e608a41672bcd1742a420feeb`다.
+- 존 오푸스의 위협은 원본상 `송사리 호`를 부수겠다는 범위로 확인된다. `NO까지 부수겠다`는 기존 과장은 correction prepared 상태이며, live 적용 전까지 이 문서의 audit status를 `partial`로 유지한다.
+- historical civil-NPC 승인을 새 승인으로 바꾸지 않으며, 사실별 후보와 차단 항목은 [2026-08-17 통합 원본 대조](./nosb-source-reconciliation-2026-08-17.md)에서 관리한다.
 
 ## Lorebook Coverage Matrix
 
@@ -30,7 +36,7 @@ source: stargate-lore-audit
 
 ## NPC Approval Ledger
 
-- skipped: source unavailable — historical civil-NPC payloads predate the current approval ledger; no profile creation or repair is authorized by this audit note.
+- not-applicable: historical civil-NPC payload는 기존 적용 증거로만 보존하며 이번 audit note는 신규 profile creation/repair를 승인하지 않는다. 후보와 차단 항목은 통합 원본 대조에서 관리한다.
 
 ## Visual Asset Ledger
 
@@ -41,7 +47,7 @@ source: stargate-lore-audit
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — no immutable personality observation envelope exists and the original dialogue/action evidence is unavailable for safe reconstruction.
+- not-applicable: 원본 dialogue/action evidence는 확보했지만 이번 pass에서 immutable personality observation을 적용하지 않았다. 후보는 통합 원본 대조에서 관리한다.
 
 ## Graph And Audit Status
 

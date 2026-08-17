@@ -2,7 +2,7 @@
 title: NOSB-S1E1-MINI session sync coverage
 category: session-sync
 tags: [NOSB-S1E1-MINI, S1E1-MINI, stargate-lore]
-updated: 2026-08-05
+updated: 2026-08-17
 source: stargate-lore
 ---
 
@@ -14,7 +14,13 @@ source: stargate-lore
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E1-MINI` | `scripts/seed-payloads/nosb-s1e1-mini-sync.json` | partial | historical-reconstruction |
+| `NOSB-S1E1-MINI` | `scripts/seed-payloads/nosb-s1e1-mini-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- 원본 79/79쪽을 재추출했으며 SHA-256은 `e6d5f1020903314a77338401e3414dca1426023ef9546ee253e338a6cff28d41`다.
+- 기존 보고서·위키·카탈로그·Dossier 연결을 원본과 다시 대조했지만, historical NPC/asset/personality 적용을 이번 원본 확보만으로 새 승인으로 바꾸지 않는다.
+- 사실별 후보와 차단 항목은 [2026-08-17 통합 원본 대조](./nosb-source-reconciliation-2026-08-17.md)에서 관리하며 자동 적용·삭제하지 않는다.
 
 ## Source Profile
 
@@ -143,12 +149,12 @@ Stock impact conclusion for `NOSB-S1E1-MINI`: the log contains a Space Zero stor
 
 ## NPC Approval Ledger
 
-- skipped: source unavailable — this historical sync predates the exact approval-ledger contract; existing NPC/Dossier payloads remain historical evidence but do not authorize a new profile apply.
+- not-applicable: historical NPC/Dossier payload는 기존 적용 증거로만 보존하며 이번 재대조에서 신규 profile apply를 승인하지 않았다. 후보와 차단 항목은 통합 원본 대조에서 관리한다.
 
 ## Visual Asset Ledger
 
-- skipped: source unavailable — historical entity assets exist, but the complete report/mirror visual inventory and source-frame provenance cannot be reconstructed safely from this coverage note alone.
+- not-applicable: historical entity assets는 유지하지만 이번 coverage pass에서 새 report/mirror visual disposition을 적용하지 않았다. 원본 프레임 후보는 통합 원본 대조에서 관리한다.
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — historical relationship prose is not converted into immutable personality observations without the original typed dialogue/description/action evidence.
+- not-applicable: 원본 대화·서술·행동은 확보했지만 historical 관계 서술을 immutable personality observation으로 새 적용하지 않았다. 후보는 통합 원본 대조에서 관리한다.

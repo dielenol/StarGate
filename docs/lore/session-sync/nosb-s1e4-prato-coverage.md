@@ -2,7 +2,7 @@
 title: NOSB-S1E4-PRATO session sync coverage
 category: session-sync
 tags: [NOSB-S1E4-PRATO-PART1, NOSB-S1E4-PRATO-PART2, S1E4, stargate-lore]
-updated: 2026-08-07
+updated: 2026-08-17
 source: stargate-lore
 ---
 
@@ -14,8 +14,15 @@ source: stargate-lore
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E4-PRATO-PART1` | `scripts/seed-payloads/nosb-s1e4-prato-sync.json` | partial | historical-reconstruction |
-| `NOSB-S1E4-PRATO-PART2` | `scripts/seed-payloads/nosb-s1e4-prato-sync.json` | partial | historical-reconstruction |
+| `NOSB-S1E4-PRATO-PART1` | `scripts/seed-payloads/nosb-s1e4-prato-sync.json` | available | partial |
+| `NOSB-S1E4-PRATO-PART2` | `scripts/seed-payloads/nosb-s1e4-prato-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- Part1 원본 93/93쪽의 SHA-256은 `730775c772631a8f81561cf703ab47000dd9d77a97e39a8b8c15ebe9a04e30b9`, Part2 원본 157/157쪽의 SHA-256은 `b3800fc46be012bb0b25f074b9e78e02b01483214a0970bd8a5d0a325169364c`다.
+- Part2 legacy `black-smoke-reaction.webp`는 p.156 `X4120`의 닥터 모스 사망 장면이며 검은 연기 샘플 장면이 아니다. report/mirror caption correction은 별도 새 repair payload가 담당하고, live 적용 전까지 audit status를 `partial`로 유지한다.
+- Part1 `JOHN_WONG`의 실제 등장에 비해 아래 NPC Approval Ledger가 닥터 모스 행만 보존한 것은 historical ledger 누락 후보다. 이번 대조에서 historical 승인을 새 승인으로 바꾸지 않는다.
+- 성격 증거는 candidate-only이며 이번 pass에서 적용하지 않았다. 사실별 후보와 차단 항목은 [2026-08-17 통합 원본 대조](./nosb-source-reconciliation-2026-08-17.md)에서 관리한다.
 
 ## Source Profile
 
@@ -244,14 +251,22 @@ source: stargate-lore
 
 이번 패스는 기존 `DOCTOR_MOSS` 레코드의 신원·소속·권한·초상·공개 여부·인적 정보와 기존 관계를 그대로 보존한다. 프라토 2부의 기존 session appearance가 확정한 사망 상태와 해당 사건 링크만 구조화하며, 다른 역사적 Dossier 필드는 변경하지 않는다.
 
+Part1의 `JOHN_WONG`은 source-confirmed 등장 및 기존 적용 기록이 있으나 이 historical ledger 표에는 누락되어 있다. 이번 원본 대조는 이를 후보로만 기록하며 새 승인 행으로 소급하지 않는다.
+
 | codename | 신원조회 실명 | 별칭 | 직함/역할 | 식별자 근거 | 정규 소속 | 파견/겸임 | 권한등급 | Dossier 초상 | 공개 여부 | 인적 정보 | 서술/관계 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `DOCTOR_MOSS` | 모이세이 알렉산드로비치 코헨(기존 spec/ERP 값 유지) | `Dr.모스`(기존 명시적 통칭 유지) | 노부스 오르도 연구 기구 사무차장(기존값 유지) | 기존 ERP 내부 식별자와 durable spec | `NOVUS_ORDO / SECRETARIAT / RESEARCH`(기존값 유지) | 없음(정규 배치 유지) | `V`(기존 승인값 유지) | `/assets/npcs/Doctor-Moss-profile.webp`(기존 승인 초상 유지) | `true`(기존값 유지) | 남성; 61세; 158cm; 체중 미상(기존값 유지) | 기존 관계는 보존; `NOSB-S1E4-PRATO-PART2` session appearance의 상부 보고 시도 직후 사망을 `DECEASED` 상태로 구조화 | ready-for-apply |
 
 ## Visual Asset Ledger
 
-- skipped: source unavailable — the historical asset section does not preserve the exact current ledger columns for every consumer, and complete source-frame provenance is unavailable for safe reconstruction.
+| asset | source | source dimensions | source-frame crop | source role | report | report wiki mirror | dedicated wiki | catalog | Dossier/personnel | decision/evidence |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `/assets/session-reports/s1e4-prato/aurora-infected-radio-facility.webp` | Part2 p.1 `X3.jp2` | 1035×503 | no — complete VTT scene frame | report-cutscene + place-archive | included | included | included (`varginha-radio-facility`) | not-applicable | excluded: location scene | source-frame identity confirmed |
+| `/assets/wiki/entities/inverted-sock.webp` | user-provided official entity image | 1024×1536 | not-applicable — standalone original | entity-archive | included | included | included (`inverted-sock`) | not-applicable | excluded: entity image | official standalone image; not a PDF frame |
+| `/assets/session-reports/s1e4-prato/harpoon-engagement.webp` | Part2 p.138 `X3648.jp2` | 1035×503 | no — complete VTT scene frame | report-cutscene | included | included | excluded: no dedicated reuse approval | not-applicable | excluded: group action scene | harpoon capture frame confirmed |
+| `/assets/session-reports/s1e4-prato/black-smoke-reaction.webp` | Part2 p.156 `X4120.jp2` | 1035×503 | no — complete VTT scene frame | report-cutscene | included with incorrect legacy caption; repair prepared | included with incorrect legacy caption; repair prepared | excluded: not a black-smoke archive image | excluded: not a sample preview | excluded: death scene, not portrait | actual frame is Doctor Moss's death, not the black-smoke sample; report/mirror caption correction is handled by a separate new payload |
+| not-applicable — no publishable black-smoke sample frame | Part2 p.130-p.132 typed evidence plus low-resolution 58×57/58×58 dialogue avatar only | 58×58 | not-applicable | candidate-only | excluded: no source frame | excluded: no source frame | excluded: no dedicated asset | excluded: no exact sample preview | excluded: low-resolution avatar is not a portrait candidate | retain the sample as text evidence; do not promote the avatar to a report, catalog, or Dossier visual |
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — existing relation summaries are not promoted to immutable personality observations without the original typed evidence.
+- not-applicable: 원본 typed evidence는 확보했지만 이번 pass의 personality evidence는 candidate-only이며 immutable observation을 적용하지 않았다. 후보와 차단 항목은 통합 원본 대조에서 관리한다.

@@ -2,7 +2,7 @@
 title: NOSB-S1E6-TURNING-POINT-PART1 session sync coverage
 category: session-sync
 tags: [NOSB-S1E6-TURNING-POINT-PART1, S1E6, 변곡점, stargate-lore]
-updated: 2026-08-10
+updated: 2026-08-17
 source: stargate-lore
 ---
 
@@ -14,7 +14,13 @@ source: stargate-lore
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E6-TURNING-POINT-PART1` | `StarGateV2/scripts/seed-payloads/nosb-s1e6-turning-point-part1-sync.json` | available | complete |
+| `NOSB-S1E6-TURNING-POINT-PART1` | `StarGateV2/scripts/seed-payloads/nosb-s1e6-turning-point-part1-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- 원본 125/125쪽과 SHA-256 `4d3d28c9b3c4db4d5e9b940b2c3cbc95dab2f5bc97528503a04f4ab2f9c336a6`를 다시 대조했다.
+- 기자회견 충돌의 source-confirmed 순서는 `NOGA 측 총기 탈취 몸싸움 → 발사 주체가 특정되지 않은 총성 → NOGA 측 화염병 투척 → 오르도 측 기관총 사격`이다. 따라서 현재 보고서의 `NOGA 시위대의 총격` 표현은 발사 주체를 과도하게 확정한다.
+- focused report/mirror correction은 prepared 상태이고 아직 live 미적용이므로 audit status를 `partial`로 낮췄다. historical 승인 상태는 바꾸지 않으며, 나머지 후보와 차단 항목은 [2026-08-17 통합 원본 대조](./nosb-source-reconciliation-2026-08-17.md)에서 관리한다.
 
 ## Source Profile
 

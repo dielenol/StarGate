@@ -2,7 +2,7 @@
 title: NOSB-S1E5-EVIL-PART1 session sync coverage
 category: session-sync
 tags: [NOSB-S1E5-EVIL-PART1, S1E5, 악, sector-c, stargate-lore]
-updated: 2026-08-05
+updated: 2026-08-17
 source: stargate-lore
 ---
 
@@ -15,6 +15,12 @@ source: stargate-lore
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
 | `NOSB-S1E5-EVIL-PART1` | `scripts/seed-payloads/nosb-s1e5-evil-part1-sync.json` | available | partial |
+
+## 2026-08-17 원본 대조
+
+- Part1 원본 112/112쪽을 재추출했으며 SHA-256은 `17e0012aa352914b6440d630f3c52bce3befae552381159bb2b1dd0172a69b0d`다.
+- 시점별 `BAZAROV` 정사는 Part1의 `수석 연구원`·`H`에서 Part2의 `감독관`·`M`으로 변한다. 현재 final live 값은 Part2 provenance에 맞지만, 아래 historical Part1 적용 기록과 payload에는 후대 직책·등급이 섞인 흔적이 있으므로 이를 Part1 시점 정사로 재해석하지 않는다.
+- 이번 대조는 과거 NPC 승인 원장을 새 승인으로 바꾸지 않는다. provenance 후보와 차단 항목은 [2026-08-17 통합 원본 대조](./nosb-source-reconciliation-2026-08-17.md)에서 관리하며 자동 rollback하지 않는다.
 
 ## Source Profile
 
@@ -225,4 +231,4 @@ source: stargate-lore
 
 ## Personality Evidence Ledger
 
-- skipped: source unavailable — this coverage predates immutable observation extraction, and the current audit does not have a source-complete dialogue/description/action inventory from which to create safe observation rows.
+- not-applicable: 원본의 source-complete dialogue/description/action inventory는 확보했지만 이번 pass에서 immutable personality observation을 새 적용하지 않았다. 후보는 통합 원본 대조에서 관리한다.
