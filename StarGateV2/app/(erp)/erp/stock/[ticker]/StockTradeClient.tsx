@@ -99,8 +99,6 @@ const StockHistoryChart = dynamic(() => import("../StockHistoryChart"), {
 
 /** 시세 테이블 노출 행 수 — 최근부터. */
 const HISTORY_TABLE_LIMIT = 10;
-/** 서버 buy/sell 라우트와 동일한 1회 주문 수량 한도. */
-const MAX_ORDER_SHARES = 50;
 /** 빠른 비율 칩 — 매수 모드: 잔액 기준 / 매도 모드: 보유 기준 비율 (1=최대). */
 const QUICK_RATIOS: Array<{ label: string; ratio: number }> = [
   { label: "10%", ratio: 0.1 },
@@ -318,12 +316,9 @@ export default function StockTradeClient({
     (balance === null || tradeTotal > balanceForTrade);
   const insufficientShares =
     effectiveTab === "sell" && tradeShares > heldShares;
-  const exceedsMaxShares = tradeShares > MAX_ORDER_SHARES;
-
   const buyDisabled =
     !canTrade ||
     tradeShares <= 0 ||
-    exceedsMaxShares ||
     insufficientBalance ||
     isTradePending ||
     displayPrice <= 0;
@@ -332,7 +327,6 @@ export default function StockTradeClient({
       ? buyDisabled
       : sellDisabled ||
         tradeShares <= 0 ||
-        exceedsMaxShares ||
         insufficientShares ||
         isTradePending;
 
@@ -444,22 +438,16 @@ export default function StockTradeClient({
     if (effectiveTab === "buy") {
       if (displayPrice <= 0) return;
       const max = Math.floor(balanceForTrade / displayPrice);
-      const next = Math.min(
-        MAX_ORDER_SHARES,
-        Math.max(0, Math.floor(max * ratio)),
-      );
+      const next = Math.max(0, Math.floor(max * ratio));
       setQtyInput(next > 0 ? String(next) : "");
     } else {
-      const next = Math.min(
-        MAX_ORDER_SHARES,
-        Math.max(0, Math.floor(heldShares * ratio)),
-      );
+      const next = Math.max(0, Math.floor(heldShares * ratio));
       setQtyInput(next > 0 ? String(next) : "");
     }
   }
 
   function adjustQty(delta: number) {
-    const next = Math.min(MAX_ORDER_SHARES, Math.max(0, tradeShares + delta));
+    const next = Math.max(0, tradeShares + delta);
     setQtyInput(next > 0 ? String(next) : "");
   }
 
@@ -1280,19 +1268,6 @@ export default function StockTradeClient({
                     <span>{heldShares.toLocaleString()}주</span>
                   </div>
                 )}
-                <div
-                  className={[
-                    sharedStyles.tradeCard__totalHint,
-                    exceedsMaxShares
-                      ? sharedStyles["tradeCard__totalHint--warn"]
-                      : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <span>1회 주문 한도</span>
-                  <span>{MAX_ORDER_SHARES.toLocaleString()}주</span>
-                </div>
                 {tradeProjection ? (
                   <div className={sharedStyles.tradeProjection}>
                     <div className={sharedStyles.tradeProjection__title}>

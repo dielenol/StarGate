@@ -6,7 +6,8 @@
  * - 시세 claim은 거래정지 변경과 같은 가격 문서 write로 직렬화된다.
  * - 후속 단계 실패 시 시세 revision, 잔액, 보유, 멱등 operation이 함께 rollback된다.
  *
- * 본인 메인 캐릭에 한해 매수 가능. 1회 shares 1~50 (tia_bot 동일).
+ * 본인 메인 캐릭에 한해 매수 가능. 1회 주문 수량 상한 없음 — 실질 상한은 잔액이며
+ * 트랜잭션 내부 잔액 차감에서 재검증된다 (구 50주 하드캡 제거).
  * 즉시 체결. 가격 변동은 본 라우트와 무관 (M3-A 시점에서는 봇 중지로 가격 변동 없음).
  */
 
@@ -23,6 +24,10 @@ import { findUserById } from "@/lib/db/users";
 import { formatSignedAmount, notifyUser } from "@/lib/notifications/events";
 import { isStockMarketEnabled } from "@/lib/stocks/market";
 import { findStockByTicker } from "@/lib/stocks/catalog";
+import {
+  INVALID_ORDER_SHARES_MESSAGE,
+  isValidOrderShares,
+} from "@/lib/stocks/order";
 import { roundStockValue } from "@/lib/stocks/pricing";
 import {
   claimStockPriceForTrade,
@@ -30,11 +35,6 @@ import {
   StockTradeAvailabilityError,
   stockTradeAvailabilityMessage,
 } from "@/lib/stocks/trading";
-
-/* ── 상수 ── */
-
-const MIN_SHARES = 1;
-const MAX_SHARES = 50;
 
 /* ── 타입 ── */
 
@@ -109,17 +109,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // shares 검증 — 1~50 정수.
-  if (
-    typeof shares !== "number" ||
-    !Number.isInteger(shares) ||
-    shares < MIN_SHARES ||
-    shares > MAX_SHARES
-  ) {
+  // shares 검증 — 1주 이상 정수. 상한은 잔액이 결정한다.
+  if (!isValidOrderShares(shares)) {
     return NextResponse.json(
-      {
-        error: `shares는 ${MIN_SHARES}~${MAX_SHARES} 사이의 정수여야 합니다.`,
-      },
+      { error: INVALID_ORDER_SHARES_MESSAGE },
       { status: 400 },
     );
   }
