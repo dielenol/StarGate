@@ -15,19 +15,6 @@ import { SESSION_CUTSCENES } from "./session-cutscenes";
 
 const SESSION_ASSET_PREFIX = "/assets/session-reports/";
 
-/**
- * 보고서 본문이 참조하는 자산 폴더를 뽑는다. 컷신 도판은 본문에 없으므로
- * 이 폴더를 키로 `SESSION_CUTSCENES` 와 이어 붙인다.
- */
-function reportAssetFolder(images: readonly { src: string }[]): string | null {
-  for (const image of images) {
-    if (!image.src.startsWith(SESSION_ASSET_PREFIX)) continue;
-    const [folder] = image.src.slice(SESSION_ASSET_PREFIX.length).split("/");
-    if (folder) return folder;
-  }
-  return null;
-}
-
 interface GalleryFeedBuildInput {
   reports: readonly GallerySessionReportDocument[];
   fanarts: readonly GalleryFanartDocument[];
@@ -102,11 +89,10 @@ function buildSessionItems(
       } satisfies GallerySessionItemDto;
     });
 
-    const folder = reportAssetFolder(images);
-    const cutscenes = folder ? SESSION_CUTSCENES[folder] ?? [] : [];
-    const extra = cutscenes.map((entry, index) => {
+    const cutsceneAlbum = SESSION_CUTSCENES[report.sessionId] ?? null;
+    const extra = (cutsceneAlbum?.shots ?? []).map((entry, index) => {
       const title = `${report.sessionTitle} 컷신 ${String(index + 1).padStart(2, "0")}`;
-      const src = `${SESSION_ASSET_PREFIX}${folder}/${entry.file}`;
+      const src = `${SESSION_ASSET_PREFIX}${cutsceneAlbum?.folder ?? ""}/${entry.file}`;
       return {
         id: `session:${id}:cutscene:${entry.file}`,
         kind: "SESSION",

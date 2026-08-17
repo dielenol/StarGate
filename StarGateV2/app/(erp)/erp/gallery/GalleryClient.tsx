@@ -66,8 +66,8 @@ const EMPTY_METADATA: MetadataState = {
 
 const CARD_RATIO_BOUNDS: Record<CardVariant, [number, number]> = {
   current: [1.05, 2.4],
-  support: [0.62, 2.4],
-  grid: [0.62, 2.4],
+  support: [0.7, 2.4],
+  grid: [0.75, 2.4],
 };
 
 function cardFrameRatio(ratio: number | null, variant: CardVariant): string | null {

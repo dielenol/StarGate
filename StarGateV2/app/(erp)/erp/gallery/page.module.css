@@ -16,7 +16,7 @@
 .showcase__label { position: absolute; z-index: 2; top: 0; left: 14px; padding: 5px 8px; border: 1px solid var(--gold); background: #0b0f15; color: var(--gold); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.12em; }
 .showcase__support { display: grid; align-content: start; gap: 14px; min-width: 0; }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 14px; }
-.card { position: relative; display: grid; min-width: 0; overflow: hidden; border: 1px solid var(--line); background: #080b10; box-shadow: 0 14px 32px rgb(0 0 0 / 12%); content-visibility: auto; contain-intrinsic-size: 0 340px; }
+.card { position: relative; display: grid; min-width: 0; overflow: hidden; border: 1px solid var(--line); background: #080b10; box-shadow: 0 14px 32px rgb(0 0 0 / 12%); content-visibility: auto; contain-intrinsic-size: auto 340px; }
 .card--current { width: 100%; aspect-ratio: var(--card-ratio, 16 / 9); min-height: clamp(260px, 20vw, 380px); max-height: min(70vh, 620px); }
 .card--support { width: 100%; aspect-ratio: var(--card-ratio, 16 / 9); min-height: 140px; max-height: 360px; }
 .card--grid { width: 100%; aspect-ratio: var(--card-ratio, 16 / 9); min-height: 180px; max-height: 480px; }
@@ -38,8 +38,14 @@
 .card__artist, .card__description { overflow: hidden; margin: 0; color: rgb(240 235 216 / 82%); font-size: 14px; line-height: 1.45; text-shadow: 0 1px 4px rgb(0 0 0 / 82%); }
 .card__artist { color: var(--gold); font-family: var(--font-mono); }
 .card__description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.card--grid .card__body { padding-top: 26px; }
-.card--grid .card__description { -webkit-line-clamp: 1; }
+/* 아카이브 그리드는 카드가 작아 오버레이가 도판을 덮는다. 항상 이미지 아래 캡션 블록으로 둔다. */
+.card--grid { aspect-ratio: auto; grid-template-rows: auto auto; min-height: 0; max-height: none; }
+.card--grid .card__imageButton { position: relative; width: 100%; height: auto; aspect-ratio: var(--card-ratio, 16 / 9); max-height: 640px; }
+.card--grid .card__imageButton::after { display: none; }
+.card--grid .card__body { position: relative; align-self: stretch; padding: 11px 12px 13px; background: #080b10; }
+.card--grid .card__titleRow h2 { white-space: normal; text-shadow: none; }
+.card--grid .card__album, .card--grid .card__artist, .card--grid .card__description { text-shadow: none; }
+.card--grid .card__footer .card__tag { background: transparent; box-shadow: none; backdrop-filter: none; }
 .card__footer { min-height: 24px; flex-wrap: wrap; }
 .card__footer .card__tag { border-color: rgb(201 168 90 / 42%); background: rgb(5 8 12 / 82%); color: rgb(240 235 216 / 92%); backdrop-filter: blur(8px); box-shadow: 0 2px 10px rgb(0 0 0 / 45%); }
 .card__actions { display: flex; gap: 7px; margin-left: auto; }
@@ -85,5 +91,20 @@
 @media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .showcase { grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.9fr); } .card--current { min-height: 240px; max-height: 64vh; } }
 @media (max-width: 920px) { .lightbox { grid-template-columns: 1fr; overflow: auto; } .lightbox__image { padding: 48px 30px 30px; } .lightbox__image img { max-height: 62svh; } .lightbox__meta { min-height: 270px; margin-top: -18px; padding: 30px 34px 32px; border-radius: 24px 24px 0 0; background: #10151c; box-shadow: 0 -18px 36px rgb(0 0 0 / 18%); } .lightbox__edge { width: 46px; height: 46px; font-size: 34px; } .lightbox__edge--previous { left: 18px; } .lightbox__edge--next { right: 18px; } .lightbox__counter { left: 26px; bottom: 22px; } }
 @media (max-width: 760px) { .showcase { grid-template-columns: 1fr; } .showcase__support { grid-template-columns: minmax(0, 1fr); } .grid { grid-template-columns: 1fr; } .card--current { min-height: 220px; max-height: 76vh; } .card--support { min-height: 160px; max-height: 60vh; } .filters { flex-direction: column; } .filters input, .filters select { flex-basis: auto; width: 100%; } .toolbar__actions { align-items: flex-start; } .overlay { padding: 0; } .lightbox { width: 100%; height: 100%; max-height: none; border-radius: 0; } .lightbox .modal__close { top: max(16px, env(safe-area-inset-top)); right: 16px; width: 46px; height: 46px; } .lightbox__stage { padding-top: env(safe-area-inset-top); } .lightbox__image { padding-right: 22px; padding-left: 22px; } .lightbox__meta { min-height: 310px; padding-right: 24px; padding-bottom: max(30px, env(safe-area-inset-bottom)); padding-left: 24px; } .lightbox__edge--previous { left: 16px; } .lightbox__edge--next { right: 16px; } .lightbox__counter { left: 22px; } .dialog { padding: 20px 14px; } }
+/* 좁은 폭: 메타데이터를 이미지 위 오버레이에서 이미지 아래 블록으로 내린다.
+   카드가 작아질수록 오버레이가 도판을 덮어버려 그림이 보이지 않기 때문. */
+@media (max-width: 900px) {
+  .card--current, .card--support { width: auto; aspect-ratio: auto; grid-template-rows: auto auto; min-height: 0; max-height: none; }
+  .card--current .card__imageButton, .card--support .card__imageButton { position: relative; width: 100%; height: auto; aspect-ratio: var(--card-ratio, 16 / 9); max-height: 58vh; }
+  .card--current .card__imageButton::after, .card--support .card__imageButton::after { display: none; }
+  .card--current .card__body, .card--support .card__body { position: relative; align-self: stretch; padding: 11px 12px 13px; background: #080b10; }
+  .card__titleRow h2, .card__album, .card__artist, .card__description { text-shadow: none; }
+  .card__titleRow h2 { white-space: normal; }
+  .card__footer .card__tag { background: transparent; box-shadow: none; backdrop-filter: none; }
+  .card--grid .card__imageButton { max-height: 58vh; }
+  .showcase__current { padding-top: 0; }
+  .showcase__label { position: static; display: inline-block; margin-bottom: 7px; }
+}
+
 @keyframes lightbox-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .card__image, .lightbox, .lightbox .modal__close, .lightbox__edge { animation: none; transition: none; } }

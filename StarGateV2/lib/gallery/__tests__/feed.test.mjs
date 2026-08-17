@@ -192,25 +192,32 @@ test("같은 보고서의 10장 이상 이미지도 Markdown 원본 순서를 �
   );
 });
 
-test("본문에 없는 세션 컷신 도판을 보고서 앨범에 이어 붙인다", () => {
-  const summary = "![첫 장](/assets/session-reports/new-dublin/neon-valkyrie-bar.webp)";
-  const feed = build({ reports: [report({ summary })], fanarts: [] });
-
-  assert.equal(feed.items[0].title, "첫 장", "본문 도판이 앞선다");
+test("본문 도판이 없는 보고서에도 sessionId 로 컷신 도판을 이어 붙인다", () => {
+  // 본문 도판이 하나도 없는 세션(질서 등)도 컷신이 붙어야 한다.
+  const sessionId = "NOSB-S1E1-ORDER";
+  const feed = build({ reports: [report({ sessionId, summary: "본문에 도판 없음" })], fanarts: [] });
 
   const cutscenes = feed.items.filter((item) => item.id.includes(":cutscene:"));
-  assert.ok(cutscenes.length > 0, "컷신 도판이 붙어야 한다");
+  assert.ok(cutscenes.length > 0, "본문 도판이 없어도 컷신이 붙어야 한다");
   for (const item of cutscenes) {
-    assert.match(item.image.src, /^\/assets\/session-reports\/new-dublin\/cut-\d{3}\.webp$/);
-    assert.equal(item.albumSessionId, "session-1");
+    assert.match(item.image.src, /^\/assets\/session-reports\/[a-z0-9-]+\/cut-\d{3}\.webp$/);
+    assert.equal(item.albumSessionId, sessionId);
     assert.ok(item.tags.includes("컷신"));
     assert.ok(item.image.width > 0 && item.image.height > 0, "카드 비율 계산용 치수가 있어야 한다");
   }
 });
 
-test("컷신 목록이 없는 보고서는 본문 도판만 낸다", () => {
+test("본문 도판과 컷신 도판은 본문 순서를 앞에 둔다", () => {
+  const sessionId = "NOSB-S1E1-ORDER";
+  const summary = "![첫 장](/assets/session-reports/s1e1-order/some-shot.webp)";
+  const feed = build({ reports: [report({ sessionId, summary })], fanarts: [] });
+  assert.equal(feed.items[0].title, "첫 장", "본문 도판이 앞선다");
+  assert.ok(feed.items.slice(1).every((item) => item.id.includes(":cutscene:")));
+});
+
+test("컷신 목록이 없는 세션은 본문 도판만 낸다", () => {
   const summary = "![유일](/assets/session-reports/no-such-folder/only.webp)";
-  const feed = build({ reports: [report({ summary })], fanarts: [] });
+  const feed = build({ reports: [report({ sessionId: "NO-SUCH-SESSION", summary })], fanarts: [] });
   assert.equal(feed.items.length, 1);
   assert.equal(feed.items[0].title, "유일");
 });
