@@ -2924,10 +2924,10 @@
 }
 
 .tossHeader__metaValue--up {
-  color: var(--danger); /* 한국 주식 톤: 상승=red */
+  color: var(--gold); /* 상승=gold (ERP 주식 전 화면 공통) */
 }
 .tossHeader__metaValue--down {
-  color: var(--info); /* 하락=blue */
+  color: var(--danger); /* 하락=red */
 }
 
 .allocationPanel {
@@ -3014,11 +3014,11 @@
 }
 
 .allocationRow__profit--up {
-  color: var(--danger);
+  color: var(--gold);
 }
 
 .allocationRow__profit--down {
-  color: var(--info);
+  color: var(--danger);
 }
 
 @media (max-width: 720px) {
@@ -3147,10 +3147,10 @@
 }
 
 .tossTable__num--up {
-  color: var(--danger);
+  color: var(--gold);
 }
 .tossTable__num--down {
-  color: var(--info);
+  color: var(--danger);
 }
 
 /* 좁은 화면: 부 컬럼 숨김 — name + 수익률 + 평가 + 원금 만 유지 */

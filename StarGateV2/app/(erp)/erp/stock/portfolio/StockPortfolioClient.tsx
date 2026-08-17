@@ -7,7 +7,7 @@
  *  - 헤더: "내 투자" + 평가금 큰 글자 + 원금 + 총 수익(±) 한 줄
  *  - 분류는 STOCK_CATALOG 에 미정의라 단일 list (필요 시 future category 도입)
  *  - 큰 테이블: 종목명/로고 + 총 수익률/금 + 평균/현재가 + 보유 수량 + 평가금 + 원금
- *  - 색상: red=상승, blue=하락 (한국 주식 톤; globals.css --danger / --info)
+ *  - 색상: gold=상승, red=하락 (ERP 주식 전 화면 공통; globals.css --gold / --danger)
  *  - 행 클릭 → /erp/stock/[ticker] 매수/매도 진입
  */
 
@@ -55,11 +55,18 @@ function profitDirection(profit: number): Direction {
   return "flat";
 }
 
-/** direction → 토스 톤 색 클래스 (red=상승 / blue=하락). */
+/** direction → 색 클래스 (gold=상승 / red=하락). */
 function directionMod(direction: Direction, baseClass: string): string {
   if (direction === "up") return `${baseClass} ${baseClass}--up`;
   if (direction === "down") return `${baseClass} ${baseClass}--down`;
   return baseClass;
+}
+
+/** 손익 통화 표기 통일 — 부호 → ¤ → 절대값 (예: `+¤ 166.40` / `-¤ 166.40`). */
+function formatSignedCurrency(value: number): string {
+  const rounded = roundStockValue(value);
+  const sign = rounded > 0 ? "+" : rounded < 0 ? "-" : "";
+  return `${sign}¤ ${formatStockValue(Math.abs(rounded))}`;
 }
 
 /* ── Props ── */
@@ -228,8 +235,7 @@ export default function StockPortfolioClient({
                   styles.tossHeader__metaValue,
                 )}
               >
-                {summary.totalPL > 0 ? "+" : ""}¤{" "}
-                {formatStockValue(summary.totalPL)} (
+                {formatSignedCurrency(summary.totalPL)} (
                 {summary.plPercent > 0 ? "+" : ""}
                 {summary.plPercent.toFixed(2)}%)
               </span>
@@ -248,7 +254,7 @@ export default function StockPortfolioClient({
                     : realizedProfitData
                       ? "원장 확인 필요"
                       : "조회 중"
-                  : `${realizedProfit > 0 ? "+" : ""}¤ ${formatStockValue(realizedProfit)}`}
+                  : formatSignedCurrency(realizedProfit)}
               </span>
             </span>
             <span className={styles.tossHeader__metaItem}>
@@ -424,8 +430,7 @@ export default function StockPortfolioClient({
                   {h.profitPercent.toFixed(2)}%
                 </span>
                 <span className={profitClass} role="cell">
-                  {h.profitLoss > 0 ? "+" : ""}
-                  {formatStockValue(h.profitLoss)}
+                  {formatSignedCurrency(h.profitLoss)}
                 </span>
                 <span className={styles.tossTable__num} role="cell">
                   ¤ {formatStockValue(h.avgPrice)}
