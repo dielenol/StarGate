@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import {
   useDeleteGalleryFanart,
@@ -37,6 +37,7 @@ import styles from "./page.module.css";
 
 type FilterKind = "ALL" | GalleryItemDto["kind"];
 type EditorMode = "upload" | "edit" | "moderate" | null;
+type CardVariant = "current" | "support" | "grid";
 
 interface Props {
   initialData: GalleryFeedResponse;
@@ -62,6 +63,22 @@ const EMPTY_METADATA: MetadataState = {
   sessionId: "",
   rightsConfirmed: false,
 };
+
+const CARD_RATIO_BOUNDS: Record<CardVariant, [number, number]> = {
+  current: [1.05, 2.4],
+  support: [0.62, 2.4],
+  grid: [0.62, 2.4],
+};
+
+function cardFrameRatio(ratio: number | null, variant: CardVariant): string | null {
+  if (ratio === null) return null;
+  const [min, max] = CARD_RATIO_BOUNDS[variant];
+  return String(Math.min(max, Math.max(min, ratio)));
+}
+
+function imageRatio(image: { width: number | null; height: number | null }): number | null {
+  return image.width && image.height ? image.width / image.height : null;
+}
 
 function toMetadata(input: MetadataState): GalleryFanartMetadataInput {
   return {
@@ -254,20 +271,24 @@ export default function GalleryClient({ initialData, initialDataUpdatedAt }: Pro
   );
 }
 
-function GalleryCard({ item, variant, album, deleteError, eager, isDeleting, onOpen, onEdit, onModerate, onDelete }: { item: GalleryItemDto; variant: "current" | "support" | "grid"; album: GalleryAlbumDto | null; deleteError: string; eager: boolean; isDeleting: boolean; onOpen: () => void; onEdit: () => void; onModerate: () => void; onDelete: () => void }) {
+function GalleryCard({ item, variant, album, deleteError, eager, isDeleting, onOpen, onEdit, onModerate, onDelete }: { item: GalleryItemDto; variant: CardVariant; album: GalleryAlbumDto | null; deleteError: string; eager: boolean; isDeleting: boolean; onOpen: () => void; onEdit: () => void; onModerate: () => void; onDelete: () => void }) {
   const fanart = item.kind === "FANART" ? item : null;
-  const imageSizes = variant === "current" ? "(max-width: 680px) 100vw, (max-width: 1100px) 66vw, 58vw" : variant === "support" ? "(max-width: 680px) 100vw, (max-width: 1100px) 33vw, 28vw" : "(max-width: 680px) 100vw, (max-width: 1100px) 50vw, (max-width: 1500px) 25vw, 300px";
-  return <article className={`${styles.card} ${styles[`card--${variant}`]}`}><button className={styles.card__imageButton} onClick={onOpen} aria-label={`${item.title} 크게 보기`}><Image src={item.image.src} alt={item.image.alt} fill loading={eager ? "eager" : "lazy"} sizes={imageSizes} unoptimized={item.kind === "FANART"} className={styles.card__image} /><span className={styles.card__scanline} aria-hidden="true" /><span className={styles.card__kind}>{item.kind === "SESSION" ? "SESSION" : "FAN ART"}</span>{fanart?.status === "HIDDEN" && <span className={styles.card__hidden}>숨김</span>}</button><div className={styles.card__body}><div className={styles.card__titleRow}><h2>{item.title}</h2>{album && <Link href={album.href} className={styles.card__album}>{album.reportNumber}</Link>}</div>{fanart && <p className={styles.card__artist}>ARTIST · {fanart.artistName}</p>}<p className={styles.card__description}>{item.description || "설명 없음"}</p>{deleteError && <p className={styles.form__error} role="alert">{deleteError}</p>}<div className={styles.card__footer}>{item.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}{fanart && (fanart.canEdit || fanart.canModerate || fanart.canDelete) && <span className={styles.card__actions}>{fanart.canEdit && <button onClick={onEdit}>편집</button>}{fanart.canModerate && <button onClick={onModerate}>관리</button>}{fanart.canDelete && <button onClick={onDelete} disabled={isDeleting}>{isDeleting ? "삭제 중…" : "삭제"}</button>}</span>}</div></div></article>;
+  const [naturalRatio, setNaturalRatio] = useState<number | null>(() => imageRatio(item.image));
+  const imageSizes = variant === "current" ? "(max-width: 760px) 100vw, (max-width: 1100px) 62vw, 58vw" : variant === "support" ? "(max-width: 760px) 50vw, (max-width: 1100px) 34vw, 28vw" : "(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw";
+  const frameRatio = cardFrameRatio(naturalRatio, variant);
+  return <article className={`${styles.card} ${styles[`card--${variant}`]}`} style={frameRatio ? ({ "--card-ratio": frameRatio } as CSSProperties) : undefined}><button className={styles.card__imageButton} onClick={onOpen} aria-label={`${item.title} 크게 보기`}><Image src={item.image.src} alt={item.image.alt} fill loading={eager ? "eager" : "lazy"} sizes={imageSizes} unoptimized={item.kind === "FANART"} className={styles.card__image} onLoad={(event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth > 0 && naturalHeight > 0) setNaturalRatio(naturalWidth / naturalHeight); }} /><span className={styles.card__scanline} aria-hidden="true" /><span className={styles.card__kind}>{item.kind === "SESSION" ? "SESSION" : "FAN ART"}</span>{fanart?.status === "HIDDEN" && <span className={styles.card__hidden}>숨김</span>}</button><div className={styles.card__body}><div className={styles.card__titleRow}><h2>{item.title}</h2>{album && <Link href={album.href} className={styles.card__album}>{album.reportNumber}</Link>}</div>{fanart && <p className={styles.card__artist}>ARTIST · {fanart.artistName}</p>}<p className={styles.card__description}>{item.description || "설명 없음"}</p>{deleteError && <p className={styles.form__error} role="alert">{deleteError}</p>}<div className={styles.card__footer}>{item.tags.slice(0, 3).map((tag) => <Tag key={tag} className={styles.card__tag}>{tag}</Tag>)}{fanart && (fanart.canEdit || fanart.canModerate || fanart.canDelete) && <span className={styles.card__actions}>{fanart.canEdit && <button onClick={onEdit}>편집</button>}{fanart.canModerate && <button onClick={onModerate}>관리</button>}{fanart.canDelete && <button onClick={onDelete} disabled={isDeleting}>{isDeleting ? "삭제 중…" : "삭제"}</button>}</span>}</div></div></article>;
 }
 
 function Lightbox({ item, album, index, total, onClose, onPrevious, onNext }: { item: GalleryItemDto; album: GalleryAlbumDto | null; index: number; total: number; onClose: () => void; onPrevious: () => void; onNext: () => void }) {
   const titleId = useId();
   const extraKeys = (event: KeyboardEvent) => { if (event.key === "ArrowLeft") { event.preventDefault(); onPrevious(); return true; } if (event.key === "ArrowRight") { event.preventDefault(); onNext(); return true; } return false; };
   const dialogRef = useDialogA11y(true, onClose, false, extraKeys);
+  const [measured, setMeasured] = useState<{ id: string; ratio: number } | null>(null);
+  const shotRatio = measured?.id === item.id ? measured.ratio : imageRatio(item.image);
   const archiveLabel = item.kind === "SESSION" ? "세션 아카이브" : "팬아트 아카이브";
   const description = item.description.trim();
   const hasDistinctDescription = description.length > 0 && description !== item.title.trim();
-  return <div className={styles.overlay} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className={styles.lightbox} ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId}><button className={styles.modal__close} onClick={onClose} aria-label="상세 보기 닫기">×</button><div className={styles.lightbox__stage}>{total > 1 && <button className={`${styles.lightbox__edge} ${styles["lightbox__edge--previous"]}`} onClick={onPrevious} aria-label="이전 이미지">‹</button>}<div className={styles.lightbox__image}><Image src={item.image.fullSrc} alt={item.image.alt} width={item.image.width ?? 1600} height={item.image.height ?? 1200} sizes="(max-width: 920px) 100vw, 72vw" unoptimized={item.kind === "FANART"} priority /></div>{total > 1 && <button className={`${styles.lightbox__edge} ${styles["lightbox__edge--next"]}`} onClick={onNext} aria-label="다음 이미지">›</button>}<span className={styles.lightbox__counter}>{String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}</span></div><div className={styles.lightbox__meta}><p className={styles.lightbox__eyebrow}>{archiveLabel}{album && <> <span aria-hidden="true">·</span> {album.reportNumber}</>}</p><h2 id={titleId}>{item.title}</h2>{hasDistinctDescription && <p className={styles.lightbox__description}>{description}</p>}{item.kind === "FANART" && <p className={styles.lightbox__artist}>작가 {item.artistName}</p>}{album && <Link href={album.href} className={styles.lightbox__album}>작전 보고서 보기 <span aria-hidden="true">↗</span></Link>}<p className={styles.lightbox__tags} aria-label={`태그: ${item.tags.join(", ")}`}>{item.tags.slice(0, 6).map((tag, tagIndex) => <span key={tag}>{tagIndex > 0 && <span aria-hidden="true"> · </span>}{tag}</span>)}{item.tags.length > 6 && <span> · +{item.tags.length - 6}</span>}</p></div></div></div>;
+  return <div className={styles.overlay} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className={styles.lightbox} ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId}><button className={styles.modal__close} onClick={onClose} aria-label="상세 보기 닫기">×</button><div className={styles.lightbox__stage}>{total > 1 && <button className={`${styles.lightbox__edge} ${styles["lightbox__edge--previous"]}`} onClick={onPrevious} aria-label="이전 이미지">‹</button>}<div className={styles.lightbox__image} style={shotRatio ? ({ "--shot-ratio": String(shotRatio) } as CSSProperties) : undefined}><Image src={item.image.fullSrc} alt={item.image.alt} width={item.image.width ?? 1600} height={item.image.height ?? 1200} sizes="(max-width: 920px) 100vw, 72vw" unoptimized={item.kind === "FANART"} priority onLoad={(event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth > 0 && naturalHeight > 0) setMeasured({ id: item.id, ratio: naturalWidth / naturalHeight }); }} /></div>{total > 1 && <button className={`${styles.lightbox__edge} ${styles["lightbox__edge--next"]}`} onClick={onNext} aria-label="다음 이미지">›</button>}<span className={styles.lightbox__counter}>{String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}</span></div><div className={styles.lightbox__meta}><p className={styles.lightbox__eyebrow}>{archiveLabel}{album && <> <span aria-hidden="true">·</span> {album.reportNumber}</>}</p><h2 id={titleId}>{item.title}</h2>{hasDistinctDescription && <p className={styles.lightbox__description}>{description}</p>}{item.kind === "FANART" && <p className={styles.lightbox__artist}>작가 {item.artistName}</p>}{album && <Link href={album.href} className={styles.lightbox__album}>작전 보고서 보기 <span aria-hidden="true">↗</span></Link>}<p className={styles.lightbox__tags} aria-label={`태그: ${item.tags.join(", ")}`}>{item.tags.slice(0, 6).map((tag, tagIndex) => <span key={tag}>{tagIndex > 0 && <span aria-hidden="true"> · </span>}{tag}</span>)}{item.tags.length > 6 && <span> · +{item.tags.length - 6}</span>}</p></div></div></div>;
 }
 
 function FanartEditor({ item, albums, onClose }: { item?: GalleryFanartItemDto; albums: GalleryAlbumDto[]; onClose: () => void }) {
