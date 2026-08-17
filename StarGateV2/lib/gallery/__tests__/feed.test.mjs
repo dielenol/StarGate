@@ -191,3 +191,26 @@ test("같은 보고서의 10장 이상 이미지도 Markdown 원본 순서를 �
     Array.from({ length: 12 }, (_, index) => `이미지 ${index}`),
   );
 });
+
+test("본문에 없는 세션 컷신 도판을 보고서 앨범에 이어 붙인다", () => {
+  const summary = "![첫 장](/assets/session-reports/new-dublin/neon-valkyrie-bar.webp)";
+  const feed = build({ reports: [report({ summary })], fanarts: [] });
+
+  assert.equal(feed.items[0].title, "첫 장", "본문 도판이 앞선다");
+
+  const cutscenes = feed.items.filter((item) => item.id.includes(":cutscene:"));
+  assert.ok(cutscenes.length > 0, "컷신 도판이 붙어야 한다");
+  for (const item of cutscenes) {
+    assert.match(item.image.src, /^\/assets\/session-reports\/new-dublin\/cut-\d{3}\.webp$/);
+    assert.equal(item.albumSessionId, "session-1");
+    assert.ok(item.tags.includes("컷신"));
+    assert.ok(item.image.width > 0 && item.image.height > 0, "카드 비율 계산용 치수가 있어야 한다");
+  }
+});
+
+test("컷신 목록이 없는 보고서는 본문 도판만 낸다", () => {
+  const summary = "![유일](/assets/session-reports/no-such-folder/only.webp)";
+  const feed = build({ reports: [report({ summary })], fanarts: [] });
+  assert.equal(feed.items.length, 1);
+  assert.equal(feed.items[0].title, "유일");
+});

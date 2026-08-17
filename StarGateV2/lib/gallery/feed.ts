@@ -11,7 +11,22 @@ import type {
 import { buildOperationReportNumbering } from "@/lib/format/session-report";
 import { extractMarkdownImages } from "@/lib/markdown-images";
 
+import { SESSION_CUTSCENES } from "./session-cutscenes";
+
 const SESSION_ASSET_PREFIX = "/assets/session-reports/";
+
+/**
+ * 보고서 본문이 참조하는 자산 폴더를 뽑는다. 컷신 도판은 본문에 없으므로
+ * 이 폴더를 키로 `SESSION_CUTSCENES` 와 이어 붙인다.
+ */
+function reportAssetFolder(images: readonly { src: string }[]): string | null {
+  for (const image of images) {
+    if (!image.src.startsWith(SESSION_ASSET_PREFIX)) continue;
+    const [folder] = image.src.slice(SESSION_ASSET_PREFIX.length).split("/");
+    if (folder) return folder;
+  }
+  return null;
+}
 
 interface GalleryFeedBuildInput {
   reports: readonly GallerySessionReportDocument[];
@@ -63,9 +78,11 @@ function buildSessionItems(
     const seriesTag = album.series === "mini" ? "미니" : "메인";
     const classificationTags = ["세션", seriesTag, album.reportNumber];
 
-    return extractMarkdownImages(report.summary, {
+    const images = extractMarkdownImages(report.summary, {
       srcPrefix: SESSION_ASSET_PREFIX,
-    }).map((image, index) => {
+    });
+
+    const documented = images.map((image, index) => {
       const title = image.caption || image.alt || report.sessionTitle;
       return {
         id: `session:${id}:${index}:${image.src}`,
@@ -84,6 +101,31 @@ function buildSessionItems(
         createdAt: toIsoString(report.createdAt),
       } satisfies GallerySessionItemDto;
     });
+
+    const folder = reportAssetFolder(images);
+    const cutscenes = folder ? SESSION_CUTSCENES[folder] ?? [] : [];
+    const extra = cutscenes.map((entry, index) => {
+      const title = `${report.sessionTitle} 컷신 ${String(index + 1).padStart(2, "0")}`;
+      const src = `${SESSION_ASSET_PREFIX}${folder}/${entry.file}`;
+      return {
+        id: `session:${id}:cutscene:${entry.file}`,
+        kind: "SESSION",
+        title,
+        description: "",
+        image: {
+          src,
+          fullSrc: src,
+          alt: title,
+          width: entry.width,
+          height: entry.height,
+        },
+        albumSessionId: album.sessionId,
+        tags: [...classificationTags, "컷신"],
+        createdAt: toIsoString(report.createdAt),
+      } satisfies GallerySessionItemDto;
+    });
+
+    return [...documented, ...extra];
   });
 }
 
