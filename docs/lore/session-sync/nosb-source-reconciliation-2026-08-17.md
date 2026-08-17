@@ -14,7 +14,7 @@ source: stargate-lore
 
 - 원본 19개 PDF를 페이지 단위로 텍스트 추출하고 첫·중간·끝 및 쟁점 페이지를 렌더링해 육안 확인했다.
 - 정규 세션 10건과 미니 세션 6건을 `sessionId` 기준으로 기존 seed payload, coverage, 공개 보고서·wiki mirror, 관련 Dossier와 대조했다.
-- source-confirmed 오기·과장·링크·시각 자료 의미만 `StarGateV2/scripts/seed-payloads/nosb-source-reconciliation-2026-08-17.json`에 focused repair로 준비했다.
+- source-confirmed 오기·과장·링크·시각 자료 의미만 `StarGateV2/scripts/seed-payloads/zzzzzzzzz-nosb-source-reconciliation-2026-08-17.json`에 focused repair로 준비했다. 파일명 접두사는 전체 payload directory replay에서 모든 historical full-set/cleanup 뒤에 이 보정이 실행되도록 고정한다.
 - 라이브 DB는 읽기 전용으로 현재값만 확인했다. 이번 패스에서는 credits, inventory, catalog, stock, holding, trade, notification을 포함한 라이브 mutation을 실행하지 않았다.
 
 ## Source Profile
@@ -46,7 +46,7 @@ source: stargate-lore
 
 | 근거 | 영속 표면 | 준비한 보정 | 상태 |
 |---|---|---|---|
-| S1E2 원본의 canonical code `ZULU-0040` | S1E2 report / wiki | 보상 문단의 `ZULU-040` 오기를 `ZULU-0040`으로 정규화 | prepared; live 미적용 |
+| S1E2 원본의 canonical code `ZULU-0040` | S1E2 report summary/highlights / wiki | 보상 문단과 highlight의 `ZULU-040` 오기를 `ZULU-0040`으로 정규화 | prepared; live 미적용 |
 | S1E2 mini에서 확인되는 파괴 대상은 송사리 호 | S1E2 mini report / wiki | 존 오푸스가 노부스 오르도까지 파괴하려 했다는 과장을 제거 | prepared; live 미적용 |
 | S1E3 p204·235·238의 `크리스토프`·가면 상실 뒤 `실험체 88` 호명·`죽은 지휘자` | S1E3 report / wiki, golden-dawn wiki | 지휘자와 실험체 88이 동일 인물이며 해당 국면에서 사망했다는 공개 서술로 정밀화 | prepared; live 미적용 |
 | S1E4 Part2 p156 장면은 검은 연기 반응이 아니라 닥터 모스 사망 | S1E4 Part2 report / wiki visual caption | 기존 소비처가 가리키는 장면의 alt·caption을 닥터 모스 사망으로 교정; catalog에는 연결하지 않음 | prepared; live 미적용 |
@@ -99,10 +99,18 @@ source: stargate-lore
 
 ## Prepared Apply Boundary
 
-- prepared payload: `StarGateV2/scripts/seed-payloads/nosb-source-reconciliation-2026-08-17.json`
+- prepared payload: `StarGateV2/scripts/seed-payloads/zzzzzzzzz-nosb-source-reconciliation-2026-08-17.json`
 - targets: `session_reports`, `wiki_pages`, `characters.CLOWN`의 focused prose/link/graph repair만 포함
+- replay order: 현재 payload directory의 마지막 JSON이며, 모든 historical full-set·cleanup·image-sync 뒤에 적용된다.
 - excluded: Dossier identity merge, clearance, portrait, credits, inventory, catalog, stocks, holdings, trades, notifications
 - live execution: 미실행. 별도 승인 전에는 dry-run과 read-only 재조회만 허용한다.
+
+## Read-only Pre-apply Evidence
+
+- live read-only anchor query에서 15개 대상 문서를 모두 찾았다. 각 old prose/caption anchor는 1회씩 존재했고, MINI04의 untyped `[[슬피 우는 것]]`만 의도대로 2회 존재했다.
+- MINI04 report는 wiki slug 1개와 personnel codename 2개가 모두 누락된 상태였고, `CLOWN`에는 S1E6 appearance가 정확히 1행 존재했다.
+- DB-connected seed dry-run은 15개 pipeline/classic update의 최종 문서를 계산하고 saved-document schema와 reference integrity를 통과했다. S1E4는 correction 적용 후 report/wiki 이미지 tuple 4개가 경로·순서·alt·caption까지 일치했다.
+- stable-key focused repair는 아직 live에 적용하지 않는다. 이후 실행 승인을 받더라도 위 exact old-anchor query와 dry-run을 즉시 다시 수행하고, anchor drift나 missing target이 있으면 실행을 중단한다.
 
 ## Verification Contract
 
