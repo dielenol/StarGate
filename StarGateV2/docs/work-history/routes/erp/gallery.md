@@ -1,5 +1,15 @@
 # /erp/gallery
 
+## 2026-08-17 · 기능 추가 · 아카이브 그리드 masonry 전환
+
+- 세로 도판이 섞여 그리드 행마다 가장 큰 카드 높이에 맞춰지면서 카드 하나당 최대 417px 씩 빈 공간이 생겼다. `grid-auto-rows: 4px` 위에서 카드마다 실제 높이만큼 row 를 점유하게 해 빈 공간을 없앴다.
+- CSS `columns` 는 쓰지 않았다. `columns` 는 전체 높이를 열 수로 나눠 담기 때문에 424장 규모에서는 1열에 앞쪽 1/3 이 전부 들어가 좌우로 읽을 수 없게 된다. grid row span 방식은 문서 순서를 유지한다.
+- 카드 높이는 `ResizeObserver` 로 측정해 `--card-span` 으로 넣는다(`useMasonrySpan`). `align-self: start` 라 카드 높이가 점유 row 수와 무관해 되먹임이 생기지 않는다. `grid-auto-rows` 4px · `margin-bottom` 14px 는 [GalleryClient.tsx](app/(erp)/erp/gallery/GalleryClient.tsx) 의 `GRID_ROW`/`GRID_GAP` 과 값이 같아야 한다.
+- masonry 는 실제 높이가 필요하므로 그리드 카드에서 `content-visibility: auto` 를 해제했다. 화면 밖 카드가 `contain-intrinsic-size` 플레이스홀더 높이를 보고해 열 배치가 어긋난다. 이미지는 여전히 `loading="lazy"` 라 네트워크 비용은 그대로다.
+- 검증: 1440px 3열 · 900px 2열 · 390px 1열에서 카드 겹침 0건, 카드 간 수직 간격 14~18px(4px row 반올림 오차 최대 +4px), 가로 overflow 0건. 갤러리 테스트 41/41, `pnpm typecheck`, 전체 `pnpm lint`, `pnpm assets:audit`
+- 관련 커밋: `76a6ca47`
+- 후속 작업: 그리드 카드가 전량 렌더되므로 항목이 1000장 규모로 늘면 가상 스크롤을 검토한다.
+
 ## 2026-08-17 · 버그 수정 · 중복 도판 제거와 전 구간 레이아웃 점검
 
 - 지각 해시(16×16 정규화 서명 + 비율 일치)로 세션 도판 전체를 비교해 중복 컷씬 14장을 제거했다. 컷씬은 재인코딩 사본이 섞여 있어 바이트 해시로는 안 잡힌다. 최종 컷씬 424장.
