@@ -126,3 +126,11 @@
 - 검증: shared NOVEX 결정 테스트 13건 통과·replica 전용 2건 skip, core 31건, worker 101건, 웹 주식·거래·인덱스 계약 68건, `pnpm typecheck`, 전체 `pnpm lint`, production build 100페이지, 인증 로컬 화면 확인, critical risk review
 - 관련 커밋: `fb012220`
 - 운영 경계: 라이브 TTL·인덱스·적정가 backfill·기능 플래그·Dokploy 일정·시장 데이터는 변경하지 않았다.
+
+## 2026-08-17 · 기능 확장 · 유상증자 회차와 주요주주
+
+- 유상증자를 시세 이력의 독립 소스로 구분해 차트 마커와 사유 라벨에 표시하고, 누적 액면분할 계수에 더해 누적 증자 계수로 과거 가격을 보정하도록 했다.
+- 공시로 확정된 종목별 주요주주 snapshot을 시장 데이터에 실어 목록과 종목 상세가 같은 값을 참조하도록 연결했다.
+- 검증: 웹 주식·거래 계약 61건, shared 주식·migration 계약 29건·replica 전용 3건 skip, core·worker 104건, `pnpm typecheck`, 전체 `pnpm lint`, production build
+- 관련 커밋: `9d37d3ec`
+- 운영 경계: 라이브 시세·이력·공시·기업행동과 기능 플래그는 변경하지 않았다.

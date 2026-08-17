@@ -61,3 +61,12 @@
 - 검증: GM route·멱등·회차 경쟁 계약, `pnpm typecheck`, 전체 `pnpm lint`, production build, 인증 로컬 관리자 화면 확인, critical risk review
 - 관련 커밋: `fb012220`
 - 운영 경계: migration·인덱스·플래그·Dokploy cron·공시·기업행동·복구 요청을 라이브에 실행하지 않았다.
+
+## 2026-08-17 · 기능 확장 · 유상증자 운영
+
+- GM이 유상증자를 예약·중단·거래재개까지 운영 센터 한 화면에서 처리하고, 중단 시 예정된 증자 미실행과 미공개 후속 공시 취소를 각각 다른 확인 문구로 구분하도록 했다.
+- 증자 실행 이후 회차의 호재 반영은 공시 센터의 PRICE 공시로 운영하도록 안내를 분리했다.
+- migration readiness marker가 `APPLYING`으로 중단된 경우를 위해 fresh plan 해시와 exact attempt CAS로만 동작하는 `mark-ready`·`abandon-blocked` 복구 경로와 런북 절차를 추가했다.
+- 검증: shared 주식·migration 계약 29건·replica 전용 3건 skip, 웹 주식·거래 계약 61건, `pnpm typecheck`, 전체 `pnpm lint`, production build
+- 관련 커밋: `9d37d3ec`
+- 운영 경계: 라이브 기업행동·공시·migration marker·플래그·Dokploy cron은 변경하지 않았다.

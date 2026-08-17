@@ -71,3 +71,11 @@
 - 검증: 거래·주식·멱등 계약 34건, worker realtime 테스트, replica 경쟁 테스트 환경 부재 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
 - 관련 커밋: `fb012220`
 - 운영 경계: 라이브 거래·선물·보유량·크레딧·DM은 변경하지 않았다.
+
+## 2026-08-17 · 기능 확장 · 유상증자 자동 취소 표기
+
+- 유상증자 발표로 서버가 자동 취소한 플레이어 거래를 이력에서 일반 취소와 구분해 사유와 함께 표시했다.
+- 거래 불가 종목 안내를 다듬어 문제 종목을 제안한 참여자만 최종 확정이 막히고 다른 참여자는 자기 제안을 계속 수정·저장할 수 있음을 명확히 했다.
+- 검증: 웹 주식·거래 계약 61건, shared 주식 계약 29건·replica 전용 3건 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build
+- 관련 커밋: `9d37d3ec`
+- 운영 경계: 라이브 거래·선물·보유량·크레딧·DM은 변경하지 않았다.

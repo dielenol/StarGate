@@ -17,3 +17,12 @@
 - 검증: core 31건, worker 101건, production build, index preflight 계약, critical risk review
 - 관련 커밋: `fb012220`
 - 운영 경계: Dokploy 일정·worker/Web 플래그·라이브 outbox와 Discord 상태는 변경하지 않았다.
+
+## 2026-08-17 · 버그 수정 · 정기 공시 슬롯 복구
+
+- `stocks.tick`이 NOVEX enabled에서는 23시, legacy에서는 종전 12시 회차를 Discord 정기 공시 슬롯으로 쓰도록 분기했다. 직전 구현은 legacy 경로도 23시로 판정해, `disabled`·`shadow` 모드에서 시장감시실 장부가 한 번도 갱신되지 않았다.
+- `shadow`는 09·13·18·23시 중 NOVEX 슬롯만 preview하고 legacy 시세는 12·13시에서만 확정하며, 슬롯별 shadow-legacy 가격 비교를 job summary에 남긴다.
+- active 유상증자가 있는 동안 `disabled`·`shadow` legacy tick은 fail closed로 중단한다.
+- 검증: core·worker 104건, shared 주식·migration 계약 29건·replica 전용 3건 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build
+- 관련 커밋: `9d37d3ec`
+- 운영 경계: Dokploy 일정·worker/Web 플래그·라이브 outbox와 Discord 상태는 변경하지 않았다.
