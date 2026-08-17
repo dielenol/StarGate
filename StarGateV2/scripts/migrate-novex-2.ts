@@ -9,14 +9,23 @@
  *     --target-db <DB_NAME> \
  *     --expected-plan <DRY_RUN_PLAN_SHA256>
  *
+ * 중단된 APPLYING marker 복구도 현재 read-only plan과 exact attempt를 새로
+ * 승인받은 뒤에만 --recover-readiness mark-ready|abandon-blocked,
+ * --yes, --target-db, --expected-attempt, --expected-plan을 모두 지정한다.
+ *
  * TTL 제거, 적정가 backfill, 신규 index, 레거시 PENDING 공시 변환은
  * 원자적인 단일 MongoDB transaction이 될 수 없으므로 적용 전후 계획을 모두 출력한다.
  */
 
 import {
   applyNovex2Migration,
+  getNovex2MigrationReadiness,
   inspectNovex2Migration,
   novex2MigrationPlanFingerprint,
+  novex2MigrationReadinessBlockers,
+  recoverNovex2MigrationReadiness,
+  type Novex2MigrationReadiness,
+  type Novex2MigrationReadinessRecoveryMode,
   type Novex2MigrationPlan,
 } from "@stargate/shared-db";
 import { MongoClient } from "mongodb";
@@ -64,6 +73,13 @@ function stablePlan(plan: Novex2MigrationPlan) {
     legacyPendingEventSpecs: [...plan.legacyPendingEventSpecs].sort(
       (left, right) => left.id.localeCompare(right.id),
     ),
+    legacyPendingPriceEffectConflicts: [
+      ...plan.legacyPendingPriceEffectConflicts,
+    ].sort((left, right) =>
+      `${left.targetSlotKey}:${left.ticker}`.localeCompare(
+        `${right.targetSlotKey}:${right.ticker}`,
+      ),
+    ),
   };
 }
 
@@ -83,6 +99,44 @@ function printPlan(label: string, plan: Novex2MigrationPlan): string {
   return fingerprint;
 }
 
+function printReadiness(
+  label: string,
+  readiness: Novex2MigrationReadiness | null,
+): void {
+  console.log(`[novex-2] ${label}`);
+  console.log(
+    JSON.stringify(
+      readiness
+        ? {
+            status: readiness.status,
+            attemptId: readiness.attemptId,
+            sourcePlanFingerprint: readiness.sourcePlanFingerprint,
+            readyPlanFingerprint: readiness.readyPlanFingerprint ?? null,
+            blockedPlanFingerprint: readiness.blockedPlanFingerprint ?? null,
+            blockers: readiness.blockers ?? [],
+            startedAt: readiness.startedAt.toISOString(),
+            completedAt: readiness.completedAt?.toISOString() ?? null,
+            blockedAt: readiness.blockedAt?.toISOString() ?? null,
+            updatedAt: readiness.updatedAt.toISOString(),
+          }
+        : null,
+      null,
+      2,
+    ),
+  );
+}
+
+function parseRecoveryMode(
+  value: string | null,
+): Novex2MigrationReadinessRecoveryMode | null {
+  if (value === null) return null;
+  if (value === "mark-ready") return "MARK_READY";
+  if (value === "abandon-blocked") return "ABANDON_BLOCKED";
+  throw new Error(
+    "--recover-readiness는 mark-ready 또는 abandon-blocked여야 합니다.",
+  );
+}
+
 function assertCompleted(plan: Novex2MigrationPlan): void {
   const blockers = [
     plan.ttlIndexPresent ? "stock_price_history TTL 잔존" : null,
@@ -94,6 +148,9 @@ function assertCompleted(plan: Novex2MigrationPlan): void {
       : null,
     plan.legacyPendingEventsToConvert > 0
       ? `미변환 PENDING 이벤트 ${plan.legacyPendingEventsToConvert}건`
+      : null,
+    plan.legacyPendingPriceEffectConflicts.length > 0
+      ? `legacy 가격 효과 충돌 ${plan.legacyPendingPriceEffectConflicts.length}건`
       : null,
     ...plan.uniqueIndexChecks
       .filter((check) => check.duplicateGroups > 0)
@@ -110,20 +167,38 @@ function assertCompleted(plan: Novex2MigrationPlan): void {
 async function main() {
   const argv = process.argv.slice(2);
   const apply = argv.includes("--apply");
+  const recoveryArgument = readArgument(argv, "--recover-readiness");
+  const recoveryRequested = argv.some(
+    (arg) => arg === "--recover-readiness" || arg.startsWith("--recover-readiness="),
+  );
+  if (recoveryRequested && recoveryArgument === null) {
+    throw new Error("--recover-readiness 값이 필요합니다.");
+  }
+  const recoveryMode = parseRecoveryMode(recoveryArgument);
   const confirmed = argv.includes("--yes");
   const targetDb = readArgument(argv, "--target-db");
   const expectedPlan = readArgument(argv, "--expected-plan");
+  const expectedAttempt = readArgument(argv, "--expected-attempt");
   const uri = process.env.MONGODB_URI;
   const configuredDb =
     process.env.MONGODB_DB_NAME?.trim() || process.env.DB_NAME?.trim() || null;
 
   if (!uri) throw new Error("MONGODB_URI 환경변수가 필요합니다.");
-  if (apply && (!confirmed || !targetDb || !expectedPlan)) {
+  if (apply && recoveryMode) {
+    throw new Error("--apply와 --recover-readiness는 함께 사용할 수 없습니다.");
+  }
+  const writesReadiness = apply || recoveryMode !== null;
+  if (writesReadiness && (!confirmed || !targetDb || !expectedPlan)) {
     throw new Error(
-      "WRITE에는 --apply --yes --target-db --expected-plan이 모두 필요합니다.",
+      "WRITE에는 --yes --target-db --expected-plan이 모두 필요합니다.",
     );
   }
-  if (apply && configuredDb && configuredDb !== targetDb) {
+  if (recoveryMode && !expectedAttempt) {
+    throw new Error(
+      "readiness 복구에는 --expected-attempt가 필요합니다.",
+    );
+  }
+  if (writesReadiness && configuredDb && configuredDb !== targetDb) {
     throw new Error(
       `환경 DB(${configuredDb})와 --target-db(${targetDb})가 달라 중단했습니다.`,
     );
@@ -136,13 +211,17 @@ async function main() {
     const db = client.db(dbName);
     const before = await inspectNovex2Migration(db);
     const fingerprint = printPlan(
-      apply ? `APPLY 직전 상태 / target=${dbName}` : `DRY-RUN / target=${dbName}`,
+      writesReadiness
+        ? `WRITE 직전 상태 / target=${dbName}`
+        : `DRY-RUN / target=${dbName}`,
       before,
     );
+    const readinessBefore = await getNovex2MigrationReadiness(db);
+    printReadiness("readiness marker", readinessBefore);
 
-    if (!apply) {
+    if (!writesReadiness) {
       console.log(
-        "[novex-2] 변경하지 않았습니다. 별도 승인 뒤 위 planSha256을 --expected-plan으로 전달해야 합니다.",
+        "[novex-2] 변경하지 않았습니다. 별도 승인 뒤 위 planSha256을 --expected-plan으로 전달해야 합니다. APPLYING 복구라면 marker의 attemptId도 --expected-attempt로 정확히 전달해야 합니다.",
       );
       return;
     }
@@ -152,14 +231,80 @@ async function main() {
       );
     }
 
+    if (apply && readinessBefore?.status === "READY") {
+      throw new Error(
+        "NOVEX-2 READY marker는 one-shot이므로 같은 migration을 다시 APPLY할 수 없습니다. 후속 변경은 새 version migration으로 수행해야 합니다.",
+      );
+    }
+    if (apply && readinessBefore?.status === "APPLYING") {
+      throw new Error(
+        "NOVEX-2 migration이 이미 APPLYING입니다. 새 apply를 시작하지 말고 exact attemptId와 fresh plan으로 readiness 복구 절차를 수행해야 합니다.",
+      );
+    }
+
+    if (recoveryMode) {
+      const result = await recoverNovex2MigrationReadiness(db, {
+        mode: recoveryMode,
+        expectedAttemptId: expectedAttempt!,
+        expectedPlanFingerprint: expectedPlan!,
+      });
+      console.log("[novex-2] readiness 복구 결과");
+      console.log(JSON.stringify(result, null, 2));
+
+      const after = await inspectNovex2Migration(db);
+      const afterFingerprint = printPlan(
+        `READINESS 복구 이후 상태 / target=${dbName}`,
+        after,
+      );
+      if (afterFingerprint !== result.inspectedPlanFingerprint) {
+        throw new Error(
+          "readiness 복구 직후 물리 계획이 다시 변경됐습니다. 추가 mutation을 중단하고 직접 NOVEX DDL 수행 여부를 조사해야 합니다.",
+        );
+      }
+      const readinessAfter = await getNovex2MigrationReadiness(db);
+      printReadiness("복구 이후 readiness marker", readinessAfter);
+      if (
+        readinessAfter?.attemptId !== result.attemptId ||
+        readinessAfter.status !== result.status
+      ) {
+        throw new Error("NOVEX readiness 복구 marker 재조회 검증에 실패했습니다.");
+      }
+      if (result.status === "READY") {
+        assertCompleted(after);
+        if (readinessAfter.readyPlanFingerprint !== afterFingerprint) {
+          throw new Error("복구된 READY fingerprint 재조회 검증에 실패했습니다.");
+        }
+      } else {
+        const blockers = novex2MigrationReadinessBlockers(after);
+        if (
+          blockers.length === 0 ||
+          readinessAfter.blockedPlanFingerprint !== afterFingerprint ||
+          JSON.stringify(readinessAfter.blockers ?? []) !== JSON.stringify(blockers)
+        ) {
+          throw new Error("복구된 BLOCKED marker 재조회 검증에 실패했습니다.");
+        }
+      }
+      return;
+    }
+
     const result = await applyNovex2Migration(db, {
-      expectedPlanFingerprint: expectedPlan,
+      expectedPlanFingerprint: expectedPlan!,
     });
     console.log("[novex-2] 적용 결과");
     console.log(JSON.stringify(result, null, 2));
     const after = await inspectNovex2Migration(db);
-    printPlan(`APPLY 이후 상태 / target=${dbName}`, after);
+    const readyFingerprint = printPlan(`APPLY 이후 상태 / target=${dbName}`, after);
     assertCompleted(after);
+    const readiness = await getNovex2MigrationReadiness(db);
+    if (
+      readiness?.status !== "READY" ||
+      readiness.readyPlanFingerprint !== readyFingerprint
+    ) {
+      throw new Error("NOVEX migration READY marker 재조회 검증에 실패했습니다.");
+    }
+    console.log(
+      `[novex-2] READY marker 확인 / version=${readiness.version} completedAt=${readiness.completedAt?.toISOString() ?? "unknown"}`,
+    );
   } finally {
     await client.close();
   }

@@ -10,10 +10,10 @@ import {
 import {
   cancelStockScheduledEvent,
   StockScheduledEventConflictError,
+  StockScheduledEventCutoverError,
   StockScheduledEventNotFoundError,
 } from "@/lib/db/stock-scheduled-events";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
-import { isNovexV2Enabled } from "@/lib/stocks/market";
 
 interface RouteContext {
   params: Promise<{ eventId: string }>;
@@ -35,13 +35,6 @@ export async function DELETE(request: Request, context: RouteContext) {
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (isNovexV2Enabled()) {
-    return NextResponse.json(
-      { error: "NOVEX 2.0에서는 레거시 예약 이벤트를 변경할 수 없습니다." },
-      { status: 409 },
-    );
-  }
-
   const requestId = readIdempotencyKey(request);
   if (!requestId) {
     return NextResponse.json(
@@ -104,6 +97,12 @@ export async function DELETE(request: Request, context: RouteContext) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockScheduledEventCutoverError) {
+      return NextResponse.json(
+        { error: "NOVEX 2.0 전환 처리 중에는 레거시 예약 이벤트를 취소할 수 없습니다." },
+        { status: 409 },
+      );
+    }
     if (error instanceof StockScheduledEventNotFoundError) {
       return NextResponse.json(
         { error: "예약 이벤트를 찾을 수 없습니다." },

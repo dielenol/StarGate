@@ -126,6 +126,7 @@ function eventSourceLabel(source: ChartPoint["source"]): string {
   if (source === "trade") return "체결";
   if (source === "dividend") return "배당락";
   if (source === "split") return "액면분할";
+  if (source === "rights-offering") return "유상증자";
   if (source === "disclosure" || source === "auto-news") return "공시";
   return "정기 변동";
 }
@@ -791,6 +792,11 @@ export default function StockTradeClient({
               ticker={meta.ticker}
               currentPrice={displayPrice}
               basePrice={meta.basePrice}
+              cumulativeSplitFactor={currentPrice?.cumulativeSplitFactor}
+              cumulativeCapitalIncreaseFactor={
+                currentPrice?.cumulativeCapitalIncreaseFactor
+              }
+              companyProfile={currentPrice?.companyProfile ?? null}
             />
 
           <div className={sharedStyles.eventInsights}>

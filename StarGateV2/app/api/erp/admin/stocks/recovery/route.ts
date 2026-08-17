@@ -8,6 +8,10 @@ import {
   executeEconomicOperationResult,
 } from "@/lib/db/execute-economic-operation";
 import {
+  claimStockMarketMigrationReady,
+  StockMarketMigrationNotReadyError,
+} from "@/lib/db/stock-market";
+import {
   enqueueGmAdminAudit,
   enqueueStockMarketRecoveryRequest,
 } from "@/lib/outbox/integration";
@@ -63,6 +67,7 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       payload: { slotKey },
       run: async (dbSession) => {
+        await claimStockMarketMigrationReady(dbSession);
         const requestedAt = new Date();
         await enqueueStockMarketRecoveryRequest(
           {
@@ -107,6 +112,12 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockMarketMigrationNotReadyError) {
+      return NextResponse.json(
+        { error: "NOVEX 2.0 migration READY 확인 전에는 회차 복구를 요청할 수 없습니다." },
+        { status: 409 },
+      );
+    }
     if (error instanceof EconomicOperationConflictError) {
       return NextResponse.json(
         { error: "동일 Idempotency-Key 요청이 처리 중이거나 충돌했습니다." },

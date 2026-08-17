@@ -10,6 +10,7 @@ import {
   rebuildScheduledStockTickSummary,
 } from "@stargate/core/operations/stocks-tick";
 import { processPendingStockDividendPayouts } from "@stargate/core/operations/stock-dividends";
+import { hasActiveStockRightsOffering } from "@stargate/shared-db";
 
 import {
   requestDailyShopRestockState,
@@ -26,6 +27,13 @@ export class ScheduledJobPartialFailureError extends Error {
         .join(", ")}`,
     );
     this.name = "ScheduledJobPartialFailureError";
+  }
+}
+
+export class ActiveRightsOfferingModeConflictError extends Error {
+  constructor(readonly novexMode: "disabled" | "shadow") {
+    super(`ACTIVE_RIGHTS_OFFERING_REQUIRES_NOVEX_ENABLED:${novexMode}`);
+    this.name = "ActiveRightsOfferingModeConflictError";
   }
 }
 
@@ -51,6 +59,8 @@ export function createDefaultScheduledJobHandlers(
     applyLegacyStockTick?: typeof applyScheduledStockTick;
     rebuildStockTickSummary?: typeof rebuildScheduledStockTickSummary;
     processDividendPayouts?: typeof processPendingStockDividendPayouts;
+    hasActiveRightsOffering?: typeof hasActiveStockRightsOffering;
+    requestStockWire?: typeof requestStockMarketWireState;
   } = {},
 ): ScheduledJobHandlerRegistry {
   return new ScheduledJobHandlerRegistry([
@@ -89,7 +99,8 @@ export function createDefaultScheduledJobHandlers(
           | Awaited<ReturnType<typeof previewNovexStockMarketTick>>
           | undefined;
         let shadowError: string | undefined;
-        if (novexMode === "shadow") {
+        const shadowSlotIsNovex = / (?:09|13|18|23):00$/.test(context.slotKey);
+        if (novexMode === "shadow" && shadowSlotIsNovex) {
           try {
             shadowPreview = await (
               dependencies.previewNovexTick ?? previewNovexStockMarketTick
@@ -101,28 +112,53 @@ export function createDefaultScheduledJobHandlers(
             shadowError = error instanceof Error ? error.message : String(error);
           }
         }
+        const runLegacyTick = novexMode === "disabled" || (
+          novexMode === "shadow" &&
+          (context.slotKey.endsWith("12:00") || context.slotKey.endsWith("13:00"))
+        );
+        if (
+          runLegacyTick &&
+          await (
+            dependencies.hasActiveRightsOffering ?? hasActiveStockRightsOffering
+          )()
+        ) {
+          throw new ActiveRightsOfferingModeConflictError(novexMode);
+        }
         const applied = novexMode === "enabled"
           ? await (dependencies.applyNovexTick ?? applyNovexStockMarketTick)({
-            now: context.requestedAt,
-            slotKey: context.slotKey,
-          })
-          : await (dependencies.applyLegacyStockTick ?? applyScheduledStockTick)({
-            now: context.requestedAt,
-            sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
-              process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
-            ),
-          });
+              now: context.requestedAt,
+              slotKey: context.slotKey,
+            })
+          : runLegacyTick
+            ? await (dependencies.applyLegacyStockTick ?? applyScheduledStockTick)({
+                now: context.requestedAt,
+                sodaStockImpactEnabled: isMrBeastSodaStockImpactTickEnabled(
+                  process.env.MRBEAST_SODA_STOCK_IMPACT_TICK_ENABLED,
+                ),
+              })
+            : {
+                date: context.slotKey.slice(0, 10),
+                slot: context.slotKey,
+                results: [],
+                skipDiscord: true,
+              };
         context.signal.throwIfAborted();
-        const result = novexMode === "enabled"
+        const result = novexMode === "enabled" || !runLegacyTick
           ? applied
           : (await (
               dependencies.rebuildStockTickSummary ??
               rebuildScheduledStockTickSummary
             )(applied.date)) ?? applied;
         context.signal.throwIfAborted();
+        const announcementSlot = novexMode === "enabled"
+          ? result.slot.endsWith("23:00")
+          : runLegacyTick && result.slot.endsWith("12:00");
         const announcement =
-          !result.skipDiscord && result.slot.endsWith("23:00")
-            ? await requestStockMarketWireState(result, context.requestedAt)
+          !result.skipDiscord && announcementSlot
+            ? await (dependencies.requestStockWire ?? requestStockMarketWireState)(
+                result,
+                context.requestedAt,
+              )
             : false;
         const dividends = novexMode === "enabled"
           ? await (dependencies.processDividendPayouts ?? processPendingStockDividendPayouts)()
@@ -160,6 +196,29 @@ export function createDefaultScheduledJobHandlers(
                 shadowUpdated: shadowPreview.results.filter(
                   (item) => item.status === "updated",
                 ).length,
+                shadowResultsJson: JSON.stringify(shadowPreview.results),
+                ...(shadowPreview.shadowState
+                  ? { shadowStateJson: JSON.stringify(shadowPreview.shadowState) }
+                  : {}),
+                shadowComparisonJson: JSON.stringify(
+                  shadowPreview.results.map((shadow) => {
+                    const legacy = result.results.find(
+                      (item) => item.ticker === shadow.ticker,
+                    );
+                    const baseline = shadowPreview.shadowComparison?.find(
+                      (item) => item.ticker === shadow.ticker,
+                    );
+                    const legacyPrice = legacy?.price ?? baseline?.legacyPrice ?? null;
+                    return {
+                      ticker: shadow.ticker,
+                      shadowPrice: shadow.price,
+                      legacyPrice,
+                      deltaPercent: legacyPrice && legacyPrice > 0
+                        ? ((shadow.price - legacyPrice) / legacyPrice) * 100
+                        : null,
+                    };
+                  }),
+                ),
               }
             : {}),
           ...(shadowError ? { shadowError } : {}),

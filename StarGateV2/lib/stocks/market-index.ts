@@ -15,6 +15,8 @@ export interface StockMarketIndexQuote {
   ticker: string;
   price: number;
   prevPrice: number;
+  cumulativeSplitFactor?: number;
+  cumulativeCapitalIncreaseFactor?: number;
 }
 
 export interface StockMarketIndexComponent {
@@ -83,13 +85,31 @@ export function formatMarketCapCredits(value: number): string {
   return formatBillionToKor(Math.round(value / MARKET_CAP_UNIT));
 }
 
-function buildIndexComponentSeed() {
+function normalizeSplitFactor(value: number | undefined): number {
+  return Number.isInteger(value) && (value ?? 0) >= 1 ? value! : 1;
+}
+
+function buildIndexComponentSeed(
+  quotes: readonly StockMarketIndexQuote[] = [],
+) {
+  const quoteByTicker = new Map(quotes.map((quote) => [quote.ticker, quote]));
   return STOCK_CATALOG.map((meta) => {
     const info = getStockInfo(meta.ticker);
+    const baseSharesOutstanding = info?.sharesOutstanding ?? 0;
+    const cumulativeSplitFactor = normalizeSplitFactor(
+      quoteByTicker.get(meta.ticker)?.cumulativeSplitFactor,
+    );
+    const cumulativeCapitalIncreaseFactor = normalizeSplitFactor(
+      quoteByTicker.get(meta.ticker)?.cumulativeCapitalIncreaseFactor,
+    );
     return {
       ticker: meta.ticker,
       basePrice: meta.basePrice,
-      sharesOutstanding: info?.sharesOutstanding ?? 0,
+      baseSharesOutstanding,
+      sharesOutstanding:
+        baseSharesOutstanding *
+        cumulativeSplitFactor *
+        cumulativeCapitalIncreaseFactor,
     };
   });
 }
@@ -114,7 +134,7 @@ function calculateBaseMarketCap(
 ): number {
   return roundStockValue(
     components.reduce(
-      (sum, item) => sum + item.basePrice * item.sharesOutstanding,
+      (sum, item) => sum + item.basePrice * item.baseSharesOutstanding,
       0,
     ),
   );
@@ -157,7 +177,7 @@ export function buildStockMarketIndexHistory(
     }
   }
   const metaByTicker = new Map(STOCK_CATALOG.map((meta) => [meta.ticker, meta]));
-  const components = buildIndexComponentSeed();
+  const components = buildIndexComponentSeed(currentQuotes);
   const workingPrices = new Map<string, number>();
 
   for (const meta of STOCK_CATALOG) {
@@ -243,13 +263,17 @@ export function buildStockMarketIndexSnapshot(
   const quoteByTicker = new Map(quotes.map((quote) => [quote.ticker, quote]));
   const components = STOCK_CATALOG.map((meta) => {
     const info = getStockInfo(meta.ticker);
-    const sharesOutstanding = info?.sharesOutstanding ?? 0;
     const quote = quoteByTicker.get(meta.ticker);
+    const baseSharesOutstanding = info?.sharesOutstanding ?? 0;
+    const sharesOutstanding =
+      baseSharesOutstanding *
+      normalizeSplitFactor(quote?.cumulativeSplitFactor) *
+      normalizeSplitFactor(quote?.cumulativeCapitalIncreaseFactor);
     const price = safePrice(quote?.price ?? meta.basePrice, meta.basePrice);
     const prevPrice = safePrice(quote?.prevPrice ?? price, price);
     const marketCap = roundStockValue(price * sharesOutstanding);
     const prevMarketCap = roundStockValue(prevPrice * sharesOutstanding);
-    const baseMarketCap = roundStockValue(meta.basePrice * sharesOutstanding);
+    const baseMarketCap = roundStockValue(meta.basePrice * baseSharesOutstanding);
     const changePercent =
       prevPrice > 0 ? ((price - prevPrice) / prevPrice) * 100 : 0;
 

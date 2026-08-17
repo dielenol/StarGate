@@ -276,6 +276,7 @@ export function getStockInfo(ticker: string): StockInfo | undefined {
 export interface StockValuation {
   marketCapBillion: number;
   enterpriseValueBillion: number;
+  sharesOutstanding: number;
 }
 
 const CREDIT_VALUE_UNIT = 100_000_000;
@@ -284,6 +285,8 @@ export function calculateStockValuation(
   info: StockInfo,
   currentPrice: number,
   basePrice: number,
+  cumulativeSplitFactor = 1,
+  cumulativeCapitalIncreaseFactor = 1,
 ): StockValuation {
   const safeBasePrice = Number.isFinite(basePrice) && basePrice > 0
     ? basePrice
@@ -292,15 +295,28 @@ export function calculateStockValuation(
     Number.isFinite(currentPrice) && currentPrice > 0
       ? currentPrice
       : safeBasePrice;
-  const priceRatio = safeBasePrice > 0 ? safeCurrentPrice / safeBasePrice : 1;
+  const safeSplitFactor =
+    Number.isInteger(cumulativeSplitFactor) && cumulativeSplitFactor >= 1
+      ? cumulativeSplitFactor
+      : 1;
+  const safeCapitalIncreaseFactor =
+    Number.isInteger(cumulativeCapitalIncreaseFactor) &&
+    cumulativeCapitalIncreaseFactor >= 1
+      ? cumulativeCapitalIncreaseFactor
+      : 1;
+  const totalFactor = safeSplitFactor * safeCapitalIncreaseFactor;
+  const sharesOutstanding = info.sharesOutstanding * totalFactor;
+  const comparableCurrentPrice = safeCurrentPrice * totalFactor;
+  const priceRatio = safeBasePrice > 0 ? comparableCurrentPrice / safeBasePrice : 1;
 
   return {
     marketCapBillion: Math.round(
-      (safeCurrentPrice * info.sharesOutstanding) / CREDIT_VALUE_UNIT,
+      (safeCurrentPrice * sharesOutstanding) / CREDIT_VALUE_UNIT,
     ),
     enterpriseValueBillion: Math.round(
       info.enterpriseValueBillion * priceRatio,
     ),
+    sharesOutstanding,
   };
 }
 

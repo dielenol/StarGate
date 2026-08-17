@@ -24,6 +24,7 @@ import {
   shouldSkipNovexClosingBriefing,
 } from "../dist/operations/stocks-tick.js";
 import { processPendingStockDividendPayouts } from "../dist/operations/stock-dividends.js";
+import { combineStockDisclosuresForTicker } from "../../shared-db/dist/index.js";
 
 test("NOVEX 회차와 격주 정규 세션 폐장 규칙을 KST로 계산한다", () => {
   assert.equal(latestDueNovexSlot(new Date("2026-08-24T04:15:00Z")), "2026-08-24 13:00");
@@ -165,6 +166,63 @@ test("가격 산식은 수급 ±3%, 회차 cap, GM exact override와 structural 
   assert.ok(shock.cooldownUntil);
 });
 
+test("유상증자 PRICE 공시는 기본 랜덤·수급 없이 exact structural 조정한다", () => {
+  const current = { ticker: "NVS", price: 50, prevPrice: 50, referencePrice: 50 };
+  const result = calculateNovexPrice({
+    current,
+    flowPercent: 0.03,
+    disclosure: {
+      _id: "rights",
+      title: "유상증자 실행",
+      body: "투자",
+      kind: "PRICE",
+      status: "SCHEDULED",
+      source: "CORPORATE_ACTION",
+      effects: [{ scope: "TICKER", ticker: "NVS", changePercent: 25, structural: true }],
+      createdById: "gm",
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    },
+    random: () => 1,
+    now: new Date(0),
+  });
+  assert.equal(result.price, 62.5);
+  assert.equal(result.referencePrice, 62.5);
+  assert.equal(result.basePercent, 0);
+  assert.equal(result.flowPercent, 0);
+  assert.equal(result.consumeFlow, false);
+});
+
+test("병합 AUTO+GM 공시는 기본 변동과 수급을 소비하지 않고 합산 지정률만 적용한다", () => {
+  const common = {
+    title: "공시",
+    body: "",
+    kind: "PRICE",
+    status: "SCHEDULED",
+    effects: [{ scope: "TICKER", ticker: "NVS", changePercent: 5, structural: false }],
+    createdById: "system",
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  };
+  const combined = combineStockDisclosuresForTicker([
+    { ...common, _id: "auto", slotKey: "2026-08-24 13:00", source: "AUTO" },
+    { ...common, _id: "gm", slotKey: "2026-08-24 18:00", source: "GM", effects: [{ scope: "TICKER", ticker: "NVS", changePercent: -12, structural: false }] },
+  ], "NVS");
+  const result = calculateNovexPrice({
+    current: { ticker: "NVS", price: 100, prevPrice: 100, referencePrice: 100, eventText: "", lastUpdate: "" },
+    flowPercent: 0.03,
+    disclosure: combined.disclosure,
+    structuralDisclosurePercent: combined.structuralDisclosurePercent,
+    random: () => 1,
+    now: new Date(0),
+  });
+  assert.equal(result.finalPercent, -0.07);
+  assert.equal(result.price, 93);
+  assert.equal(result.consumeFlow, false);
+  assert.equal(result.flowPercent, 0);
+  assert.equal(result.pendingBasePercent, 0.03);
+});
+
 test("자동 공시 분포 경계와 생성 큐는 4건/대형1건/slot-target 충돌 금지를 지킨다", () => {
   assert.deepEqual([0.19, 0.2, 0.54, 0.55, 0.79, 0.8, 0.949, 0.95].map((v) => rollNovexAutoDisclosureCount(() => v)), [0, 1, 1, 2, 2, 3, 3, 4]);
   let seed = 123456;
@@ -222,10 +280,14 @@ test("Modified Dietz 연쇄·참가 조건·배지와 split 보정은 인위적 
   const adjusted = adjustNovexHistoryForSplits([
     { price: 100 },
     { price: 50, splitFactor: 2 },
-    { price: 55 },
+    { price: 27.5, capitalIncreaseFactor: 2 },
+    { price: 30 },
   ]);
-  assert.equal(adjusted[0].adjustedPrice, 50);
-  assert.equal(adjusted[1].adjustedPrice, 50);
+  assert.equal(adjusted[0].adjustedPrice, 25);
+  assert.equal(adjusted[1].adjustedPrice, 25);
+  assert.equal(adjusted[2].adjustedPrice, 27.5);
+  assert.equal(adjusted[0].cumulativeSplitFactor, 2);
+  assert.equal(adjusted[0].cumulativeCapitalIncreaseFactor, 2);
   assert.deepEqual(normalizeNovexPositionForSplits({ shares: 1, price: 100, cumulativeSplitFactor: 2 }), { shares: 2, price: 50, marketValue: 100 });
 });
 
@@ -310,29 +372,41 @@ test("23시 종가 브리핑은 다음날 09시 전 복구에만 허용한다", 
   );
 });
 
-test("배당 지급 큐는 100건마다 재예약 신호를 내고 손상 건을 건너뛴다", async () => {
-  const queue = [
-    { status: "ERROR", entitlementId: "broken", error: "OWNER_NOT_FOUND" },
-    ...Array.from({ length: 100 }, (_, index) => ({
-      status: "PAID",
-      entitlementId: `paid-${index}`,
-      amount: 1,
-    })),
-    { status: "EMPTY" },
-  ];
-  const payNext = async () => queue.shift();
+test("배당 지급 큐는 같은 실행에서 오류 건을 제외하고 다음 worker 실행에서 재시도한다", async () => {
+  let repaired = false;
+  let brokenPaid = false;
+  let brokenAttempts = 0;
+  let paidRemaining = 2;
+  const payNext = async ({ excludeEntitlementIds }) => {
+    if (!brokenPaid && !excludeEntitlementIds.includes("broken")) {
+      brokenAttempts += 1;
+      if (repaired) {
+        brokenPaid = true;
+        return { status: "PAID", entitlementId: "broken", amount: 3 };
+      }
+      return { status: "ERROR", entitlementId: "broken", error: "OWNER_NOT_FOUND" };
+    }
+    if (paidRemaining > 0) {
+      paidRemaining -= 1;
+      return { status: "PAID", entitlementId: `paid-${paidRemaining}`, amount: 1 };
+    }
+    return { status: "EMPTY" };
+  };
   const first = await processPendingStockDividendPayouts(100, { payNext });
   assert.deepEqual(first, {
-    paid: 99,
-    totalAmount: 99,
+    paid: 2,
+    totalAmount: 2,
     errors: 1,
     drained: false,
   });
+  assert.equal(brokenAttempts, 1);
+  repaired = true;
   const second = await processPendingStockDividendPayouts(100, { payNext });
   assert.deepEqual(second, {
     paid: 1,
-    totalAmount: 1,
+    totalAmount: 3,
     errors: 0,
     drained: true,
   });
+  assert.equal(brokenAttempts, 2);
 });

@@ -24,6 +24,7 @@ export const COLLECTION_RESOURCE_MAP = {
   stock_market_calendar_exceptions: ["stocks"],
   stock_order_flow: ["stocks"],
   stock_disclosures: ["stocks"],
+  stock_company_profiles: ["stocks"],
   stock_market_preferences: ["stocks"],
   stock_corporate_actions: ["stocks"],
   stock_dividend_entitlements: ["stocks"],

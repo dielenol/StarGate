@@ -894,6 +894,7 @@ export async function cancelPlayerTrade(
         status: "CANCELLED",
         cancelledAt,
         updatedAt: cancelledAt,
+        cancellationReason: "USER_CANCELLED",
       },
     },
     { returnDocument: "after", session },

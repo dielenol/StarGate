@@ -12,7 +12,11 @@ export async function GET() {
 
   try {
     const now = new Date();
-    const rows = await listStockDisclosures({ now, limit: 100 });
+    const rows = await listStockDisclosures({
+      now,
+      publicOnly: true,
+      limit: 100,
+    });
     return NextResponse.json(
       {
         items: rows.map((row) =>

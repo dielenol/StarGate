@@ -8,8 +8,10 @@ import {
   executeEconomicOperationResult,
 } from "@/lib/db/execute-economic-operation";
 import {
+  claimStockMarketMigrationReady,
   deleteStockMarketCalendarException,
   listStockMarketCalendarExceptions,
+  StockMarketMigrationNotReadyError,
   upsertStockMarketCalendarException,
 } from "@/lib/db/stock-market";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
@@ -128,6 +130,7 @@ export async function PUT(request: Request) {
       actorId: session.user.id,
       payload: { kstDate, mode, closeAt, reason },
       run: async (dbSession) => {
+        await claimStockMarketMigrationReady(dbSession);
         const now = new Date();
         await upsertStockMarketCalendarException(
           {
@@ -169,6 +172,12 @@ export async function PUT(request: Request) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockMarketMigrationNotReadyError) {
+      return NextResponse.json(
+        { error: "NOVEX 2.0 migration READY 확인 전에는 시장 캘린더를 변경할 수 없습니다." },
+        { status: 409 },
+      );
+    }
     if (error instanceof EconomicOperationConflictError) {
       return NextResponse.json(
         { error: "동일 Idempotency-Key 요청이 처리 중이거나 충돌했습니다." },
@@ -214,6 +223,7 @@ export async function DELETE(request: Request) {
       actorId: session.user.id,
       payload: { kstDate },
       run: async (dbSession) => {
+        await claimStockMarketMigrationReady(dbSession);
         const now = new Date();
         await deleteStockMarketCalendarException(kstDate, dbSession);
         await enqueueGmAdminAudit(
@@ -243,6 +253,12 @@ export async function DELETE(request: Request) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockMarketMigrationNotReadyError) {
+      return NextResponse.json(
+        { error: "NOVEX 2.0 migration READY 확인 전에는 시장 캘린더를 변경할 수 없습니다." },
+        { status: 409 },
+      );
+    }
     if (error instanceof EconomicOperationConflictError) {
       return NextResponse.json(
         { error: "동일 Idempotency-Key 요청이 처리 중이거나 충돌했습니다." },

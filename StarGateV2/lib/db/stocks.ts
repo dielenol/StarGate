@@ -17,6 +17,7 @@ export {
   getStockPrice,
   claimTradableStockPrice,
   setStockTradingHalted,
+  StockCorporateActionHaltConflictError,
   StockPriceTradeClaimError,
   ensureStockPrice,
   ensureStockPrices,

@@ -122,6 +122,18 @@ export interface StockPriceItem {
   isTradingHalted: boolean;
   /** 동적 적정가. 전환 전 문서는 현재가와 동일하게 직렬화한다. */
   referencePrice: number;
+  /** 정방향 액면분할 누적계수. */
+  cumulativeSplitFactor: number;
+  cumulativeCapitalIncreaseFactor: number;
+  companyProfile: {
+    majorShareholders: Array<{
+      name: string;
+      stakePercent: number;
+      note?: string;
+    }>;
+    sourceDisclosureId: string;
+    updatedAt: string;
+  } | null;
   /** 자동 냉각 종료 시각. 냉각 중이 아니면 null. */
   cooldownUntil: string | null;
   cooldownReason: string | null;
@@ -208,7 +220,8 @@ export interface StockHistoryItem {
     | "disclosure"
     | "corporate-action"
     | "dividend"
-    | "split";
+    | "split"
+    | "rights-offering";
   slotKey?: string;
   /** 같은 경제 시각의 배당락→분할→가격 회차 순번. */
   effectiveSequence?: number;
@@ -219,7 +232,7 @@ export interface StockHistoryItem {
   disclosurePercent?: number;
   disclosureIds?: string[];
   markers?: Array<{
-    type: "SLOT" | "DISCLOSURE" | "DIVIDEND" | "SPLIT";
+    type: "SLOT" | "DISCLOSURE" | "DIVIDEND" | "SPLIT" | "RIGHTS_OFFERING";
     id?: string;
     label: string;
   }>;
@@ -336,13 +349,15 @@ async function fetchStockPrices(): Promise<StockPricesResponse> {
 }
 
 async function fetchStockHoldings(): Promise<StockHoldingsResponse> {
-  const res = await fetch("/api/erp/stocks/holdings");
+  const res = await fetch("/api/erp/stocks/holdings", { cache: "no-store" });
   if (!res.ok) await parseStocksError(res);
   return res.json();
 }
 
 async function fetchStockAdminHoldings(): Promise<StockAdminHoldingsResponse> {
-  const res = await fetch("/api/erp/admin/stocks/holdings");
+  const res = await fetch("/api/erp/admin/stocks/holdings", {
+    cache: "no-store",
+  });
   if (!res.ok) await parseStocksError(res);
   return res.json();
 }
@@ -461,12 +476,17 @@ export function useStockPrices(options?: {
 export function useStockHoldings(options?: {
   initialData?: StockHoldingsResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    MARKET_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: stocksKeys.holdings,
     queryFn: fetchStockHoldings,
     staleTime: HOLDINGS_STALE_MS,
     initialData: options?.initialData,
     refetchOnWindowFocus: true,
+    refetchInterval,
+    refetchIntervalInBackground: false,
     // 메인 캐릭 정합성 위반은 사용자 인풋으로 회복 불가 → 재시도 비활성.
     retry: retryOwnedStockRead,
   });
@@ -475,11 +495,17 @@ export function useStockHoldings(options?: {
 export function useStockAdminHoldings(options?: {
   initialData?: StockAdminHoldingsResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    MARKET_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: stocksKeys.adminHoldings,
     queryFn: fetchStockAdminHoldings,
     staleTime: ADMIN_HOLDINGS_STALE_MS,
     initialData: options?.initialData,
+    refetchInterval,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -494,6 +520,9 @@ export function useStockHistory(
     range?: StockHistoryRange;
   },
 ) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    MARKET_REFETCH_INTERVAL_MS,
+  );
   const range =
     options?.range ?? (options?.days === 0 ? "all" : options?.days) ?? 30;
   return useQuery({
@@ -503,6 +532,9 @@ export function useStockHistory(
     initialData: options?.initialData,
     // ticker 비어 있으면 호출 안 함. 호출자가 명시적으로 disable 하고 싶을 때도 활용.
     enabled: ticker.length > 0 && (options?.enabled ?? true),
+    refetchInterval,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
 

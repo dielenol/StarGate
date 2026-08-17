@@ -1,14 +1,22 @@
 import {
   applyStockMarketRoundTransaction,
   applyScheduledStockPriceMutation,
+  aggregateStockOrderFlow,
+  buildStockCorporateActionExecutionPlan,
+  calculateForwardStockSplitPrices,
+  calculateRightsOfferingPrices,
+  calculateStockDividendExDatePrices,
   claimPendingStockScheduledEvent,
+  combineStockDisclosuresForTicker,
   createAutomaticStockDisclosureQueue,
   consumeMrBeastSodaStockImpactDemand,
   closeStockMarketWithoutRound,
   getStockMarketCalendarException,
   getScheduledStockDisclosureQueueStatsForDate,
+  getLatestStockMarketShadowState,
   getStockPrices,
-  listPendingStockFlowAggregates,
+  listPendingStockOrderFlows,
+  listStockCorporateActions,
   listStockDisclosures,
   listRegularSessionStartsForStockMarket,
   listScheduledStockPriceHistoryRange,
@@ -16,6 +24,9 @@ import {
 } from "@stargate/shared-db";
 import type {
   StockInvestmentSeason,
+  StockDisclosure,
+  StockMarketShadowPrice,
+  StockMarketShadowState,
   StockPrice,
   StockPriceHistory,
 } from "@stargate/shared-db/types";
@@ -86,6 +97,8 @@ export interface ScheduledStockTickResult {
   eventText: string;
   eventTier: StockEventTier;
   status: "updated" | "initialized" | "skipped";
+  cumulativeSplitFactor?: number;
+  cumulativeCapitalIncreaseFactor?: number;
 }
 
 export interface ScheduledStockTickSummary {
@@ -97,6 +110,14 @@ export interface ScheduledStockTickSummary {
   marketStateChanged?: boolean;
   skipDiscord?: boolean;
   warning?: "REGULAR_SESSION_MISSING" | "REGULAR_SESSION_AMBIGUOUS";
+  /** shadow 모드에서만 scheduled_job_runs summary에 직렬화하는 누적 상태. */
+  shadowState?: StockMarketShadowState;
+  shadowComparison?: Array<{
+    ticker: string;
+    shadowPrice: number;
+    legacyPrice: number | null;
+    deltaPercent: number | null;
+  }>;
 }
 
 export class ScheduledStockTickNotDueError extends Error {
@@ -306,35 +327,345 @@ async function buildNovexSeasonActivationCandidates(
   );
 }
 
-/** shadow rollout용 read-only 계산. 가격·수급·공시·시장 상태를 변경하지 않는다. */
+function stockPriceFromShadow(price: StockMarketShadowPrice): StockPrice {
+  return {
+    ticker: price.ticker,
+    price: price.price,
+    prevPrice: price.prevPrice,
+    eventText: price.eventText,
+    lastUpdate: price.lastUpdate,
+    referencePrice: price.referencePrice,
+    pendingBasePercent: price.pendingBasePercent,
+    cumulativeSplitFactor: price.cumulativeSplitFactor,
+    cumulativeCapitalIncreaseFactor: price.cumulativeCapitalIncreaseFactor,
+    corporateActionHaltId: price.corporateActionHaltId,
+    corporateActionHaltReason: price.corporateActionHaltReason,
+    corporateActionResumeSlotKey: price.corporateActionResumeSlotKey,
+    cooldownUntil: price.cooldownUntil ? new Date(price.cooldownUntil) : undefined,
+    cooldownReason: price.cooldownReason,
+  };
+}
+
+function stockPriceToShadow(price: StockPrice): StockMarketShadowPrice {
+  return {
+    ticker: price.ticker,
+    price: price.price,
+    prevPrice: price.prevPrice,
+    eventText: price.eventText,
+    lastUpdate: price.lastUpdate,
+    referencePrice: price.referencePrice ?? price.price,
+    pendingBasePercent: price.pendingBasePercent ?? 0,
+    cumulativeSplitFactor: price.cumulativeSplitFactor ?? 1,
+    cumulativeCapitalIncreaseFactor:
+      price.cumulativeCapitalIncreaseFactor ?? 1,
+    ...(price.corporateActionHaltId
+      ? { corporateActionHaltId: price.corporateActionHaltId }
+      : {}),
+    ...(price.corporateActionHaltReason
+      ? { corporateActionHaltReason: price.corporateActionHaltReason }
+      : {}),
+    ...(price.corporateActionResumeSlotKey
+      ? { corporateActionResumeSlotKey: price.corporateActionResumeSlotKey }
+      : {}),
+    ...(price.cooldownUntil ? { cooldownUntil: price.cooldownUntil.toISOString() } : {}),
+    ...(price.cooldownReason ? { cooldownReason: price.cooldownReason } : {}),
+  };
+}
+
+function virtualStockDisclosure(
+  input: ReturnType<typeof buildNovexAutoDisclosureQueue>[number],
+): StockDisclosure {
+  const createdAt = input.now ?? new Date(0);
+  return {
+    _id: input.id,
+    title: input.title,
+    body: input.body,
+    kind: input.kind,
+    status: input.status,
+    source: input.source,
+    effects: input.effects,
+    publishAt: input.publishAt,
+    slotKey: input.slotKey,
+    shock: input.shock,
+    forceCooldown: input.forceCooldown,
+    templateId: input.templateId,
+    createdById: input.createdById,
+    createdAt,
+    updatedAt: createdAt,
+  };
+}
+
+function buildShadowAutomaticDisclosures(
+  mergedSlotKeys: readonly string[],
+  existing: readonly StockDisclosure[],
+): StockDisclosure[] {
+  const generated: StockDisclosure[] = [];
+  for (const date of new Set(mergedSlotKeys.map((slotKey) => slotKey.slice(0, 10)))) {
+    const existingAutomatic = existing.filter((disclosure) =>
+      disclosure.source === "AUTO" && disclosure.slotKey?.startsWith(`${date} `),
+    );
+    // 이미 실제 queue가 있으면 그것을 SSOT로 삼는다. 없을 때만 동일 seed로 가상 생성한다.
+    if (existingAutomatic.length > 0) continue;
+    generated.push(...buildNovexAutoDisclosureQueue({
+      kstDate: date,
+      tickers: STOCK_CATALOG.map((stock) => stock.ticker),
+      random: seededNovexRandom(date),
+      now: new Date(`${date}T00:00:00+09:00`),
+    }).map(virtualStockDisclosure));
+  }
+  return generated;
+}
+
+/** shadow rollout용 read-only 누적 계산. 시장·경제 컬렉션은 변경하지 않는다. */
 export async function previewNovexStockMarketTick(
   options: ApplyNovexStockMarketTickOptions = {},
 ): Promise<ScheduledStockTickSummary> {
   const now = options.now ?? new Date();
   const slotKey = options.slotKey ?? latestDueNovexSlot(now);
   if (!slotKey) throw new NovexStockTickNotDueError(new Date(`${novexKstDate(now)}T09:00:00+09:00`));
+  const slotAt = parseNovexSlotKey(slotKey);
+  if (slotAt.getTime() > now.getTime()) throw new NovexStockTickNotDueError(slotAt);
   const date = slotKey.slice(0, 10);
-  const [prices, flows, disclosures] = await Promise.all([
+  const dayStart = new Date(`${date}T00:00:00+09:00`);
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  const [livePrices, liveFlows, disclosures, actions, previous, exception, regularSessionStarts] = await Promise.all([
     getStockPrices(),
-    listPendingStockFlowAggregates(),
+    listPendingStockOrderFlows({ occurredAtOrBefore: now }),
     listStockDisclosures({ now, limit: 500 }),
+    listStockCorporateActions({
+      statuses: ["SCHEDULED", "HALTED", "SNAPSHOTTED", "PROCESSING"],
+      limit: 200,
+    }),
+    getLatestStockMarketShadowState(slotKey),
+    getStockMarketCalendarException(date),
+    listRegularSessionStartsForStockMarket({
+      title: NOVEX_REGULAR_SESSION_TITLE,
+      start: dayStart,
+      end: dayEnd,
+    }),
   ]);
-  const flowMap = new Map(flows.map((flow) => [flow.ticker, flow]));
+  const window = resolveNovexTradingWindow({
+    kstDate: date,
+    regularSessionStarts,
+    exception,
+  });
+  const previousByTicker = new Map(
+    previous?.prices.map((price) => [price.ticker, stockPriceFromShadow(price)]),
+  );
+  const liveByTicker = new Map(livePrices.map((price) => [price.ticker, price]));
+  const currentPrices = new Map(STOCK_CATALOG.map((stock) => {
+    const current = previousByTicker.get(stock.ticker) ?? liveByTicker.get(stock.ticker);
+    return [stock.ticker, current ?? {
+      ticker: stock.ticker,
+      price: stock.basePrice,
+      prevPrice: stock.basePrice,
+      referencePrice: stock.basePrice,
+      cumulativeSplitFactor: 1,
+      cumulativeCapitalIncreaseFactor: 1,
+      eventText: "정기 시세 초기화",
+      lastUpdate: slotKey,
+    } satisfies StockPrice] as const;
+  }));
+  const seenFlowOperationKeys = new Set(previous?.seenFlowOperationKeys ?? []);
+  let pendingFlows = [...(previous?.pendingFlows ?? [])];
+  for (const flow of liveFlows) {
+    if (seenFlowOperationKeys.has(flow.operationKey)) continue;
+    seenFlowOperationKeys.add(flow.operationKey);
+    pendingFlows.push(flow);
+  }
+  const mergedSlotKeys = enumerateNovexSlotsAfter(
+    previous?.lastCompletedSlotKey,
+    slotKey,
+  );
+  const baseShadowState = (): StockMarketShadowState => ({
+    version: 1,
+    lastCompletedSlotKey: previous?.lastCompletedSlotKey,
+    completedAt: previous?.completedAt ?? now.toISOString(),
+    prices: [...currentPrices.values()].map(stockPriceToShadow),
+    rejectedDividendActionIds: [...(previous?.rejectedDividendActionIds ?? [])],
+    pendingFlows,
+    seenFlowOperationKeys: [...seenFlowOperationKeys],
+  });
+  if (shouldDeferNovexRoundForEarlyClose(slotKey, window.closesAt)) {
+    return {
+      date,
+      slot: slotKey,
+      mergedSlotKeys,
+      results: [],
+      skipDiscord: true,
+      warning: window.warning,
+      shadowState: baseShadowState(),
+    };
+  }
+
+  const rejectedDividendActionIds = new Set(
+    previous?.rejectedDividendActionIds ?? [],
+  );
+  const previousSlotKey = previous?.lastCompletedSlotKey;
+  const normalizedActions = actions.map((action) => {
+    if (!previousSlotKey) return action;
+    if (action.type === "SPLIT" && previousSlotKey >= action.executeSlotKey) {
+      return { ...action, status: "COMPLETED" as const };
+    }
+    if (action.type === "RIGHTS_OFFERING") {
+      if (previousSlotKey >= action.executeSlotKey) {
+        return { ...action, status: "COMPLETED" as const };
+      }
+      if (previousSlotKey >= action.announceSlotKey) {
+        return { ...action, status: "HALTED" as const };
+      }
+    }
+    if (action.type === "DIVIDEND") {
+      if (rejectedDividendActionIds.has(action._id)) {
+        return { ...action, status: "ERROR" as const };
+      }
+      if (previousSlotKey >= action.exDateSlotKey) {
+        return { ...action, status: "COMPLETED" as const };
+      }
+      if (previousSlotKey >= action.recordSlotKey) {
+        return { ...action, status: "SNAPSHOTTED" as const };
+      }
+    }
+    return action;
+  });
+  const actionById = new Map(normalizedActions.map((action) => [action._id, action]));
+  const actionPlan = buildStockCorporateActionExecutionPlan(
+    normalizedActions,
+    mergedSlotKeys,
+    { allowCollapsedRightsOffering: true },
+  );
+  const applyShadowAction = (step: (typeof actionPlan)[number]) => {
+    const action = actionById.get(step.actionId);
+    if (!action) return;
+    const current = currentPrices.get(action.ticker);
+    if (!current) return;
+    if (step.kind === "DIVIDEND_RECORD" && action.type === "DIVIDEND") {
+      if (action.amountPerShare > current.price * 0.25) {
+        rejectedDividendActionIds.add(action._id);
+      }
+      return;
+    }
+    if (step.kind === "DIVIDEND_EX_DATE" && action.type === "DIVIDEND") {
+      if (rejectedDividendActionIds.has(action._id)) return;
+      const adjusted = calculateStockDividendExDatePrices(current, action.amountPerShare);
+      currentPrices.set(action.ticker, {
+        ...current,
+        prevPrice: current.price,
+        price: adjusted.price,
+        referencePrice: adjusted.referencePrice,
+        eventText: `주당 ${action.amountPerShare.toFixed(2)} CR 배당락`,
+        lastUpdate: action.exDateSlotKey,
+      });
+      return;
+    }
+    if (step.kind === "SPLIT" && action.type === "SPLIT") {
+      const adjusted = calculateForwardStockSplitPrices(current, action.factor);
+      currentPrices.set(action.ticker, {
+        ...current,
+        prevPrice: current.price,
+        price: adjusted.price,
+        referencePrice: adjusted.referencePrice,
+        cumulativeSplitFactor: adjusted.cumulativeSplitFactor,
+        eventText: `${action.factor}:1 액면분할`,
+        lastUpdate: action.executeSlotKey,
+      });
+      return;
+    }
+    if (
+      step.kind === "RIGHTS_OFFERING_ANNOUNCE" &&
+      action.type === "RIGHTS_OFFERING"
+    ) {
+      currentPrices.set(action.ticker, {
+        ...current,
+        corporateActionHaltId: action._id,
+        corporateActionHaltReason: action.reason,
+        corporateActionResumeSlotKey: action.executeSlotKey,
+        eventText: `${action.factor}배 유상증자 발표 · 거래정지`,
+        lastUpdate: action.announceSlotKey,
+      });
+      return;
+    }
+    if (
+      step.kind === "RIGHTS_OFFERING_EXECUTE" &&
+      action.type === "RIGHTS_OFFERING"
+    ) {
+      const adjusted = calculateRightsOfferingPrices(current, action.factor);
+      currentPrices.set(action.ticker, {
+        ...current,
+        prevPrice: current.price,
+        price: adjusted.price,
+        referencePrice: adjusted.referencePrice,
+        cumulativeCapitalIncreaseFactor:
+          adjusted.cumulativeCapitalIncreaseFactor,
+        eventText: `${action.factor}배 유상증자 기계 조정`,
+        lastUpdate: action.executeSlotKey,
+        corporateActionHaltId: undefined,
+        corporateActionHaltReason: undefined,
+        corporateActionResumeSlotKey: undefined,
+      });
+    }
+  };
+  for (const step of actionPlan.filter((item) =>
+    item.kind !== "DIVIDEND_RECORD" || item.slotKey !== slotKey,
+  )) applyShadowAction(step);
+
+  const dueDisclosures = [
+    ...disclosures,
+    ...buildShadowAutomaticDisclosures(mergedSlotKeys, disclosures),
+  ].filter((disclosure) =>
+    disclosure.status === "SCHEDULED" &&
+    disclosure.kind === "PRICE" &&
+    disclosure.slotKey !== undefined &&
+    mergedSlotKeys.includes(disclosure.slotKey),
+  );
+  const flowMap = new Map(
+    aggregateStockOrderFlow(pendingFlows).map((flow) => [flow.ticker, flow]),
+  );
   const random = options.random ?? seededNovexRandom(slotKey);
-  const results = prices.map((current) => {
-    const disclosure = disclosures.find((row) =>
-      row.status === "SCHEDULED" &&
-      row.kind === "PRICE" &&
-      (row.slotKey === slotKey || (row.publishAt?.getTime() ?? Number.POSITIVE_INFINITY) <= now.getTime()) &&
-      row.effects.some((effect) => effect.scope === "MARKET" || effect.ticker === current.ticker),
+  const samples = new Map(STOCK_CATALOG.map((stock) => [stock.ticker, random()]));
+  const results = [...currentPrices.values()].map((current) => {
+    const applicable = dueDisclosures.filter((disclosure) =>
+      disclosure.effects.some((effect) =>
+        effect.scope === "MARKET" ||
+        (effect.scope === "TICKER" && effect.ticker === current.ticker),
+      ),
     );
-    const calculated = calculateNovexPrice({
-      current,
-      flowPercent: flowMap.get(current.ticker)?.percent ?? 0,
-      disclosure,
-      random,
-      now,
+    const combined = combineStockDisclosuresForTicker(applicable, current.ticker);
+    const calculated = current.corporateActionHaltId
+      ? {
+          price: current.price,
+          referencePrice: current.referencePrice ?? current.price,
+          basePercent: 0,
+          flowPercent: 0,
+          disclosurePercent: 0,
+          finalPercent: 0,
+          eventTier: "scenario" as const,
+          eventText: "유상증자 거래정지 · 가격 동결",
+          pendingBasePercent: current.pendingBasePercent ?? 0,
+          consumeFlow: false,
+        }
+      : calculateNovexPrice({
+          current,
+          flowPercent: flowMap.get(current.ticker)?.percent ?? 0,
+          disclosure: combined?.disclosure,
+          structuralDisclosurePercent: combined?.structuralDisclosurePercent,
+          random: () => samples.get(current.ticker) ?? 0.5,
+          now,
+        });
+    currentPrices.set(current.ticker, {
+      ...current,
+      prevPrice: current.price,
+      price: calculated.price,
+      referencePrice: calculated.referencePrice,
+      eventText: calculated.eventText,
+      lastUpdate: slotKey,
+      pendingBasePercent: calculated.pendingBasePercent,
+      cooldownUntil: calculated.cooldownUntil,
+      cooldownReason: calculated.cooldownReason,
     });
+    if (calculated.consumeFlow) {
+      pendingFlows = pendingFlows.filter((flow) => flow.ticker !== current.ticker);
+    }
     return {
       ticker: current.ticker,
       previousPrice: current.price,
@@ -343,9 +674,48 @@ export async function previewNovexStockMarketTick(
       eventText: `[shadow] ${calculated.eventText}`,
       eventTier: calculated.eventTier,
       status: "updated" as const,
+      cumulativeSplitFactor:
+        currentPrices.get(current.ticker)?.cumulativeSplitFactor ?? 1,
+      cumulativeCapitalIncreaseFactor:
+        currentPrices.get(current.ticker)?.cumulativeCapitalIncreaseFactor ?? 1,
     };
   });
-  return { date, slot: slotKey, results, skipDiscord: true };
+  for (const step of actionPlan.filter((item) =>
+    item.kind === "DIVIDEND_RECORD" && item.slotKey === slotKey,
+  )) applyShadowAction(step);
+  const shadowState: StockMarketShadowState = {
+    version: 1,
+    lastCompletedSlotKey: slotKey,
+    completedAt: now.toISOString(),
+    prices: [...currentPrices.values()].map(stockPriceToShadow),
+    rejectedDividendActionIds: [...rejectedDividendActionIds].sort(),
+    pendingFlows,
+    seenFlowOperationKeys: [...seenFlowOperationKeys].sort(),
+  };
+  const shadowComparison = results.map((shadow) => {
+    const legacyPrice = liveByTicker.get(shadow.ticker)?.price ?? null;
+    return {
+      ticker: shadow.ticker,
+      shadowPrice: shadow.price,
+      legacyPrice,
+      deltaPercent: legacyPrice && legacyPrice > 0
+        ? ((shadow.price - legacyPrice) / legacyPrice) * 100
+        : null,
+    };
+  });
+  return {
+    date,
+    slot: slotKey,
+    mergedSlotKeys,
+    sourceRevision: shadowState.prices
+      .map((price) => `${price.ticker}:${price.price}`)
+      .join("|"),
+    results,
+    skipDiscord: true,
+    warning: window.warning,
+    shadowState,
+    shadowComparison,
+  };
 }
 
 /**
@@ -385,7 +755,7 @@ export async function applyNovexStockMarketTick(
     regularSessionStarts,
     exception,
   });
-  const random = options.random ?? Math.random;
+  const random = options.random ?? seededNovexRandom(slotKey);
   const samples = new Map(
     STOCK_CATALOG.map((stock) => [stock.ticker, random()]),
   );
@@ -485,6 +855,12 @@ export async function applyNovexStockMarketTick(
       eventText: history.eventText ?? "정기 변동",
       eventTier: history.eventTier ?? "routine",
       status: outcome.applied ? "updated" : "skipped",
+      cumulativeSplitFactor:
+        outcome.prices.find((price) => price.ticker === history.ticker)
+          ?.cumulativeSplitFactor ?? 1,
+      cumulativeCapitalIncreaseFactor:
+        outcome.prices.find((price) => price.ticker === history.ticker)
+          ?.cumulativeCapitalIncreaseFactor ?? 1,
     })),
     skipDiscord: shouldSkipNovexClosingBriefing(slotKey, now),
     warning: window.warning,

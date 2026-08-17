@@ -25,6 +25,7 @@ test(
       getDb,
       initServerless,
       PlayerTradeError,
+      replacePlayerTradeOffer,
       setStockTradingHalted,
       StockPriceTradeClaimError,
     } = await import("../../../dist/index.js");
@@ -380,6 +381,74 @@ test(
     } finally {
       await sequentialSession.endSession();
     }
+
+    const recovery = await seedScenario("RECOVERY_A");
+    const otherTicker = "HALT_RECOVERY_B";
+    await prices.insertOne({
+      ticker: otherTicker,
+      price: 20,
+      prevPrice: 20,
+      eventText: "seed",
+      lastUpdate: "2026-08-13 12:00",
+    });
+    await holdings.insertOne({
+      characterId: recovery.counterparty.characterId,
+      ticker: otherTicker,
+      shares: 5,
+      avgPrice: 20,
+      updatedAt: new Date(),
+    });
+    const recoverySetupSession = client.startSession();
+    let recoveryTrade;
+    try {
+      await recoverySetupSession.withTransaction(async () => {
+        recoveryTrade = await createOpenPlayerTrade(
+          recovery.initiator,
+          recovery.counterparty,
+          { credits: 0, items: [], stocks: [{ ticker: recovery.ticker, shares: 1 }] },
+          recoverySetupSession,
+        );
+        recoveryTrade = await replacePlayerTradeOffer(
+          recoveryTrade._id.toString(),
+          recovery.counterparty.userId,
+          recoveryTrade.revision,
+          { credits: 0, items: [], stocks: [{ ticker: otherTicker, shares: 1 }] },
+          recoverySetupSession,
+        );
+      });
+    } finally {
+      await recoverySetupSession.endSession();
+    }
+    const haltBothSession = client.startSession();
+    try {
+      await haltBothSession.withTransaction(async () => {
+        await setStockTradingHalted(recovery.ticker, true, haltBothSession);
+        await setStockTradingHalted(otherTicker, true, haltBothSession);
+      });
+    } finally {
+      await haltBothSession.endSession();
+    }
+    for (const userId of [
+      recovery.initiator.userId,
+      recovery.counterparty.userId,
+    ]) {
+      const recoverySession = client.startSession();
+      try {
+        await recoverySession.withTransaction(async () => {
+          recoveryTrade = await replacePlayerTradeOffer(
+            recoveryTrade._id.toString(),
+            userId,
+            recoveryTrade.revision,
+            { credits: 0, items: [], stocks: [] },
+            recoverySession,
+          );
+        });
+      } finally {
+        await recoverySession.endSession();
+      }
+    }
+    assert.deepEqual(recoveryTrade.initiatorOffer.stocks, []);
+    assert.deepEqual(recoveryTrade.counterpartyOffer.stocks, []);
 
     const novexNow = new Date("2026-08-14T12:00:00.000Z");
     const closedGift = await seedScenario("NOVEX_CLOSED");

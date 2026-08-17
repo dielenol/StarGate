@@ -26,6 +26,13 @@ export interface StockDisclosureItem {
   headline?: string;
   body?: string;
   effects?: StockDisclosureEffect[];
+  companyProfileUpdate?: {
+    majorShareholders: Array<{
+      name: string;
+      stakePercent: number;
+      note?: string;
+    }>;
+  };
   createdBy?: string;
   canEdit: boolean;
   canCancel: boolean;
@@ -88,10 +95,13 @@ export function useStockDisclosures(options?: {
 export function useAdminStockDisclosures(options?: {
   initialData?: StockDisclosuresResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(60_000);
   return useQuery({
     queryKey: stockDisclosureKeys.admin,
     queryFn: () => fetchStockDisclosures("/api/erp/admin/stocks/disclosures"),
     staleTime: 30_000,
+    refetchInterval,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });

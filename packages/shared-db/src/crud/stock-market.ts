@@ -7,6 +7,8 @@ import { claimTradableStockPrice } from "./stocks.js";
 import { enqueueIntegrationOutbox, type EnqueueIntegrationOutboxInput } from "./worker.js";
 import type {
   StockCorporateAction,
+  StockCompanyProfile,
+  StockCompanyProfileUpdate,
   StockDisclosure,
   StockDisclosureEffect,
   StockDividendAction,
@@ -15,9 +17,11 @@ import type {
   StockInvestmentSeason,
   StockMarketCalendarException,
   StockMarketPreference,
+  StockMarketShadowState,
   StockMarketSnapshot,
   StockMarketState,
   StockOrderFlow,
+  PlayerTrade,
   StockPrice,
   StockPriceHistory,
   StockSeasonPerformance,
@@ -34,10 +38,48 @@ const DISCLOSURES = "stock_disclosures";
 const DISCLOSURE_FENCES = "stock_disclosure_effect_fences";
 const PREFERENCES = "stock_market_preferences";
 const CORPORATE_ACTIONS = "stock_corporate_actions";
+const COMPANY_PROFILES = "stock_company_profiles";
+const PLAYER_TRADES = "player_trades";
 const DIVIDEND_ENTITLEMENTS = "stock_dividend_entitlements";
 const SEASONS = "stock_investment_seasons";
 const SEASON_PERFORMANCE = "stock_season_performance";
 const SEASON_FLOWS = "stock_season_flows";
+const SCHEDULED_JOB_RUNS = "scheduled_job_runs";
+const NOVEX_MIGRATION_READINESS = "stock_market_migration_readiness";
+
+interface NovexMigrationRuntimeFence {
+  _id: "novex-2";
+  status: "PRE_MIGRATION" | "APPLYING" | "READY" | "BLOCKED";
+  runtimeRevision?: number;
+}
+
+export class StockMarketMigrationNotReadyError extends Error {
+  readonly code = "NOVEX_2_MIGRATION_NOT_READY";
+
+  constructor() {
+    super("NOVEX_2_MIGRATION_NOT_READY");
+    this.name = "StockMarketMigrationNotReadyError";
+  }
+}
+
+/**
+ * NOVEX writer와 migration readiness owner를 같은 문서 write로 직렬화한다.
+ * READY 조회만 하면 migration claim과 TOCTOU가 생기므로 transaction 안에서 호출해야 한다.
+ */
+export async function claimStockMarketMigrationReady(
+  session: ClientSession,
+): Promise<void> {
+  const result = await (
+    await col<NovexMigrationRuntimeFence>(NOVEX_MIGRATION_READINESS)
+  ).updateOne(
+    { _id: "novex-2", status: "READY" },
+    { $inc: { runtimeRevision: 1 } },
+    { session },
+  );
+  if (result.matchedCount !== 1) {
+    throw new StockMarketMigrationNotReadyError();
+  }
+}
 
 async function col<T extends object>(name: string): Promise<Collection<T>> {
   return (await getDb()).collection<T>(name);
@@ -55,22 +97,130 @@ export async function getStockMarketState(
 export async function getStockMarketSnapshot(
   now = new Date(),
 ): Promise<StockMarketSnapshot | null> {
-  const [state, prices] = await Promise.all([
-    getStockMarketState(),
-    stockPricesCol().then((pricesCol) => pricesCol.find().sort({ ticker: 1 }).toArray()),
-  ]);
-  if (!state) return null;
-  const stateError = classifyStockMarketStateTradeError(state, now);
-  const effectiveState = state.status === "OPEN" && (
-    now.getTime() >= state.closesAt.getTime() || state.tradingDate < kstDateForMarket(now)
-  )
-    ? { ...state, status: stateError === "MARKET_OPENING_PENDING" ? "OPENING_PENDING" as const : "CLOSED" as const }
-    : state.status === "CLOSED" && stateError === "MARKET_OPENING_PENDING"
-      ? { ...state, status: "OPENING_PENDING" as const }
-      : state.status === "OPENING_PENDING" && stateError === "MARKET_CLOSED"
-        ? { ...state, status: "CLOSED" as const }
-      : state;
-  return { state: effectiveState, prices };
+  const client = await getClient();
+  const session = client.startSession();
+  let snapshot: StockMarketSnapshot | null = null;
+  try {
+    await session.withTransaction(async () => {
+      const state = await getStockMarketState({ session });
+      if (!state) return;
+      const prices = await (await stockPricesCol())
+        .find({}, { session })
+        .sort({ ticker: 1 })
+        .toArray();
+      const companyProfiles = await (await col<StockCompanyProfile>(COMPANY_PROFILES))
+        .find({}, { session })
+        .sort({ _id: 1 })
+        .toArray();
+      const flowSignals = await listPendingStockFlowSignals({ session });
+      const stateError = classifyStockMarketStateTradeError(state, now);
+      const effectiveState = state.status === "OPEN" && (
+        now.getTime() >= state.closesAt.getTime() || state.tradingDate < kstDateForMarket(now)
+      )
+        ? { ...state, status: stateError === "MARKET_OPENING_PENDING" ? "OPENING_PENDING" as const : "CLOSED" as const }
+        : state.status === "CLOSED" && stateError === "MARKET_OPENING_PENDING"
+          ? { ...state, status: "OPENING_PENDING" as const }
+          : state.status === "OPENING_PENDING" && stateError === "MARKET_CLOSED"
+            ? { ...state, status: "CLOSED" as const }
+            : state;
+      snapshot = { state: effectiveState, prices, companyProfiles, flowSignals };
+    }, { readConcern: { level: "snapshot" } });
+    return snapshot;
+  } finally {
+    await session.endSession();
+  }
+}
+
+export function parseStockMarketShadowState(
+  value: unknown,
+): StockMarketShadowState | null {
+  if (typeof value !== "string") return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<StockMarketShadowState>;
+    if (
+      parsed.version !== 1 ||
+      typeof parsed.completedAt !== "string" ||
+      (parsed.lastCompletedSlotKey !== undefined &&
+        typeof parsed.lastCompletedSlotKey !== "string") ||
+      !Array.isArray(parsed.prices) ||
+      !Array.isArray(parsed.rejectedDividendActionIds) ||
+      !Array.isArray(parsed.pendingFlows) ||
+      !Array.isArray(parsed.seenFlowOperationKeys)
+    ) return null;
+    const validPrices = parsed.prices.every((price) =>
+      price &&
+      typeof price.ticker === "string" &&
+      typeof price.eventText === "string" &&
+      typeof price.lastUpdate === "string" &&
+      Number.isFinite(price.price) &&
+      price.price > 0 &&
+      Number.isFinite(price.prevPrice) &&
+      price.prevPrice > 0 &&
+      Number.isFinite(price.referencePrice) &&
+      price.referencePrice > 0 &&
+      Number.isFinite(price.pendingBasePercent) &&
+      Number.isInteger(price.cumulativeSplitFactor) &&
+      price.cumulativeSplitFactor >= 1 &&
+      (price.cumulativeCapitalIncreaseFactor === undefined ||
+        (Number.isInteger(price.cumulativeCapitalIncreaseFactor) &&
+          price.cumulativeCapitalIncreaseFactor >= 1)) &&
+      (price.cooldownUntil === undefined ||
+        (typeof price.cooldownUntil === "string" &&
+          Number.isFinite(new Date(price.cooldownUntil).getTime()))) &&
+      (price.cooldownReason === undefined || typeof price.cooldownReason === "string") &&
+      (price.corporateActionHaltId === undefined ||
+        typeof price.corporateActionHaltId === "string") &&
+      (price.corporateActionHaltReason === undefined ||
+        typeof price.corporateActionHaltReason === "string") &&
+      (price.corporateActionResumeSlotKey === undefined ||
+        typeof price.corporateActionResumeSlotKey === "string"),
+    );
+    const validFlows = parsed.pendingFlows.every((flow) =>
+      flow &&
+      typeof flow.operationKey === "string" &&
+      typeof flow.characterId === "string" &&
+      typeof flow.ticker === "string" &&
+      (flow.side === "BUY" || flow.side === "SELL") &&
+      Number.isInteger(flow.shares) &&
+      flow.shares > 0,
+    );
+    const validIds = parsed.rejectedDividendActionIds.every(
+      (id) => typeof id === "string",
+    ) && parsed.seenFlowOperationKeys.every((id) => typeof id === "string");
+    if (!validPrices || !validFlows || !validIds) return null;
+    return {
+      ...parsed,
+      prices: parsed.prices.map((price) => ({
+        ...price,
+        cumulativeCapitalIncreaseFactor:
+          price.cumulativeCapitalIncreaseFactor ?? 1,
+      })),
+    } as StockMarketShadowState;
+  } catch {
+    return null;
+  }
+}
+
+/** 직전 성공한 shadow 회차 상태. 시장·경제 컬렉션을 변경하지 않는다. */
+export async function getLatestStockMarketShadowState(
+  beforeSlotKey?: string,
+): Promise<StockMarketShadowState | null> {
+  const run = await (await col<{
+    jobName: string;
+    slotKey: string;
+    status: string;
+    summary?: Record<string, unknown>;
+  }>(SCHEDULED_JOB_RUNS)).findOne(
+    {
+      jobName: "stocks.tick",
+      status: "SUCCEEDED",
+      "summary.novexMode": "shadow",
+      "summary.shadowStateJson": { $type: "string" },
+      ...(beforeSlotKey ? { slotKey: { $lt: beforeSlotKey } } : {}),
+    },
+    { sort: { slotKey: -1 } },
+  );
+  return parseStockMarketShadowState(run?.summary?.shadowStateJson);
 }
 
 export async function saveStockMarketState(
@@ -103,6 +253,7 @@ export async function closeStockMarketWithoutRound(input: {
   let saved: StockMarketState | null = null;
   try {
     await session.withTransaction(async () => {
+      await claimStockMarketMigrationReady(session);
       const stateCol = await col<StockMarketState>(MARKET_STATE);
       const current = await stateCol.findOneAndUpdate(
         { _id: STOCK_MARKET_STATE_ID },
@@ -396,6 +547,30 @@ export interface StockFlowAggregate {
   signal: StockFlowSignal;
 }
 
+export async function listPendingStockOrderFlows(
+  options: { session?: ClientSession; occurredAtOrBefore?: Date } = {},
+): Promise<Array<Pick<StockOrderFlow, "operationKey" | "characterId" | "ticker" | "side" | "shares">>> {
+  return (await col<StockOrderFlow>(ORDER_FLOW))
+    .find(
+      {
+        consumedSlotKey: { $exists: false },
+        ...(options.occurredAtOrBefore
+          ? { occurredAt: { $lte: options.occurredAtOrBefore } }
+          : {}),
+      },
+      { session: options.session },
+    )
+    .project<Pick<StockOrderFlow, "operationKey" | "characterId" | "ticker" | "side" | "shares">>({
+      _id: 0,
+      operationKey: 1,
+      characterId: 1,
+      ticker: 1,
+      side: 1,
+      shares: 1,
+    })
+    .toArray();
+}
+
 /** character별 매수/매도를 먼저 상계하고 각 character 기여를 ±100주로 제한한다. */
 export function aggregateStockOrderFlow(
   rows: readonly Pick<StockOrderFlow, "characterId" | "ticker" | "side" | "shares">[],
@@ -434,14 +609,28 @@ export function aggregateStockOrderFlow(
   });
 }
 
-export async function listPendingStockFlowSignals(): Promise<StockFlowSignal[]> {
-  return (await listPendingStockFlowAggregates()).map((row) => row.signal);
+export async function listPendingStockFlowSignals(
+  options: { session?: ClientSession; occurredAfter?: Date; occurredAtOrBefore?: Date } = {},
+): Promise<StockFlowSignal[]> {
+  return (await listPendingStockFlowAggregates(options)).map((row) => row.signal);
 }
 
 /** worker shadow/round 내부용. 플레이어 응답에는 percent/netShares를 직렬화하지 않는다. */
-export async function listPendingStockFlowAggregates(): Promise<StockFlowAggregate[]> {
+export async function listPendingStockFlowAggregates(
+  options: { session?: ClientSession; occurredAfter?: Date; occurredAtOrBefore?: Date } = {},
+): Promise<StockFlowAggregate[]> {
+  const occurredAt = {
+    ...(options.occurredAfter ? { $gt: options.occurredAfter } : {}),
+    ...(options.occurredAtOrBefore ? { $lte: options.occurredAtOrBefore } : {}),
+  };
   const rows = await (await col<StockOrderFlow>(ORDER_FLOW))
-    .find({ consumedSlotKey: { $exists: false } })
+    .find(
+      {
+        consumedSlotKey: { $exists: false },
+        ...(Object.keys(occurredAt).length > 0 ? { occurredAt } : {}),
+      },
+      { session: options.session },
+    )
     .project<Pick<StockOrderFlow, "characterId" | "ticker" | "side" | "shares">>({
       characterId: 1,
       ticker: 1,
@@ -464,6 +653,8 @@ export interface CreateStockDisclosureInput {
   slotKey?: string;
   shock?: boolean;
   forceCooldown?: boolean;
+  companyProfileUpdate?: StockCompanyProfileUpdate;
+  ownerCorporateActionId?: string;
   templateId?: string;
   createdById: string;
   now?: Date;
@@ -520,16 +711,80 @@ function assertScheduledDisclosureFuture(
   }
 }
 
-function validateDisclosureEffects(effects: readonly StockDisclosureEffect[]): void {
+export function validateStockDisclosureEffects(
+  effects: readonly StockDisclosureEffect[],
+): void {
   const tickerTargets = new Set<string>();
   for (const effect of effects) {
+    if (
+      (effect.scope !== "MARKET" && effect.scope !== "TICKER") ||
+      typeof effect.structural !== "boolean" ||
+      (effect.changePercent !== undefined &&
+        (!Number.isFinite(effect.changePercent) ||
+          effect.changePercent < -50 ||
+          effect.changePercent > 75))
+    ) {
+      throw new Error("Invalid stock disclosure effect");
+    }
     if (effect.scope === "TICKER" && !effect.ticker) {
       throw new Error("Ticker disclosure effect requires ticker");
+    }
+    if (effect.scope === "MARKET" && effect.ticker !== undefined) {
+      throw new Error("Market disclosure effect cannot target ticker");
     }
     if (effect.ticker) {
       if (tickerTargets.has(effect.ticker)) throw new Error("Duplicate ticker disclosure effect");
       tickerTargets.add(effect.ticker);
     }
+  }
+}
+
+export function validateStockCompanyProfileUpdate(
+  update: StockCompanyProfileUpdate,
+  disclosure: Pick<StockDisclosure, "kind" | "effects">,
+): void {
+  const shareholders = update.majorShareholders;
+  if (
+    disclosure.kind !== "PRICE" ||
+    !Array.isArray(shareholders) ||
+    shareholders.length < 1 ||
+    shareholders.length > 10
+  ) {
+    throw new Error("Invalid stock company profile update");
+  }
+  const targetTickers = new Set(
+    disclosure.effects
+      .filter((effect) => effect.scope === "TICKER" && effect.ticker)
+      .map((effect) => effect.ticker!),
+  );
+  if (
+    targetTickers.size !== 1 ||
+    disclosure.effects.some((effect) => effect.scope === "MARKET")
+  ) {
+    throw new Error("Stock company profile update requires one ticker");
+  }
+  const names = new Set<string>();
+  let totalStake = 0;
+  for (const shareholder of shareholders) {
+    const normalizedName = shareholder.name.trim();
+    if (
+      normalizedName.length < 1 ||
+      normalizedName.length > 100 ||
+      names.has(normalizedName) ||
+      !Number.isFinite(shareholder.stakePercent) ||
+      shareholder.stakePercent <= 0 ||
+      shareholder.stakePercent > 100 ||
+      Math.round(shareholder.stakePercent * 100) / 100 !==
+        shareholder.stakePercent ||
+      (shareholder.note !== undefined && shareholder.note.trim().length > 300)
+    ) {
+      throw new Error("Invalid major shareholder profile");
+    }
+    names.add(normalizedName);
+    totalStake += shareholder.stakePercent;
+  }
+  if (Math.round(totalStake * 100) / 100 > 100) {
+    throw new Error("Major shareholder stake exceeds 100 percent");
   }
 }
 
@@ -579,8 +834,35 @@ export async function createStockDisclosure(
   input: CreateStockDisclosureInput,
   session: ClientSession,
 ): Promise<StockDisclosure> {
-  validateDisclosureEffects(input.effects);
+  validateStockDisclosureEffects(input.effects);
+  if (input.companyProfileUpdate) {
+    validateStockCompanyProfileUpdate(input.companyProfileUpdate, input);
+  }
   const now = input.now ?? new Date();
+  if (input.ownerCorporateActionId) {
+    const owner = await (await col<StockCorporateAction>(CORPORATE_ACTIONS))
+      .findOne(
+        {
+          _id: input.ownerCorporateActionId,
+          type: "RIGHTS_OFFERING",
+          status: "SCHEDULED",
+        },
+        { session },
+      );
+    if (
+      !owner ||
+      owner.type !== "RIGHTS_OFFERING" ||
+      input.source !== "GM" ||
+      input.kind !== "PRICE" ||
+      input.status !== "SCHEDULED" ||
+      input.effects.some(
+        (effect) =>
+          effect.scope !== "TICKER" || effect.ticker !== owner.ticker,
+      )
+    ) {
+      throw new Error("Invalid corporate action owned disclosure");
+    }
+  }
   if (input.status === "PUBLISHED" && input.kind !== "INFO") {
     throw new Error("Only information disclosures can publish immediately");
   }
@@ -601,7 +883,12 @@ export async function createStockDisclosure(
       doStockDisclosureEffectsConflict(input.effects, row.effects),
     );
     if (conflicts.length) {
-      if (input.source !== "GM" || conflicts.some((row) => row.source === "GM")) {
+      const protectedSource =
+        input.source === "GM" || input.source === "CORPORATE_ACTION";
+      if (
+        !protectedSource ||
+        conflicts.some((row) => row.source !== "AUTO")
+      ) {
         throw new StockDisclosureConflictError();
       }
       await collection.updateMany(
@@ -623,6 +910,12 @@ export async function createStockDisclosure(
     slotKey: input.slotKey,
     shock: input.shock,
     forceCooldown: input.forceCooldown,
+    ...(input.companyProfileUpdate
+      ? { companyProfileUpdate: input.companyProfileUpdate }
+      : {}),
+    ...(input.ownerCorporateActionId
+      ? { ownerCorporateActionId: input.ownerCorporateActionId }
+      : {}),
     templateId: input.templateId,
     createdById: input.createdById,
     createdAt: now,
@@ -638,11 +931,11 @@ export async function createStockDisclosure(
 
 export async function updateStockDisclosure(
   id: string,
-  patch: Partial<Pick<StockDisclosure, "title" | "body" | "kind" | "source" | "effects" | "publishAt" | "slotKey" | "status" | "shock" | "forceCooldown">>,
+  patch: Partial<Pick<StockDisclosure, "title" | "body" | "kind" | "source" | "effects" | "publishAt" | "slotKey" | "status" | "shock" | "forceCooldown" | "companyProfileUpdate">>,
   now: Date,
   session: ClientSession,
 ): Promise<StockDisclosure | null> {
-  if (patch.effects) validateDisclosureEffects(patch.effects);
+  if (patch.effects) validateStockDisclosureEffects(patch.effects);
   const collection = await col<StockDisclosure>(DISCLOSURES);
   const existing = await collection.findOne(
     {
@@ -655,10 +948,16 @@ export async function updateStockDisclosure(
     { session },
   );
   if (!existing) return null;
-  if (existing.source === "CORPORATE_ACTION") {
+  if (
+    existing.source === "CORPORATE_ACTION" ||
+    existing.ownerCorporateActionId
+  ) {
     throw new StockCorporateActionDisclosureError();
   }
   const candidate = { ...existing, ...patch };
+  if (candidate.companyProfileUpdate) {
+    validateStockCompanyProfileUpdate(candidate.companyProfileUpdate, candidate);
+  }
   if (candidate.status === "PUBLISHED" && candidate.kind !== "INFO") {
     throw new Error("Only information disclosures can publish immediately");
   }
@@ -678,7 +977,12 @@ export async function updateStockDisclosure(
       doStockDisclosureEffectsConflict(candidate.effects, row.effects),
     );
     if (conflicts.length) {
-      if (candidate.source !== "GM" || conflicts.some((row) => row.source === "GM")) {
+      const protectedSource =
+        candidate.source === "GM" || candidate.source === "CORPORATE_ACTION";
+      if (
+        !protectedSource ||
+        conflicts.some((row) => row.source !== "AUTO")
+      ) {
         throw new StockDisclosureConflictError();
       }
       await collection.updateMany(
@@ -695,6 +999,10 @@ export async function updateStockDisclosure(
       $or: [
         { status: "DRAFT" },
         { status: "SCHEDULED", publishAt: { $gt: now } },
+        {
+          status: "SCHEDULED",
+          deferredByCorporateActionId: { $exists: true },
+        },
       ],
     },
     { $set: {
@@ -723,18 +1031,27 @@ export async function cancelStockDisclosure(
       $or: [
         { status: "DRAFT" },
         { status: "SCHEDULED", publishAt: { $gt: now } },
+        {
+          status: "SCHEDULED",
+          deferredByCorporateActionId: { $exists: true },
+        },
       ],
     },
     { session },
   );
   if (!existing) return null;
   if (
-    existing.source === "CORPORATE_ACTION" &&
+    (existing.source === "CORPORATE_ACTION" ||
+      existing.ownerCorporateActionId) &&
     options.allowCorporateAction !== true
   ) {
     throw new StockCorporateActionDisclosureError();
   }
-  if (existing.status === "SCHEDULED" && existing.slotKey) {
+  if (
+    existing.status === "SCHEDULED" &&
+    existing.slotKey &&
+    !existing.deferredByCorporateActionId
+  ) {
     await fenceStockDisclosureSlot(existing.slotKey, session);
     // fence 대기 또는 transaction retry 중 공개 시각이 지난 취소는 commit하지 않는다.
     assertScheduledDisclosureFuture(existing, new Date());
@@ -746,6 +1063,10 @@ export async function cancelStockDisclosure(
       $or: [
         { status: "DRAFT" },
         { status: "SCHEDULED", publishAt: { $gt: cancelledAt } },
+        {
+          status: "SCHEDULED",
+          deferredByCorporateActionId: { $exists: true },
+        },
       ],
     },
     {
@@ -762,16 +1083,31 @@ export async function cancelStockDisclosure(
 export async function listStockDisclosures(input: {
   now: Date;
   includeDrafts?: boolean;
+  publicOnly?: boolean;
   limit?: number;
 }): Promise<StockDisclosure[]> {
-  const statuses: StockDisclosure["status"][] = input.includeDrafts
-    ? ["DRAFT", "SCHEDULED", "PUBLISHED", "CANCELLED"]
-    : ["SCHEDULED", "PUBLISHED"];
+  const statuses: StockDisclosure["status"][] = input.publicOnly
+    ? ["PUBLISHED"]
+    : input.includeDrafts
+      ? ["DRAFT", "SCHEDULED", "PUBLISHED", "CANCELLED"]
+      : ["SCHEDULED", "PUBLISHED"];
   return (await col<StockDisclosure>(DISCLOSURES))
-    .find({ status: { $in: statuses } })
+    .find({
+      status: { $in: statuses },
+    })
     .sort({ publishAt: -1, createdAt: -1 })
     .limit(Math.min(500, Math.max(1, input.limit ?? 100)))
     .toArray();
+}
+
+export async function getStockDisclosure(
+  id: string,
+  options: { session?: ClientSession } = {},
+): Promise<StockDisclosure | null> {
+  return (await col<StockDisclosure>(DISCLOSURES)).findOne(
+    { _id: id },
+    { session: options.session },
+  );
 }
 
 export async function getScheduledStockDisclosureQueueStatsForDate(
@@ -809,6 +1145,7 @@ export async function createAutomaticStockDisclosureQueue(
   let skipped = 0;
   try {
     await session.withTransaction(async () => {
+      await claimStockMarketMigrationReady(session);
       let transactionCreated = 0;
       let transactionSkipped = 0;
       const disclosures = await col<StockDisclosure>(DISCLOSURES);
@@ -964,7 +1301,9 @@ export class StockCorporateActionCutoffError extends Error {
 function corporateActionSlotKey(action: StockCorporateAction): string {
   return action.type === "DIVIDEND"
     ? action.recordSlotKey
-    : action.executeSlotKey;
+    : action.type === "RIGHTS_OFFERING"
+      ? action.announceSlotKey
+      : action.executeSlotKey;
 }
 
 function stockSlotKeyDate(slotKey: string): Date {
@@ -991,19 +1330,105 @@ export async function createStockCorporateAction(
   if (action.type === "SPLIT" && (!Number.isInteger(action.factor) || action.factor < 2 || action.factor > 10)) {
     throw new Error("Split factor must be an integer from 2 through 10");
   }
+  if (action.type === "RIGHTS_OFFERING") {
+    if (!Number.isInteger(action.factor) || action.factor < 2 || action.factor > 10) {
+      throw new Error("Rights offering factor must be an integer from 2 through 10");
+    }
+    if (!action.reason.trim() || action.reason.length > 500) {
+      throw new Error("Rights offering reason must be 1 through 500 characters");
+    }
+    if (
+      !Number.isFinite(action.priceAdjustmentPercent) ||
+      action.priceAdjustmentPercent < -50 ||
+      action.priceAdjustmentPercent > 75
+    ) {
+      throw new Error("Rights offering price adjustment must be from -50 through 75");
+    }
+    if (
+      stockSlotKeyDate(action.executeSlotKey).getTime() <=
+      stockSlotKeyDate(action.announceSlotKey).getTime()
+    ) {
+      throw new Error("Rights offering execution must follow announcement");
+    }
+    const [currentPrice, currentHoldings] = await Promise.all([
+      (await stockPricesCol()).findOne(
+        { ticker: action.ticker },
+        { session },
+      ),
+      (await stockHoldingsCol())
+        .find(
+          { ticker: action.ticker },
+          { projection: { shares: 1, avgPrice: 1 }, session },
+        )
+        .toArray(),
+    ]);
+    if (!currentPrice) {
+      throw new Error("Corporate action stock price not found");
+    }
+    assertStockRightsOfferingExecutionSafe({
+      current: currentPrice,
+      holdings: currentHoldings,
+      factor: action.factor,
+      priceAdjustmentPercent: action.priceAdjustmentPercent,
+    });
+  }
   const slotKey = corporateActionSlotKey(action);
   await fenceStockDisclosureSlot(slotKey, session);
+  if (action.type === "RIGHTS_OFFERING") {
+    await fenceStockDisclosureSlot(action.executeSlotKey, session);
+  }
   const priceFence = await (await stockPricesCol()).updateOne(
-    { ticker: action.ticker },
-    { $inc: { corporateActionRevision: 1 } },
+    {
+      ticker: action.ticker,
+      corporateActionReservationId: { $exists: false },
+      corporateActionHaltId: { $exists: false },
+      ...(action.type === "RIGHTS_OFFERING"
+        ? { isTradingHalted: { $ne: true } }
+        : {}),
+    },
+    {
+      $inc: { corporateActionRevision: 1 },
+      ...(action.type === "RIGHTS_OFFERING"
+        ? { $set: { corporateActionReservationId: action._id } }
+        : {}),
+    },
     { session },
   );
-  if (priceFence.matchedCount !== 1) throw new Error("Corporate action stock price not found");
+  if (priceFence.matchedCount !== 1) {
+    const price = await (await stockPricesCol()).findOne(
+      { ticker: action.ticker },
+      { session },
+    );
+    if (
+      price?.corporateActionReservationId ||
+      price?.corporateActionHaltId ||
+      (action.type === "RIGHTS_OFFERING" && price?.isTradingHalted === true)
+    ) {
+      throw new StockCorporateActionConflictError();
+    }
+    throw new Error("Corporate action stock price not found");
+  }
   if (stockSlotKeyDate(slotKey).getTime() <= Date.now()) {
     throw new StockCorporateActionCutoffError();
   }
   const actionCollection = await col<StockCorporateAction>(CORPORATE_ACTIONS);
-  const slotField = action.type === "DIVIDEND" ? "recordSlotKey" : "executeSlotKey";
+  if (action.type === "RIGHTS_OFFERING") {
+    const activeTickerAction = await actionCollection.findOne(
+      {
+        ticker: action.ticker,
+        status: {
+          $in: ["SCHEDULED", "HALTED", "SNAPSHOTTED", "PROCESSING"],
+        },
+      },
+      { session },
+    );
+    if (activeTickerAction) throw new StockCorporateActionConflictError();
+  }
+  const slotField = action.type === "DIVIDEND"
+    ? "recordSlotKey"
+    : action.type === "RIGHTS_OFFERING"
+      ? "announceSlotKey"
+      : "executeSlotKey";
   const conflict = await actionCollection.findOne({
     type: action.type,
     ticker: action.ticker,
@@ -1012,6 +1437,41 @@ export async function createStockCorporateAction(
   }, { session });
   if (conflict) throw new StockCorporateActionConflictError();
   await actionCollection.insertOne(action, { session });
+  if (action.type === "RIGHTS_OFFERING") {
+    const executeAt = stockSlotKeyDate(action.executeSlotKey);
+    await createStockDisclosure({
+      id: `stock-disclosure:corporate-action:${action._id}:announcement`,
+      title: `${action.ticker} 유상증자 발표`,
+      body: `총 주식 수를 ${action.factor}배로 늘리는 유상증자를 발표합니다. 사유: ${action.reason}. 실행 및 거래재개: ${action.executeSlotKey}.`,
+      kind: "INFO",
+      status: "SCHEDULED",
+      source: "CORPORATE_ACTION",
+      effects: [{ scope: "TICKER", ticker: action.ticker, structural: false }],
+      slotKey: action.announceSlotKey,
+      publishAt: stockSlotKeyDate(action.announceSlotKey),
+      createdById: action.createdById,
+      now: action.createdAt,
+    }, session);
+    await createStockDisclosure({
+      id: `stock-disclosure:corporate-action:${action._id}:execution`,
+      title: `${action.ticker} 유상증자 실행`,
+      body: `${action.factor}배 유상증자 실행 후 사유(${action.reason})를 반영해 주가를 ${action.priceAdjustmentPercent >= 0 ? "+" : ""}${action.priceAdjustmentPercent}% 조정합니다.`,
+      kind: "PRICE",
+      status: "SCHEDULED",
+      source: "CORPORATE_ACTION",
+      effects: [{
+        scope: "TICKER",
+        ticker: action.ticker,
+        changePercent: action.priceAdjustmentPercent,
+        structural: true,
+      }],
+      slotKey: action.executeSlotKey,
+      publishAt: executeAt,
+      createdById: action.createdById,
+      now: action.createdAt,
+    }, session);
+    return action;
+  }
   await createStockDisclosure({
     id: `stock-disclosure:corporate-action:${action._id}`,
     title: action.type === "DIVIDEND"
@@ -1091,29 +1551,235 @@ export async function listStockCorporateActions(input: {
     .toArray();
 }
 
+export async function hasActiveStockRightsOffering(
+  options: { session?: ClientSession } = {},
+): Promise<boolean> {
+  return Boolean(
+    await (await col<StockCorporateAction>(CORPORATE_ACTIONS)).findOne(
+      {
+        type: "RIGHTS_OFFERING",
+        status: { $in: ["SCHEDULED", "HALTED"] },
+      },
+      { session: options.session, projection: { _id: 1 } },
+    ),
+  );
+}
+
+async function cancelCorporateActionOwnedDisclosures(
+  actionId: string,
+  now: Date,
+  session: ClientSession,
+  options: { allowPublished?: boolean } = {},
+): Promise<number> {
+  const disclosures = await col<StockDisclosure>(DISCLOSURES);
+  const allowedStatuses: StockDisclosure["status"][] = options.allowPublished
+    ? ["SCHEDULED", "CANCELLED", "PUBLISHED"]
+    : ["SCHEDULED", "CANCELLED"];
+  const invalid = await disclosures.findOne(
+    {
+      ownerCorporateActionId: actionId,
+      status: { $nin: allowedStatuses },
+    },
+    { session, projection: { _id: 1, status: 1 } },
+  );
+  if (invalid) {
+    throw new Error(
+      `Corporate action owned disclosure is not cancellable: ${invalid._id}:${invalid.status}`,
+    );
+  }
+  const cancelled = await disclosures.updateMany(
+    { ownerCorporateActionId: actionId, status: "SCHEDULED" },
+    {
+      $set: {
+        status: "CANCELLED",
+        cancelledAt: now,
+        updatedAt: now,
+      },
+      $unset: {
+        deferredByCorporateActionId: "",
+        deferredAt: "",
+      },
+    },
+    { session },
+  );
+  return cancelled.modifiedCount;
+}
+
+async function cancelManagedCorporateActionDisclosure(
+  disclosureId: string,
+  now: Date,
+  session: ClientSession,
+): Promise<StockDisclosure | null> {
+  return (await col<StockDisclosure>(DISCLOSURES)).findOneAndUpdate(
+    {
+      _id: disclosureId,
+      source: "CORPORATE_ACTION",
+      status: "SCHEDULED",
+    },
+    {
+      $set: {
+        status: "CANCELLED",
+        cancelledAt: now,
+        updatedAt: now,
+      },
+      $unset: {
+        deferredByCorporateActionId: "",
+        deferredAt: "",
+      },
+    },
+    { returnDocument: "after", session },
+  );
+}
+
 export async function cancelStockCorporateAction(
   id: string,
   now: Date,
   session: ClientSession,
 ): Promise<StockCorporateAction | null> {
+  // enabled에서 시작된 action을 모드 rollback 뒤에도 철회할 수는 있어야 한다.
+  // 대신 migration READY 문서를 첫 write fence로 사용해 APPLYING/BLOCKED 중
+  // 취소·reservation 해제·거래재개가 cutover를 우회하지 못하게 한다.
+  await claimStockMarketMigrationReady(session);
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const current = await actions.findOne(
-    { _id: id, status: "SCHEDULED" },
+    {
+      _id: id,
+      $or: [
+        { status: { $in: ["SCHEDULED", "HALTED"] } },
+        {
+          type: "RIGHTS_OFFERING",
+          status: "COMPLETED",
+          remainingDisclosuresCancelledAt: { $exists: false },
+        },
+      ],
+    },
     { session },
   );
   if (!current) return null;
-  const disclosure = await cancelStockDisclosure(
-    `stock-disclosure:corporate-action:${id}`,
-    now,
-    session,
-    { allowCorporateAction: true },
-  );
-  if (!disclosure) {
-    throw new Error(`Corporate action disclosure is not cancellable: ${id}`);
+  if (current.type === "RIGHTS_OFFERING" && current.status === "COMPLETED") {
+    const cancelledCount = await cancelCorporateActionOwnedDisclosures(
+      id,
+      now,
+      session,
+      { allowPublished: true },
+    );
+    const updated = await actions.findOneAndUpdate(
+      {
+        _id: id,
+        type: "RIGHTS_OFFERING",
+        status: "COMPLETED",
+        remainingDisclosuresCancelledAt: { $exists: false },
+      },
+      {
+        $set: {
+          remainingDisclosuresCancelledAt: now,
+          remainingDisclosuresCancelledCount: cancelledCount,
+          updatedAt: now,
+        },
+      },
+      { returnDocument: "after", session },
+    );
+    if (!updated) {
+      throw new Error(`Corporate action follow-up cancellation lost: ${id}`);
+    }
+    return updated;
+  }
+  if (current.type === "RIGHTS_OFFERING" && current.status === "HALTED") {
+    await cancelCorporateActionOwnedDisclosures(id, now, session);
+    const cancelledDisclosure = await cancelManagedCorporateActionDisclosure(
+      `stock-disclosure:corporate-action:${id}:execution`,
+      now,
+      session,
+    );
+    if (!cancelledDisclosure) {
+      throw new Error(`Corporate action disclosure is not cancellable: ${id}`);
+    }
+    const released = await (await stockPricesCol()).updateOne(
+      { ticker: current.ticker, corporateActionHaltId: id },
+      {
+        $set: { isTradingHalted: false },
+        $unset: {
+          corporateActionHaltId: "",
+          corporateActionHaltReason: "",
+          corporateActionResumeSlotKey: "",
+        },
+      },
+      { session },
+    );
+    if (released.matchedCount !== 1) {
+      throw new Error(`Corporate action halt abort lost: ${id}`);
+    }
+    await createStockDisclosure({
+      id: `stock-disclosure:corporate-action:${id}:abort`,
+      title: `${current.ticker} 유상증자 철회`,
+      body: `예정된 유상증자 실행을 취소하고 거래를 재개합니다. 기존 발표의 실행 예정 내용은 더 이상 유효하지 않습니다.`,
+      kind: "INFO",
+      status: "PUBLISHED",
+      source: "CORPORATE_ACTION",
+      effects: [
+        { scope: "TICKER", ticker: current.ticker, structural: false },
+      ],
+      createdById: current.createdById,
+      now,
+    }, session);
+    await enqueueIntegrationOutbox({
+      kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      dedupeKey: `stock:rights-offering:${id}:abort-resume`,
+      partitionKey: `stock:${current.ticker}`,
+      partitionOrderAt: now,
+      payload: {
+        eventKind: "RESUME",
+        ticker: current.ticker,
+        eventText: "유상증자 실행이 취소되어 거래를 재개합니다.",
+        actor: { displayName: "NOVEX", role: "SYSTEM" },
+        occurredAt: now.toISOString(),
+      },
+    }, { session });
+    return actions.findOneAndUpdate(
+      { _id: id, type: "RIGHTS_OFFERING", status: "HALTED" },
+      { $set: { status: "CANCELLED", cancelledAt: now, updatedAt: now } },
+      { returnDocument: "after", session },
+    );
+  }
+  const disclosureIds = current.type === "RIGHTS_OFFERING"
+    ? [
+        `stock-disclosure:corporate-action:${id}:announcement`,
+        `stock-disclosure:corporate-action:${id}:execution`,
+      ]
+    : [`stock-disclosure:corporate-action:${id}`];
+  if (current.type === "RIGHTS_OFFERING") {
+    await cancelCorporateActionOwnedDisclosures(id, now, session);
+  }
+  for (const disclosureId of disclosureIds) {
+    // 아직 공개되지 않은 action 자체를 철회하는 경로다. 장애로 publishAt이
+    // 지났더라도 worker와 readiness fence로 직렬화됐다면 허위 발표를 먼저
+    // 공개할 이유가 없으므로 일반 공시 cutoff와 무관하게 취소한다.
+    const disclosure = await cancelManagedCorporateActionDisclosure(
+      disclosureId,
+      now,
+      session,
+    );
+    if (!disclosure) {
+      throw new Error(`Corporate action disclosure is not cancellable: ${id}`);
+    }
+  }
+  if (current.type === "RIGHTS_OFFERING") {
+    const released = await (await stockPricesCol()).updateOne(
+      {
+        ticker: current.ticker,
+        corporateActionReservationId: id,
+        corporateActionHaltId: { $exists: false },
+      },
+      { $unset: { corporateActionReservationId: "" } },
+      { session },
+    );
+    if (released.matchedCount !== 1) {
+      throw new Error(`Corporate action reservation release lost: ${id}`);
+    }
   }
   const cancelled = await actions.findOneAndUpdate(
     { _id: id, status: "SCHEDULED" },
-    { $set: { status: "CANCELLED", updatedAt: now } },
+    { $set: { status: "CANCELLED", cancelledAt: now, updatedAt: now } },
     { returnDocument: "after", session },
   );
   if (!cancelled) throw new Error(`Corporate action cancellation lost: ${id}`);
@@ -1203,7 +1869,7 @@ export async function snapshotStockDividendEntitlements(
 
 export async function listPendingStockDividendEntitlements(limit = 100): Promise<StockDividendEntitlement[]> {
   return (await col<StockDividendEntitlement>(DIVIDEND_ENTITLEMENTS))
-    .find({ status: "PENDING" })
+    .find({ status: { $in: ["PENDING", "ERROR"] } })
     .sort({ createdAt: 1 })
     .limit(Math.min(500, Math.max(1, limit)))
     .toArray();
@@ -1215,40 +1881,48 @@ export async function markStockDividendEntitlementPaid(
   session: ClientSession,
 ): Promise<boolean> {
   const result = await (await col<StockDividendEntitlement>(DIVIDEND_ENTITLEMENTS)).updateOne(
-    { _id: id, status: "PENDING" },
-    { $set: { status: "PAID", paidAt } },
+    { _id: id, status: { $in: ["PENDING", "ERROR"] } },
+    {
+      $set: { status: "PAID", paidAt },
+      $unset: { failedAt: "", failureReason: "" },
+    },
     { session },
   );
   return result.modifiedCount === 1;
 }
 
-export async function payNextPendingStockDividendEntitlement(): Promise<
+export async function payNextPendingStockDividendEntitlement(
+  options: { excludeEntitlementIds?: readonly string[] } = {},
+): Promise<
   | { status: "EMPTY" }
   | { status: "PAID"; entitlementId: string; amount: number }
   | { status: "ERROR"; entitlementId: string; error: string }
 > {
   const entitlementCol = await col<StockDividendEntitlement>(DIVIDEND_ENTITLEMENTS);
-  const candidate = await entitlementCol.findOne(
-    { status: "PENDING" },
-    { sort: { createdAt: 1, _id: 1 } },
-  );
-  if (!candidate) return { status: "EMPTY" };
   const client = await getClient();
   const session = client.startSession();
-  let outcome:
+  type PayoutOutcome =
     | { status: "PAID"; entitlementId: string; amount: number }
-    | { status: "ERROR"; entitlementId: string; error: string }
-    | null = null;
+    | { status: "ERROR"; entitlementId: string; error: string };
   try {
-    await session.withTransaction(async () => {
+    const outcome = await session.withTransaction<PayoutOutcome | null>(async () => {
+      const excluded = options.excludeEntitlementIds?.length
+        ? { _id: { $nin: [...options.excludeEntitlementIds] } }
+        : {};
+      // 정상 지급을 영구 오류 재시도보다 먼저 처리한다. transaction 재시도마다
+      // candidate를 다시 골라 동시 worker가 먼저 처리한 행 때문에 조기 EMPTY가
+      // 반환되지 않게 한다.
       const entitlement = await entitlementCol.findOne(
-        { _id: candidate._id, status: "PENDING" },
-        { session },
+        { status: "PENDING", ...excluded },
+        { sort: { createdAt: 1, _id: 1 }, session },
+      ) ?? await entitlementCol.findOne(
+        { status: "ERROR", ...excluded },
+        { sort: { createdAt: 1, _id: 1 }, session },
       );
-      if (!entitlement) return;
-      const markPermanentError = async (reason: string) => {
+      if (!entitlement) return null;
+      const markPermanentError = async (reason: string): Promise<PayoutOutcome> => {
         await entitlementCol.updateOne(
-          { _id: entitlement._id, status: "PENDING" },
+          { _id: entitlement._id, status: { $in: ["PENDING", "ERROR"] } },
           {
             $set: {
               status: "ERROR",
@@ -1263,39 +1937,35 @@ export async function payNextPendingStockDividendEntitlement(): Promise<
           { $set: { failureReason: reason, updatedAt: new Date() } },
           { session },
         );
-        outcome = {
+        return {
           status: "ERROR",
           entitlementId: entitlement._id,
           error: reason,
         };
       };
       if (!ObjectId.isValid(entitlement.characterId)) {
-        await markPermanentError("INVALID_CHARACTER_ID");
-        return;
+        return markPermanentError("INVALID_CHARACTER_ID");
       }
       const character = await (await charactersCol()).findOne(
         { _id: new ObjectId(entitlement.characterId) },
         { session },
       );
       if (!character?.ownerId || !ObjectId.isValid(character.ownerId)) {
-        await markPermanentError("CHARACTER_OWNER_NOT_FOUND");
-        return;
+        return markPermanentError("CHARACTER_OWNER_NOT_FOUND");
       }
       const owner = await (await usersCol()).findOne(
         { _id: new ObjectId(character.ownerId) },
         { session },
       );
       if (!owner) {
-        await markPermanentError("DIVIDEND_OWNER_NOT_FOUND");
-        return;
+        return markPermanentError("DIVIDEND_OWNER_NOT_FOUND");
       }
       const dividendAction = await (await col<StockCorporateAction>(CORPORATE_ACTIONS)).findOne(
         { _id: entitlement.actionId, type: "DIVIDEND" },
         { session },
       );
       if (!dividendAction || dividendAction.type !== "DIVIDEND") {
-        await markPermanentError("DIVIDEND_ACTION_NOT_FOUND");
-        return;
+        return markPermanentError("DIVIDEND_ACTION_NOT_FOUND");
       }
       await addCredit({
         characterId: entitlement.characterId,
@@ -1327,8 +1997,11 @@ export async function payNextPendingStockDividendEntitlement(): Promise<
         { upsert: true, session },
       );
       const marked = await entitlementCol.updateOne(
-        { _id: entitlement._id, status: "PENDING" },
-        { $set: { status: "PAID", paidAt: new Date() } },
+        { _id: entitlement._id, status: { $in: ["PENDING", "ERROR"] } },
+        {
+          $set: { status: "PAID", paidAt: new Date() },
+          $unset: { failedAt: "", failureReason: "" },
+        },
         { session },
       );
       if (marked.modifiedCount !== 1) throw new Error("Dividend entitlement claim lost");
@@ -1348,20 +2021,40 @@ export async function payNextPendingStockDividendEntitlement(): Promise<
         });
         await (await col<StockCorporateAction>(CORPORATE_ACTIONS)).updateOne(
           { _id: entitlement.actionId, status: { $in: ["SNAPSHOTTED", "PROCESSING"] } },
-          { $set: {
-            status: lifecycle.status,
-            payoutCompletedAt: lifecycle.payoutCompletedAt,
-            updatedAt: new Date(),
-          } },
+          {
+            $set: {
+              status: lifecycle.status,
+              payoutCompletedAt: lifecycle.payoutCompletedAt,
+              updatedAt: new Date(),
+            },
+            $unset: { failureReason: "" },
+          },
           { session },
         );
       }
-      outcome = { status: "PAID", entitlementId: entitlement._id, amount: entitlement.amount };
+      return {
+        status: "PAID",
+        entitlementId: entitlement._id,
+        amount: entitlement.amount,
+      };
     });
     return outcome ?? { status: "EMPTY" };
   } finally {
     await session.endSession();
   }
+}
+
+export function calculateStockDividendExDatePrices(
+  current: Pick<StockPrice, "price" | "referencePrice">,
+  amountPerShare: number,
+): { price: number; referencePrice: number } {
+  return {
+    price: Math.max(0.01, Math.round((current.price - amountPerShare) * 100) / 100),
+    referencePrice: Math.max(
+      0.01,
+      Math.round(((current.referencePrice ?? current.price) - amountPerShare) * 100) / 100,
+    ),
+  };
 }
 
 /** 다음 09시 배당락: 현재가와 적정가에서 같은 주당 배당액을 차감한다. */
@@ -1379,8 +2072,9 @@ export async function applyStockDividendExDate(
   const prices = await stockPricesCol();
   const previous = await prices.findOne({ ticker: action.ticker }, { session });
   if (!previous) throw new Error(`Dividend stock not found: ${action.ticker}`);
-  const nextPrice = Math.max(0.01, Math.round((previous.price - action.amountPerShare) * 100) / 100);
-  const nextReference = Math.max(0.01, Math.round(((previous.referencePrice ?? previous.price) - action.amountPerShare) * 100) / 100);
+  const adjusted = calculateStockDividendExDatePrices(previous, action.amountPerShare);
+  const nextPrice = adjusted.price;
+  const nextReference = adjusted.referencePrice;
   await prices.updateOne(
     { ticker: action.ticker },
     { $set: { prevPrice: previous.price, price: nextPrice, referencePrice: nextReference, eventText: `주당 ${action.amountPerShare.toFixed(2)} CR 배당락`, lastUpdate: action.exDateSlotKey } },
@@ -1916,6 +2610,8 @@ export interface ApplyStockMarketRoundResult {
 export type StockCorporateActionExecutionStepKind =
   | "DIVIDEND_EX_DATE"
   | "SPLIT"
+  | "RIGHTS_OFFERING_ANNOUNCE"
+  | "RIGHTS_OFFERING_EXECUTE"
   | "DIVIDEND_RECORD";
 export interface StockCorporateActionExecutionStep {
   actionId: string;
@@ -1927,10 +2623,39 @@ export interface StockCorporateActionExecutionStep {
 export function buildStockCorporateActionExecutionPlan(
   actions: readonly StockCorporateAction[],
   mergedSlotKeys: readonly string[],
+  options: { allowCollapsedRightsOffering?: boolean } = {},
 ): StockCorporateActionExecutionStep[] {
   const merged = new Set(mergedSlotKeys);
+  const latestMergedSlotKey = [...mergedSlotKeys].sort().at(-1);
   const steps: StockCorporateActionExecutionStep[] = [];
   for (const action of actions) {
+    if (action.type === "RIGHTS_OFFERING") {
+      const announcesInBatch =
+        action.status === "SCHEDULED" && merged.has(action.announceSlotKey);
+      if (announcesInBatch) {
+        steps.push({
+          actionId: action._id,
+          slotKey: action.announceSlotKey,
+          kind: "RIGHTS_OFFERING_ANNOUNCE",
+        });
+      }
+      if (
+        (action.status === "HALTED" ||
+          (announcesInBatch && options.allowCollapsedRightsOffering === true)) &&
+        latestMergedSlotKey !== undefined &&
+        latestMergedSlotKey >= action.executeSlotKey
+      ) {
+        steps.push({
+          actionId: action._id,
+          slotKey:
+            action.status === "HALTED"
+              ? latestMergedSlotKey
+              : action.executeSlotKey,
+          kind: "RIGHTS_OFFERING_EXECUTE",
+        });
+      }
+      continue;
+    }
     if (action.type === "SPLIT") {
       if (action.status === "SCHEDULED" && merged.has(action.executeSlotKey)) {
         steps.push({
@@ -1966,7 +2691,9 @@ export function buildStockCorporateActionExecutionPlan(
   const priority: Record<StockCorporateActionExecutionStepKind, number> = {
     DIVIDEND_EX_DATE: 0,
     SPLIT: 1,
-    DIVIDEND_RECORD: 2,
+    RIGHTS_OFFERING_ANNOUNCE: 2,
+    RIGHTS_OFFERING_EXECUTE: 3,
+    DIVIDEND_RECORD: 4,
   };
   return steps.sort(
     (left, right) =>
@@ -1991,7 +2718,7 @@ export class StockPreferenceConcurrentUpdateError extends Error {
   }
 }
 
-/** 원본 회차별로 같은 scope는 GM 우선, MARKET과 TICKER가 겹치면 TICKER를 선택한다. */
+/** 원본 회차별 같은 scope는 기업행동→GM→자동 순으로 보호한다. */
 export function selectStockDisclosuresForTicker(
   disclosures: readonly StockDisclosure[],
   ticker: string,
@@ -2004,8 +2731,11 @@ export function selectStockDisclosuresForTicker(
     if (!effect) continue;
     const groupKey = `${slotGroup}\u0000${effect.scope}`;
     const selected = selectedBySlotAndScope.get(groupKey);
-    if (selected && selected.source === "GM" && disclosure.source !== "GM") continue;
-    if (!selected || disclosure.source === "GM") selectedBySlotAndScope.set(groupKey, disclosure);
+    const priority = (source: StockDisclosure["source"]): number =>
+      source === "CORPORATE_ACTION" ? 2 : source === "GM" ? 1 : 0;
+    if (!selected || priority(disclosure.source) > priority(selected.source)) {
+      selectedBySlotAndScope.set(groupKey, disclosure);
+    }
   }
   const slotGroups = new Map<string, { ticker?: StockDisclosure; market?: StockDisclosure }>();
   for (const [key, disclosure] of selectedBySlotAndScope) {
@@ -2016,6 +2746,59 @@ export function selectStockDisclosuresForTicker(
     slotGroups.set(slotGroup!, group);
   }
   return [...slotGroups.values()].map((group) => group.ticker ?? group.market!);
+}
+
+export interface CombinedStockDisclosureForTicker {
+  disclosure: StockDisclosure;
+  ids: string[];
+  structuralDisclosurePercent: number;
+}
+
+/**
+ * 병합 회차의 선택 공시를 가격 계산용 단일 효과로 합친다. 하나라도 GM이면
+ * 합계 전체를 GM exact override로 취급해 기본 변동·수급을 다음 회차로 넘긴다.
+ */
+export function combineStockDisclosuresForTicker(
+  disclosures: readonly StockDisclosure[],
+  ticker: string,
+): CombinedStockDisclosureForTicker | undefined {
+  const candidates = selectStockDisclosuresForTicker(disclosures, ticker);
+  const protectedCorporateActions = candidates.filter(
+    (disclosure) =>
+      disclosure.source === "CORPORATE_ACTION" && disclosure.kind === "PRICE",
+  );
+  const selected = protectedCorporateActions.length > 0
+    ? protectedCorporateActions
+    : candidates;
+  if (selected.length === 0) return undefined;
+  const effects = selected.map((disclosure) =>
+    disclosure.effects.find((effect) => effect.scope === "TICKER" && effect.ticker === ticker)
+      ?? disclosure.effects.find((effect) => effect.scope === "MARKET"),
+  ).filter((effect): effect is StockDisclosureEffect => Boolean(effect));
+  const contribution = summarizeStockDisclosureEffects(effects);
+  const only = selected.length === 1 ? selected[0]! : undefined;
+  return {
+    disclosure: only ?? {
+      ...selected[selected.length - 1]!,
+      _id: selected.map((row) => row._id).join("+"),
+      title: selected.map((row) => row.title).join(" · "),
+      source: selected.some((row) => row.source === "CORPORATE_ACTION")
+        ? "CORPORATE_ACTION"
+        : selected.some((row) => row.source === "GM")
+          ? "GM"
+          : "AUTO",
+      shock: selected.some((row) => row.shock),
+      forceCooldown: selected.some((row) => row.forceCooldown),
+      effects: [{
+        scope: "TICKER",
+        ticker,
+        changePercent: contribution.changePercent,
+        structural: effects.some((effect) => effect.structural),
+      }],
+    },
+    ids: selected.map((row) => row._id),
+    structuralDisclosurePercent: contribution.structuralChangePercent / 100,
+  };
 }
 
 export function evaluateStockMarketAlertRules(
@@ -2168,6 +2951,7 @@ export async function applyStockMarketRoundTransaction(
   let result: ApplyStockMarketRoundResult | null = null;
   try {
     await session.withTransaction(async () => {
+      await claimStockMarketMigrationReady(session);
       const stateCol = await col<StockMarketState>(MARKET_STATE);
       // 모든 거래와 같은 순서로 market_state를 첫 write fence로 잡는다. Mongo가
       // transaction callback을 재시도하면 최신 lastCompletedSlotKey에서 다시 판정한다.
@@ -2231,7 +3015,7 @@ export async function applyStockMarketRoundTransaction(
       }
 
       await prices.bulkWrite(
-        input.seeds.map((seed) => ({ updateOne: { filter: { ticker: seed.ticker }, update: { $setOnInsert: { ticker: seed.ticker, price: seed.price, prevPrice: seed.price, referencePrice: seed.price, eventText: "정기 시세 초기화", lastUpdate: input.slotKey, tradeRevision: 0 } }, upsert: true } })),
+        input.seeds.map((seed) => ({ updateOne: { filter: { ticker: seed.ticker }, update: { $setOnInsert: { ticker: seed.ticker, price: seed.price, prevPrice: seed.price, referencePrice: seed.price, cumulativeSplitFactor: 1, cumulativeCapitalIncreaseFactor: 1, eventText: "정기 시세 초기화", lastUpdate: input.slotKey, tradeRevision: 0 } }, upsert: true } })),
         { ordered: false, session },
       );
       if (seasonActivation) {
@@ -2245,7 +3029,7 @@ export async function applyStockMarketRoundTransaction(
       const corporateActions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
       const corporateActionPlan = buildStockCorporateActionExecutionPlan(
         await corporateActions.find(
-          { status: { $in: ["SCHEDULED", "SNAPSHOTTED", "PROCESSING"] } },
+          { status: { $in: ["SCHEDULED", "HALTED", "SNAPSHOTTED", "PROCESSING"] } },
           { session },
         ).toArray(),
         mergedSlotKeys,
@@ -2273,8 +3057,21 @@ export async function applyStockMarketRoundTransaction(
           if (!await applyStockDividendExDate(step.actionId, input.now, session)) {
             throw new Error(`Dividend ex-date execution lost: ${step.actionId}`);
           }
-        } else if (!await applyForwardStockSplit(step.actionId, input.now, session)) {
-          throw new Error(`Stock split execution lost: ${step.actionId}`);
+        } else if (step.kind === "SPLIT") {
+          if (!await applyForwardStockSplit(step.actionId, input.now, session)) {
+            throw new Error(`Stock split execution lost: ${step.actionId}`);
+          }
+        } else if (step.kind === "RIGHTS_OFFERING_ANNOUNCE") {
+          if (!await announceStockRightsOffering(step.actionId, input.now, session)) {
+            throw new Error(`Rights offering announcement lost: ${step.actionId}`);
+          }
+        } else if (!await applyStockRightsOffering(
+          step.actionId,
+          step.slotKey,
+          input.now,
+          session,
+        )) {
+          throw new Error(`Rights offering execution lost: ${step.actionId}`);
         }
       }
       const current = await prices.find(
@@ -2285,13 +3082,119 @@ export async function applyStockMarketRoundTransaction(
       const flowRows = await flowCol.find({ consumedSlotKey: { $exists: false }, occurredAt: { $lte: input.now } }, { session }).toArray();
       const flowMap = new Map(aggregateStockOrderFlow(flowRows).map((flow) => [flow.ticker, flow]));
       const disclosureCol = await col<StockDisclosure>(DISCLOSURES);
-      const dueDisclosures = await disclosureCol.find({
+      const overdueRightsOfferingDisclosureIds = corporateActionPlan
+        .filter((step) => step.kind === "RIGHTS_OFFERING_EXECUTE")
+        .map((step) =>
+          `stock-disclosure:corporate-action:${step.actionId}:execution`
+        );
+      const dueDisclosureCandidates = await disclosureCol.find({
         status: "SCHEDULED",
         $or: [
           { kind: "PRICE", slotKey: { $in: mergedSlotKeys } },
           { kind: "INFO", slotKey: { $in: mergedSlotKeys } },
+          { deferredByCorporateActionId: { $exists: true } },
+          ...(overdueRightsOfferingDisclosureIds.length
+            ? [{ _id: { $in: overdueRightsOfferingDisclosureIds } }]
+            : []),
         ],
       }, { session }).sort({ createdAt: 1 }).toArray();
+      const executingRightsOfferingIds = new Set(
+        corporateActionPlan
+          .filter((step) => step.kind === "RIGHTS_OFFERING_EXECUTE")
+          .map((step) => step.actionId),
+      );
+      const protectedTickerOwners = new Map(
+        current
+          .filter((price) => Boolean(price.corporateActionHaltId))
+          .map((price) => [price.ticker, price.corporateActionHaltId!] as const),
+      );
+      for (const disclosure of dueDisclosureCandidates) {
+        if (
+          disclosure.source !== "CORPORATE_ACTION" ||
+          disclosure.kind !== "PRICE" ||
+          !disclosure._id.endsWith(":execution")
+        ) continue;
+        const actionId = disclosure._id
+          .slice("stock-disclosure:corporate-action:".length, -":execution".length);
+        if (!executingRightsOfferingIds.has(actionId)) continue;
+        for (const effect of disclosure.effects) {
+          if (effect.scope === "TICKER" && effect.ticker) {
+            protectedTickerOwners.set(effect.ticker, actionId);
+          }
+        }
+      }
+      const currentlyProtectedActionIds = new Set(
+        protectedTickerOwners.values(),
+      );
+      const nextDeferredSlotByAction = new Map<string, string>();
+      for (const disclosure of dueDisclosureCandidates) {
+        const deferredOwner = disclosure.deferredByCorporateActionId;
+        if (
+          !deferredOwner ||
+          currentlyProtectedActionIds.has(deferredOwner) ||
+          disclosure.kind !== "PRICE" ||
+          !disclosure.slotKey
+        ) {
+          continue;
+        }
+        const currentSlot = nextDeferredSlotByAction.get(deferredOwner);
+        if (!currentSlot || disclosure.slotKey < currentSlot) {
+          nextDeferredSlotByAction.set(deferredOwner, disclosure.slotKey);
+        }
+      }
+      const deferredDisclosureIds = new Set<string>();
+      for (const disclosure of dueDisclosureCandidates) {
+        if (
+          disclosure.source === "CORPORATE_ACTION" ||
+          disclosure.kind !== "PRICE"
+        ) continue;
+        const owner = disclosure.effects.find((effect) =>
+          effect.scope === "MARKET" ||
+          (effect.scope === "TICKER" &&
+            effect.ticker !== undefined &&
+            protectedTickerOwners.has(effect.ticker)),
+        );
+        const actionId = owner
+          ? owner.scope === "TICKER" && owner.ticker
+            ? protectedTickerOwners.get(owner.ticker)
+            : [...protectedTickerOwners.values()].sort()[0]
+          : undefined;
+        if (actionId) {
+          deferredDisclosureIds.add(disclosure._id);
+          await disclosureCol.updateOne(
+            { _id: disclosure._id, status: "SCHEDULED" },
+            {
+              $set: {
+                deferredByCorporateActionId: actionId,
+                deferredAt: input.now,
+                updatedAt: input.now,
+              },
+            },
+            { session },
+          );
+          continue;
+        }
+        const deferredOwner = disclosure.deferredByCorporateActionId;
+        if (
+          deferredOwner &&
+          disclosure.slotKey !== nextDeferredSlotByAction.get(deferredOwner)
+        ) {
+          // 거래재개 뒤 backlog를 한 실제 회차에 합산하지 않고 원래 slot 순서로
+          // 한 그룹씩 공개한다. 같은 원본 slot의 시장/종목 공시는 함께 유지한다.
+          deferredDisclosureIds.add(disclosure._id);
+        }
+      }
+      const dueDisclosures = dueDisclosureCandidates.filter((disclosure) => {
+        if (deferredDisclosureIds.has(disclosure._id)) return false;
+        if (
+          disclosure.source !== "CORPORATE_ACTION" ||
+          disclosure.kind !== "PRICE" ||
+          !disclosure._id.endsWith(":execution")
+        ) return true;
+        const actionId = disclosure._id
+          .slice("stock-disclosure:corporate-action:".length, -":execution".length);
+        return executingRightsOfferingIds.has(actionId);
+      });
       const disclosureByTicker = new Map<string, {
         disclosure: StockDisclosure;
         ids: string[];
@@ -2303,34 +3206,8 @@ export async function applyStockMarketRoundTransaction(
             effect.scope === "MARKET" || (effect.scope === "TICKER" && effect.ticker === seed.ticker),
           ),
         );
-        if (!applicable.length) continue;
-        const selected = selectStockDisclosuresForTicker(applicable, seed.ticker);
-        const effects = selected.map((disclosure) =>
-          disclosure.effects.find((effect) => effect.scope === "TICKER" && effect.ticker === seed.ticker)
-            ?? disclosure.effects.find((effect) => effect.scope === "MARKET"),
-        ).filter((effect): effect is StockDisclosureEffect => Boolean(effect));
-        const contribution = summarizeStockDisclosureEffects(effects);
-        const only = selected.length === 1 ? selected[0]! : undefined;
-        const combined: StockDisclosure = only ?? {
-          ...selected[selected.length - 1]!,
-          _id: selected.map((row) => row._id).join("+"),
-          title: selected.map((row) => row.title).join(" · "),
-          source: "AUTO",
-          shock: selected.some((row) => row.shock),
-          forceCooldown: selected.some((row) => row.forceCooldown),
-          effects: [{
-            scope: "TICKER",
-            ticker: seed.ticker,
-            changePercent: contribution.changePercent,
-            structural: effects.some((effect) => effect.structural),
-          }],
-        };
-        disclosureByTicker.set(seed.ticker, {
-          disclosure: combined,
-          ids: selected.map((row) => row._id),
-          structuralDisclosurePercent:
-            contribution.structuralChangePercent / 100,
-        });
+        const combined = combineStockDisclosuresForTicker(applicable, seed.ticker);
+        if (combined) disclosureByTicker.set(seed.ticker, combined);
       }
 
       for (const disclosure of dueDisclosures.filter((row) => row.kind === "PRICE" && row.shock === true)) {
@@ -2367,12 +3244,24 @@ export async function applyStockMarketRoundTransaction(
         const flow = flowMap.get(seed.ticker) ?? { ticker: seed.ticker, netShares: 0, volume: 0, percent: 0, signal: { ticker: seed.ticker, direction: "NEUTRAL", strength: "WEAK", volume: 0 } } as StockFlowAggregate;
         const disclosureGroup = disclosureByTicker.get(seed.ticker);
         const disclosure = disclosureGroup?.disclosure;
-        const mutation = input.calculate(price, {
-          flow,
-          disclosure,
-          structuralDisclosurePercent:
-            disclosureGroup?.structuralDisclosurePercent,
-        });
+        const mutation = price.corporateActionHaltId
+          ? {
+              price: price.price,
+              referencePrice: price.referencePrice ?? price.price,
+              eventText: "유상증자 거래정지 · 가격 동결",
+              eventTier: "scenario" as const,
+              basePercent: 0,
+              flowPercent: 0,
+              disclosurePercent: 0,
+              pendingBasePercent: price.pendingBasePercent ?? 0,
+              consumeFlow: false,
+            }
+          : input.calculate(price, {
+              flow,
+              disclosure,
+              structuralDisclosurePercent:
+                disclosureGroup?.structuralDisclosurePercent,
+            });
         const saved = await prices.findOneAndUpdate(
           { ticker: seed.ticker },
           {
@@ -2441,11 +3330,65 @@ export async function applyStockMarketRoundTransaction(
           { session },
         );
       }
+      const profileUpdates = dueDisclosures
+        .filter(
+          (disclosure) =>
+            disclosure.kind === "PRICE" &&
+            disclosure.companyProfileUpdate !== undefined &&
+            disclosure.companyProfileUpdate !== null,
+        )
+        .sort(
+          (left, right) =>
+            (left.slotKey ?? "").localeCompare(right.slotKey ?? "") ||
+            left.createdAt.getTime() - right.createdAt.getTime(),
+        );
+      if (profileUpdates.length) {
+        const profiles = await col<StockCompanyProfile>(COMPANY_PROFILES);
+        for (const disclosure of profileUpdates) {
+          validateStockCompanyProfileUpdate(
+            disclosure.companyProfileUpdate!,
+            disclosure,
+          );
+          const ticker = disclosure.effects.find(
+            (effect) => effect.scope === "TICKER" && effect.ticker,
+          )!.ticker!;
+          await profiles.updateOne(
+            { _id: ticker },
+            {
+              $set: {
+                majorShareholders:
+                  disclosure.companyProfileUpdate!.majorShareholders.map(
+                    (shareholder) => ({
+                      name: shareholder.name.trim(),
+                      stakePercent: shareholder.stakePercent,
+                      ...(shareholder.note?.trim()
+                        ? { note: shareholder.note.trim() }
+                        : {}),
+                    }),
+                  ),
+                sourceDisclosureId: disclosure._id,
+                updatedAt: input.now,
+              },
+            },
+            { upsert: true, session },
+          );
+        }
+      }
       const publishedDisclosureIds = dueDisclosures.map((row) => row._id);
       if (publishedDisclosureIds.length) {
         await disclosureCol.updateMany(
           { _id: { $in: publishedDisclosureIds }, status: "SCHEDULED" },
-          { $set: { status: "PUBLISHED", publishedAt: input.now, updatedAt: input.now } },
+          {
+            $set: {
+              status: "PUBLISHED",
+              publishedAt: input.now,
+              updatedAt: input.now,
+            },
+            $unset: {
+              deferredByCorporateActionId: "",
+              deferredAt: "",
+            },
+          },
           { session },
         );
         await (await col<StockScheduledEvent>("stock_scheduled_events")).updateMany(
@@ -2508,6 +3451,388 @@ export async function applyStockMarketRoundTransaction(
   }
 }
 
+export function calculateForwardStockSplitPrices(
+  current: Pick<StockPrice, "price" | "referencePrice" | "cumulativeSplitFactor">,
+  factor: number,
+): { price: number; referencePrice: number; cumulativeSplitFactor: number } {
+  return {
+    price: Math.max(0.01, Math.round((current.price / factor) * 100) / 100),
+    referencePrice: Math.max(
+      0.01,
+      Math.round(((current.referencePrice ?? current.price) / factor) * 100) / 100,
+    ),
+    cumulativeSplitFactor: (current.cumulativeSplitFactor ?? 1) * factor,
+  };
+}
+
+export function calculateRightsOfferingPrices(
+  current: Pick<
+    StockPrice,
+    "price" | "referencePrice" | "cumulativeCapitalIncreaseFactor"
+  >,
+  factor: number,
+): {
+  price: number;
+  referencePrice: number;
+  cumulativeCapitalIncreaseFactor: number;
+} {
+  return {
+    price: Math.max(0.01, Math.round((current.price / factor) * 100) / 100),
+    referencePrice: Math.max(
+      0.01,
+      Math.round(((current.referencePrice ?? current.price) / factor) * 100) /
+        100,
+    ),
+    cumulativeCapitalIncreaseFactor:
+      (current.cumulativeCapitalIncreaseFactor ?? 1) * factor,
+  };
+}
+
+// packages/core의 현재 9개 종목 카탈로그 중 최대 기본 발행주식수(SPZ)다.
+// DB 계수만 안전 정수여도 표시 발행량은 먼저 정밀도를 잃을 수 있으므로,
+// 모든 지원 종목에 안전한 보수적 상한으로 사용한다.
+const MAX_SUPPORTED_BASE_SHARES_OUTSTANDING = 1_240_000_000;
+
+export function assertStockRightsOfferingExecutionSafe(input: {
+  current: Pick<
+    StockPrice,
+    | "price"
+    | "referencePrice"
+    | "cumulativeSplitFactor"
+    | "cumulativeCapitalIncreaseFactor"
+  >;
+  holdings: ReadonlyArray<Pick<import("../types/stock.js").StockHolding, "shares" | "avgPrice">>;
+  factor: number;
+  priceAdjustmentPercent: number;
+}): void {
+  const { current, factor, holdings, priceAdjustmentPercent } = input;
+  const referencePrice = current.referencePrice ?? current.price;
+  const postAdjustmentMultiplier = 1 + priceAdjustmentPercent / 100;
+  const mechanicalPrice = current.price / factor;
+  const mechanicalReference = referencePrice / factor;
+  if (
+    !Number.isInteger(factor) ||
+    factor < 2 ||
+    factor > 10 ||
+    !Number.isFinite(postAdjustmentMultiplier) ||
+    mechanicalPrice < 0.01 ||
+    mechanicalReference < 0.01 ||
+    mechanicalPrice * postAdjustmentMultiplier < 0.01 ||
+    mechanicalReference * postAdjustmentMultiplier < 0.01
+  ) {
+    throw new Error("RIGHTS_OFFERING_PRICE_PRECISION_UNSAFE");
+  }
+  const cumulativeFactor = current.cumulativeCapitalIncreaseFactor ?? 1;
+  const cumulativeSplitFactor = current.cumulativeSplitFactor ?? 1;
+  if (
+    !Number.isSafeInteger(cumulativeFactor) ||
+    cumulativeFactor < 1 ||
+    cumulativeFactor > Number.MAX_SAFE_INTEGER / factor ||
+    !Number.isSafeInteger(cumulativeSplitFactor) ||
+    cumulativeSplitFactor < 1 ||
+    cumulativeSplitFactor > Number.MAX_SAFE_INTEGER / cumulativeFactor
+  ) {
+    throw new Error("RIGHTS_OFFERING_FACTOR_UNSAFE_INTEGER");
+  }
+  const currentIssuanceFactor = cumulativeSplitFactor * cumulativeFactor;
+  if (currentIssuanceFactor > Number.MAX_SAFE_INTEGER / factor) {
+    throw new Error("RIGHTS_OFFERING_FACTOR_UNSAFE_INTEGER");
+  }
+  const postIssuanceFactor = currentIssuanceFactor * factor;
+  if (
+    postIssuanceFactor >
+    Math.floor(
+      Number.MAX_SAFE_INTEGER / MAX_SUPPORTED_BASE_SHARES_OUTSTANDING,
+    )
+  ) {
+    throw new Error("RIGHTS_OFFERING_OUTSTANDING_SHARES_UNSAFE_INTEGER");
+  }
+  for (const holding of holdings) {
+    if (
+      !Number.isSafeInteger(holding.shares) ||
+      holding.shares < 0 ||
+      holding.shares > Number.MAX_SAFE_INTEGER / factor
+    ) {
+      throw new Error("RIGHTS_OFFERING_SHARES_UNSAFE_INTEGER");
+    }
+    if (
+      holding.avgPrice > 0 &&
+      (!Number.isFinite(holding.avgPrice) || holding.avgPrice / factor < 0.01)
+    ) {
+      throw new Error("RIGHTS_OFFERING_AVG_PRICE_PRECISION_UNSAFE");
+    }
+  }
+}
+
+export async function announceStockRightsOffering(
+  actionId: string,
+  now: Date,
+  session: ClientSession,
+): Promise<boolean> {
+  const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
+  const action = await actions.findOne(
+    { _id: actionId, type: "RIGHTS_OFFERING", status: "SCHEDULED" },
+    { session },
+  );
+  if (!action || action.type !== "RIGHTS_OFFERING") return false;
+  const prices = await stockPricesCol();
+  const [reservedPrice, currentHoldings] = await Promise.all([
+    prices.findOne(
+      { ticker: action.ticker, corporateActionReservationId: actionId },
+      { session },
+    ),
+    (await stockHoldingsCol())
+      .find(
+        { ticker: action.ticker },
+        { projection: { shares: 1, avgPrice: 1 }, session },
+      )
+      .toArray(),
+  ]);
+  if (!reservedPrice) return false;
+  try {
+    assertStockRightsOfferingExecutionSafe({
+      current: reservedPrice,
+      holdings: currentHoldings,
+      factor: action.factor,
+      priceAdjustmentPercent: action.priceAdjustmentPercent,
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (!reason.startsWith("RIGHTS_OFFERING_")) throw error;
+    await cancelCorporateActionOwnedDisclosures(actionId, now, session);
+    await actions.updateOne(
+      { _id: actionId, type: "RIGHTS_OFFERING", status: "SCHEDULED" },
+      {
+        $set: {
+          status: "ERROR",
+          failedAt: now,
+          failureReason: reason,
+          updatedAt: now,
+        },
+      },
+      { session },
+    );
+    await prices.updateOne(
+      { ticker: action.ticker, corporateActionReservationId: actionId },
+      {
+        $inc: { corporateActionRevision: 1 },
+        $unset: { corporateActionReservationId: "" },
+      },
+      { session },
+    );
+    await (await col<StockDisclosure>(DISCLOSURES)).updateMany(
+      {
+        _id: {
+          $in: [
+            `stock-disclosure:corporate-action:${actionId}:announcement`,
+            `stock-disclosure:corporate-action:${actionId}:execution`,
+          ],
+        },
+        status: "SCHEDULED",
+      },
+      {
+        $set: {
+          status: "CANCELLED",
+          cancelledAt: now,
+          updatedAt: now,
+        },
+      },
+      { session },
+    );
+    await enqueueIntegrationOutbox(
+      {
+        kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+        dedupeKey: `stock:rights-offering:${actionId}:safety-rejected`,
+        partitionKey: `stock:${action.ticker}`,
+        partitionOrderAt: now,
+        payload: {
+          eventKind: "RIGHTS_OFFERING_REJECTED",
+          ticker: action.ticker,
+          eventText: `유상증자 발표 직전 안전성 검증 실패: ${reason}`,
+          actor: { displayName: "NOVEX", role: "SYSTEM" },
+          occurredAt: now.toISOString(),
+        },
+      },
+      { session },
+    );
+    return true;
+  }
+  const halted = await prices.updateOne(
+    {
+      ticker: action.ticker,
+      corporateActionReservationId: actionId,
+      corporateActionHaltId: { $exists: false },
+    },
+    {
+      $set: {
+        isTradingHalted: true,
+        corporateActionHaltId: actionId,
+        corporateActionHaltReason: action.reason,
+        corporateActionResumeSlotKey: action.executeSlotKey,
+      },
+      $unset: { corporateActionReservationId: "" },
+    },
+    { session },
+  );
+  if (halted.matchedCount !== 1) return false;
+  const cancelledTrades = await (await col<PlayerTrade>(PLAYER_TRADES)).updateMany(
+    {
+      status: "OPEN",
+      $or: [
+        { "initiatorOffer.stocks": { $elemMatch: { ticker: action.ticker } } },
+        { "counterpartyOffer.stocks": { $elemMatch: { ticker: action.ticker } } },
+      ],
+    },
+    {
+      $set: {
+        status: "CANCELLED",
+        cancelledAt: now,
+        updatedAt: now,
+        cancellationReason: "RIGHTS_OFFERING_ANNOUNCED",
+        cancellationContextId: actionId,
+      },
+      $inc: { revision: 1 },
+      $unset: {
+        initiatorConfirmedRevision: "",
+        counterpartyConfirmedRevision: "",
+      },
+    },
+    { session },
+  );
+  const saved = await actions.updateOne(
+    { _id: actionId, type: "RIGHTS_OFFERING", status: "SCHEDULED" },
+    {
+      $set: {
+        status: "HALTED",
+        haltedAt: now,
+        updatedAt: now,
+        cancelledOpenTradeCount: cancelledTrades.modifiedCount,
+        openTradesCancelledAt: now,
+      },
+    },
+    { session },
+  );
+  if (saved.matchedCount === 1) {
+    await enqueueIntegrationOutbox({
+      kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      dedupeKey: `stock:rights-offering:${actionId}:halt`,
+      partitionKey: `stock:${action.ticker}`,
+      partitionOrderAt: now,
+      payload: {
+        eventKind: "HALT",
+        ticker: action.ticker,
+        eventText: `${action.factor}배 유상증자 발표에 따라 ${action.executeSlotKey}까지 거래를 정지합니다. 사유: ${action.reason}`,
+        actor: { displayName: "NOVEX", role: "SYSTEM" },
+        occurredAt: now.toISOString(),
+      },
+    }, { session });
+  }
+  return saved.matchedCount === 1;
+}
+
+/** 유상증자의 기계 조정·발행계수·거래재개를 한 transaction 안에서 반영한다. */
+export async function applyStockRightsOffering(
+  actionId: string,
+  executionSlotKey: string,
+  now: Date,
+  session: ClientSession,
+): Promise<boolean> {
+  const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
+  const action = await actions.findOne(
+    { _id: actionId, type: "RIGHTS_OFFERING", status: "HALTED" },
+    { session },
+  );
+  if (!action || action.type !== "RIGHTS_OFFERING") return false;
+  const prices = await stockPricesCol();
+  const previous = await prices.findOne(
+    { ticker: action.ticker, corporateActionHaltId: actionId },
+    { session },
+  );
+  if (!previous) throw new Error(`Rights offering halt owner lost: ${actionId}`);
+  const holdings = await (await stockHoldingsCol())
+    .find(
+      { ticker: action.ticker },
+      { session, projection: { shares: 1, avgPrice: 1 } },
+    )
+    .toArray();
+  assertStockRightsOfferingExecutionSafe({
+    current: previous,
+    holdings,
+    factor: action.factor,
+    priceAdjustmentPercent: action.priceAdjustmentPercent,
+  });
+  await (await stockHoldingsCol()).updateMany(
+    { ticker: action.ticker },
+    [{
+      $set: {
+        shares: { $multiply: ["$shares", action.factor] },
+        avgPrice: {
+          $round: [{ $divide: ["$avgPrice", action.factor] }, 2],
+        },
+        updatedAt: now,
+      },
+    }],
+    { session },
+  );
+  const adjusted = calculateRightsOfferingPrices(previous, action.factor);
+  const released = await prices.updateOne(
+    { ticker: action.ticker, corporateActionHaltId: actionId },
+    {
+      $set: {
+        prevPrice: previous.price,
+        price: adjusted.price,
+        referencePrice: adjusted.referencePrice,
+        cumulativeCapitalIncreaseFactor:
+          adjusted.cumulativeCapitalIncreaseFactor,
+        isTradingHalted: false,
+        eventText: `${action.factor}배 유상증자 기계 조정`,
+        lastUpdate: executionSlotKey,
+      },
+      $unset: {
+        corporateActionHaltId: "",
+        corporateActionHaltReason: "",
+        corporateActionResumeSlotKey: "",
+      },
+    },
+    { session },
+  );
+  if (released.matchedCount !== 1) {
+    throw new Error(`Rights offering halt release lost: ${actionId}`);
+  }
+  await enqueueIntegrationOutbox({
+    kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+    dedupeKey: `stock:rights-offering:${actionId}:resume`,
+    partitionKey: `stock:${action.ticker}`,
+    partitionOrderAt: now,
+    payload: {
+      eventKind: "RESUME",
+      ticker: action.ticker,
+      eventText: "유상증자 실행이 완료되어 거래를 재개합니다.",
+      actor: { displayName: "NOVEX", role: "SYSTEM" },
+      occurredAt: now.toISOString(),
+    },
+  }, { session });
+  await (await stockPriceHistoryCol()).insertOne({
+    ticker: action.ticker,
+    price: adjusted.price,
+    prevPrice: previous.price,
+    referencePrice: adjusted.referencePrice,
+    eventText: `${action.factor}배 유상증자 기계 조정`,
+    source: "rights-offering",
+    slotKey: executionSlotKey,
+    effectiveAt: stockSlotKeyDate(executionSlotKey),
+    effectiveSequence: 20,
+    capitalIncreaseFactor: action.factor,
+    createdAt: now,
+  }, { session });
+  const completed = await actions.updateOne(
+    { _id: actionId, type: "RIGHTS_OFFERING", status: "HALTED" },
+    { $set: { status: "COMPLETED", completedAt: now, updatedAt: now } },
+    { session },
+  );
+  return completed.matchedCount === 1;
+}
+
 /** 액면분할을 가격·적정가·보유량·평단에 같은 transaction으로 반영한다. */
 export async function applyForwardStockSplit(
   actionId: string,
@@ -2526,9 +3851,11 @@ export async function applyForwardStockSplit(
   const prices = await stockPricesCol();
   const previous = await prices.findOne({ ticker: action.ticker }, { session });
   if (!previous) throw new Error(`Split stock not found: ${action.ticker}`);
-  const nextPrice = Math.max(0.01, Math.round((previous.price / action.factor) * 100) / 100);
-  const nextReference = Math.max(0.01, Math.round(((previous.referencePrice ?? previous.price) / action.factor) * 100) / 100);
-  await prices.updateOne({ ticker: action.ticker }, { $set: { prevPrice: previous.price, price: nextPrice, referencePrice: nextReference, eventText: `${action.factor}:1 액면분할`, lastUpdate: action.executeSlotKey } }, { session });
+  const adjusted = calculateForwardStockSplitPrices(previous, action.factor);
+  const nextPrice = adjusted.price;
+  const nextReference = adjusted.referencePrice;
+  const cumulativeSplitFactor = adjusted.cumulativeSplitFactor;
+  await prices.updateOne({ ticker: action.ticker }, { $set: { prevPrice: previous.price, price: nextPrice, referencePrice: nextReference, cumulativeSplitFactor, eventText: `${action.factor}:1 액면분할`, lastUpdate: action.executeSlotKey } }, { session });
   await (await stockPriceHistoryCol()).insertOne({ ticker: action.ticker, price: nextPrice, prevPrice: previous.price, referencePrice: nextReference, eventText: `${action.factor}:1 액면분할`, source: "split", slotKey: action.executeSlotKey, effectiveAt: stockSlotKeyDate(action.executeSlotKey), effectiveSequence: 20, splitFactor: action.factor, createdAt: now }, { session });
   await actions.updateOne({ _id: actionId, status: "SCHEDULED" }, { $set: { status: "COMPLETED", updatedAt: now } }, { session });
   return true;

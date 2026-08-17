@@ -80,6 +80,15 @@ export interface SetStockTradingHaltedResult {
   previousIsTradingHalted: boolean;
 }
 
+export class StockCorporateActionHaltConflictError extends Error {
+  readonly code = "STOCK_CORPORATE_ACTION_HALT_CONFLICT";
+
+  constructor() {
+    super("STOCK_CORPORATE_ACTION_HALT_CONFLICT");
+    this.name = "StockCorporateActionHaltConflictError";
+  }
+}
+
 /** GM 개별 종목 거래정지 상태 변경. 미시드 종목은 null을 반환하며 생성하지 않는다. */
 export async function setStockTradingHalted(
   ticker: string,
@@ -88,11 +97,24 @@ export async function setStockTradingHalted(
 ): Promise<SetStockTradingHaltedResult | null> {
   const col = await stockPricesCol();
   const previous = await col.findOneAndUpdate(
-    { ticker },
+    {
+      ticker,
+      corporateActionReservationId: { $exists: false },
+      corporateActionHaltId: { $exists: false },
+    },
     { $set: { isTradingHalted } },
     { returnDocument: "before", session },
   );
-  if (!previous) return null;
+  if (!previous) {
+    const existing = await col.findOne({ ticker }, { session });
+    if (
+      existing?.corporateActionReservationId ||
+      existing?.corporateActionHaltId
+    ) {
+      throw new StockCorporateActionHaltConflictError();
+    }
+    return null;
+  }
   return {
     price: { ...previous, isTradingHalted },
     previousIsTradingHalted: previous.isTradingHalted === true,
@@ -644,19 +666,24 @@ function compareStockPriceHistoryEconomicOrder(
 function adjustStockPriceHistoryForSplits(
   rows: readonly StockPriceHistory[],
 ): StockPriceHistory[] {
-  let cumulative = 1;
+  let cumulativeSplit = 1;
+  let cumulativeCapitalIncrease = 1;
   const adjusted = new Array<StockPriceHistory>(rows.length);
   for (let index = rows.length - 1; index >= 0; index -= 1) {
     const row = rows[index]!;
     adjusted[index] = {
       ...row,
-      adjustedPrice: row.price / cumulative,
+      adjustedPrice: row.price / (cumulativeSplit * cumulativeCapitalIncrease),
       adjustedReferencePrice: row.referencePrice === undefined
         ? undefined
-        : row.referencePrice / cumulative,
-      cumulativeSplitFactor: cumulative,
+        : row.referencePrice / (cumulativeSplit * cumulativeCapitalIncrease),
+      cumulativeSplitFactor: cumulativeSplit,
+      cumulativeCapitalIncreaseFactor: cumulativeCapitalIncrease,
     };
-    if (row.splitFactor) cumulative *= row.splitFactor;
+    if (row.splitFactor) cumulativeSplit *= row.splitFactor;
+    if (row.capitalIncreaseFactor) {
+      cumulativeCapitalIncrease *= row.capitalIncreaseFactor;
+    }
   }
   return adjusted;
 }

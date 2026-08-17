@@ -49,6 +49,16 @@ interface Props {
   ticker: string;
   currentPrice?: number;
   basePrice?: number;
+  cumulativeSplitFactor?: number;
+  cumulativeCapitalIncreaseFactor?: number;
+  companyProfile?: {
+    majorShareholders: Array<{
+      name: string;
+      stakePercent: number;
+      note?: string;
+    }>;
+    updatedAt: string;
+  } | null;
 }
 
 /* ── 컴포넌트 ── */
@@ -57,6 +67,9 @@ export default function StockInfoPanel({
   ticker,
   currentPrice,
   basePrice,
+  cumulativeSplitFactor,
+  cumulativeCapitalIncreaseFactor,
+  companyProfile,
 }: Props) {
   const info = getStockInfo(ticker);
   const meta = findStockByTicker(ticker);
@@ -81,6 +94,8 @@ export default function StockInfoPanel({
     info,
     currentPrice ?? meta.basePrice,
     basePrice ?? meta.basePrice,
+    cumulativeSplitFactor,
+    cumulativeCapitalIncreaseFactor,
   );
   const marketCapKor = formatBillionToKor(valuation.marketCapBillion);
   const enterpriseValueKor = formatBillionToKor(
@@ -132,7 +147,7 @@ export default function StockInfoPanel({
         <div className={styles.infoPanel__kvCell}>
           <dt className={styles.infoPanel__kvLabel}>발행주식수</dt>
           <dd className={styles.infoPanel__kvValueMono}>
-            {info.sharesOutstanding.toLocaleString()} 주
+            {valuation.sharesOutstanding.toLocaleString()} 주
           </dd>
         </div>
       </dl>
@@ -162,7 +177,38 @@ export default function StockInfoPanel({
         </div>
       </div>
 
-      {/* 4. 주요 사업 카드 — 2-col grid. 좌측 brand color border + 로고 도트 */}
+      {/* 4. 공시로 확정된 동적 주요주주 snapshot */}
+      {companyProfile?.majorShareholders.length ? (
+        <div className={styles.infoPanel__section}>
+          <h3 className={styles.infoPanel__sectionTitle}>주요주주</h3>
+          <div className={styles.infoPanel__mainBusinesses}>
+            {companyProfile.majorShareholders.map((shareholder) => (
+              <div
+                key={shareholder.name}
+                className={styles.infoPanel__bizCard}
+                style={{ borderLeftColor: meta.color }}
+              >
+                <StockLogo
+                  ticker={ticker}
+                  size="sm"
+                  className={styles.infoPanel__bizDot}
+                />
+                <div className={styles.infoPanel__bizMeta}>
+                  <span className={styles.infoPanel__bizLabel}>
+                    {shareholder.name}
+                  </span>
+                  <span className={styles.infoPanel__bizRank}>
+                    지분 {shareholder.stakePercent.toLocaleString()}%
+                    {shareholder.note ? ` · ${shareholder.note}` : ""}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 5. 주요 사업 카드 — 2-col grid. 좌측 brand color border + 로고 도트 */}
       <div className={styles.infoPanel__section}>
         <h3 className={styles.infoPanel__sectionTitle}>주요 사업</h3>
         <div className={styles.infoPanel__mainBusinesses}>

@@ -1,6 +1,7 @@
 import type {
   StockDisclosure,
   StockDisclosureEffect,
+  StockCompanyProfileUpdate,
 } from "@stargate/shared-db/types";
 
 import type { StockDisclosureItem } from "@/hooks/queries/useStockDisclosuresQuery";
@@ -22,6 +23,7 @@ export interface StockDisclosurePayload {
   body: string;
   effects: StockDisclosureEffect[];
   forceCooldown: boolean;
+  companyProfileUpdate?: StockCompanyProfileUpdate;
 }
 
 function toKstSlotKey(value: Date): string | null {
@@ -62,6 +64,57 @@ function readFinitePercent(value: unknown): number | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== "number" || !Number.isFinite(value)) return Number.NaN;
   return Math.round(value * 100) / 100;
+}
+
+function normalizeCompanyProfileUpdate(
+  value: unknown,
+): StockCompanyProfileUpdate | null | undefined {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== "object") return null;
+  const majorShareholders = (value as Record<string, unknown>)
+    .majorShareholders;
+  if (
+    !Array.isArray(majorShareholders) ||
+    majorShareholders.length < 1 ||
+    majorShareholders.length > 10
+  ) {
+    return null;
+  }
+  const seen = new Set<string>();
+  let totalStake = 0;
+  const normalized: StockCompanyProfileUpdate["majorShareholders"] = [];
+  for (const raw of majorShareholders) {
+    if (!raw || typeof raw !== "object") return null;
+    const shareholder = raw as Record<string, unknown>;
+    const name = typeof shareholder.name === "string"
+      ? shareholder.name.trim()
+      : "";
+    const stakePercent = readFinitePercent(shareholder.stakePercent);
+    const note = typeof shareholder.note === "string"
+      ? shareholder.note.trim()
+      : undefined;
+    if (
+      name.length < 1 ||
+      name.length > 100 ||
+      seen.has(name) ||
+      stakePercent === undefined ||
+      !Number.isFinite(stakePercent) ||
+      stakePercent <= 0 ||
+      stakePercent > 100 ||
+      (note !== undefined && note.length > 300)
+    ) {
+      return null;
+    }
+    seen.add(name);
+    totalStake += stakePercent;
+    normalized.push({
+      name,
+      stakePercent,
+      ...(note ? { note } : {}),
+    });
+  }
+  if (Math.round(totalStake * 100) / 100 > 100) return null;
+  return { majorShareholders: normalized };
 }
 
 function buildEffects(input: {
@@ -208,6 +261,20 @@ export function parseStockDisclosurePayload(
   if (!effects) {
     return { ok: false, error: "공시 가격 효과가 올바르지 않습니다." };
   }
+  const companyProfileUpdate = normalizeCompanyProfileUpdate(
+    input.companyProfileUpdate,
+  );
+  if (
+    companyProfileUpdate === null ||
+    (companyProfileUpdate !== undefined &&
+      (kind !== "PRICE" || scope !== "TICKERS" || tickers.length !== 1))
+  ) {
+    return {
+      ok: false,
+      error:
+        "주요주주 갱신은 단일 종목 PRICE 공시에 이름·지분율·메모로 입력해야 합니다.",
+    };
+  }
   return {
     ok: true,
     value: {
@@ -221,6 +288,7 @@ export function parseStockDisclosurePayload(
       body,
       effects,
       forceCooldown: input.forceCooldown === true,
+      ...(companyProfileUpdate ? { companyProfileUpdate } : {}),
     },
   };
 }
@@ -268,6 +336,9 @@ export function serializeStockDisclosure(
           headline: disclosure.title,
           body: disclosure.body,
           effects: disclosure.effects,
+          ...(disclosure.companyProfileUpdate
+            ? { companyProfileUpdate: disclosure.companyProfileUpdate }
+            : {}),
         }
       : {}),
     ...(options.admin ? { createdBy: disclosure.createdById } : {}),

@@ -22,7 +22,6 @@ import {
 } from "@/lib/db/stocks";
 import {
   getStockMarketSnapshot,
-  listPendingStockFlowSignals,
 } from "@/lib/db/stock-market";
 import { getCharacterBalance } from "@/lib/db/credits";
 import {
@@ -59,15 +58,17 @@ import type {
 export async function buildPricesResponse(): Promise<StockPricesResponse> {
   const now = new Date();
   const novexEnabled = isNovexV2Enabled();
-  const [snapshot, flowSignals, legacyPrices] = await Promise.all([
+  const [snapshot, legacyPrices] = await Promise.all([
     novexEnabled ? getStockMarketSnapshot(now) : Promise.resolve(null),
-    novexEnabled ? listPendingStockFlowSignals() : Promise.resolve([]),
     novexEnabled ? Promise.resolve([]) : getStockPrices(),
   ]);
   const prices = snapshot?.prices ?? legacyPrices;
   const priceByTicker = new Map(prices.map((p) => [p.ticker, p]));
+  const companyProfileByTicker = new Map(
+    (snapshot?.companyProfiles ?? []).map((profile) => [profile._id, profile]),
+  );
   const flowByTicker = new Map(
-    flowSignals.map((signal) => [signal.ticker, signal]),
+    (snapshot?.flowSignals ?? []).map((signal) => [signal.ticker, signal]),
   );
 
   const items: StockPricesResponse["items"] = STOCK_CATALOG.map((meta) => {
@@ -78,6 +79,7 @@ export async function buildPricesResponse(): Promise<StockPricesResponse> {
     const lastUpdate = row?.lastUpdate ?? "";
     const changePercent =
       prevPrice > 0 ? ((price - prevPrice) / prevPrice) * 100 : 0;
+    const companyProfile = companyProfileByTicker.get(meta.ticker);
     return {
       ticker: meta.ticker,
       name: meta.name,
@@ -91,6 +93,16 @@ export async function buildPricesResponse(): Promise<StockPricesResponse> {
       isSeeded: Boolean(row),
       isTradingHalted: row?.isTradingHalted === true,
       referencePrice: row?.referencePrice ?? price,
+      cumulativeSplitFactor: row?.cumulativeSplitFactor ?? 1,
+      cumulativeCapitalIncreaseFactor:
+        row?.cumulativeCapitalIncreaseFactor ?? 1,
+      companyProfile: companyProfile
+        ? {
+            majorShareholders: companyProfile.majorShareholders,
+            sourceDisclosureId: companyProfile.sourceDisclosureId,
+            updatedAt: companyProfile.updatedAt.toISOString(),
+          }
+        : null,
       cooldownUntil:
         row?.cooldownUntil && row.cooldownUntil > now
           ? row.cooldownUntil.toISOString()
@@ -241,10 +253,16 @@ export async function buildHistoryResponse(
   const rows = await listStockPriceHistory(ticker, days);
   const items: StockHistoryResponse["items"] = rows.map((r) => {
     const cumulativeSplitFactor = r.cumulativeSplitFactor ?? 1;
-    const price = r.adjustedPrice ?? r.price / cumulativeSplitFactor;
+    const cumulativeCapitalIncreaseFactor =
+      r.cumulativeCapitalIncreaseFactor ?? 1;
+    const cumulativeFactor =
+      cumulativeSplitFactor * cumulativeCapitalIncreaseFactor;
+    const price = r.adjustedPrice ?? r.price / cumulativeFactor;
     const prevPrice =
       r.prevPrice /
-      (cumulativeSplitFactor * (r.splitFactor ?? 1));
+      (cumulativeFactor *
+        (r.splitFactor ?? 1) *
+        (r.capitalIncreaseFactor ?? 1));
     return {
     price,
     prevPrice,
@@ -255,7 +273,7 @@ export async function buildHistoryResponse(
       r.adjustedReferencePrice ??
       (r.referencePrice === undefined
         ? undefined
-        : r.referencePrice / cumulativeSplitFactor),
+        : r.referencePrice / cumulativeFactor),
     slotKey: r.slotKey,
     mergedSlotKeys: r.mergedSlotKeys,
     delayed: r.delayed,
@@ -277,6 +295,9 @@ export async function buildHistoryResponse(
         : []),
       ...(r.source === "split"
         ? [{ type: "SPLIT" as const, label: "액면분할" }]
+        : []),
+      ...(r.source === "rights-offering"
+        ? [{ type: "RIGHTS_OFFERING" as const, label: "유상증자" }]
         : []),
     ],
     createdAt: (r.effectiveAt ?? r.createdAt).toISOString(),
@@ -319,10 +340,16 @@ export async function buildMarketWireResponse(
   const items: StockMarketWireResponse["items"] = rows
     .map((row) => {
       const cumulativeSplitFactor = row.cumulativeSplitFactor ?? 1;
-      const price = row.adjustedPrice ?? row.price / cumulativeSplitFactor;
+      const cumulativeCapitalIncreaseFactor =
+        row.cumulativeCapitalIncreaseFactor ?? 1;
+      const cumulativeFactor =
+        cumulativeSplitFactor * cumulativeCapitalIncreaseFactor;
+      const price = row.adjustedPrice ?? row.price / cumulativeFactor;
       const prevPrice =
         row.prevPrice /
-        (cumulativeSplitFactor * (row.splitFactor ?? 1));
+        (cumulativeFactor *
+          (row.splitFactor ?? 1) *
+          (row.capitalIncreaseFactor ?? 1));
       const changePercent =
         prevPrice > 0
           ? ((price - prevPrice) / prevPrice) * 100
@@ -372,6 +399,9 @@ export async function buildMarketIndexHistoryResponse(
       ticker: meta.ticker,
       price: row?.price ?? meta.basePrice,
       prevPrice: row?.prevPrice ?? meta.basePrice,
+      cumulativeSplitFactor: row?.cumulativeSplitFactor ?? 1,
+      cumulativeCapitalIncreaseFactor:
+        row?.cumulativeCapitalIncreaseFactor ?? 1,
     };
   });
   // buildStockMarketIndexHistory 는 entries 를 내부에서 createdAt 오름차순 재정렬하므로
@@ -382,7 +412,10 @@ export async function buildMarketIndexHistoryResponse(
       price: row.adjustedPrice ?? row.price,
       prevPrice:
         row.prevPrice /
-        ((row.cumulativeSplitFactor ?? 1) * (row.splitFactor ?? 1)),
+        ((row.cumulativeSplitFactor ?? 1) *
+          (row.cumulativeCapitalIncreaseFactor ?? 1) *
+          (row.splitFactor ?? 1) *
+          (row.capitalIncreaseFactor ?? 1)),
       createdAt: row.effectiveAt ?? row.createdAt,
     })),
     currentQuotes,

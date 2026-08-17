@@ -297,6 +297,9 @@ function buildRoutineOverviewFields(
       ticker: result.ticker,
       price: result.price,
       prevPrice: result.previousPrice,
+      cumulativeSplitFactor: result.cumulativeSplitFactor,
+      cumulativeCapitalIncreaseFactor:
+        result.cumulativeCapitalIncreaseFactor,
     })),
   );
 

@@ -1,3 +1,4 @@
+import { MongoServerError } from "mongodb";
 import type { ClientSession, Collection } from "mongodb";
 
 import { getDb } from "../client.js";
@@ -12,6 +13,20 @@ import type { StockDisclosure } from "../types/stock-market.js";
 const COLLECTION = "stock_scheduled_events";
 const DISCLOSURES_COLLECTION = "stock_disclosures";
 const DISCLOSURE_FENCES_COLLECTION = "stock_disclosure_effect_fences";
+const MIGRATION_READINESS_COLLECTION = "stock_market_migration_readiness";
+
+type StockScheduledEventCutoverOperation = "CREATE" | "CANCEL";
+
+interface StockScheduledEventCutoverFence {
+  _id: "novex-2";
+  version: 2;
+  status: "PRE_MIGRATION" | "APPLYING" | "READY" | "BLOCKED";
+  attemptId: string;
+  sourcePlanFingerprint: string;
+  startedAt: Date;
+  updatedAt: Date;
+  legacyWriterRevision?: number;
+}
 
 interface StockPriceScheduleFence {
   ticker: string;
@@ -176,6 +191,65 @@ export class StockScheduledEventCreationError extends Error {
   }
 }
 
+export class StockScheduledEventCutoverError extends Error {
+  readonly code = "NOVEX_CUTOVER_LEGACY_WRITER_BLOCKED";
+  readonly operation: StockScheduledEventCutoverOperation;
+
+  constructor(operation: StockScheduledEventCutoverOperation) {
+    super("NOVEX_CUTOVER_LEGACY_WRITER_BLOCKED");
+    this.name = "StockScheduledEventCutoverError";
+    this.operation = operation;
+  }
+}
+
+/**
+ * legacy 예약 writer와 NOVEX-2 migration claim을 같은 readiness 문서 write로
+ * 직렬화한다. CREATE는 전환 전만 허용하고, CANCEL은 전환 전 또는 변환이 끝난
+ * READY 상태에서만 허용한다. APPLYING/BLOCKED는 복구 판단 전까지 fail closed다.
+ */
+export async function fenceStockScheduledEventCutover(input: {
+  operation: StockScheduledEventCutoverOperation;
+  now: Date;
+  session: ClientSession;
+}): Promise<void> {
+  const db = await getDb();
+  const allowedStatus = input.operation === "CREATE"
+    ? "PRE_MIGRATION" as const
+    : { $in: ["PRE_MIGRATION", "READY"] as const };
+  try {
+    const fenced = await db.collection<StockScheduledEventCutoverFence>(
+      MIGRATION_READINESS_COLLECTION,
+    ).updateOne(
+      { _id: "novex-2", status: allowedStatus },
+      {
+        $set: { updatedAt: input.now },
+        $setOnInsert: {
+          version: 2,
+          status: "PRE_MIGRATION",
+          // PRE_MIGRATION은 migration attempt가 아니지만 기존 marker serializer와
+          // 운영 출력 계약을 깨지 않도록 명시적인 sentinel을 보관한다.
+          attemptId: "legacy-writer-fence",
+          sourcePlanFingerprint: "legacy-writer-fence",
+          startedAt: input.now,
+        },
+        $inc: { legacyWriterRevision: 1 },
+      },
+      { upsert: true, session: input.session },
+    );
+    if (fenced.matchedCount + fenced.upsertedCount !== 1) {
+      throw new StockScheduledEventCutoverError(input.operation);
+    }
+  } catch (error) {
+    if (error instanceof StockScheduledEventCutoverError) throw error;
+    // 동일 _id의 APPLYING/READY/BLOCKED marker가 filter에서 제외되면 upsert가
+    // duplicate-key로 종료된다. 이를 안정적인 도메인 conflict로 변환한다.
+    if (error instanceof MongoServerError && error.code === 11_000) {
+      throw new StockScheduledEventCutoverError(input.operation);
+    }
+    throw error;
+  }
+}
+
 /**
  * 예약 생성과 같은 ticker의 정기 tick을 stock_prices 문서 write로 직렬화한다.
  * transaction retry마다 현재 시각을 다시 주입해야 cutoff 뒤 늦은 commit을 막을 수 있다.
@@ -221,6 +295,11 @@ export async function createStockScheduledEvent(
   input: CreateStockScheduledEventInput,
   session: ClientSession,
 ): Promise<StockScheduledEvent> {
+  await fenceStockScheduledEventCutover({
+    operation: "CREATE",
+    now: input.now,
+    session,
+  });
   const col = await scheduledEventsCol();
   const id = stockScheduledEventId(input.kstDate, input.ticker);
   const doc: StockScheduledEvent = {
@@ -356,6 +435,11 @@ export async function cancelStockScheduledEvent(input: {
   now: Date;
   session: ClientSession;
 }): Promise<StockScheduledEvent> {
+  await fenceStockScheduledEventCutover({
+    operation: "CANCEL",
+    now: input.now,
+    session: input.session,
+  });
   const col = await scheduledEventsCol();
   const current = await col.findOne(
     { _id: input.eventId },

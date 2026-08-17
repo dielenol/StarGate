@@ -24,8 +24,9 @@ test("예약 생성·취소는 경제 operation과 GM 감사 outbox를 같은 tr
       route,
       /executeEconomicOperationResult[\s\S]*run: async \(dbSession\)[\s\S]*enqueueGmAdminAudit[\s\S]*session: dbSession/,
     );
-    assert.match(route, /isNovexV2Enabled\(\)[\s\S]*status: 409/);
   }
+  assert.match(createRoute, /isNovexV2Enabled\(\)[\s\S]*status: 409/);
+  assert.doesNotMatch(cancelRoute, /isNovexV2Enabled\(\)/);
   assert.match(createRoute, /listScheduledStockMarketEvents\(\)[\s\S]*builtInConflict/);
   assert.match(
     createRoute,
@@ -72,6 +73,18 @@ test("예약 lifecycle은 ticker/date 결정 ID와 PENDING 조건부 claim·canc
   );
   assert.match(
     database,
+    /fenceStockScheduledEventCutover[\s\S]*operation === "CREATE"[\s\S]*"PRE_MIGRATION"[\s\S]*\$in: \["PRE_MIGRATION", "READY"\][\s\S]*legacyWriterRevision/,
+  );
+  assert.match(
+    database,
+    /createStockScheduledEvent[\s\S]*fenceStockScheduledEventCutover\(\{[\s\S]*operation: "CREATE"/,
+  );
+  assert.match(
+    database,
+    /cancelStockScheduledEvent[\s\S]*fenceStockScheduledEventCutover\(\{[\s\S]*operation: "CANCEL"/,
+  );
+  assert.match(
+    database,
     /const \[pending, history\] = await Promise\.all\([\s\S]*find\(\{ status: "PENDING" \}\)[\s\S]*status: \{ \$in: \["APPLIED", "CANCELLED"\] \}[\s\S]*limit\(historyLimit\)/,
   );
 
@@ -82,6 +95,37 @@ test("예약 lifecycle은 ticker/date 결정 ID와 PENDING 조건부 claim·canc
   assert.match(
     indexes,
     /collection\("stock_scheduled_events"\)\.createIndex\([\s\S]*status: 1, executeAt: 1, ticker: 1[\s\S]*stock_scheduled_events_status_executeAt_ticker/,
+  );
+});
+
+test("legacy 예약 API는 NOVEX cutover writer 거부를 안정적인 409로 매핑한다", () => {
+  const createRoute = source("app/api/erp/admin/stocks/events/route.ts");
+  const cancelRoute = source(
+    "app/api/erp/admin/stocks/events/[eventId]/route.ts",
+  );
+  for (const route of [createRoute, cancelRoute]) {
+    assert.match(
+      route,
+      /error instanceof StockScheduledEventCutoverError[\s\S]*status: 409/,
+    );
+  }
+});
+
+test("NOVEX migration은 writer claim 직후 plan을 재검사하고 drift를 BLOCKED로 남긴다", () => {
+  const migration = readFileSync(
+    resolve(
+      repoDir,
+      "packages/shared-db/src/migrations/novex-2-transition.ts",
+    ),
+    "utf8",
+  );
+  assert.match(
+    migration,
+    /claimNovex2MigrationReadiness[\s\S]*fencedPlan = await inspectNovex2Migration\(db, inspectedAt\)[\s\S]*NOVEX_MIGRATION_PLAN_CHANGED_AFTER_CLAIM/,
+  );
+  assert.match(
+    migration,
+    /attemptId,[\s\S]*sourcePlanFingerprint: actualPlanFingerprint[\s\S]*status: "BLOCKED"[\s\S]*blockedPlanFingerprint: fencedPlanFingerprint/,
   );
 });
 

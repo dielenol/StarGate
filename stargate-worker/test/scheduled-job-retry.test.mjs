@@ -210,6 +210,15 @@ test("NOVEX shadow는 신규 산식을 읽기 전용 계산하면서 legacy 시�
           slot: input.slotKey,
           results: [{ ticker: "NVS", status: "updated" }],
           skipDiscord: true,
+          shadowState: {
+            version: 1,
+            lastCompletedSlotKey: input.slotKey,
+            completedAt: "2099-01-02T04:00:00.000Z",
+            prices: [],
+            rejectedDividendActionIds: [],
+            pendingFlows: [],
+            seenFlowOperationKeys: [],
+          },
         };
       },
       async applyLegacyStockTick() {
@@ -220,6 +229,9 @@ test("NOVEX shadow는 신규 산식을 읽기 전용 계산하면서 legacy 시�
           results: [{ ticker: "NVS", status: "updated" }],
           skipDiscord: true,
         };
+      },
+      async hasActiveRightsOffering() {
+        return false;
       },
       async rebuildStockTickSummary() {
         return null;
@@ -235,7 +247,135 @@ test("NOVEX shadow는 신규 산식을 읽기 전용 계산하면서 legacy 시�
     assert.deepEqual(calls, ["preview:2099-01-02 13:00", "legacy"]);
     assert.equal(summary.novexMode, "shadow");
     assert.equal(summary.shadowUpdated, 1);
+    assert.equal(JSON.parse(summary.shadowStateJson).lastCompletedSlotKey, "2099-01-02 13:00");
+    assert.equal(JSON.parse(summary.shadowComparisonJson)[0].ticker, "NVS");
     assert.equal(summary.mutated, true);
+  } finally {
+    if (previousMode === undefined) delete process.env.NOVEX_V2_MODE;
+    else process.env.NOVEX_V2_MODE = previousMode;
+  }
+});
+
+test("NOVEX shadow의 09·18·23시는 legacy 가격을 재실행하지 않는다", async () => {
+  const previousMode = process.env.NOVEX_V2_MODE;
+  process.env.NOVEX_V2_MODE = "shadow";
+  let legacyCalls = 0;
+  try {
+    const handlers = createDefaultScheduledJobHandlers({
+      async previewNovexTick(input) {
+        return {
+          date: input.slotKey.slice(0, 10),
+          slot: input.slotKey,
+          results: [],
+          skipDiscord: true,
+          shadowState: {
+            version: 1,
+            lastCompletedSlotKey: input.slotKey,
+            completedAt: "2099-01-02T00:00:00.000Z",
+            prices: [],
+            rejectedDividendActionIds: [],
+            pendingFlows: [],
+            seenFlowOperationKeys: [],
+          },
+        };
+      },
+      async applyLegacyStockTick() {
+        legacyCalls += 1;
+        throw new Error("legacy should not run");
+      },
+    });
+    for (const slotKey of ["2099-01-02 09:00", "2099-01-02 18:00", "2099-01-02 23:00"]) {
+      const summary = await handlers.require("stocks.tick").execute({
+        jobName: "stocks.tick",
+        slotKey,
+        requestedAt: new Date("2099-01-02T14:00:00Z"),
+        mode: "active",
+        signal: new AbortController().signal,
+      });
+      assert.equal(summary.mutated, false);
+      assert.equal(summary.shadowSlot, slotKey);
+    }
+    assert.equal(legacyCalls, 0);
+  } finally {
+    if (previousMode === undefined) delete process.env.NOVEX_V2_MODE;
+    else process.env.NOVEX_V2_MODE = previousMode;
+  }
+});
+
+test("legacy disabled 모드는 종전 12시 결과로 Discord 장부를 갱신한다", async () => {
+  const previousMode = process.env.NOVEX_V2_MODE;
+  process.env.NOVEX_V2_MODE = "disabled";
+  let wireCalls = 0;
+  try {
+    const handlers = createDefaultScheduledJobHandlers({
+      async applyLegacyStockTick() {
+        return {
+          date: "2099-01-02",
+          slot: "2099-01-02 12:00",
+          results: [{ ticker: "NVS", status: "updated", price: 10 }],
+        };
+      },
+      async hasActiveRightsOffering() {
+        return false;
+      },
+      async rebuildStockTickSummary() {
+        return null;
+      },
+      async requestStockWire() {
+        wireCalls += 1;
+        return true;
+      },
+    });
+    const summary = await handlers.require("stocks.tick").execute({
+      jobName: "stocks.tick",
+      slotKey: "2099-01-02 12:00",
+      requestedAt: new Date("2099-01-02T03:00:00Z"),
+      mode: "active",
+      signal: new AbortController().signal,
+    });
+    assert.equal(summary.announcement, true);
+    assert.equal(wireCalls, 1);
+  } finally {
+    if (previousMode === undefined) delete process.env.NOVEX_V2_MODE;
+    else process.env.NOVEX_V2_MODE = previousMode;
+  }
+});
+
+test("active 유상증자 중 disabled/shadow legacy tick은 fail closed 한다", async () => {
+  const previousMode = process.env.NOVEX_V2_MODE;
+  let legacyCalls = 0;
+  try {
+    for (const mode of ["disabled", "shadow"]) {
+      process.env.NOVEX_V2_MODE = mode;
+      const handlers = createDefaultScheduledJobHandlers({
+        async previewNovexTick(input) {
+          return {
+            date: input.slotKey.slice(0, 10),
+            slot: input.slotKey,
+            results: [],
+            skipDiscord: true,
+          };
+        },
+        async hasActiveRightsOffering() {
+          return true;
+        },
+        async applyLegacyStockTick() {
+          legacyCalls += 1;
+          throw new Error("legacy should not run");
+        },
+      });
+      await assert.rejects(
+        handlers.require("stocks.tick").execute({
+          jobName: "stocks.tick",
+          slotKey: "2099-01-02 13:00",
+          requestedAt: new Date("2099-01-02T04:00:00Z"),
+          mode: "active",
+          signal: new AbortController().signal,
+        }),
+        new RegExp(`ACTIVE_RIGHTS_OFFERING_REQUIRES_NOVEX_ENABLED:${mode}`),
+      );
+    }
+    assert.equal(legacyCalls, 0);
   } finally {
     if (previousMode === undefined) delete process.env.NOVEX_V2_MODE;
     else process.env.NOVEX_V2_MODE = previousMode;

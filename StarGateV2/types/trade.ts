@@ -29,6 +29,8 @@ export interface PlayerTradeDto {
   updatedAt: string;
   completedAt?: string;
   cancelledAt?: string;
+  cancellationReason?: import("@stargate/shared-db/types").PlayerTradeCancellationReason;
+  cancellationContextId?: string;
 }
 
 export interface PlayerTradeAssets {

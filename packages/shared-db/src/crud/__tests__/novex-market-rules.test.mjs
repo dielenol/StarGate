@@ -14,13 +14,23 @@ import {
   reconstructStockSeasonSharesAtCutoff,
   doStockDisclosureEffectsConflict,
   selectStockDisclosuresForTicker,
+  combineStockDisclosuresForTicker,
   summarizeStockDisclosureEffects,
   NOVEX_INDEX_DEFINITIONS,
   buildStockCooldownOutboxEvents,
   inspectNovex2Migration,
   calculateStockDividendEligibleShares,
+  calculateForwardStockSplitPrices,
+  calculateRightsOfferingPrices,
+  assertStockRightsOfferingExecutionSafe,
+  validateStockDisclosureEffects,
+  validateStockCompanyProfileUpdate,
   nextNovexSlotAfter,
+  findNovex2LegacyPriceEffectConflicts,
+  parseStockMarketShadowState,
   novex2MigrationPlanFingerprint,
+  novex2MigrationReadinessBlockers,
+  claimNovex2MigrationReadiness,
 } from "../../../dist/index.js";
 
 test("수급은 캐릭터별 순매매를 먼저 상계하고 개인 ±100주·전체 tanh 3%를 적용한다", () => {
@@ -171,6 +181,257 @@ test("병합 공시는 현재가 총효과와 구조적 적정가 효과를 분�
       { scope: "TICKER", ticker: "NVS", changePercent: -3, structural: false },
     ]),
     { changePercent: 2, structuralChangePercent: 5 },
+  );
+});
+
+test("병합 회차에 GM 공시가 하나라도 있으면 합산 효과가 exact override로 유지된다", () => {
+  const base = {
+    title: "공시",
+    body: "본문",
+    kind: "PRICE",
+    status: "SCHEDULED",
+    effects: [{ scope: "TICKER", ticker: "NVS", changePercent: 4, structural: false }],
+    createdById: "system",
+    createdAt: new Date(1),
+    updatedAt: new Date(1),
+  };
+  const combined = combineStockDisclosuresForTicker([
+    { ...base, _id: "auto", slotKey: "2026-08-24 13:00", source: "AUTO" },
+    { ...base, _id: "gm", slotKey: "2026-08-24 18:00", source: "GM", effects: [{ scope: "TICKER", ticker: "NVS", changePercent: -10, structural: false }] },
+  ], "NVS");
+  assert.equal(combined.disclosure.source, "GM");
+  assert.equal(combined.disclosure.effects[0].changePercent, -6);
+  assert.deepEqual(combined.ids, ["auto", "gm"]);
+});
+
+test("유상증자 structural PRICE 공시는 같은 종목·회차 GM 공시보다 우선한다", () => {
+  const base = {
+    title: "공시",
+    body: "본문",
+    kind: "PRICE",
+    status: "SCHEDULED",
+    slotKey: "2026-08-24 18:00",
+    effects: [{ scope: "TICKER", ticker: "NVS", changePercent: 10, structural: true }],
+    createdById: "system",
+    createdAt: new Date(1),
+    updatedAt: new Date(1),
+  };
+  const combined = combineStockDisclosuresForTicker([
+    { ...base, _id: "gm", source: "GM", slotKey: "2026-08-24 23:00", effects: [{ ...base.effects[0], changePercent: -25 }] },
+    { ...base, _id: "rights", source: "CORPORATE_ACTION" },
+  ], "NVS");
+  assert.equal(combined.disclosure.source, "CORPORATE_ACTION");
+  assert.equal(combined.disclosure.effects[0].changePercent, 10);
+  assert.deepEqual(combined.ids, ["rights"]);
+});
+
+test("정방향 분할은 가격과 적정가를 나누고 누적 분할계수를 곱한다", () => {
+  assert.deepEqual(
+    calculateForwardStockSplitPrices(
+      { price: 120, referencePrice: 100, cumulativeSplitFactor: 2 },
+      3,
+    ),
+    { price: 40, referencePrice: 33.33, cumulativeSplitFactor: 6 },
+  );
+  assert.equal(40 * 6, 120 * 2);
+});
+
+test("유상증자는 가격과 적정가를 나누고 별도 누적 발행계수를 곱한다", () => {
+  assert.deepEqual(
+    calculateRightsOfferingPrices(
+      { price: 120, referencePrice: 90, cumulativeCapitalIncreaseFactor: 2 },
+      3,
+    ),
+    { price: 40, referencePrice: 30, cumulativeCapitalIncreaseFactor: 6 },
+  );
+  assert.equal(40 * 6, 120 * 2);
+});
+
+test("유상증자 실행은 센트 하한·누적계수·보유주식 safe integer를 fail closed 한다", () => {
+  assert.doesNotThrow(() =>
+    assertStockRightsOfferingExecutionSafe({
+      current: {
+        price: 100,
+        referencePrice: 90,
+        cumulativeSplitFactor: 1,
+        cumulativeCapitalIncreaseFactor: 2,
+      },
+      holdings: [{ shares: 10, avgPrice: 100 }],
+      factor: 2,
+      priceAdjustmentPercent: -35,
+    }),
+  );
+  assert.throws(
+    () =>
+      assertStockRightsOfferingExecutionSafe({
+        current: { price: 0.02, referencePrice: 0.02 },
+        holdings: [],
+        factor: 2,
+        priceAdjustmentPercent: -35,
+      }),
+    /RIGHTS_OFFERING_PRICE_PRECISION_UNSAFE/,
+  );
+  assert.throws(
+    () =>
+      assertStockRightsOfferingExecutionSafe({
+        current: {
+          price: 100,
+          cumulativeCapitalIncreaseFactor: Number.MAX_SAFE_INTEGER,
+        },
+        holdings: [],
+        factor: 2,
+        priceAdjustmentPercent: 0,
+      }),
+    /RIGHTS_OFFERING_FACTOR_UNSAFE_INTEGER/,
+  );
+  assert.throws(
+    () =>
+      assertStockRightsOfferingExecutionSafe({
+        current: {
+          price: 100,
+          cumulativeSplitFactor: 4_000_000,
+          cumulativeCapitalIncreaseFactor: 1,
+        },
+        holdings: [],
+        factor: 2,
+        priceAdjustmentPercent: 0,
+      }),
+    /RIGHTS_OFFERING_OUTSTANDING_SHARES_UNSAFE_INTEGER/,
+  );
+  assert.throws(
+    () =>
+      assertStockRightsOfferingExecutionSafe({
+        current: { price: 100 },
+        holdings: [{ shares: Number.MAX_SAFE_INTEGER, avgPrice: 100 }],
+        factor: 2,
+        priceAdjustmentPercent: 0,
+      }),
+    /RIGHTS_OFFERING_SHARES_UNSAFE_INTEGER/,
+  );
+});
+
+test("동적 주요주주는 단일 종목 PRICE 공시와 100% 이하 snapshot만 허용한다", () => {
+  assert.doesNotThrow(() =>
+    validateStockCompanyProfileUpdate(
+      {
+        majorShareholders: [
+          { name: "MrBeast", stakePercent: 35, note: "전략적 투자" },
+          { name: "기존 주주", stakePercent: 40 },
+        ],
+      },
+      {
+        kind: "PRICE",
+        effects: [
+          {
+            scope: "TICKER",
+            ticker: "STM",
+            changePercent: 70,
+            structural: true,
+          },
+        ],
+      },
+    ),
+  );
+  assert.throws(
+    () =>
+      validateStockCompanyProfileUpdate(
+        { majorShareholders: [{ name: "MrBeast", stakePercent: 101 }] },
+        {
+          kind: "PRICE",
+          effects: [
+            { scope: "TICKER", ticker: "STM", structural: true },
+          ],
+        },
+      ),
+    /Invalid major shareholder profile/,
+  );
+  assert.throws(
+    () =>
+      validateStockCompanyProfileUpdate(
+        { majorShareholders: [{ name: "MrBeast", stakePercent: 35 }] },
+        {
+          kind: "INFO",
+          effects: [
+            { scope: "TICKER", ticker: "STM", structural: false },
+          ],
+        },
+      ),
+    /Invalid stock company profile update/,
+  );
+});
+
+test("공시 가격 효과는 엔진과 같은 -50~+75% 범위만 허용한다", () => {
+  assert.doesNotThrow(() =>
+    validateStockDisclosureEffects([
+      {
+        scope: "TICKER",
+        ticker: "STM",
+        changePercent: 75,
+        structural: true,
+      },
+    ]),
+  );
+  for (const changePercent of [-50.01, 75.01, Number.POSITIVE_INFINITY]) {
+    assert.throws(
+      () =>
+        validateStockDisclosureEffects([
+          {
+            scope: "TICKER",
+            ticker: "STM",
+            changePercent,
+            structural: false,
+          },
+        ]),
+      /Invalid stock disclosure effect/,
+    );
+  }
+  assert.throws(
+    () =>
+      validateStockDisclosureEffects([
+        {
+          scope: "MARKET",
+          ticker: "STM",
+          changePercent: 1,
+          structural: false,
+        },
+      ]),
+    /Market disclosure effect cannot target ticker/,
+  );
+});
+
+test("유상증자 merged 발표·실행은 live에서 분리하고 overdue 실행은 실제 회차에 둔다", () => {
+  const scheduled = {
+    _id: "rights",
+    type: "RIGHTS_OFFERING",
+    ticker: "NVS",
+    factor: 2,
+    reason: "투자",
+    priceAdjustmentPercent: 15,
+    announceSlotKey: "2026-08-24 13:00",
+    executeSlotKey: "2026-08-24 18:00",
+    status: "SCHEDULED",
+  };
+  assert.deepEqual(
+    buildStockCorporateActionExecutionPlan(
+      [scheduled],
+      ["2026-08-24 13:00", "2026-08-24 18:00"],
+    ).map((step) => [step.kind, step.slotKey]),
+    [["RIGHTS_OFFERING_ANNOUNCE", "2026-08-24 13:00"]],
+  );
+  assert.deepEqual(
+    buildStockCorporateActionExecutionPlan(
+      [{ ...scheduled, status: "HALTED" }],
+      ["2026-08-24 23:00"],
+    ).map((step) => [step.kind, step.slotKey]),
+    [["RIGHTS_OFFERING_EXECUTE", "2026-08-24 23:00"]],
+  );
+  assert.deepEqual(
+    buildStockCorporateActionExecutionPlan(
+      [scheduled],
+      ["2026-08-24 13:00", "2026-08-24 18:00"],
+      { allowCollapsedRightsOffering: true },
+    ).map((step) => step.kind),
+    ["RIGHTS_OFFERING_ANNOUNCE", "RIGHTS_OFFERING_EXECUTE"],
   );
 });
 
@@ -383,7 +644,7 @@ test("migration preflight는 같은 이름의 잘못된 key와 임의 이름 TTL
       ...plan,
       legacyPendingEvents: 1,
       legacyPendingEventsToConvert: 1,
-      legacyPendingEventSpecs: [{ id: "new-event", contentHash: "hash" }],
+      legacyPendingEventSpecs: [{ id: "new-event", contentHash: "hash", ticker: "NVS", targetSlotKey: "2026-08-24 13:00" }],
     }),
   );
   assert.notEqual(
@@ -408,6 +669,136 @@ test("migration의 다음 NOVEX 슬롯은 입력 시각보다 항상 미래다",
       new Date("2026-08-24T23:00:00+09:00"),
     ).toISOString(),
     "2026-08-25T00:00:00.000Z",
+  );
+});
+
+test("NOVEX migration READY marker는 모든 전환 blocker가 사라진 계획에서만 허용한다", () => {
+  const ready = {
+    ttlIndexPresent: false,
+    ttlIndexNames: [],
+    ttlIndexSpecs: [],
+    pricesWithoutReferencePrice: 0,
+    referencePriceBackfillSpecs: [],
+    indexesToCreate: [],
+    indexSpecs: [],
+    uniqueIndexChecks: [],
+    legacyPendingEventSpecs: [],
+    legacyPendingPriceEffectConflicts: [],
+    legacyPendingEvents: 0,
+    legacyPendingEventsAlreadyConverted: 0,
+    legacyPendingEventsToConvert: 0,
+  };
+  assert.deepEqual(novex2MigrationReadinessBlockers(ready), []);
+  assert.match(
+    novex2MigrationReadinessBlockers({
+      ...ready,
+      pricesWithoutReferencePrice: 1,
+    }).join(" "),
+    /referencePrice/,
+  );
+  assert.match(
+    novex2MigrationReadinessBlockers({
+      ...ready,
+      uniqueIndexChecks: [
+        { collection: "stock_prices", name: "ticker", duplicateGroups: 1 },
+      ],
+    }).join(" "),
+    /unique duplicates/,
+  );
+});
+
+test("NOVEX migration READY marker claim은 APPLYING owner를 CAS로 덮어쓰지 않는다", async () => {
+  let observedFilter;
+  const db = {
+    collection() {
+      return {
+        async updateOne(filter) {
+          observedFilter = filter;
+          return { matchedCount: 0, upsertedCount: 1 };
+        },
+      };
+    },
+  };
+  const now = new Date("2026-08-17T00:00:00.000Z");
+  const claimed = await claimNovex2MigrationReadiness(db, {
+    sourcePlanFingerprint: "plan",
+    attemptId: "attempt-a",
+    now,
+  });
+  assert.deepEqual(observedFilter, {
+    _id: "novex-2",
+    status: { $in: ["PRE_MIGRATION", "BLOCKED"] },
+  });
+  assert.deepEqual(claimed, { attemptId: "attempt-a", startedAt: now });
+
+  const contested = {
+    collection() {
+      return {
+        async findOne() {
+          return { _id: "novex-2", status: "APPLYING" };
+        },
+        async updateOne() {
+          throw Object.assign(new Error("duplicate"), { code: 11000 });
+        },
+      };
+    },
+  };
+  await assert.rejects(
+    claimNovex2MigrationReadiness(contested, {
+      sourcePlanFingerprint: "plan",
+      attemptId: "attempt-b",
+      now,
+    }),
+    /NOVEX_MIGRATION_ALREADY_APPLYING/,
+  );
+});
+
+test("migration은 같은 종목·회차 legacy 중복과 기존 가격 공시를 모두 blocker로 만든다", () => {
+  const targets = ["legacy-a", "legacy-b"].map((id) => ({
+    id,
+    contentHash: `${id}-hash`,
+    ticker: "NVS",
+    targetSlotKey: "2026-08-24 13:00",
+  }));
+  assert.deepEqual(
+    findNovex2LegacyPriceEffectConflicts(targets, [{
+      _id: "existing",
+      slotKey: "2026-08-24 13:00",
+      effects: [{ scope: "TICKER", ticker: "NVS", changePercent: 2, structural: false }],
+    }]),
+    [{
+      ticker: "NVS",
+      targetSlotKey: "2026-08-24 13:00",
+      legacyEventIds: ["legacy-a", "legacy-b"],
+      existingDisclosureIds: ["existing"],
+    }],
+  );
+});
+
+test("shadow 누적 상태는 완전한 가격·수급 계약만 복원한다", () => {
+  const state = {
+    version: 1,
+    lastCompletedSlotKey: "2026-08-24 13:00",
+    completedAt: "2026-08-24T04:00:00.000Z",
+    prices: [{
+      ticker: "NVS",
+      price: 100,
+      prevPrice: 99,
+      eventText: "정기 변동",
+      lastUpdate: "2026-08-24 13:00",
+      referencePrice: 100,
+      pendingBasePercent: 0,
+      cumulativeSplitFactor: 1,
+      cumulativeCapitalIncreaseFactor: 1,
+    }],
+    rejectedDividendActionIds: [],
+    pendingFlows: [{ operationKey: "flow-1", characterId: "c1", ticker: "NVS", side: "BUY", shares: 2 }],
+    seenFlowOperationKeys: ["flow-1"],
+  };
+  assert.deepEqual(parseStockMarketShadowState(JSON.stringify(state)), state);
+  assert.equal(
+    parseStockMarketShadowState(JSON.stringify({ ...state, prices: [{ ...state.prices[0], price: -1 }] })),
+    null,
   );
 });
 

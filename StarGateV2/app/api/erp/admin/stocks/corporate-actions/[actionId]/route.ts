@@ -9,11 +9,10 @@ import {
 } from "@/lib/db/execute-economic-operation";
 import {
   cancelStockCorporateAction,
-  StockDisclosureCutoffError,
+  StockMarketMigrationNotReadyError,
 } from "@/lib/db/stock-market";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 import { serializeStockCorporateAction } from "@/lib/stocks/corporate-actions";
-import { isNovexV2Enabled } from "@/lib/stocks/market";
 
 interface RouteContext {
   params: Promise<{ actionId: string }>;
@@ -28,12 +27,6 @@ export async function DELETE(request: Request, context: RouteContext) {
     requireRole(session.user.role, "GM");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  if (!isNovexV2Enabled()) {
-    return NextResponse.json(
-      { error: "NOVEX 2.0 enabled 모드에서만 기업행동을 변경할 수 있습니다." },
-      { status: 409 },
-    );
   }
   const requestId = readIdempotencyKey(request);
   if (!requestId) {
@@ -53,9 +46,15 @@ export async function DELETE(request: Request, context: RouteContext) {
         const now = new Date();
         const item = await cancelStockCorporateAction(actionId, now, dbSession);
         if (!item) throw new Error("ACTION_NOT_CANCELLABLE");
+        const cancelledRemainingDisclosures =
+          item.type === "RIGHTS_OFFERING" &&
+          item.status === "COMPLETED" &&
+          item.remainingDisclosuresCancelledAt !== undefined;
         await enqueueGmAdminAudit(
           {
-            action: "NOVEX 기업행동 취소",
+            action: cancelledRemainingDisclosures
+              ? "NOVEX 기업행동 연계 후속 공시 취소"
+              : "NOVEX 기업행동 취소",
             actor: {
               id: session.user.id,
               displayName: session.user.displayName,
@@ -63,7 +62,14 @@ export async function DELETE(request: Request, context: RouteContext) {
             },
             summary: `${item.ticker} · ${item.type}`,
             target: actionId,
-            details: [],
+            details: cancelledRemainingDisclosures
+              ? [
+                  {
+                    name: "취소 공시 수",
+                    value: String(item.remainingDisclosuresCancelledCount ?? 0),
+                  },
+                ]
+              : [],
             timestamp: now,
           },
           {
@@ -84,9 +90,9 @@ export async function DELETE(request: Request, context: RouteContext) {
         : undefined,
     });
   } catch (error) {
-    if (error instanceof StockDisclosureCutoffError) {
+    if (error instanceof StockMarketMigrationNotReadyError) {
       return NextResponse.json(
-        { error: "기업행동 취소 마감 시각이 이미 지났습니다." },
+        { error: "NOVEX 2.0 migration READY 상태에서만 기업행동을 취소할 수 있습니다." },
         { status: 409 },
       );
     }

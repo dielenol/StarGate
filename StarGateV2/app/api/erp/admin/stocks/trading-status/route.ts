@@ -13,7 +13,10 @@ import {
   EconomicOperationConflictError,
   executeEconomicOperationResult,
 } from "@/lib/db/execute-economic-operation";
-import { setStockTradingHalted } from "@/lib/db/stocks";
+import {
+  setStockTradingHalted,
+  StockCorporateActionHaltConflictError,
+} from "@/lib/db/stocks";
 import {
   enqueueGmAdminAudit,
   enqueueStockManualInterventionWebhook,
@@ -158,6 +161,16 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockCorporateActionHaltConflictError) {
+      return NextResponse.json(
+        {
+          error:
+            "기업행동 예약 또는 유상증자 거래정지가 소유한 종목 상태는 수동으로 변경할 수 없습니다.",
+          code: error.code,
+        },
+        { status: 409 },
+      );
+    }
     if (error instanceof StockTradingStatusTargetError) {
       return NextResponse.json(
         {

@@ -9,6 +9,9 @@ export const PLAYER_TRADE_STATUSES = [
   "CANCELLED",
 ] as const;
 export type PlayerTradeStatus = (typeof PLAYER_TRADE_STATUSES)[number];
+export type PlayerTradeCancellationReason =
+  | "USER_CANCELLED"
+  | "RIGHTS_OFFERING_ANNOUNCED";
 
 export interface PlayerTradeParticipant {
   userId: string;
@@ -49,6 +52,8 @@ export interface PlayerTrade {
   updatedAt: Date;
   completedAt?: Date;
   cancelledAt?: Date;
+  cancellationReason?: PlayerTradeCancellationReason;
+  cancellationContextId?: string;
 }
 
 export type CreatePlayerTradeInput = Omit<

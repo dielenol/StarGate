@@ -8,10 +8,12 @@ import {
   executeEconomicOperationResult,
 } from "@/lib/db/execute-economic-operation";
 import {
+  claimStockMarketMigrationReady,
   createStockDisclosure,
   listStockDisclosures,
   StockDisclosureCutoffError,
   StockDisclosureConflictError,
+  StockMarketMigrationNotReadyError,
 } from "@/lib/db/stock-market";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 import {
@@ -83,6 +85,7 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       payload: parsed.value,
       run: async (dbSession) => {
+        await claimStockMarketMigrationReady(dbSession);
         const now = new Date();
         const item = await createStockDisclosure(
           {
@@ -99,6 +102,7 @@ export async function POST(request: Request) {
               (effect) => Math.abs(effect.changePercent ?? 0) >= 12,
             ),
             forceCooldown: parsed.value.forceCooldown,
+            companyProfileUpdate: parsed.value.companyProfileUpdate,
             createdById: session.user.id,
             now,
           },
@@ -142,6 +146,12 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockMarketMigrationNotReadyError) {
+      return NextResponse.json(
+        { error: "NOVEX 2.0 migration READY 확인 전에는 공시를 생성할 수 없습니다." },
+        { status: 409 },
+      );
+    }
     if (error instanceof StockDisclosureConflictError) {
       return NextResponse.json(
         { error: "같은 종목·가격 회차에 이미 가격 연동 공시가 있습니다." },

@@ -15,6 +15,7 @@ import {
   listStockScheduledEvents,
   StockScheduledEventConflictError,
   StockScheduledEventCreationError,
+  StockScheduledEventCutoverError,
   type StockScheduledEvent,
   type StockScheduledEventTier,
 } from "@/lib/db/stock-scheduled-events";
@@ -281,6 +282,12 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockScheduledEventCutoverError) {
+      return NextResponse.json(
+        { error: "NOVEX 2.0 전환이 시작되어 레거시 예약 이벤트를 생성할 수 없습니다." },
+        { status: 409 },
+      );
+    }
     if (error instanceof StockScheduledEventCreationError) {
       return NextResponse.json(
         {

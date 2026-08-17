@@ -64,23 +64,69 @@ type CalendarItem = {
 };
 type Corporate = {
   id: string;
-  type: "DIVIDEND" | "SPLIT";
+  type: "DIVIDEND" | "SPLIT" | "RIGHTS_OFFERING";
   status: string;
   ticker: string;
   executeAt: string;
   perShare?: number;
   ratio?: number;
+  announceAt?: string;
+  reason?: string;
+  priceAdjustmentPercent?: number;
+  cancelledOpenTradeCount?: number;
+  failedAt?: string;
+  failureReason?: string;
+  remainingDisclosuresCancelledAt?: string;
+  remainingDisclosuresCancelledCount?: number;
 };
 type Feedback = { tone: "success" | "error"; text: string } | null;
 
-function toDateTimeLocal(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+function toKstDateTimeLocal(date = new Date()) {
+  return new Date(date.getTime() + KST_OFFSET_MS)
     .toISOString()
     .slice(0, 16);
 }
 
+function parseKstDateTimeLocal(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
+  const parsed = new Date(`${value}:00+09:00`);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    toKstDateTimeLocal(parsed) !== value
+  ) {
+    return null;
+  }
+  return parsed;
+}
+
 function errorText(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
+}
+
+function formatKstDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+}
+
+function corporateStatusLabel(status: string) {
+  return {
+    SCHEDULED: "예약",
+    HALTED: "거래정지",
+    COMPLETED: "완료",
+    CANCELLED: "취소",
+    ERROR: "오류",
+  }[status] ?? status;
 }
 
 export default function StockNovexOperationsPanels({
@@ -116,7 +162,7 @@ export default function StockNovexOperationsPanels({
   );
   const [headline, setHeadline] = useState("");
   const [body, setBody] = useState("");
-  const [publishAt, setPublishAt] = useState(toDateTimeLocal());
+  const [publishAt, setPublishAt] = useState(toKstDateTimeLocal());
   const [disclosureStatus, setDisclosureStatus] =
     useState<DisclosureStatus>("SCHEDULED");
   const [kind, setKind] = useState<DisclosureKind>("INFO");
@@ -130,12 +176,15 @@ export default function StockNovexOperationsPanels({
   );
   const [closeAt, setCloseAt] = useState("18:00");
   const [calendarReason, setCalendarReason] = useState("");
-  const [actionType, setActionType] = useState<"DIVIDEND" | "SPLIT">(
-    "DIVIDEND",
-  );
-  const [actionAt, setActionAt] = useState(toDateTimeLocal());
+  const [actionType, setActionType] = useState<
+    "DIVIDEND" | "SPLIT" | "RIGHTS_OFFERING"
+  >("DIVIDEND");
+  const [actionAt, setActionAt] = useState(toKstDateTimeLocal());
+  const [announceAt, setAnnounceAt] = useState(toKstDateTimeLocal());
   const [perShare, setPerShare] = useState("");
   const [ratio, setRatio] = useState("2");
+  const [rightsReason, setRightsReason] = useState("");
+  const [priceAdjustmentPercent, setPriceAdjustmentPercent] = useState("0");
   const [slotKey, setSlotKey] = useState("");
 
   const disclosures = (disclosuresQuery.data?.items ?? []) as Disclosure[];
@@ -150,6 +199,29 @@ export default function StockNovexOperationsPanels({
     scheduleAction.isPending ||
     cancelAction.isPending ||
     recover.isPending;
+  const selectedStock = stocks.find((stock) => stock.ticker === ticker);
+  const rightsFactor = Number(ratio);
+  const rightsAdjustment = Number(priceAdjustmentPercent);
+  const rightsMechanicalRawPrice =
+    selectedStock && Number.isInteger(rightsFactor) && rightsFactor > 0
+      ? selectedStock.price / rightsFactor
+      : null;
+  const rightsMechanicalPrice =
+    rightsMechanicalRawPrice !== null
+      ? Math.round(rightsMechanicalRawPrice * 100) / 100
+      : null;
+  const rightsFinalRawPrice =
+    rightsMechanicalRawPrice !== null && Number.isFinite(rightsAdjustment)
+      ? rightsMechanicalRawPrice * (1 + rightsAdjustment / 100)
+      : null;
+  const rightsFinalPrice =
+    rightsFinalRawPrice !== null
+      ? Math.round(rightsFinalRawPrice * 100) / 100
+      : null;
+  const rightsPriceUnsafe =
+    rightsMechanicalRawPrice !== null &&
+    rightsFinalRawPrice !== null &&
+    (rightsMechanicalRawPrice < 0.01 || rightsFinalRawPrice < 0.01);
 
   function finish(
     operationRef: React.MutableRefObject<RetainedIdempotencyOperation | null>,
@@ -190,9 +262,13 @@ export default function StockNovexOperationsPanels({
             ),
           }))
         : [];
+    const scheduledPublishAt =
+      disclosureStatus === "SCHEDULED"
+        ? parseKstDateTimeLocal(publishAt)
+        : null;
     if (
       !headline.trim() ||
-      (disclosureStatus === "SCHEDULED" && !publishAt) ||
+      (disclosureStatus === "SCHEDULED" && !scheduledPublishAt) ||
       (scope === "TICKERS" && disclosureTickers.length === 0) ||
       (isPrice &&
         (!Number.isFinite(changePercent) ||
@@ -217,7 +293,7 @@ export default function StockNovexOperationsPanels({
       scope,
       tickers: disclosureTickers,
       ...(disclosureStatus === "SCHEDULED"
-        ? { publishAt: new Date(publishAt).toISOString() }
+        ? { publishAt: scheduledPublishAt!.toISOString() }
         : {}),
       headline: headline.trim(),
       body: body.trim(),
@@ -284,7 +360,7 @@ export default function StockNovexOperationsPanels({
     setEditingId(item.id);
     setHeadline(item.headline ?? "");
     setBody(item.body ?? "");
-    setPublishAt(toDateTimeLocal(new Date(item.publishAt)));
+    setPublishAt(toKstDateTimeLocal(new Date(item.publishAt)));
     setDisclosureStatus(item.status === "CANCELLED" ? "DRAFT" : item.status);
     setKind(item.kind ?? "INFO");
     setScope(item.scope);
@@ -400,14 +476,27 @@ export default function StockNovexOperationsPanels({
     const value =
       actionType === "DIVIDEND"
         ? Number.parseFloat(perShare)
-        : Number.parseInt(ratio, 10);
+        : Number(ratio);
+    const executionDate = parseKstDateTimeLocal(actionAt);
+    const announcementDate =
+      actionType === "RIGHTS_OFFERING"
+        ? parseKstDateTimeLocal(announceAt)
+        : null;
     if (
       !ticker ||
-      !actionAt ||
+      !executionDate ||
       !Number.isFinite(value) ||
       value <= 0 ||
-      (actionType === "SPLIT" &&
-        (!Number.isInteger(value) || value < 2 || value > 10))
+      (actionType !== "DIVIDEND" &&
+        (!Number.isInteger(value) || value < 2 || value > 10)) ||
+      (actionType === "RIGHTS_OFFERING" &&
+        (!announcementDate ||
+          !rightsReason.trim() ||
+          !Number.isFinite(Number(priceAdjustmentPercent)) ||
+          Number(priceAdjustmentPercent) < -50 ||
+          Number(priceAdjustmentPercent) > 75 ||
+          rightsPriceUnsafe ||
+          announcementDate.getTime() >= executionDate.getTime()))
     ) {
       setFeedback({ tone: "error", text: "기업행동 예약 값을 확인하세요." });
       return;
@@ -415,8 +504,15 @@ export default function StockNovexOperationsPanels({
     const payload = {
       type: actionType,
       ticker,
-      executeAt: new Date(actionAt).toISOString(),
+      executeAt: executionDate.toISOString(),
       ...(actionType === "DIVIDEND" ? { perShare: value } : { ratio: value }),
+      ...(actionType === "RIGHTS_OFFERING"
+        ? {
+            announceAt: announcementDate!.toISOString(),
+            reason: rightsReason.trim(),
+            priceAdjustmentPercent: Number(priceAdjustmentPercent),
+          }
+        : {}),
     };
     const operation = retainIdempotencyOperation(
       corporateOpRef.current,
@@ -439,9 +535,17 @@ export default function StockNovexOperationsPanels({
   }
 
   function cancelCorporateActionWithConfirm(item: Corporate) {
+    const abortsActiveRightsOffering =
+      item.type === "RIGHTS_OFFERING" && item.status === "HALTED";
+    const cancelsRemainingDisclosures =
+      item.type === "RIGHTS_OFFERING" && item.status === "COMPLETED";
     if (
       !window.confirm(
-        `${item.ticker} ${item.type === "DIVIDEND" ? "배당" : "분할"} 예약을 취소할까요?`,
+        abortsActiveRightsOffering
+          ? `${item.ticker} 유상증자를 중단하고 거래를 재개할까요? 예정된 증자는 실행되지 않습니다.`
+          : cancelsRemainingDisclosures
+            ? `${item.ticker} 유상증자는 되돌리지 않고 아직 공개되지 않은 연계 후속 공시만 모두 취소할까요?`
+            : `${item.ticker} ${item.type === "DIVIDEND" ? "배당" : item.type === "SPLIT" ? "분할" : "유상증자"} 예약을 취소할까요?`,
       )
     )
       return;
@@ -455,7 +559,15 @@ export default function StockNovexOperationsPanels({
       { operationId: operation.key, id: item.id },
       {
         onSuccess: () =>
-          finish(cancelOpRef, operation.key, "기업행동 예약을 취소했습니다."),
+          finish(
+            cancelOpRef,
+            operation.key,
+            abortsActiveRightsOffering
+              ? "유상증자를 중단하고 거래를 재개했습니다."
+              : cancelsRemainingDisclosures
+                ? "미공개 연계 후속 공시를 모두 취소했습니다."
+              : "기업행동 예약을 취소했습니다.",
+          ),
         onError: (error) =>
           setFeedback({
             tone: "error",
@@ -531,7 +643,7 @@ export default function StockNovexOperationsPanels({
           </label>
           {disclosureStatus === "SCHEDULED" ? (
             <label>
-              <span>공개 시각</span>
+              <span>공개 시각 (KST)</span>
               <input
                 type="datetime-local"
                 value={publishAt}
@@ -675,7 +787,7 @@ export default function StockNovexOperationsPanels({
                   <div key={item.id}>
                     <strong>{item.headline ?? "제목 없음"}</strong>
                     <span>
-                      {item.status} · {item.publishAt}
+                      {item.status} · {formatKstDateTime(item.publishAt)} KST
                     </span>
                     {item.canEdit ? (
                       <button
@@ -772,7 +884,7 @@ export default function StockNovexOperationsPanels({
       </section>
       <section className={styles.panel}>
         <div className={styles.panel__head}>
-          <span>배당 · 액면분할</span>
+          <span>배당 · 액면분할 · 유상증자</span>
           <span>{actions.length}건</span>
         </div>
         <div className={styles.novexForm}>
@@ -786,6 +898,7 @@ export default function StockNovexOperationsPanels({
             >
               <option value="DIVIDEND">배당</option>
               <option value="SPLIT">정방향 분할</option>
+              <option value="RIGHTS_OFFERING">유상증자</option>
             </select>
           </label>
           <label>
@@ -802,13 +915,27 @@ export default function StockNovexOperationsPanels({
             </select>
           </label>
           <label>
-            <span>실행 시각</span>
+            <span>
+              {actionType === "RIGHTS_OFFERING"
+                ? "증자 실행 · 거래재개 (KST)"
+                : "실행 시각 (KST)"}
+            </span>
             <input
               type="datetime-local"
               value={actionAt}
               onChange={(event) => setActionAt(event.target.value)}
             />
           </label>
+          {actionType === "RIGHTS_OFFERING" ? (
+            <label>
+              <span>발표 · 거래정지 시작 (KST)</span>
+              <input
+                type="datetime-local"
+                value={announceAt}
+                onChange={(event) => setAnnounceAt(event.target.value)}
+              />
+            </label>
+          ) : null}
           {actionType === "DIVIDEND" ? (
             <label>
               <span>주당 배당액</span>
@@ -822,7 +949,11 @@ export default function StockNovexOperationsPanels({
             </label>
           ) : (
             <label>
-              <span>분할 비율</span>
+              <span>
+                {actionType === "RIGHTS_OFFERING"
+                  ? "총 주식 수 배수"
+                  : "분할 비율"}
+              </span>
               <input
                 type="number"
                 min="2"
@@ -833,6 +964,42 @@ export default function StockNovexOperationsPanels({
               />
             </label>
           )}
+          {actionType === "RIGHTS_OFFERING" ? (
+            <>
+              <label>
+                <span>유증 사유</span>
+                <input
+                  value={rightsReason}
+                  maxLength={500}
+                  onChange={(event) => setRightsReason(event.target.value)}
+                  placeholder="투자 재원 확보, 경영난 자금조달 등"
+                />
+              </label>
+              <label>
+                <span>실행 회차 추가 가격조정률 (%)</span>
+                <input
+                  type="number"
+                  min="-50"
+                  max="75"
+                  step="0.01"
+                  value={priceAdjustmentPercent}
+                  onChange={(event) =>
+                    setPriceAdjustmentPercent(event.target.value)
+                  }
+                />
+              </label>
+              <p className={styles.opsHint}>
+                {rightsMechanicalPrice !== null && rightsFinalPrice !== null
+                  ? `현재 ¤${selectedStock?.price.toLocaleString()} → 주식 수 ${rightsFactor}배 반영 후 ¤${rightsMechanicalPrice.toLocaleString()} → 사유 조정 ${rightsAdjustment >= 0 ? "+" : ""}${rightsAdjustment}% 후 약 ¤${rightsFinalPrice.toLocaleString()}`
+                  : "배수와 가격조정률을 입력하면 실행 가격을 미리 확인할 수 있습니다."}
+                {rightsPriceUnsafe
+                  ? " · 센트 하한보다 낮아 예약할 수 없습니다."
+                  : Math.abs(rightsAdjustment) >= 12
+                  ? " · 실행 직후 10분 자동냉각이 적용됩니다."
+                  : ""}
+              </p>
+            </>
+          ) : null}
           <button
             type="button"
             className={styles.submit}
@@ -849,23 +1016,56 @@ export default function StockNovexOperationsPanels({
                 {item.ticker} ·{" "}
                 {item.type === "DIVIDEND"
                   ? `주당 ${item.perShare ?? 0}`
-                  : `${item.ratio ?? 0}:1`}
+                  : item.type === "SPLIT"
+                    ? `${item.ratio ?? 0}:1`
+                    : `총 주식 ${item.ratio ?? 0}배 · ${item.priceAdjustmentPercent ?? 0}%`}
               </strong>
               <span>
-                {item.status} · {item.executeAt}
+                {corporateStatusLabel(item.status)} · {item.announceAt
+                  ? `${formatKstDateTime(item.announceAt)} KST 정지 → `
+                  : ""}{formatKstDateTime(item.executeAt)} KST
               </span>
-              {item.status === "SCHEDULED" ? (
+              {item.type === "RIGHTS_OFFERING" ? (
+                <span>
+                  {item.reason}
+                  {item.cancelledOpenTradeCount !== undefined
+                    ? ` · 발표 시 OPEN 거래 ${item.cancelledOpenTradeCount}건 자동 취소`
+                    : ""}
+                </span>
+              ) : null}
+              {item.status === "ERROR" && item.failureReason ? (
+                <span>
+                  실행 차단: {item.failureReason}
+                  {item.failedAt
+                    ? ` · ${formatKstDateTime(item.failedAt)} KST`
+                    : ""}
+                </span>
+              ) : null}
+              {item.remainingDisclosuresCancelledAt ? (
+                <span>
+                  연계 후속 공시 {item.remainingDisclosuresCancelledCount ?? 0}건 취소 · {formatKstDateTime(item.remainingDisclosuresCancelledAt)} KST
+                </span>
+              ) : null}
+              {item.status === "SCHEDULED" ||
+              item.status === "HALTED" ||
+              (item.type === "RIGHTS_OFFERING" &&
+                item.status === "COMPLETED" &&
+                !item.remainingDisclosuresCancelledAt) ? (
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => cancelCorporateActionWithConfirm(item)}
                 >
-                  취소
+                  {item.status === "COMPLETED" ? "후속 공시 취소" : "취소"}
                 </button>
               ) : null}
             </div>
           ))}
         </div>
+        <p className={styles.opsHint}>
+          유상증자 이후 호재 폭등은 실행 이후 회차에 공시 센터의 PRICE 공시로
+          별도 예약하세요.
+        </p>
       </section>
       <section className={styles.panel}>
         <div className={styles.panel__head}>

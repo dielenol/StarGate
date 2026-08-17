@@ -67,6 +67,15 @@ test("Mongo 컬렉션 변경은 공개 데이터 없이 Query resource로만 매
   );
   assert.deepEqual(
     mapRealtimeChange({
+      collectionName: "stock_company_profiles",
+      operationType: "update",
+      documentId: "STM",
+      updatedFields: ["majorShareholders"],
+    }),
+    { resources: ["stocks"] },
+  );
+  assert.deepEqual(
+    mapRealtimeChange({
       collectionName: "gallery_fanarts",
       operationType: "insert",
       documentId: "fanart-id",

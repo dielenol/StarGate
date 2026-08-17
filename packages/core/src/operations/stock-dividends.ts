@@ -17,15 +17,17 @@ export async function processPendingStockDividendPayouts(
   let paid = 0;
   let totalAmount = 0;
   let errors = 0;
+  const failedEntitlementIds = new Set<string>();
   for (let processed = 0; processed < limit; processed += 1) {
     const result = await (
       dependencies.payNext ?? payNextPendingStockDividendEntitlement
-    )();
+    )({ excludeEntitlementIds: [...failedEntitlementIds] });
     if (result.status === "EMPTY") {
-      return { paid, totalAmount, errors, drained: true };
+      return { paid, totalAmount, errors, drained: errors === 0 };
     }
     if (result.status === "ERROR") {
       errors += 1;
+      failedEntitlementIds.add(result.entitlementId);
       continue;
     }
     paid += 1;

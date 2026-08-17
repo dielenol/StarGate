@@ -8,11 +8,14 @@ import {
   executeEconomicOperationResult,
 } from "@/lib/db/execute-economic-operation";
 import {
+  claimStockMarketMigrationReady,
   createStockCorporateAction,
   listStockCorporateActions,
   StockCorporateActionCutoffError,
   StockCorporateActionConflictError,
+  StockDisclosureConflictError,
   StockDisclosureCutoffError,
+  StockMarketMigrationNotReadyError,
 } from "@/lib/db/stock-market";
 import { enqueueGmAdminAudit } from "@/lib/outbox/integration";
 import { findStockByTicker } from "@/lib/stocks/catalog";
@@ -80,8 +83,11 @@ export async function POST(request: Request) {
     type?: unknown;
     ticker?: unknown;
     executeAt?: unknown;
+    announceAt?: unknown;
     perShare?: unknown;
     ratio?: unknown;
+    reason?: unknown;
+    priceAdjustmentPercent?: unknown;
   } | null;
   const type = body?.type;
   const ticker =
@@ -89,25 +95,36 @@ export async function POST(request: Request) {
   const executeAt = new Date(
     typeof body?.executeAt === "string" ? body.executeAt : "invalid",
   );
+  const announceAt = new Date(
+    typeof body?.announceAt === "string" ? body.announceAt : "invalid",
+  );
   const stock = findStockByTicker(ticker);
   if (
-    (type !== "DIVIDEND" && type !== "SPLIT") ||
+    (type !== "DIVIDEND" &&
+      type !== "SPLIT" &&
+      type !== "RIGHTS_OFFERING") ||
     !stock ||
-    Number.isNaN(executeAt.getTime())
+    Number.isNaN(executeAt.getTime()) ||
+    (type === "RIGHTS_OFFERING" && Number.isNaN(announceAt.getTime()))
   ) {
     return NextResponse.json(
       { error: "기업행동 예약 입력이 올바르지 않습니다." },
       { status: 400 },
     );
   }
-  const slotKey = toStockSlotKey(executeAt, type === "DIVIDEND" ? 23 : 9);
+  const slotKey = toStockSlotKey(
+    executeAt,
+    type === "DIVIDEND" ? 23 : type === "SPLIT" ? 9 : undefined,
+  );
   if (!slotKey) {
     return NextResponse.json(
       {
         error:
           type === "DIVIDEND"
             ? "배당 기준일은 23시 가격 회차여야 합니다."
-            : "액면분할은 09시 개장 회차여야 합니다.",
+            : type === "SPLIT"
+              ? "액면분할은 09시 개장 회차여야 합니다."
+              : "유상증자 실행은 NOVEX 가격 회차(09·13·18·23시)여야 합니다.",
       },
       { status: 400 },
     );
@@ -115,6 +132,9 @@ export async function POST(request: Request) {
 
   let amountPerShare: number | undefined;
   let factor: number | undefined;
+  let announceSlotKey: string | undefined;
+  let reason: string | undefined;
+  let priceAdjustmentPercent: number | undefined;
   if (type === "DIVIDEND") {
     const perShare = body?.perShare;
     if (
@@ -137,11 +157,40 @@ export async function POST(request: Request) {
       ratio > 10
     ) {
       return NextResponse.json(
-        { error: "액면분할 비율은 2:1~10:1 정수여야 합니다." },
+        {
+          error:
+            type === "RIGHTS_OFFERING"
+              ? "유상증자 총 주식 수 배수는 2~10 정수여야 합니다."
+              : "액면분할 비율은 2:1~10:1 정수여야 합니다.",
+        },
         { status: 400 },
       );
     }
     factor = ratio;
+    if (type === "RIGHTS_OFFERING") {
+      announceSlotKey = toStockSlotKey(announceAt) ?? undefined;
+      reason = typeof body?.reason === "string" ? body.reason.trim() : "";
+      const adjustment = body?.priceAdjustmentPercent;
+      if (
+        !announceSlotKey ||
+        announceAt.getTime() >= executeAt.getTime() ||
+        !reason ||
+        reason.length > 500 ||
+        typeof adjustment !== "number" ||
+        !Number.isFinite(adjustment) ||
+        adjustment < -50 ||
+        adjustment > 75
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "발표·실행은 NOVEX 회차여야 하며 실행은 발표 이후여야 합니다. 사유와 -50~+75% 가격조정률도 입력해 주세요.",
+          },
+          { status: 400 },
+        );
+      }
+      priceAdjustmentPercent = adjustment;
+    }
   }
 
   try {
@@ -153,14 +202,27 @@ export async function POST(request: Request) {
         type,
         ticker,
         slotKey,
-        ...(type === "DIVIDEND" ? { amountPerShare } : { factor }),
+        ...(type === "DIVIDEND"
+          ? { amountPerShare }
+          : type === "RIGHTS_OFFERING"
+            ? {
+                factor,
+                announceSlotKey,
+                reason,
+                priceAdjustmentPercent,
+              }
+            : { factor }),
       },
       prepare: async () => {
-        if (executeAt.getTime() <= Date.now()) {
+        if (
+          executeAt.getTime() <= Date.now() ||
+          (type === "RIGHTS_OFFERING" && announceAt.getTime() <= Date.now())
+        ) {
           throw new CorporateActionScheduleError();
         }
       },
       run: async (dbSession) => {
+        await claimStockMarketMigrationReady(dbSession);
         const now = new Date();
         const actionId = `stock-corporate-action:${requestId}`;
         const saved = await (
@@ -180,7 +242,25 @@ export async function POST(request: Request) {
                 },
                 dbSession,
               )
-            : createStockCorporateAction(
+            : type === "RIGHTS_OFFERING"
+              ? createStockCorporateAction(
+                  {
+                    _id: actionId,
+                    type,
+                    ticker,
+                    factor: factor!,
+                    reason: reason!,
+                    priceAdjustmentPercent: priceAdjustmentPercent!,
+                    announceSlotKey: announceSlotKey!,
+                    executeSlotKey: slotKey,
+                    status: "SCHEDULED",
+                    createdById: session.user.id,
+                    createdAt: now,
+                    updatedAt: now,
+                  },
+                  dbSession,
+                )
+              : createStockCorporateAction(
                 {
                   _id: actionId,
                   type,
@@ -226,6 +306,12 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    if (error instanceof StockMarketMigrationNotReadyError) {
+      return NextResponse.json(
+        { error: "NOVEX 2.0 migration READY 확인 전에는 기업행동을 예약할 수 없습니다." },
+        { status: 409 },
+      );
+    }
     if (
       error instanceof CorporateActionScheduleError ||
       error instanceof StockCorporateActionCutoffError ||
@@ -236,9 +322,15 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (error instanceof StockCorporateActionConflictError) {
+    if (
+      error instanceof StockCorporateActionConflictError ||
+      error instanceof StockDisclosureConflictError
+    ) {
       return NextResponse.json(
-        { error: "같은 종목·기업행동·회차 예약이 이미 존재합니다." },
+        {
+          error:
+            "같은 종목에 기업행동 예약 또는 수동/기업행동 거래정지가 존재합니다.",
+        },
         { status: 409 },
       );
     }

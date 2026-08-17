@@ -10,6 +10,7 @@ import {
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import { stockDisclosureKeys } from "@/hooks/queries/useStockDisclosuresQuery";
 import { stocksKeys } from "@/hooks/queries/useStocksQuery";
+import { tradeKeys } from "@/hooks/queries/useTradesQuery";
 
 export interface UpsertStockCalendarExceptionInput {
   operationId: string;
@@ -26,11 +27,14 @@ export interface DeleteStockCalendarExceptionInput {
 
 export interface ScheduleStockCorporateActionInput {
   operationId: string;
-  type: "DIVIDEND" | "SPLIT";
+  type: "DIVIDEND" | "SPLIT" | "RIGHTS_OFFERING";
   ticker: string;
   executeAt: string;
   perShare?: number;
   ratio?: number;
+  announceAt?: string;
+  reason?: string;
+  priceAdjustmentPercent?: number;
 }
 
 export interface CancelStockCorporateActionInput {
@@ -148,6 +152,8 @@ export function useCancelStockCorporateAction() {
         queryKey: adminStockMarketKeys.corporateActions,
       });
       queryClient.invalidateQueries({ queryKey: stockDisclosureKeys.all });
+      invalidateAdminMarket(queryClient);
+      queryClient.invalidateQueries({ queryKey: tradeKeys.all });
     },
   });
 }

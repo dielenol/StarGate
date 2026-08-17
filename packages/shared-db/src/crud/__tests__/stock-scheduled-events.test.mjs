@@ -10,7 +10,9 @@ test(
   async (t) => {
     const {
       applyScheduledStockPriceMutation,
+      cancelStockScheduledEvent,
       claimPendingStockScheduledEvent,
+      claimNovex2MigrationReadiness,
       close,
       connect,
       createStockScheduledEvent,
@@ -18,6 +20,7 @@ test(
       getClient,
       getDb,
       listStockScheduledEvents,
+      StockScheduledEventCutoverError,
     } = await import("../../../dist/index.js");
 
     await connect({ uri: TEST_URI, dbName: TEST_DB_NAME });
@@ -25,11 +28,15 @@ test(
     const prices = db.collection("stock_prices");
     const history = db.collection("stock_price_history");
     const events = db.collection("stock_scheduled_events");
+    const disclosures = db.collection("stock_disclosures");
+    const readiness = db.collection("stock_market_migration_readiness");
     t.after(async () => {
       await Promise.all([
         prices.deleteMany({}),
         history.deleteMany({}),
         events.deleteMany({}),
+        disclosures.deleteMany({}),
+        readiness.deleteMany({}),
       ]);
       await close();
     });
@@ -37,6 +44,8 @@ test(
       prices.deleteMany({}),
       history.deleteMany({}),
       events.deleteMany({}),
+      disclosures.deleteMany({}),
+      readiness.deleteMany({}),
     ]);
     await history.createIndex(
       { operationKey: 1 },
@@ -257,6 +266,124 @@ test(
       );
       assert.ok(listed.some((event) => event._id === "history-119"));
       assert.ok(!listed.some((event) => event._id === "history-0"));
+    });
+
+    await t.test("cutover marker는 CREATE와 migration을 직렬화하고 READY cancel만 허용한다", async () => {
+      await claimNovex2MigrationReadiness(db, {
+        sourcePlanFingerprint: "approved-test-plan",
+        attemptId: "cutover-test-attempt",
+      });
+
+      const rejectedCreateSession = client.startSession();
+      try {
+        await assert.rejects(
+          rejectedCreateSession.withTransaction(() =>
+            createStockScheduledEvent(
+              {
+                ticker: "LATE",
+                kstDate: "2099-12-01",
+                executeAt: new Date("2099-12-01T03:00:00.000Z"),
+                changePercent: 10,
+                eventText: "cutover 이후 생성 차단",
+                eventTier: "scenario",
+                actor: { id: "gm", displayName: "GM" },
+                now: new Date("2099-12-01T02:00:00.000Z"),
+              },
+              rejectedCreateSession,
+            ),
+          ),
+          (error) => error instanceof StockScheduledEventCutoverError,
+        );
+      } finally {
+        await rejectedCreateSession.endSession();
+      }
+      assert.equal(await events.countDocuments({ ticker: "LATE" }), 0);
+
+      const readyAt = new Date("2099-12-01T02:10:00.000Z");
+      await readiness.updateOne(
+        { _id: "novex-2", status: "APPLYING" },
+        { $set: { status: "READY", updatedAt: readyAt } },
+      );
+      const eventId = "stock-event:2099-12-02:READY";
+      const disclosureId = `stock-disclosure:legacy:${eventId}`;
+      await events.insertOne({
+        _id: eventId,
+        ticker: "READY",
+        kstDate: "2099-12-02",
+        executeAt: new Date("2099-12-02T03:00:00.000Z"),
+        changePercent: 10,
+        eventText: "READY 취소",
+        eventTier: "scenario",
+        status: "PENDING",
+        createdBy: { id: "gm", displayName: "GM" },
+        createdAt: readyAt,
+        updatedAt: readyAt,
+        migratedDisclosureId: disclosureId,
+      });
+      await disclosures.insertOne({
+        _id: disclosureId,
+        title: "READY 예약 공시",
+        body: "READY 취소",
+        kind: "PRICE",
+        status: "SCHEDULED",
+        source: "GM",
+        effects: [{
+          scope: "TICKER",
+          ticker: "READY",
+          changePercent: 10,
+          structural: false,
+        }],
+        publishAt: new Date("2099-12-02T03:00:00.000Z"),
+        slotKey: "2099-12-02 12:00",
+        shock: false,
+        createdById: "gm",
+        createdAt: readyAt,
+        updatedAt: readyAt,
+      });
+
+      const cancelSession = client.startSession();
+      try {
+        await cancelSession.withTransaction(() =>
+          cancelStockScheduledEvent({
+            eventId,
+            actor: { id: "gm", displayName: "GM" },
+            now: readyAt,
+            session: cancelSession,
+          }),
+        );
+      } finally {
+        await cancelSession.endSession();
+      }
+      assert.equal((await events.findOne({ _id: eventId }))?.status, "CANCELLED");
+      assert.equal(
+        (await disclosures.findOne({ _id: disclosureId }))?.status,
+        "CANCELLED",
+      );
+
+      await readiness.updateOne(
+        { _id: "novex-2", status: "READY" },
+        { $set: { status: "BLOCKED", updatedAt: new Date() } },
+      );
+      const blockedCancelSession = client.startSession();
+      try {
+        await assert.rejects(
+          blockedCancelSession.withTransaction(() =>
+            cancelStockScheduledEvent({
+              eventId: "pending-0",
+              actor: { id: "gm", displayName: "GM" },
+              now: new Date(),
+              session: blockedCancelSession,
+            }),
+          ),
+          (error) => error instanceof StockScheduledEventCutoverError,
+        );
+      } finally {
+        await blockedCancelSession.endSession();
+      }
+      assert.equal(
+        (await events.findOne({ _id: "pending-0" }))?.status,
+        "PENDING",
+      );
     });
   },
 );

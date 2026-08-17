@@ -51,24 +51,71 @@ const STOCK_QUERY_HOOKS = new URL(
   "../../../hooks/queries/useStocksQuery.ts",
   import.meta.url,
 );
+const SHARED_STOCK_MARKET = new URL(
+  "../../../../packages/shared-db/src/crud/stock-market.ts",
+  import.meta.url,
+);
+const STOCK_MARKET_INDEX = new URL("../market-index.ts", import.meta.url);
+const STOCK_INFO = new URL(
+  "../../../app/(erp)/erp/stock/_stockInfo.ts",
+  import.meta.url,
+);
 const NOVEX_ADMIN_MUTATION_ROUTES = [
   "../../../app/api/erp/admin/stocks/disclosures/route.ts",
   "../../../app/api/erp/admin/stocks/disclosures/[disclosureId]/route.ts",
   "../../../app/api/erp/admin/stocks/calendar/route.ts",
   "../../../app/api/erp/admin/stocks/corporate-actions/route.ts",
-  "../../../app/api/erp/admin/stocks/corporate-actions/[actionId]/route.ts",
 ].map((path) => new URL(path, import.meta.url));
+const CORPORATE_ACTION_CANCEL_ROUTE = new URL(
+  "../../../app/api/erp/admin/stocks/corporate-actions/[actionId]/route.ts",
+  import.meta.url,
+);
 
 test("the worker scheduled tick applies prices before requesting the canonical wire batch", async () => {
   const source = await readFile(WORKER_JOBS, "utf8");
   const jobStart = source.indexOf('jobName: "stocks.tick"');
   const applyStart = source.indexOf("const applied =", jobStart);
-  const wireStart = source.indexOf("requestStockMarketWireState(", applyStart);
+  const wireStart = source.indexOf("const announcement =", applyStart);
   assert.ok(jobStart >= 0 && applyStart > jobStart && wireStart > applyStart);
   const stockJob = source.slice(jobStart, wireStart);
   assert.match(stockJob, /applyNovexStockMarketTick/);
   assert.match(stockJob, /previewNovexStockMarketTick/);
   assert.match(stockJob, /applyScheduledStockTick/);
+});
+
+test("NOVEX price response reads state, prices and flow from one Mongo snapshot", async () => {
+  const [shared, data] = await Promise.all([
+    readFile(SHARED_STOCK_MARKET, "utf8"),
+    readFile(STOCK_DATA_BUILDERS, "utf8"),
+  ]);
+  const snapshotStart = shared.indexOf("export async function getStockMarketSnapshot");
+  const snapshotEnd = shared.indexOf("export function parseStockMarketShadowState", snapshotStart);
+  const snapshot = shared.slice(snapshotStart, snapshotEnd);
+  assert.match(snapshot, /session\.withTransaction/);
+  assert.match(snapshot, /readConcern: \{ level: "snapshot" \}/);
+  assert.match(snapshot, /listPendingStockFlowSignals\(\{ session \}\)/);
+  assert.match(data, /snapshot\?\.flowSignals/);
+  assert.doesNotMatch(data, /listPendingStockFlowSignals/);
+});
+
+test("split and capital increase factors preserve shares, market cap and comparable enterprise value", async () => {
+  const [data, hooks, marketIndex, stockInfo] = await Promise.all([
+    readFile(STOCK_DATA_BUILDERS, "utf8"),
+    readFile(STOCK_QUERY_HOOKS, "utf8"),
+    readFile(STOCK_MARKET_INDEX, "utf8"),
+    readFile(STOCK_INFO, "utf8"),
+  ]);
+  assert.match(data, /cumulativeSplitFactor: row\?\.cumulativeSplitFactor \?\? 1/);
+  assert.match(hooks, /cumulativeSplitFactor: number/);
+  assert.match(hooks, /cumulativeCapitalIncreaseFactor: number/);
+  assert.match(
+    marketIndex,
+    /baseSharesOutstanding \*[\s\S]*cumulativeSplitFactor \*[\s\S]*cumulativeCapitalIncreaseFactor/,
+  );
+  assert.match(marketIndex, /item\.basePrice \* item\.baseSharesOutstanding/);
+  assert.match(stockInfo, /const totalFactor = safeSplitFactor \* safeCapitalIncreaseFactor/);
+  assert.match(stockInfo, /comparableCurrentPrice = safeCurrentPrice \* totalFactor/);
+  assert.match(stockInfo, /safeCurrentPrice \* sharesOutstanding/);
 });
 
 test("economic history sequence survives the API DTO and newest-first UI ordering", async () => {
@@ -251,9 +298,10 @@ test("disabled or shadow NOVEX preserves browser preferences without server migr
   assert.match(detail, /<StockMarketPreferencesPanel ticker=\{ticker\} \/>/);
 });
 
-test("NOVEX writers are server-gated and legacy manual price bypass closes after enablement", async () => {
-  const [routes, legacyPrice, adminClient] = await Promise.all([
+test("NOVEX writers are server-gated, while corporate action rollback remains available", async () => {
+  const [routes, cancelRoute, legacyPrice, adminClient] = await Promise.all([
     Promise.all(NOVEX_ADMIN_MUTATION_ROUTES.map((route) => readFile(route, "utf8"))),
+    readFile(CORPORATE_ACTION_CANCEL_ROUTE, "utf8"),
     readFile(ADMIN_PRICE_ROUTE, "utf8"),
     readFile(STOCK_ADMIN_CLIENT, "utf8"),
   ]);
@@ -261,6 +309,8 @@ test("NOVEX writers are server-gated and legacy manual price bypass closes after
     assert.match(route, /requireRole\([\s\S]*"GM"/);
     assert.match(route, /if \(!isNovexV2Enabled\(\)\)[\s\S]*status: 409/);
   }
+  assert.match(cancelRoute, /requireRole\([\s\S]*"GM"/);
+  assert.doesNotMatch(cancelRoute, /if \(!isNovexV2Enabled\(\)\)/);
   assert.match(
     legacyPrice,
     /requireRole\([\s\S]*if \(isNovexV2Enabled\(\)\)[\s\S]*status: 409/,

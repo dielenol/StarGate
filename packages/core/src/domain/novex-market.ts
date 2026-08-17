@@ -203,12 +203,16 @@ export function calculateNovexPrice(input: {
   const carriedBase = input.current.pendingBasePercent ?? 0;
   const effect = effectForTicker(input.disclosure, input.current.ticker);
   const disclosurePercent = (effect?.changePercent ?? 0) / 100;
-  const exactGmOverride = input.disclosure?.source === "GM" && input.disclosure.kind === "PRICE" && effect?.changePercent !== undefined;
+  const exactPriceOverride =
+    (input.disclosure?.source === "GM" ||
+      input.disclosure?.source === "CORPORATE_ACTION") &&
+    input.disclosure.kind === "PRICE" &&
+    effect?.changePercent !== undefined;
 
   let finalPercent: number;
   let pendingBasePercent = 0;
   let consumeFlow = true;
-  if (exactGmOverride) {
+  if (exactPriceOverride) {
     finalPercent = clamp(disclosurePercent, -0.5, 0.75);
     pendingBasePercent = clamp(carriedBase + basePercent, -0.08, 0.08);
     consumeFlow = false;
@@ -232,9 +236,9 @@ export function calculateNovexPrice(input: {
   return {
     price,
     referencePrice,
-    basePercent: exactGmOverride ? 0 : basePercent + carriedBase,
-    flowPercent: exactGmOverride ? 0 : input.flowPercent,
-    disclosurePercent: exactGmOverride ? finalPercent : disclosurePercent,
+    basePercent: exactPriceOverride ? 0 : basePercent + carriedBase,
+    flowPercent: exactPriceOverride ? 0 : input.flowPercent,
+    disclosurePercent: exactPriceOverride ? finalPercent : disclosurePercent,
     finalPercent,
     eventTier,
     eventText: input.disclosure ? `${input.disclosure.title} ${signed}` : `정기 변동 ${signed}`,
@@ -402,19 +406,37 @@ export function calculateNovexSeasonPerformance(
 }
 
 /** splitFactor 이후의 과거 점들을 현재 주식 단위로 보정한다. */
-export function adjustNovexHistoryForSplits<T extends { price: number; splitFactor?: number }>(
+export function adjustNovexHistoryForSplits<T extends {
+  price: number;
+  splitFactor?: number;
+  capitalIncreaseFactor?: number;
+}>(
   rows: readonly T[],
-): Array<T & { adjustedPrice: number; cumulativeSplitFactor: number }> {
-  let cumulative = 1;
-  const adjusted = new Array<T & { adjustedPrice: number; cumulativeSplitFactor: number }>(rows.length);
+): Array<T & {
+  adjustedPrice: number;
+  cumulativeSplitFactor: number;
+  cumulativeCapitalIncreaseFactor: number;
+}> {
+  let cumulativeSplit = 1;
+  let cumulativeCapitalIncrease = 1;
+  const adjusted = new Array<T & {
+    adjustedPrice: number;
+    cumulativeSplitFactor: number;
+    cumulativeCapitalIncreaseFactor: number;
+  }>(rows.length);
   for (let index = rows.length - 1; index >= 0; index -= 1) {
     const row = rows[index]!;
     adjusted[index] = {
       ...row,
-      adjustedPrice: row.price / cumulative,
-      cumulativeSplitFactor: cumulative,
+      adjustedPrice:
+        row.price / (cumulativeSplit * cumulativeCapitalIncrease),
+      cumulativeSplitFactor: cumulativeSplit,
+      cumulativeCapitalIncreaseFactor: cumulativeCapitalIncrease,
     };
-    if (row.splitFactor) cumulative *= row.splitFactor;
+    if (row.splitFactor) cumulativeSplit *= row.splitFactor;
+    if (row.capitalIncreaseFactor) {
+      cumulativeCapitalIncrease *= row.capitalIncreaseFactor;
+    }
   }
   return adjusted;
 }

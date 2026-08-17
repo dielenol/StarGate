@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { useRealtimeRefetchInterval } from "@/lib/realtime/client-context";
+
 export interface StockCalendarExceptionItem {
   id: string;
   kstDate: string;
@@ -15,9 +17,10 @@ export interface AdminStockCalendarResponse {
 
 export interface StockCorporateActionItem {
   id: string;
-  type: "DIVIDEND" | "SPLIT";
+  type: "DIVIDEND" | "SPLIT" | "RIGHTS_OFFERING";
   status:
     | "SCHEDULED"
+    | "HALTED"
     | "SNAPSHOTTED"
     | "PROCESSING"
     | "COMPLETED"
@@ -28,6 +31,14 @@ export interface StockCorporateActionItem {
   perShare?: number;
   ratio?: number;
   recordAt?: string;
+  announceAt?: string;
+  reason?: string;
+  priceAdjustmentPercent?: number;
+  cancelledOpenTradeCount?: number;
+  failedAt?: string;
+  failureReason?: string;
+  remainingDisclosuresCancelledAt?: string;
+  remainingDisclosuresCancelledCount?: number;
 }
 
 export interface AdminStockCorporateActionsResponse {
@@ -50,6 +61,8 @@ export const adminStockMarketKeys = {
   corporateActions: ["stocks", "admin", "corporate-actions"] as const,
 };
 
+const ADMIN_MARKET_REFETCH_INTERVAL_MS = 60_000;
+
 export async function parseAdminStockMarketError(
   response: Response,
 ): Promise<never> {
@@ -69,6 +82,9 @@ async function fetchAdminStockMarket<T>(endpoint: string): Promise<T> {
 export function useAdminStockCalendar(options?: {
   initialData?: AdminStockCalendarResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    ADMIN_MARKET_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: adminStockMarketKeys.calendar,
     queryFn: () =>
@@ -76,6 +92,9 @@ export function useAdminStockCalendar(options?: {
         "/api/erp/admin/stocks/calendar",
       ),
     staleTime: 30_000,
+    refetchInterval,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });
 }
@@ -83,6 +102,9 @@ export function useAdminStockCalendar(options?: {
 export function useAdminStockCorporateActions(options?: {
   initialData?: AdminStockCorporateActionsResponse;
 }) {
+  const refetchInterval = useRealtimeRefetchInterval(
+    ADMIN_MARKET_REFETCH_INTERVAL_MS,
+  );
   return useQuery({
     queryKey: adminStockMarketKeys.corporateActions,
     queryFn: () =>
@@ -90,6 +112,9 @@ export function useAdminStockCorporateActions(options?: {
         "/api/erp/admin/stocks/corporate-actions",
       ),
     staleTime: 30_000,
+    refetchInterval,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     initialData: options?.initialData,
   });
 }

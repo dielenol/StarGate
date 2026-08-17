@@ -13,7 +13,10 @@
 - [ ] rollback 담당자와 관찰 시간을 정했다.
 - [ ] secret 값이 저장소, 로그, 스크린샷에 노출되지 않았음을 확인했다.
 - [ ] `pnpm migrate:novex-2` read-only 결과의 대상 DB, TTL 유무, 적정가 backfill 수, 레거시 PENDING 공시 수, 누락 index와 `planSha256`을 기록했다.
+- [ ] `stock_market_migration_readiness._id=novex-2`의 상태와 attemptId를 함께 기록하고, `APPLYING`이면 아래 crash recovery 절차가 끝날 때까지 새 migration·writer·scheduler를 중단했다.
 - [ ] 정규 일요일 일정 없음·복수·정상 1건과 월요일 09시 병합을 합성 리플레이했다.
+
+NOVEX 관련 TTL/index 생성·삭제·교체와 schema/data backfill은 readiness marker를 소유하는 `pnpm migrate:novex-2` 경로로만 수행한다. Mongo shell, 임시 스크립트, `ensureNovexIndexes`, 범용 index one-shot으로 NOVEX DDL을 직접 수행하면 READY attestation이 즉시 무효가 되므로 금지한다. 직접 DDL 또는 marker 밖 변경이 발견되면 Web·worker를 `NOVEX_V2_MODE=disabled`로 유지하고 추가 mutation을 중단한 뒤, 새 read-only plan과 별도 승인을 갖춘 **새 버전 migration**으로 복구한다. READY/BLOCKED marker를 수동 update하거나 삭제해서 우회하지 않는다.
 
 ### 승인 게이트 0 — writer 배포 전 index
 
@@ -222,9 +225,38 @@ Dokploy timezone을 `Asia/Seoul`로 확인하고 다음 schedule을 등록한다
 2. `pnpm migrate:novex-2`를 읽기 전용으로 실행해 전환 전 상태와 `planSha256`을 기록한다.
 3. TTL 제거, `referencePrice` backfill, 신규 index, 레거시 PENDING 공시 변환의 정확한 전→후와 비원자적 index 적용 위험을 제시해 별도 승인을 받는다.
 4. 승인된 경우에만 `--apply --yes --target-db <DB> --expected-plan <SHA256>`를 모두 지정한다. 적용 후 동일 검사를 재실행해 TTL 없음, backfill 0건, 누락 index 0개, 미변환 PENDING 0건을 확인한다.
-5. Dokploy만 `NOVEX_V2_MODE=shadow`로 최소 7일 운영한다. 기존 가격 엔진은 계속 운영하고 NOVEX 가격·수급·자동 뉴스 preview와 정규 일요일 합성 리플레이만 비교하며, NOVEX 시장 상태와 경제 원장은 쓰지 않는다.
-6. blocker 0건과 별도 승인을 받은 뒤 Web·worker flag와 Dokploy cron을 함께 `enabled`/`0 9,13,18,23 * * *`로 전환한다. Vercel에는 자동 schedule을 추가하지 않는다.
+5. 별도 승인을 받아 Dokploy의 `stocks.tick`을 `0 9,13,18,23 * * *`로 바꾸는 시점에 worker만 `NOVEX_V2_MODE=shadow`로 최소 7일 운영한다. 4개 회차 모두 NOVEX 가격·수급·자동 뉴스 preview를 누적 저장하되 시장 상태와 경제 원장은 쓰지 않는다. 기존 가격 엔진은 13시 호출에서만 종전 12시 회차를 확정하고 Discord 장부도 그 결과로 한 번 갱신한다.
+6. shadow 4개 slot과 정규 일요일 합성 리플레이의 blocker가 0건이면 별도 승인을 받아 Web·worker flag만 `enabled`로 전환한다. cron owner와 `0 9,13,18,23 * * *` 일정은 그대로 유지하고 Vercel에는 자동 schedule을 추가하지 않는다.
 7. 첫 09시 회차의 9종목 history, market state, 공시, 수급 소비가 한 transaction으로 확정됐는지 읽기 전용으로 확인한 뒤 개장을 선언한다.
+
+#### NOVEX migration crash recovery
+
+`--apply`가 비원자적 DDL/data 단계 중 종료되면 readiness marker는 의도적으로 `APPLYING`에 남는다. 새 apply가 이를 덮어쓰지 않으며, 아래 절차 외의 marker 수정은 금지한다.
+
+1. Web·worker가 모두 `NOVEX_V2_MODE=disabled`인지 확인하고 NOVEX DDL/data writer를 정지한다.
+2. `pnpm migrate:novex-2`를 read-only로 다시 실행한다. 출력된 현재 `planSha256`, marker의 정확한 `attemptId`, 물리 blocker 목록을 기록한다. 과거 apply 전 SHA는 복구 승인값으로 재사용하지 않는다.
+3. 현재 물리 blocker가 0개라면 대상 DB, `APPLYING → READY`, exact attemptId와 fresh plan SHA를 제시해 별도 승인을 받은 뒤 다음 명령만 실행한다.
+
+   ```bash
+   pnpm migrate:novex-2 -- \
+     --recover-readiness mark-ready --yes \
+     --target-db <DB> \
+     --expected-attempt <APPLYING_ATTEMPT_ID> \
+     --expected-plan <FRESH_PLAN_SHA256>
+   ```
+
+4. blocker가 하나라도 남았다면 READY로 승격하지 않는다. 대상 DB, `APPLYING → BLOCKED`, exact attemptId, fresh plan SHA와 blocker를 제시해 별도 승인을 받은 뒤 실패 attempt만 폐기한다.
+
+   ```bash
+   pnpm migrate:novex-2 -- \
+     --recover-readiness abandon-blocked --yes \
+     --target-db <DB> \
+     --expected-attempt <APPLYING_ATTEMPT_ID> \
+     --expected-plan <FRESH_PLAN_SHA256>
+   ```
+
+5. 두 복구 명령은 함수 내부에서 물리 상태를 다시 inspect하고 exact `status=APPLYING + attemptId` CAS로 marker를 변경한다. SHA, attempt, 상태, blocker 조건 중 하나라도 달라지면 mutation 없이 실패한다.
+6. `BLOCKED`는 전환 완료가 아니다. 새 read-only plan, 새 승인, 새 `--apply` attempt로 남은 작업을 처음부터 검증한다. `READY`는 복구 직후 재조회한 물리 plan SHA와 marker의 `readyPlanFingerprint`가 같을 때만 인정한다.
 
 TTL/index/data migration, Dokploy cron, Web·worker 기능 플래그는 서로 다른 라이브 mutation이다. 한 단계의 승인을 다음 단계 승인으로 재사용하지 않는다.
 

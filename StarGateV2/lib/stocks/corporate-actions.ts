@@ -28,9 +28,16 @@ function formatKstDateTime(value: Date): { date: string; time: string } {
   };
 }
 
-export function toStockSlotKey(value: Date, expectedHour: 9 | 23): string | null {
+export function toStockSlotKey(
+  value: Date,
+  expectedHour?: 9 | 13 | 18 | 23,
+): string | null {
   const kst = formatKstDateTime(value);
-  return kst.time === `${String(expectedHour).padStart(2, "0")}:00`
+  const hour = Number(kst.time.slice(0, 2));
+  const validHour = expectedHour === undefined
+    ? [9, 13, 18, 23].includes(hour)
+    : hour === expectedHour;
+  return validHour && kst.time.endsWith(":00")
     ? `${kst.date} ${kst.time}`
     : null;
 }
@@ -72,6 +79,26 @@ export function serializeStockCorporateAction(
       executeAt: slotKeyToIso(item.recordSlotKey),
       perShare: item.amountPerShare,
       recordAt: slotKeyToIso(item.recordSlotKey),
+    };
+  }
+  if (item.type === "RIGHTS_OFFERING") {
+    return {
+      id: item._id,
+      type: item.type,
+      status: item.status,
+      ticker: item.ticker,
+      announceAt: slotKeyToIso(item.announceSlotKey),
+      executeAt: slotKeyToIso(item.executeSlotKey),
+      ratio: item.factor,
+      reason: item.reason,
+      priceAdjustmentPercent: item.priceAdjustmentPercent,
+      cancelledOpenTradeCount: item.cancelledOpenTradeCount,
+      failedAt: item.failedAt?.toISOString(),
+      failureReason: item.failureReason,
+      remainingDisclosuresCancelledAt:
+        item.remainingDisclosuresCancelledAt?.toISOString(),
+      remainingDisclosuresCancelledCount:
+        item.remainingDisclosuresCancelledCount,
     };
   }
   return {

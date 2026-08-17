@@ -65,7 +65,7 @@ test("매매 claim은 transaction session에서 거래 가능한 동일 가격 �
   assert.match(claim, /existing \? "STOCK_TRADING_HALTED" : "PRICE_NOT_FOUND"/);
   assert.match(
     sharedCrud.slice(setterStart),
-    /findOneAndUpdate\([\s\S]*\{ ticker \}[\s\S]*\$set: \{ isTradingHalted \}[\s\S]*session/,
+    /findOneAndUpdate\([\s\S]*corporateActionReservationId: \{ \$exists: false \}[\s\S]*corporateActionHaltId: \{ \$exists: false \}[\s\S]*\$set: \{ isTradingHalted \}[\s\S]*session/,
   );
   assert.match(dbWrapper, /claimTradableStockPrice/);
   assert.match(dbWrapper, /setStockTradingHalted/);
@@ -111,6 +111,8 @@ test("GM 거래상태 API는 멱등 transaction 안에서 상태와 감사 outbo
   assert.match(statusRoute.slice(auditIndex), /session: dbSession/);
   assert.match(statusRoute, /if \(!result\) throw new StockTradingStatusTargetError/);
   assert.match(statusRoute, /enqueueStockManualInterventionWebhook/);
+  assert.match(statusRoute, /StockCorporateActionHaltConflictError/);
+  assert.match(statusRoute, /status: 409/);
   assert.doesNotMatch(statusRoute, /discord\.com\/api|fetch\([^)]*webhook/i);
 });
 
@@ -261,6 +263,10 @@ test("플레이어 거래 응답과 화면은 양측 OPEN 제안 상태까지 �
     playerTradeClient,
     /unavailableOfferBlocked/,
     "상대 정지 종목 때문에 본인 제안 복구를 막으면 안 됨",
+  );
+  assert.match(
+    playerTradeClient,
+    /다른 참여자는 자기 제안을 계속[\s\S]*수정·저장할 수 있습니다/,
   );
   assert.match(
     playerTradeMutations,

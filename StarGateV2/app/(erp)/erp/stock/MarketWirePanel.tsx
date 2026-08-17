@@ -23,6 +23,7 @@ interface Props {
 function sourceLabel(source: StockMarketWireItem["source"]): string {
   if (source === "gm-event") return "GM 공시";
   if (source === "trade") return "거래 반영";
+  if (source === "rights-offering") return "유상증자";
   return "정기 공시";
 }
 

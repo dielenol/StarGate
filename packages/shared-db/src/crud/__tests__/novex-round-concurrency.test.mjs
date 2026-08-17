@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { ObjectId } from "mongodb";
 
 const TEST_URI = process.env.MONGODB_TEST_URI?.trim();
 const HAS_DB =
@@ -35,6 +36,7 @@ test("13·18시 역순 commit과 동시 실행은 시장 상태와 가격을 과
     initServerless,
     legacyPendingEventContentHash,
     migrateLegacyPendingStockDisclosures,
+    payNextPendingStockDividendEntitlement,
     createStockScheduledEvent,
     fenceStockScheduledEventCreation,
   } = await import("../../../dist/index.js");
@@ -52,6 +54,212 @@ test("13·18시 역순 commit과 동시 실행은 시장 상태와 가격을 과
       partialFilterExpression: { dedupeKey: { $type: "string" } },
     },
   );
+  await db.collection("stock_market_migration_readiness").insertOne({
+    _id: "novex-2",
+    version: 2,
+    status: "READY",
+    attemptId: "test-ready",
+    sourcePlanFingerprint: "test-source-plan",
+    readyPlanFingerprint: "test-ready-plan",
+    startedAt: new Date("2026-08-23T09:00:00+09:00"),
+    completedAt: new Date("2026-08-23T10:00:00+09:00"),
+    updatedAt: new Date("2026-08-23T10:00:00+09:00"),
+  });
+
+  await t.test("오래된 ERROR entitlement 100건보다 정상 PENDING 배당을 먼저 지급한다", async (subtest) => {
+    const ownerId = new ObjectId();
+    const characterId = new ObjectId();
+    const actionId = "dividend-pending-priority";
+    const entitlementIds = [
+      ...Array.from({ length: 100 }, (_, index) => `dividend-error-${index}`),
+      "dividend-pending-after-errors",
+    ];
+    subtest.after(async () => {
+      await Promise.all([
+        db.collection("stock_dividend_entitlements").deleteMany({ _id: { $in: entitlementIds } }),
+        db.collection("stock_corporate_actions").deleteOne({ _id: actionId }),
+        db.collection("notifications").deleteMany({ userId: ownerId.toString() }),
+        db.collection("credit_transactions").deleteMany({ characterId: characterId.toString() }),
+        db.collection("credit_balances").deleteOne({ characterId: characterId.toString() }),
+        db.collection("characters").deleteOne({ _id: characterId }),
+        db.collection("users").deleteOne({ _id: ownerId }),
+      ]);
+    });
+    await db.collection("users").insertOne({
+      _id: ownerId,
+      displayName: "배당 테스트 소유자",
+    });
+    await db.collection("characters").insertOne({
+      _id: characterId,
+      ownerId: ownerId.toString(),
+      codename: "DIVIDEND-READY",
+    });
+    await db.collection("stock_corporate_actions").insertOne({
+      _id: actionId,
+      type: "DIVIDEND",
+      ticker: "NV0",
+      status: "PROCESSING",
+      amountPerShare: 1,
+      recordSlotKey: "2099-01-01 23:00",
+      exDateSlotKey: "2099-01-02 09:00",
+      createdById: "gm",
+      createdAt: new Date("2099-01-01T09:00:00+09:00"),
+      updatedAt: new Date("2099-01-01T09:00:00+09:00"),
+    });
+    await db.collection("stock_dividend_entitlements").insertMany([
+      ...Array.from({ length: 100 }, (_, index) => ({
+        _id: `dividend-error-${index}`,
+        actionId,
+        characterId: `invalid-${index}`,
+        shares: 1,
+        amount: 1,
+        creditRequestId: `dividend-error-credit-${index}`,
+        status: "ERROR",
+        failureReason: "INVALID_CHARACTER_ID",
+        createdAt: new Date(index),
+      })),
+      {
+        _id: "dividend-pending-after-errors",
+        actionId,
+        characterId: characterId.toString(),
+        shares: 1,
+        amount: 1,
+        creditRequestId: "dividend-pending-priority-credit",
+        status: "PENDING",
+        createdAt: new Date("2099-01-01T10:00:00+09:00"),
+      },
+    ]);
+
+    assert.deepEqual(await payNextPendingStockDividendEntitlement(), {
+      status: "PAID",
+      entitlementId: "dividend-pending-after-errors",
+      amount: 1,
+    });
+  });
+
+  await t.test("migration은 fence 획득 시점에 지난 공시 slot을 거부한다", async (subtest) => {
+    const event = {
+      _id: "stock-event:migration-cutoff-after-fence",
+      ticker: "NV0",
+      kstDate: "2099-01-03",
+      executeAt: new Date("2099-01-03T13:00:00+09:00"),
+      changePercent: 5,
+      eventText: "cutoff 경쟁",
+      eventTier: "scenario",
+      status: "PENDING",
+      createdBy: { id: "gm", displayName: "GM" },
+      createdAt: new Date("2099-01-03T12:00:00+09:00"),
+      updatedAt: new Date("2099-01-03T12:00:00+09:00"),
+    };
+    subtest.after(async () => {
+      await Promise.all([
+        db.collection("stock_scheduled_events").deleteOne({ _id: event._id }),
+        db.collection("stock_disclosures").deleteOne({
+          _id: `stock-disclosure:legacy:${event._id}`,
+        }),
+        db.collection("stock_disclosure_effect_fences").deleteOne({
+          _id: "2099-01-03 13:00",
+        }),
+      ]);
+    });
+    await db.collection("stock_scheduled_events").insertOne(event);
+
+    await assert.rejects(
+      migrateLegacyPendingStockDisclosures(
+        db,
+        [{
+          id: event._id,
+          contentHash: legacyPendingEventContentHash(event),
+          ticker: event.ticker,
+          targetSlotKey: "2099-01-03 13:00",
+        }],
+        new Date("2099-01-03T12:59:59+09:00"),
+        { now: () => new Date("2099-01-03T13:00:01+09:00") },
+      ),
+      /NOVEX_MIGRATION_LEGACY_SLOT_CUTOFF_PASSED:2099-01-03 13:00/,
+    );
+    assert.equal(
+      await db.collection("stock_disclosures").countDocuments({
+        _id: `stock-disclosure:legacy:${event._id}`,
+      }),
+      0,
+    );
+    assert.equal(
+      (await db.collection("stock_scheduled_events").findOne({ _id: event._id }))?.status,
+      "PENDING",
+    );
+  });
+
+  await t.test("동시 배당 worker는 transaction 재시도마다 실제 다음 entitlement를 다시 선택한다", async (subtest) => {
+    const ownerId = new ObjectId();
+    const characterId = new ObjectId();
+    const actionId = "dividend-retry-reselection";
+    const entitlementIds = ["dividend-retry-a", "dividend-retry-b"];
+    subtest.after(async () => {
+      await Promise.all([
+        db.collection("stock_dividend_entitlements").deleteMany({ _id: { $in: entitlementIds } }),
+        db.collection("stock_corporate_actions").deleteOne({ _id: actionId }),
+        db.collection("notifications").deleteMany({ userId: ownerId.toString() }),
+        db.collection("credit_transactions").deleteMany({ characterId: characterId.toString() }),
+        db.collection("credit_balances").deleteOne({ characterId: characterId.toString() }),
+        db.collection("characters").deleteOne({ _id: characterId }),
+        db.collection("users").deleteOne({ _id: ownerId }),
+      ]);
+    });
+    await db.collection("users").insertOne({
+      _id: ownerId,
+      displayName: "배당 동시성 소유자",
+    });
+    await db.collection("characters").insertOne({
+      _id: characterId,
+      ownerId: ownerId.toString(),
+      codename: "DIVIDEND-RACE",
+    });
+    await db.collection("stock_corporate_actions").insertOne({
+      _id: actionId,
+      type: "DIVIDEND",
+      ticker: "NV0",
+      status: "PROCESSING",
+      amountPerShare: 1,
+      recordSlotKey: "2099-01-01 23:00",
+      exDateSlotKey: "2099-01-02 09:00",
+      createdById: "gm",
+      createdAt: new Date("2099-01-01T09:00:00+09:00"),
+      updatedAt: new Date("2099-01-01T09:00:00+09:00"),
+    });
+    await db.collection("stock_dividend_entitlements").insertMany(
+      entitlementIds.map((id, index) => ({
+        _id: id,
+        actionId,
+        characterId: characterId.toString(),
+        shares: 1,
+        amount: index + 1,
+        creditRequestId: `${id}-credit`,
+        status: "PENDING",
+        createdAt: new Date(index),
+      })),
+    );
+
+    const outcomes = await Promise.all([
+      payNextPendingStockDividendEntitlement(),
+      payNextPendingStockDividendEntitlement(),
+    ]);
+    assert.deepEqual(
+      outcomes.map((outcome) => outcome.status).sort(),
+      ["PAID", "PAID"],
+    );
+    assert.deepEqual(
+      outcomes.map((outcome) => outcome.entitlementId).sort(),
+      entitlementIds,
+    );
+    assert.equal(
+      await db.collection("credit_transactions").countDocuments({
+        characterId: characterId.toString(),
+        type: "STOCK_DIVIDEND",
+      }),
+      2,
+    );
+  });
 
   function runRound(slotKey) {
     const date = slotKey.slice(0, 10);
@@ -176,6 +384,8 @@ test("13·18시 역순 commit과 동시 실행은 시장 상태와 가격을 과
         [{
           id: legacyEvent._id,
           contentHash: legacyPendingEventContentHash(legacyEvent),
+          ticker: legacyEvent.ticker,
+          targetSlotKey: "2026-09-08 18:00",
         }],
         legacyNow,
       ),
@@ -220,7 +430,12 @@ test("13·18시 역순 commit과 동시 실행은 시장 상태와 가격을 과
     await db.collection("stock_scheduled_events").insertOne(event);
     await migrateLegacyPendingStockDisclosures(
       db,
-      [{ id: event._id, contentHash: legacyPendingEventContentHash(event) }],
+      [{
+        id: event._id,
+        contentHash: legacyPendingEventContentHash(event),
+        ticker: event.ticker,
+        targetSlotKey: "2027-01-10 13:00",
+      }],
       migratedAt,
     );
 

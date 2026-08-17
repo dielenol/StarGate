@@ -38,7 +38,7 @@ export interface ChartPoint {
   ts: string;
   price: number;
   eventText: string;
-  source: "scheduled" | "trade" | "gm-event" | "auto-news" | "disclosure" | "corporate-action" | "dividend" | "split";
+  source: "scheduled" | "trade" | "gm-event" | "auto-news" | "disclosure" | "corporate-action" | "dividend" | "split" | "rights-offering";
   /** NOVEX 2.0 가격 회차 식별자. 툴팁에서만 노출한다. */
   slotKey?: string;
   /** 공시 마커용 공개 제목. 가격 이유(eventText)와 별도일 수 있다. */
@@ -96,7 +96,7 @@ export function ChartSkeleton() {
 function eventMarkerColor(source: ChartPoint["source"]): string {
   if (source === "gm-event") return "var(--danger)";
   if (source === "trade") return "var(--info)";
-  if (source === "auto-news" || source === "disclosure" || source === "corporate-action" || source === "dividend" || source === "split") return "var(--gold)";
+  if (source === "auto-news" || source === "disclosure" || source === "corporate-action" || source === "dividend" || source === "split" || source === "rights-offering") return "var(--gold)";
   return "var(--gold)";
 }
 

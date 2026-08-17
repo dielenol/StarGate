@@ -27,6 +27,16 @@ export interface StockPrice {
   cooldownReason?: string;
   /** GM exact override 때 다음 회차로 넘긴 기본 변동 기여도. */
   pendingBasePercent?: number;
+  /** 정방향 액면분할 누적계수. 기존 문서는 1로 해석한다. */
+  cumulativeSplitFactor?: number;
+  /** 유상증자 누적 발행주식 증가계수. 액면분할과 별도 도메인으로 유지한다. */
+  cumulativeCapitalIncreaseFactor?: number;
+  /** 예약 단계에서 같은 종목의 수동 halt/resume과 기업행동 생성을 막는 owner. */
+  corporateActionReservationId?: string;
+  /** 발표 뒤 거래정지를 소유하는 유상증자 action id. */
+  corporateActionHaltId?: string;
+  corporateActionHaltReason?: string;
+  corporateActionResumeSlotKey?: string;
 }
 
 export type CreateStockPriceInput = Omit<StockPrice, "_id">;
@@ -72,7 +82,7 @@ export interface StockPriceHistory {
   prevPrice: number;
   eventText?: string;
   eventTier?: "routine" | "scenario" | "shock";
-  source: "scheduled" | "trade" | "gm-event" | "dividend" | "split";
+  source: "scheduled" | "trade" | "gm-event" | "dividend" | "split" | "rights-offering";
   /** NOVEX 가격 회차 키(KST `YYYY-MM-DD HH:mm`). */
   slotKey?: string;
   /**
@@ -91,10 +101,12 @@ export interface StockPriceHistory {
   disclosurePercent?: number;
   disclosureIds?: string[];
   splitFactor?: number;
+  capitalIncreaseFactor?: number;
   /** 조회 시 이후 액면분할을 누적 반영한 차트용 보정값. DB 원문에는 없을 수 있다. */
   adjustedPrice?: number;
   adjustedReferencePrice?: number;
   cumulativeSplitFactor?: number;
+  cumulativeCapitalIncreaseFactor?: number;
   createdAt: Date;
 }
 

@@ -144,5 +144,11 @@ export function serializePlayerTrade(trade: PlayerTrade): PlayerTradeDto {
       dateToIso(trade.updatedAt) ?? new Date(0).toISOString(),
     ...(completedAt ? { completedAt } : {}),
     ...(cancelledAt ? { cancelledAt } : {}),
+    ...(trade.cancellationReason
+      ? { cancellationReason: trade.cancellationReason }
+      : {}),
+    ...(trade.cancellationContextId
+      ? { cancellationContextId: trade.cancellationContextId }
+      : {}),
   };
 }

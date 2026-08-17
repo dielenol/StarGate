@@ -926,8 +926,9 @@ const TradeCard = memo(function TradeCard({
       </div>
       {hasUnavailableOfferStock ? (
         <p className={styles.tradeAvailabilityNotice} role="alert">
-          {unavailableOfferSummary}. 해당 종목을 제안한 참여자가 구성에서 제거해야
-          저장하거나 확정할 수 있습니다.
+          {unavailableOfferSummary}. 문제 종목을 제안한 참여자가 자기 제안에서
+          제거해야 최종 확정할 수 있습니다. 다른 참여자는 자기 제안을 계속
+          수정·저장할 수 있습니다.
         </p>
       ) : null}
       {isEditing ? (
@@ -1312,7 +1313,12 @@ export default function TradesClient() {
                     )}
                   </div>
                   <span className={trade.status === "COMPLETED" ? styles.statusConfirmed : styles.status}>
-                    {trade.status === "COMPLETED" ? "완료" : "취소"}
+                    {trade.status === "COMPLETED"
+                      ? "완료"
+                      : trade.cancellationReason ===
+                          "RIGHTS_OFFERING_ANNOUNCED"
+                        ? "유상증자 발표로 자동 취소"
+                        : "취소"}
                   </span>
                 </article>
               );

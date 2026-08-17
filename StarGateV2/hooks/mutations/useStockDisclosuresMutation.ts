@@ -24,6 +24,7 @@ export interface CreateStockDisclosureInput {
   body: string;
   effects: StockDisclosureEffect[];
   forceCooldown?: boolean;
+  companyProfileUpdate?: StockDisclosureItem["companyProfileUpdate"];
 }
 
 export interface UpdateStockDisclosureInput {
@@ -41,6 +42,7 @@ export interface UpdateStockDisclosureInput {
   body?: string;
   effects?: StockDisclosureEffect[];
   forceCooldown?: boolean;
+  companyProfileUpdate?: StockDisclosureItem["companyProfileUpdate"];
 }
 
 export interface CancelStockDisclosureInput {
