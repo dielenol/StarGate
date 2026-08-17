@@ -1,9 +1,12 @@
 /* ── PersonnelCard ── */
 
 .card {
-  --card-accent: var(--gold);
-  --card-accent-dim: var(--gold-dim);
-  --card-accent-bg: color-mix(in srgb, var(--gold) 5%, transparent);
+  --card-accent: var(--personnel-accent, var(--gold));
+  --card-accent-dim: var(--personnel-accent-dim, var(--gold-dim));
+  --card-accent-bg: var(
+    --personnel-accent-bg,
+    color-mix(in srgb, var(--gold) 5%, transparent)
+  );
   --card-pattern: repeating-linear-gradient(
     0deg,
     color-mix(in srgb, var(--card-accent) 3%, transparent) 0 1px,

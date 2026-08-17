@@ -1,9 +1,12 @@
 /* ── GroupHero (L2 그룹 진입 헤더) ── */
 
 .hero {
-  --hero-accent: var(--gold);
-  --hero-accent-dim: var(--gold-dim);
-  --hero-accent-bg: color-mix(in srgb, var(--gold) 6%, transparent);
+  --hero-accent: var(--personnel-accent, var(--gold));
+  --hero-accent-dim: var(--personnel-accent-dim, var(--gold-dim));
+  --hero-accent-bg: var(
+    --personnel-accent-bg,
+    color-mix(in srgb, var(--gold) 6%, transparent)
+  );
   --hero-scanline: repeating-linear-gradient(
     0deg,
     color-mix(in srgb, var(--hero-accent) 3%, transparent) 0 1px,
@@ -22,7 +25,7 @@
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.018);
 }
 
-.hero[data-group-code="HOSTILE"] {
+.hero[data-tone="hostile"] {
   --hero-accent: var(--danger);
   --hero-accent-dim: color-mix(in oklab, var(--danger) 76%, transparent);
   --hero-accent-bg: color-mix(in oklab, var(--danger) 8%, transparent);
@@ -135,7 +138,7 @@
   color: var(--hero-accent);
 }
 
-.hero[data-group-code="HOSTILE"] .titleIcon {
+.hero[data-tone] .titleIcon {
   color: var(--hero-accent);
 }
 
@@ -198,7 +201,7 @@
 
 .subUnitChip svg {
   flex-shrink: 0;
-  color: var(--gold-dim);
+  color: var(--hero-accent-dim);
 }
 
 .subUnitLogo {
@@ -235,7 +238,7 @@
   background: var(--hero-accent-bg);
 }
 
-.hero[data-group-code="HOSTILE"] .subUnitChip--clickable:hover {
+.hero[data-tone] .subUnitChip--clickable:hover {
   border-color: var(--hero-accent);
   color: var(--hero-accent);
   background: var(--hero-accent-bg);
@@ -245,7 +248,7 @@
   color: var(--hero-accent);
 }
 
-.hero[data-group-code="HOSTILE"] .subUnitChip--clickable:hover svg {
+.hero[data-tone] .subUnitChip--clickable:hover svg {
   color: var(--hero-accent);
 }
 
@@ -254,7 +257,7 @@
   outline-offset: 2px;
 }
 
-.hero[data-group-code="HOSTILE"] .subUnitChip--clickable:focus-visible {
+.hero[data-tone] .subUnitChip--clickable:focus-visible {
   outline-color: var(--hero-accent);
 }
 
@@ -264,7 +267,7 @@
   background: color-mix(in srgb, var(--hero-accent) 12%, transparent);
 }
 
-.hero[data-group-code="HOSTILE"] .subUnitChip--on {
+.hero[data-tone] .subUnitChip--on {
   border-color: var(--hero-accent);
   color: var(--hero-accent);
   background: color-mix(in oklab, var(--hero-accent) 12%, transparent);
@@ -274,7 +277,7 @@
   color: var(--hero-accent);
 }
 
-.hero[data-group-code="HOSTILE"] .subUnitChip--on svg {
+.hero[data-tone] .subUnitChip--on svg {
   color: var(--hero-accent);
 }
 
@@ -308,7 +311,7 @@
   gap: 14px 20px;
 }
 
-.hero[data-group-code="HOSTILE"] .sections {
+.hero[data-tone] .sections {
   border-top-color: color-mix(in oklab, var(--hero-accent) 48%, transparent);
 }
 
@@ -395,7 +398,7 @@
   letter-spacing: 0;
 }
 
-.hero[data-group-code="HOSTILE"] .headcountN {
+.hero[data-tone] .headcountN {
   color: var(--hero-accent);
 }
 

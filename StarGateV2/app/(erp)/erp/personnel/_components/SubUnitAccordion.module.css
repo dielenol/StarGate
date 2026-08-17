@@ -1,9 +1,12 @@
 /* ── SubUnitAccordion ── */
 
 .subunit {
-  --subunit-accent: var(--gold);
-  --subunit-accent-dim: var(--gold-dim);
-  --subunit-accent-bg: color-mix(in srgb, var(--gold) 5%, transparent);
+  --subunit-accent: var(--personnel-accent, var(--gold));
+  --subunit-accent-dim: var(--personnel-accent-dim, var(--gold-dim));
+  --subunit-accent-bg: var(
+    --personnel-accent-bg,
+    color-mix(in srgb, var(--gold) 5%, transparent)
+  );
   --subunit-pattern: repeating-linear-gradient(
     0deg,
     color-mix(in srgb, var(--subunit-accent) 3%, transparent) 0 1px,
@@ -27,7 +30,7 @@
   --subunit-accent-bg: color-mix(in oklab, var(--danger) 7%, transparent);
 }
 
-.subunit[data-tone="hostile"].subunit--open {
+.subunit[data-tone].subunit--open {
   border-color: var(--subunit-accent);
   box-shadow:
     inset 0 0 0 1px color-mix(in oklab, var(--subunit-accent) 18%, transparent),
@@ -82,7 +85,7 @@
     var(--bg-2);
 }
 
-.subunit[data-tone="hostile"].subunit--open > .head {
+.subunit[data-tone].subunit--open > .head {
   border-bottom-color: color-mix(in oklab, var(--subunit-accent) 48%, transparent);
   background:
     linear-gradient(90deg, var(--subunit-accent-bg), transparent 58%),
@@ -100,7 +103,7 @@
   outline-offset: -1px;
 }
 
-.subunit[data-tone="hostile"] .head:focus-visible {
+.subunit[data-tone] .head:focus-visible {
   outline-color: var(--subunit-accent);
 }
 
@@ -112,7 +115,7 @@
   flex: 0 0 auto;
 }
 
-.subunit[data-tone="hostile"] .arrow {
+.subunit[data-tone] .arrow {
   color: var(--subunit-accent);
 }
 
@@ -127,7 +130,7 @@
   color: var(--subunit-accent-dim);
 }
 
-.subunit[data-tone="hostile"] .icon {
+.subunit[data-tone] .icon {
   color: var(--subunit-accent);
 }
 
@@ -184,7 +187,7 @@
   color: var(--subunit-accent);
 }
 
-.subunit[data-tone="hostile"].subunit--open .icon {
+.subunit[data-tone].subunit--open .icon {
   color: var(--subunit-accent);
 }
 
@@ -197,7 +200,7 @@
   letter-spacing: 0.22em;
 }
 
-.subunit[data-tone="hostile"] .code {
+.subunit[data-tone] .code {
   color: var(--subunit-accent);
 }
 

@@ -21,6 +21,20 @@
   --personnel-accent-bg-strong: color-mix(in oklab, var(--danger) 11%, transparent);
 }
 
+.personnelPage[data-tone="military"] {
+  --personnel-accent: #7fa6c9;
+  --personnel-accent-dim: color-mix(in srgb, #7fa6c9 68%, transparent);
+  --personnel-accent-bg: color-mix(in srgb, #7fa6c9 6%, transparent);
+  --personnel-accent-bg-strong: color-mix(in srgb, #7fa6c9 11%, transparent);
+}
+
+.personnelPage[data-tone="civil"] {
+  --personnel-accent: rgb(255 255 255 / 0.72);
+  --personnel-accent-dim: rgb(255 255 255 / 0.5);
+  --personnel-accent-bg: rgb(255 255 255 / 0.05);
+  --personnel-accent-bg-strong: rgb(255 255 255 / 0.09);
+}
+
 /* data-rank 주입 시 rank 팔레트로 자동 전환, 미지정 시 gold 폴백 */
 .clrPill {
   display: inline-flex;
@@ -225,10 +239,8 @@
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.018);
 }
 
-.directMembers[data-tone="hostile"] {
-  --direct-accent: var(--danger);
-  --direct-accent-dim: color-mix(in oklab, var(--danger) 68%, transparent);
-  border-color: color-mix(in oklab, var(--danger) 44%, var(--line-strong));
+.directMembers[data-tone] {
+  border-color: color-mix(in srgb, var(--direct-accent) 44%, var(--line-strong));
 }
 
 .directMembers::before {
@@ -269,7 +281,7 @@
 
 .directMembers__icon {
   flex-shrink: 0;
-  color: var(--gold);
+  color: var(--direct-accent);
 }
 
 .directMembers__label {
@@ -286,8 +298,8 @@
   letter-spacing: 0.12em;
 }
 
-.directMembers[data-tone="hostile"] .directMembers__meta {
-  color: var(--danger);
+.directMembers[data-tone] .directMembers__meta {
+  color: var(--direct-accent);
 }
 
 .directMembers__body {

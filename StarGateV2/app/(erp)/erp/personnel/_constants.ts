@@ -1,4 +1,5 @@
 import type { AgentLevel, FactionCode, InstitutionCode } from "@/types/character";
+import { getTopLevelGroup } from "@/lib/org-structure";
 import {
   CIVIL_PERSONNEL_CATEGORIES,
   EXTERNAL_SUB_ORGS,
@@ -67,6 +68,20 @@ export const INSTITUTION_DOCTRINE: Record<InstitutionCode, string> = {
 
 export function getInstitutionDoctrine(code: string): string | undefined {
   return INSTITUTION_DOCTRINE[code as InstitutionCode];
+}
+
+/** 외부 조직 drilldown에서 쓰는 시각 강조색. 내부 조직과 미배정은 기본 gold를 유지한다. */
+export type PersonnelOrgTone = "military" | "civil" | "hostile";
+
+export function getPersonnelOrgTone(
+  code: string | null | undefined,
+): PersonnelOrgTone | undefined {
+  const topLevelGroup = getTopLevelGroup(code ?? undefined);
+
+  if (topLevelGroup === "MILITARY") return "military";
+  if (topLevelGroup === "CIVIL") return "civil";
+  if (topLevelGroup === "HOSTILE") return "hostile";
+  return undefined;
 }
 
 /** subUnits 가 있는 기관은 GroupHero/OrgCanvas 의 SUB UNITS 분기로 흡수되어

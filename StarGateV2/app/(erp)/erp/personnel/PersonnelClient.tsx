@@ -67,6 +67,7 @@ import {
   INSTITUTION_OVERSIGHT,
   isCivilPersonnelCategory,
   isExternalSubOrg,
+  getPersonnelOrgTone,
 } from "./_constants";
 
 import styles from "./page.module.css";
@@ -168,13 +169,6 @@ function getCivilPersonnelCategoryUnits(): readonly SubUnitItem[] {
 function getDrillSubUnits(groupCode: string): readonly SubUnitItem[] {
   if (groupCode !== "CIVIL") return getDisplaySubUnits(groupCode);
   return [...getDisplaySubUnits(groupCode), ...getCivilPersonnelCategoryUnits()];
-}
-
-function getOrgTone(code: string | null | undefined): "hostile" | undefined {
-  if (code === "HOSTILE") return "hostile";
-  return getExternalSubOrg(code ?? "")?.parentCode === "HOSTILE"
-    ? "hostile"
-    : undefined;
 }
 
 /** 같은 그룹/서브유닛 내부 카드 정렬: 등급 내림차순 → codename 오름차순 */
@@ -665,7 +659,7 @@ export default function PersonnelClient({
     : "faction";
   const selectedGroupUsesAgentLevels =
     !selectedGroup || isInternalOrgCode(selectedGroup);
-  const selectedTone = getOrgTone(selectedGroup);
+  const selectedTone = getPersonnelOrgTone(selectedGroup);
 
   // 검색 배너 표시 조건 (L2 에서 다른 그룹에도 매칭이 있을 때)
   const searchBannerInfo = useMemo(() => {
@@ -738,7 +732,7 @@ export default function PersonnelClient({
       items.push({
         key: "group",
         label,
-        tone: getOrgTone(selectedGroup),
+        tone: getPersonnelOrgTone(selectedGroup),
         iconCode:
           kind === "faction"
             ? isExternalSubOrg(selectedGroup)
@@ -766,7 +760,7 @@ export default function PersonnelClient({
       items.push({
         key: "sub",
         label: `하위: ${subLabel}`,
-        tone: getOrgTone(expandedSubUnit),
+        tone: getPersonnelOrgTone(expandedSubUnit),
         iconCode:
           externalSubOrg && !civilCategory
             ? undefined

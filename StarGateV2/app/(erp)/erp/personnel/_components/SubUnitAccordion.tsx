@@ -4,7 +4,11 @@ import type { ReactNode } from "react";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
-import { getCivilPersonnelCategory, getExternalSubOrg } from "../_constants";
+import {
+  getCivilPersonnelCategory,
+  getExternalSubOrg,
+  getPersonnelOrgTone,
+} from "../_constants";
 
 import OrgIcon, {
   getCivilCategoryIcon,
@@ -61,8 +65,7 @@ export default function SubUnitAccordion({
     ? preferOptimizedPublicImagePath(subLogo)
     : undefined;
   const displayLabel = classifiedGroup?.label ?? label;
-  const tone =
-    externalSubOrg?.parentCode === "HOSTILE" ? ("hostile" as const) : undefined;
+  const tone = getPersonnelOrgTone(code);
 
   return (
     <div

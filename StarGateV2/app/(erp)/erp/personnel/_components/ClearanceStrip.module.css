@@ -1,16 +1,29 @@
 /* Clearance strip — 권한 등급 pill + 안내 + 등급 안내 버튼 + SOURCE 한 줄 통합 */
 
 .strip {
+  --strip-accent: var(
+    --personnel-accent,
+    var(--dossier-accent, var(--gold))
+  );
+  --strip-accent-dim: var(
+    --personnel-accent-dim,
+    var(--dossier-accent-dim, var(--gold-dim))
+  );
+  --strip-accent-bg: var(
+    --personnel-accent-bg,
+    var(--dossier-accent-bg, rgba(201, 168, 90, 0.06))
+  );
+
   display: flex;
   gap: 14px;
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 14px;
   padding: 10px 16px;
-  border: 1px solid var(--gold-dim);
-  border-left: 2px solid var(--gold);
+  border: 1px solid var(--strip-accent-dim);
+  border-left: 2px solid var(--strip-accent);
   border-radius: var(--radius-sm);
-  background: rgba(201, 168, 90, 0.06);
+  background: var(--strip-accent-bg);
   color: var(--ink-1);
   font-size: 14px;
 }
@@ -36,7 +49,7 @@
 }
 
 .strip__level {
-  color: var(--gold);
+  color: var(--strip-accent);
   font-family: var(--font-mono);
 }
 

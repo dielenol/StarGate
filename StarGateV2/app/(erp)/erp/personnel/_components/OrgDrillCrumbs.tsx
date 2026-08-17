@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
+import type { PersonnelOrgTone } from "../_constants";
+
 import OrgIcon, { type OrgIconCode } from "./OrgIcon";
 
 import styles from "./OrgDrillCrumbs.module.css";
@@ -17,7 +19,7 @@ import styles from "./OrgDrillCrumbs.module.css";
 export interface DrillCrumbItem {
   key: string;
   label: string;
-  tone?: "hostile";
+  tone?: PersonnelOrgTone;
   /** 강조(현재 위치). 마지막 chip 에 부여. */
   on?: boolean;
   href?: string;

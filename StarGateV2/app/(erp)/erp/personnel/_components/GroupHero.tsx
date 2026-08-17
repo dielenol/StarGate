@@ -4,7 +4,11 @@ import Button from "@/components/ui/Button/Button";
 import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
-import { getExternalSubOrg, LEVEL_ORDER } from "../_constants";
+import {
+  getExternalSubOrg,
+  getPersonnelOrgTone,
+  LEVEL_ORDER,
+} from "../_constants";
 
 import OrgIcon, {
   getExternalSubOrgIcon,
@@ -94,9 +98,10 @@ export default function GroupHero({
 
   const subUnitCount = subUnits?.length ?? 0;
   const hasSubUnits = subUnitCount > 0;
+  const tone = getPersonnelOrgTone(groupCode);
 
   return (
-    <div className={styles.hero} data-group-code={groupCode}>
+    <div className={styles.hero} data-group-code={groupCode} data-tone={tone}>
       <span className={`${styles.corner} ${styles["corner--tl"]}`} />
       <span className={`${styles.corner} ${styles["corner--tr"]}`} />
       <span className={`${styles.corner} ${styles["corner--bl"]}`} />
