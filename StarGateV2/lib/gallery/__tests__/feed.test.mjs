@@ -108,6 +108,31 @@ test("보고서 이미지와 fanart를 album으로 합치고 권한 플래그를
   assert.equal(item?.hiddenReason, "검토");
 });
 
+test("세션 이미지 태그는 참가자를 제외하고 유형·시리즈·보고 번호로 규격화한다", () => {
+  const regularFeed = build({ fanarts: [] });
+  const regularItem = regularFeed.items.find(
+    (candidate) => candidate.kind === "SESSION",
+  );
+  assert.deepEqual(regularItem?.tags, ["세션", "메인", "01"]);
+
+  const miniFeed = build({
+    reports: [
+      report({
+        sessionId: "NOSB-MINI-NEVED",
+        sessionTitle: "작전 보고서 MINI06: 전사의 탄생",
+        reportNumber: "MINI06",
+        participants: ["키아나 오 캘러핸 / 네베드", "AGENT_A"],
+      }),
+    ],
+    fanarts: [],
+  });
+  const miniItem = miniFeed.items.find(
+    (candidate) => candidate.kind === "SESSION",
+  );
+  assert.equal(miniFeed.albums[0]?.series, "mini");
+  assert.deepEqual(miniItem?.tags, ["세션", "미니", "MINI06"]);
+});
+
 test("현재 보이는 보고서가 없는 linked fanart도 소유자는 정리할 수 있다", () => {
   const feed = build({
     reports: [],

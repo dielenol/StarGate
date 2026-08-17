@@ -46,7 +46,6 @@ export type GallerySessionReportDocument = Pick<
   | "sessionTitle"
   | "reportNumber"
   | "summary"
-  | "participants"
   | "createdAt"
 >;
 
@@ -153,7 +152,6 @@ export async function listGallerySessionReports(
           sessionTitle: 1,
           reportNumber: 1,
           summary: 1,
-          participants: 1,
           createdAt: 1,
         },
       },
@@ -430,7 +428,6 @@ export async function findVisibleGallerySessionReportBySessionId(
         sessionTitle: 1,
         reportNumber: 1,
         summary: 1,
-        participants: 1,
         createdAt: 1,
       },
       session: options.session,

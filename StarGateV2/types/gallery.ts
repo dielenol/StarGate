@@ -11,6 +11,7 @@ export interface GalleryImageDto {
 
 export interface GalleryAlbumDto {
   sessionId: string;
+  series: "regular" | "mini";
   reportNumber: string;
   title: string;
   href: string;

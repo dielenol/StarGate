@@ -38,11 +38,12 @@ function buildAlbums(
   reports: readonly GallerySessionReportDocument[],
 ): GalleryAlbumDto[] {
   return buildOperationReportNumbering(reports)
-    .map(({ report, number }) => {
+    .map(({ report, number, series }) => {
       const id = reportId(report);
       if (!id) return null;
       return {
         sessionId: report.sessionId,
+        series,
         reportNumber: number,
         title: report.sessionTitle,
         href: `/erp/sessions/report/${id}`,
@@ -59,6 +60,8 @@ function buildSessionItems(
     const id = reportId(report);
     const album = albumBySessionId.get(report.sessionId);
     if (!id || !album) return [];
+    const seriesTag = album.series === "mini" ? "미니" : "메인";
+    const classificationTags = ["세션", seriesTag, album.reportNumber];
 
     return extractMarkdownImages(report.summary, {
       srcPrefix: SESSION_ASSET_PREFIX,
@@ -77,7 +80,7 @@ function buildSessionItems(
           height: null,
         },
         albumSessionId: album.sessionId,
-        tags: ["세션", album.reportNumber, ...report.participants],
+        tags: [...classificationTags],
         createdAt: toIsoString(report.createdAt),
       } satisfies GallerySessionItemDto;
     });
