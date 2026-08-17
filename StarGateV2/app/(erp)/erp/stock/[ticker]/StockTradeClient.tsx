@@ -46,6 +46,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 import { findStockByTicker } from "@/lib/stocks/catalog";
 import { buildStockMarketIndexSnapshot } from "@/lib/stocks/market-index";
+import { MAX_SAFE_ORDER_SHARES } from "@/lib/stocks/order";
 import {
   formatStockValue,
   roundStockValue,
@@ -316,6 +317,20 @@ export default function StockTradeClient({
     (balance === null || tradeTotal > balanceForTrade);
   const insufficientShares =
     effectiveTab === "sell" && tradeShares > heldShares;
+
+  /**
+   * 현재 탭에서 실제로 체결 가능한 최대 수량 — 매수=잔액으로 살 수 있는 수량,
+   * 매도=보유 수량. 잔액 미확인이거나 시세가 없어 계산이 불가하면 null.
+   */
+  const maxOrderShares = useMemo(() => {
+    if (effectiveTab === "sell") return heldShares;
+    if (balance === null || displayPrice <= 0) return null;
+    return Math.floor(balanceForTrade / displayPrice);
+  }, [effectiveTab, heldShares, balance, displayPrice, balanceForTrade]);
+
+  const atMaxOrderShares =
+    maxOrderShares !== null && tradeShares >= maxOrderShares;
+
   const buyDisabled =
     !canTrade ||
     tradeShares <= 0 ||
@@ -433,21 +448,26 @@ export default function StockTradeClient({
     alertRules.setRule(ticker, nextRule);
   }
 
-  /** 빠른 비율 적용 — 매수: floor(balance×ratio / price). 매도: floor(held × ratio). */
+  /**
+   * 수량을 체결 가능 범위(0 ~ maxOrderShares)로 clamp.
+   * 상한을 계산할 수 없으면 안전 정수 상한만 적용한다 — 이 경우 제출은
+   * insufficientBalance/insufficientShares 가 계속 막는다.
+   */
+  function clampShares(value: number): number {
+    const floored = Math.max(0, Math.floor(value));
+    const upper = maxOrderShares ?? MAX_SAFE_ORDER_SHARES;
+    return Math.min(upper, floored);
+  }
+
+  /** 빠른 비율 적용 — 체결 가능 최대 수량 × ratio. */
   function applyQuickRatio(ratio: number) {
-    if (effectiveTab === "buy") {
-      if (displayPrice <= 0) return;
-      const max = Math.floor(balanceForTrade / displayPrice);
-      const next = Math.max(0, Math.floor(max * ratio));
-      setQtyInput(next > 0 ? String(next) : "");
-    } else {
-      const next = Math.max(0, Math.floor(heldShares * ratio));
-      setQtyInput(next > 0 ? String(next) : "");
-    }
+    if (maxOrderShares === null) return;
+    const next = clampShares(maxOrderShares * ratio);
+    setQtyInput(next > 0 ? String(next) : "");
   }
 
   function adjustQty(delta: number) {
-    const next = Math.max(0, tradeShares + delta);
+    const next = clampShares(tradeShares + delta);
     setQtyInput(next > 0 ? String(next) : "");
   }
 
@@ -1166,12 +1186,20 @@ export default function StockTradeClient({
                     type="number"
                     inputMode="numeric"
                     min={0}
+                    max={maxOrderShares ?? undefined}
                     step={1}
                     className={sharedStyles.tradeCard__qtyInput}
                     value={qtyInput}
                     onChange={(e) => {
                       const raw = e.target.value.replace(/[^0-9]/g, "");
-                      setQtyInput(raw);
+                      if (raw === "") {
+                        setQtyInput("");
+                        return;
+                      }
+                      // 체결 가능 수량 초과 입력은 최대치로 clamp — 보유 132주에
+                      // 13320000 같은 값이 찍히지 않도록.
+                      const next = clampShares(Number.parseInt(raw, 10));
+                      setQtyInput(next > 0 ? String(next) : "");
                     }}
                     placeholder="0"
                     disabled={!canTrade || isTradePending}
@@ -1181,7 +1209,7 @@ export default function StockTradeClient({
                     type="button"
                     className={sharedStyles.tradeCard__qtyBtn}
                     onClick={() => adjustQty(1)}
-                    disabled={!canTrade || isTradePending}
+                    disabled={!canTrade || isTradePending || atMaxOrderShares}
                     aria-label="수량 1 증가"
                   >
                     +
