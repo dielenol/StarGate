@@ -54,6 +54,16 @@
 
 추론 강도나 agent 리뷰는 테스트, DB 재조회, 브라우저 관찰, 성능 측정을 대체하지 않는다.
 
+## Dossier Portrait Alpha Contract
+
+> **재발 방지: 신원조회용 NPC `profile` 자산은 흰 배경을 포함한 불투명 원본을 그대로 발행하지 않는다.**
+
+- 사용자가 제공한 Dossier 초상에 평면·흰색·촬영 배경이 있으면 단순 이미지 연결이 아니라 배경제거가 포함된 자산 준비 작업으로 분류하고, 전역 `local-cutout` Skill과 `/Users/flitto/Code/toolbox` 절차를 반드시 적용한다.
+- `public/assets/npcs/<Entity>-profile.webp`에는 실제 투명 픽셀이 있어야 한다. 알파 채널만 존재하고 모든 픽셀이 불투명한 파일도 허용하지 않는다.
+- 원본과 1차 후보를 덮어쓰지 않는다. 4배경 QA에서 피사체 보존, 내부 구멍, 밝고 어두운 배경의 가장자리 오염을 확인한 채택본만 `pnpm asset:publish`에 전달한다.
+- 자동 1차 모델과 선언된 fallback이 모두 실패하면 배경 잔여물을 통과 처리하거나 다른 모델을 계속 순회하지 않는다. `local-cutout`의 수동 보정·생성형 복구 경계에 따라 사용자 지시를 받는다.
+- NPC profile 발행을 수정하면 `node --test lib/assets/__tests__/asset-system.test.mjs`를 실행해 불투명 입력의 쓰기 전 거부와 투명 WebP 보존을 확인한다.
+
 ## Page Work History
 
 사용자에게 보이는 페이지 동작을 실질적으로 변경하는 작업은 `docs/work-history/README.md`의 페이지별 작업 이력 규칙을 따른다.

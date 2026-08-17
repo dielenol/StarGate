@@ -32,6 +32,33 @@ async function exists(filePath: string): Promise<boolean> {
   }
 }
 
+function requiresTransparentPixels(spec: AssetPathCliInput): boolean {
+  return spec.domain === "npc" && spec.role === "profile";
+}
+
+async function assertRequiredTransparency(
+  inputPath: string,
+  spec: AssetPathCliInput,
+): Promise<void> {
+  if (!requiresTransparentPixels(spec)) return;
+
+  const image = sharp(inputPath);
+  const metadata = await image.metadata();
+  if (!metadata.hasAlpha) {
+    throw new Error(
+      "NPC profile 자산은 local-cutout QA를 통과한 실제 투명 픽셀이 필요합니다.",
+    );
+  }
+
+  const stats = await image.stats();
+  const alpha = stats.channels.at(-1);
+  if (!alpha || alpha.min >= 255) {
+    throw new Error(
+      "NPC profile 자산은 local-cutout QA를 통과한 실제 투명 픽셀이 필요합니다.",
+    );
+  }
+}
+
 export async function publishAsset({
   inputPath,
   overwrite = false,
@@ -50,6 +77,7 @@ export async function publishAsset({
   if (!(await exists(absoluteInputPath))) {
     throw new Error(`입력 이미지를 찾을 수 없습니다: ${absoluteInputPath}`);
   }
+  await assertRequiredTransparency(absoluteInputPath, spec);
 
   const destination = resolveAssetDestination({ ...spec, format: "webp" });
   const absoluteOutputPath = path.resolve(projectRoot, destination.filePath);

@@ -161,6 +161,69 @@ test("publish CLI는 staging 이미지를 역할 기반 alpha WebP로 발행하�
   }
 });
 
+test("publish CLI는 실제 투명 픽셀이 없는 NPC profile 발행을 쓰기 전에 막는다", async () => {
+  const projectRoot = await mkdtemp(
+    path.join(tmpdir(), "stargate-opaque-npc-profile-"),
+  );
+  const rgbInputPath = path.join(projectRoot, "opaque-rgb-profile.png");
+  const alphaInputPath = path.join(projectRoot, "opaque-alpha-profile.png");
+
+  try {
+    await sharp({
+      create: {
+        background: { b: 255, g: 255, r: 255 },
+        channels: 3,
+        height: 8,
+        width: 8,
+      },
+    })
+      .png()
+      .toFile(rgbInputPath);
+
+    await sharp({
+      create: {
+        background: { alpha: 1, b: 255, g: 255, r: 255 },
+        channels: 4,
+        height: 8,
+        width: 8,
+      },
+    })
+      .png()
+      .toFile(alphaInputPath);
+
+    for (const [inputPath, entitySlug] of [
+      [rgbInputPath, "Opaque-Rgb-Profile"],
+      [alphaInputPath, "Opaque-Alpha-Profile"],
+    ]) {
+      await assert.rejects(
+        () =>
+          publishAsset({
+            inputPath,
+            projectRoot,
+            spec: {
+              domain: "npc",
+              entitySlug,
+              role: "profile",
+            },
+          }),
+        /실제 투명 픽셀이 필요합니다/,
+      );
+      await assert.rejects(
+        () =>
+          access(
+            path.join(
+              projectRoot,
+              `public/assets/npcs/${entitySlug}-profile.webp`,
+            ),
+          ),
+        /ENOENT/,
+      );
+    }
+  } finally {
+    await rm(projectRoot, { force: true, recursive: true });
+  }
+});
+
 test("NPC·상점·카탈로그 레지스트리의 경로는 실제 배포 자산으로 연결된다", async () => {
   assert.ok(PUBLIC_ASSET_REGISTRY_PATHS.length >= 100);
   for (const assetPath of PUBLIC_ASSET_REGISTRY_PATHS) {
