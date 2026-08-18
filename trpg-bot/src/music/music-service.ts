@@ -45,6 +45,8 @@ import {
 } from "./types.js";
 import {
   MAX_PLAYLIST_TRACKS_PER_REQUEST,
+  getPlayerClients,
+  getPotProviderBaseUrl,
   inspectMusicRuntime,
   resolveYoutubePlaylist,
   resolveYoutubeTrack,
@@ -1461,6 +1463,10 @@ export class MusicService {
         단계: event.stage,
         영상ID: event.track.videoId,
         곡명: event.track.title,
+        // 서버 로그에 접근하지 않고도 원인을 좁힐 수 있게 런타임 구성을 함께 싣는다.
+        "yt-dlp": this.runtimeInfo?.ytDlpVersion ?? "unknown",
+        playerClient: getPlayerClients(),
+        POT: getPotProviderBaseUrl() ?? "미설정",
       },
     });
   }
