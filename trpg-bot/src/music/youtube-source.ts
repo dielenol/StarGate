@@ -33,12 +33,15 @@ const FALLBACK_AUDIO_FORMAT_SELECTOR = "bestaudio/best";
  * client로 다시 해석해도 같은 제한이 걸린다. 그래서 기본 프로필과 폴백 프로필을
  * 서로 다른 client로 구성하고, 배포 없이 교체할 수 있게 환경변수 재정의를 둔다.
  *
- * gvs PO token 없이 HTTPS 음원을 받을 수 있는 client는 `tv`, `tv_downgraded`,
- * `visionos`, `web_embedded` 뿐이다. `android*`·`ios`·`mweb`·`web`·`web_safari`는
- * PO token을 요구하므로 provider 없이 지정하면 다시 403으로 돌아온다.
+ * 2026-08-18 실측 (yt-dlp 2026.8.18 nightly):
+ * - `visionos` — 정상. PO token 없이도 WebM/Opus HTTPS 음원을 받는다
+ * - `web_safari` — 정상이지만 gvs PO token을 요구한다. provider가 떠 있을 때만 신뢰
+ * - `tv`, `tv_downgraded` — `The page needs to be reloaded` 로 URL 자체를 못 받는다.
+ *   TVHTML5 계열이 회복되면 후보로 되돌릴 수 있다
+ * - `tv` 는 SABR-only 실험에 걸려 https 포맷이 URL 없이 오는 경우도 관측됐다
  */
-const DEFAULT_PLAYER_CLIENTS = "tv,visionos";
-const FALLBACK_PLAYER_CLIENTS = "visionos,tv_downgraded";
+const DEFAULT_PLAYER_CLIENTS = "visionos";
+const FALLBACK_PLAYER_CLIENTS = "web_safari";
 const PLAYER_CLIENT_PATTERN = /^[\da-z_.-]+(?:,[\da-z_.-]+)*$/;
 
 const ALLOWED_YOUTUBE_HOSTS = new Set([

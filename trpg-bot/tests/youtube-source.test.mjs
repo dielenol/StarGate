@@ -245,7 +245,7 @@ test("기본 프로필은 PO token을 요구하지 않는 player client와 Opus 
   }, () => {
     const args = buildYtDlpInfoArgs("https://www.youtube.com/watch?v=abc123", 0);
     assert.deepEqual(argValues(args, "--extractor-args"), [
-      "youtube:player_client=tv,visionos",
+      "youtube:player_client=visionos",
     ]);
     assert.deepEqual(argValues(args, "-f"), [
       "bestaudio[ext=webm][acodec^=opus]/bestaudio[acodec^=opus]/bestaudio/best",
@@ -263,7 +263,7 @@ test("폴백 프로필은 다른 player client와 완화된 포맷 조건으로 
   }, () => {
     const args = buildYtDlpInfoArgs("https://www.youtube.com/watch?v=abc123", 1);
     assert.deepEqual(argValues(args, "--extractor-args"), [
-      "youtube:player_client=visionos,tv_downgraded",
+      "youtube:player_client=web_safari",
     ]);
     assert.deepEqual(argValues(args, "-f"), ["bestaudio/best"]);
     assert.deepEqual(argValues(args, "-S"), []);
@@ -287,7 +287,7 @@ test("player client 재정의는 형식이 올바를 때만 적용한다", () =>
     assert.equal(getPlayerClients(), "web_safari,android_vr");
   });
   withEnv({ YT_DLP_PLAYER_CLIENTS: "tv; rm -rf /" }, () => {
-    assert.equal(getPlayerClients(), "tv,visionos");
+    assert.equal(getPlayerClients(), "visionos");
   });
 });
 
@@ -299,7 +299,7 @@ test("POT provider 주소는 설정된 경우에만 extractor 인자로 넘긴�
     assert.deepEqual(
       argValues(buildYtDlpInfoArgs("ytsearch1:test", 0), "--extractor-args"),
       [
-        "youtube:player_client=tv,visionos",
+        "youtube:player_client=visionos",
         "youtubepot-bgutilhttp:base_url=http://pot-provider:4416",
       ],
     );
@@ -310,7 +310,7 @@ test("POT provider 주소는 설정된 경우에만 extractor 인자로 넘긴�
   }, () => {
     assert.deepEqual(
       argValues(buildYtDlpInfoArgs("ytsearch1:test", 0), "--extractor-args"),
-      ["youtube:player_client=tv,visionos"],
+      ["youtube:player_client=visionos"],
     );
   });
 });
