@@ -7,7 +7,10 @@ import {
   MusicOperationAbortedError,
   isMusicOperationAbortedError,
 } from "../dist/music/types.js";
-import { YoutubeSourceError } from "../dist/music/youtube-source.js";
+import {
+  isYoutubeMediaForbiddenError,
+  YoutubeSourceError,
+} from "../dist/music/youtube-source.js";
 
 const TEST_TRACK = {
   videoId: "video-id",
@@ -96,5 +99,43 @@ test("상위 세션의 AbortSignal은 응답 대기 중인 HTTP 요청까지 취
       assert.equal(error.message, "테스트 취소");
       return true;
     });
+  });
+});
+
+test("googlevideo 403 응답은 프로필 교체가 가능한 전용 오류로 분류한다", async () => {
+  await withHttpServer((_request, response) => {
+    response.writeHead(403, { "Content-Type": "text/plain" });
+    response.end("Forbidden");
+  }, async (url) => {
+    await assert.rejects(
+      createAudioResourceFromMedia(TEST_TRACK, passthroughMedia(url), {
+        responseTimeoutMs: 1_000,
+        firstByteTimeoutMs: 1_000,
+      }),
+      (error) => {
+        assert.equal(isYoutubeMediaForbiddenError(error), true);
+        assert.match(error.message, /HTTP 403/);
+        return true;
+      },
+    );
+  });
+});
+
+test("403이 아닌 HTTP 오류는 일반 소스 오류로 남긴다", async () => {
+  await withHttpServer((_request, response) => {
+    response.writeHead(500, { "Content-Type": "text/plain" });
+    response.end("boom");
+  }, async (url) => {
+    await assert.rejects(
+      createAudioResourceFromMedia(TEST_TRACK, passthroughMedia(url), {
+        responseTimeoutMs: 1_000,
+        firstByteTimeoutMs: 1_000,
+      }),
+      (error) => {
+        assert.equal(error instanceof YoutubeSourceError, true);
+        assert.equal(isYoutubeMediaForbiddenError(error), false);
+        return true;
+      },
+    );
   });
 });

@@ -23,6 +23,24 @@ export const MAX_PLAYLIST_TRACKS_PER_REQUEST = 50;
 const AUDIO_FORMAT_SELECTOR =
   "bestaudio[ext=webm][acodec^=opus]/bestaudio[acodec^=opus]/bestaudio/best";
 
+/** 폴백 프로필은 포맷 제약을 풀어 HLS·m4a 음원까지 후보로 둔다. */
+const FALLBACK_AUDIO_FORMAT_SELECTOR = "bestaudio/best";
+
+/**
+ * gvs PO token을 요구하지 않는 player client를 우선 사용한다.
+ *
+ * YouTube가 특정 client의 미디어 URL을 막으면 googlevideo 응답이 403이 되고 같은
+ * client로 다시 해석해도 같은 제한이 걸린다. 그래서 기본 프로필과 폴백 프로필을
+ * 서로 다른 client로 구성하고, 배포 없이 교체할 수 있게 환경변수 재정의를 둔다.
+ *
+ * gvs PO token 없이 HTTPS 음원을 받을 수 있는 client는 `tv`, `tv_downgraded`,
+ * `visionos`, `web_embedded` 뿐이다. `android*`·`ios`·`mweb`·`web`·`web_safari`는
+ * PO token을 요구하므로 provider 없이 지정하면 다시 403으로 돌아온다.
+ */
+const DEFAULT_PLAYER_CLIENTS = "tv,visionos";
+const FALLBACK_PLAYER_CLIENTS = "visionos,tv_downgraded";
+const PLAYER_CLIENT_PATTERN = /^[\da-z_.-]+(?:,[\da-z_.-]+)*$/;
+
 const ALLOWED_YOUTUBE_HOSTS = new Set([
   "youtube.com",
   "youtu.be",
@@ -87,13 +105,39 @@ export interface MusicRuntimeInfo {
 
 export interface YoutubeResolveOptions {
   signal?: AbortSignal;
+  /** 403 회피용 player client 프로필 인덱스. 0이 기본 경로다. */
+  profile?: number;
 }
+
+/** 미디어 URL 해석에 사용하는 player client·포맷 조합. */
+export interface MediaResolveProfile {
+  readonly label: string;
+  readonly playerClients: string;
+  readonly formatSelector: string;
+  readonly preferHttpsProtocol: boolean;
+}
+
+export const MEDIA_RESOLVE_PROFILE_COUNT = 2;
 
 export class YoutubeSourceError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "YoutubeSourceError";
   }
+}
+
+/** googlevideo가 미디어 URL 자체를 거부한 경우 (player client·PO token 제한). */
+export class YoutubeMediaForbiddenError extends YoutubeSourceError {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "YoutubeMediaForbiddenError";
+  }
+}
+
+export function isYoutubeMediaForbiddenError(
+  error: unknown,
+): error is YoutubeMediaForbiddenError {
+  return error instanceof YoutubeMediaForbiddenError;
 }
 
 class ProcessExecutionError extends Error {
@@ -117,6 +161,57 @@ export function getYtDlpExecutable(): string {
 
 export function getFfmpegExecutable(): string {
   return firstNonEmpty(process.env.FFMPEG_PATH) ?? "ffmpeg";
+}
+
+/** 기본 프로필의 player client 목록. 형식이 잘못된 재정의는 무시한다. */
+export function getPlayerClients(): string {
+  const configured = firstNonEmpty(
+    process.env.YT_DLP_PLAYER_CLIENTS,
+  )?.toLowerCase();
+  if (!configured) return DEFAULT_PLAYER_CLIENTS;
+  if (PLAYER_CLIENT_PATTERN.test(configured)) return configured;
+  console.warn(
+    "[music] YT_DLP_PLAYER_CLIENTS 형식이 올바르지 않아 기본값을 사용합니다.",
+  );
+  return DEFAULT_PLAYER_CLIENTS;
+}
+
+/** bgutil POT provider HTTP 주소. 없으면 PO token 없이 해석한다. */
+export function getPotProviderBaseUrl(): string | null {
+  const raw = firstNonEmpty(process.env.YT_DLP_POT_PROVIDER_URL);
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new TypeError("unsupported protocol");
+    }
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    console.warn(
+      "[music] YT_DLP_POT_PROVIDER_URL이 올바른 HTTP 주소가 아니어서 무시합니다.",
+    );
+    return null;
+  }
+}
+
+export function mediaResolveProfile(index: number): MediaResolveProfile {
+  const clamped = Math.min(
+    Math.max(Number.isFinite(index) ? Math.floor(index) : 0, 0),
+    MEDIA_RESOLVE_PROFILE_COUNT - 1,
+  );
+  return clamped === 0
+    ? {
+        label: "primary",
+        playerClients: getPlayerClients(),
+        formatSelector: AUDIO_FORMAT_SELECTOR,
+        preferHttpsProtocol: true,
+      }
+    : {
+        label: "fallback",
+        playerClients: FALLBACK_PLAYER_CLIENTS,
+        formatSelector: FALLBACK_AUDIO_FORMAT_SELECTOR,
+        preferHttpsProtocol: false,
+      };
 }
 
 function isAllowedYoutubeHostname(hostname: string): boolean {
@@ -532,7 +627,25 @@ export function parseYoutubeMediaSource(raw: string): YoutubeMediaSource {
   };
 }
 
-function ytDlpInfoArgs(input: string): string[] {
+/** yt-dlp extractor 인자. POT provider가 설정된 경우에만 주소를 넘긴다. */
+function extractorArgs(playerClients: string): string[] {
+  const args = ["--extractor-args", `youtube:player_client=${playerClients}`];
+  const potBaseUrl = getPotProviderBaseUrl();
+  if (potBaseUrl) {
+    args.push(
+      "--extractor-args",
+      `youtubepot-bgutilhttp:base_url=${potBaseUrl}`,
+    );
+  }
+  return args;
+}
+
+/** 테스트와 실제 해석에서 공유하는 단일 영상 해석 인자. */
+export function buildYtDlpInfoArgs(
+  input: string,
+  profileIndex = 0,
+): string[] {
+  const profile = mediaResolveProfile(profileIndex);
   return [
     "--ignore-config",
     "--dump-single-json",
@@ -547,10 +660,10 @@ function ytDlpInfoArgs(input: string): string[] {
     "3",
     "--js-runtimes",
     "node",
+    ...extractorArgs(profile.playerClients),
     "-f",
-    AUDIO_FORMAT_SELECTOR,
-    "-S",
-    "proto:https",
+    profile.formatSelector,
+    ...(profile.preferHttpsProtocol ? ["-S", "proto:https"] : []),
     "--",
     input,
   ];
@@ -572,6 +685,7 @@ function ytDlpPlaylistArgs(input: string): string[] {
     "3",
     "--js-runtimes",
     "node",
+    ...extractorArgs(getPlayerClients()),
     "--",
     input,
   ];
@@ -590,6 +704,9 @@ function sourceFailureMessage(error: unknown): string {
   if (/sign in|confirm.*not a bot|cookies/i.test(detail)) {
     return "YouTube가 서버의 재생 요청을 제한했습니다. 잠시 뒤 다시 시도해 주세요.";
   }
+  if (/http error 403|403:? forbidden/i.test(detail)) {
+    return "YouTube가 서버 IP의 재생 요청을 차단했습니다 (HTTP 403). 운영자 확인이 필요합니다.";
+  }
   if (/ENOENT|spawn .* not found/i.test(detail)) {
     return "서버에 yt-dlp가 설치되어 있지 않습니다.";
   }
@@ -604,7 +721,7 @@ export async function resolveYoutubeTrack(
   try {
     const { stdout } = await runProcess(
       getYtDlpExecutable(),
-      ytDlpInfoArgs(input),
+      buildYtDlpInfoArgs(input, options.profile ?? 0),
       YT_DLP_TIMEOUT_MS,
       options.signal,
     );
@@ -643,7 +760,10 @@ export async function resolveYoutubeMedia(
   try {
     const { stdout } = await runProcess(
       getYtDlpExecutable(),
-      ytDlpInfoArgs(normalizeYoutubeRequest(videoUrl)),
+      buildYtDlpInfoArgs(
+        normalizeYoutubeRequest(videoUrl),
+        options.profile ?? 0,
+      ),
       YT_DLP_TIMEOUT_MS,
       options.signal,
     );

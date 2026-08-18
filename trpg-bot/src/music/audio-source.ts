@@ -14,18 +14,26 @@ import { createAudioResource, StreamType } from "@discordjs/voice";
 import type { AudioResource } from "@discordjs/voice";
 
 import {
+  isMusicOperationAbortedError,
   MusicOperationAbortedError,
   type AudioQualityMode,
   type MusicTrack,
 } from "./types.js";
 import {
   getFfmpegExecutable,
+  isYoutubeMediaForbiddenError,
+  MEDIA_RESOLVE_PROFILE_COUNT,
   resolveYoutubeMedia,
+  YoutubeMediaForbiddenError,
   YoutubeSourceError,
   type YoutubeMediaSource,
 } from "./youtube-source.js";
 
 const MAX_FFMPEG_ERROR_BYTES = 16 * 1024;
+/** 프로필 교체 + 서명 URL 재해석까지 감싸는 준비 시도 횟수 상한. */
+const MAX_RESOURCE_ATTEMPTS = 3;
+/** FFmpeg가 googlevideo 403을 만났을 때 stderr에 남는 표현. */
+const FORBIDDEN_STDERR_PATTERN = /403 forbidden|http error 403|server returned 403/i;
 const DEFAULT_RESPONSE_TIMEOUT_MS = 20_000;
 const DEFAULT_FIRST_BYTE_TIMEOUT_MS = 20_000;
 
@@ -183,9 +191,10 @@ async function createPassthroughResource(
   if (!response.ok || !response.body) {
     detachAbortSignal();
     controller.abort();
-    throw new YoutubeSourceError(
-      `YouTube Opus 스트림 연결에 실패했습니다 (HTTP ${response.status}).`,
-    );
+    const message = `YouTube Opus 스트림 연결에 실패했습니다 (HTTP ${response.status}).`;
+    throw response.status === 403
+      ? new YoutubeMediaForbiddenError(message)
+      : new YoutubeSourceError(message);
   }
 
   const stream = Readable.fromWeb(
@@ -396,10 +405,15 @@ async function createTranscodedResource(
   child.once("close", (code, signal) => {
     options.signal?.removeEventListener("abort", handleAbort);
     if (!disposed && code !== 0) {
+      const detail = safeFfmpegError(stderr);
       child.stdout.destroy(
-        new YoutubeSourceError(
-          `FFmpeg 변환이 중단되었습니다 (code=${code}, signal=${signal ?? "none"}): ${safeFfmpegError(stderr)}`,
-        ),
+        FORBIDDEN_STDERR_PATTERN.test(stderr)
+          ? new YoutubeMediaForbiddenError(
+              `YouTube 오디오 서버가 변환 요청을 거부했습니다 (HTTP 403): ${detail}`,
+            )
+          : new YoutubeSourceError(
+              `FFmpeg 변환이 중단되었습니다 (code=${code}, signal=${signal ?? "none"}): ${detail}`,
+            ),
       );
     }
   });
@@ -442,24 +456,48 @@ export async function createAudioResourceFromMedia(
   return createTranscodedResource(track, media.url, media.headers, options);
 }
 
+/**
+ * 재생 가능한 오디오 경로를 찾을 때까지 해석 프로필을 바꿔가며 시도한다.
+ *
+ * 만료된 서명 URL은 같은 프로필로 다시 해석하면 복구되지만, googlevideo가 403으로
+ * 거부한 경우에는 같은 player client로 다시 받아도 동일한 제한이 걸린다. 그래서
+ * 403일 때만 다음 프로필로 넘어가고, 그 외 실패는 재해석 한 번으로 제한한다.
+ */
 export async function createYoutubeAudioResource(
   track: MusicTrack,
   options: AudioResourceRequestOptions = {},
 ): Promise<ManagedAudioResource> {
-  const media = await resolveYoutubeMedia(track.url, {
-    signal: options.signal,
-  });
-  if (media.qualityMode === "opus-passthrough") {
+  let profile = 0;
+  let refreshAttempted = false;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < MAX_RESOURCE_ATTEMPTS; attempt += 1) {
+    const media = await resolveYoutubeMedia(track.url, {
+      signal: options.signal,
+      profile,
+    });
     try {
       return await createAudioResourceFromMedia(track, media, options);
     } catch (error) {
       if (options.signal?.aborted) throw abortedOperation(options.signal);
-      // 서명 URL 만료·일시 403은 한 번 다시 해석해 새 URL로 재시도한다.
-      const refreshed = await resolveYoutubeMedia(track.url, {
-        signal: options.signal,
-      });
-      return createAudioResourceFromMedia(track, refreshed, options);
+      if (isMusicOperationAbortedError(error)) throw error;
+      lastError = error;
+
+      if (isYoutubeMediaForbiddenError(error)) {
+        if (profile + 1 >= MEDIA_RESOLVE_PROFILE_COUNT) throw error;
+        profile += 1;
+        console.warn(
+          `[music] 미디어 URL이 403으로 거부되어 player client 프로필을 교체합니다 ` +
+            `track=${track.videoId} profile=${profile}`,
+        );
+        continue;
+      }
+      if (refreshAttempted) throw error;
+      refreshAttempted = true;
     }
   }
-  return createAudioResourceFromMedia(track, media, options);
+
+  throw lastError instanceof Error
+    ? lastError
+    : new YoutubeSourceError("YouTube 오디오 스트림을 준비하지 못했습니다.");
 }
