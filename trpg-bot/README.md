@@ -26,7 +26,7 @@
 - Discord Bot Token
 - FFmpeg와 최신 yt-dlp (`yt-dlp[default]`, Node.js EJS runtime 사용)
 
-Docker 이미지에는 FFmpeg와 검증된 yt-dlp 버전이 포함됩니다. 로컬 또는 PM2 실행에서는 두 실행파일을 `PATH`에 두거나 `YT_DLP_PATH`, `FFMPEG_PATH`로 절대 경로를 지정해야 합니다.
+Docker 이미지에는 FFmpeg와 고정된 yt-dlp **nightly** 버전이 포함됩니다. YouTube가 player client를 조일 때마다 stable 릴리스는 수 주 뒤처지고 그 사이 재생이 HTTP 403으로 깨지므로, nightly 채널을 고정 버전으로 사용합니다. 로컬 또는 PM2 실행에서는 두 실행파일을 `PATH`에 두거나 `YT_DLP_PATH`, `FFMPEG_PATH`로 절대 경로를 지정해야 합니다.
 
 ## 설정
 
@@ -136,6 +136,23 @@ pnpm dev
 - 사용자별 음량은 음성 채널에서 다채봇을 우클릭한 뒤 `사용자 음량` 슬라이더로 조절합니다.
 - Discord 음성 연결은 최신 `@discordjs/voice`의 DAVE 종단간 암호화를 사용합니다.
 
+### YouTube 403 대응
+
+`YouTube Opus 스트림 연결에 실패했습니다 (HTTP 403)` 이 반복되면 googlevideo가 미디어 URL 자체를 거부한 상태입니다. 대응 순서:
+
+1. **player client 교체 (재배포 불필요)** — `YT_DLP_PLAYER_CLIENTS`를 다른 조합으로 바꾸고 재기동합니다. 기본값은 gvs PO token을 요구하지 않는 `tv,visionos`이며, 403이 나면 봇이 자동으로 폴백 프로필(`visionos,tv_downgraded` + HLS·m4a 허용)로 한 번 재해석합니다. PO token 없이 HTTPS 음원을 받을 수 있는 client는 `tv`, `tv_downgraded`, `visionos`, `web_embedded` 뿐이므로 `android*`·`ios`·`mweb`·`web`·`web_safari`는 provider 없이 지정하지 않습니다. 존재하지 않는 client 이름을 넣으면 yt-dlp가 경고만 남기고 자체 기본값으로 되돌아갑니다(봇은 `--no-warnings`로 실행하므로 로그에 보이지 않음) — 값을 바꿀 때는 [yt-dlp의 client 목록](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py)과 대조하세요.
+2. **yt-dlp nightly 승급** — `Dockerfile`의 `ARG YT_DLP_VERSION`을 [최신 nightly](https://pypi.org/project/yt-dlp/#history)로 올려 재빌드합니다. 기본 player client가 막힌 경우 upstream이 며칠 안에 교체하므로 이 경로가 가장 확실합니다.
+3. **PO token 붙이기** — 서버 IP가 YouTube에 플래그된 경우 PO token 없이는 풀리지 않습니다. POT provider 컨테이너를 띄우고 `YT_DLP_POT_PROVIDER_URL`을 지정합니다. 플러그인(`bgutil-ytdlp-pot-provider`)은 이미지에 포함되어 있어 주소만 주면 동작합니다.
+
+   ```bash
+   docker run --name bgutil-provider -d --init --restart unless-stopped \
+     brainicism/bgutil-ytdlp-pot-provider
+   ```
+
+   봇 컨테이너와 같은 Docker 네트워크에 두고 `YT_DLP_POT_PROVIDER_URL=http://bgutil-provider:4416`을 설정합니다. PO token은 403 우회를 보장하지 않고 트래픽을 더 정상처럼 보이게 하는 수단입니다.
+
+현재 사용 중인 런타임 버전은 기동 로그의 `음악 런타임 준비 완료 — yt-dlp=…` 줄에서 확인합니다.
+
 YouTube 추출 방식은 서비스 정책이나 서명 변경에 따라 중단될 수 있습니다. 운영자는 [YouTube 서비스 약관과 개발자 정책](https://developers.google.com/youtube/terms/developer-policies), 콘텐츠 저작권과 재생 권한을 확인해야 합니다.
 
 모든 슬래시 커맨드는 `TRPG_GUILD_ID`로 지정된 운영 길드의 채널에서만 실행됩니다.
@@ -159,7 +176,7 @@ YouTube 추출 방식은 서비스 정책이나 서명 변경에 따라 중단�
 - Build context: 저장소 루트(`/`)
 - Dockerfile path: `trpg-bot/Dockerfile`
 - Runtime env: `trpg-bot/.env.example`의 필수 값을 Dokploy 환경변수에 설정
-- 이미지 내장 런타임: FFmpeg, `yt-dlp[default]` 2026.7.4, Node.js 22 EJS runtime
+- 이미지 내장 런타임: FFmpeg, `yt-dlp[default]` nightly(`ARG YT_DLP_VERSION`), `bgutil-ytdlp-pot-provider` 플러그인, Node.js 22 EJS runtime
 - 앱 타입: long-running worker/service. Vercel serverless 대상이 아님
 
 PM2 설정 파일은 로컬 또는 별도 VM에서 수동 운영할 때만 사용하는 보조 설정입니다.

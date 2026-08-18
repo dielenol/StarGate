@@ -141,7 +141,9 @@ trpg-web ── 세션 생성·수정·취소 ──> trpg_sessions
 3. AAC, HLS, 라이브 등 직접 전달할 수 없는 소스만 FFmpeg/libopus에서 48 kHz stereo, 128 kbps VBR, 20 ms frame으로 한 번 변환한다.
 4. 플레이어 인라인 볼륨과 오디오 필터는 사용하지 않는다. 사용자는 Discord의 개별 사용자 음량으로 조절한다.
 5. Discord 음성 연결은 `@discordjs/voice`의 기본 DAVE E2EE를 사용한다.
-6. 미디어 응답 헤더와 첫 오디오 데이터는 각각 20초 안에 도착해야 한다. 세션이 트랙을 준비하는 동안 `건너뛰기`, `정지`, `퇴장` 또는 연결 종료가 발생하면 같은 `AbortSignal`로 yt-dlp·HTTP·FFmpeg 작업을 취소한다.
+6. 미디어 URL 해석은 gvs PO token을 요구하지 않는 player client(`tv,visionos`)를 기본으로 사용하고, `YT_DLP_PLAYER_CLIENTS`로 재정의할 수 있다. `YT_DLP_POT_PROVIDER_URL`이 있으면 PO token을 붙여 해석한다.
+7. googlevideo가 미디어 URL을 HTTP 403으로 거부하면 같은 client로 재해석해도 복구되지 않으므로, 다른 player client(`visionos,tv_downgraded`)와 완화된 포맷 조건(HLS·m4a 허용)을 쓰는 폴백 프로필로 한 번 교체해 다시 해석한다. 403이 아닌 실패는 서명 URL 만료로 보고 같은 프로필로 한 번만 재해석하며, 준비 시도는 총 3회로 제한한다.
+8. 미디어 응답 헤더와 첫 오디오 데이터는 각각 20초 안에 도착해야 한다. 세션이 트랙을 준비하는 동안 `건너뛰기`, `정지`, `퇴장` 또는 연결 종료가 발생하면 같은 `AbortSignal`로 yt-dlp·HTTP·FFmpeg 작업을 취소한다.
 
 채널 메시지 규칙:
 
@@ -299,6 +301,8 @@ trpg-web ── 세션 생성·수정·취소 ──> trpg_sessions
 | `RESULT_CARD_IMAGE` | 아니요 | 활성 | `/세션확인` PNG 활성 여부 |
 | `YT_DLP_PATH` | 아니요 | `yt-dlp` | PATH 외 yt-dlp 실행파일 경로 |
 | `FFMPEG_PATH` | 아니요 | `ffmpeg` | PATH 외 FFmpeg 실행파일 경로 |
+| `YT_DLP_PLAYER_CLIENTS` | 아니요 | `tv,visionos` | 기본 프로필 player client 목록 |
+| `YT_DLP_POT_PROVIDER_URL` | 아니요 | - | bgutil POT provider HTTP 주소 |
 
 필수 환경변수가 없으면 기동이 실패한다. 단, `TRPG_MUSIC_CHANNEL_ID` 누락·오류 또는 음악 재생 런타임 실패는 음악 기능만 비활성화하며 기존 세션 조회·알림 기능은 계속 실행된다. 잘못된 폴백 채널은 부팅 시 오류 로그를 남기지만 봇은 계속 실행된다.
 
