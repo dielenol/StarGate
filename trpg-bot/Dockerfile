@@ -60,6 +60,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         dumb-init \
         python3 \
         python3-pip \
+        libexpat1 \
+        curl \
         tini \
     && python3 -m pip install --break-system-packages --no-cache-dir --pre \
         "yt-dlp[default]==${YT_DLP_VERSION}" \
@@ -68,10 +70,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ffmpeg -version \
     && rm -rf /var/lib/apt/lists/*
 
+# POT provider 는 소스 빌드 시 canvas 네이티브 컴파일이 필요하므로 공식 이미지의
+# 빌드 산출물을 그대로 복사한다. canvas 는 napi 바인딩 + 자체 번들 .so 라서
+# 이미지의 Node 25 와 여기의 Node 22 사이에서 그대로 동작한다 (2026-08-18 실측).
+COPY --from=brainicism/bgutil-ytdlp-pot-provider:1.3.1 --chown=1001:1001 \
+     /app /opt/pot-provider
+
 ENV NODE_ENV=production \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
-    TZ=Asia/Seoul
+    TZ=Asia/Seoul \
+    YT_DLP_POT_PROVIDER_URL=http://127.0.0.1:4416
 
 RUN corepack enable
 
@@ -96,7 +105,9 @@ RUN groupadd --system --gid 1001 bot \
  && chown -R bot:bot /repo
 USER bot
 
+COPY --chmod=755 trpg-bot/docker-entrypoint.sh /usr/local/bin/trpg-bot-start
+
 WORKDIR /repo/trpg-bot
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/index.js"]
+CMD ["/usr/local/bin/trpg-bot-start"]
