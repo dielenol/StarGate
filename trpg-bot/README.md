@@ -138,20 +138,42 @@ pnpm dev
 
 ### YouTube 403 대응
 
-`YouTube Opus 스트림 연결에 실패했습니다 (HTTP 403)` 이 반복되면 googlevideo가 미디어 URL 자체를 거부한 상태입니다. 대응 순서:
+`YouTube Opus 스트림 연결에 실패했습니다 (HTTP 403)` 이 반복되면 googlevideo가 미디어 URL 자체를 거부한 상태입니다. 원인은 두 갈래입니다 — **player client가 막혔거나**, **서버 IP가 YouTube에 플래그된 것**입니다.
 
-1. **player client 교체 (재배포 불필요)** — `YT_DLP_PLAYER_CLIENTS`를 다른 조합으로 바꾸고 재기동합니다. 기본값은 gvs PO token을 요구하지 않는 `tv,visionos`이며, 403이 나면 봇이 자동으로 폴백 프로필(`visionos,tv_downgraded` + HLS·m4a 허용)로 한 번 재해석합니다. PO token 없이 HTTPS 음원을 받을 수 있는 client는 `tv`, `tv_downgraded`, `visionos`, `web_embedded` 뿐이므로 `android*`·`ios`·`mweb`·`web`·`web_safari`는 provider 없이 지정하지 않습니다. 존재하지 않는 client 이름을 넣으면 yt-dlp가 경고만 남기고 자체 기본값으로 되돌아갑니다(봇은 `--no-warnings`로 실행하므로 로그에 보이지 않음) — 값을 바꿀 때는 [yt-dlp의 client 목록](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py)과 대조하세요.
-2. **yt-dlp nightly 승급** — `Dockerfile`의 `ARG YT_DLP_VERSION`을 [최신 nightly](https://pypi.org/project/yt-dlp/#history)로 올려 재빌드합니다. 기본 player client가 막힌 경우 upstream이 며칠 안에 교체하므로 이 경로가 가장 확실합니다.
-3. **PO token 붙이기** — 서버 IP가 YouTube에 플래그된 경우 PO token 없이는 풀리지 않습니다. POT provider 컨테이너를 띄우고 `YT_DLP_POT_PROVIDER_URL`을 지정합니다. 플러그인(`bgutil-ytdlp-pot-provider`)은 이미지에 포함되어 있어 주소만 주면 동작합니다.
+#### 이미지에 이미 들어 있는 대응
 
-   ```bash
-   docker run --name bgutil-provider -d --init --restart unless-stopped \
-     brainicism/bgutil-ytdlp-pot-provider
-   ```
+- **PO token** — bgutil POT provider를 봇과 같은 컨테이너에서 함께 띄웁니다(`docker-entrypoint.sh`). `YT_DLP_POT_PROVIDER_URL`은 `http://127.0.0.1:4416`으로 기본 설정되어 있어 별도 구성이 필요 없습니다. Dokploy Application은 사이드카를 붙일 수 없어 이 방식을 택했습니다. 메모리를 아끼려면 `POT_PROVIDER_DISABLED=1`로 끌 수 있습니다(대신 PO token 없이 동작).
+- **클라이언트 폴백** — 403이 나면 봇이 자동으로 기본 프로필(`visionos`)에서 폴백 프로필(`web_safari` + HLS·m4a 허용)로 한 번 교체해 다시 해석합니다. 폴백은 PO token을 사용하므로 provider가 떠 있어야 신뢰할 수 있습니다.
 
-   봇 컨테이너와 같은 Docker 네트워크에 두고 `YT_DLP_POT_PROVIDER_URL=http://bgutil-provider:4416`을 설정합니다. PO token은 403 우회를 보장하지 않고 트래픽을 더 정상처럼 보이게 하는 수단입니다.
+#### player client 실측값 (2026-08-18, yt-dlp 2026.8.18 nightly)
 
-현재 사용 중인 런타임 버전은 기동 로그의 `음악 런타임 준비 완료 — yt-dlp=…` 줄에서 확인합니다.
+| client | 상태 |
+|--------|------|
+| `visionos` | 정상. PO token 없이 WebM/Opus HTTPS 음원 |
+| `web_safari` | 정상이나 gvs PO token 필요 → provider 전제 |
+| `web` | 동일 (PO token 필요) |
+| `tv`, `tv_downgraded` | **불가** — `The page needs to be reloaded` 로 URL 미수신 |
+| `android*`, `ios`, `mweb`, `tv_simply` | PO token 필요 |
+
+`tv` 계열은 SABR-only 실험에 걸려 https 포맷이 URL 없이 오는 사례도 관측됐습니다. TVHTML5 계열이 회복되면 후보로 되돌릴 수 있습니다.
+
+#### 여전히 403일 때
+
+1. **player client 교체 (재배포 불필요)** — `YT_DLP_PLAYER_CLIENTS`를 위 표의 정상 클라이언트로 바꾸고 재기동합니다. 존재하지 않는 client 이름을 넣으면 yt-dlp가 경고만 남기고 자체 기본값으로 되돌아갑니다(봇은 `--no-warnings`로 실행하므로 로그에 보이지 않음).
+2. **yt-dlp nightly 승급** — `Dockerfile`의 `ARG YT_DLP_VERSION`을 [최신 nightly](https://pypi.org/project/yt-dlp/#history)로 올려 재빌드합니다. 기본 client가 막힌 경우 upstream이 며칠 안에 교체하므로 이 경로가 가장 확실합니다.
+3. **쿠키 또는 프록시** — IP 평판 문제가 PO token으로도 풀리지 않으면 남는 수단입니다.
+
+#### 진단
+
+재생 실패가 5분 안에 연속 임계치를 넘기면 운영 알림(DM·`TRPG_ALERT_CHANNEL_ID`)에 **실행 중인 yt-dlp 버전·player client·POT provider 주소**가 함께 실립니다. 서버 로그 없이 Discord에서 바로 확인할 수 있습니다.
+
+컨테이너에 접근할 수 있으면 다음으로 한 번에 판정합니다:
+
+```bash
+docker exec $(docker ps --format '{{.Names}}' | grep -i trpg | head -1) bash -c 'yt-dlp --version; URL=$(yt-dlp --ignore-config --no-warnings --js-runtimes node --extractor-args "youtube:player_client=visionos" -f "bestaudio[ext=webm][acodec^=opus]/bestaudio" -g -- "https://www.youtube.com/watch?v=dQw4w9WgXcQ" | head -1); curl -s -o /dev/null -w "media=%{http_code}\n" -r 0-1023 "$URL"'
+```
+
+기동 로그의 `[pot-provider] Started POT server` 와 `음악 런타임 준비 완료 — yt-dlp=…` 두 줄로 provider와 런타임 버전을 확인합니다.
 
 YouTube 추출 방식은 서비스 정책이나 서명 변경에 따라 중단될 수 있습니다. 운영자는 [YouTube 서비스 약관과 개발자 정책](https://developers.google.com/youtube/terms/developer-policies), 콘텐츠 저작권과 재생 권한을 확인해야 합니다.
 
@@ -176,7 +198,7 @@ YouTube 추출 방식은 서비스 정책이나 서명 변경에 따라 중단�
 - Build context: 저장소 루트(`/`)
 - Dockerfile path: `trpg-bot/Dockerfile`
 - Runtime env: `trpg-bot/.env.example`의 필수 값을 Dokploy 환경변수에 설정
-- 이미지 내장 런타임: FFmpeg, `yt-dlp[default]` nightly(`ARG YT_DLP_VERSION`), `bgutil-ytdlp-pot-provider` 플러그인, Node.js 22 EJS runtime
+- 이미지 내장 런타임: FFmpeg, `yt-dlp[default]` nightly(`ARG YT_DLP_VERSION`), `bgutil-ytdlp-pot-provider` 플러그인 + POT provider 서버(같은 컨테이너), Node.js 22 EJS runtime
 - 앱 타입: long-running worker/service. Vercel serverless 대상이 아님
 
 PM2 설정 파일은 로컬 또는 별도 VM에서 수동 운영할 때만 사용하는 보조 설정입니다.
