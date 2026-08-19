@@ -26,6 +26,7 @@ import { handleHelpCommand } from "./commands/help.js";
 import { handleMusicCommand } from "./commands/music.js";
 import { registerCommands } from "./commands/register.js";
 import { handleTrpgSessionCheck } from "./commands/trpg-session-check.js";
+import { startMusicHealthcheck } from "./music/music-healthcheck.js";
 import { MusicService } from "./music/music-service.js";
 import { startTrpgCancellationNotificationChecker } from "./scheduler/trpg-cancellation-notification-checker.js";
 import { startTrpgNotificationChecker } from "./scheduler/trpg-notification-checker.js";
@@ -85,6 +86,7 @@ let stopUpdateNotificationChecker: (() => void) | null = null;
 let stopCancellationNotificationChecker: (() => void) | null = null;
 let stopReminderChecker: (() => void) | null = null;
 let stopDailyMemberSync: (() => void) | null = null;
+let stopMusicHealthcheck: (() => void) | null = null;
 
 /**
  * 폴백 채널이 올바른 길드에 속한 송신 가능 채널인지 부팅 시 1회 검증.
@@ -163,6 +165,19 @@ client.once(Events.ClientReady, async (readyClient) => {
     console.log(
       `[TRPG Bot] 음악 런타임 준비 완료 — yt-dlp=${runtime.ytDlpVersion}, ${runtime.ffmpegVersion}`,
     );
+    // YouTube 정책 변화는 서버 IP 에서만 재현되므로 점검도 봇 안에서 수행한다.
+    if (config.musicHealthcheckEnabled) {
+      stopMusicHealthcheck = startMusicHealthcheck({
+        videoUrl: config.musicHealthcheckVideoUrl,
+        intervalMs: config.musicHealthcheckIntervalMs,
+        startDelayMs: config.musicHealthcheckStartDelayMs,
+        operatorAlerts,
+        ytDlpVersion: runtime.ytDlpVersion,
+      });
+      console.log(
+        `[TRPG Bot] 음악 자동 점검 시작 — 주기=${config.musicHealthcheckIntervalMs}ms`,
+      );
+    }
   } catch (err) {
     // 음악 기능만 비활성화하고 기존 세션 조회·알림 책임은 계속 수행한다.
     console.error("[TRPG Bot] 음악 런타임 준비 실패:", err);
@@ -276,6 +291,7 @@ async function shutdown(signal: string): Promise<void> {
   if (stopCancellationNotificationChecker) stopCancellationNotificationChecker();
   if (stopReminderChecker) stopReminderChecker();
   if (stopDailyMemberSync) stopDailyMemberSync();
+  if (stopMusicHealthcheck) stopMusicHealthcheck();
 
   // 2) 음악 스트림과 음성 연결 종료
   await musicService.destroyAll();

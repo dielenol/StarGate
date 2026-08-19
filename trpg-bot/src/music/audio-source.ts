@@ -51,7 +51,9 @@ export interface ManagedAudioResource {
   dispose(): void;
 }
 
-function sanitizedHttpHeaders(headers: Record<string, string>): Record<string, string> {
+export function sanitizedHttpHeaders(
+  headers: Record<string, string>,
+): Record<string, string> {
   const blocked = new Set([
     "accept-encoding",
     "connection",

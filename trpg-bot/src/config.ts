@@ -132,6 +132,45 @@ function getTrpgReminderIntervalMs(): number {
 }
 
 /**
+ * 음악 재생 경로 일일 자동 점검 사용 여부.
+ * `TRPG_MUSIC_HEALTHCHECK=0` / `false` / `off` 이면 비활성.
+ */
+function isMusicHealthcheckEnabled(): boolean {
+  const v = process.env.TRPG_MUSIC_HEALTHCHECK?.trim().toLowerCase();
+  return v !== "0" && v !== "false" && v !== "off";
+}
+
+/** 음악 자동 점검 주기(ms). default 86_400_000 (24시간). */
+function getMusicHealthcheckIntervalMs(): number {
+  const v = process.env.TRPG_MUSIC_HEALTHCHECK_INTERVAL_MS?.trim();
+  if (!v) return 86_400_000;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return 86_400_000;
+  return Math.floor(n);
+}
+
+/** 기동 후 첫 점검까지의 지연(ms). default 60_000 (1분). */
+function getMusicHealthcheckStartDelayMs(): number {
+  const v = process.env.TRPG_MUSIC_HEALTHCHECK_START_DELAY_MS?.trim();
+  if (!v) return 60_000;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return 60_000;
+  return Math.floor(n);
+}
+
+/**
+ * 자동 점검에 사용할 YouTube 영상 URL.
+ *
+ * 삭제·지역 차단된 영상을 두면 점검이 항상 실패하므로 오래 유지되는 공개 영상을
+ * 기본값으로 둔다. 점검 실패 알림에는 실패 단계가 함께 실리므로 "영상 없음" 과
+ * "403 차단" 은 알림 본문에서 구분된다.
+ */
+function getMusicHealthcheckVideoUrl(): string {
+  const url = process.env.TRPG_MUSIC_HEALTHCHECK_VIDEO_URL?.trim();
+  return url || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+}
+
+/**
  * 마감 시 결과 카드 PNG 첨부(Puppeteer) 사용 여부.
  * `RESULT_CARD_IMAGE=0` / `false` / `off` 이면 비활성(임베드만 전송).
  */
@@ -155,4 +194,8 @@ export const config = {
   trpgWebBaseUrl: getTrpgWebBaseUrl(),
   trpgPollingIntervalMs: getTrpgPollingIntervalMs(),
   trpgReminderIntervalMs: getTrpgReminderIntervalMs(),
+  musicHealthcheckEnabled: isMusicHealthcheckEnabled(),
+  musicHealthcheckIntervalMs: getMusicHealthcheckIntervalMs(),
+  musicHealthcheckStartDelayMs: getMusicHealthcheckStartDelayMs(),
+  musicHealthcheckVideoUrl: getMusicHealthcheckVideoUrl(),
 } as const;
