@@ -160,19 +160,56 @@ test("스타마트 시나리오는 유증 발표부터 후속 호재 3회까지 
     "2026-08-18 18:00",
   ]);
   assert.equal(plan.action.factor, 2);
-  assert.equal(plan.action.priceAdjustmentPercent, -35);
-  assert.equal(plan.disclosures[0].effects[0].changePercent, 70);
+  assert.equal(plan.action.priceAdjustmentPercent, -32.4);
+  assert.equal(plan.disclosures[0].effects[0].changePercent, 63.8);
   assert.deepEqual(
     plan.disclosures.slice(1).map((item) => item.effects[0].changePercent),
-    [25, 25, 25],
+    [38.6, 27.4, 44.1],
   );
   assert.deepEqual(plan.majorShareholders, [
     {
       name: "미스터비스트",
-      stakePercent: 20,
+      stakePercent: 17.3,
       note: "전략적 지분 투자",
     },
   ]);
+});
+
+test("후속 호재 변동률은 회차별로 다르게 지정할 수 있다", () => {
+  const plan = buildStarmartCapitalScenarioPlan({
+    announceSlotKey: "2026-08-17 13:00",
+    followupPriceChangePercents: [29.3, 41.7, 33.8],
+  });
+
+  assert.deepEqual(
+    plan.disclosures.slice(1).map((item) => item.effects[0].changePercent),
+    [29.3, 41.7, 33.8],
+  );
+});
+
+test("후속 호재 변동률 개수가 후속 공시 횟수와 다르면 거절한다", () => {
+  assert.throws(
+    () =>
+      buildStarmartCapitalScenarioPlan({
+        announceSlotKey: "2026-08-17 13:00",
+        followupCount: 3,
+        followupPriceChangePercents: [29.3, 41.7],
+      }),
+    /후속 호재 변동률은 후속 공시 횟수와 같은 3개여야 합니다/,
+  );
+});
+
+test("단일 후속 변동률을 주면 전 회차에 같은 값을 적용한다", () => {
+  const plan = buildStarmartCapitalScenarioPlan({
+    announceSlotKey: "2026-08-17 13:00",
+    followupCount: 2,
+    followupPriceChangePercent: 26.5,
+  });
+
+  assert.deepEqual(
+    plan.disclosures.slice(1).map((item) => item.effects[0].changePercent),
+    [26.5, 26.5],
+  );
 });
 
 test("기존 주요 주주는 보존하고 미스터비스트 항목만 최신 지분으로 치환한다", () => {

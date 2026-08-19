@@ -59,6 +59,9 @@ import type { ClientSession, Db } from "mongodb";
 
 import {
   buildStarmartCapitalScenarioPlan,
+  DEFAULT_ACQUISITION_PRICE_CHANGE_PERCENT,
+  DEFAULT_MRBEAST_STAKE_PERCENT,
+  DEFAULT_RIGHTS_PRICE_ADJUSTMENT_PERCENT,
   firstNovexSlotAfter,
   STM_CAPITAL_SCENARIO_SYSTEM_ACTOR,
   STM_CAPITAL_SCENARIO_TICKER,
@@ -106,6 +109,34 @@ function readNumberArgument(
   const value = Number(raw);
   if (!Number.isFinite(value)) throw new Error(`${name} 값이 숫자가 아닙니다.`);
   return value;
+}
+
+/**
+ * 후속 호재 변동률 인자 해석. `--followup-percents 29.3,41.7,33.8`은 회차별 값으로,
+ * `--followup-change`는 전 회차 동일 값으로 넘긴다. 둘 다 없으면 옵션을 넘기지 않아
+ * 시나리오 기본값(회차마다 다른 값)이 그대로 쓰인다.
+ */
+function resolveFollowupArgument(
+  argv: readonly string[],
+): { followupPriceChangePercents?: number[]; followupPriceChangePercent?: number } {
+  const list = readArgument(argv, "--followup-percents");
+  if (list) {
+    const values = list.split(",").map((item) => {
+      const value = Number(item.trim());
+      if (!Number.isFinite(value)) {
+        throw new Error("--followup-percents 값이 숫자가 아닙니다.");
+      }
+      return value;
+    });
+    return { followupPriceChangePercents: values };
+  }
+  const single = readArgument(argv, "--followup-change");
+  if (single === null) return {};
+  const value = Number(single);
+  if (!Number.isFinite(value)) {
+    throw new Error("--followup-change 값이 숫자가 아닙니다.");
+  }
+  return { followupPriceChangePercent: value };
 }
 
 function maskDbName(value: string): string {
@@ -837,19 +868,19 @@ async function main() {
       rightsPriceAdjustmentPercent: readNumberArgument(
         argv,
         "--rights-adjustment",
-        -35,
+        DEFAULT_RIGHTS_PRICE_ADJUSTMENT_PERCENT,
       ),
-      mrBeastStakePercent: readNumberArgument(argv, "--stake-percent", 20),
+      mrBeastStakePercent: readNumberArgument(
+        argv,
+        "--stake-percent",
+        DEFAULT_MRBEAST_STAKE_PERCENT,
+      ),
       acquisitionPriceChangePercent: readNumberArgument(
         argv,
         "--acquisition-change",
-        70,
+        DEFAULT_ACQUISITION_PRICE_CHANGE_PERCENT,
       ),
-      followupPriceChangePercent: readNumberArgument(
-        argv,
-        "--followup-change",
-        25,
-      ),
+      ...resolveFollowupArgument(argv),
       followupCount: readNumberArgument(argv, "--followup-count", 3),
       existingMajorShareholders: initialProfile?.majorShareholders ?? [],
     });

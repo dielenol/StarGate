@@ -22,6 +22,7 @@ export interface StarmartCapitalScenarioOptions {
   mrBeastStakePercent?: number;
   acquisitionPriceChangePercent?: number;
   followupPriceChangePercent?: number;
+  followupPriceChangePercents?: readonly number[];
   followupCount?: number;
   existingMajorShareholders?: readonly StockMajorShareholder[];
 }
@@ -52,6 +53,12 @@ export interface StarmartCapitalScenarioPlan {
 }
 
 const SLOT_PATTERN = /^\d{4}-\d{2}-\d{2} (?:09|13|18|23):00$/;
+
+/** 5% 단위로 떨어지지 않는 실측형 기본 변동률. 후속 호재는 회차마다 다르게 준다. */
+export const DEFAULT_RIGHTS_PRICE_ADJUSTMENT_PERCENT = -32.4;
+export const DEFAULT_MRBEAST_STAKE_PERCENT = 17.3;
+export const DEFAULT_ACQUISITION_PRICE_CHANGE_PERCENT = 63.8;
+export const DEFAULT_FOLLOWUP_PRICE_CHANGE_PERCENTS = [38.6, 27.4, 44.1] as const;
 const FOLLOWUP_TEMPLATES = [
   {
     suffix: "global-partnership",
@@ -101,6 +108,32 @@ function normalizeMajorShareholders(
   ];
 }
 
+/**
+ * 후속 호재 변동률 해석. 배열이 오면 회차별로 그대로 쓰고, 단일 값이면 전 회차에 같은 값을
+ * 적용한다. 둘 다 없으면 회차마다 다른 기본값을 쓴다.
+ */
+function resolveFollowupPriceChanges(
+  options: StarmartCapitalScenarioOptions,
+  followupCount: number,
+): number[] {
+  if (options.followupPriceChangePercents) {
+    const values = [...options.followupPriceChangePercents];
+    if (values.length !== followupCount) {
+      throw new Error(
+        `후속 호재 변동률은 후속 공시 횟수와 같은 ${followupCount}개여야 합니다.`,
+      );
+    }
+    return values;
+  }
+  if (options.followupPriceChangePercent !== undefined) {
+    return Array.from(
+      { length: followupCount },
+      () => options.followupPriceChangePercent!,
+    );
+  }
+  return DEFAULT_FOLLOWUP_PRICE_CHANGE_PERCENTS.slice(0, followupCount);
+}
+
 function tickerPriceEffect(changePercent: number): StockDisclosureEffect[] {
   return [
     {
@@ -124,10 +157,11 @@ export function buildStarmartCapitalScenarioPlan(
   }
 
   const factor = options.rightsFactor ?? 2;
-  const rightsAdjustment = options.rightsPriceAdjustmentPercent ?? -35;
-  const stakePercent = options.mrBeastStakePercent ?? 20;
-  const acquisitionChange = options.acquisitionPriceChangePercent ?? 70;
-  const followupChange = options.followupPriceChangePercent ?? 25;
+  const rightsAdjustment =
+    options.rightsPriceAdjustmentPercent ?? DEFAULT_RIGHTS_PRICE_ADJUSTMENT_PERCENT;
+  const stakePercent = options.mrBeastStakePercent ?? DEFAULT_MRBEAST_STAKE_PERCENT;
+  const acquisitionChange =
+    options.acquisitionPriceChangePercent ?? DEFAULT_ACQUISITION_PRICE_CHANGE_PERCENT;
   const followupCount = options.followupCount ?? 3;
 
   if (!Number.isInteger(factor) || factor < 2 || factor > 10) {
@@ -136,10 +170,13 @@ export function buildStarmartCapitalScenarioPlan(
   assertPercent(rightsAdjustment, "유상증자 사유 조정률", -50, 75);
   assertPercent(stakePercent, "미스터비스트 지분율", 0.01, 100);
   assertPercent(acquisitionChange, "지분 인수 공시 변동률", -50, 75);
-  assertPercent(followupChange, "후속 공시 변동률", -50, 75);
   if (!Number.isInteger(followupCount) || followupCount < 2 || followupCount > 3) {
     throw new Error("후속 호재 횟수는 2~3회여야 합니다.");
   }
+  const followupChanges = resolveFollowupPriceChanges(options, followupCount);
+  followupChanges.forEach((value, index) =>
+    assertPercent(value, `후속 공시 ${index + 1}회차 변동률`, -50, 75),
+  );
 
   const slotKeys = [options.announceSlotKey];
   while (slotKeys.length < 3 + followupCount) {
@@ -164,7 +201,7 @@ export function buildStarmartCapitalScenarioPlan(
       title: template.title,
       body: template.body,
       slotKey: slotKeys[index + 3]!,
-      effects: tickerPriceEffect(followupChange),
+      effects: tickerPriceEffect(followupChanges[index]!),
     })),
   ];
 
