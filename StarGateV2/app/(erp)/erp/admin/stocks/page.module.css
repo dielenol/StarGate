@@ -25,7 +25,6 @@
 }
 
 .novexForm input,
-.novexForm select,
 .novexForm textarea {
   width: 100%;
   min-height: 40px;
@@ -40,7 +39,6 @@
 
 .novexForm textarea { min-height: 78px; padding: 9px 10px; resize: vertical; }
 .novexForm input:focus,
-.novexForm select:focus,
 .novexForm textarea:focus { outline: 2px solid color-mix(in oklab, var(--gold) 50%, transparent); outline-offset: 2px; }
 .novexForm .check { display: flex; align-items: center; gap: 7px; }
 .novexForm .check input { width: 16px; min-height: 16px; }
