@@ -41,7 +41,7 @@
 .novexForm textarea { min-height: 78px; padding: 9px 10px; resize: vertical; }
 .novexForm input:focus,
 .novexForm select:focus,
-.novexForm textarea:focus { outline: 2px solid rgba(120, 130, 255, .5); outline-offset: 2px; }
+.novexForm textarea:focus { outline: 2px solid color-mix(in oklab, var(--gold) 50%, transparent); outline-offset: 2px; }
 .novexForm .check { display: flex; align-items: center; gap: 7px; }
 .novexForm .check input { width: 16px; min-height: 16px; }
 .tickerEffects { display: grid; gap: 7px; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; }
@@ -65,8 +65,8 @@
   border: 1px solid var(--danger);
   border-left-width: 3px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  color: var(--alert-4-text);
+  background: color-mix(in oklab, var(--danger) 12%, transparent);
+  color: var(--danger);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -129,8 +129,8 @@
 
 .priceRow:hover,
 .priceRow--active {
-  border-color: rgba(120, 130, 255, 0.58);
-  background: rgba(93, 101, 245, 0.13);
+  border-color: color-mix(in oklab, var(--gold) 58%, transparent);
+  background: color-mix(in oklab, var(--gold) 13%, transparent);
 }
 
 .priceRow__name {
@@ -159,7 +159,7 @@
 .haltedBadge {
   display: inline-flex;
   margin-left: 6px;
-  border: 1px solid rgba(255, 91, 91, 0.48);
+  border: 1px solid color-mix(in oklab, var(--danger) 48%, transparent);
   border-radius: 999px;
   padding: 1px 6px;
   color: var(--danger);
@@ -223,14 +223,14 @@
 }
 
 .haltBtn {
-  border: 1px solid rgba(255, 91, 91, 0.52);
-  background: rgba(255, 91, 91, 0.14);
+  border: 1px solid color-mix(in oklab, var(--danger) 52%, transparent);
+  background: color-mix(in oklab, var(--danger) 14%, transparent);
   color: var(--danger);
 }
 
 .resumeBtn {
-  border: 1px solid rgba(58, 184, 124, 0.46);
-  background: rgba(58, 184, 124, 0.13);
+  border: 1px solid color-mix(in oklab, var(--success) 46%, transparent);
+  background: color-mix(in oklab, var(--success) 13%, transparent);
   color: var(--success);
 }
 
@@ -254,7 +254,7 @@
   align-items: baseline;
   margin-bottom: 16px;
   padding: 10px 12px;
-  border: 1px dashed rgba(201, 168, 90, 0.38);
+  border: 1px dashed color-mix(in oklab, var(--gold) 38%, transparent);
   border-radius: 8px;
   color: var(--ink-2);
   font-family: var(--font-mono);
@@ -284,7 +284,7 @@
 }
 
 .field input:focus {
-  outline: 2px solid rgba(120, 130, 255, 0.5);
+  outline: 2px solid color-mix(in oklab, var(--gold) 50%, transparent);
   outline-offset: 2px;
 }
 
@@ -312,12 +312,12 @@
 }
 
 .quickMoves .quickMoves__button--up {
-  border-color: rgba(201, 168, 90, 0.52);
+  border-color: color-mix(in oklab, var(--gold) 52%, transparent);
   color: var(--gold);
 }
 
 .quickMoves .quickMoves__button--down {
-  border-color: rgba(255, 91, 91, 0.42);
+  border-color: color-mix(in oklab, var(--danger) 42%, transparent);
   color: var(--danger);
 }
 
@@ -389,7 +389,7 @@
 }
 
 .holdingSearch:focus {
-  outline: 2px solid rgba(120, 130, 255, 0.5);
+  outline: 2px solid color-mix(in oklab, var(--gold) 50%, transparent);
   outline-offset: 2px;
 }
 
@@ -486,14 +486,14 @@
 }
 
 .message {
-  border: 1px solid rgba(58, 184, 124, 0.34);
-  background: rgba(58, 184, 124, 0.12);
+  border: 1px solid color-mix(in oklab, var(--success) 34%, transparent);
+  background: color-mix(in oklab, var(--success) 12%, transparent);
   color: var(--success);
 }
 
 .error {
-  border: 1px solid rgba(255, 91, 91, 0.36);
-  background: rgba(255, 91, 91, 0.12);
+  border: 1px solid color-mix(in oklab, var(--danger) 36%, transparent);
+  background: color-mix(in oklab, var(--danger) 12%, transparent);
   color: var(--danger);
 }
 
@@ -503,7 +503,7 @@
 
 .submit {
   min-height: 48px;
-  border: 1px solid rgba(120, 130, 255, 0.58);
+  border: 1px solid color-mix(in oklab, var(--gold) 58%, transparent);
   background: var(--p2);
   color: #fff;
   border-radius: 8px;
@@ -523,8 +523,8 @@
 }
 
 .secondaryBtn {
-  border: 1px solid rgba(201, 168, 90, 0.58);
-  background: rgba(201, 168, 90, 0.16);
+  border: 1px solid color-mix(in oklab, var(--gold) 58%, transparent);
+  background: color-mix(in oklab, var(--gold) 16%, transparent);
   color: var(--gold);
 }
 

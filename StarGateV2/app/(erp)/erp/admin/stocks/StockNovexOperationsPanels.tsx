@@ -1,6 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+
+import DropdownSelect from "@/components/ui/DropdownSelect/DropdownSelect";
+import type { DropdownSelectOption } from "@/components/ui/DropdownSelect/DropdownSelect";
 
 import {
   useCancelStockCorporateAction,
@@ -26,6 +29,29 @@ import {
 } from "@/lib/query/idempotency";
 
 import styles from "./page.module.css";
+
+const DISCLOSURE_SCOPE_OPTIONS: readonly DropdownSelectOption<DisclosureScope>[] = [
+  { value: "TICKERS", label: "개별 종목" },
+  { value: "MARKET", label: "시장 전체" },
+];
+
+const DISCLOSURE_KIND_OPTIONS: readonly DropdownSelectOption<DisclosureKind>[] = [
+  { value: "INFO", label: "정보 전용" },
+  { value: "PRICE", label: "가격 연동 (예약만)" },
+];
+
+const CALENDAR_MODE_OPTIONS: readonly DropdownSelectOption<"EARLY_CLOSE" | "NORMAL_HOURS">[] = [
+  { value: "EARLY_CLOSE", label: "조기 폐장" },
+  { value: "NORMAL_HOURS", label: "정규 시간" },
+];
+
+const CORPORATE_ACTION_TYPE_OPTIONS: readonly DropdownSelectOption<
+  "DIVIDEND" | "SPLIT" | "RIGHTS_OFFERING"
+>[] = [
+  { value: "DIVIDEND", label: "배당" },
+  { value: "SPLIT", label: "정방향 분할" },
+  { value: "RIGHTS_OFFERING", label: "유상증자" },
+];
 
 interface StockOption {
   ticker: string;
@@ -167,6 +193,25 @@ export default function StockNovexOperationsPanels({
     useState<DisclosureStatus>("SCHEDULED");
   const [kind, setKind] = useState<DisclosureKind>("INFO");
   const [scope, setScope] = useState<DisclosureScope>("TICKERS");
+  // 가격 연동 공시는 즉시공개를 허용하지 않으므로 해당 항목만 비활성으로 내린다.
+  const disclosureStatusOptions = useMemo<
+    readonly DropdownSelectOption<DisclosureStatus>[]
+  >(
+    () => [
+      { value: "DRAFT", label: "초안" },
+      { value: "SCHEDULED", label: "예약 공개" },
+      {
+        value: "PUBLISHED",
+        label: "정보 즉시공개",
+        disabled: kind === "PRICE",
+      },
+    ],
+    [kind],
+  );
+  const tickerOptions = useMemo<readonly DropdownSelectOption<string>[]>(
+    () => stocks.map((stock) => ({ value: stock.ticker, label: stock.ticker })),
+    [stocks],
+  );
   const [percent, setPercent] = useState("");
   const [structural, setStructural] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -628,18 +673,12 @@ export default function StockNovexOperationsPanels({
         <div className={styles.novexForm}>
           <label>
             <span>공시 상태</span>
-            <select
+            <DropdownSelect
+              ariaLabel="공시 상태"
               value={disclosureStatus}
-              onChange={(event) =>
-                setDisclosureStatus(event.target.value as DisclosureStatus)
-              }
-            >
-              <option value="DRAFT">초안</option>
-              <option value="SCHEDULED">예약 공개</option>
-              <option value="PUBLISHED" disabled={kind === "PRICE"}>
-                정보 즉시공개
-              </option>
-            </select>
+              onChange={setDisclosureStatus}
+              options={disclosureStatusOptions}
+            />
           </label>
           {disclosureStatus === "SCHEDULED" ? (
             <label>
@@ -662,15 +701,12 @@ export default function StockNovexOperationsPanels({
           </label>
           <label>
             <span>대상</span>
-            <select
+            <DropdownSelect
+              ariaLabel="공시 대상"
               value={scope}
-              onChange={(event) =>
-                setScope(event.target.value as DisclosureScope)
-              }
-            >
-              <option value="TICKERS">개별 종목</option>
-              <option value="MARKET">시장 전체</option>
-            </select>
+              onChange={setScope}
+              options={DISCLOSURE_SCOPE_OPTIONS}
+            />
           </label>
           {scope === "TICKERS" || kind === "PRICE" ? (
             <fieldset className={styles.tickerEffects}>
@@ -715,15 +751,12 @@ export default function StockNovexOperationsPanels({
           ) : null}
           <label>
             <span>공시 유형</span>
-            <select
+            <DropdownSelect
+              ariaLabel="공시 유형"
               value={kind}
-              onChange={(event) =>
-                selectKind(event.target.value as DisclosureKind)
-              }
-            >
-              <option value="INFO">정보 전용</option>
-              <option value="PRICE">가격 연동 (예약만)</option>
-            </select>
+              onChange={selectKind}
+              options={DISCLOSURE_KIND_OPTIONS}
+            />
           </label>
           {kind === "PRICE" ? (
             <>
@@ -827,13 +860,12 @@ export default function StockNovexOperationsPanels({
           </label>
           <label>
             <span>운영</span>
-            <select
+            <DropdownSelect
+              ariaLabel="캘린더 운영"
               value={mode}
-              onChange={(event) => setMode(event.target.value as typeof mode)}
-            >
-              <option value="EARLY_CLOSE">조기 폐장</option>
-              <option value="NORMAL_HOURS">정규 시간</option>
-            </select>
+              onChange={setMode}
+              options={CALENDAR_MODE_OPTIONS}
+            />
           </label>
           {mode === "EARLY_CLOSE" ? (
             <label>
@@ -890,29 +922,21 @@ export default function StockNovexOperationsPanels({
         <div className={styles.novexForm}>
           <label>
             <span>유형</span>
-            <select
+            <DropdownSelect
+              ariaLabel="기업행동 유형"
               value={actionType}
-              onChange={(event) =>
-                setActionType(event.target.value as typeof actionType)
-              }
-            >
-              <option value="DIVIDEND">배당</option>
-              <option value="SPLIT">정방향 분할</option>
-              <option value="RIGHTS_OFFERING">유상증자</option>
-            </select>
+              onChange={setActionType}
+              options={CORPORATE_ACTION_TYPE_OPTIONS}
+            />
           </label>
           <label>
             <span>종목</span>
-            <select
+            <DropdownSelect
+              ariaLabel="대상 종목"
               value={ticker}
-              onChange={(event) => setTicker(event.target.value)}
-            >
-              {stocks.map((stock) => (
-                <option key={stock.ticker} value={stock.ticker}>
-                  {stock.ticker}
-                </option>
-              ))}
-            </select>
+              onChange={setTicker}
+              options={tickerOptions}
+            />
           </label>
           <label>
             <span>

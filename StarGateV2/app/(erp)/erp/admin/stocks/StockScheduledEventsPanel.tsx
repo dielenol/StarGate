@@ -2,6 +2,9 @@
 
 import { useMemo, useRef, useState } from "react";
 
+import DropdownSelect from "@/components/ui/DropdownSelect/DropdownSelect";
+import type { DropdownSelectOption } from "@/components/ui/DropdownSelect/DropdownSelect";
+
 import {
   useCancelStockScheduledEvent,
   useCreateStockScheduledEvent,
@@ -27,6 +30,11 @@ import {
 } from "@/lib/stocks/scheduled-event";
 
 import styles from "./scheduled-events.module.css";
+
+const EVENT_TIER_OPTIONS: readonly DropdownSelectOption<"scenario" | "shock">[] = [
+  { value: "scenario", label: "시나리오" },
+  { value: "shock", label: "충격" },
+];
 
 interface StockOption {
   ticker: string;
@@ -62,6 +70,14 @@ export default function StockScheduledEventsPanel({ stocks }: Props) {
   );
   const [changeInput, setChangeInput] = useState("-10");
   const [eventTier, setEventTier] = useState<"scenario" | "shock">("shock");
+  const tickerOptions = useMemo<readonly DropdownSelectOption<string>[]>(
+    () =>
+      stocks.map((stock) => ({
+        value: stock.ticker,
+        label: `${stock.name} (${stock.ticker}) · ¤ ${formatStockValue(stock.price)}`,
+      })),
+    [stocks],
+  );
   const [eventText, setEventText] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -164,13 +180,12 @@ export default function StockScheduledEventsPanel({ stocks }: Props) {
         <form className={styles.form} onSubmit={handleSubmit}>
           <label>
             <span>종목</span>
-            <select value={ticker} onChange={(event) => setTicker(event.target.value)}>
-              {stocks.map((stock) => (
-                <option key={stock.ticker} value={stock.ticker}>
-                  {stock.name} ({stock.ticker}) · ¤ {formatStockValue(stock.price)}
-                </option>
-              ))}
-            </select>
+            <DropdownSelect
+              ariaLabel="대상 종목"
+              value={ticker}
+              onChange={setTicker}
+              options={tickerOptions}
+            />
           </label>
           <label>
             <span>정기 공시일</span>
@@ -195,15 +210,12 @@ export default function StockScheduledEventsPanel({ stocks }: Props) {
             </label>
             <label>
               <span>공시 등급</span>
-              <select
+              <DropdownSelect
+                ariaLabel="공시 등급"
                 value={eventTier}
-                onChange={(event) =>
-                  setEventTier(event.target.value as "scenario" | "shock")
-                }
-              >
-                <option value="scenario">시나리오</option>
-                <option value="shock">충격</option>
-              </select>
+                onChange={setEventTier}
+                options={EVENT_TIER_OPTIONS}
+              />
             </label>
           </div>
           <label>

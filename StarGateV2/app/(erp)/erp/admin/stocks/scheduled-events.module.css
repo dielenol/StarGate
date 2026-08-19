@@ -1,10 +1,10 @@
 .panel {
   grid-column: 1 / -1;
-  border: 1px solid rgba(201, 168, 90, 0.38);
+  border: 1px solid color-mix(in oklab, var(--gold) 38%, transparent);
   border-radius: 8px;
   padding: 18px;
   background:
-    linear-gradient(135deg, rgba(201, 168, 90, 0.08), transparent 38%),
+    linear-gradient(135deg, color-mix(in oklab, var(--gold) 8%, transparent), transparent 38%),
     rgba(10, 14, 22, 0.78);
 }
 
@@ -97,7 +97,7 @@
 .form input:focus,
 .form select:focus,
 .form textarea:focus {
-  outline: 2px solid rgba(201, 168, 90, 0.45);
+  outline: 2px solid color-mix(in oklab, var(--gold) 45%, transparent);
   outline-offset: 2px;
 }
 
@@ -141,9 +141,9 @@
 
 .submit {
   min-height: 46px;
-  border: 1px solid rgba(201, 168, 90, 0.62);
+  border: 1px solid color-mix(in oklab, var(--gold) 62%, transparent);
   border-radius: 8px;
-  background: rgba(201, 168, 90, 0.18);
+  background: color-mix(in oklab, var(--gold) 18%, transparent);
   color: var(--gold);
   font-size: 14px;
   font-weight: 800;
@@ -217,17 +217,17 @@
 }
 
 .status[data-status="PENDING"] {
-  border-color: rgba(201, 168, 90, 0.46);
+  border-color: color-mix(in oklab, var(--gold) 46%, transparent);
   color: var(--gold);
 }
 
 .status[data-status="APPLIED"] {
-  border-color: rgba(58, 184, 124, 0.42);
+  border-color: color-mix(in oklab, var(--success) 42%, transparent);
   color: var(--success);
 }
 
 .status[data-status="CANCELLED"] {
-  border-color: rgba(255, 91, 91, 0.38);
+  border-color: color-mix(in oklab, var(--danger) 38%, transparent);
   color: var(--danger);
 }
 
@@ -252,10 +252,10 @@
 
 .cancel {
   justify-self: end;
-  border: 1px solid rgba(255, 91, 91, 0.36);
+  border: 1px solid color-mix(in oklab, var(--danger) 36%, transparent);
   border-radius: 6px;
   padding: 6px 10px;
-  background: rgba(255, 91, 91, 0.1);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
   color: var(--danger);
   font-size: 12px;
   font-weight: 800;
@@ -271,14 +271,14 @@
 }
 
 .message {
-  border: 1px solid rgba(58, 184, 124, 0.34);
-  background: rgba(58, 184, 124, 0.1);
+  border: 1px solid color-mix(in oklab, var(--success) 34%, transparent);
+  background: color-mix(in oklab, var(--success) 10%, transparent);
   color: var(--success);
 }
 
 .error {
-  border: 1px solid rgba(255, 91, 91, 0.34);
-  background: rgba(255, 91, 91, 0.1);
+  border: 1px solid color-mix(in oklab, var(--danger) 34%, transparent);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
   color: var(--danger);
 }
 
