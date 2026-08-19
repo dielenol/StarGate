@@ -1,0 +1,259 @@
+/* 시나리오 흐름 패널. 색은 globals.css 토큰만 사용한다. */
+
+.panel {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(10, 14, 22, 0.74);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  color: var(--ink-0);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hint {
+  margin: 6px 0 0;
+  max-width: 62ch;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.tickerPicker {
+  min-width: 240px;
+}
+
+.feedbackOk,
+.feedbackError {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.feedbackOk {
+  border: 1px solid color-mix(in oklab, var(--success) 46%, transparent);
+  background: color-mix(in oklab, var(--success) 13%, transparent);
+  color: var(--ink-1);
+}
+
+.feedbackError {
+  border: 1px solid color-mix(in oklab, var(--danger) 52%, transparent);
+  background: color-mix(in oklab, var(--danger) 14%, transparent);
+  color: var(--ink-1);
+}
+
+.empty {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink-2);
+  font-size: 15px;
+  text-align: center;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.summary span {
+  color: var(--ink-2);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summary strong {
+  color: var(--ink-0);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.up {
+  color: var(--gold);
+}
+
+.down {
+  color: var(--danger);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid color-mix(in oklab, var(--gold) 52%, transparent);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink-1);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.slot {
+  color: var(--ink-1);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.badgeAction,
+.badgeDisclosure,
+.badgeStructural {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.badgeAction {
+  border: 1px solid color-mix(in oklab, var(--gold) 62%, transparent);
+  background: color-mix(in oklab, var(--gold) 18%, transparent);
+  color: var(--gold);
+}
+
+.badgeDisclosure {
+  border: 1px solid var(--line-strong);
+  color: var(--ink-2);
+}
+
+.badgeStructural {
+  border: 1px solid color-mix(in oklab, var(--danger) 48%, transparent);
+  color: var(--danger);
+}
+
+.status {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.label {
+  margin: 0;
+  color: var(--ink-0);
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.detail {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.cardFoot span {
+  color: var(--ink-2);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardFoot strong {
+  color: var(--ink-0);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cancelBtn {
+  margin-left: auto;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in oklab, var(--danger) 42%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--danger) 14%, transparent);
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelBtn:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .head {
+    flex-direction: column;
+  }
+
+  .tickerPicker {
+    width: 100%;
+  }
+}

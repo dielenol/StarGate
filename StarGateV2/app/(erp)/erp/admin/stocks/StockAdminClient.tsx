@@ -37,6 +37,7 @@ import MarketWirePanel from "../../stock/MarketWirePanel";
 import { StockLogo } from "../../stock/_logos";
 import StockScheduledEventsPanel from "./StockScheduledEventsPanel";
 import StockNovexOperationsPanels from "./StockNovexOperationsPanels";
+import StockScenarioTimelinePanel from "./StockScenarioTimelinePanel";
 import { ARROW, priceDirection } from "../../stock/_helpers";
 import styles from "./page.module.css";
 
@@ -561,7 +562,10 @@ export default function StockAdminClient({
         </section>
 
         {novexMode === "enabled" ? (
-          <StockNovexOperationsPanels stocks={prices.items} />
+          <>
+            <StockScenarioTimelinePanel stocks={prices.items} />
+            <StockNovexOperationsPanels stocks={prices.items} />
+          </>
         ) : (
           <StockScheduledEventsPanel stocks={prices.items} />
         )}

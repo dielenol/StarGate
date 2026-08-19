@@ -122,7 +122,11 @@ test("실행 transaction은 보유량·평단·가격·발행계수·resume을 �
 });
 
 test("운영 UI와 Query mutation은 유상증자 입력 및 두 캐시를 연결한다", () => {
-  assert.match(adminPanel, /value="RIGHTS_OFFERING">유상증자/);
+  // 공용 DropdownSelect 전환 후 유형 선택지는 모듈 상수로 정의된다.
+  assert.match(
+    adminPanel,
+    /\{ value: "RIGHTS_OFFERING", label: "유상증자" \}/,
+  );
   assert.match(adminPanel, /발표 · 거래정지 시작/);
   assert.match(adminPanel, /실행 회차 추가 가격조정률/);
   assert.match(adminPanel, /실행 이후 회차에 공시 센터의 PRICE 공시/);
