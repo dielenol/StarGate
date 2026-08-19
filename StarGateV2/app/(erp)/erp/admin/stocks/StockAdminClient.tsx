@@ -83,6 +83,13 @@ export default function StockAdminClient({
     () => prices.items.find((item) => item.ticker === selectedTicker),
     [prices.items, selectedTicker],
   );
+  // 시세를 읽지 못하면 카탈로그 basePrice 로 폴백된 값이 표시된다. 그 상태로 GM 시세
+  // 조정을 실행하면 시드값이 그대로 확정되므로 조작 자체를 잠근다.
+  const unseededCount = prices.items.filter((item) => !item.isSeeded).length;
+  const allUnseeded =
+    prices.items.length > 0 && unseededCount === prices.items.length;
+  const priceControlsLocked =
+    novexMode === "enabled" || selected?.isSeeded === false;
   const [priceInput, setPriceInput] = useState(
     selected ? String(selected.price) : "",
   );
@@ -343,6 +350,13 @@ export default function StockAdminClient({
             <span>시세 조정</span>
             <span>{selectedTicker}</span>
           </div>
+          {unseededCount > 0 ? (
+            <p className={styles.seedWarning} role="alert">
+              {allUnseeded
+                ? "실제 시세를 불러오지 못했습니다. 아래 가격은 카탈로그 시드값이며 현재가가 아닙니다. 시세 조정을 실행하지 마세요."
+                : `${unseededCount}개 종목의 시세가 등록되지 않아 시드값으로 표시됩니다. 해당 종목은 시세 조정이 잠깁니다.`}
+            </p>
+          ) : null}
           {novexMode === "enabled" ? (
             <p className={styles.opsHint}>
               NOVEX 회차 복구는 아래 운영 패널에서 정확한 회차 키를 지정해
@@ -448,7 +462,7 @@ export default function StockAdminClient({
                   min={MIN_STOCK_PRICE}
                   step={0.01}
                   value={priceInput}
-                  disabled={novexMode === "enabled"}
+                  disabled={priceControlsLocked}
                   onChange={(e) => {
                     const next = e.target.value
                       .replace(/[^\d.]/g, "")
@@ -464,7 +478,7 @@ export default function StockAdminClient({
                   <button
                     key={percent}
                     type="button"
-                    disabled={novexMode === "enabled"}
+                    disabled={priceControlsLocked}
                     onClick={() => applyPercentMove(percent)}
                     className={
                       percent < 0
@@ -483,7 +497,7 @@ export default function StockAdminClient({
                   type="text"
                   maxLength={80}
                   value={eventText}
-                  disabled={novexMode === "enabled"}
+                  disabled={priceControlsLocked}
                   onChange={(e) => setEventText(e.target.value)}
                   placeholder="예: 기업 실적 발표"
                 />
@@ -493,7 +507,7 @@ export default function StockAdminClient({
                   <button
                     key={template}
                     type="button"
-                    disabled={novexMode === "enabled"}
+                    disabled={priceControlsLocked}
                     onClick={() => applyEventTemplate(template)}
                   >
                     {template}
@@ -528,15 +542,17 @@ export default function StockAdminClient({
                 disabled={
                   mutation.isPending ||
                   tradingStatusMutation.isPending ||
-                  novexMode === "enabled" ||
+                  priceControlsLocked ||
                   !selectedTicker
                 }
               >
                 {novexMode === "enabled"
                   ? "공시 센터에서 회차 예약"
-                  : mutation.isPending
-                    ? "변경 중..."
-                    : "주가 변경"}
+                  : selected.isSeeded === false
+                    ? "시세 등록 전에는 변경할 수 없음"
+                    : mutation.isPending
+                      ? "변경 중..."
+                      : "주가 변경"}
               </button>
             </form>
           ) : (

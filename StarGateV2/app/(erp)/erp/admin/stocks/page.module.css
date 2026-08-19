@@ -58,6 +58,19 @@
 .novexList button:focus-visible { border-color: var(--danger); color: var(--danger); outline: none; }
 .opsHint { margin: 10px 0 0; color: var(--ink-2); font-size: 14px; line-height: 1.55; }
 
+/* 시세 미등록 폴백 경고. 색은 globals.css 토큰만 사용한다. */
+.seedWarning {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-left-width: 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--alert-4-text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 @media (max-width: 980px) {
   .novexOps { grid-template-columns: 1fr; }
 }
