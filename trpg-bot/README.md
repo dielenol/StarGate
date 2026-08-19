@@ -163,6 +163,18 @@ pnpm dev
 2. **yt-dlp nightly 승급** — `Dockerfile`의 `ARG YT_DLP_VERSION`을 [최신 nightly](https://pypi.org/project/yt-dlp/#history)로 올려 재빌드합니다. 기본 client가 막힌 경우 upstream이 며칠 안에 교체하므로 이 경로가 가장 확실합니다.
 3. **쿠키 또는 프록시** — IP 평판 문제가 PO token으로도 풀리지 않으면 남는 수단입니다.
 
+### 일일 자동 점검
+
+봇이 스스로 하루 한 번 음악 해석 경로를 점검하고, 나빠질 때만 알립니다.
+
+- **언제** — 기동 1분 뒤 1회, 이후 24시간 주기 (`TRPG_MUSIC_HEALTHCHECK_INTERVAL_MS`)
+- **어디서** — 봇 프로세스 안에서 실제 해석 코드로 수행합니다. YouTube 차단은 서버 IP 에서만 재현되므로 외부 CI(GitHub Actions 등)에서 돌리면 의미가 없습니다.
+- **무엇을** — 해석 프로필별로 미디어 URL 을 받아 첫 1KB 만 확인하고 즉시 끊습니다. 음성 채널 연결·실제 재생은 하지 않아 사용자에게 보이지 않습니다.
+- **판정** — `healthy`(기본 프로필 정상) / `degraded`(폴백만 정상) / `down`(전부 실패). 프로필을 나눠 보는 이유는 1순위 client 가 죽었는데 폴백이 가려주는 상태를 미리 잡기 위해서입니다.
+- **알림** — `down`은 critical, `degraded`는 warning 으로 DM + `TRPG_ALERT_CHANNEL_ID` 에 보냅니다. 프로필별 실패 단계(URL 해석 / 미디어 수신), HTTP 상태, 실행 중인 yt-dlp 버전이 함께 실립니다. **정상일 때는 아무 메시지도 보내지 않습니다.** 실패 뒤 정상으로 돌아오면 복구 알림을 한 번 보냅니다.
+- 일시적 네트워크 오류로 알림이 뜨지 않게 프로필마다 최대 2회 시도합니다.
+- 끄려면 `TRPG_MUSIC_HEALTHCHECK=0`. 점검 영상은 `TRPG_MUSIC_HEALTHCHECK_VIDEO_URL` 로 바꿉니다(삭제·지역차단되지 않는 공개 영상을 쓰세요 — 그런 영상을 지정하면 점검이 항상 실패합니다. 다만 알림에 실패 단계가 실리므로 "영상 없음"과 "403 차단"은 구분됩니다).
+
 #### 진단
 
 재생 실패가 5분 안에 연속 임계치를 넘기면 운영 알림(DM·`TRPG_ALERT_CHANNEL_ID`)에 **실행 중인 yt-dlp 버전·player client·POT provider 주소**가 함께 실립니다. 서버 로그 없이 Discord에서 바로 확인할 수 있습니다.

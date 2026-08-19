@@ -154,6 +154,14 @@ trpg-web ── 세션 생성·수정·취소 ──> trpg_sessions
 - `TRPG_ALERT_CHANNEL_ID`가 있으면 운영 장애는 상태판 수정이 아닌 다채봇의 별도 임베드 메시지로 전송한다.
 - 재생 실패가 5분 안에 연속 임계치를 넘기면 운영 알림에 실행 중인 yt-dlp 버전·player client·POT provider 주소를 함께 싣는다. 서버 로그에 접근하지 않고 Discord 에서 원인을 좁히기 위한 정보다.
 
+자동 점검:
+
+- 기동 1분 뒤와 이후 24시간 주기로 음악 해석 경로를 스스로 점검한다. YouTube 정책 변화로 인한 실패는 서버 IP 에서만 재현되므로 점검도 봇 프로세스 안에서 실제 해석 코드로 수행한다.
+- 해석 프로필별로 나눠 점검해 `healthy`(기본 프로필 정상) / `degraded`(폴백만 정상) / `down`(전부 실패)으로 판정한다. 1순위 client 가 죽었는데 폴백이 가려주는 상태를 정상으로 넘기지 않기 위한 구분이다.
+- 프로필마다 최대 2회 시도해 일시적 네트워크 오류로 알림이 뜨지 않게 한다.
+- 점검은 미디어 URL 의 첫 1KB 만 받고 즉시 스트림을 취소한다. 음성 채널 연결과 실제 재생은 하지 않는다.
+- `degraded` 는 warning, `down` 은 critical 로 운영 알림을 보내고 프로필별 실패 단계·HTTP 상태·yt-dlp 버전을 함께 싣는다. 정상일 때는 알리지 않으며, 실패 뒤 정상으로 돌아오면 복구 사실을 한 번 알린다.
+
 운영 장애 알림:
 
 - `TRPG_ALERT_USER_ID`가 있으면 슬래시 커맨드 등록, 음악 런타임 초기화, Discord 클라이언트, 음악 상태판·명령, 음성 연결 장애를 해당 사용자에게 DM으로 보낸다.
@@ -305,6 +313,10 @@ trpg-web ── 세션 생성·수정·취소 ──> trpg_sessions
 | `YT_DLP_PLAYER_CLIENTS` | 아니요 | `visionos` | 기본 프로필 player client 목록 |
 | `YT_DLP_POT_PROVIDER_URL` | 아니요 | 이미지 기본 `http://127.0.0.1:4416` | bgutil POT provider HTTP 주소 |
 | `POT_PROVIDER_DISABLED` | 아니요 | `0` | `1`이면 내장 POT provider를 띄우지 않음 |
+| `TRPG_MUSIC_HEALTHCHECK` | 아니요 | 활성 | 음악 경로 일일 자동 점검 활성 여부 |
+| `TRPG_MUSIC_HEALTHCHECK_INTERVAL_MS` | 아니요 | `86400000` | 자동 점검 주기 |
+| `TRPG_MUSIC_HEALTHCHECK_START_DELAY_MS` | 아니요 | `60000` | 기동 후 첫 점검까지 지연 |
+| `TRPG_MUSIC_HEALTHCHECK_VIDEO_URL` | 아니요 | 고정 공개 영상 | 점검에 사용할 YouTube 영상 |
 
 필수 환경변수가 없으면 기동이 실패한다. 단, `TRPG_MUSIC_CHANNEL_ID` 누락·오류 또는 음악 재생 런타임 실패는 음악 기능만 비활성화하며 기존 세션 조회·알림 기능은 계속 실행된다. 잘못된 폴백 채널은 부팅 시 오류 로그를 남기지만 봇은 계속 실행된다.
 
