@@ -70,3 +70,12 @@
 - 검증: shared 주식·migration 계약 29건·replica 전용 3건 skip, 웹 주식·거래 계약 61건, `pnpm typecheck`, 전체 `pnpm lint`, production build
 - 관련 커밋: `9d37d3ec`
 - 운영 경계: 라이브 기업행동·공시·migration marker·플래그·Dokploy cron은 변경하지 않았다.
+
+## 2026-08-19 · 버그 수정 · 시세 미등록 폴백 차단과 공용 UI 정렬
+
+- Web이 `enabled`인데 NOVEX 시장 상태가 없으면 시세 조회가 0건이 되어 카탈로그 `basePrice`가 현재가처럼 표시되던 문제를 고쳤다. enabled에서도 `stock_prices` 조회를 항상 확보해 폴백 경로를 유지한다.
+- 시드값으로 표시되는 상태를 경고로 노출하고, 선택 종목이 미등록이면 가격 입력·빠른 조정·문구 템플릿·제출을 잠가 시드값이 실제 시세로 확정되는 경로를 막았다.
+- 네이티브 select 8개를 공용 `DropdownSelect`로 교체하고, 하드코딩 `rgba` 34건을 `globals.css` 토큰(--gold/--danger/--success)으로 이관했다. 포커스는 ERP 표준인 gold outline을 따른다.
+- 검증: 웹 주식·거래 계약 61건, `pnpm typecheck`, 전체 `pnpm lint`, production build
+- 관련 커밋: `d158aa43`, `f29e5b0f`, `c936c81d`, `96a50b3c`
+- 운영 경계: 라이브 시세·공시·기업행동과 Dokploy 플래그는 변경하지 않았다.

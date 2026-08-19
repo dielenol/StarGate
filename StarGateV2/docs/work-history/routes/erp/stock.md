@@ -134,3 +134,11 @@
 - 검증: 웹 주식·거래 계약 61건, shared 주식·migration 계약 29건·replica 전용 3건 skip, core·worker 104건, `pnpm typecheck`, 전체 `pnpm lint`, production build
 - 관련 커밋: `9d37d3ec`
 - 운영 경계: 라이브 시세·이력·공시·기업행동과 기능 플래그는 변경하지 않았다.
+
+## 2026-08-19 · 버그 수정 · NOVEX 전환 중 시세 폴백 복구
+
+- `buildPricesResponse`가 `enabled` 모드에서 legacy 시세 조회를 건너뛰어, NOVEX 시장 상태가 아직 없을 때 전 종목이 카탈로그 시드값으로 표시되던 문제를 고쳤다.
+- `getStockMarketSnapshot`이 읽는 컬렉션과 legacy 조회 대상이 동일한 `stock_prices`이므로 두 경로를 함께 확보해 전환 구간에서도 실제 시세를 노출한다.
+- 검증: 웹 주식·거래 계약 61건, `pnpm typecheck`, 전체 `pnpm lint`, production build
+- 관련 커밋: `d158aa43`
+- 운영 경계: 라이브 시세·이력은 변경하지 않았다.
