@@ -41,6 +41,7 @@ export const MusicSubcommand = {
   resume: "재개",
   skip: "건너뛰기",
   repeat: "반복",
+  volume: "볼륨",
   reset: "초기화",
   queue: "대기열",
   leave: "퇴장",
@@ -52,6 +53,7 @@ export type MusicSubcommandName =
 export const MUSIC_QUERY_OPTION = "검색어";
 export const MUSIC_PLAYLIST_OPTION = "링크";
 export const MUSIC_REPEAT_MODE_OPTION = "모드";
+export const MUSIC_VOLUME_OPTION = "퍼센트";
 
 export function isMusicCommandName(value: string): value is typeof MUSIC_ROOT {
   return value === MUSIC_ROOT;

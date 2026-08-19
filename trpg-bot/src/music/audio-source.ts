@@ -14,6 +14,8 @@ import { createAudioResource, StreamType } from "@discordjs/voice";
 import type { AudioResource } from "@discordjs/voice";
 
 import {
+  DEFAULT_VOLUME_PERCENT,
+  isDefaultVolume,
   isMusicOperationAbortedError,
   MusicOperationAbortedError,
   type AudioQualityMode,
@@ -43,6 +45,14 @@ export interface AudioResourceRequestOptions {
   firstByteTimeoutMs?: number;
   /** 직접 Opus 전달이 조기 종료됐을 때 FFmpeg 재연결 경로를 강제한다. */
   forceTranscode?: boolean;
+  /**
+   * 재생 음량(%). 100이면 무손실 Opus 전달을 유지하고, 그 외에는 FFmpeg 음량
+   * 필터를 쓰기 위해 변환 경로로 전환한다. Opus 인코더 의존성을 추가하지 않고
+   * 음량을 조절하려면 FFmpeg 단계에서 처리하는 방법밖에 없다.
+   */
+  volumePercent?: number;
+  /** 변환 경로에서 이 지점(초)부터 재생한다. 음량 변경 후 이어듣기에 사용한다. */
+  seekSeconds?: number;
 }
 
 export interface ManagedAudioResource {
@@ -257,12 +267,25 @@ function ffmpegHeaderBlock(headers: Record<string, string>): string | null {
   return `${entries.map(([key, value]) => `${key}: ${value}`).join("\r\n")}\r\n`;
 }
 
-function buildFfmpegArgs(
+/** 100% 기준 배율. FFmpeg volume 필터는 배율(1.0 = 원음)을 받는다. */
+function volumeFilterValue(volumePercent: number): string {
+  return (volumePercent / 100).toFixed(3);
+}
+
+export function buildFfmpegArgs(
   url: string,
   headers: Record<string, string>,
   responseTimeoutMs: number,
+  options: { volumePercent?: number; seekSeconds?: number } = {},
 ): string[] {
   const headerBlock = ffmpegHeaderBlock(headers);
+  const volumePercent = options.volumePercent ?? DEFAULT_VOLUME_PERCENT;
+  const seekSeconds =
+    typeof options.seekSeconds === "number" &&
+    Number.isFinite(options.seekSeconds) &&
+    options.seekSeconds > 0
+      ? Math.floor(options.seekSeconds)
+      : 0;
   return [
     "-hide_banner",
     "-loglevel",
@@ -277,6 +300,8 @@ function buildFfmpegArgs(
     "-rw_timeout",
     String(responseTimeoutMs * 1_000),
     ...(headerBlock ? ["-headers", headerBlock] : []),
+    // 입력 앞의 -ss 는 디코딩을 건너뛰어 이어듣기 지연을 줄인다.
+    ...(seekSeconds > 0 ? ["-ss", String(seekSeconds)] : []),
     "-i",
     url,
     "-map",
@@ -284,6 +309,9 @@ function buildFfmpegArgs(
     "-vn",
     "-sn",
     "-dn",
+    ...(isDefaultVolume(volumePercent)
+      ? []
+      : ["-filter:a", `volume=${volumeFilterValue(volumePercent)}`]),
     "-ac",
     "2",
     "-ar",
@@ -361,7 +389,10 @@ async function createTranscodedResource(
   );
   const child = spawn(
     getFfmpegExecutable(),
-    buildFfmpegArgs(url, headers, responseTimeoutMs),
+    buildFfmpegArgs(url, headers, responseTimeoutMs, {
+      volumePercent: options.volumePercent,
+      seekSeconds: options.seekSeconds,
+    }),
     {
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
@@ -449,10 +480,14 @@ export async function createAudioResourceFromMedia(
   media: YoutubeMediaSource,
   options: AudioResourceRequestOptions = {},
 ): Promise<ManagedAudioResource> {
-  if (
-    media.qualityMode === "opus-passthrough" &&
-    options.forceTranscode !== true
-  ) {
+  const volumePercent = options.volumePercent ?? DEFAULT_VOLUME_PERCENT;
+  // 무손실 전달은 음량 조절과 이어듣기를 지원하지 않는다. 둘 중 하나가 필요하면
+  // FFmpeg 경로로 넘긴다 — 기본 음량으로 재생하는 동안은 원래대로 무손실이다.
+  const needsFfmpeg =
+    options.forceTranscode === true ||
+    !isDefaultVolume(volumePercent) ||
+    (options.seekSeconds ?? 0) > 0;
+  if (media.qualityMode === "opus-passthrough" && !needsFfmpeg) {
     return createPassthroughResource(track, media.url, media.headers, options);
   }
   return createTranscodedResource(track, media.url, media.headers, options);

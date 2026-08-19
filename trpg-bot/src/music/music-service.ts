@@ -38,7 +38,11 @@ import {
   MusicRepeatMode,
   MusicOperationAbortedError,
   MusicUserError,
+  DEFAULT_VOLUME_PERCENT,
+  VOLUME_CLIPPING_THRESHOLD_PERCENT,
+  isDefaultVolume,
   isMusicOperationAbortedError,
+  normalizeVolumePercent,
   type AudioQualityMode,
   type MusicRepeatMode as MusicRepeatModeValue,
   type MusicTrack,
@@ -199,6 +203,17 @@ function createMusicAudioPlayer(): AudioPlayer {
   });
 }
 
+/** `/음악 볼륨` 결과 — 명령 응답 문구를 만들기 위한 정보. */
+export interface MusicVolumeChange {
+  volumePercent: number;
+  previousVolumePercent: number;
+  /** 재생 중인 곡을 다시 열어 즉시 반영했는지. */
+  appliedToCurrentTrack: boolean;
+  /** 이어듣기를 시작한 지점(초). 라이브이거나 즉시 반영이 아니면 null. */
+  resumedFromSeconds: number | null;
+  track: MusicTrack | null;
+}
+
 export class GuildMusicSession {
   private readonly dependencies: GuildMusicSessionDependencies;
   private readonly queue: MusicTrack[] = [];
@@ -214,6 +229,9 @@ export class GuildMusicSession {
   private repeatMode: MusicRepeatModeValue = MusicRepeatMode.off;
   private forceTranscodeTrack: MusicTrack | null = null;
   private currentUsesForcedTranscode = false;
+  private volumePercent = DEFAULT_VOLUME_PERCENT;
+  /** 음량 변경으로 현재 곡을 이어서 다시 열 때 사용할 재생 위치(초). */
+  private pendingSeekSeconds = 0;
   private destroyed = false;
 
   constructor(
@@ -431,6 +449,59 @@ export class GuildMusicSession {
     return mode;
   }
 
+  /**
+   * 음량을 바꾸고, 재생 중이면 현재 위치부터 이어서 다시 연다.
+   *
+   * 무손실 Opus 전달 경로는 음량을 조절할 수 없어 FFmpeg 경로로 갈아타야 하고,
+   * 이미 흐르는 스트림에는 필터를 끼울 수 없다. 그래서 같은 곡을 재생 위치부터
+   * 다시 여는 방식으로 적용한다. 라이브는 위치 탐색이 불가해 처음부터 다시 연다.
+   */
+  setVolume(percent: number): MusicVolumeChange {
+    if (this.destroyed) {
+      throw new MusicUserError("음성 연결이 종료되었습니다. 다시 시도해 주세요.");
+    }
+    const next = normalizeVolumePercent(percent);
+    const previous = this.volumePercent;
+    this.volumePercent = next;
+    if (previous === next || !this.current) {
+      this.syncPanel();
+      return {
+        volumePercent: next,
+        previousVolumePercent: previous,
+        appliedToCurrentTrack: false,
+        resumedFromSeconds: null,
+        track: this.current,
+      };
+    }
+
+    const track = this.current;
+    const playedMs = this.activeResource?.resource.playbackDuration ?? 0;
+    const resumeSeconds = track.isLive ? 0 : Math.floor(playedMs / 1_000);
+    this.playbackToken += 1;
+    this.current = null;
+    this.currentQualityMode = null;
+    this.currentUsesForcedTranscode = false;
+    this.disposeActiveResource();
+    // 이전 resource 의 늦은 Idle 전환이 새로 여는 곡을 끝낸 것으로 오인되지 않게
+    // 재예약 전에 player 를 확실히 비운다 (조기 종료 재시도 경로와 같은 이유).
+    this.player.stop(true);
+    this.pendingSeekSeconds = resumeSeconds;
+    this.queue.unshift(track);
+    this.syncPanel();
+    this.queueStart();
+    return {
+      volumePercent: next,
+      previousVolumePercent: previous,
+      appliedToCurrentTrack: true,
+      resumedFromSeconds: track.isLive ? null : resumeSeconds,
+      track,
+    };
+  }
+
+  getVolume(): number {
+    return this.volumePercent;
+  }
+
   skip(): MusicTrack | null {
     const skipped = this.current;
     if (!skipped) return null;
@@ -454,6 +525,7 @@ export class GuildMusicSession {
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = false;
     this.forceTranscodeTrack = null;
+    this.pendingSeekSeconds = 0;
     this.recentError = null;
     this.repeatMode = MusicRepeatMode.off;
     this.disposeActiveResource();
@@ -524,9 +596,13 @@ export class GuildMusicSession {
     const resourceController = new AbortController();
     this.resourceAbortController = resourceController;
     try {
+      const seekSeconds = this.pendingSeekSeconds;
+      this.pendingSeekSeconds = 0;
       const managed = await this.dependencies.createAudioResource(next, {
         signal: resourceController.signal,
         forceTranscode,
+        volumePercent: this.volumePercent,
+        seekSeconds,
       });
       if (
         this.destroyed ||
@@ -792,6 +868,7 @@ export class GuildMusicSession {
       currentQualityMode: this.currentQualityMode,
       upcoming: this.queue,
       repeatMode: this.repeatMode,
+      volumePercent: this.volumePercent,
       paused:
         this.player.state.status === AudioPlayerStatus.Paused ||
         this.player.state.status === AudioPlayerStatus.AutoPaused,
@@ -1114,6 +1191,20 @@ export class MusicService {
   ): MusicRepeatModeValue {
     const session = this.requireSession(guildId, voiceChannelId);
     return session.setRepeatMode(mode);
+  }
+
+  setVolume(
+    guildId: string,
+    voiceChannelId: string,
+    percent: number,
+  ): MusicVolumeChange {
+    const session = this.requireSession(guildId, voiceChannelId);
+    return session.setVolume(percent);
+  }
+
+  getVolume(guildId: string, voiceChannelId: string): number {
+    const session = this.requireSession(guildId, voiceChannelId);
+    return session.getVolume();
   }
 
   skip(guildId: string, voiceChannelId: string): MusicTrack | null {

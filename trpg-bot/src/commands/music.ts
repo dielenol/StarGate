@@ -17,6 +17,7 @@ import {
   MUSIC_PLAYLIST_OPTION,
   MUSIC_QUERY_OPTION,
   MUSIC_REPEAT_MODE_OPTION,
+  MUSIC_VOLUME_OPTION,
   MusicSubcommand,
   type MusicSubcommandName,
 } from "../slash/ko-names.js";
@@ -27,6 +28,8 @@ import {
 import {
   MusicRepeatMode,
   MusicUserError,
+  VOLUME_CLIPPING_THRESHOLD_PERCENT,
+  isDefaultVolume,
   isMusicRepeatMode,
   type MusicRepeatMode as MusicRepeatModeValue,
   type MusicTrack,
@@ -47,15 +50,20 @@ function truncate(value: string, maxLength: number): string {
     : `${value.slice(0, Math.max(0, maxLength - 1))}…`;
 }
 
-function formatDuration(track: MusicTrack): string {
-  if (track.isLive) return "LIVE";
-  if (track.durationSeconds === null) return "?:??";
-  const hours = Math.floor(track.durationSeconds / 3600);
-  const minutes = Math.floor((track.durationSeconds % 3600) / 60);
-  const seconds = track.durationSeconds % 60;
+function formatSeconds(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const seconds = safe % 60;
   return hours > 0
     ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
     : `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatDuration(track: MusicTrack): string {
+  if (track.isLive) return "LIVE";
+  if (track.durationSeconds === null) return "?:??";
+  return formatSeconds(track.durationSeconds);
 }
 
 function trackLink(track: MusicTrack): string {
@@ -285,6 +293,39 @@ async function handleControl(
       }
       service.setRepeatMode(guild.id, voiceChannel.id, mode);
       content = `🔁 반복 모드를 **${repeatModeLabel(mode)}**으로 설정했습니다.`;
+      break;
+    }
+    case MusicSubcommand.volume: {
+      const requested = interaction.options.getInteger(MUSIC_VOLUME_OPTION);
+      if (requested === null) {
+        const current = service.getVolume(guild.id, voiceChannel.id);
+        content = `🔊 현재 음량은 **${current}%** 입니다.`;
+        break;
+      }
+      const change = service.setVolume(guild.id, voiceChannel.id, requested);
+      const lines = [`🔊 음량을 **${change.volumePercent}%** 로 설정했습니다.`];
+      if (change.appliedToCurrentTrack) {
+        lines.push(
+          change.resumedFromSeconds === null
+            ? "라이브 스트림은 위치 탐색이 되지 않아 처음부터 다시 엽니다."
+            : `현재 곡을 ${formatSeconds(change.resumedFromSeconds)} 지점부터 이어서 다시 엽니다.`,
+        );
+      } else if (change.previousVolumePercent === change.volumePercent) {
+        lines.push("이미 같은 음량입니다.");
+      } else {
+        lines.push("다음 곡부터 적용됩니다.");
+      }
+      if (!isDefaultVolume(change.volumePercent)) {
+        lines.push(
+          `기본값(${VOLUME_CLIPPING_THRESHOLD_PERCENT}%)이 아니면 무손실 Opus 전달 대신 FFmpeg 변환 경로를 사용합니다.`,
+        );
+      }
+      if (change.volumePercent > VOLUME_CLIPPING_THRESHOLD_PERCENT) {
+        lines.push(
+          `⚠️ ${VOLUME_CLIPPING_THRESHOLD_PERCENT}%를 넘기면 증폭으로 소리가 깨질 수 있습니다.`,
+        );
+      }
+      content = lines.join("\n");
       break;
     }
     case MusicSubcommand.reset: {

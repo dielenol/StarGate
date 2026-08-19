@@ -5,6 +5,8 @@ import { ChannelType, EmbedBuilder } from "discord.js";
 import type { Client, Message, TextChannel } from "discord.js";
 
 import {
+  DEFAULT_VOLUME_PERCENT,
+  isDefaultVolume,
   MusicRepeatMode,
   type AudioQualityMode,
   type MusicRepeatMode as MusicRepeatModeValue,
@@ -23,6 +25,7 @@ export interface MusicPanelView {
   upcoming: readonly MusicTrack[];
   paused: boolean;
   repeatMode: MusicRepeatModeValue;
+  volumePercent: number;
   recentError: string | null;
   notice: string | null;
 }
@@ -133,6 +136,13 @@ export function buildMusicPanelEmbed(view: MusicPanelView): EmbedBuilder {
         value: repeatModeLabel(view.repeatMode),
         inline: true,
       },
+      {
+        name: "음량",
+        value: isDefaultVolume(view.volumePercent)
+          ? `${view.volumePercent}%`
+          : `${view.volumePercent}% · FFmpeg 변환`,
+        inline: true,
+      },
     );
   }
 
@@ -213,6 +223,7 @@ export function idleMusicPanelView(notice: string | null = null): MusicPanelView
     upcoming: [],
     paused: false,
     repeatMode: MusicRepeatMode.off,
+    volumePercent: DEFAULT_VOLUME_PERCENT,
     recentError: null,
     notice,
   };

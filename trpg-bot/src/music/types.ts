@@ -36,6 +36,34 @@ export class MusicUserError extends Error {
   }
 }
 
+/** 음량 기본값과 허용 범위(%). */
+export const DEFAULT_VOLUME_PERCENT = 100;
+export const MIN_VOLUME_PERCENT = 0;
+export const MAX_VOLUME_PERCENT = 200;
+
+/**
+ * 100%를 넘기면 FFmpeg 증폭으로 클리핑이 생길 수 있다. 막지는 않되 경고 기준으로 쓴다.
+ */
+export const VOLUME_CLIPPING_THRESHOLD_PERCENT = 100;
+
+export function isDefaultVolume(percent: number): boolean {
+  return percent === DEFAULT_VOLUME_PERCENT;
+}
+
+/** 사용자 입력 음량을 허용 범위 정수로 정규화한다. */
+export function normalizeVolumePercent(value: number): number {
+  if (!Number.isFinite(value)) {
+    throw new MusicUserError("음량은 숫자로 입력해 주세요.");
+  }
+  const rounded = Math.round(value);
+  if (rounded < MIN_VOLUME_PERCENT || rounded > MAX_VOLUME_PERCENT) {
+    throw new MusicUserError(
+      `음량은 ${MIN_VOLUME_PERCENT}%부터 ${MAX_VOLUME_PERCENT}% 사이로 입력해 주세요.`,
+    );
+  }
+  return rounded;
+}
+
 /** 건너뛰기·초기화·퇴장·종료로 정상 취소된 음악 준비 작업. */
 export class MusicOperationAbortedError extends Error {
   constructor(message = "음악 재생 준비가 취소되었습니다.", options?: ErrorOptions) {

@@ -13,7 +13,12 @@
 import { REST, Routes } from "discord.js";
 
 import { config } from "../config.js";
-import { MusicRepeatMode } from "../music/types.js";
+import {
+  DEFAULT_VOLUME_PERCENT,
+  MAX_VOLUME_PERCENT,
+  MIN_VOLUME_PERCENT,
+  MusicRepeatMode,
+} from "../music/types.js";
 import {
   HELP_NAME,
   HELP_TOPIC_OPTION,
@@ -21,6 +26,7 @@ import {
   MUSIC_PLAYLIST_OPTION,
   MUSIC_QUERY_OPTION,
   MUSIC_REPEAT_MODE_OPTION,
+  MUSIC_VOLUME_OPTION,
   MUSIC_ROOT,
   MusicSubcommand,
   ROLL_NAME,
@@ -193,6 +199,21 @@ const MUSIC_COMMAND = {
             { name: "현재 곡", value: MusicRepeatMode.track },
             { name: "대기열 전체", value: MusicRepeatMode.queue },
           ],
+        },
+      ],
+    },
+    {
+      type: 1 as const,
+      name: MusicSubcommand.volume,
+      description: "재생 음량을 조절합니다 (생략하면 현재 음량을 확인합니다)",
+      options: [
+        {
+          type: 4 as const,
+          name: MUSIC_VOLUME_OPTION,
+          description: `음량 %. ${MIN_VOLUME_PERCENT}~${MAX_VOLUME_PERCENT}, 기본 ${DEFAULT_VOLUME_PERCENT}`,
+          required: false,
+          min_value: MIN_VOLUME_PERCENT,
+          max_value: MAX_VOLUME_PERCENT,
         },
       ],
     },
