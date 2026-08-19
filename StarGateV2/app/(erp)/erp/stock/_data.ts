@@ -58,9 +58,11 @@ import type {
 export async function buildPricesResponse(): Promise<StockPricesResponse> {
   const now = new Date();
   const novexEnabled = isNovexV2Enabled();
+  // NOVEX state 가 아직 없으면 snapshot 은 null 이다. 그 경우에도 stock_prices 는
+  // 동일 컬렉션에 살아 있으므로 legacy 조회를 항상 확보해 시드값 폴백을 막는다.
   const [snapshot, legacyPrices] = await Promise.all([
     novexEnabled ? getStockMarketSnapshot(now) : Promise.resolve(null),
-    novexEnabled ? Promise.resolve([]) : getStockPrices(),
+    getStockPrices(),
   ]);
   const prices = snapshot?.prices ?? legacyPrices;
   const priceByTicker = new Map(prices.map((p) => [p.ticker, p]));
