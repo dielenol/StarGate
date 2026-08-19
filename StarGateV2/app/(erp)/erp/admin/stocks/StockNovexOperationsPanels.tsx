@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import DropdownSelect from "@/components/ui/DropdownSelect/DropdownSelect";
+import Input from "@/components/ui/Input/Input";
 import type { DropdownSelectOption } from "@/components/ui/DropdownSelect/DropdownSelect";
 
 import {
@@ -683,7 +684,7 @@ export default function StockNovexOperationsPanels({
           {disclosureStatus === "SCHEDULED" ? (
             <label>
               <span>공개 시각 (KST)</span>
-              <input
+              <Input
                 type="datetime-local"
                 value={publishAt}
                 onChange={(event) => setPublishAt(event.target.value)}
@@ -692,7 +693,7 @@ export default function StockNovexOperationsPanels({
           ) : null}
           <label>
             <span>공시 제목</span>
-            <input
+            <Input
               value={headline}
               onChange={(event) => setHeadline(event.target.value)}
               maxLength={120}
@@ -728,7 +729,7 @@ export default function StockNovexOperationsPanels({
                       {stock.ticker} · {stock.name}
                     </label>
                     {scope === "MARKET" && selected ? (
-                      <input
+                      <Input
                         type="number"
                         min="-50"
                         max="75"
@@ -762,7 +763,7 @@ export default function StockNovexOperationsPanels({
             <>
               <label>
                 <span>정확한 등락률</span>
-                <input
+                <Input
                   type="number"
                   min="-50"
                   max="75"
@@ -852,7 +853,7 @@ export default function StockNovexOperationsPanels({
         <div className={styles.novexForm}>
           <label>
             <span>날짜</span>
-            <input
+            <Input
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
@@ -870,7 +871,7 @@ export default function StockNovexOperationsPanels({
           {mode === "EARLY_CLOSE" ? (
             <label>
               <span>폐장 시각</span>
-              <input
+              <Input
                 type="time"
                 value={closeAt}
                 onChange={(event) => setCloseAt(event.target.value)}
@@ -879,7 +880,7 @@ export default function StockNovexOperationsPanels({
           ) : null}
           <label>
             <span>사유</span>
-            <input
+            <Input
               value={calendarReason}
               onChange={(event) => setCalendarReason(event.target.value)}
             />
@@ -944,7 +945,7 @@ export default function StockNovexOperationsPanels({
                 ? "증자 실행 · 거래재개 (KST)"
                 : "실행 시각 (KST)"}
             </span>
-            <input
+            <Input
               type="datetime-local"
               value={actionAt}
               onChange={(event) => setActionAt(event.target.value)}
@@ -953,7 +954,7 @@ export default function StockNovexOperationsPanels({
           {actionType === "RIGHTS_OFFERING" ? (
             <label>
               <span>발표 · 거래정지 시작 (KST)</span>
-              <input
+              <Input
                 type="datetime-local"
                 value={announceAt}
                 onChange={(event) => setAnnounceAt(event.target.value)}
@@ -963,7 +964,7 @@ export default function StockNovexOperationsPanels({
           {actionType === "DIVIDEND" ? (
             <label>
               <span>주당 배당액</span>
-              <input
+              <Input
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -978,7 +979,7 @@ export default function StockNovexOperationsPanels({
                   ? "총 주식 수 배수"
                   : "분할 비율"}
               </span>
-              <input
+              <Input
                 type="number"
                 min="2"
                 max="10"
@@ -992,7 +993,7 @@ export default function StockNovexOperationsPanels({
             <>
               <label>
                 <span>유증 사유</span>
-                <input
+                <Input
                   value={rightsReason}
                   maxLength={500}
                   onChange={(event) => setRightsReason(event.target.value)}
@@ -1001,7 +1002,7 @@ export default function StockNovexOperationsPanels({
               </label>
               <label>
                 <span>실행 회차 추가 가격조정률 (%)</span>
-                <input
+                <Input
                   type="number"
                   min="-50"
                   max="75"
@@ -1099,7 +1100,7 @@ export default function StockNovexOperationsPanels({
         <div className={styles.novexForm}>
           <label>
             <span>회차 키</span>
-            <input
+            <Input
               value={slotKey}
               onChange={(event) => setSlotKey(event.target.value)}
               placeholder="YYYY-MM-DD HH:mm"

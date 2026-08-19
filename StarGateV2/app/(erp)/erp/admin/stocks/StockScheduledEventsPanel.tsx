@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import DropdownSelect from "@/components/ui/DropdownSelect/DropdownSelect";
+import Input from "@/components/ui/Input/Input";
 import type { DropdownSelectOption } from "@/components/ui/DropdownSelect/DropdownSelect";
 
 import {
@@ -189,7 +190,7 @@ export default function StockScheduledEventsPanel({ stocks }: Props) {
           </label>
           <label>
             <span>정기 공시일</span>
-            <input
+            <Input
               type="date"
               min={query.data?.nextTickDate ?? getNextStockScheduledEventDate()}
               value={kstDate}
@@ -199,7 +200,7 @@ export default function StockScheduledEventsPanel({ stocks }: Props) {
           <div className={styles.inlineFields}>
             <label>
               <span>변동률</span>
-              <input
+              <Input
                 type="number"
                 min={STOCK_SCHEDULED_EVENT_MIN_CHANGE_PERCENT}
                 max={STOCK_SCHEDULED_EVENT_MAX_CHANGE_PERCENT}

@@ -2,6 +2,8 @@
 
 import { useMemo, useRef, useState } from "react";
 
+import Input from "@/components/ui/Input/Input";
+
 import PageHead from "@/components/ui/PageHead/PageHead";
 import {
   type RunScheduledStockTickResponse,
@@ -458,7 +460,7 @@ export default function StockAdminClient({
               </div>
               <label className={styles.field}>
                 <span>변경 가격</span>
-                <input
+                <Input
                   type="number"
                   min={MIN_STOCK_PRICE}
                   step={0.01}
@@ -494,7 +496,7 @@ export default function StockAdminClient({
               </div>
               <label className={styles.field}>
                 <span>이벤트 문구</span>
-                <input
+                <Input
                   type="text"
                   maxLength={80}
                   value={eventText}
@@ -588,7 +590,7 @@ export default function StockAdminClient({
               갱신 <strong>{formatDate(new Date(holdings.generatedAt))}</strong>
             </span>
           </div>
-          <input
+          <Input
             type="search"
             className={styles.holdingSearch}
             value={holdingQuery}

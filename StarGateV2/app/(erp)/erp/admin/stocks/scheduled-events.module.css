@@ -70,32 +70,26 @@
   font-weight: 700;
 }
 
-.form input,
+/* 공용 Input 과 같은 규격. input 자체는 components/ui/Input 이 담당한다. */
 .form textarea {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: rgba(5, 8, 14, 0.8);
+  box-sizing: border-box;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
   color: var(--ink-0);
-  font: inherit;
-}
-
-.form input {
-  min-height: 42px;
-  padding: 0 11px;
-}
-
-.form textarea {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.05em;
   min-height: 86px;
   resize: vertical;
-  padding: 10px 11px;
+  padding: 9px 12px;
   line-height: 1.5;
 }
 
-.form input:focus,
 .form textarea:focus {
-  outline: 2px solid color-mix(in oklab, var(--gold) 45%, transparent);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--gold-dim);
 }
 
 .form small {

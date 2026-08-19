@@ -24,22 +24,22 @@
   font-weight: 700;
 }
 
-.novexForm input,
+/* 공용 Input 과 같은 규격. input 자체는 components/ui/Input 이 담당한다. */
 .novexForm textarea {
   width: 100%;
-  min-height: 40px;
   box-sizing: border-box;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, .28);
-  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-2);
+  border-radius: var(--radius-sm);
   color: var(--ink-0);
+  font-family: var(--font-mono);
   font-size: 14px;
-  padding: 0 10px;
+  letter-spacing: 0.05em;
+  padding: 9px 12px;
 }
 
-.novexForm textarea { min-height: 78px; padding: 9px 10px; resize: vertical; }
-.novexForm input:focus,
-.novexForm textarea:focus { outline: 2px solid color-mix(in oklab, var(--gold) 50%, transparent); outline-offset: 2px; }
+.novexForm textarea { min-height: 78px; resize: vertical; }
+.novexForm textarea:focus { outline: none; border-color: var(--gold-dim); }
 .novexForm .check { display: flex; align-items: center; gap: 7px; }
 .novexForm .check input { width: 16px; min-height: 16px; }
 .tickerEffects { display: grid; gap: 7px; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; }
@@ -270,20 +270,16 @@
   font-weight: 700;
 }
 
-.field input,
+/* 읽기 전용 표시는 공용 Input 과 나란히 놓이므로 같은 규격을 쓴다. */
 .readonly {
-  min-height: 46px;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-2);
   color: var(--ink-0);
-  border-radius: 8px;
-  padding: 0 14px;
-  font-size: 15px;
-}
-
-.field input:focus {
-  outline: 2px solid color-mix(in oklab, var(--gold) 50%, transparent);
-  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.05em;
 }
 
 .quickMoves,
@@ -503,7 +499,7 @@
   min-height: 48px;
   border: 1px solid color-mix(in oklab, var(--gold) 58%, transparent);
   background: var(--p2);
-  color: #fff;
+  color: var(--ink-0);
   border-radius: 8px;
   font-size: 15px;
   font-weight: 800;
