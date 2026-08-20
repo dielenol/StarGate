@@ -8,6 +8,7 @@ import type {
 } from "@stargate/shared-db/types";
 import type { CreateStockDisclosureInput } from "@stargate/shared-db";
 
+import type { StockPriceDirection } from "./stock-events.js";
 import { normalizeStockPrice } from "./stock-pricing.js";
 
 export const NOVEX_SLOT_HOURS = [9, 13, 18, 23] as const;
@@ -255,13 +256,21 @@ export interface AutoDisclosureTemplate {
   body: string;
   structural: boolean;
   scope: "MARKET" | "TICKER";
+  /** 문안 서사와 가격 방향을 강제로 일치시킨다. 부호를 따로 굴리지 않는다. */
+  direction: StockPriceDirection;
 }
 
+// 문안이 호재/악재를 이미 단정하므로 방향은 템플릿이 소유한다. TICKER 6종 : MARKET
+// 2종 = 3:1 비율과 상승 4종 : 하락 4종 균형을 유지한 상태로만 항목을 늘린다.
 export const NOVEX_AUTO_DISCLOSURE_TEMPLATES: readonly AutoDisclosureTemplate[] = [
-  { id: "contract-win", title: "대형 공급 계약 체결", body: "주요 공급 계약이 확정되었습니다.", structural: true, scope: "TICKER" },
-  { id: "production-delay", title: "생산 일정 지연", body: "핵심 생산 일정에 차질이 발생했습니다.", structural: false, scope: "TICKER" },
-  { id: "sector-demand", title: "산업 수요 전망 변경", body: "시장 수요 전망이 조정되었습니다.", structural: true, scope: "MARKET" },
-  { id: "regulatory-review", title: "규제기관 검토 착수", body: "관련 사업에 대한 규제 검토가 시작되었습니다.", structural: false, scope: "TICKER" },
+  { id: "contract-win", title: "대형 공급 계약 체결", body: "주요 공급 계약이 확정되었습니다.", structural: true, scope: "TICKER", direction: "up" },
+  { id: "capacity-expansion", title: "증설 투자안 승인", body: "생산 능력 확대 투자안이 이사회를 통과했습니다.", structural: true, scope: "TICKER", direction: "up" },
+  { id: "guidance-raise", title: "분기 실적 전망 상향", body: "자체 실적 전망치가 상향 조정되었습니다.", structural: false, scope: "TICKER", direction: "up" },
+  { id: "contract-loss", title: "주요 공급 계약 해지", body: "장기 공급 계약 한 건이 해지되었습니다.", structural: true, scope: "TICKER", direction: "down" },
+  { id: "production-delay", title: "생산 일정 지연", body: "핵심 생산 일정에 차질이 발생했습니다.", structural: false, scope: "TICKER", direction: "down" },
+  { id: "regulatory-review", title: "규제기관 검토 착수", body: "관련 사업에 대한 규제 검토가 시작되었습니다.", structural: false, scope: "TICKER", direction: "down" },
+  { id: "sector-demand-up", title: "산업 수요 전망 상향", body: "시장 수요 전망이 상향 조정되었습니다.", structural: true, scope: "MARKET", direction: "up" },
+  { id: "sector-demand-down", title: "산업 수요 전망 하향", body: "시장 수요 전망이 하향 조정되었습니다.", structural: true, scope: "MARKET", direction: "down" },
 ] as const;
 
 export function rollNovexAutoDisclosureCount(random: () => number): number {
@@ -300,7 +309,7 @@ export function buildNovexAutoDisclosureQueue(input: {
     const magnitude = big
       ? 8 + input.random() * 12
       : 3 + input.random() * 4;
-    const sign = input.random() < 0.5 ? -1 : 1;
+    const sign = template.direction === "up" ? 1 : -1;
     const hour = slotHours[Math.floor(input.random() * slotHours.length)]!;
     const ticker = template.scope === "TICKER"
       ? input.tickers[Math.floor(input.random() * input.tickers.length)]!

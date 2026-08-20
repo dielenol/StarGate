@@ -21,7 +21,7 @@ import {
   remainingNovexAutoQueueHours,
   resolveNovexV2Mode,
   selectNovexSeasonActivationForMergedSlots,
-  shouldSkipNovexClosingBriefing,
+  shouldSkipNovexRoundLedger,
 } from "../dist/operations/stocks-tick.js";
 import { processPendingStockDividendPayouts } from "../dist/operations/stock-dividends.js";
 import { combineStockDisclosuresForTicker } from "../../shared-db/dist/index.js";
@@ -348,25 +348,32 @@ test("누락된 월요일 09시가 13시 또는 다음날 회차에 병합돼도
   );
 });
 
-test("23시 종가 브리핑은 다음날 09시 전 복구에만 허용한다", () => {
+test("회차 장부는 네 회차 모두 공시하고 다음 회차 시각을 넘긴 복구분만 건너뛴다", () => {
   assert.equal(
-    shouldSkipNovexClosingBriefing(
+    shouldSkipNovexRoundLedger(
       "2026-08-24 23:00",
       new Date("2026-08-24T23:59:59+09:00"),
     ),
     false,
   );
   assert.equal(
-    shouldSkipNovexClosingBriefing(
+    shouldSkipNovexRoundLedger(
       "2026-08-24 23:00",
       new Date("2026-08-25T09:00:00+09:00"),
     ),
     true,
   );
   assert.equal(
-    shouldSkipNovexClosingBriefing(
+    shouldSkipNovexRoundLedger(
       "2026-08-24 18:00",
       new Date("2026-08-24T18:05:00+09:00"),
+    ),
+    false,
+  );
+  assert.equal(
+    shouldSkipNovexRoundLedger(
+      "2026-08-24 09:00",
+      new Date("2026-08-24T13:00:00+09:00"),
     ),
     true,
   );
