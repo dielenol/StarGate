@@ -3210,35 +3210,16 @@ export async function applyStockMarketRoundTransaction(
         if (combined) disclosureByTicker.set(seed.ticker, combined);
       }
 
-      for (const disclosure of dueDisclosures.filter((row) => row.kind === "PRICE" && row.shock === true)) {
-        const marketWide = disclosure.effects.some((effect) => effect.scope === "MARKET");
-        const affectedTickers = marketWide
-          ? input.seeds.map((seed) => seed.ticker)
-          : disclosure.effects
-            .filter((effect) => effect.scope === "TICKER" && effect.ticker)
-            .map((effect) => effect.ticker!);
-        for (const ticker of new Set(affectedTickers)) {
-          await enqueueIntegrationOutbox({
-            kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
-            dedupeKey: `stock:shock-disclosure:${disclosure._id}:${ticker}`,
-            partitionKey: `stock:${ticker}`,
-            partitionOrderAt: input.now,
-            payload: {
-              eventKind: "SHOCK_DISCLOSURE",
-              ticker,
-              eventText: `${disclosure.title} · ${disclosure.body}`,
-              actor: { displayName: "NOVEX", role: disclosure.source },
-              occurredAt: input.now.toISOString(),
-            },
-          }, { session });
-        }
-      }
-
       const createdAt = input.now;
       const effectiveAt = stockSlotKeyDate(input.slotKey);
       const histories: StockPriceHistory[] = [];
       const savedPrices: StockPrice[] = [];
       const consumedTickers = new Set<string>();
+      const roundMoveByTicker = new Map<
+        string,
+        { previousPrice: number; price: number }
+      >();
+      const cooldownOutboxEvents: EnqueueIntegrationOutboxInput[] = [];
       for (const seed of input.seeds) {
         const price = current.find((row) => row.ticker === seed.ticker)!;
         const flow = flowMap.get(seed.ticker) ?? { ticker: seed.ticker, netShares: 0, volume: 0, percent: 0, signal: { ticker: seed.ticker, direction: "NEUTRAL", strength: "WEAK", volume: 0 } } as StockFlowAggregate;
@@ -3286,8 +3267,14 @@ export async function applyStockMarketRoundTransaction(
           { returnDocument: "after", session },
         );
         if (!saved) throw new Error(`Missing stock during round: ${seed.ticker}`);
+        roundMoveByTicker.set(seed.ticker, {
+          previousPrice: price.price,
+          price: mutation.price,
+        });
         if (mutation.cooldownUntil) {
-          for (const outbox of buildStockCooldownOutboxEvents({
+          // 충격 공시 카드가 같은 회차의 냉각 카드보다 먼저 전달되도록,
+          // outbox 적재는 가격 확정 뒤 한 곳에서 순서대로 처리한다.
+          cooldownOutboxEvents.push(...buildStockCooldownOutboxEvents({
             ticker: seed.ticker,
             slotKey: input.slotKey,
             previousPrice: price.price,
@@ -3295,7 +3282,7 @@ export async function applyStockMarketRoundTransaction(
             reason: mutation.cooldownReason ?? "급격한 가격 변동",
             startedAt: input.now,
             cooldownUntil: mutation.cooldownUntil,
-          })) await enqueueIntegrationOutbox(outbox, { session });
+          }));
         }
         savedPrices.push(saved);
         if (mutation.consumeFlow !== false) consumedTickers.add(seed.ticker);
@@ -3322,6 +3309,36 @@ export async function applyStockMarketRoundTransaction(
       }
       await history.insertMany(histories, { session });
       await emitStockAlertsForRound(histories, session);
+      for (const disclosure of dueDisclosures.filter((row) => row.kind === "PRICE" && row.shock === true)) {
+        const marketWide = disclosure.effects.some((effect) => effect.scope === "MARKET");
+        const affectedTickers = marketWide
+          ? input.seeds.map((seed) => seed.ticker)
+          : disclosure.effects
+            .filter((effect) => effect.scope === "TICKER" && effect.ticker)
+            .map((effect) => effect.ticker!);
+        for (const ticker of new Set(affectedTickers)) {
+          const move = roundMoveByTicker.get(ticker);
+          await enqueueIntegrationOutbox({
+            kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+            dedupeKey: `stock:shock-disclosure:${disclosure._id}:${ticker}`,
+            partitionKey: `stock:${ticker}`,
+            partitionOrderAt: input.now,
+            payload: {
+              eventKind: "SHOCK_DISCLOSURE",
+              ticker,
+              ...(move
+                ? { previousPrice: move.previousPrice, price: move.price }
+                : {}),
+              eventText: `${disclosure.title} · ${disclosure.body}`,
+              actor: { displayName: "NOVEX", role: disclosure.source },
+              occurredAt: input.now.toISOString(),
+            },
+          }, { session });
+        }
+      }
+      for (const outbox of cooldownOutboxEvents) {
+        await enqueueIntegrationOutbox(outbox, { session });
+      }
       const consumedFlowRows = flowRows.filter((row) => consumedTickers.has(row.ticker));
       if (consumedFlowRows.length) {
         await flowCol.updateMany(
