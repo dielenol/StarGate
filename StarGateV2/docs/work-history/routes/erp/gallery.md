@@ -93,3 +93,11 @@
 - 기존 화살표 키·Escape·focus trap·focus 복원·overlay 닫기·scroll lock과 단일 검색 결과의 탐색 버튼 숨김 동작을 유지했다.
 - 검증: 갤러리 테스트 38/38, `pnpm typecheck`, 전체 `pnpm lint`, `git diff --check`, 인증 로컬 1440/900/600px의 상세 화면·키보드 탐색·focus 복원·가로 overflow·깨진 이미지·console 오류 0건, 읽기 전용 UI 리뷰
 - 관련 커밋: `b673150c`
+
+## 2026-08-20 · UI 개선 · 전시 헤더 정렬과 공용 필터 전환
+
+- 카드 테두리에 겹쳐 있던 `CURRENT EXHIBIT` 탭을 showcase 전체를 여는 정적 헤더와 골드 라인으로 바꿨다. 주 전시와 보조 전시가 같은 시작선에 놓이고 `SESSION` 작품 종류 칩과 시각적 위계가 분리된다.
+- 종류·앨범 필터는 키보드 이동과 선택 상태를 제공하는 공용 `DropdownSelect`로 교체했다. 팬아트 등록·편집 모달의 관련 세션 선택도 공용 `Select`로 전환해 갤러리에 직접 작성된 native `<select>`를 제거했다.
+- 기존 검색·필터 상태, 업로드 메타데이터, lightbox, masonry 배치는 변경하지 않았다.
+- 검증: 갤러리 테스트 41/41, `pnpm typecheck`, 전체 `pnpm lint`, `git diff --check`. 인증 로컬 1440/900/390px에서 주·보조 카드 시작선 일치, 2열·1열 전환, 가로 overflow 0건, 보이는 깨진 이미지·console 오류 0건. 종류 필터 방향키·Home·Enter·Escape와 17개 앨범 메뉴를 확인했다.
+- 관련 커밋: `e42aa9a8`
