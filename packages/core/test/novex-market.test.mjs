@@ -224,7 +224,7 @@ test("병합 AUTO+GM 공시는 기본 변동과 수급을 소비하지 않고 �
 });
 
 test("자동 공시 분포 경계와 생성 큐는 4건/대형1건/slot-target 충돌 금지를 지킨다", () => {
-  assert.deepEqual([0.19, 0.2, 0.54, 0.55, 0.79, 0.8, 0.949, 0.95].map((v) => rollNovexAutoDisclosureCount(() => v)), [0, 1, 1, 2, 2, 3, 3, 4]);
+  assert.deepEqual([0.079, 0.08, 0.349, 0.35, 0.649, 0.65, 0.879, 0.88].map((v) => rollNovexAutoDisclosureCount(() => v)), [0, 1, 1, 2, 2, 3, 3, 4]);
   let seed = 123456;
   const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
   const queue = buildNovexAutoDisclosureQueue({

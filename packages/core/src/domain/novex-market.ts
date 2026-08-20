@@ -273,12 +273,22 @@ export const NOVEX_AUTO_DISCLOSURE_TEMPLATES: readonly AutoDisclosureTemplate[] 
   { id: "sector-demand-down", title: "산업 수요 전망 하향", body: "시장 수요 전망이 하향 조정되었습니다.", structural: true, scope: "MARKET", direction: "down" },
 ] as const;
 
+/**
+ * 하루치 자동 공시 건수 분포. 기대값 약 2.0건.
+ *
+ * 호출부는 날짜를 시드로 고정한 의사난수를 넘긴다(`seededNovexRandom(date)`).
+ * 이 고정 시드는 의도된 것으로, 전날 23시 생성이 누락돼도 당일 아무 회차에서나
+ * 같은 큐를 재구성할 수 있게 해준다 — 회차별 시드로 바꾸면 이 복구가 깨진다.
+ *
+ * 대신 하루 건수가 draw 하나로 확정되므로 0건 구간이 곧 "공시 없는 날" 비율이다.
+ * 20%는 시장이 죽은 것처럼 읽혀 8%로 낮췄다. 조용한 날 연출은 남기고 빈도만 줄인다.
+ */
 export function rollNovexAutoDisclosureCount(random: () => number): number {
   const roll = random();
-  if (roll < 0.2) return 0;
-  if (roll < 0.55) return 1;
-  if (roll < 0.8) return 2;
-  if (roll < 0.95) return 3;
+  if (roll < 0.08) return 0;
+  if (roll < 0.35) return 1;
+  if (roll < 0.65) return 2;
+  if (roll < 0.88) return 3;
   return 4;
 }
 
