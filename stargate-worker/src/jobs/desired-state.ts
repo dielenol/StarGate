@@ -259,6 +259,8 @@ export function buildStockMarketWireDesiredPayloads(
     0,
   );
   const marketIndex = buildStockMarketIndex(summary);
+  // 09·13·18 장중 회차도 장부를 갱신하므로 "마감"은 폐장 회차에서만 쓴다.
+  const ledgerScope = summary.closingRound === true ? "마감 장부" : "회차 장부";
   const color =
     upCount > downCount || netDelta > 0
       ? MARKET_WIRE_POSITIVE
@@ -332,7 +334,7 @@ export function buildStockMarketWireDesiredPayloads(
       ...basePayload,
       embeds: [
         {
-          title: "상승 마감 장부",
+          title: `상승 ${ledgerScope}`,
           url: STOCK_URL,
           color: MARKET_WIRE_POSITIVE,
           fields: [
@@ -345,7 +347,7 @@ export function buildStockMarketWireDesiredPayloads(
               ),
             },
           ],
-          footer: { text: `${officer.code} · ${summary.slot} KST · 상승 장부` },
+          footer: { text: `${officer.code} · ${summary.slot} KST · 상승 ${ledgerScope}` },
           timestamp,
         },
       ],
@@ -354,7 +356,7 @@ export function buildStockMarketWireDesiredPayloads(
       ...basePayload,
       embeds: [
         {
-          title: "하락 마감 장부",
+          title: `하락 ${ledgerScope}`,
           url: STOCK_URL,
           color: MARKET_WIRE_NEGATIVE,
           fields: [
@@ -367,7 +369,7 @@ export function buildStockMarketWireDesiredPayloads(
               ),
             },
           ],
-          footer: { text: `${officer.code} · ${summary.slot} KST · 하락 장부` },
+          footer: { text: `${officer.code} · ${summary.slot} KST · 하락 ${ledgerScope}` },
           timestamp,
         },
       ],

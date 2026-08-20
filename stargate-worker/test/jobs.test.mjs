@@ -113,8 +113,8 @@ test("정기 주식 공시는 독립된 시장감시실 카드 4개로 구성한
     payloads.map((payload) => payload.embeds[0].title),
     [
       "재무기구 정기 시세 공시 · 2026-07-20",
-      "상승 마감 장부",
-      "하락 마감 장부",
+      "상승 회차 장부",
+      "하락 회차 장부",
       "보합 및 감시실 특이사항",
     ],
   );
@@ -139,6 +139,39 @@ test("정기 주식 공시는 독립된 시장감시실 카드 4개로 구성한
     /특이 · 하락 · \*\*VF제약 \(VFP\)\*\*/,
   );
   assert.match(payloads[3].embeds[0].fields.at(-1).value, /@​everyone/);
+});
+
+test("폐장 회차 장부만 마감 문안을 쓴다", () => {
+  const payloads = buildStockMarketWireDesiredPayloads(
+    {
+      date: "2026-07-20",
+      slot: "2026-07-20 23:00",
+      closingRound: true,
+      results: [
+        {
+          ticker: "TWS",
+          previousPrice: 6.17,
+          price: 6.65,
+          changePercent: 7.78,
+          eventText: "정기 변동 +7.78%",
+          eventTier: "routine",
+          status: "updated",
+        },
+      ],
+    },
+    new Date("2026-07-20T14:00:00.000Z"),
+  );
+
+  assert.deepEqual(
+    payloads.map((payload) => payload.embeds[0].title),
+    [
+      "재무기구 정기 시세 공시 · 2026-07-20",
+      "상승 마감 장부",
+      "하락 마감 장부",
+      "보합 및 감시실 특이사항",
+    ],
+  );
+  assert.match(payloads[1].embeds[0].footer.text, /2026-07-20 23:00 KST · 상승 마감 장부$/);
 });
 
 test("구형 단일 메시지 공시는 같은 시세 revision이어도 current로 취급하지 않는다", () => {

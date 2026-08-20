@@ -51,6 +51,7 @@ import {
   latestDueNovexSlot,
   isNovexRegularSessionDate,
   nextNovexMarketActionAt,
+  nextNovexSlotAfter,
   NOVEX_REGULAR_SESSION_TITLE,
   novexKstDate,
   novexSeasonDateRangeForStart,
@@ -108,6 +109,8 @@ export interface ScheduledStockTickSummary {
   sourceRevision?: string;
   results: ScheduledStockTickResult[];
   marketStateChanged?: boolean;
+  /** 이 회차로 장이 닫히는지 여부. Discord 장부 문안을 마감/장중으로 가른다. */
+  closingRound?: boolean;
   skipDiscord?: boolean;
   warning?: "REGULAR_SESSION_MISSING" | "REGULAR_SESSION_AMBIGUOUS";
   /** shadow 모드에서만 scheduled_job_runs summary에 직렬화하는 누적 상태. */
@@ -163,13 +166,17 @@ export function resolveNovexV2Mode(input: {
   return isNovexV2Enabled(input.legacyEnabled) ? "enabled" : "disabled";
 }
 
-/** 종가 브리핑은 23시 회차만, 다음 개장(09시) 전 복구분까지만 허용한다. */
-export function shouldSkipNovexClosingBriefing(
+/**
+ * 09·13·18·23 네 회차 모두 Discord 장부를 갱신한다. 다음 회차 시각을 넘긴
+ * 복구분만 건너뛴다 — 그 시점엔 다음 회차 장부가 어차피 대체한다.
+ */
+export function shouldSkipNovexRoundLedger(
   slotKey: string,
   now: Date,
 ): boolean {
-  if (!slotKey.endsWith("23:00")) return true;
-  return now.getTime() >= nextNovexMarketActionAt(slotKey, true).getTime();
+  return (
+    now.getTime() >= parseNovexSlotKey(nextNovexSlotAfter(slotKey)).getTime()
+  );
 }
 
 function seededNovexRandom(seed: string): () => number {
@@ -862,7 +869,8 @@ export async function applyNovexStockMarketTick(
         outcome.prices.find((price) => price.ticker === history.ticker)
           ?.cumulativeCapitalIncreaseFactor ?? 1,
     })),
-    skipDiscord: shouldSkipNovexClosingBriefing(slotKey, now),
+    closingRound: closeAfterRound,
+    skipDiscord: shouldSkipNovexRoundLedger(slotKey, now),
     warning: window.warning,
   };
 }

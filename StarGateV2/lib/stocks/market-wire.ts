@@ -345,13 +345,15 @@ function buildRoutineLedgerEmbeds(input: {
   timestamp: string;
 }): DiscordEmbed[] {
   const { changed, officer, summary, timestamp } = input;
+  // 09·13·18 장중 회차도 장부를 갱신하므로 "마감"은 폐장 회차에서만 쓴다.
+  const ledgerScope = summary.closingRound === true ? "마감 장부" : "회차 장부";
   const rising = changed.filter((result) => result.price > result.previousPrice);
   const falling = changed.filter((result) => result.price < result.previousPrice);
   const flat = changed.filter((result) => result.price === result.previousPrice);
   const eventLines = buildEventLines(changed);
   const embeds: DiscordEmbed[] = [
     {
-      title: "상승 마감 장부",
+      title: `상승 ${ledgerScope}`,
       url: STOCK_WEB_URL,
       color: MARKET_WIRE_POSITIVE,
       fields: [
@@ -364,11 +366,11 @@ function buildRoutineLedgerEmbeds(input: {
           ),
         },
       ],
-      footer: { text: `${officer.code} · ${summary.slot} KST · 상승 장부` },
+      footer: { text: `${officer.code} · ${summary.slot} KST · 상승 ${ledgerScope}` },
       timestamp,
     },
     {
-      title: "하락 마감 장부",
+      title: `하락 ${ledgerScope}`,
       url: STOCK_WEB_URL,
       color: MARKET_WIRE_NEGATIVE,
       fields: [
@@ -381,7 +383,7 @@ function buildRoutineLedgerEmbeds(input: {
           ),
         },
       ],
-      footer: { text: `${officer.code} · ${summary.slot} KST · 하락 장부` },
+      footer: { text: `${officer.code} · ${summary.slot} KST · 하락 ${ledgerScope}` },
       timestamp,
     },
   ];
@@ -495,8 +497,9 @@ export async function notifyScheduledStockMarketWire(
   summary: ScheduledStockTickSummary,
   dependencies: ScheduledStockMarketWireDependencies = scheduledStockMarketWireDependencies,
 ): Promise<MarketWireResult> {
-  // NOVEX 2.0은 정상 장중 회차를 ERP에만 공개하고 23시 종가만 Discord
-  // desired-state 장부를 갱신한다. 정규 세션 조기 폐장 일요일도 skipDiscord다.
+  // NOVEX 2.0은 09·13·18·23 네 회차 모두 Discord desired-state 장부를 갱신한다.
+  // 회차 게이트는 core의 skipDiscord가 소유한다 — 다음 회차 시각을 넘긴 복구분과
+  // 정규 세션 조기 폐장 일요일 잔여 회차만 skipDiscord다.
   if (summary.skipDiscord === true) return { status: "skipped-no-change" };
   try {
     const canonicalSummary = dependencies.rebuild

@@ -43,7 +43,7 @@ export function createStockMarketRecoveryOutboxHandler(
       const summary = await (
         dependencies.applyTick ?? applyNovexStockMarketTick
       )({ slotKey, now });
-      if (!summary.skipDiscord && summary.slot.endsWith("23:00")) {
+      if (!summary.skipDiscord) {
         await (dependencies.requestWire ?? requestStockMarketWireState)(
           summary,
           now,

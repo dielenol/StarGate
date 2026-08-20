@@ -150,8 +150,9 @@ export function createDefaultScheduledJobHandlers(
               rebuildScheduledStockTickSummary
             )(applied.date)) ?? applied;
         context.signal.throwIfAborted();
+        // NOVEX는 회차 게이트를 core의 skipDiscord가 소유한다(네 회차 모두 공시).
         const announcementSlot = novexMode === "enabled"
-          ? result.slot.endsWith("23:00")
+          ? true
           : runLegacyTick && result.slot.endsWith("12:00");
         const announcement =
           !result.skipDiscord && announcementSlot

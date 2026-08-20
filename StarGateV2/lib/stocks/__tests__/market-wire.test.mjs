@@ -95,7 +95,7 @@ test("scheduled stock market wire requests four durable single-embed messages", 
   assert.equal(requests[0].date, "2026-07-09");
   assert.equal(
     requests[0].formatRevision,
-    "four-single-embed-messages-v1",
+    "four-single-embed-messages-v2",
   );
   assert.deepEqual(
     requests[0].payloads.map((payload) => payload.embeds.length),
@@ -113,8 +113,8 @@ test("scheduled stock market wire requests four durable single-embed messages", 
     requests[0].payloads.map((payload) => payload.embeds[0].title),
     [
       "재무기구 정기 시세 공시 · 2026-07-09",
-      "상승 마감 장부",
-      "하락 마감 장부",
+      "상승 회차 장부",
+      "하락 회차 장부",
       "보합 및 감시실 특이사항",
     ],
   );
@@ -194,7 +194,7 @@ test("a skipped tick rebuilds history and replaces the legacy message format", a
   assert.equal(requests.length, 1);
   assert.equal(
     requests[0].formatRevision,
-    "four-single-embed-messages-v1",
+    "four-single-embed-messages-v2",
   );
   assert.deepEqual(
     requests[0].payloads.map((payload) => payload.embeds.length),
