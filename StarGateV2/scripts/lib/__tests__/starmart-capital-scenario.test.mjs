@@ -160,12 +160,26 @@ test("스타마트 시나리오는 유증 발표부터 후속 호재 3회까지 
     "2026-08-18 18:00",
   ]);
   assert.equal(plan.action.factor, 2);
-  assert.equal(plan.action.priceAdjustmentPercent, -32.4);
-  assert.equal(plan.disclosures[0].effects[0].changePercent, 63.8);
+  // 발표·실행은 같은 회차(희석만·가격동결), 거래재개는 투심 공시 회차.
+  assert.equal(plan.action.announceSlotKey, "2026-08-17 13:00");
+  assert.equal(plan.action.executeSlotKey, "2026-08-17 13:00");
+  assert.equal(plan.action.resumeSlotKey, "2026-08-17 18:00");
+  assert.equal(plan.action.priceAdjustmentPercent, 0);
   assert.deepEqual(
-    plan.disclosures.slice(1).map((item) => item.effects[0].changePercent),
-    [38.6, 27.4, 44.1],
+    plan.disclosures.map((item) => [item.slotKey, item.effects[0].changePercent]),
+    [
+      ["2026-08-17 18:00", -32.4],
+      ["2026-08-17 23:00", 63.8],
+      ["2026-08-18 09:00", 38.6],
+      ["2026-08-18 13:00", 27.4],
+      ["2026-08-18 18:00", 44.1],
+    ],
   );
+  assert.equal(
+    plan.disclosures[0].id,
+    "stock-disclosure:stm-mrbeast-v1:rights-sentiment",
+  );
+  assert.equal(plan.disclosures[0].effects[0].structural, true);
   assert.deepEqual(plan.majorShareholders, [
     {
       name: "미스터비스트",
@@ -182,7 +196,7 @@ test("후속 호재 변동률은 회차별로 다르게 지정할 수 있다", (
   });
 
   assert.deepEqual(
-    plan.disclosures.slice(1).map((item) => item.effects[0].changePercent),
+    plan.disclosures.slice(2).map((item) => item.effects[0].changePercent),
     [29.3, 41.7, 33.8],
   );
 });
@@ -207,7 +221,7 @@ test("단일 후속 변동률을 주면 전 회차에 같은 값을 적용한다
   });
 
   assert.deepEqual(
-    plan.disclosures.slice(1).map((item) => item.effects[0].changePercent),
+    plan.disclosures.slice(2).map((item) => item.effects[0].changePercent),
     [26.5, 26.5],
   );
 });

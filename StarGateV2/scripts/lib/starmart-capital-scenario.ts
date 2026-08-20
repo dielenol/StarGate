@@ -43,6 +43,7 @@ export interface StarmartCapitalScenarioPlan {
     id: string;
     announceSlotKey: string;
     executeSlotKey: string;
+    resumeSlotKey: string;
     factor: number;
     reason: string;
     priceAdjustmentPercent: number;
@@ -54,11 +55,22 @@ export interface StarmartCapitalScenarioPlan {
 
 const SLOT_PATTERN = /^\d{4}-\d{2}-\d{2} (?:09|13|18|23):00$/;
 
-/** 5% 단위로 떨어지지 않는 실측형 기본 변동률. 후속 호재는 회차마다 다르게 준다. */
+/**
+ * 5% 단위로 떨어지지 않는 실측형 기본 변동률. 후속 호재는 회차마다 다르게 준다.
+ *
+ * 유상증자 실행 회차는 기계적 희석(주가 1/배수·주식 수 ×배수)만 반영하고 가격을
+ * 동결한다. 투심 약화는 그 다음 회차의 독립 공시로 분리해 떨어지는 과정을 보이게 한다.
+ */
 export const DEFAULT_RIGHTS_PRICE_ADJUSTMENT_PERCENT = -32.4;
 export const DEFAULT_MRBEAST_STAKE_PERCENT = 17.3;
 export const DEFAULT_ACQUISITION_PRICE_CHANGE_PERCENT = 63.8;
 export const DEFAULT_FOLLOWUP_PRICE_CHANGE_PERCENTS = [38.6, 27.4, 44.1] as const;
+const RIGHTS_SENTIMENT_TEMPLATE = {
+  suffix: "rights-sentiment",
+  title: "스타마트 유상증자 물량 부담 · 투자심리 악화",
+  body: "대규모 신주 발행에 따른 지분 희석 우려로 스타마트 투자심리가 급격히 악화됐습니다.",
+} as const;
+
 const FOLLOWUP_TEMPLATES = [
   {
     suffix: "global-partnership",
@@ -167,7 +179,7 @@ export function buildStarmartCapitalScenarioPlan(
   if (!Number.isInteger(factor) || factor < 2 || factor > 10) {
     throw new Error("유상증자 배수는 2~10 정수여야 합니다.");
   }
-  assertPercent(rightsAdjustment, "유상증자 사유 조정률", -50, 75);
+  assertPercent(rightsAdjustment, "유상증자 투심 조정률", -50, 75);
   assertPercent(stakePercent, "미스터비스트 지분율", 0.01, 100);
   assertPercent(acquisitionChange, "지분 인수 공시 변동률", -50, 75);
   if (!Number.isInteger(followupCount) || followupCount < 2 || followupCount > 3) {
@@ -178,6 +190,8 @@ export function buildStarmartCapitalScenarioPlan(
     assertPercent(value, `후속 공시 ${index + 1}회차 변동률`, -50, 75),
   );
 
+  // 발표+실행(희석·거래정지·가격동결) → 거래재개+투심 악화 → 지분 인수 → 후속 호재.
+  // 발표와 실행은 같은 회차에서 collapse하고, 거래재개만 다음 회차로 미룬다.
   const slotKeys = [options.announceSlotKey];
   while (slotKeys.length < 3 + followupCount) {
     slotKeys.push(nextNovexSlotAfter(slotKeys.at(-1)!));
@@ -186,13 +200,19 @@ export function buildStarmartCapitalScenarioPlan(
     options.existingMajorShareholders ?? [],
     stakePercent,
   );
-  const stakeSlotKey = slotKeys[2]!;
   const disclosures: StarmartCapitalScenarioDisclosurePlan[] = [
+    {
+      id: `stock-disclosure:${STM_CAPITAL_SCENARIO_ID}:${RIGHTS_SENTIMENT_TEMPLATE.suffix}`,
+      title: RIGHTS_SENTIMENT_TEMPLATE.title,
+      body: RIGHTS_SENTIMENT_TEMPLATE.body,
+      slotKey: slotKeys[1]!,
+      effects: tickerPriceEffect(rightsAdjustment),
+    },
     {
       id: `stock-disclosure:${STM_CAPITAL_SCENARIO_ID}:stake-acquisition`,
       title: "미스터비스트, 스타마트 전략적 지분 인수",
       body: `미스터비스트가 스타마트 지분 ${stakePercent}%를 인수하고 글로벌 성장 파트너로 합류했습니다.`,
-      slotKey: stakeSlotKey,
+      slotKey: slotKeys[2]!,
       effects: tickerPriceEffect(acquisitionChange),
       companyProfileUpdate: { majorShareholders },
     },
@@ -211,10 +231,14 @@ export function buildStarmartCapitalScenarioPlan(
     action: {
       id: `stock-corporate-action:${STM_CAPITAL_SCENARIO_ID}:rights`,
       announceSlotKey: slotKeys[0]!,
-      executeSlotKey: slotKeys[1]!,
+      // 발표·실행은 같은 회차. 그 회차는 희석만 반영하고 거래정지·가격동결을 유지한다.
+      executeSlotKey: slotKeys[0]!,
+      // 거래재개는 투심 공시 회차. 재개와 -32.4%가 같은 회차에서 함께 나간다.
+      resumeSlotKey: slotKeys[1]!,
       factor,
       reason: "자본잠식 해소 및 운영자금 조달",
-      priceAdjustmentPercent: rightsAdjustment,
+      // 실행 회차는 기계적 희석만 반영한다. 투심 악화는 다음 회차 공시가 소유한다.
+      priceAdjustmentPercent: 0,
     },
     disclosures,
     majorShareholders,

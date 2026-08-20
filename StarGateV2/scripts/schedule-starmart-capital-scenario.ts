@@ -772,6 +772,7 @@ async function applyScenario(
           priceAdjustmentPercent: plan.action.priceAdjustmentPercent,
           announceSlotKey: plan.action.announceSlotKey,
           executeSlotKey: plan.action.executeSlotKey,
+          resumeSlotKey: plan.action.resumeSlotKey,
           status: "SCHEDULED",
           createdById: STM_CAPITAL_SCENARIO_SYSTEM_ACTOR,
           createdAt: now,

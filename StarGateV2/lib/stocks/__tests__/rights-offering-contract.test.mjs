@@ -84,7 +84,17 @@ test("예약 owner와 active halt owner는 수동 상태 변경을 409로 막는
 });
 
 test("merged 발표·실행은 첫 회차 halt만 commit하고 overdue 실행 공시를 다음 회차에 exact 적용한다", () => {
-  assert.match(marketCrud, /announcesInBatch && options\.allowCollapsedRightsOffering === true/);
+  assert.match(marketCrud, /options\.allowCollapsedRightsOffering === true/);
+  // 예약 자체가 같은 회차인 collapsed 유증만 그 회차에서 바로 실행한다.
+  assert.match(
+    marketCrud,
+    /const collapsedByDesign =\s*action\.announceSlotKey === action\.executeSlotKey;/,
+  );
+  assert.match(marketCrud, /collapsedByDesign \|\|\s*options\.allowCollapsedRightsOffering === true/);
+  assert.match(
+    marketCrud,
+    /stockSlotKeyDate\(action\.executeSlotKey\)\.getTime\(\) <\s*stockSlotKeyDate\(action\.announceSlotKey\)\.getTime\(\)/,
+  );
   assert.match(marketCrud, /action\.status === "HALTED"[\s\S]*latestMergedSlotKey/);
   assert.match(marketCrud, /executingRightsOfferingIds/);
   assert.match(marketCrud, /disclosure\._id\.endsWith\(":execution"\)/);
@@ -95,6 +105,39 @@ test("merged 발표·실행은 첫 회차 halt만 commit하고 overdue 실행 �
   assert.match(stockTick, /RIGHTS_OFFERING_ANNOUNCE/);
   assert.match(stockTick, /corporateActionHaltId: action\._id/);
   assert.match(stockTick, /current\.corporateActionHaltId[\s\S]*consumeFlow: false/);
+});
+
+test("재개 회차를 실행 회차보다 뒤로 두면 희석 회차는 거래정지·가격동결을 유지한다", () => {
+  const start = marketCrud.indexOf("export async function applyStockRightsOffering");
+  const end = marketCrud.indexOf("export async function resumeStockRightsOffering", start);
+  const block = marketCrud.slice(start, end);
+  assert.match(block, /const resumeSlotKey = action\.resumeSlotKey \?\? action\.executeSlotKey;/);
+  assert.match(block, /const deferResume = resumeSlotKey > executionSlotKey;/);
+  // 미룰 때는 halt 필드를 지우지 않고 RESUME 카드도 내보내지 않는다.
+  assert.match(block, /\.\.\.\(deferResume \? \{\} : \{ isTradingHalted: false \}\)/);
+  assert.match(block, /if \(!deferResume\) \{[\s\S]*eventKind: "RESUME"/);
+  assert.match(block, /executedAt: now[\s\S]*deferResume \? \{\} : \{ status: "COMPLETED"/);
+
+  const resumeStart = marketCrud.indexOf("export async function resumeStockRightsOffering");
+  const resumeEnd = marketCrud.indexOf("export async function applyForwardStockSplit", resumeStart);
+  const resume = marketCrud.slice(resumeStart, resumeEnd);
+  assert.match(resume, /Rights offering resume before execution/);
+  assert.match(resume, /corporateActionHaltId: ""/);
+  assert.match(resume, /eventKind: "RESUME"/);
+  assert.match(resume, /status: "COMPLETED"/);
+
+  // 재개는 가격 계산 전에 처리해야 같은 회차 공시가 동결되지 않는다.
+  const roundStart = marketCrud.indexOf(
+    "export async function applyStockMarketRoundTransaction",
+  );
+  const round = marketCrud.slice(roundStart);
+  assert.ok(
+    round.indexOf("resumeStockRightsOffering(") <
+      round.indexOf("const current = await prices.find("),
+  );
+  // 실행과 같은 batch에서는 RESUME 스텝을 편성하지 않는다(이중 재개 방지).
+  assert.match(marketCrud, /!executesInBatch &&\s*action\.executedAt !== undefined/);
+  assert.match(marketCrud, /Rights offering resume must not precede execution/);
 });
 
 test("실행 transaction은 보유량·평단·가격·발행계수·resume을 함께 처리한다", () => {

@@ -1344,11 +1344,20 @@ export async function createStockCorporateAction(
     ) {
       throw new Error("Rights offering price adjustment must be from -50 through 75");
     }
+    // 같은 회차 발표·실행(collapsed)은 허용한다. 희석은 주식 수와 평단을 함께
+    // 배수 조정해 보유 평가액이 보존되므로 예고 회차 없이도 보유자에게 중립이다.
     if (
-      stockSlotKeyDate(action.executeSlotKey).getTime() <=
+      stockSlotKeyDate(action.executeSlotKey).getTime() <
       stockSlotKeyDate(action.announceSlotKey).getTime()
     ) {
-      throw new Error("Rights offering execution must follow announcement");
+      throw new Error("Rights offering execution must not precede announcement");
+    }
+    if (
+      action.resumeSlotKey !== undefined &&
+      stockSlotKeyDate(action.resumeSlotKey).getTime() <
+        stockSlotKeyDate(action.executeSlotKey).getTime()
+    ) {
+      throw new Error("Rights offering resume must not precede execution");
     }
     const [currentPrice, currentHoldings] = await Promise.all([
       (await stockPricesCol()).findOne(
@@ -1376,6 +1385,12 @@ export async function createStockCorporateAction(
   await fenceStockDisclosureSlot(slotKey, session);
   if (action.type === "RIGHTS_OFFERING") {
     await fenceStockDisclosureSlot(action.executeSlotKey, session);
+    if (
+      action.resumeSlotKey !== undefined &&
+      action.resumeSlotKey !== action.executeSlotKey
+    ) {
+      await fenceStockDisclosureSlot(action.resumeSlotKey, session);
+    }
   }
   const priceFence = await (await stockPricesCol()).updateOne(
     {
@@ -1455,7 +1470,11 @@ export async function createStockCorporateAction(
     await createStockDisclosure({
       id: `stock-disclosure:corporate-action:${action._id}:execution`,
       title: `${action.ticker} 유상증자 실행`,
-      body: `${action.factor}배 유상증자 실행 후 사유(${action.reason})를 반영해 주가를 ${action.priceAdjustmentPercent >= 0 ? "+" : ""}${action.priceAdjustmentPercent}% 조정합니다.`,
+      // 조정률 0은 기계적 희석만 반영하고 가격을 동결하는 운용이다. 별도 투심 공시가
+      // 다음 회차를 소유하므로 실행 회차 문안에 0% 조정을 적지 않는다.
+      body: action.priceAdjustmentPercent === 0
+        ? `${action.factor}배 유상증자를 실행해 주식 수를 ${action.factor}배로, 기준가를 1/${action.factor}로 조정합니다. 사유: ${action.reason}. 실행 회차 주가는 희석분만 반영해 동결합니다.`
+        : `${action.factor}배 유상증자 실행 후 사유(${action.reason})를 반영해 주가를 ${action.priceAdjustmentPercent >= 0 ? "+" : ""}${action.priceAdjustmentPercent}% 조정합니다.`,
       kind: "PRICE",
       status: "SCHEDULED",
       source: "CORPORATE_ACTION",
@@ -2612,6 +2631,7 @@ export type StockCorporateActionExecutionStepKind =
   | "SPLIT"
   | "RIGHTS_OFFERING_ANNOUNCE"
   | "RIGHTS_OFFERING_EXECUTE"
+  | "RIGHTS_OFFERING_RESUME"
   | "DIVIDEND_RECORD";
 export interface StockCorporateActionExecutionStep {
   actionId: string;
@@ -2639,19 +2659,46 @@ export function buildStockCorporateActionExecutionPlan(
           kind: "RIGHTS_OFFERING_ANNOUNCE",
         });
       }
-      if (
+      // 예약 자체가 같은 회차 발표·실행이면 그 회차에서 바로 실행한다. 반면 서로 다른
+      // 회차가 병합으로 겹친 경우는 첫 회차 halt만 commit하고 실행을 다음 회차로 미룬다.
+      const collapsedByDesign =
+        action.announceSlotKey === action.executeSlotKey;
+      const resumeSlotKey = action.resumeSlotKey ?? action.executeSlotKey;
+      const executesInBatch =
+        action.executedAt === undefined &&
         (action.status === "HALTED" ||
-          (announcesInBatch && options.allowCollapsedRightsOffering === true)) &&
+          (announcesInBatch &&
+            (collapsedByDesign ||
+              options.allowCollapsedRightsOffering === true))) &&
         latestMergedSlotKey !== undefined &&
-        latestMergedSlotKey >= action.executeSlotKey
-      ) {
+        latestMergedSlotKey >= action.executeSlotKey;
+      if (executesInBatch) {
         steps.push({
           actionId: action._id,
           slotKey:
             action.status === "HALTED"
-              ? latestMergedSlotKey
+              ? latestMergedSlotKey!
               : action.executeSlotKey,
           kind: "RIGHTS_OFFERING_EXECUTE",
+        });
+      }
+      // 재개 회차가 실행 회차보다 뒤면 그 사이 회차는 거래정지·가격동결을 유지하고,
+      // 재개 회차에서만 halt를 풀어 같은 회차 공시가 정상 반영되게 한다.
+      // 실행과 같은 batch에서는 절대 재개하지 않는다 — applyStockRightsOffering이
+      // `resumeSlotKey <= 실행 회차`면 그 자리에서 재개하고, 아니면 executedAt만
+      // 남겨 이후 회차의 RESUME 스텝에 넘긴다. 판정 주체를 한쪽으로 몰아 이중
+      // 재개를 구조적으로 막는다.
+      if (
+        !executesInBatch &&
+        action.executedAt !== undefined &&
+        action.status === "HALTED" &&
+        latestMergedSlotKey !== undefined &&
+        latestMergedSlotKey >= resumeSlotKey
+      ) {
+        steps.push({
+          actionId: action._id,
+          slotKey: latestMergedSlotKey,
+          kind: "RIGHTS_OFFERING_RESUME",
         });
       }
       continue;
@@ -2693,7 +2740,8 @@ export function buildStockCorporateActionExecutionPlan(
     SPLIT: 1,
     RIGHTS_OFFERING_ANNOUNCE: 2,
     RIGHTS_OFFERING_EXECUTE: 3,
-    DIVIDEND_RECORD: 4,
+    RIGHTS_OFFERING_RESUME: 4,
+    DIVIDEND_RECORD: 5,
   };
   return steps.sort(
     (left, right) =>
@@ -3064,6 +3112,10 @@ export async function applyStockMarketRoundTransaction(
         } else if (step.kind === "RIGHTS_OFFERING_ANNOUNCE") {
           if (!await announceStockRightsOffering(step.actionId, input.now, session)) {
             throw new Error(`Rights offering announcement lost: ${step.actionId}`);
+          }
+        } else if (step.kind === "RIGHTS_OFFERING_RESUME") {
+          if (!await resumeStockRightsOffering(step.actionId, input.now, session)) {
+            throw new Error(`Rights offering resume lost: ${step.actionId}`);
           }
         } else if (!await applyStockRightsOffering(
           step.actionId,
@@ -3685,7 +3737,8 @@ export async function announceStockRightsOffering(
         isTradingHalted: true,
         corporateActionHaltId: actionId,
         corporateActionHaltReason: action.reason,
-        corporateActionResumeSlotKey: action.executeSlotKey,
+        corporateActionResumeSlotKey:
+          action.resumeSlotKey ?? action.executeSlotKey,
       },
       $unset: { corporateActionReservationId: "" },
     },
@@ -3738,7 +3791,7 @@ export async function announceStockRightsOffering(
       payload: {
         eventKind: "HALT",
         ticker: action.ticker,
-        eventText: `${action.factor}배 유상증자 발표에 따라 ${action.executeSlotKey}까지 거래를 정지합니다. 사유: ${action.reason}`,
+        eventText: `${action.factor}배 유상증자 발표에 따라 ${action.resumeSlotKey ?? action.executeSlotKey}까지 거래를 정지합니다. 사유: ${action.reason}`,
         actor: { displayName: "NOVEX", role: "SYSTEM" },
         occurredAt: now.toISOString(),
       },
@@ -3792,6 +3845,9 @@ export async function applyStockRightsOffering(
     { session },
   );
   const adjusted = calculateRightsOfferingPrices(previous, action.factor);
+  // 재개 회차가 실행 회차보다 뒤면 희석만 반영하고 거래정지·가격동결을 유지한다.
+  const resumeSlotKey = action.resumeSlotKey ?? action.executeSlotKey;
+  const deferResume = resumeSlotKey > executionSlotKey;
   const released = await prices.updateOne(
     { ticker: action.ticker, corporateActionHaltId: actionId },
     {
@@ -3801,10 +3857,90 @@ export async function applyStockRightsOffering(
         referencePrice: adjusted.referencePrice,
         cumulativeCapitalIncreaseFactor:
           adjusted.cumulativeCapitalIncreaseFactor,
-        isTradingHalted: false,
         eventText: `${action.factor}배 유상증자 기계 조정`,
         lastUpdate: executionSlotKey,
+        ...(deferResume ? {} : { isTradingHalted: false }),
       },
+      ...(deferResume
+        ? {}
+        : {
+            $unset: {
+              corporateActionHaltId: "",
+              corporateActionHaltReason: "",
+              corporateActionResumeSlotKey: "",
+            },
+          }),
+    },
+    { session },
+  );
+  if (released.matchedCount !== 1) {
+    throw new Error(`Rights offering halt release lost: ${actionId}`);
+  }
+  if (!deferResume) {
+    await enqueueIntegrationOutbox({
+      kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      dedupeKey: `stock:rights-offering:${actionId}:resume`,
+      partitionKey: `stock:${action.ticker}`,
+      partitionOrderAt: now,
+      payload: {
+        eventKind: "RESUME",
+        ticker: action.ticker,
+        eventText: "유상증자 실행이 완료되어 거래를 재개합니다.",
+        actor: { displayName: "NOVEX", role: "SYSTEM" },
+        occurredAt: now.toISOString(),
+      },
+    }, { session });
+  }
+  await (await stockPriceHistoryCol()).insertOne({
+    ticker: action.ticker,
+    price: adjusted.price,
+    prevPrice: previous.price,
+    referencePrice: adjusted.referencePrice,
+    eventText: `${action.factor}배 유상증자 기계 조정`,
+    source: "rights-offering",
+    slotKey: executionSlotKey,
+    effectiveAt: stockSlotKeyDate(executionSlotKey),
+    effectiveSequence: 20,
+    capitalIncreaseFactor: action.factor,
+    createdAt: now,
+  }, { session });
+  const advanced = await actions.updateOne(
+    { _id: actionId, type: "RIGHTS_OFFERING", status: "HALTED" },
+    {
+      $set: {
+        executedAt: now,
+        updatedAt: now,
+        ...(deferResume ? {} : { status: "COMPLETED", completedAt: now }),
+      },
+    },
+    { session },
+  );
+  return advanced.matchedCount === 1;
+}
+
+/**
+ * 실행 회차보다 뒤로 예약된 거래재개를 확정한다. 같은 회차 공시가 정상 반영되도록
+ * 가격 계산 전에 halt를 풀어야 한다.
+ */
+export async function resumeStockRightsOffering(
+  actionId: string,
+  now: Date,
+  session: ClientSession,
+): Promise<boolean> {
+  const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
+  const action = await actions.findOne(
+    { _id: actionId, type: "RIGHTS_OFFERING", status: "HALTED" },
+    { session },
+  );
+  if (!action || action.type !== "RIGHTS_OFFERING") return false;
+  if (action.executedAt === undefined) {
+    throw new Error(`Rights offering resume before execution: ${actionId}`);
+  }
+  const prices = await stockPricesCol();
+  const released = await prices.updateOne(
+    { ticker: action.ticker, corporateActionHaltId: actionId },
+    {
+      $set: { isTradingHalted: false },
       $unset: {
         corporateActionHaltId: "",
         corporateActionHaltReason: "",
@@ -3824,23 +3960,10 @@ export async function applyStockRightsOffering(
     payload: {
       eventKind: "RESUME",
       ticker: action.ticker,
-      eventText: "유상증자 실행이 완료되어 거래를 재개합니다.",
+      eventText: "유상증자 물량 반영이 끝나 거래를 재개합니다.",
       actor: { displayName: "NOVEX", role: "SYSTEM" },
       occurredAt: now.toISOString(),
     },
-  }, { session });
-  await (await stockPriceHistoryCol()).insertOne({
-    ticker: action.ticker,
-    price: adjusted.price,
-    prevPrice: previous.price,
-    referencePrice: adjusted.referencePrice,
-    eventText: `${action.factor}배 유상증자 기계 조정`,
-    source: "rights-offering",
-    slotKey: executionSlotKey,
-    effectiveAt: stockSlotKeyDate(executionSlotKey),
-    effectiveSequence: 20,
-    capitalIncreaseFactor: action.factor,
-    createdAt: now,
   }, { session });
   const completed = await actions.updateOne(
     { _id: actionId, type: "RIGHTS_OFFERING", status: "HALTED" },

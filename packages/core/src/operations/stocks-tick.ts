@@ -515,8 +515,17 @@ export async function previewNovexStockMarketTick(
       return { ...action, status: "COMPLETED" as const };
     }
     if (action.type === "RIGHTS_OFFERING") {
-      if (previousSlotKey >= action.executeSlotKey) {
+      const resumeSlotKey = action.resumeSlotKey ?? action.executeSlotKey;
+      if (previousSlotKey >= resumeSlotKey) {
         return { ...action, status: "COMPLETED" as const };
+      }
+      if (previousSlotKey >= action.executeSlotKey) {
+        // 희석은 끝났고 재개만 남은 구간. executedAt으로 실행 재편성을 막는다.
+        return {
+          ...action,
+          status: "HALTED" as const,
+          executedAt: action.executedAt ?? parseNovexSlotKey(action.executeSlotKey),
+        };
       }
       if (previousSlotKey >= action.announceSlotKey) {
         return { ...action, status: "HALTED" as const };
@@ -586,7 +595,8 @@ export async function previewNovexStockMarketTick(
         ...current,
         corporateActionHaltId: action._id,
         corporateActionHaltReason: action.reason,
-        corporateActionResumeSlotKey: action.executeSlotKey,
+        corporateActionResumeSlotKey:
+          action.resumeSlotKey ?? action.executeSlotKey,
         eventText: `${action.factor}배 유상증자 발표 · 거래정지`,
         lastUpdate: action.announceSlotKey,
       });
@@ -597,6 +607,9 @@ export async function previewNovexStockMarketTick(
       action.type === "RIGHTS_OFFERING"
     ) {
       const adjusted = calculateRightsOfferingPrices(current, action.factor);
+      // 재개 회차가 실행 회차보다 뒤면 희석만 반영하고 거래정지를 유지한다.
+      const resumeSlotKey = action.resumeSlotKey ?? action.executeSlotKey;
+      const deferResume = resumeSlotKey > step.slotKey;
       currentPrices.set(action.ticker, {
         ...current,
         prevPrice: current.price,
@@ -606,6 +619,22 @@ export async function previewNovexStockMarketTick(
           adjusted.cumulativeCapitalIncreaseFactor,
         eventText: `${action.factor}배 유상증자 기계 조정`,
         lastUpdate: action.executeSlotKey,
+        ...(deferResume
+          ? {}
+          : {
+              corporateActionHaltId: undefined,
+              corporateActionHaltReason: undefined,
+              corporateActionResumeSlotKey: undefined,
+            }),
+      });
+      return;
+    }
+    if (
+      step.kind === "RIGHTS_OFFERING_RESUME" &&
+      action.type === "RIGHTS_OFFERING"
+    ) {
+      currentPrices.set(action.ticker, {
+        ...current,
         corporateActionHaltId: undefined,
         corporateActionHaltReason: undefined,
         corporateActionResumeSlotKey: undefined,

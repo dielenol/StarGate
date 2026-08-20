@@ -219,11 +219,18 @@ export interface StockRightsOfferingAction {
   priceAdjustmentPercent: number;
   announceSlotKey: string;
   executeSlotKey: string;
+  /**
+   * 거래재개 회차. 생략하면 실행 회차에 바로 재개한다. 실행 회차보다 뒤로 두면
+   * 희석만 실행 회차에 반영하고 그 사이 회차는 거래정지·가격동결을 유지한다.
+   */
+  resumeSlotKey?: string;
   status: StockCorporateActionStatus;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
   haltedAt?: Date;
+  /** 희석이 반영된 시각. 재개가 뒤 회차면 status는 HALTED로 남는다. */
+  executedAt?: Date;
   completedAt?: Date;
   failedAt?: Date;
   failureReason?: string;
