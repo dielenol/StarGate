@@ -491,6 +491,53 @@ test("거래정지·냉각 긴급 공시는 가격 없이도 STOCK webhook으로
   );
 });
 
+test("충격 공시·냉각 카드는 실제 등락 방향과 폭을 함께 노출한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      DISCORD_WEBHOOK_STOCK_URL: "https://discord.com/api/webhooks/stock/token",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({ url: String(url), body: JSON.parse(String(init.body)) });
+        return Response.json({ id: "22345678901234567" });
+      },
+    },
+  );
+  for (const [eventKind, previousPrice, price] of [
+    ["SHOCK_DISCLOSURE", 657.5, 788.48],
+    ["SHOCK_DISCLOSURE", 657.5, 526.02],
+    ["COOLDOWN", 657.5, 788.48],
+  ]) {
+    await registry.get("STOCK_MANUAL_INTERVENTION_WEBHOOK").deliver(
+      outboxEvent("STOCK_MANUAL_INTERVENTION_WEBHOOK", {
+        eventKind,
+        ticker: "GN3",
+        previousPrice,
+        price,
+        eventText: "생산 일정 지연 · 핵심 생산 일정에 차질이 발생했습니다.",
+        actor: { displayName: "NOVEX", role: "AUTO" },
+        occurredAt: new Date().toISOString(),
+      }),
+    );
+  }
+  const stateValues = requests.map(
+    (request) =>
+      request.body.embeds[0].fields.find((field) => field.name === "시장 상태")
+        .value,
+  );
+  assert.match(stateValues[0], /^충격 공시 · 상승\n657\.5 CR → 788\.48 CR · \+19\.92%$/);
+  assert.match(stateValues[1], /^충격 공시 · 하락\n657\.5 CR → 526\.02 CR · -20\.00%$/);
+  assert.match(stateValues[2], /^자동 냉각 · 상승\n/);
+  assert.deepEqual(
+    requests.map((request) => request.body.embeds[0].color),
+    // 냉각 카드는 방향과 무관한 상태 고지라 고유 색(amber)을 유지한다.
+    [0x2fbf71, 0xd95f5f, 0xf0a33b],
+  );
+});
+
 test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노출하지 않는다", async () => {
   const requests = [];
   const registry = createDiscordIntegrationOutboxHandlers(

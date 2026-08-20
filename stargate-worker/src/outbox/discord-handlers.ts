@@ -596,23 +596,36 @@ function buildStockManualIntervention(
   const price = eventKind === "PRICE"
     ? numberValue(payload.price, "price")
     : typeof payload.price === "number" ? payload.price : undefined;
+  const hasMove = previousPrice !== undefined && price !== undefined;
   const percent =
-    previousPrice !== undefined && price !== undefined && previousPrice > 0
-      ? ((price - previousPrice) / previousPrice) * 100
+    hasMove && previousPrice! > 0
+      ? ((price! - previousPrice!) / previousPrice!) * 100
       : 0;
   const signedPercent = `${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`;
+  const moveLine = hasMove
+    ? `${previousPrice!.toLocaleString("ko-KR")} CR → ${price!.toLocaleString("ko-KR")} CR · ${signedPercent}`
+    : undefined;
+  const directionLabel = !hasMove || percent === 0
+    ? "보합"
+    : percent > 0 ? "상승" : "하락";
+  // 공시 문안만으로는 방향을 알 수 없으므로 등락이 실린 카드는 색도 등락에 맞춘다.
+  const moveColor = !hasMove || percent === 0
+    ? 0xc5a059
+    : percent > 0 ? 0x2fbf71 : 0xd95f5f;
   const stock = findStockByTicker(ticker);
   const presentation = {
-    PRICE: { title: "재무기구 특별 시세 공시", description: "시장감시실장 승인에 따른 수동 조정 내역입니다.", state: "수동 가격 조정", color: price! > previousPrice! ? 0x2fbf71 : price! < previousPrice! ? 0xd95f5f : 0xc5a059 },
+    PRICE: { title: "재무기구 특별 시세 공시", description: "시장감시실장 승인에 따른 수동 조정 내역입니다.", state: "수동 가격 조정", color: moveColor },
     HALT: { title: "긴급 거래정지 공시", description: "해당 종목의 모든 플레이어 거래가 즉시 정지되었습니다.", state: "거래정지", color: 0xd95f5f },
     RESUME: { title: "거래재개 공시", description: "시장감시실 확인을 거쳐 해당 종목 거래가 재개되었습니다.", state: "거래재개", color: 0x2fbf71 },
     COOLDOWN: { title: "변동성 냉각 공시", description: "급격한 가격 변동으로 10분 자동 냉각이 적용되었습니다.", state: "자동 냉각", color: 0xf0a33b },
     COOLDOWN_RELEASE: { title: "변동성 냉각 해제", description: "자동 냉각이 종료되었습니다. 수동 거래정지와 시장 운영 상태는 별도로 적용됩니다.", state: "냉각 해제", color: 0x2fbf71 },
-    SHOCK_DISCLOSURE: { title: "NOVEX 충격 공시", description: "시장에 중대한 영향을 주는 공시가 공개되었습니다.", state: "충격 공시", color: 0xd95f5f },
+    SHOCK_DISCLOSURE: { title: "NOVEX 충격 공시", description: "시장에 중대한 영향을 주는 공시가 공개되었습니다.", state: "충격 공시", color: hasMove ? moveColor : 0xd95f5f },
   }[eventKind]!;
-  const stateValue = eventKind === "PRICE" && previousPrice !== undefined && price !== undefined
-    ? `${previousPrice.toLocaleString("ko-KR")} CR → ${price.toLocaleString("ko-KR")} CR · ${signedPercent}`
-    : presentation.state;
+  const stateValue = eventKind === "PRICE" && moveLine
+    ? moveLine
+    : (eventKind === "SHOCK_DISCLOSURE" || eventKind === "COOLDOWN") && moveLine
+      ? `${presentation.state} · ${directionLabel}\n${moveLine}`
+      : presentation.state;
   return basePayload(
     "재무기구 시장감시실",
     presentation.title,
