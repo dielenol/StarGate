@@ -103,6 +103,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 - [`/erp/admin/equipment-workshop`](routes/erp/admin/equipment-workshop.md)
 - [`/erp/admin/stocks`](routes/erp/admin/stocks.md)
 - [`/erp/admin/users`](routes/erp/admin/users.md)
+- [`/erp/admin/vtt`](routes/erp/admin/vtt.md)
 - [`/erp/admin/dialogue-beep`](routes/erp/admin/dialogue-beep.md)
 - [`/erp/characters`](routes/erp/characters.md)
 - [`/erp/characters/[id]`](routes/erp/characters/_id.md)
