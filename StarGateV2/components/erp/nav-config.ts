@@ -266,6 +266,7 @@ export const NAV_GROUPS: NavGroup[] = [
     minRole: "GM",
     items: [
       { label: "관리자", keywords: "admin discord worker outbox 연동 상태", icon: IconCrown, href: "/erp/admin" },
+      { label: "VTT 운영", keywords: "vtt nochichim runtime server 원격 시작 종료", icon: IconSystem, href: "/erp/admin/vtt" },
       { label: "사용자 관리", keywords: "users admin", icon: IconUserAdmin, href: "/erp/admin/users" },
       { label: "크레딧 운영", keywords: "credits admin grant op pool 작전풀", icon: IconCredit, href: "/erp/admin/credits" },
       { label: "주식 운영", keywords: "stocks admin market price 주식 시세", icon: IconStock, href: "/erp/admin/stocks" },

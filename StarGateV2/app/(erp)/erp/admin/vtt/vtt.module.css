@@ -1,0 +1,342 @@
+.root {
+  display: grid;
+  width: min(1180px, 100%);
+  gap: 28px;
+  padding-bottom: 32px;
+  margin: 0 auto;
+}
+
+.root section {
+  display: grid;
+  gap: 12px;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: clamp(24px, 5vw, 72px);
+  padding: clamp(22px, 3vw, 34px);
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--gold) 10%, transparent), transparent 42%),
+    var(--bg-1);
+}
+
+.hero__copy {
+  display: grid;
+  max-width: 700px;
+  gap: 9px;
+}
+
+.hero h2,
+.hero p,
+.runtime p,
+.controls p,
+.confirm p,
+.lastAction p {
+  margin: 0;
+}
+
+.hero h2 {
+  color: var(--ink-1);
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.35;
+}
+
+.hero p,
+.runtime p,
+.controls p,
+.confirm p,
+.lastAction p {
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+
+.hero__status {
+  display: grid;
+  width: min(280px, 100%);
+  justify-items: end;
+  gap: 10px;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.notice {
+  padding: 13px 16px;
+  border-left: 3px solid var(--line-strong);
+  color: var(--ink-1);
+  line-height: 1.5;
+}
+
+.notice[data-tone="success"] { border-left-color: var(--success); }
+.notice[data-tone="warning"] { border-left-color: var(--gold); }
+.notice[data-tone="error"] { border-left-color: var(--danger); }
+
+.runtime {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.8fr);
+  padding: 0;
+  overflow: hidden;
+}
+
+.runtime__primary {
+  display: flex;
+  min-height: 190px;
+  align-items: center;
+  gap: 16px;
+  padding: 26px;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink-2) 4%, transparent);
+}
+
+.runtime[data-state="running"] .runtime__primary {
+  background: color-mix(in srgb, var(--success) 7%, transparent);
+}
+
+.runtime[data-state="degraded"] .runtime__primary,
+.runtime[data-state="unreachable"] .runtime__primary {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+.runtime__pulse {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--ink-3);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ink-3) 12%, transparent);
+}
+
+.runtime[data-state="running"] .runtime__pulse {
+  background: var(--success);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.runtime[data-state="starting"] .runtime__pulse,
+.runtime[data-state="stopping"] .runtime__pulse {
+  background: var(--info);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--info) 12%, transparent);
+}
+
+.runtime[data-state="degraded"] .runtime__pulse,
+.runtime[data-state="unreachable"] .runtime__pulse {
+  background: var(--danger);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.runtime__primary > div {
+  display: grid;
+  gap: 7px;
+}
+
+.runtime__primary small,
+.metrics dt,
+.lastAction dt,
+.confirm__field span {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.runtime__primary strong {
+  color: var(--ink-1);
+  font-size: 24px;
+}
+
+.runtime__primary p {
+  font-size: 12px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.metrics > div {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 8px;
+  min-height: 95px;
+  padding: 20px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.metrics > div:nth-child(2n) { border-right: 0; }
+.metrics > div:nth-last-child(-n + 2) { border-bottom: 0; }
+
+.metrics dd,
+.lastAction dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+}
+
+.controls__copy {
+  display: grid;
+  max-width: 650px;
+  gap: 7px;
+}
+
+.controls__copy strong,
+.confirm strong {
+  color: var(--ink-1);
+}
+
+.controls__copy p,
+.confirm p {
+  font-size: 13px;
+}
+
+.controls__actions,
+.confirm__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stopButton {
+  border-color: color-mix(in srgb, var(--danger) 70%, var(--line-strong));
+  color: var(--danger);
+}
+
+.confirm {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+  background: color-mix(in srgb, var(--danger) 5%, var(--bg-1));
+}
+
+.confirm > div:first-child {
+  display: grid;
+  gap: 8px;
+}
+
+.confirm__field {
+  display: grid;
+  max-width: 320px;
+  gap: 7px;
+}
+
+.confirm__field input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg-0);
+  color: var(--ink-1);
+  font: inherit;
+}
+
+.confirm__field input:focus-visible {
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 0 1px var(--gold-dim);
+}
+
+.lastAction {
+  padding: 0;
+  overflow: hidden;
+}
+
+.lastAction dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.lastAction dl > div {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  padding: 18px;
+  border-right: 1px solid var(--line);
+}
+
+.lastAction dl > div:nth-child(4) { border-right: 0; }
+.lastAction .lastAction__request {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  border-right: 0;
+}
+
+.lastAction > p {
+  padding: 22px;
+}
+
+@media (max-width: 860px) {
+  .hero,
+  .controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero__status {
+    width: 100%;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .runtime {
+    grid-template-columns: 1fr;
+  }
+
+  .runtime__primary {
+    min-height: 150px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .controls__actions,
+  .confirm__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  .metrics,
+  .lastAction dl {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics > div,
+  .metrics > div:nth-child(2n),
+  .metrics > div:nth-last-child(-n + 2),
+  .lastAction dl > div,
+  .lastAction dl > div:nth-child(4) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .metrics > div:last-child,
+  .lastAction dl > div:last-child {
+    border-bottom: 0;
+  }
+
+  .controls__actions > button,
+  .confirm__actions > button {
+    justify-content: center;
+    width: 100%;
+  }
+}
