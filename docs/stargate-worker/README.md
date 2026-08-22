@@ -154,7 +154,7 @@ StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
 
 편의점·주식·연구 카드는 웹이나 예약 job이 desired-state만 기록하고 worker만 Discord를 변경한다. 교체 시 새 메시지를 먼저 생성·활성화한 뒤 이전 메시지를 삭제해 실패 중에도 기존 카드가 사라지지 않는다. 정기 주식 공시는 개요·상승·하락·보합/특수 종목을 네 개의 독립 카드로 유지한다. 연구 공로 카드는 Incoming Webhook POST 결과가 불명확하면 기존 카드를 유지하고 `deliveryUnknownRevision`으로 자동 재발행을 격리한다. 아메리 DM에 같은 공방 요청의 여러 과거 단계가 동시에 밀려 있으면 이미 낡은 단계는 `superseded_by_newer_due_event`로 남기고 최신 도달 단계만 보낸다.
 
-`integration_outbox.dedupeKey`는 queue 문서 중복을 막는다. Bot Create Message 기반 DM은 `nonce`와 `enforce_nonce`도 사용한다. 반면 Discord Execute Webhook에는 같은 nonce 계약이 없으므로, 응답이 유실된 POST의 외부 exactly-once를 보장하지는 못한다. 일반 webhook 전달은 queue 수준 멱등 + 외부 at-least-once로 분류하고, 연구 공로 desired-state는 불명확 결과를 자동 재전송하지 않는 수동 reconciliation 대상으로 격리한다. 엄격한 외부 exactly-once가 필요하면 bot channel 전송 또는 수신측 idempotency를 별도 설계한다.
+`integration_outbox.dedupeKey`는 queue 문서 중복을 막는다. Bot Create Message 기반 DM은 `nonce`와 `enforce_nonce`도 사용한다. 반면 Discord Execute Webhook에는 같은 nonce 계약이 없으므로, 응답이 유실된 POST의 외부 exactly-once를 보장하지는 못한다. 일반 webhook 전달은 queue 수준 멱등 + 외부 at-least-once로 분류하고, 연구 공로 desired-state는 불명확 결과를 자동 재전송하지 않는 수동 reconciliation 대상으로 격리한다. 연구 공로 격리는 관리자·worker health에서 즉시 CRITICAL 장애로 유지하며 `node dist/cli/reconcile-research-ranking.js`의 dry-run plan과 guarded execute로만 해제한다. `adopt`는 설정된 연구 webhook의 GET으로 후보 소유권을 확인하고, plan digest는 credential을 제외한 Mongo host 집합+DB fingerprint와 후보 소유권 증거에 묶인다. 엄격한 외부 exactly-once가 필요하면 bot channel 전송 또는 수신측 idempotency를 별도 설계한다.
 
 ## 로컬 검증
 

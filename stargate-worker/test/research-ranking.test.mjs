@@ -21,6 +21,7 @@ function rankingRow(overrides = {}) {
 function makeStateDb() {
   let state = null;
   const filters = [];
+  const updates = [];
   return {
     get state() {
       return state;
@@ -28,11 +29,15 @@ function makeStateDb() {
     get filters() {
       return filters;
     },
+    get updates() {
+      return updates;
+    },
     db: {
       collection() {
         return {
           async updateOne(filter, update) {
             filters.push(filter);
+            updates.push(update);
             const sameRevision =
               state?.desiredDate === update.$set.desiredDate &&
               state?.desiredSourceRevision === update.$set.desiredSourceRevision &&
@@ -196,6 +201,26 @@ test("빈 순위는 공개 empty snapshot을 저장하고 Discord 카드를 요�
 
   assert.deepEqual(fixture.state.publicSnapshot.items, []);
   assert.deepEqual(fixture.state.desiredPayloads, []);
+});
+
+test("새 일일 revision은 retry backoff만 해제하고 격리 오류 원인은 보존한다", async () => {
+  const fixture = makeStateDb();
+  await requestDailyResearchRankingState(
+    "2026-08-22",
+    new Date("2026-08-22T12:00:00.000Z"),
+    {
+      async listRankings() {
+        return [rankingRow()];
+      },
+      async getDbImpl() {
+        return fixture.db;
+      },
+      siteBaseUrl: "https://www.ordonet.co.kr",
+    },
+  );
+
+  assert.deepEqual(fixture.updates[0].$unset, { nextAttemptAt: "" });
+  assert.equal("lastError" in fixture.updates[0].$unset, false);
 });
 
 test("daily ranking handler는 KST 일일 slot과 취소 신호를 전달한다", async () => {

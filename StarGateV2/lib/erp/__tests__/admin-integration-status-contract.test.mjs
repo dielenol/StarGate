@@ -72,5 +72,7 @@ test("연구 공로 job과 desired-state consumer를 연동 현황에 포함한�
   assert.match(service, /"research-ranking"/);
   assert.match(service, /RESEARCH_RANKING_STATE_COLLECTION/);
   assert.match(service, /key: "RESEARCH_RANKING"/);
+  assert.match(service, /deliveryUnknownRevision\?: number/);
+  assert.match(service, /if \(deliveryUnknown\) categories\.add\("UNKNOWN"\)/);
   assert.match(types, /"RESEARCH_RANKING"/);
 });

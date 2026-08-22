@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 const DISCORD_API_BASE_URL = "https://discord.com/api/v10";
 const DISCORD_USER_AGENT = "DiscordBot (https://www.ordonet.co.kr, 1.0.0)";
 const DISCORD_SNOWFLAKE_PATTERN = /^\d{17,20}$/;
@@ -340,6 +342,79 @@ export async function createDiscordWebhookMessage(
       error,
     );
   }
+}
+
+function webhookMessageUrl(
+  webhookUrl: string,
+  messageId: string,
+): { url: string; webhookId: string } {
+  if (!DISCORD_SNOWFLAKE_PATTERN.test(messageId)) {
+    throw new DiscordDeliveryError(
+      "조회할 Discord Webhook message id가 올바르지 않습니다.",
+    );
+  }
+  const url = new URL(webhookUrl);
+  const segments = url.pathname.split("/").filter(Boolean);
+  const webhookIndex = segments.lastIndexOf("webhooks");
+  const webhookId = segments[webhookIndex + 1];
+  const token = segments[webhookIndex + 2];
+  if (
+    webhookIndex < 0 ||
+    !webhookId ||
+    !DISCORD_SNOWFLAKE_PATTERN.test(webhookId) ||
+    !token
+  ) {
+    throw new DiscordDeliveryError(
+      "Discord Webhook URL에서 webhook identity를 확인할 수 없습니다.",
+    );
+  }
+  url.pathname = `${url.pathname.replace(/\/+$/, "")}/messages/${encodeURIComponent(messageId)}`;
+  url.search = "";
+  url.hash = "";
+  return { url: url.toString(), webhookId };
+}
+
+/**
+ * 정확한 webhook token으로 후보 메시지를 읽어 해당 webhook 소유임을 확인한다.
+ * 반환 증거에는 webhook URL이나 token을 넣지 않는다.
+ */
+export async function verifyDiscordWebhookMessageOwnership(
+  webhookUrl: string,
+  messageId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string> {
+  const target = webhookMessageUrl(webhookUrl, messageId);
+  let response: Response;
+  try {
+    response = await discordFetch(fetchImpl, target.url, { method: "GET" });
+  } catch {
+    throw new DiscordDeliveryError(
+      "Discord Webhook 후보 메시지의 소유권을 확인하지 못했습니다.",
+    );
+  }
+  if (!response.ok) {
+    throw await responseError(response, "Webhook 후보 메시지 조회");
+  }
+  let message: { id?: unknown; webhook_id?: unknown };
+  try {
+    message = (await response.json()) as {
+      id?: unknown;
+      webhook_id?: unknown;
+    };
+  } catch {
+    throw new DiscordDeliveryError(
+      "Discord Webhook 후보 메시지 응답을 확인하지 못했습니다.",
+    );
+  }
+  if (message.id !== messageId || message.webhook_id !== target.webhookId) {
+    throw new DiscordDeliveryError(
+      "Discord Webhook 후보 메시지가 설정된 연구 webhook 소유가 아닙니다.",
+    );
+  }
+  const digest = createHash("sha256")
+    .update(`discord-webhook-message-v1\0${target.webhookId}\0${messageId}`)
+    .digest("hex");
+  return `discord-webhook-message-v1:${digest}`;
 }
 
 export async function deleteDiscordWebhookMessage(

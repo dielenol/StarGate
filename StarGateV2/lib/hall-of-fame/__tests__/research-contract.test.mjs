@@ -100,6 +100,10 @@ test("화면은 오류·빈 결과와 desktop/mobile 시상대 계약을 제공�
   ]);
 
   assert.match(client, /연구 공로 순위를 불러오지 못했습니다/);
+  assert.match(client, /if \(!data\)/);
+  assert.doesNotMatch(client, /if \(isError \|\| !data\)/);
+  assert.match(client, /const refreshWarning = isError/);
+  assert.match(client, /마지막으로 확인된 일일 순위를 유지합니다/);
   assert.match(client, /아직 기록된 팀 연구 공로가 없습니다/);
   assert.match(client, /<ol[\s\S]*data-rank=\{item\.rank\}/);
   assert.match(css, /grid-template-areas: "second first third"/);

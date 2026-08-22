@@ -260,3 +260,29 @@ test("Q-8: 서버 조회 실패 seed는 즉시 stale 처리해 마운트에서 �
   unsubscribe();
   client.clear();
 });
+
+test("Q-9: background refetch 실패는 error와 마지막 성공 data를 함께 유지한다", async () => {
+  const client = makeClient();
+  const observer = new QueryObserver(client, {
+    queryKey: ["hall-of-fame", "research"],
+    queryFn: async () => {
+      throw new Error("temporary refresh failure");
+    },
+    initialData: { generatedAt: "2026-08-22T12:00:00.000Z", items: ["seed"] },
+    initialDataUpdatedAt: 0,
+    staleTime: 5 * 60 * 1000,
+  });
+  const unsubscribe = observer.subscribe(() => {});
+  await tick();
+
+  const result = observer.getCurrentResult();
+  assert.equal(result.isError, true);
+  assert.equal(result.isRefetchError, true);
+  assert.deepEqual(result.data, {
+    generatedAt: "2026-08-22T12:00:00.000Z",
+    items: ["seed"],
+  });
+
+  unsubscribe();
+  client.clear();
+});

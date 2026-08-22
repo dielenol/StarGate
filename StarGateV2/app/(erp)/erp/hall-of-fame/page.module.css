@@ -2,6 +2,37 @@
   min-width: 0;
 }
 
+.refreshWarning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+  border-color: var(--gold-dim);
+}
+
+.refreshWarning > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.refreshWarning strong {
+  color: var(--ink-0);
+  font-size: 14px;
+}
+
+.refreshWarning span {
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.refreshWarning button {
+  flex: 0 0 auto;
+}
+
 .honors__intro {
   display: flex;
   align-items: flex-end;
@@ -370,6 +401,11 @@
 }
 
 @media (max-width: 640px) {
+  .refreshWarning {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .honors__intro {
     gap: 18px;
     margin-bottom: 14px;

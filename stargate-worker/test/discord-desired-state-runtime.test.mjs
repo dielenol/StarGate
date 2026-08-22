@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DiscordDesiredStateConsumer } from "../dist/consumers/discord-desired-state.js";
+import { reconcileResearchRankingDeliveryUnknown } from "../dist/operations/research-ranking-reconciliation.js";
 
 const OLD_MESSAGE_IDS = [
   "90000000000000001",
@@ -45,8 +46,11 @@ function makeFixture({
   name = "stock-market-wire",
   quarantineUnknownCreate = false,
 } = {}) {
+  const stateId = name === "research-ranking"
+    ? "team-research-all-time"
+    : "scheduled";
   const state = {
-    _id: "scheduled",
+    _id: stateId,
     requestedRevision: 2,
     syncedRevision: 1,
     desiredPayloads: [1, 2, 3, 4].map(payload),
@@ -89,20 +93,55 @@ function makeFixture({
       return structuredClone(state);
     },
     async updateOne(filter, update) {
-      if (filter.leaseToken && filter.leaseToken !== state.leaseToken) {
+      if (
+        typeof filter.leaseToken === "string" &&
+        filter.leaseToken !== state.leaseToken
+      ) {
         return { modifiedCount: 0 };
+      }
+      for (const field of [
+        "requestedRevision",
+        "syncedRevision",
+        "deliveryUnknownRevision",
+        "deliveryUnknownAt",
+      ]) {
+        if (
+          filter[field] !== undefined &&
+          JSON.stringify(filter[field]) !== JSON.stringify(state[field])
+        ) {
+          return { modifiedCount: 0 };
+        }
+      }
+      if (
+        filter.leaseToken?.$exists === false &&
+        state.leaseToken !== undefined
+      ) {
+        return { modifiedCount: 0 };
+      }
+      for (const clause of filter.$and ?? []) {
+        const [field, expected] = Object.entries(clause)[0];
+        if (expected?.$exists === false) {
+          if (Object.hasOwn(state, field)) return { modifiedCount: 0 };
+        } else if (
+          JSON.stringify(state[field]) !== JSON.stringify(expected)
+        ) {
+          return { modifiedCount: 0 };
+        }
       }
       applyUpdate(state, update);
       return { modifiedCount: 1 };
     },
     async findOne(filter) {
+      if (filter._id && filter._id !== state._id) return null;
       const messageIdsMatch =
         !filter.messageIds ||
         JSON.stringify(filter.messageIds) === JSON.stringify(state.messageIds);
       const revisionMatches =
         !filter.syncedRevision?.$gte ||
         state.syncedRevision >= filter.syncedRevision.$gte;
-      return messageIdsMatch && revisionMatches ? { _id: state._id } : null;
+      return messageIdsMatch && revisionMatches
+        ? structuredClone(state)
+        : null;
     },
   };
 
@@ -134,8 +173,10 @@ function makeFixture({
   };
 
   const consumer = new DiscordDesiredStateConsumer(name, {
-    collectionName: "stock_discord_market_wires",
-    stateId: "scheduled",
+    collectionName: name === "research-ranking"
+      ? "research_ranking_states"
+      : "stock_discord_market_wires",
+    stateId,
     webhookUrl: "https://discord.test/api/webhooks/123/token",
     fetchImpl,
     getDbImpl: async () => ({ collection: () => collection }),
@@ -148,6 +189,7 @@ function makeFixture({
     posts,
     state,
     visible,
+    db: { collection: () => collection },
     failNextPostAt(index) {
       failPostAt = index;
     },
@@ -159,6 +201,9 @@ function makeFixture({
     },
     allowRetry() {
       state.nextAttemptAt = new Date(0);
+    },
+    removeVisible(messageId) {
+      visible.delete(messageId);
     },
   };
 }
@@ -230,6 +275,74 @@ test("연구 공로 POST 결과 유실은 기존 카드를 유지하고 자동 �
     failed: 0,
   });
   assert.equal(fixture.posts.length, postCount);
+});
+
+test("연구 공로 adopt와 retry는 격리 뒤 최신 requested revision까지 수렴한다", async (t) => {
+  for (const action of ["adopt", "retry"]) {
+    await t.test(action, async () => {
+      const fixture = makeFixture({
+        name: "research-ranking",
+        quarantineUnknownCreate: true,
+      });
+      fixture.loseNextPostResponseAt(3);
+      await fixture.consumer.tick({ signal: new AbortController().signal });
+
+      const unknownMessageId = [...fixture.visible].find(
+        (messageId) => !OLD_MESSAGE_IDS.includes(messageId),
+      );
+      assert.ok(unknownMessageId);
+      fixture.state.requestedRevision = 3;
+      if (action === "retry") fixture.removeVisible(unknownMessageId);
+
+      const input = {
+        targetFingerprint: `mongo-target-v1:${"a".repeat(64)}`,
+        action,
+        ...(action === "adopt"
+          ? { candidateMessageId: unknownMessageId }
+          : {}),
+      };
+      const dependencies = {
+        async getDbImpl() {
+          return fixture.db;
+        },
+        async verifyCandidateMessageOwnership(messageId) {
+          assert.equal(action, "adopt");
+          assert.equal(messageId, unknownMessageId);
+          assert.ok(fixture.visible.has(messageId));
+          return `discord-webhook-message-v1:${"b".repeat(64)}`;
+        },
+      };
+      const dryRun = await reconcileResearchRankingDeliveryUnknown(
+        input,
+        dependencies,
+      );
+      await reconcileResearchRankingDeliveryUnknown(
+        {
+          ...input,
+          execute: true,
+          expectedPlanDigest: dryRun.plan.planDigest,
+        },
+        dependencies,
+      );
+
+      const converged = await fixture.consumer.tick({
+        signal: new AbortController().signal,
+      });
+      assert.equal(converged.delivered, 1);
+      assert.equal(
+        fixture.state.requestedRevision,
+        fixture.state.syncedRevision,
+      );
+      assert.equal(fixture.state.deliveryUnknownRevision, undefined);
+      assert.equal(fixture.state.deliveryUnknownAt, undefined);
+      assert.equal(fixture.state.staleMessageIds, undefined);
+      assert.deepEqual([...fixture.visible], fixture.state.messageIds);
+      assert.ok(
+        OLD_MESSAGE_IDS.every((messageId) => !fixture.visible.has(messageId)),
+      );
+      assert.equal(fixture.visible.has(unknownMessageId), false);
+    });
+  }
 });
 
 test("네 장 활성화 뒤 이전 카드 삭제 실패는 재시도에서 새 네 장을 보존한다", async () => {

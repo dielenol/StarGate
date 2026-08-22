@@ -99,7 +99,9 @@ export async function requestDailyResearchRankingState(
       publicSnapshot,
       updatedAt: now,
     },
-    $unset: { lastError: "", nextAttemptAt: "" },
+    // DELIVERY_UNKNOWN은 수동 reconciliation 전까지 원인과 CRITICAL 상태를
+    // 보존한다. 새 desired revision은 backoff만 해제해 즉시 재평가한다.
+    $unset: { nextAttemptAt: "" },
   };
   const changedFilter: Filter<ResearchRankingState> = {
     _id: RESEARCH_RANKING_STATE_ID,

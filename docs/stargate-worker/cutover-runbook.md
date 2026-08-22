@@ -201,8 +201,21 @@ Discord webhook은 queue 중복 방지는 보장하지만 Execute Webhook 자체
 1. `research_ranking_states._id=team-research-all-time`에서 `requestedRevision`, `syncedRevision`, `desiredDate`, `messageIds`, `deliveryUnknownRevision`, `deliveryUnknownAt`만 read-only로 확인한다. payload, webhook URL과 오류 원문은 출력하지 않는다.
 2. `deliveryUnknownAt` 전후의 연구 채널을 직접 확인해 새 일일 카드가 실제 생성됐는지, 후보가 정확히 한 장인지 판정한다. 기존 활성 카드와 후보를 모두 유지한 상태에서 먼저 판정하며, 메시지를 추정해 삭제하지 않는다.
 3. 후보가 정확히 한 장이면 그 message ID를 새 active ID로 채택하고 이전 `messageIds`를 stale cleanup 대상으로 넘긴다. 후보가 없으면 격리 필드만 해제해 같은 revision을 다시 발행한다. 후보가 여러 장이거나 판정할 수 없으면 격리를 유지한다.
-4. 어느 경로든 정확한 state ID, unknown revision, 채택·삭제할 message ID, 예상 Discord 변화와 DB 전→후를 제시해 별도 live mutation 승인을 받은 뒤 guarded update 한 건만 실행한다.
-5. worker가 `syncedRevision`, `messageIds`, `staleMessageIds`를 수렴시켰는지 재조회하고 채널에 활성 연구 공로 카드가 한 장인지 확인한다. 조건 불일치나 추가 오류가 나면 자동 재시도·DB 보정을 중단한다.
+4. 후보가 한 장이면 다음 dry-run으로 `adopt` plan을 만든다. 후보가 없으면 `retry` plan을 만든다. 두 명령 모두 DB를 읽을 뿐 쓰지 않으며, `adopt`는 설정된 연구 webhook의 GET message를 추가로 호출해 후보가 그 webhook 소유인지 확인한다. payload·webhook URL·token·오류 원문은 출력하지 않는다.
+
+   ```bash
+   node dist/cli/reconcile-research-ranking.js --action adopt --message-id <CANDIDATE_MESSAGE_ID>
+   node dist/cli/reconcile-research-ranking.js --action retry
+   ```
+
+5. dry-run이 출력한 정확한 state ID, unknown/requested/synced revision, 현재·후보·stale message ID, 대상 DB, credential 비노출 `targetFingerprint`, 후보 소유권 증거와 `planDigest`를 검토한다. target fingerprint는 정규화한 Mongo host 집합과 DB 이름의 hash라서 같은 DB 이름을 쓰는 다른 cluster를 구분한다. 별도 live mutation 승인을 받은 뒤 같은 action과 message ID에 `--execute --yes --target-db <DB> --target-id <TARGET_FINGERPRINT> --expected-plan <PLAN_DIGEST>`를 모두 붙인다. execute도 후보 GET을 다시 확인하며 fingerprint, 소유권 증거, digest나 CAS 대상이 바뀌면 쓰지 않고 종료한다.
+
+   ```bash
+   node dist/cli/reconcile-research-ranking.js --action adopt --message-id <CANDIDATE_MESSAGE_ID> --execute --yes --target-db <DB> --target-id <TARGET_FINGERPRINT> --expected-plan <PLAN_DIGEST>
+   node dist/cli/reconcile-research-ranking.js --action retry --execute --yes --target-db <DB> --target-id <TARGET_FINGERPRINT> --expected-plan <PLAN_DIGEST>
+   ```
+
+6. CLI의 read-back 검증 뒤 worker가 `syncedRevision`, `messageIds`, `staleMessageIds`를 수렴시켰는지 재조회하고 채널에 활성 연구 공로 카드가 한 장인지 확인한다. 조건 불일치나 추가 오류가 나면 자동 재시도·DB 보정을 중단한다.
 
 ### 승인 게이트 B
 

@@ -49,6 +49,7 @@ interface DesiredStateDocument {
   leaseExpiresAt?: Date;
   nextAttemptAt?: Date;
   lastError?: string;
+  deliveryUnknownRevision?: number;
   updatedAt?: Date;
 }
 
@@ -204,9 +205,11 @@ function buildDesiredStateStatus(input: {
     if (doc.leaseToken && (!doc.leaseExpiresAt || doc.leaseExpiresAt > input.now)) {
       inFlightCount += 1;
     }
-    if (doc.lastError) {
+    const deliveryUnknown = doc.deliveryUnknownRevision !== undefined;
+    if (doc.lastError || deliveryUnknown) {
       errorCount += 1;
-      categories.add(errorCategory(doc.lastError));
+      if (deliveryUnknown) categories.add("UNKNOWN");
+      else if (doc.lastError) categories.add(errorCategory(doc.lastError));
     }
     if (doc.updatedAt && (!updatedAt || doc.updatedAt > updatedAt)) {
       updatedAt = doc.updatedAt;
