@@ -26,3 +26,12 @@
 - 검증: core·worker 104건, shared 주식·migration 계약 29건·replica 전용 3건 skip, `pnpm typecheck`, 전체 `pnpm lint`, production build
 - 관련 커밋: `9d37d3ec`
 - 운영 경계: Dokploy 일정·worker/Web 플래그·라이브 outbox와 Discord 상태는 변경하지 않았다.
+
+## 2026-08-22 · 버그 수정 · 변동성 냉각 공시 통합
+
+- 같은 가격 회차에서 여러 종목이 자동 냉각되면 종목별 시작·해제 공시를 반복하지 않고, 전체 대상과 등락 정보를 담은 시작 1건·해제 1건으로 묶도록 변경했다.
+- 회차 기업행동·충격 공시·냉각 시작·해제를 공용 outbox partition으로 직렬화해 원인과 상태 전환 순서를 보존하고, 유상증자 안전 거절 이벤트도 worker가 정상 처리하도록 보강했다.
+- 기존 종목별 단건 payload와 rolling deploy 호환을 유지하고, 9종목 전체 급변 시 마지막 종목까지 Discord field 제한 안에 노출되는지 검증했다.
+- 검증: shared/outbox 집중 계약 37건, worker 107건, core 33건, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
+- 관련 커밋: `aef555e5`
+- 운영 경계: 라이브 outbox·Discord·주가·거래 상태는 변경하지 않았다. 배포 전에 이미 적재된 종목별 냉각 이벤트는 자동 병합하지 않는다.
