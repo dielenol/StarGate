@@ -459,7 +459,7 @@ test("수동 주가 조정 공시는 전용 webhook payload로 전달한다", as
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
 });
 
-test("거래정지·냉각 긴급 공시는 가격 없이도 STOCK webhook으로 전달한다", async () => {
+test("거래정지·냉각·기업행동 거절 공시는 가격 없이도 STOCK webhook으로 전달한다", async () => {
   const requests = [];
   const registry = createDiscordIntegrationOutboxHandlers(
     {
@@ -474,7 +474,7 @@ test("거래정지·냉각 긴급 공시는 가격 없이도 STOCK webhook으로
       },
     },
   );
-  for (const eventKind of ["HALT", "RESUME", "COOLDOWN", "COOLDOWN_RELEASE", "SHOCK_DISCLOSURE"]) {
+  for (const eventKind of ["HALT", "RESUME", "COOLDOWN", "COOLDOWN_RELEASE", "SHOCK_DISCLOSURE", "RIGHTS_OFFERING_REJECTED"]) {
     await registry.get("STOCK_MANUAL_INTERVENTION_WEBHOOK").deliver(
       outboxEvent("STOCK_MANUAL_INTERVENTION_WEBHOOK", {
         eventKind,
@@ -487,8 +487,67 @@ test("거래정지·냉각 긴급 공시는 가격 없이도 STOCK webhook으로
   }
   assert.deepEqual(
     requests.map((request) => request.body.embeds[0].title),
-    ["긴급 거래정지 공시", "거래재개 공시", "변동성 냉각 공시", "변동성 냉각 해제", "NOVEX 충격 공시"],
+    ["긴급 거래정지 공시", "거래재개 공시", "변동성 냉각 공시", "변동성 냉각 해제", "NOVEX 충격 공시", "유상증자 안전 거절"],
   );
+});
+
+test("같은 회차의 다종목 냉각 시작과 해제는 각각 한 카드로 묶는다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      DISCORD_WEBHOOK_STOCK_URL: "https://discord.com/api/webhooks/stock/token",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({ url: String(url), body: JSON.parse(String(init.body)) });
+        return Response.json({ id: "22345678901234567" });
+      },
+    },
+  );
+  const items = ["TWS", "STM", "SSR", "MSF", "VFP", "BPE", "ART", "GN3", "SPZ"]
+    .map((ticker, index) => ({
+      ticker,
+      previousPrice: 100,
+      price: index === 1 ? 120 : 80,
+      eventText: ticker === "SPZ"
+        ? "GM_FORCE_COOLDOWN"
+        : "VOLATILITY_12_PERCENT",
+      cooldownUntil: "2026-08-21T04:10:00.000Z",
+    }));
+  for (const [eventKind, occurredAt] of [
+    ["COOLDOWN", "2026-08-21T04:00:00.000Z"],
+    ["COOLDOWN_RELEASE", "2026-08-21T04:10:00.000Z"],
+  ]) {
+    await registry.get("STOCK_MANUAL_INTERVENTION_WEBHOOK").deliver(
+      outboxEvent("STOCK_MANUAL_INTERVENTION_WEBHOOK", {
+        eventKind,
+        ticker: "TWS",
+        eventText: "구형 worker 호환 필드",
+        items,
+        actor: { displayName: "NOVEX", role: "SYSTEM" },
+        occurredAt,
+      }),
+    );
+  }
+
+  assert.equal(requests.length, 2);
+  assert.deepEqual(
+    requests.map((request) => request.body.embeds[0].title),
+    ["변동성 냉각 공시", "변동성 냉각 해제"],
+  );
+  const [startTarget, releaseTarget] = requests.map(
+    (request) => request.body.embeds[0].fields[0],
+  );
+  assert.equal(startTarget.name, "냉각 종목 · 9개");
+  assert.match(startTarget.value, /토와스키 · TWS — 하락 -20\.00%/);
+  assert.match(startTarget.value, /스타마트 · STM — 상승 \+20\.00%/);
+  assert.match(startTarget.value, /스페이스 제로 · SPZ — 하락 -20\.00%/);
+  assert.equal(releaseTarget.name, "해제 종목 · 9개");
+  assert.match(releaseTarget.value, /토와스키 · TWS/);
+  assert.match(releaseTarget.value, /스타마트 · STM/);
+  assert.match(releaseTarget.value, /스페이스 제로 · SPZ/);
 });
 
 test("충격 공시·냉각 카드는 실제 등락 방향과 폭을 함께 노출한다", async () => {

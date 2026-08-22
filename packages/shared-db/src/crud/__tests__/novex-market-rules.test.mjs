@@ -802,21 +802,74 @@ test("shadow 누적 상태는 완전한 가격·수급 계약만 복원한다", 
   );
 });
 
-test("냉각 시작과 해제 outbox는 같은 partition에서 10분 순서를 미리 예약한다", () => {
+test("같은 회차의 냉각 종목은 시작 1건과 해제 1건으로 묶어 예약한다", () => {
   const startedAt = new Date("2026-08-15T04:00:00Z");
   const cooldownUntil = new Date("2026-08-15T04:10:00Z");
-  const [start, release] = buildStockCooldownOutboxEvents({
-    ticker: "NVS",
+  const events = buildStockCooldownOutboxEvents({
     slotKey: "2026-08-15 13:00",
+    startedAt,
+    items: [
+      {
+        ticker: "TWS",
+        previousPrice: 100,
+        price: 112,
+        reason: "VOLATILITY_12_PERCENT",
+        cooldownUntil,
+      },
+      {
+        ticker: "STM",
+        previousPrice: 50,
+        price: 40,
+        reason: "GM_FORCE_COOLDOWN",
+        cooldownUntil,
+      },
+      {
+        ticker: "SPZ",
+        previousPrice: 1_000,
+        price: 800,
+        reason: "VOLATILITY_12_PERCENT",
+        cooldownUntil,
+      },
+    ],
+  });
+  assert.equal(events.length, 2);
+  const [start, release] = events;
+  assert.equal(start.partitionKey, release.partitionKey);
+  assert.equal(start.partitionKey, "stock:round:2026-08-15 13:00");
+  assert.equal(start.partitionOrderAt, startedAt);
+  assert.equal(release.partitionOrderAt.getTime(), cooldownUntil.getTime());
+  assert.equal(release.availableAt.getTime(), cooldownUntil.getTime());
+  assert.equal(start.dedupeKey, "stock:cooldown:2026-08-15 13:00:batch");
+  assert.equal(release.dedupeKey, "stock:cooldown-release:2026-08-15 13:00:batch");
+  assert.deepEqual(
+    start.payload.items.map((item) => item.ticker),
+    ["TWS", "STM", "SPZ"],
+  );
+  assert.equal(release.payload.items.length, 3);
+  assert.equal(release.payload.eventKind, "COOLDOWN_RELEASE");
+});
+
+test("냉각 묶음 outbox는 빈 목록과 중복 종목을 거부한다", () => {
+  const base = {
+    slotKey: "2026-08-15 13:00",
+    startedAt: new Date("2026-08-15T04:00:00Z"),
+  };
+  assert.throws(
+    () => buildStockCooldownOutboxEvents({ ...base, items: [] }),
+    /at least one ticker/,
+  );
+  const duplicate = {
+    ticker: "TWS",
     previousPrice: 100,
     price: 112,
     reason: "VOLATILITY_12_PERCENT",
-    startedAt,
-    cooldownUntil,
-  });
-  assert.equal(start.partitionKey, release.partitionKey);
-  assert.equal(start.partitionOrderAt, startedAt);
-  assert.equal(release.partitionOrderAt, cooldownUntil);
-  assert.equal(release.availableAt, cooldownUntil);
-  assert.equal(release.payload.eventKind, "COOLDOWN_RELEASE");
+    cooldownUntil: new Date("2026-08-15T04:10:00Z"),
+  };
+  assert.throws(
+    () => buildStockCooldownOutboxEvents({
+      ...base,
+      items: [duplicate, { ...duplicate }],
+    }),
+    /duplicate tickers/,
+  );
 });

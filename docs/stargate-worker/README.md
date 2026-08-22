@@ -90,7 +90,7 @@ Dokploy Application Job은 동일 이미지에서 다음 명령을 실행한다.
 - 13·18시 지연은 직전 가격으로 거래를 유지하고, 다음 회차 전 재시도한다. 오래된 회차는 다음 성공 회차의 `mergedSlotKeys`에 병합한다.
 - `2026-08-23`을 기준으로 격주 일요일의 `노부스 오르도 - 정규 세션` 일정 하나를 조기 폐장 시각으로 사용한다. 일정이 없거나 복수면 운영 경고를 남기고 18시에 폐장하며, GM 날짜 예외가 우선한다.
 - 조기 폐장 뒤 남은 수급·공시·회차는 월요일 09시에 합치고 일요일 23시 Discord 종가 장부는 갱신하지 않는다.
-- 정상 Discord 장부는 23시 desired-state 한 회차만 갱신한다. 충격 공시, 수동 정지·재개, 자동 냉각·해제는 durable outbox로 즉시 처리한다.
+- 정상 Discord 장부는 09·13·18·23시 각 회차의 desired-state를 갱신한다. 충격 공시와 수동 정지·재개는 종목별 durable outbox로 처리하고, 자동 냉각·해제는 같은 회차의 대상 종목을 각각 한 공시로 묶어 처리한다.
 - `/api/cron/stocks/tick`은 `CRON_SECRET`으로 인증된 수동 복구 경로일 뿐 자동 실행 owner가 아니다.
 
 ## 실시간 계약
@@ -151,7 +151,7 @@ StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
 
 범용 outbox 완료 기록은 `SENT`와 `SKIPPED`를 구분한다. 실제 Discord message ID는 운영 추적용으로 DB에만 저장하고 관리자 API에는 노출하지 않는다. 비활성·미연결·수신 불가 사용자, 비공개 공지, 이미 유효하지 않은 예약 단계는 사유가 제한된 `SKIPPED`로 남는다. Discord payload는 발송 직전 embed/field/전체 6,000자 제한을 맞추며 초과 내용은 생략 수를 표시한다.
 
-편의점·주식·연구 카드는 웹이 desired-state만 기록하고 worker만 Discord를 변경한다. 교체 시 새 메시지를 먼저 생성·활성화한 뒤 이전 메시지를 삭제해 실패 중에도 기존 카드가 사라지지 않는다. 정기 주식 공시는 네 embed를 한 메시지로 묶는다. 아메리 DM에 같은 공방 요청의 여러 과거 단계가 동시에 밀려 있으면 이미 낡은 단계는 `superseded_by_newer_due_event`로 남기고 최신 도달 단계만 보낸다.
+편의점·주식·연구 카드는 웹이 desired-state만 기록하고 worker만 Discord를 변경한다. 교체 시 새 메시지를 먼저 생성·활성화한 뒤 이전 메시지를 삭제해 실패 중에도 기존 카드가 사라지지 않는다. 정기 주식 공시는 개요·상승·하락·보합/특수 종목을 네 개의 독립 카드로 유지한다. 아메리 DM에 같은 공방 요청의 여러 과거 단계가 동시에 밀려 있으면 이미 낡은 단계는 `superseded_by_newer_due_event`로 남기고 최신 도달 단계만 보낸다.
 
 `integration_outbox.dedupeKey`는 queue 문서 중복을 막는다. Bot Create Message 기반 DM은 `nonce`와 `enforce_nonce`도 사용한다. 반면 Discord Execute Webhook에는 같은 nonce 계약이 없으므로, 2xx 응답 직후 프로세스가 종료되는 매우 짧은 구간까지 외부 webhook 정확히 한 번을 보장하지는 못한다. 이 전달은 queue 수준 멱등 + 외부 at-least-once로 분류한다. 엄격한 외부 exactly-once가 필요하면 bot channel 전송 또는 수신측 idempotency/reconciliation을 별도 설계한다.
 

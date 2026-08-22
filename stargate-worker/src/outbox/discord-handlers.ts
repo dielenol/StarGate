@@ -583,13 +583,91 @@ function buildStockManualIntervention(
   payload: Record<string, unknown>,
 ): DiscordWebhookPayload {
   const actor = record(payload.actor, "actor");
-  const ticker = text(payload.ticker, "ticker", 20);
   const eventKind = payload.eventKind === undefined
     ? "PRICE"
     : text(payload.eventKind, "eventKind", 30);
-  if (!["PRICE", "HALT", "RESUME", "COOLDOWN", "COOLDOWN_RELEASE", "SHOCK_DISCLOSURE"].includes(eventKind)) {
+  if (!["PRICE", "HALT", "RESUME", "COOLDOWN", "COOLDOWN_RELEASE", "SHOCK_DISCLOSURE", "RIGHTS_OFFERING_REJECTED"].includes(eventKind)) {
     throw new Error("지원하지 않는 주식 긴급 공시 eventKind입니다.");
   }
+  if (
+    (eventKind === "COOLDOWN" || eventKind === "COOLDOWN_RELEASE") &&
+    Array.isArray(payload.items)
+  ) {
+    if (payload.items.length === 0 || payload.items.length > 50) {
+      throw new Error("주식 냉각 묶음 공시의 종목 수가 올바르지 않습니다.");
+    }
+    const seenTickers = new Set<string>();
+    const items = payload.items.map((value, index) => {
+      const item = record(value, `items[${index}]`);
+      const ticker = text(item.ticker, `items[${index}].ticker`, 20);
+      if (seenTickers.has(ticker)) {
+        throw new Error("주식 냉각 묶음 공시에 중복 종목이 있습니다.");
+      }
+      seenTickers.add(ticker);
+      return {
+        ticker,
+        previousPrice: numberValue(
+          item.previousPrice,
+          `items[${index}].previousPrice`,
+        ),
+        price: numberValue(item.price, `items[${index}].price`),
+        reason: text(item.eventText, `items[${index}].eventText`, 200),
+      };
+    });
+    const targetLines = items.map((item) => {
+      const stock = findStockByTicker(item.ticker);
+      if (eventKind === "COOLDOWN_RELEASE") {
+        return `• ${stock?.name ?? item.ticker} · ${item.ticker}`;
+      }
+      const percent = item.previousPrice > 0
+        ? ((item.price - item.previousPrice) / item.previousPrice) * 100
+        : 0;
+      const direction = percent === 0 ? "보합" : percent > 0 ? "상승" : "하락";
+      const signedPercent = `${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`;
+      return `• ${stock?.name ?? item.ticker} · ${item.ticker} — ${direction} ${signedPercent} · ${item.previousPrice.toLocaleString("ko-KR")} CR → ${item.price.toLocaleString("ko-KR")} CR`;
+    });
+    const reasonLabels = Array.from(new Set(items.map((item) => {
+      if (item.reason === "VOLATILITY_12_PERCENT") return "회차 변동률 12% 이상";
+      if (item.reason === "GM_FORCE_COOLDOWN") return "시장감시실 강제 냉각";
+      return item.reason;
+    })));
+    const releasing = eventKind === "COOLDOWN_RELEASE";
+    return basePayload(
+      "재무기구 시장감시실",
+      releasing ? "변동성 냉각 해제" : "변동성 냉각 공시",
+      isoTimestamp(payload.occurredAt),
+      {
+        url: "https://www.ordonet.co.kr/erp/stock",
+        description: releasing
+          ? `${items.length}개 종목의 자동 냉각이 일괄 종료되었습니다. 수동 거래정지와 시장 운영 상태는 별도로 적용됩니다.`
+          : `급격한 가격 변동으로 ${items.length}개 종목에 10분 자동 냉각이 일괄 적용되었습니다.`,
+        color: releasing ? 0x2fbf71 : 0xf0a33b,
+        fields: [
+          {
+            name: `${releasing ? "해제" : "냉각"} 종목 · ${items.length}개`,
+            value: targetLines.join("\n").slice(0, FIELD_VALUE_MAX),
+          },
+          {
+            name: "시장 상태",
+            value: releasing ? "냉각 해제" : "자동 냉각",
+            inline: true,
+          },
+          ...(!releasing
+            ? [{
+                name: "적용 사유",
+                value: reasonLabels.join(" · ").slice(0, FIELD_VALUE_MAX),
+                inline: true,
+              }]
+            : []),
+          {
+            name: "승인 기록",
+            value: `${text(actor.displayName, "actor.displayName")} · ${text(actor.role, "actor.role", 20)}`,
+          },
+        ],
+      },
+    );
+  }
+  const ticker = text(payload.ticker, "ticker", 20);
   const previousPrice = eventKind === "PRICE"
     ? numberValue(payload.previousPrice, "previousPrice")
     : typeof payload.previousPrice === "number" ? payload.previousPrice : undefined;
@@ -620,6 +698,7 @@ function buildStockManualIntervention(
     COOLDOWN: { title: "변동성 냉각 공시", description: "급격한 가격 변동으로 10분 자동 냉각이 적용되었습니다.", state: "자동 냉각", color: 0xf0a33b },
     COOLDOWN_RELEASE: { title: "변동성 냉각 해제", description: "자동 냉각이 종료되었습니다. 수동 거래정지와 시장 운영 상태는 별도로 적용됩니다.", state: "냉각 해제", color: 0x2fbf71 },
     SHOCK_DISCLOSURE: { title: "NOVEX 충격 공시", description: "시장에 중대한 영향을 주는 공시가 공개되었습니다.", state: "충격 공시", color: hasMove ? moveColor : 0xd95f5f },
+    RIGHTS_OFFERING_REJECTED: { title: "유상증자 안전 거절", description: "안전성 검증 실패로 예정된 유상증자를 중단했습니다. 해당 종목의 기존 거래 상태는 유지됩니다.", state: "실행 거절", color: 0xd95f5f },
   }[eventKind]!;
   const stateValue = eventKind === "PRICE" && moveLine
     ? moveLine

@@ -2536,45 +2536,80 @@ export interface StockMarketRoundContext {
   structuralDisclosurePercent?: number;
 }
 
-export function buildStockCooldownOutboxEvents(input: {
+export interface StockCooldownOutboxItem {
   ticker: string;
-  slotKey: string;
   previousPrice: number;
   price: number;
   reason: string;
-  startedAt: Date;
   cooldownUntil: Date;
+}
+
+function stockMarketRoundOutboxPartitionKey(slotKey: string): string {
+  return `stock:round:${slotKey}`;
+}
+
+export function buildStockCooldownOutboxEvents(input: {
+  slotKey: string;
+  startedAt: Date;
+  items: StockCooldownOutboxItem[];
 }): [EnqueueIntegrationOutboxInput, EnqueueIntegrationOutboxInput] {
-  const partitionKey = `stock:${input.ticker}`;
+  if (input.items.length === 0) {
+    throw new Error("Stock cooldown outbox requires at least one ticker");
+  }
+  const tickerSet = new Set(input.items.map((item) => item.ticker));
+  if (tickerSet.size !== input.items.length) {
+    throw new Error("Stock cooldown outbox contains duplicate tickers");
+  }
+  const releaseAtMs = Math.max(
+    ...input.items.map((item) => item.cooldownUntil.getTime()),
+  );
+  if (!Number.isFinite(releaseAtMs)) {
+    throw new Error("Stock cooldown outbox contains an invalid release time");
+  }
+  const releaseAt = new Date(releaseAtMs);
+  const items = input.items.map((item) => ({
+    ticker: item.ticker,
+    previousPrice: item.previousPrice,
+    price: item.price,
+    eventText: item.reason,
+    cooldownUntil: item.cooldownUntil.toISOString(),
+  }));
+  const tickers = input.items.map((item) => item.ticker).join(", ");
+  const [first] = input.items;
+  const partitionKey = stockMarketRoundOutboxPartitionKey(input.slotKey);
   return [
     {
       kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
-      dedupeKey: `stock:cooldown:${input.slotKey}:${input.ticker}`,
+      dedupeKey: `stock:cooldown:${input.slotKey}:batch`,
       partitionKey,
       partitionOrderAt: input.startedAt,
       payload: {
         eventKind: "COOLDOWN",
-        ticker: input.ticker,
-        previousPrice: input.previousPrice,
-        price: input.price,
-        eventText: input.reason,
-        cooldownUntil: input.cooldownUntil.toISOString(),
+        // rolling deploy 중 구형 worker도 한 건으로 전달할 수 있도록 첫 종목
+        // 필드는 유지하고, 신형 worker는 items 전체를 묶어 렌더링한다.
+        ticker: first.ticker,
+        previousPrice: first.previousPrice,
+        price: first.price,
+        eventText: `${tickers} · 급격한 가격 변동으로 자동 냉각 적용`,
+        cooldownUntil: releaseAt.toISOString(),
+        items,
         actor: { displayName: "NOVEX", role: "SYSTEM" },
         occurredAt: input.startedAt.toISOString(),
       },
     },
     {
       kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
-      dedupeKey: `stock:cooldown-release:${input.slotKey}:${input.ticker}`,
+      dedupeKey: `stock:cooldown-release:${input.slotKey}:batch`,
       partitionKey,
-      partitionOrderAt: input.cooldownUntil,
-      availableAt: input.cooldownUntil,
+      partitionOrderAt: releaseAt,
+      availableAt: releaseAt,
       payload: {
         eventKind: "COOLDOWN_RELEASE",
-        ticker: input.ticker,
-        eventText: "자동 냉각 시간이 종료되었습니다.",
+        ticker: first.ticker,
+        eventText: `${tickers} · 자동 냉각 시간이 종료되었습니다.`,
+        items,
         actor: { displayName: "NOVEX", role: "SYSTEM" },
-        occurredAt: input.cooldownUntil.toISOString(),
+        occurredAt: releaseAt.toISOString(),
       },
     },
   ];
@@ -3075,6 +3110,9 @@ export async function applyStockMarketRoundTransaction(
         }, session);
       }
       const corporateActions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
+      const roundOutboxPartitionKey = stockMarketRoundOutboxPartitionKey(
+        input.slotKey,
+      );
       const corporateActionPlan = buildStockCorporateActionExecutionPlan(
         await corporateActions.find(
           { status: { $in: ["SCHEDULED", "HALTED", "SNAPSHOTTED", "PROCESSING"] } },
@@ -3110,11 +3148,21 @@ export async function applyStockMarketRoundTransaction(
             throw new Error(`Stock split execution lost: ${step.actionId}`);
           }
         } else if (step.kind === "RIGHTS_OFFERING_ANNOUNCE") {
-          if (!await announceStockRightsOffering(step.actionId, input.now, session)) {
+          if (!await announceStockRightsOffering(
+            step.actionId,
+            input.now,
+            session,
+            roundOutboxPartitionKey,
+          )) {
             throw new Error(`Rights offering announcement lost: ${step.actionId}`);
           }
         } else if (step.kind === "RIGHTS_OFFERING_RESUME") {
-          if (!await resumeStockRightsOffering(step.actionId, input.now, session)) {
+          if (!await resumeStockRightsOffering(
+            step.actionId,
+            input.now,
+            session,
+            roundOutboxPartitionKey,
+          )) {
             throw new Error(`Rights offering resume lost: ${step.actionId}`);
           }
         } else if (!await applyStockRightsOffering(
@@ -3122,6 +3170,7 @@ export async function applyStockMarketRoundTransaction(
           step.slotKey,
           input.now,
           session,
+          roundOutboxPartitionKey,
         )) {
           throw new Error(`Rights offering execution lost: ${step.actionId}`);
         }
@@ -3271,7 +3320,7 @@ export async function applyStockMarketRoundTransaction(
         string,
         { previousPrice: number; price: number }
       >();
-      const cooldownOutboxEvents: EnqueueIntegrationOutboxInput[] = [];
+      const cooldownOutboxItems: StockCooldownOutboxItem[] = [];
       for (const seed of input.seeds) {
         const price = current.find((row) => row.ticker === seed.ticker)!;
         const flow = flowMap.get(seed.ticker) ?? { ticker: seed.ticker, netShares: 0, volume: 0, percent: 0, signal: { ticker: seed.ticker, direction: "NEUTRAL", strength: "WEAK", volume: 0 } } as StockFlowAggregate;
@@ -3324,17 +3373,13 @@ export async function applyStockMarketRoundTransaction(
           price: mutation.price,
         });
         if (mutation.cooldownUntil) {
-          // 충격 공시 카드가 같은 회차의 냉각 카드보다 먼저 전달되도록,
-          // outbox 적재는 가격 확정 뒤 한 곳에서 순서대로 처리한다.
-          cooldownOutboxEvents.push(...buildStockCooldownOutboxEvents({
+          cooldownOutboxItems.push({
             ticker: seed.ticker,
-            slotKey: input.slotKey,
             previousPrice: price.price,
             price: mutation.price,
             reason: mutation.cooldownReason ?? "급격한 가격 변동",
-            startedAt: input.now,
             cooldownUntil: mutation.cooldownUntil,
-          }));
+          });
         }
         savedPrices.push(saved);
         if (mutation.consumeFlow !== false) consumedTickers.add(seed.ticker);
@@ -3373,7 +3418,7 @@ export async function applyStockMarketRoundTransaction(
           await enqueueIntegrationOutbox({
             kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
             dedupeKey: `stock:shock-disclosure:${disclosure._id}:${ticker}`,
-            partitionKey: `stock:${ticker}`,
+            partitionKey: roundOutboxPartitionKey,
             partitionOrderAt: input.now,
             payload: {
               eventKind: "SHOCK_DISCLOSURE",
@@ -3388,8 +3433,16 @@ export async function applyStockMarketRoundTransaction(
           }, { session });
         }
       }
-      for (const outbox of cooldownOutboxEvents) {
-        await enqueueIntegrationOutbox(outbox, { session });
+      if (cooldownOutboxItems.length > 0) {
+        // 충격 공시를 먼저 적재한 뒤 같은 회차의 냉각 종목 전체를 시작 1건,
+        // 해제 1건으로 묶어 대규모 변동 때도 알림 폭증을 막는다.
+        for (const outbox of buildStockCooldownOutboxEvents({
+          slotKey: input.slotKey,
+          startedAt: input.now,
+          items: cooldownOutboxItems,
+        })) {
+          await enqueueIntegrationOutbox(outbox, { session });
+        }
       }
       const consumedFlowRows = flowRows.filter((row) => consumedTickers.has(row.ticker));
       if (consumedFlowRows.length) {
@@ -3637,6 +3690,7 @@ export async function announceStockRightsOffering(
   actionId: string,
   now: Date,
   session: ClientSession,
+  outboxPartitionKey?: string,
 ): Promise<boolean> {
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne(
@@ -3712,7 +3766,7 @@ export async function announceStockRightsOffering(
       {
         kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
         dedupeKey: `stock:rights-offering:${actionId}:safety-rejected`,
-        partitionKey: `stock:${action.ticker}`,
+        partitionKey: outboxPartitionKey ?? `stock:${action.ticker}`,
         partitionOrderAt: now,
         payload: {
           eventKind: "RIGHTS_OFFERING_REJECTED",
@@ -3786,7 +3840,7 @@ export async function announceStockRightsOffering(
     await enqueueIntegrationOutbox({
       kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
       dedupeKey: `stock:rights-offering:${actionId}:halt`,
-      partitionKey: `stock:${action.ticker}`,
+      partitionKey: outboxPartitionKey ?? `stock:${action.ticker}`,
       partitionOrderAt: now,
       payload: {
         eventKind: "HALT",
@@ -3806,6 +3860,7 @@ export async function applyStockRightsOffering(
   executionSlotKey: string,
   now: Date,
   session: ClientSession,
+  outboxPartitionKey?: string,
 ): Promise<boolean> {
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne(
@@ -3880,7 +3935,7 @@ export async function applyStockRightsOffering(
     await enqueueIntegrationOutbox({
       kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
       dedupeKey: `stock:rights-offering:${actionId}:resume`,
-      partitionKey: `stock:${action.ticker}`,
+      partitionKey: outboxPartitionKey ?? `stock:${action.ticker}`,
       partitionOrderAt: now,
       payload: {
         eventKind: "RESUME",
@@ -3926,6 +3981,7 @@ export async function resumeStockRightsOffering(
   actionId: string,
   now: Date,
   session: ClientSession,
+  outboxPartitionKey?: string,
 ): Promise<boolean> {
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne(
@@ -3955,7 +4011,7 @@ export async function resumeStockRightsOffering(
   await enqueueIntegrationOutbox({
     kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
     dedupeKey: `stock:rights-offering:${actionId}:resume`,
-    partitionKey: `stock:${action.ticker}`,
+    partitionKey: outboxPartitionKey ?? `stock:${action.ticker}`,
     partitionOrderAt: now,
     payload: {
       eventKind: "RESUME",

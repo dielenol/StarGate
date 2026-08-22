@@ -148,7 +148,8 @@ export interface StockManualInterventionNotice {
     | "RESUME"
     | "SHOCK_DISCLOSURE"
     | "COOLDOWN"
-    | "COOLDOWN_RELEASE";
+    | "COOLDOWN_RELEASE"
+    | "RIGHTS_OFFERING_REJECTED";
   ticker: string;
   previousPrice: number;
   price: number;

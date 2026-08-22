@@ -149,7 +149,10 @@ test("실행 transaction은 보유량·평단·가격·발행계수·resume을 �
   assert.match(block, /cumulativeCapitalIncreaseFactor/);
   assert.match(block, /source: "rights-offering"/);
   assert.match(block, /eventKind: "RESUME"/);
-  assert.match(block, /partitionKey: `stock:\$\{action\.ticker\}`/);
+  assert.match(
+    block,
+    /partitionKey: outboxPartitionKey \?\? `stock:\$\{action\.ticker\}`/,
+  );
   const roundStart = marketCrud.indexOf(
     "export async function applyStockMarketRoundTransaction",
   );
@@ -161,6 +164,41 @@ test("실행 transaction은 보유량·평단·가격·발행계수·resume을 �
   assert.ok(
     round.indexOf("applyStockRightsOffering(") <
       round.indexOf("buildStockCooldownOutboxEvents({"),
+  );
+});
+
+test("회차 기업행동·충격 공시·냉각 공시는 같은 outbox partition을 쓴다", () => {
+  const roundStart = marketCrud.indexOf(
+    "export async function applyStockMarketRoundTransaction",
+  );
+  const roundEnd = marketCrud.indexOf(
+    "export function calculateForwardStockSplitPrices",
+    roundStart,
+  );
+  const round = marketCrud.slice(roundStart, roundEnd);
+  assert.match(
+    round,
+    /const roundOutboxPartitionKey = stockMarketRoundOutboxPartitionKey\(/,
+  );
+  assert.match(
+    round,
+    /announceStockRightsOffering\([\s\S]*?roundOutboxPartitionKey/,
+  );
+  assert.match(
+    round,
+    /resumeStockRightsOffering\([\s\S]*?roundOutboxPartitionKey/,
+  );
+  assert.match(
+    round,
+    /applyStockRightsOffering\([\s\S]*?roundOutboxPartitionKey/,
+  );
+  assert.match(
+    round,
+    /dedupeKey: `stock:shock-disclosure:[\s\S]*?partitionKey: roundOutboxPartitionKey/,
+  );
+  assert.match(
+    marketCrud,
+    /const partitionKey = stockMarketRoundOutboxPartitionKey\(input\.slotKey\)/,
   );
 });
 
