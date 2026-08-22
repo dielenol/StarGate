@@ -262,6 +262,18 @@ export type {
   NpcConversationMessage,
   NpcConversation,
 } from "./research-lab.js";
+
+export type {
+  ResearchContributionRankingRow,
+  ResearchHallOfFameResponse,
+  ResearchRankingDiscordPayload,
+  ResearchRankingState,
+  TeamResearchContribution,
+} from "./research-ranking.js";
+export {
+  RESEARCH_RANKING_STATE_COLLECTION,
+  RESEARCH_RANKING_STATE_ID,
+} from "./research-ranking.js";
 export {
   RESEARCH_RECIPE_IDS,
   RESEARCH_LINE_STATUSES,

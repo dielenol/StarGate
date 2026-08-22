@@ -41,6 +41,24 @@ async function signTicket(overrides = {}) {
 test("Mongo 컬렉션 변경은 공개 데이터 없이 Query resource로만 매핑된다", () => {
   assert.deepEqual(
     mapRealtimeChange({
+      collectionName: "research_ranking_states",
+      operationType: "update",
+      documentId: "team-research-all-time",
+      updatedFields: ["publicSnapshot"],
+    }),
+    { resources: ["hall-of-fame"] },
+  );
+  assert.equal(
+    mapRealtimeChange({
+      collectionName: "research_ranking_states",
+      operationType: "update",
+      documentId: "team-research-all-time",
+      updatedFields: ["syncedRevision", "messageIds"],
+    }),
+    null,
+  );
+  assert.deepEqual(
+    mapRealtimeChange({
       collectionName: "character_inventory",
       operationType: "update",
       documentId: "inventory-id",

@@ -25,6 +25,9 @@ const equipmentQuery = read(
   "../../../hooks/queries/useEquipmentShopQuery.ts",
 );
 const galleryQuery = read("../../../hooks/queries/useGalleryQuery.ts");
+const hallOfFameQuery = read(
+  "../../../hooks/queries/useHallOfFameQuery.ts",
+);
 const realtimeContract = read(
   "../../../../packages/core/src/domain/realtime.ts",
 );
@@ -111,6 +114,7 @@ test("전환 대상 고정 폴링은 연결 상태 기반 fallback을 사용한�
     stocksQuery,
     equipmentQuery,
     galleryQuery,
+    hallOfFameQuery,
   ]) {
     assert.match(source, /useRealtimeRefetchInterval/);
   }

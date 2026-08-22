@@ -1,3 +1,8 @@
+import {
+  RESEARCH_RANKING_STATE_COLLECTION,
+  RESEARCH_RANKING_STATE_ID,
+} from "@stargate/shared-db";
+
 import type { WorkerConsumerName } from "../config.js";
 import { AmeriDmConsumer } from "./ameri-dm.js";
 import { DiscordDesiredStateConsumer } from "./discord-desired-state.js";
@@ -86,6 +91,17 @@ export function createDefaultDomainConsumers(
         return env.RESEARCH_LAB_WORKER_ENABLED?.trim().toLowerCase() === "true"
           ? new ResearchLabConsumer()
           : new ResearchLabActivationGateConsumer();
+      case "research-ranking":
+        return new DiscordDesiredStateConsumer(name, {
+          collectionName: RESEARCH_RANKING_STATE_COLLECTION,
+          stateId: RESEARCH_RANKING_STATE_ID,
+          webhookUrl: webhook(
+            env,
+            ["DISCORD_WEBHOOK_RESEARCH_URL"],
+            name,
+          ),
+          quarantineUnknownCreate: true,
+        });
       case "shop-restock":
         return new DiscordDesiredStateConsumer(name, {
           collectionName: "shop_restock_notifications",

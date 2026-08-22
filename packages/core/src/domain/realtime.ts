@@ -19,6 +19,7 @@ export const REALTIME_RESOURCES = [
   "wiki",
   "factions",
   "page-locks",
+  "hall-of-fame",
 ] as const;
 
 export type RealtimeResource = (typeof REALTIME_RESOURCES)[number];

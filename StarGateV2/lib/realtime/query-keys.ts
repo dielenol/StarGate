@@ -52,6 +52,7 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
     ["wiki", "lore-search"],
   ],
   gallery: [["gallery"]],
+  "hall-of-fame": [["hall-of-fame"]],
   "equipment-shop": [["equipment-shop"]],
   wiki: [["wiki"], ["dashboard"], ["factions"], ["wiki", "lore-search"]],
   factions: [["factions"], ["wiki", "lore-search"]],

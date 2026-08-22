@@ -62,3 +62,15 @@ test("관리자 연동 현황은 상태별 표현과 키보드 접근 가능한 
   assert.match(styles, /\.tableWrap:focus-visible/);
   assert.doesNotMatch(styles, /\.kpi:nth-child/);
 });
+
+test("연구 공로 job과 desired-state consumer를 연동 현황에 포함한다", async () => {
+  const [service, types] = await Promise.all([
+    source("lib/erp/admin-integration-status.ts"),
+    source("types/admin-integration-status.ts"),
+  ]);
+
+  assert.match(service, /"research-ranking"/);
+  assert.match(service, /RESEARCH_RANKING_STATE_COLLECTION/);
+  assert.match(service, /key: "RESEARCH_RANKING"/);
+  assert.match(types, /"RESEARCH_RANKING"/);
+});

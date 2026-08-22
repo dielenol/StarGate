@@ -41,7 +41,10 @@ function applyUpdate(state, update) {
   }
 }
 
-function makeFixture() {
+function makeFixture({
+  name = "stock-market-wire",
+  quarantineUnknownCreate = false,
+} = {}) {
   const state = {
     _id: "scheduled",
     requestedRevision: 2,
@@ -55,6 +58,7 @@ function makeFixture() {
   const deletes = [];
   let nextMessageId = 91000000000000000n;
   let failPostAt = null;
+  let losePostResponseAt = null;
   let failDeleteId = null;
 
   const collection = {
@@ -71,7 +75,14 @@ function makeFixture() {
         !state.leaseExpiresAt ||
         state.leaseExpiresAt <= now;
       const retryDue = !state.nextAttemptAt || state.nextAttemptAt <= now;
-      if ((!hasDueRevision && !hasCleanup) || !leaseAvailable || !retryDue) {
+      const deliveryAllowed =
+        state.deliveryUnknownRevision === undefined || hasCleanup;
+      if (
+        (!hasDueRevision && !hasCleanup) ||
+        !deliveryAllowed ||
+        !leaseAvailable ||
+        !retryDue
+      ) {
         return null;
       }
       applyUpdate(state, update);
@@ -105,6 +116,10 @@ function makeFixture() {
       nextMessageId += 1n;
       const id = nextMessageId.toString();
       visible.add(id);
+      if (losePostResponseAt === posts.length) {
+        losePostResponseAt = null;
+        throw new TypeError("socket closed after request write");
+      }
       return Response.json({ id });
     }
 
@@ -118,12 +133,13 @@ function makeFixture() {
     return new Response(null, { status: 204 });
   };
 
-  const consumer = new DiscordDesiredStateConsumer("stock-market-wire", {
+  const consumer = new DiscordDesiredStateConsumer(name, {
     collectionName: "stock_discord_market_wires",
     stateId: "scheduled",
     webhookUrl: "https://discord.test/api/webhooks/123/token",
     fetchImpl,
     getDbImpl: async () => ({ collection: () => collection }),
+    quarantineUnknownCreate,
   });
 
   return {
@@ -134,6 +150,9 @@ function makeFixture() {
     visible,
     failNextPostAt(index) {
       failPostAt = index;
+    },
+    loseNextPostResponseAt(index) {
+      losePostResponseAt = index;
     },
     failNextDelete(id) {
       failDeleteId = id;
@@ -174,6 +193,43 @@ test("네 장 생성 중 세 번째 실패는 새 카드만 정리하고 재시�
     fixture.posts.slice(-4).map((posted) => posted.embeds.length),
     [1, 1, 1, 1],
   );
+});
+
+test("연구 공로 POST 결과 유실은 기존 카드를 유지하고 자동 재발행을 격리한다", async () => {
+  const fixture = makeFixture({
+    name: "research-ranking",
+    quarantineUnknownCreate: true,
+  });
+  fixture.loseNextPostResponseAt(3);
+
+  const failed = await fixture.consumer.tick({
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(failed.failed, 1);
+  assert.equal(fixture.state.syncedRevision, 1);
+  assert.deepEqual(fixture.state.messageIds, OLD_MESSAGE_IDS);
+  assert.equal(fixture.state.deliveryUnknownRevision, 2);
+  assert.ok(fixture.state.deliveryUnknownAt instanceof Date);
+  assert.match(fixture.state.lastError, /^DELIVERY_UNKNOWN:/);
+  assert.equal(fixture.state.nextAttemptAt, undefined);
+  assert.equal(fixture.state.replacementMessageIds, undefined);
+  assert.equal(fixture.visible.size, OLD_MESSAGE_IDS.length + 1);
+  assert.ok(OLD_MESSAGE_IDS.every((id) => fixture.visible.has(id)));
+
+  const postCount = fixture.posts.length;
+  fixture.allowRetry();
+  const quarantined = await fixture.consumer.tick({
+    signal: new AbortController().signal,
+  });
+
+  assert.deepEqual(quarantined, {
+    observedDue: 0,
+    claimed: 0,
+    delivered: 0,
+    failed: 0,
+  });
+  assert.equal(fixture.posts.length, postCount);
 });
 
 test("네 장 활성화 뒤 이전 카드 삭제 실패는 재시도에서 새 네 장을 보존한다", async () => {

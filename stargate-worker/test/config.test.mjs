@@ -102,6 +102,7 @@ test("active worker는 domain consumer 전체를 명시하지 않으면 기동�
       "ameri-dm",
       "research-card",
       "research-lab",
+      "research-ranking",
       "shop-restock",
       "stock-market-wire",
     ],

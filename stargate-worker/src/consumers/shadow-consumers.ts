@@ -1,4 +1,8 @@
-import { getDb } from "@stargate/shared-db";
+import {
+  RESEARCH_RANKING_STATE_COLLECTION,
+  RESEARCH_RANKING_STATE_ID,
+  getDb,
+} from "@stargate/shared-db";
 import type { Document, Filter } from "mongodb";
 
 import type { DueWorkConsumerPort } from "./port.js";
@@ -89,6 +93,28 @@ export function createShadowDomainConsumers(): DueWorkConsumerPort[] {
             status: "CLAIMABLE",
             claimReminderAt: { $lte: now },
             claimReminderSentAt: { $exists: false },
+          },
+        ],
+      }),
+    ),
+    new ShadowBoundaryConsumer(
+      "research-ranking",
+      RESEARCH_RANKING_STATE_COLLECTION,
+      (now) => ({
+        _id: RESEARCH_RANKING_STATE_ID,
+        $expr: { $gt: ["$requestedRevision", "$syncedRevision"] },
+        $and: [
+          {
+            $or: [
+              { leaseExpiresAt: { $exists: false } },
+              { leaseExpiresAt: { $lte: now } },
+            ],
+          },
+          {
+            $or: [
+              { nextAttemptAt: { $exists: false } },
+              { nextAttemptAt: { $lte: now } },
+            ],
           },
         ],
       }),

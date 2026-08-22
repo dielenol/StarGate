@@ -11,7 +11,10 @@ import {
 
 import "./init";
 
-import { getDb } from "@stargate/shared-db";
+import {
+  getDb,
+  listTeamResearchContributionRankings,
+} from "@stargate/shared-db";
 
 import {
   DEFAULT_EQUIPMENT_RESEARCH_CAPABILITIES,
@@ -709,50 +712,17 @@ export async function listEquipmentResearchDiscordProjectKeys(): Promise<
   return Array.from(new Set([...projects, ...pools, ...contributions])).sort();
 }
 
-/**
- * 기여 랭킹 상위 N — DB aggregation 단일 쿼리.
- *
- * 기존 "1000건 로드 → JS 그룹핑 → slice" 를 파이프라인으로 내렸다.
- * `buildResearchContributionRankings` 와 동일 semantics 보존:
- * - 대상: amount > 0 인 최근 1000건 ($match → $sort createdAt desc → $limit 1000)
- * - 그룹: contributorCharacterId 별 합계/건수/최신 기여 시각,
- *   codename 은 최신 기여의 값 ($sort desc 이후 $first — JS 버전의 첫 등장 값과 동일)
- * - 정렬: totalAmount desc → lastContributedAt desc
- */
+/** 팀 연구 모금·가속 전체 기간 기여 랭킹 상위 N. */
 export async function listEquipmentResearchContributionRankings(
   limit = 10,
 ): Promise<SerializedEquipmentResearchContributionRanking[]> {
-  const col = await equipmentResearchContributionsCol();
-  const rankings = await col
-    .aggregate<{
-      _id: string;
-      contributorCodename: string;
-      totalAmount: number;
-      contributionCount: number;
-      lastContributedAt: Date;
-    }>([
-      { $match: { amount: { $gt: 0 } } },
-      { $sort: { createdAt: -1 } },
-      { $limit: 1000 },
-      {
-        $group: {
-          _id: "$contributorCharacterId",
-          contributorCodename: { $first: "$contributorCodename" },
-          totalAmount: { $sum: "$amount" },
-          contributionCount: { $sum: 1 },
-          lastContributedAt: { $max: "$createdAt" },
-        },
-      },
-      { $sort: { totalAmount: -1, lastContributedAt: -1 } },
-      { $limit: limit },
-    ])
-    .toArray();
+  const rankings = await listTeamResearchContributionRankings(limit);
 
   return rankings.map((row) =>
     serializeEquipmentResearchContributionRanking({
-      contributorCharacterId: row._id,
+      contributorCharacterId: row.contributorCharacterId,
       contributorCodename: row.contributorCodename,
-      totalAmount: row.totalAmount,
+      totalAmount: row.totalCredits,
       contributionCount: row.contributionCount,
       lastContributedAt: row.lastContributedAt,
     }),

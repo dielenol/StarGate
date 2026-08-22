@@ -48,13 +48,14 @@ test("현재 KST 주식 slot 재시도는 실제 재시도 시각과 원본 slot
       },
       async findDue(input) {
         assert.equal(input.maxAttempts, undefined);
-        assert.equal(input.limit, 4);
+        assert.equal(input.limit, 5);
         assert.equal(input.slotKey, undefined);
         assert.deepEqual(input.jobNames, [
           "shop.refresh",
           "stocks.tick",
           "credits.daily-allowance",
           "sessions.erp-reminders",
+          "research.daily-ranking",
         ]);
         return [dueRun("stocks.tick", "2099-01-02 09:00", startedAt)];
       },
@@ -147,6 +148,46 @@ test("세션 알림 재시도는 지난 창 대신 실제 재시도 시각을 �
         return [
           dueRun(
             "sessions.erp-reminders",
+            "2099-01-02",
+            new Date("2099-01-02T12:00:00.000Z"),
+          ),
+        ];
+      },
+    },
+  );
+
+  await consumer.tick({
+    mode: "active",
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(requestedAt, now);
+});
+
+test("연구 랭킹 재시도는 최신 snapshot fence에 실제 재시도 시각을 사용한다", async () => {
+  const now = new Date("2099-01-02T12:10:00.000Z");
+  let requestedAt;
+  const consumer = new ScheduledJobRetryConsumer(
+    {
+      async executeOnce(context) {
+        requestedAt = context.requestedAt;
+        return {
+          jobName: context.jobName,
+          slotKey: context.slotKey,
+          outcome: "SUCCEEDED",
+          summary: { mutated: false },
+        };
+      },
+    },
+    {
+      now: () => now,
+      async expireStale() {
+        return 0;
+      },
+      async findDue() {
+        return [
+          dueRun(
+            "research.daily-ranking",
             "2099-01-02",
             new Date("2099-01-02T12:00:00.000Z"),
           ),

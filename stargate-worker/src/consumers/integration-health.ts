@@ -1,4 +1,8 @@
-import { getDb } from "@stargate/shared-db";
+import {
+  RESEARCH_RANKING_STATE_COLLECTION,
+  RESEARCH_RANKING_STATE_ID,
+  getDb,
+} from "@stargate/shared-db";
 
 import {
   WORKER_CONSUMER_NAMES,
@@ -12,6 +16,10 @@ const DESIRED_STATE_SOURCES: Array<{
   stateId?: string;
 }> = [
   { collectionName: "research_discord_cards" },
+  {
+    collectionName: RESEARCH_RANKING_STATE_COLLECTION,
+    stateId: RESEARCH_RANKING_STATE_ID,
+  },
   {
     collectionName: "shop_restock_notifications",
     stateId: "daily-shop-restock",

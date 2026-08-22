@@ -47,6 +47,7 @@ export const COLLECTION_RESOURCE_MAP = {
   research_team_funding_pools: ["equipment-shop"],
   research_contributions: ["equipment-shop"],
   research_discord_cards: ["equipment-shop"],
+  research_ranking_states: ["hall-of-fame"],
   wiki_pages: ["wiki"],
   wiki_page_revisions: ["wiki"],
   factions: ["factions"],
@@ -88,9 +89,19 @@ function shouldReauthenticateUser(change: RealtimeDatabaseChange): boolean {
   );
 }
 
+function changesHallOfFameSnapshot(change: RealtimeDatabaseChange): boolean {
+  if (change.collectionName !== "research_ranking_states") return true;
+  if (change.operationType !== "update") return true;
+  return change.updatedFields.some(
+    (field) =>
+      field === "publicSnapshot" || field.startsWith("publicSnapshot."),
+  );
+}
+
 export function mapRealtimeChange(
   change: RealtimeDatabaseChange,
 ): MappedRealtimeChange | null {
+  if (!changesHallOfFameSnapshot(change)) return null;
   const resources =
     COLLECTION_RESOURCE_MAP[
       change.collectionName as keyof typeof COLLECTION_RESOURCE_MAP

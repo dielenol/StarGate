@@ -41,6 +41,17 @@ export class DiscordDeliveryError extends Error {
   }
 }
 
+/**
+ * Discord가 메시지를 생성했는지 응답만 유실됐는지 판별할 수 없는 오류.
+ * Incoming Webhook에는 idempotency key가 없어 자동 재전송하면 중복될 수 있다.
+ */
+export class DiscordDeliveryUnknownError extends Error {
+  constructor(message: string, cause: unknown) {
+    super(message, { cause });
+    this.name = "DiscordDeliveryUnknownError";
+  }
+}
+
 function truncate(value: string | undefined, max: number): string | undefined {
   if (value === undefined || value.length <= max) return value;
   return `${value.slice(0, Math.max(0, max - 1))}…`;
@@ -306,13 +317,29 @@ export async function createDiscordWebhookMessage(
 ): Promise<string> {
   const url = new URL(webhookUrl);
   url.searchParams.set("wait", "true");
-  const response = await discordFetch(fetchImpl, url.toString(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(fitDiscordWebhookPayload(payload)),
-  });
+  let response: Response;
+  try {
+    response = await discordFetch(fetchImpl, url.toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fitDiscordWebhookPayload(payload)),
+    });
+  } catch (error) {
+    if (error instanceof DiscordDeliveryError) throw error;
+    throw new DiscordDeliveryUnknownError(
+      "Discord Webhook 생성 결과를 확인할 수 없습니다.",
+      error,
+    );
+  }
   if (!response.ok) throw await responseError(response, "Webhook 생성");
-  return discordMessageId(response, "Webhook 생성");
+  try {
+    return await discordMessageId(response, "Webhook 생성");
+  } catch (error) {
+    throw new DiscordDeliveryUnknownError(
+      "Discord Webhook 생성 응답의 message id를 확인할 수 없습니다.",
+      error,
+    );
+  }
 }
 
 export async function deleteDiscordWebhookMessage(

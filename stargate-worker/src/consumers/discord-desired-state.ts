@@ -5,6 +5,7 @@ import { getDb } from "@stargate/shared-db";
 import {
   createDiscordWebhookMessage,
   deleteDiscordWebhookMessage,
+  DiscordDeliveryUnknownError,
   type DiscordWebhookPayload,
 } from "../outbox/discord-client.js";
 import type { DueWorkConsumerPort } from "./port.js";
@@ -26,6 +27,8 @@ interface DiscordDesiredState {
   leaseExpiresAt?: Date;
   nextAttemptAt?: Date;
   lastError?: string;
+  deliveryUnknownRevision?: number;
+  deliveryUnknownAt?: Date;
   updatedAt: Date;
 }
 
@@ -35,13 +38,14 @@ function errorMessage(error: unknown): string {
 
 export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
   constructor(
-    readonly name: "shop-restock" | "stock-market-wire",
+    readonly name: "research-ranking" | "shop-restock" | "stock-market-wire",
     private readonly options: {
       collectionName: string;
       stateId: string;
       webhookUrl: string;
       fetchImpl?: typeof fetch;
       getDbImpl?: typeof getDb;
+      quarantineUnknownCreate?: boolean;
     },
   ) {}
 
@@ -70,6 +74,14 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
           { "cleanupMessageIds.0": { $exists: true } },
         ],
         $and: [
+          {
+            $or: [
+              { deliveryUnknownRevision: { $exists: false } },
+              { "staleMessageIds.0": { $exists: true } },
+              { "replacementMessageIds.0": { $exists: true } },
+              { "cleanupMessageIds.0": { $exists: true } },
+            ],
+          },
           {
             $or: [
               { leaseToken: { $exists: false } },
@@ -155,6 +167,25 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
         if (pulled.modifiedCount !== 1) {
           throw new Error("이전 Discord message 정리 전에 lease를 상실했습니다.");
         }
+      }
+
+      if (state.deliveryUnknownRevision !== undefined) {
+        const released = await col.updateOne(
+          { _id: state._id, leaseToken },
+          {
+            $set: { updatedAt: new Date() },
+            $unset: {
+              leaseToken: "",
+              leaseExpiresAt: "",
+              nextAttemptAt: "",
+            },
+          },
+        );
+        if (released.modifiedCount !== 1) {
+          throw new Error("Discord 불명확 전달 격리 중 lease를 상실했습니다.");
+        }
+        summary.failed = 1;
+        return summary;
       }
 
       if (state.requestedRevision <= state.syncedRevision) {
@@ -251,6 +282,8 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
             leaseExpiresAt: "",
             nextAttemptAt: "",
             lastError: "",
+            deliveryUnknownRevision: "",
+            deliveryUnknownAt: "",
           },
         },
       );
@@ -260,6 +293,9 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
       summary.delivered = 1;
       return summary;
     } catch (error) {
+      const deliveryUnknown =
+        this.options.quarantineUnknownCreate === true &&
+        error instanceof DiscordDeliveryUnknownError;
       if (activationAttempted && !activated && newMessageIds.length > 0) {
         try {
           const confirmed = await col.findOne(
@@ -295,8 +331,20 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
         { _id: state._id, leaseToken },
         {
           $set: {
-            lastError: errorMessage(error).slice(0, 1_000),
-            nextAttemptAt: new Date(failedAt.getTime() + RETRY_DELAY_MS),
+            lastError: `${deliveryUnknown ? "DELIVERY_UNKNOWN: " : ""}${errorMessage(error)}`.slice(
+              0,
+              1_000,
+            ),
+            ...(deliveryUnknown
+              ? {
+                  deliveryUnknownRevision: state.requestedRevision,
+                  deliveryUnknownAt: failedAt,
+                }
+              : {
+                  nextAttemptAt: new Date(
+                    failedAt.getTime() + RETRY_DELAY_MS,
+                  ),
+                }),
             ...(!activated && preserveReplacement && newMessageIds.length > 0
               ? { replacementMessageIds: newMessageIds }
               : {}),
@@ -305,6 +353,7 @@ export class DiscordDesiredStateConsumer implements DueWorkConsumerPort {
           $unset: {
             leaseToken: "",
             leaseExpiresAt: "",
+            ...(deliveryUnknown ? { nextAttemptAt: "" } : {}),
             ...(!activated &&
             !preserveReplacement &&
             !preexistingReplacementCleanup

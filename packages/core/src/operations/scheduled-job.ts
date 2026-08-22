@@ -3,6 +3,7 @@ export const SCHEDULED_JOB_NAMES = [
   "stocks.tick",
   "credits.daily-allowance",
   "sessions.erp-reminders",
+  "research.daily-ranking",
 ] as const;
 
 export type ScheduledJobName = (typeof SCHEDULED_JOB_NAMES)[number];

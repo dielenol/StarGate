@@ -18,6 +18,7 @@ import {
 } from "./desired-state.js";
 import { ScheduledJobHandlerRegistry } from "./handler-registry.js";
 import { loadRuntimeShopCatalog } from "./runtime-shop-catalog.js";
+import { requestDailyResearchRankingState } from "./research-ranking.js";
 
 export class ScheduledJobPartialFailureError extends Error {
   constructor(jobName: string, details: Record<string, number | string>) {
@@ -61,6 +62,7 @@ export function createDefaultScheduledJobHandlers(
     processDividendPayouts?: typeof processPendingStockDividendPayouts;
     hasActiveRightsOffering?: typeof hasActiveStockRightsOffering;
     requestStockWire?: typeof requestStockMarketWireState;
+    requestResearchRanking?: typeof requestDailyResearchRankingState;
   } = {},
 ): ScheduledJobHandlerRegistry {
   return new ScheduledJobHandlerRegistry([
@@ -256,6 +258,26 @@ export function createDefaultScheduledJobHandlers(
           notificationsFailed: result.notificationsFailed,
           totalAmount: result.totalAmount,
           mutated: result.granted > 0,
+        };
+      },
+    },
+    {
+      jobName: "research.daily-ranking",
+      async execute(context) {
+        context.signal.throwIfAborted();
+        const result = await (
+          dependencies.requestResearchRanking ??
+          requestDailyResearchRankingState
+        )(context.slotKey, context.requestedAt, {
+          signal: context.signal,
+        });
+        context.signal.throwIfAborted();
+        return {
+          date: context.slotKey,
+          contributors: result.contributorCount,
+          announcement: result.status,
+          sourceRevision: result.sourceRevision,
+          mutated: result.status === "requested",
         };
       },
     },

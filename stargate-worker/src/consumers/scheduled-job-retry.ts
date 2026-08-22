@@ -93,7 +93,9 @@ export class ScheduledJobRetryConsumer implements DueWorkConsumerPort {
           jobName: run.jobName,
           slotKey: run.slotKey,
           requestedAt:
-            run.jobName === "sessions.erp-reminders" || run.jobName === "stocks.tick"
+            run.jobName === "sessions.erp-reminders" ||
+            run.jobName === "stocks.tick" ||
+            run.jobName === "research.daily-ranking"
               ? now
               : run.startedAt,
           mode: "active",

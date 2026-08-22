@@ -26,6 +26,9 @@ test("realtime resource는 기존 TanStack Query root key로만 확장된다", (
     ],
   );
   assert.deepEqual(queryKeysForRealtimeResources(["gallery"]), [["gallery"]]);
+  assert.deepEqual(queryKeysForRealtimeResources(["hall-of-fame"]), [
+    ["hall-of-fame"],
+  ]);
 });
 
 test("복합 resource가 같은 Query root를 공유해도 한 번만 반환한다", () => {

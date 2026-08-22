@@ -4,6 +4,7 @@ export const WORKER_CONSUMER_NAMES = [
   "ameri-dm",
   "research-card",
   "research-lab",
+  "research-ranking",
   "shop-restock",
   "stock-market-wire",
 ] as const;

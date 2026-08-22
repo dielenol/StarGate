@@ -20,6 +20,10 @@ test("주식 작업 slot key만 최신 KST 가격 회차까지 포함한다", ()
     "2026-07-27 13:00",
   );
   assert.equal(buildScheduledJobSlotKey("shop.refresh", requestedAt), "2026-07-27");
+  assert.equal(
+    buildScheduledJobSlotKey("research.daily-ranking", requestedAt),
+    "2026-07-27",
+  );
 });
 
 test("알 수 없는 예약 작업은 dispatch 전에 거부한다", () => {
@@ -39,12 +43,13 @@ test("shadow dispatcher는 mutation 없이 명시적인 결과를 반환한다",
   assert.equal(result.summary.mutated, false);
 });
 
-test("Dokploy CLI 진입점은 네 작업을 shadow dispatch할 수 있다", () => {
+test("Dokploy CLI 진입점은 다섯 작업을 shadow dispatch할 수 있다", () => {
   for (const jobName of [
     "shop.refresh",
     "stocks.tick",
     "credits.daily-allowance",
     "sessions.erp-reminders",
+    "research.daily-ranking",
   ]) {
     const result = spawnSync(
       process.execPath,
@@ -60,7 +65,7 @@ test("Dokploy CLI 진입점은 네 작업을 shadow dispatch할 수 있다", () 
   }
 });
 
-test("active CLI는 네 도메인 handler를 연결하고 Mongo 설정 없이는 실행하지 않는다", () => {
+test("active CLI는 다섯 도메인 handler를 연결하고 Mongo 설정 없이는 실행하지 않는다", () => {
   const result = spawnSync(
     process.execPath,
     ["dist/cli/run-job.js", "stocks.tick"],

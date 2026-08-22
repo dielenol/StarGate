@@ -4,6 +4,8 @@ import "@/lib/db/init";
 import { SCHEDULED_JOB_NAMES } from "@stargate/core";
 import {
   INTEGRATION_OUTBOX_KINDS,
+  RESEARCH_RANKING_STATE_COLLECTION,
+  RESEARCH_RANKING_STATE_ID,
   getDb,
   type IntegrationOutboxKind,
   type ScheduledJobRun,
@@ -24,6 +26,7 @@ const WORKER_STALE_AFTER_MS = 90_000;
 const FALLBACK_EXPECTED_CONSUMERS = [
   "ameri-dm",
   "research-card",
+  "research-ranking",
   "shop-restock",
   "stock-market-wire",
 ];
@@ -239,6 +242,7 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
     deliveredRows,
     workerRuntime,
     researchStates,
+    researchRankingStates,
     shopStates,
     stockStates,
     workshopRequests,
@@ -366,6 +370,9 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
     db.collection<WorkerRuntimeStatusDocument>("worker_runtime_status")
       .findOne({ _id: "active" }),
     db.collection<DesiredStateDocument>("research_discord_cards").find({}).toArray(),
+    db.collection<DesiredStateDocument>(RESEARCH_RANKING_STATE_COLLECTION)
+      .find({ _id: RESEARCH_RANKING_STATE_ID })
+      .toArray(),
     db.collection<DesiredStateDocument>("shop_restock_notifications").find({}).toArray(),
     db.collection<DesiredStateDocument>("stock_discord_market_wires")
       .find({ _id: "scheduled" })
@@ -450,6 +457,12 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
       key: "RESEARCH",
       label: "장비 연구 카드",
       docs: researchStates,
+      now,
+    }),
+    buildDesiredStateStatus({
+      key: "RESEARCH_RANKING",
+      label: "연구 공로 일일 카드",
+      docs: researchRankingStates,
       now,
     }),
     buildDesiredStateStatus({

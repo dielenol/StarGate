@@ -11,16 +11,18 @@ import {
 test("실시간 resource 계약은 허용 목록만 통과시킨다", () => {
   assert.equal(isRealtimeResource("inventory"), true);
   assert.equal(isRealtimeResource("gallery"), true);
+  assert.equal(isRealtimeResource("hall-of-fame"), true);
   assert.equal(isRealtimeResource("credit-balance"), false);
   assert.equal(new Set(REALTIME_RESOURCES).size, REALTIME_RESOURCES.length);
 });
 
-test("Dokploy 예약 작업 이름은 고정된 네 종류다", () => {
+test("Dokploy 예약 작업 이름은 고정된 다섯 종류다", () => {
   assert.deepEqual(SCHEDULED_JOB_NAMES, [
     "shop.refresh",
     "stocks.tick",
     "credits.daily-allowance",
     "sessions.erp-reminders",
+    "research.daily-ranking",
   ]);
   assert.equal(isScheduledJobName("stocks.tick"), true);
   assert.equal(isScheduledJobName("stocks.run-now"), false);

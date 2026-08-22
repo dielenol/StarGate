@@ -48,7 +48,11 @@ export interface AdminOutboxKindStatus {
 }
 
 export interface AdminDesiredStateStatus {
-  key: "RESEARCH" | "SHOP_RESTOCK" | "STOCK_MARKET_WIRE";
+  key:
+    | "RESEARCH"
+    | "RESEARCH_RANKING"
+    | "SHOP_RESTOCK"
+    | "STOCK_MARKET_WIRE";
   label: string;
   health: AdminIntegrationHealth;
   documentCount: number;

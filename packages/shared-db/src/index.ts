@@ -209,6 +209,11 @@ export type {
   NpcRelationshipEvent,
   NpcConversationMessage,
   NpcConversation,
+  ResearchContributionRankingRow,
+  ResearchHallOfFameResponse,
+  ResearchRankingDiscordPayload,
+  ResearchRankingState,
+  TeamResearchContribution,
 } from "./types/index.js";
 
 export {
@@ -266,6 +271,8 @@ export {
   RESEARCH_CLAIM_REMINDER_LEAD_MS,
   RESEARCH_REPEAT_CREDIT_COST,
   STOCK_MARKET_STATE_ID,
+  RESEARCH_RANKING_STATE_COLLECTION,
+  RESEARCH_RANKING_STATE_ID,
 } from "./types/index.js";
 
 /* ── Client ── */

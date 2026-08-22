@@ -8,6 +8,11 @@ for (const [label, path, replacementField] of [
     "../src/consumers/discord-desired-state.ts",
     "replacementMessageIds",
   ],
+  [
+    "연구 공로 카드",
+    "../src/consumers/discord-desired-state.ts",
+    "replacementMessageIds",
+  ],
   ["연구 카드", "../src/consumers/research-card.ts", "replacementMessageId"],
 ]) {
   test(`${label} 교체는 새 메시지 활성화 후 이전 메시지를 삭제한다`, async () => {

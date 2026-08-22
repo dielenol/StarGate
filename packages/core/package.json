@@ -54,6 +54,10 @@
       "types": "./dist/domain/research-discord-card.d.ts",
       "import": "./dist/domain/research-discord-card.js"
     },
+    "./domain/research-ranking": {
+      "types": "./dist/domain/research-ranking.d.ts",
+      "import": "./dist/domain/research-ranking.js"
+    },
     "./domain/stock-catalog": {
       "types": "./dist/domain/stock-catalog.d.ts",
       "import": "./dist/domain/stock-catalog.js"
