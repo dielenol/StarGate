@@ -93,8 +93,9 @@ test("RSC 초기 데이터와 realtime 5분 fallback Query를 연결한다", asy
   assert.match(queryKeys, /"hall-of-fame": \[\["hall-of-fame"\]\]/);
 });
 
-test("화면은 오류·빈 결과와 desktop/mobile 시상대 계약을 제공한다", async () => {
-  const [client, css] = await Promise.all([
+test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공한다", async () => {
+  const [page, client, css] = await Promise.all([
+    source("app/(erp)/erp/hall-of-fame/page.tsx"),
     source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
     source("app/(erp)/erp/hall-of-fame/page.module.css"),
   ]);
@@ -105,10 +106,25 @@ test("화면은 오류·빈 결과와 desktop/mobile 시상대 계약을 제공�
   assert.match(client, /const refreshWarning = isError/);
   assert.match(client, /마지막으로 확인된 일일 순위를 유지합니다/);
   assert.match(client, /아직 기록된 팀 연구 공로가 없습니다/);
-  assert.match(client, /<ol[\s\S]*data-rank=\{item\.rank\}/);
-  assert.match(css, /grid-template-areas: "second first third"/);
+  assert.match(page, /DAILY · 21:00 KST/);
+  assert.match(client, /getPixelProfilePath\(item\.codename\)/);
+  assert.match(client, /preferOptimizedPublicImagePath\(profilePath\)/);
+  assert.match(client, /onError=\{\(\) => setHasImageError\(true\)\}/);
+  assert.match(client, /podium__portraitFallback/);
+  assert.match(client, /<li className=\{styles\.podium__card\} data-rank=\{item\.rank\}>/);
+  assert.match(
+    client,
+    /data\.items\.map\(\(item\) => \([\s\S]*<HonoreeCard item=\{item\}/,
+  );
+  assert.match(css, /max-width: 1280px/);
+  assert.match(css, /container-type: inline-size/);
+  assert.match(css, /@container \(max-width: 960px\)/);
+  assert.match(css, /@container \(max-width: 640px\)/);
+  assert.match(css, /grid-template-columns: minmax\(0, 1\.6fr\) minmax\(300px, 0\.9fr\)/);
+  assert.doesNotMatch(css, /grid-template-areas:/);
+  assert.doesNotMatch(css, /@media \(max-width: 390px\)/);
   assert.match(
     css,
-    /@media \(max-width: 640px\)[\s\S]*\.podium \{[\s\S]*display: flex;[\s\S]*flex-direction: column/,
+    /@container \(max-width: 640px\)[\s\S]*\.podium \{[\s\S]*display: flex;[\s\S]*flex-direction: column/,
   );
 });

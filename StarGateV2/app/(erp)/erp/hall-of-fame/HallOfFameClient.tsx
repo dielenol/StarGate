@@ -1,12 +1,17 @@
 "use client";
 
+import Image from "next/image";
+import { useState } from "react";
+
 import type { ResearchHallOfFameResponse } from "@stargate/core";
 
 import { useResearchHallOfFame } from "@/hooks/queries/useHallOfFameQuery";
 
+import { IconCrown } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
 import Button from "@/components/ui/Button/Button";
-import Tag from "@/components/ui/Tag/Tag";
+import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { getPixelProfilePath } from "@/lib/assets/characters";
 import { formatDateTime } from "@/lib/format/date";
 
 import styles from "./page.module.css";
@@ -16,14 +21,69 @@ interface Props {
   initialDataUpdatedAt?: number;
 }
 
-const MEDAL_LABELS = {
-  1: "금",
-  2: "은",
-  3: "동",
+const RANK_LABELS = {
+  1: "GOLD LAUREATE",
+  2: "SILVER HONOREE",
+  3: "BRONZE HONOREE",
 } as const;
+
+type HallOfFameItem = ResearchHallOfFameResponse["items"][number];
 
 function formatCredits(value: number): string {
   return `${value.toLocaleString("ko-KR")} CR`;
+}
+
+function HonoreePortrait({ item }: { item: HallOfFameItem }) {
+  const profilePath = getPixelProfilePath(item.codename);
+  const [hasImageError, setHasImageError] = useState(false);
+
+  if (!profilePath || hasImageError) {
+    return (
+      <div className={styles.podium__portraitFallback} aria-hidden="true">
+        <IconCrown />
+        <span>{String(item.rank).padStart(2, "0")}</span>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      fill
+      alt=""
+      className={styles.podium__portraitImage}
+      onError={() => setHasImageError(true)}
+      sizes="(max-width: 640px) 112px, (max-width: 960px) 30vw, 400px"
+      src={preferOptimizedPublicImagePath(profilePath)}
+    />
+  );
+}
+
+function HonoreeCard({ item }: { item: HallOfFameItem }) {
+  const rankLabel = RANK_LABELS[item.rank];
+
+  return (
+    <li className={styles.podium__card} data-rank={item.rank}>
+      <div className={styles.podium__portrait} aria-hidden="true">
+        <HonoreePortrait item={item} />
+      </div>
+      <div className={styles.podium__content}>
+        <span className={styles.podium__rank}>
+          {String(item.rank).padStart(2, "0")} · {rankLabel}
+        </span>
+        <h3>{item.codename}</h3>
+        <dl className={styles.podium__stats}>
+          <div>
+            <dt>누적 공로</dt>
+            <dd>{formatCredits(item.totalCredits)}</dd>
+          </div>
+          <div>
+            <dt>기여 횟수</dt>
+            <dd>{item.contributionCount.toLocaleString("ko-KR")}회</dd>
+          </div>
+        </dl>
+      </div>
+    </li>
+  );
 }
 
 export default function HallOfFameClient({
@@ -97,52 +157,30 @@ export default function HallOfFameClient({
     <>
       {refreshWarning}
       <section className={styles.honors} aria-labelledby="research-honors-title">
-        <Box variant="gold" className={styles.honors__intro}>
-          <div>
-            <span className={styles.honors__eyebrow}>ALL-TIME RESEARCH HONORS</span>
-            <h2 id="research-honors-title">팀 연구 누적 공로 TOP 3</h2>
-            <p>
-              공동 연구의 모금과 가속에 실제 사용된 CR을 전 기간 합산합니다.
-            </p>
-          </div>
-          <div className={styles.honors__status}>
-            <Tag tone="gold">DAILY · 21:00 KST</Tag>
-            <span>기준 {formatDateTime(data.generatedAt, "padded")} KST</span>
-          </div>
-        </Box>
+        <Box variant="gold" className={styles.honors__register}>
+          <header className={styles.honors__header}>
+            <IconCrown className={styles.honors__crown} aria-hidden="true" />
+            <div>
+              <span className={styles.honors__eyebrow}>
+                RESEARCH HONORS REGISTER · ALL TIME
+              </span>
+              <h2 id="research-honors-title">팀 연구 공로 헌액자</h2>
+              <p>공동 연구의 모금과 가속에 실제 사용된 CR을 전 기간 합산합니다.</p>
+            </div>
+          </header>
 
-        <ol className={styles.podium} aria-label="팀 연구 누적 공로 상위 3명">
-          {data.items.map((item) => (
-            <li
-              className={styles.podium__card}
-              data-rank={item.rank}
-              key={`${item.rank}-${item.codename}`}
-            >
-              <div className={styles.podium__medal} aria-label={`${item.rank}위`}>
-                <span>{MEDAL_LABELS[item.rank]}</span>
-                <strong>{item.rank}</strong>
-              </div>
-              <div className={styles.podium__identity}>
-                <span>{item.rank === 1 ? "PRIME CONTRIBUTOR" : "HONORED CONTRIBUTOR"}</span>
-                <h3>{item.codename}</h3>
-              </div>
-              <dl className={styles.podium__stats}>
-                <div>
-                  <dt>누적 공로</dt>
-                  <dd>{formatCredits(item.totalCredits)}</dd>
-                </div>
-                <div>
-                  <dt>기여 횟수</dt>
-                  <dd>{item.contributionCount.toLocaleString("ko-KR")}회</dd>
-                </div>
-              </dl>
-              <div className={styles.podium__base} aria-hidden="true">
-                <span>RANK</span>
-                <strong>0{item.rank}</strong>
-              </div>
-            </li>
-          ))}
-        </ol>
+          <ol className={styles.podium} aria-label="팀 연구 누적 공로 상위 3명">
+            {data.items.map((item) => (
+              <HonoreeCard item={item} key={`${item.rank}-${item.codename}`} />
+            ))}
+          </ol>
+
+          <footer className={styles.honors__meta}>
+            <span>ALL TIME</span>
+            <span>FUND + RUSH</span>
+            <span>기준 {formatDateTime(data.generatedAt, "padded")} KST</span>
+          </footer>
+        </Box>
       </section>
     </>
   );

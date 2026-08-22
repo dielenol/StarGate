@@ -36,7 +36,7 @@ export default async function HallOfFamePage() {
           { label: "HALL OF FAME" },
         ]}
         title="명예의 전당"
-        right={<Tag tone="gold">RESEARCH HONORS</Tag>}
+        right={<Tag tone="gold">DAILY · 21:00 KST</Tag>}
       />
       <HallOfFameClient
         initialData={initialData}
