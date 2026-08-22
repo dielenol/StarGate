@@ -43,3 +43,11 @@
 - 검증: 관리자 연동 계약 테스트 포함 웹 집중 테스트 22건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `9b2b7897`
 - 운영 경계: worker consumer 활성화, 카드 재전송, DB 보정과 Discord 발송은 실행하지 않았다.
+
+## 2026-08-22 · 안정성 개선 · 연구 공지 불명확 전달 감시
+
+- 연구 공로 카드의 `DELIVERY_UNKNOWN` 격리를 일반 지연과 구분해 즉시 CRITICAL로 표시하고, worker 운영 경보와 관리자 연동 현황이 같은 장애 판정을 사용하도록 맞췄다.
+- 관리자 응답에는 격리 revision, Discord message ID, webhook 정보와 오류 원문을 추가하지 않고 제한된 `UNKNOWN` 분류와 집계만 노출한다.
+- 검증: 관리자 연동 계약·worker health 집중 테스트, `pnpm test:worker` core 35건·worker 128건, `pnpm typecheck`, `pnpm lint`, critical risk review
+- 관련 커밋: `a9037103`
+- 운영 경계: 관리자 화면과 테스트에서 reconciliation, DB 수정, Discord 조회·발송을 실행하지 않았다.

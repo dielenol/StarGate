@@ -44,3 +44,12 @@
 - 검증: `pnpm test:worker` core 35건·worker 114건, `pnpm build:worker`, 동일 날짜 역전 경쟁·source hash·카드 create-before-retire·응답 유실 격리 회귀 테스트, critical risk review
 - 관련 커밋: `9b2b7897`
 - 운영 경계: Dokploy 21:00 KST schedule, production consumer 활성화, 라이브 스냅샷 생성과 Discord 첫 발송은 실행하지 않았다.
+
+## 2026-08-22 · 안정성 개선 · 연구 공지 DELIVERY_UNKNOWN 복구 경계
+
+- Webhook POST 응답 유실 격리는 자동 재발행하지 않고, `adopt` 또는 `retry` dry-run plan과 digest를 확인한 뒤에만 실행할 수 있는 전용 reconciliation CLI를 추가했다.
+- `adopt` 후보는 현재 활성 카드와 달라야 하며 설정된 연구 webhook의 GET으로 소유권을 다시 확인한다. Mongo host 집합과 DB의 credential 비노출 fingerprint, 후보 증거, revision·lease·message 배열 CAS를 plan digest에 결합해 다른 cluster나 변경된 상태에는 쓰지 않는다.
+- 격리 오류 원인을 새 일일 revision에서도 보존하고 worker health에서 즉시 CRITICAL로 집계한다. 병렬 health count 사이에 격리가 생겨도 정상 복구로 오보하지 않으며, 복구 뒤에는 더 최신 requested revision까지 create-before-retire 순서로 수렴한다.
+- 검증: `pnpm test:worker` core 35건·worker 128건, `pnpm build:worker`, worker typecheck, 후보 소유권·target fingerprint·CAS·adopt/retry 최종 수렴·health count race 회귀 테스트, critical risk review
+- 관련 커밋: `a9037103`
+- 운영 경계: 실제 Discord GET·reconciliation execute·Dokploy 변경·라이브 DB 수정·첫 카드 발송은 수행하지 않았다. Execute Webhook의 외부 exactly-once 한계 때문에 후보 의미 판정과 라이브 실행에는 정확한 운영 대상과 별도 승인이 필요하다.

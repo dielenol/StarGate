@@ -8,3 +8,11 @@
 - 검증: 웹 집중 테스트 22건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 비로그인 API 401, 회원·게스트 동일 TOP 3와 공개 필드 확인, 1440×1000·390×844에서 콘솔 오류·네트워크 실패·가로 넘침 없음, critical risk review
 - 관련 커밋: `9b2b7897`
 - 운영 경계: 라이브 연구·크레딧·인벤토리·Discord·Dokploy 상태는 변경하지 않았다.
+
+## 2026-08-22 · 안정성 개선 · 마지막 일일 스냅샷 보존
+
+- 5분 polling 또는 realtime 재검증이 실패해도 마지막으로 성공한 TOP 3와 기준 시각을 유지하고, 최신 상태를 확인하지 못했다는 경고와 수동 재시도만 표시하도록 보강했다.
+- 최초 조회처럼 사용할 데이터가 전혀 없을 때만 전체 오류 상태를 보여 주며, 빈 순위 스냅샷도 같은 stale-data 경고 계약을 따른다.
+- 검증: Hall of Fame·TanStack Query·관리자 집중 테스트 17건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 1440×1000·390×844 및 API 500 강제 상황에서 순위 유지·가로 넘침·콘솔 상태 확인, critical risk review
+- 관련 커밋: `a9037103`
+- 운영 경계: 브라우저 QA는 조회와 로컬 API 실패 주입만 수행했으며 라이브 DB·Discord·Dokploy 상태는 변경하지 않았다.
