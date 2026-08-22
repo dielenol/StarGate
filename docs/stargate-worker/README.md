@@ -32,7 +32,7 @@ flowchart LR
 
 | 항목 | 상태 | 안전 경계 |
 |---|---|---|
-| `@stargate/core` | 구현 | 주식·편의점·연구 규칙과 네 예약 operation, 실시간 계약 |
+| `@stargate/core` | 구현 | 주식·편의점·연구 규칙과 다섯 예약 operation, 실시간 계약 |
 | Node 22 ESM worker/Docker | 구현 | Chromium 없음, 비루트 `node` 사용자 |
 | `/healthz`, `/readyz` | 구현 | ready는 Mongo·consumer·Change Stream이 모두 준비된 경우만 200 |
 | graceful shutdown | 구현 | SIGTERM/SIGINT에서 Change Stream → consumer → Mongo → HTTP 순서로 종료 |
@@ -40,7 +40,7 @@ flowchart LR
 | Change Stream mapper | 구현 | whitelist 컬렉션을 Query resource로만 변환하며 DB 값/PII를 보내지 않음 |
 | Change Stream checkpoint | 구현 | `worker_checkpoints` persistent adapter가 기본, 손상 token은 폐기 후 전체 invalidate |
 | shadow consumer | 구현 | due 수만 읽고 claim·외부 전송·경제 mutation은 하지 않음 |
-| active 예약 job | 구현 | 네 CLI, slot lease heartbeat/token fencing, 최종 시도 crash DEAD 회수 |
+| active 예약 job | 구현 | 다섯 CLI, slot lease heartbeat/token fencing, 최종 시도 crash DEAD 회수 |
 | active 범용 outbox | 구현 | 전체 kind fail-fast 등록, 지수 backoff, 최대 8회 및 만료 lease DEAD 회수, 실제 발송/정책 생략 결과 분리 |
 | active desired-state/아메리 | 구현 | production 전체 consumer fail-fast, 밀린 DM 최신 단계 수렴, 카드 create-before-retire 교체 |
 | 운영 heartbeat/연동 경보 | 구현 | 활성 consumer/kind와 지연·DEAD·lease·봇 위임 오류를 감시하고 incident/cooldown을 MongoDB에 영속화 |
@@ -80,8 +80,9 @@ Dokploy Application Job은 동일 이미지에서 다음 명령을 실행한다.
 | NOVEX 주식 회차 | 매일 09:00·13:00·18:00·23:00 | `node dist/cli/run-job.js stocks.tick` |
 | 일일 수당 | 매일 12:00 | `node dist/cli/run-job.js credits.daily-allowance` |
 | ERP 세션 알림 | 매일 21:00 | `node dist/cli/run-job.js sessions.erp-reminders` |
+| 팀 연구 공로 | 매일 21:00 | `node dist/cli/run-job.js research.daily-ranking` |
 
-외부 job 실행 HTTP API는 만들지 않는다. 동일 `(jobName, slotKey)` 실행권은 `scheduled_job_runs` unique/lease가 보장하고 장기 handler는 heartbeat로 lease를 갱신한다. 최종 attempt에서 프로세스가 종료돼도 active sweeper가 만료 lease를 `DEAD`로 전환한다. `stocks.tick`의 `slotKey`는 KST `YYYY-MM-DD HH:mm`, 나머지 일일 job은 기존 `YYYY-MM-DD`를 유지한다. 네 job은 각각 편의점 품목별 날짜 조건, 주식 회차·ticker별 operation key와 transaction, 수당 캐릭터별 일자 ledger, ERP 알림 `dedupeKey`를 추가 불변 조건으로 사용한다.
+외부 job 실행 HTTP API는 만들지 않는다. 동일 `(jobName, slotKey)` 실행권은 `scheduled_job_runs` unique/lease가 보장하고 장기 handler는 heartbeat로 lease를 갱신한다. 최종 attempt에서 프로세스가 종료돼도 active sweeper가 만료 lease를 `DEAD`로 전환한다. `stocks.tick`의 `slotKey`는 KST `YYYY-MM-DD HH:mm`, 나머지 일일 job은 기존 `YYYY-MM-DD`를 유지한다. 다섯 job은 각각 편의점 품목별 날짜 조건, 주식 회차·ticker별 operation key와 transaction, 수당 캐릭터별 일자 ledger, ERP 알림 `dedupeKey`, 연구 공로 날짜·source hash·생성 시각 fence를 추가 불변 조건으로 사용한다.
 
 ### NOVEX 2.0 주식 엔진
 
@@ -143,7 +144,7 @@ StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
 
 `REALTIME_TICKET_SECRET`은 StarGateV2의 ticket 발급 환경과 동일한 최소 32바이트 secret이어야 한다. 값을 로그, CI 출력, 문서에 남기지 않는다.
 
-`WORKER_CONSUMERS`는 `ameri-dm`, `research-card`, `shop-restock`, `stock-market-wire`를 활성화한다. production active는 `all` 또는 네 이름 전부를 요구하며, 누락되면 claim 전에 기동을 거부한다. 제한된 staging 순차 검증만 `WORKER_CONSUMERS_ALLOW_PARTIAL=true`와 명시 목록을 함께 사용할 수 있다. 관리자 연동 현황과 운영 경보는 기대 목록 대비 누락 consumer를 장애로 표시한다.
+`WORKER_CONSUMERS`는 `ameri-dm`, `research-card`, `research-lab`, `research-ranking`, `shop-restock`, `stock-market-wire`를 활성화한다. production active는 `all` 또는 여섯 이름 전부를 요구하며, 누락되면 claim 전에 기동을 거부한다. 제한된 staging 순차 검증만 `WORKER_CONSUMERS_ALLOW_PARTIAL=true`와 명시 목록을 함께 사용할 수 있다. 관리자 연동 현황과 운영 경보는 기대 목록 대비 누락 consumer를 장애로 표시한다.
 
 `WORKER_OUTBOX_KINDS`는 active에서 `all`을 사용한다. 지원 값은 `GM_ADMIN_AUDIT`, `CHARACTER_EDIT_WEBHOOK`, `EQUIPMENT_WORKSHOP_WEBHOOK`, `SHOP_REORDER_REQUEST_WEBHOOK`, `SHOP_REORDER_FULFILLED_WEBHOOK`, `SHOP_PRODUCT_LAUNCH_WEBHOOK`, `MRBEAST_LOTTERY_WINNER_WEBHOOK`, `STOCK_MANUAL_INTERVENTION_WEBHOOK`, `WORKFLOW_STATUS_WEBHOOK`, `PLAYER_TRADE_DM`이다. 제한된 staging 검증만 `WORKER_OUTBOX_ALLOW_PARTIAL=true`와 명시 목록을 함께 사용할 수 있다. 활성 kind에 필요한 webhook/bot token이 없으면 worker는 outbox를 claim하기 전에 기동을 거부한다.
 
@@ -151,9 +152,9 @@ StarGateV2의 `REALTIME_CLIENT_MODE`는 다음 세 단계다.
 
 범용 outbox 완료 기록은 `SENT`와 `SKIPPED`를 구분한다. 실제 Discord message ID는 운영 추적용으로 DB에만 저장하고 관리자 API에는 노출하지 않는다. 비활성·미연결·수신 불가 사용자, 비공개 공지, 이미 유효하지 않은 예약 단계는 사유가 제한된 `SKIPPED`로 남는다. Discord payload는 발송 직전 embed/field/전체 6,000자 제한을 맞추며 초과 내용은 생략 수를 표시한다.
 
-편의점·주식·연구 카드는 웹이 desired-state만 기록하고 worker만 Discord를 변경한다. 교체 시 새 메시지를 먼저 생성·활성화한 뒤 이전 메시지를 삭제해 실패 중에도 기존 카드가 사라지지 않는다. 정기 주식 공시는 개요·상승·하락·보합/특수 종목을 네 개의 독립 카드로 유지한다. 아메리 DM에 같은 공방 요청의 여러 과거 단계가 동시에 밀려 있으면 이미 낡은 단계는 `superseded_by_newer_due_event`로 남기고 최신 도달 단계만 보낸다.
+편의점·주식·연구 카드는 웹이나 예약 job이 desired-state만 기록하고 worker만 Discord를 변경한다. 교체 시 새 메시지를 먼저 생성·활성화한 뒤 이전 메시지를 삭제해 실패 중에도 기존 카드가 사라지지 않는다. 정기 주식 공시는 개요·상승·하락·보합/특수 종목을 네 개의 독립 카드로 유지한다. 연구 공로 카드는 Incoming Webhook POST 결과가 불명확하면 기존 카드를 유지하고 `deliveryUnknownRevision`으로 자동 재발행을 격리한다. 아메리 DM에 같은 공방 요청의 여러 과거 단계가 동시에 밀려 있으면 이미 낡은 단계는 `superseded_by_newer_due_event`로 남기고 최신 도달 단계만 보낸다.
 
-`integration_outbox.dedupeKey`는 queue 문서 중복을 막는다. Bot Create Message 기반 DM은 `nonce`와 `enforce_nonce`도 사용한다. 반면 Discord Execute Webhook에는 같은 nonce 계약이 없으므로, 2xx 응답 직후 프로세스가 종료되는 매우 짧은 구간까지 외부 webhook 정확히 한 번을 보장하지는 못한다. 이 전달은 queue 수준 멱등 + 외부 at-least-once로 분류한다. 엄격한 외부 exactly-once가 필요하면 bot channel 전송 또는 수신측 idempotency/reconciliation을 별도 설계한다.
+`integration_outbox.dedupeKey`는 queue 문서 중복을 막는다. Bot Create Message 기반 DM은 `nonce`와 `enforce_nonce`도 사용한다. 반면 Discord Execute Webhook에는 같은 nonce 계약이 없으므로, 응답이 유실된 POST의 외부 exactly-once를 보장하지는 못한다. 일반 webhook 전달은 queue 수준 멱등 + 외부 at-least-once로 분류하고, 연구 공로 desired-state는 불명확 결과를 자동 재전송하지 않는 수동 reconciliation 대상으로 격리한다. 엄격한 외부 exactly-once가 필요하면 bot channel 전송 또는 수신측 idempotency를 별도 설계한다.
 
 ## 로컬 검증
 

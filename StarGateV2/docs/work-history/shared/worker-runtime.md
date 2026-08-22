@@ -35,3 +35,12 @@
 - 검증: shared/outbox 집중 계약 37건, worker 107건, core 33건, `pnpm typecheck`, 전체 `pnpm lint`, production build, critical risk review
 - 관련 커밋: `aef555e5`
 - 운영 경계: 라이브 outbox·Discord·주가·거래 상태는 변경하지 않았다. 배포 전에 이미 적재된 종목별 냉각 이벤트는 자동 병합하지 않는다.
+
+## 2026-08-22 · 기능 확장 · 연구 공로 일일 공지
+
+- `research.daily-ranking`이 KST 일일 slot에서 전체 기간 TOP 3 공개 스냅샷과 기존 연구 webhook용 desired-state를 요청하도록 추가했다. 같은 날짜·source hash·format은 revision을 늘리지 않고, 다음 날짜에는 결과가 같아도 새 일일 revision을 만든다.
+- 새 카드를 생성·활성화한 뒤 전날 카드를 삭제하고, 명확한 HTTP 실패는 lease로 재시도한다. Webhook POST 결과가 불명확하면 기존 카드를 유지한 채 `DELIVERY_UNKNOWN`으로 격리해 자동 중복 발행을 막는다.
+- 같은 날짜의 오래된 실행이 최신 결과를 덮지 않도록 `desiredGeneratedAt` atomic fence와 실제 재시도 시각을 사용한다. 빈 순위는 카드 없이 공개 empty snapshot으로 수렴한다.
+- 검증: `pnpm test:worker` core 35건·worker 114건, `pnpm build:worker`, 동일 날짜 역전 경쟁·source hash·카드 create-before-retire·응답 유실 격리 회귀 테스트, critical risk review
+- 관련 커밋: `9b2b7897`
+- 운영 경계: Dokploy 21:00 KST schedule, production consumer 활성화, 라이브 스냅샷 생성과 Discord 첫 발송은 실행하지 않았다.

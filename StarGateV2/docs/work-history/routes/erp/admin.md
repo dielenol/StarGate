@@ -35,3 +35,11 @@
 - 검증: 관리자 계약 테스트 3건, `pnpm typecheck`, `pnpm lint`, 인증 브라우저 1600×900·1024×768·390×844에서 반응형 배치·방향키 스크롤·콘솔 오류 없음
 - 관련 커밋: `a67c8956`
 - 운영 경계: 읽기 전용 화면 검증만 수행했으며 라이브 상태 변경이나 Discord 발송은 실행하지 않았다.
+
+## 2026-08-22 · 기능 확장 · 연구 공로 연동 상태
+
+- 관리자 연동 현황에 `research.daily-ranking` 예약 작업과 `research-ranking` desired-state consumer, 연구 공로 일일 카드 revision 지연 상태를 추가했다.
+- 공개 화면과 마찬가지로 webhook URL, Discord message ID, payload와 원본 오류는 관리자 DTO에 노출하지 않는다.
+- 검증: 관리자 연동 계약 테스트 포함 웹 집중 테스트 22건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `9b2b7897`
+- 운영 경계: worker consumer 활성화, 카드 재전송, DB 보정과 Discord 발송은 실행하지 않았다.

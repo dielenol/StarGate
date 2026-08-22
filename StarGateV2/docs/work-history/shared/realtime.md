@@ -23,3 +23,10 @@
 - realtime 연결 장애에서는 기존 fallback polling을 유지하고, 사용자별 설정·알림 데이터는 대상 사용자에게만 전달한다.
 - 검증: worker realtime 101건 전체 테스트와 웹 Query·거래 계약 테스트
 - 관련 커밋: `fb012220`
+
+## 2026-08-22 · 기능 확장 · 명예의 전당 Query 동기화
+
+- `hall-of-fame` realtime resource를 추가하고 연구 공로 state의 `publicSnapshot`이 바뀔 때만 `['hall-of-fame']` Query root를 무효화한다.
+- Discord `syncedRevision`·message ID 같은 전달 상태 변경은 공개 Query를 다시 불러오지 않으며, 연결 장애·게스트 환경에서는 기존 5분 polling fallback을 유지한다.
+- 검증: realtime mapper·Query key·fallback 계약 테스트, worker 114건, 웹 집중 테스트 22건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
+- 관련 커밋: `9b2b7897`

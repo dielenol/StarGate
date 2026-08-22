@@ -79,10 +79,12 @@ staging에서는 한 번에 한 consumer만 검증한다.
 
 1. `WORKER_CONSUMERS_ALLOW_PARTIAL=true`, `WORKER_CONSUMERS=ameri-dm`
 2. `research-card` 추가
-3. `shop-restock` 추가
-4. `stock-market-wire` 추가
-5. 범용 `integration_outbox` kind도 staging에서 한 종류씩 검증
-6. production은 `WORKER_CONSUMERS=all`, `WORKER_CONSUMERS_ALLOW_PARTIAL=false`, `WORKER_OUTBOX_KINDS=all`, `WORKER_OUTBOX_ALLOW_PARTIAL=false`로 한 번에 고정
+3. `research-lab` 추가
+4. `research-ranking` 추가
+5. `shop-restock` 추가
+6. `stock-market-wire` 추가
+7. 범용 `integration_outbox` kind도 staging에서 한 종류씩 검증
+8. production은 `WORKER_CONSUMERS=all`, `WORKER_CONSUMERS_ALLOW_PARTIAL=false`, `WORKER_OUTBOX_KINDS=all`, `WORKER_OUTBOX_ALLOW_PARTIAL=false`로 한 번에 고정
 
 도메인 consumer와 범용 outbox는 서로 다른 설정이다. 부분 활성화 escape hatch는 staging 검증 전용이다. production active에서 어느 한 consumer나 kind라도 빠지면 기동을 거부하며, heartbeat·관리자 화면·운영 경보에도 누락을 장애로 남긴다. 지원 kind는 GM 감사, 캐릭터 변경, 공방, 발주 요청/완료, 편의점 신제품 출시, 미스터비스트 복권 고액 당첨, 수동 주가 공시, 중앙 workflow 상태, 거래 DM이다. typed destination별 `DISCORD_WEBHOOK_*`, `AMERI_DISCORD_BOT_TOKEN`, `REGISTRAR_DISCORD_BOT_TOKEN`을 claim 전에 주입한다.
 
@@ -187,9 +189,20 @@ db.integration_outbox.aggregate([
 - [ ] `nextAttemptAt` 전에는 실패 대상을 다시 claim하지 않는다.
 - [ ] 이 모델은 8회 DEAD가 아니라 기존 지속 retry이므로 stuck due/oldest lag 경보를 둔다.
 - [ ] 편의점·주식·연구 카드는 새 메시지 생성과 활성화가 끝난 뒤 이전 메시지를 삭제하며, 중간 실패 시 기존 활성 카드가 남는다.
+- [ ] 연구 공로 카드의 POST 응답 유실은 `deliveryUnknownRevision`으로 격리되고 자동 재발행되지 않는다.
 - [ ] 정기 주식 공시 한 회차가 네 embed를 담은 Discord 메시지 한 건으로 생성된다.
 
 Discord webhook은 queue 중복 방지는 보장하지만 Execute Webhook 자체에는 bot Create Message의 `enforce_nonce`가 없다. 응답 수신 직후 완료 기록 전 장애까지 외부 exactly-once가 필수라면 이 컷오버를 중지하고 bot channel 전송 또는 수신측 idempotency/reconciliation을 먼저 설계한다.
+
+### 연구 공로 `DELIVERY_UNKNOWN` reconciliation
+
+연구 공로 state가 `deliveryUnknownRevision`을 가지면 worker는 기존 `messageIds`를 유지하고 새 POST를 자동 실행하지 않는다. 이 격리는 정상 retry 대상이 아니다.
+
+1. `research_ranking_states._id=team-research-all-time`에서 `requestedRevision`, `syncedRevision`, `desiredDate`, `messageIds`, `deliveryUnknownRevision`, `deliveryUnknownAt`만 read-only로 확인한다. payload, webhook URL과 오류 원문은 출력하지 않는다.
+2. `deliveryUnknownAt` 전후의 연구 채널을 직접 확인해 새 일일 카드가 실제 생성됐는지, 후보가 정확히 한 장인지 판정한다. 기존 활성 카드와 후보를 모두 유지한 상태에서 먼저 판정하며, 메시지를 추정해 삭제하지 않는다.
+3. 후보가 정확히 한 장이면 그 message ID를 새 active ID로 채택하고 이전 `messageIds`를 stale cleanup 대상으로 넘긴다. 후보가 없으면 격리 필드만 해제해 같은 revision을 다시 발행한다. 후보가 여러 장이거나 판정할 수 없으면 격리를 유지한다.
+4. 어느 경로든 정확한 state ID, unknown revision, 채택·삭제할 message ID, 예상 Discord 변화와 DB 전→후를 제시해 별도 live mutation 승인을 받은 뒤 guarded update 한 건만 실행한다.
+5. worker가 `syncedRevision`, `messageIds`, `staleMessageIds`를 수렴시켰는지 재조회하고 채널에 활성 연구 공로 카드가 한 장인지 확인한다. 조건 불일치나 추가 오류가 나면 자동 재시도·DB 보정을 중단한다.
 
 ### 승인 게이트 B
 
@@ -203,15 +216,19 @@ Discord webhook은 queue 중복 방지는 보장하지만 Execute Webhook 자체
 2. 주식 `stocks.tick`
 3. 수당 `credits.daily-allowance`
 4. ERP 세션 알림 `sessions.erp-reminders`
+5. 팀 연구 공로 `research.daily-ranking`
 
 Dokploy timezone을 `Asia/Seoul`로 확인하고 다음 schedule을 등록한다.
 
-| Job | Cron |
-|---|---|
-| shop.refresh | `0 11 * * *` |
-| stocks.tick | `0 9,13,18,23 * * *` |
-| credits.daily-allowance | `0 12 * * *` |
-| sessions.erp-reminders | `0 21 * * *` |
+| Job | Cron | 명령 |
+|---|---|---|
+| shop.refresh | `0 11 * * *` | `node dist/cli/run-job.js shop.refresh` |
+| stocks.tick | `0 9,13,18,23 * * *` | `node dist/cli/run-job.js stocks.tick` |
+| credits.daily-allowance | `0 12 * * *` | `node dist/cli/run-job.js credits.daily-allowance` |
+| sessions.erp-reminders | `0 21 * * *` | `node dist/cli/run-job.js sessions.erp-reminders` |
+| research.daily-ranking | `0 21 * * *` | `node dist/cli/run-job.js research.daily-ranking` |
+
+위 Cron은 Dokploy timezone이 `Asia/Seoul`일 때만 사용한다. 플랫폼이 UTC로 고정된 경우 `research.daily-ranking`의 21:00 KST는 `0 12 * * *`이며 두 schedule을 동시에 등록하지 않는다.
 
 기존 `/api/cron/*` route에는 Vercel schedule owner가 없다. 인증된 수동 복구 진입점으로만 유지하며 `/api/cron/stocks/tick`은 `job=stocks`, `job=daily-allowance`, `job=all` 중 하나를 명시하지 않으면 mutation하지 않는다. legacy owner flag와 기본 활성화 helper는 제거했다.
 
