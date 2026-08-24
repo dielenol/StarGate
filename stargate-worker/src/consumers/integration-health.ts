@@ -1,3 +1,4 @@
+import { isResearchDailyRankingCadenceOverdue } from "@stargate/core";
 import {
   RESEARCH_RANKING_STATE_COLLECTION,
   RESEARCH_RANKING_STATE_ID,
@@ -76,6 +77,7 @@ interface IntegrationHealthAlertInput {
   missingConsumers: readonly WorkerConsumerName[];
   votePublicationStalls: number;
   latestScheduledFailures: readonly { status: string }[];
+  researchRankingCadenceOverdue: boolean;
 }
 
 export function buildIntegrationHealthOperationalAlert(
@@ -93,6 +95,7 @@ export function buildIntegrationHealthOperationalAlert(
     missingConsumers,
     votePublicationStalls,
     latestScheduledFailures,
+    researchRankingCadenceOverdue,
   } = input;
   const desiredWithoutUnknown = Math.max(0, desired - deliveryUnknown);
   const parts = [
@@ -119,6 +122,9 @@ export function buildIntegrationHealthOperationalAlert(
     latestScheduledFailures.length > 0
       ? `예약 작업 실패 ${latestScheduledFailures.length}건`
       : null,
+    researchRankingCadenceOverdue
+      ? "연구 공로 일일 예약 슬롯 누락"
+      : null,
   ].filter((value): value is string => Boolean(value));
   const issueKinds = [
     dead > 0 ? "OUTBOX_DEAD" : null,
@@ -132,6 +138,7 @@ export function buildIntegrationHealthOperationalAlert(
     missingConsumers.length > 0 ? "CONSUMER_MISSING" : null,
     votePublicationStalls > 0 ? "REGISTRAR_VOTE" : null,
     latestScheduledFailures.length > 0 ? "SCHEDULED_JOB" : null,
+    researchRankingCadenceOverdue ? "RESEARCH_RANKING_CADENCE" : null,
   ].filter((value): value is string => Boolean(value));
   const severity =
     dead > 0 ||
@@ -171,7 +178,7 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
       workshopDmErrors,
       workshopDmOverdue,
       votePublicationStalls,
-      latestScheduledFailures,
+      latestScheduledRuns,
     ] =
       await Promise.all([
         db.collection("integration_outbox").countDocuments({ status: "DEAD" }),
@@ -225,12 +232,11 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
           ],
         }),
         db.collection("scheduled_job_runs")
-          .aggregate<{ status: string }>([
+          .aggregate<{ jobName: string; slotKey: string; status: string }>([
             { $sort: { updatedAt: -1 } },
             { $group: { _id: "$jobName", row: { $first: "$$ROOT" } } },
             { $replaceRoot: { newRoot: "$row" } },
-            { $match: { status: { $in: ["FAILED", "DEAD"] } } },
-            { $project: { status: 1 } },
+            { $project: { _id: 0, jobName: 1, slotKey: 1, status: 1 } },
           ])
           .toArray(),
       ]);
@@ -243,6 +249,17 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
       desired,
       deliveryUnknown,
     );
+    const latestScheduledFailures = latestScheduledRuns.filter((row) =>
+      ["FAILED", "DEAD"].includes(row.status),
+    );
+    const latestResearchRankingRun = latestScheduledRuns.find(
+      (row) => row.jobName === "research.daily-ranking",
+    );
+    const researchRankingCadenceOverdue =
+      isResearchDailyRankingCadenceOverdue(
+        latestResearchRankingRun?.slotKey,
+        now,
+      );
     const issueCount =
       dead +
       retrying +
@@ -253,7 +270,8 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
       workshopDmOverdue +
       missingConsumers.length +
       votePublicationStalls +
-      latestScheduledFailures.length;
+      latestScheduledFailures.length +
+      Number(researchRankingCadenceOverdue);
     if (issueCount === 0) {
       return {
         observedDue: 0,
@@ -279,6 +297,7 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
         missingConsumers,
         votePublicationStalls,
         latestScheduledFailures,
+        researchRankingCadenceOverdue,
       }),
     };
   }

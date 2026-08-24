@@ -42,6 +42,20 @@ test("Discord 카드는 금·은·동, 누적 CR, 횟수, 링크를 표시하고
         contributionCount: 7,
         lastContributedAt: new Date("2026-08-22T12:00:00.000Z"),
       },
+      {
+        contributorCharacterId: "private-2",
+        contributorCodename: "SILVER",
+        totalCredits: 1_000,
+        contributionCount: 5,
+        lastContributedAt: new Date("2026-08-22T11:00:00.000Z"),
+      },
+      {
+        contributorCharacterId: "private-3",
+        contributorCodename: "BRONZE",
+        totalCredits: 900,
+        contributionCount: 4,
+        lastContributedAt: new Date("2026-08-22T10:00:00.000Z"),
+      },
     ],
     new Date("2026-08-22T12:00:00.000Z"),
   );
@@ -55,6 +69,11 @@ test("Discord 카드는 금·은·동, 누적 CR, 횟수, 링크를 표시하고
   assert.match(payload.embeds[0].fields[0].name, /@​everyone <@​123>/);
   assert.match(payload.embeds[0].fields[0].value, /1,234 CR/);
   assert.match(payload.embeds[0].fields[0].value, /7회/);
+  assert.match(payload.embeds[0].fields[1].name, /🥈 은상 · SILVER/);
+  assert.match(payload.embeds[0].fields[1].value, /1,000 CR/);
+  assert.match(payload.embeds[0].fields[2].name, /🥉 동상 · BRONZE/);
+  assert.match(payload.embeds[0].fields[2].value, /900 CR/);
+  assert.match(payload.embeds[0].fields[3].value, /연구 공로 시상대 보기/);
   assert.equal(payload.embeds[0].url, "https://www.ordonet.co.kr/erp/hall-of-fame");
   assert.deepEqual(
     buildResearchRankingDiscordPayloads({

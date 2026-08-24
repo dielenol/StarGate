@@ -1,7 +1,11 @@
 import "server-only";
 import "@/lib/db/init";
 
-import { SCHEDULED_JOB_NAMES } from "@stargate/core";
+import {
+  SCHEDULED_JOB_NAMES,
+  expectedResearchDailyRankingSlot,
+  isResearchDailyRankingCadenceOverdue,
+} from "@stargate/core";
 import {
   INTEGRATION_OUTBOX_KINDS,
   RESEARCH_RANKING_STATE_COLLECTION,
@@ -534,17 +538,29 @@ export async function getAdminIntegrationStatusResponse(): Promise<AdminIntegrat
   const scheduledJobs: AdminScheduledJobStatus[] = SCHEDULED_JOB_NAMES.map((jobName) => {
     const row = latestJobs.get(jobName);
     const status = row?.status ?? "UNKNOWN";
+    const isResearchRanking = jobName === "research.daily-ranking";
+    const cadenceOverdue = isResearchRanking
+      ? isResearchDailyRankingCadenceOverdue(row?.slotKey, now)
+      : false;
     return {
       jobName,
       health: !row
-        ? "UNKNOWN"
+        ? cadenceOverdue
+          ? "WARNING"
+          : "UNKNOWN"
         : status === "DEAD"
           ? "CRITICAL"
           : status === "FAILED" || status === "RUNNING"
             ? "WARNING"
-            : "HEALTHY",
+            : cadenceOverdue
+              ? "WARNING"
+              : "HEALTHY",
       status,
       attempts: row?.attempts ?? 0,
+      cadenceOverdue,
+      expectedSlotKey: isResearchRanking
+        ? expectedResearchDailyRankingSlot(now)
+        : null,
       updatedAt: iso(row?.updatedAt),
       completedAt: iso(row?.completedAt),
     };

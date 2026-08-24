@@ -80,6 +80,8 @@ export interface AdminScheduledJobStatus {
   health: AdminIntegrationHealth;
   status: ScheduledJobRunStatus | "UNKNOWN";
   attempts: number;
+  cadenceOverdue: boolean;
+  expectedSlotKey: string | null;
   updatedAt: string | null;
   completedAt: string | null;
 }

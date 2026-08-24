@@ -74,5 +74,9 @@ test("연구 공로 job과 desired-state consumer를 연동 현황에 포함한�
   assert.match(service, /key: "RESEARCH_RANKING"/);
   assert.match(service, /deliveryUnknownRevision\?: number/);
   assert.match(service, /if \(deliveryUnknown\) categories\.add\("UNKNOWN"\)/);
+  assert.match(service, /isResearchDailyRankingCadenceOverdue\(row\?\.slotKey, now\)/);
+  assert.match(service, /expectedResearchDailyRankingSlot\(now\)/);
   assert.match(types, /"RESEARCH_RANKING"/);
+  assert.match(types, /cadenceOverdue: boolean/);
+  assert.match(types, /expectedSlotKey: string \| null/);
 });

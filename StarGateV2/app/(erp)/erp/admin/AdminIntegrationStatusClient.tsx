@@ -391,7 +391,12 @@ export default function AdminIntegrationStatusClient({ initialData }: Props) {
             <Box key={job.jobName} className={styles.jobCard}>
               <div>
                 <strong>{job.jobName}</strong>
-                <small>{job.status} · 시도 {job.attempts}</small>
+                <small>
+                  {job.status} · 시도 {job.attempts}
+                  {job.cadenceOverdue && job.expectedSlotKey
+                    ? ` · ${job.expectedSlotKey} 슬롯 누락`
+                    : ""}
+                </small>
               </div>
               <HealthTag health={job.health} />
             </Box>

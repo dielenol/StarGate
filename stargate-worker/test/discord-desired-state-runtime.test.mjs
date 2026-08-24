@@ -45,6 +45,7 @@ function applyUpdate(state, update) {
 function makeFixture({
   name = "stock-market-wire",
   quarantineUnknownCreate = false,
+  desiredPayloads = [1, 2, 3, 4].map(payload),
 } = {}) {
   const stateId = name === "research-ranking"
     ? "team-research-all-time"
@@ -53,7 +54,7 @@ function makeFixture({
     _id: stateId,
     requestedRevision: 2,
     syncedRevision: 1,
-    desiredPayloads: [1, 2, 3, 4].map(payload),
+    desiredPayloads,
     messageIds: [...OLD_MESSAGE_IDS],
     updatedAt: new Date("2026-08-11T03:00:00.000Z"),
   };
@@ -275,6 +276,25 @@ test("연구 공로 POST 결과 유실은 기존 카드를 유지하고 자동 �
     failed: 0,
   });
   assert.equal(fixture.posts.length, postCount);
+});
+
+test("연구 공로가 0명이 되면 새 카드를 게시하지 않고 기존 카드만 정리한다", async () => {
+  const fixture = makeFixture({
+    name: "research-ranking",
+    quarantineUnknownCreate: true,
+    desiredPayloads: [],
+  });
+
+  const completed = await fixture.consumer.tick({
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(completed.delivered, 1);
+  assert.equal(fixture.posts.length, 0);
+  assert.deepEqual(fixture.deletes, OLD_MESSAGE_IDS);
+  assert.equal(fixture.visible.size, 0);
+  assert.deepEqual(fixture.state.messageIds, []);
+  assert.equal(fixture.state.syncedRevision, 2);
 });
 
 test("연구 공로 adopt와 retry는 격리 뒤 최신 requested revision까지 수렴한다", async (t) => {

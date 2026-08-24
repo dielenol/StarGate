@@ -30,7 +30,10 @@ export * from "./operations/stocks-tick.js";
 export * from "./operations/stock-dividends.js";
 
 export {
+  RESEARCH_DAILY_RANKING_GRACE_MINUTES,
   SCHEDULED_JOB_NAMES,
+  expectedResearchDailyRankingSlot,
+  isResearchDailyRankingCadenceOverdue,
   isScheduledJobName,
   type ScheduledJobExecutionContext,
   type ScheduledJobExecutionResult,
