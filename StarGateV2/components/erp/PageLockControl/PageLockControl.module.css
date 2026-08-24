@@ -105,7 +105,33 @@
   }
 }
 
+@media (max-width: 2047px), (max-height: 900px) {
+  .control.control--hallOfFame {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    align-self: flex-end;
+    margin: 0 14px 14px;
+  }
+}
+
 @media (max-width: 720px) {
+  .control.control--hallOfFame {
+    gap: 0;
+    margin: 0 8px max(8px, env(safe-area-inset-bottom));
+    padding: 4px;
+  }
+
+  .control--hallOfFame .control__copy {
+    display: none;
+  }
+
+  .control--hallOfFame .control__switch {
+    min-width: 60px;
+    justify-content: center;
+    padding: 6px 8px;
+  }
+
   .control.control--shopHud {
     bottom: 134px;
   }

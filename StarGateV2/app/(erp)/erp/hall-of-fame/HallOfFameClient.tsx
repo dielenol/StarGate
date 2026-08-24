@@ -41,7 +41,6 @@ function HonoreePortrait({ item }: { item: HallOfFameItem }) {
     return (
       <div className={styles.podium__portraitFallback} aria-hidden="true">
         <IconCrown />
-        <span>{String(item.rank).padStart(2, "0")}</span>
       </div>
     );
   }
@@ -51,8 +50,9 @@ function HonoreePortrait({ item }: { item: HallOfFameItem }) {
       fill
       alt=""
       className={styles.podium__portraitImage}
+      loading={item.rank === 1 ? "eager" : "lazy"}
       onError={() => setHasImageError(true)}
-      sizes="(max-width: 640px) 112px, (max-width: 960px) 30vw, 400px"
+      sizes="(max-width: 640px) 112px, (max-width: 960px) 55vw, 400px"
       src={preferOptimizedPublicImagePath(profilePath)}
     />
   );
@@ -169,7 +169,11 @@ export default function HallOfFameClient({
             </div>
           </header>
 
-          <ol className={styles.podium} aria-label="팀 연구 누적 공로 상위 3명">
+          <ol
+            className={styles.podium}
+            data-count={data.items.length}
+            aria-label="팀 연구 누적 공로 상위 3명"
+          >
             {data.items.map((item) => (
               <HonoreeCard item={item} key={`${item.rank}-${item.codename}`} />
             ))}

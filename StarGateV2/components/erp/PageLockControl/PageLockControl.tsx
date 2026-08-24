@@ -25,6 +25,7 @@ export default function PageLockControl({
   initialPageLocks,
 }: PageLockControlProps) {
   const pathname = usePathname();
+  const isHallOfFamePage = pathname === "/erp/hall-of-fame";
   const isShopHudPage = pathname === "/erp/shop";
   const isEquipmentHudPage =
     pathname === "/erp/equipment-shop" ||
@@ -50,6 +51,7 @@ export default function PageLockControl({
     <aside
       className={[
         styles.control,
+        isHallOfFamePage ? styles["control--hallOfFame"] : "",
         isShopHudPage ? styles["control--shopHud"] : "",
         isEquipmentHudPage ? styles["control--equipmentHud"] : "",
         pathname.startsWith("/erp/equipment-shop/lab")

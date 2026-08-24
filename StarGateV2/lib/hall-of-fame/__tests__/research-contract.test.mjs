@@ -110,8 +110,15 @@ test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공�
   assert.match(client, /getPixelProfilePath\(item\.codename\)/);
   assert.match(client, /preferOptimizedPublicImagePath\(profilePath\)/);
   assert.match(client, /onError=\{\(\) => setHasImageError\(true\)\}/);
+  assert.match(client, /loading=\{item\.rank === 1 \? "eager" : "lazy"\}/);
   assert.match(client, /podium__portraitFallback/);
+  assert.doesNotMatch(
+    client,
+    /podium__portraitFallback\} aria-hidden="true">\s*<IconCrown \/>\s*<span/,
+  );
+  assert.match(client, /max-width: 960px\) 55vw/);
   assert.match(client, /<li className=\{styles\.podium__card\} data-rank=\{item\.rank\}>/);
+  assert.match(client, /data-count=\{data\.items\.length\}/);
   assert.match(
     client,
     /data\.items\.map\(\(item\) => \([\s\S]*<HonoreeCard item=\{item\}/,
@@ -121,10 +128,32 @@ test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공�
   assert.match(css, /@container \(max-width: 960px\)/);
   assert.match(css, /@container \(max-width: 640px\)/);
   assert.match(css, /grid-template-columns: minmax\(0, 1\.6fr\) minmax\(300px, 0\.9fr\)/);
+  assert.match(css, /\.podium\[data-count="1"\][\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(css, /\.podium\[data-count="2"\][\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@container \(max-width: 960px\)[\s\S]*\.podium\[data-count="1"\],[\s\S]*\.podium\[data-count="2"\][\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="1"\][\s\S]*min-height: 256px/);
+  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="2"\][\s\S]*min-height: 150px/);
   assert.doesNotMatch(css, /grid-template-areas:/);
   assert.doesNotMatch(css, /@media \(max-width: 390px\)/);
   assert.match(
     css,
     /@container \(max-width: 640px\)[\s\S]*\.podium \{[\s\S]*display: flex;[\s\S]*flex-direction: column/,
   );
+});
+
+test("명예의 전당 모바일 GM 잠금 HUD는 기록판을 가리지 않도록 축소한다", async () => {
+  const [control, css] = await Promise.all([
+    source("components/erp/PageLockControl/PageLockControl.tsx"),
+    source("components/erp/PageLockControl/PageLockControl.module.css"),
+  ]);
+
+  assert.match(control, /pathname === "\/erp\/hall-of-fame"/);
+  assert.match(control, /control--hallOfFame/);
+  assert.match(css, /@media \(max-width: 2047px\), \(max-height: 900px\)/);
+  assert.match(css, /\.control\.control--hallOfFame \{[\s\S]*position: relative/);
+  assert.match(css, /\.control\.control--hallOfFame \{[\s\S]*right: auto;[\s\S]*bottom: auto/);
+  assert.match(css, /\.control__error \{[\s\S]*position: absolute/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*\.control\.control--hallOfFame/);
+  assert.match(css, /\.control--hallOfFame \.control__copy \{[\s\S]*display: none/);
+  assert.match(css, /\.control--hallOfFame \.control__switch \{[\s\S]*min-width: 60px/);
 });
