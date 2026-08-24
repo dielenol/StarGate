@@ -53,3 +53,12 @@
 - 검증: `pnpm test:worker` core 35건·worker 128건, `pnpm build:worker`, worker typecheck, 후보 소유권·target fingerprint·CAS·adopt/retry 최종 수렴·health count race 회귀 테스트, critical risk review
 - 관련 커밋: `a9037103`
 - 운영 경계: 실제 Discord GET·reconciliation execute·Dokploy 변경·라이브 DB 수정·첫 카드 발송은 수행하지 않았다. Execute Webhook의 외부 exactly-once 한계 때문에 후보 의미 판정과 라이브 실행에는 정확한 운영 대상과 별도 승인이 필요하다.
+
+## 2026-08-24 · 운영성 개선 · 연구 공로 일일 cadence 감시
+
+- KST 21:00 실행에 15분 유예를 두고, 이후에도 당일 `research.daily-ranking` 슬롯이 없으면 worker 운영 경보에 `RESEARCH_RANKING_CADENCE` WARNING을 생성한다. 전날 성공 행이 남아 있어도 정상으로 오인하지 않는다.
+- 같은 cadence helper를 GM 연동 현황에서도 사용해 worker 경보와 화면 판정을 일치시켰다.
+- Discord payload 테스트를 금·은·동 3명 전체로 확장하고, 기여자가 0명이 되면 새 POST 없이 기존 카드만 삭제한 뒤 revision을 동기화하는 동작을 고정했다.
+- 검증: `pnpm test:worker` core 36건·worker 130건, `pnpm build:worker`, 웹 관리자 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `3123e61d`
+- 운영 경계: Dokploy schedule 생성, production consumer 활성화, 라이브 DB 수정과 Discord 첫 발송은 수행하지 않았다. active worker를 일정 등록보다 먼저 전환하면 cadence WARNING이 발생하므로 운영 활성화 순서를 함께 승인해야 한다.

@@ -51,3 +51,11 @@
 - 검증: 관리자 연동 계약·worker health 집중 테스트, `pnpm test:worker` core 35건·worker 128건, `pnpm typecheck`, `pnpm lint`, critical risk review
 - 관련 커밋: `a9037103`
 - 운영 경계: 관리자 화면과 테스트에서 reconciliation, DB 수정, Discord 조회·발송을 실행하지 않았다.
+
+## 2026-08-24 · 운영성 개선 · 연구 공로 예약 슬롯 누락 감시
+
+- `research.daily-ranking`의 최신 성공 기록이 오래 남아 있어도 매일 21:15 KST 이후 당일 슬롯이 없으면 `WARNING`으로 표시하도록 cadence 감시를 추가했다.
+- 예약 작업 카드에는 기대한 KST 날짜와 슬롯 누락 사유를 함께 표시하며, 기존 webhook·message ID·payload·오류 원문 비노출 계약은 유지한다.
+- 검증: 관리자 연동 계약 4건, `pnpm test:worker` core 36건·worker 130건, `pnpm build:worker`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
+- 관련 커밋: `3123e61d`
+- 운영 경계: 화면 조회와 로컬 테스트만 수행했으며 worker 배포·Dokploy 일정·DB 수정·Discord 발송은 실행하지 않았다.
