@@ -29,6 +29,12 @@ const RANK_LABELS = {
 
 type HallOfFameItem = ResearchHallOfFameResponse["items"][number];
 
+const PORTRAIT_SIZES = {
+  1: "(max-width: 960px) 55vw, 510px",
+  2: "(max-width: 640px) 43vw, (max-width: 960px) 24.5vw, 230px",
+  3: "(max-width: 640px) 43vw, (max-width: 960px) 24.5vw, 230px",
+} satisfies Record<HallOfFameItem["rank"], string>;
+
 function formatCredits(value: number): string {
   return `${value.toLocaleString("ko-KR")} CR`;
 }
@@ -52,7 +58,7 @@ function HonoreePortrait({ item }: { item: HallOfFameItem }) {
       className={styles.podium__portraitImage}
       loading={item.rank === 1 ? "eager" : "lazy"}
       onError={() => setHasImageError(true)}
-      sizes="(max-width: 640px) 112px, (max-width: 960px) 55vw, 400px"
+      sizes={PORTRAIT_SIZES[item.rank]}
       src={preferOptimizedPublicImagePath(profilePath)}
     />
   );

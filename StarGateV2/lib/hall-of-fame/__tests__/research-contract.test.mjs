@@ -123,7 +123,12 @@ test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공�
     client,
     /podium__portraitFallback\} aria-hidden="true">\s*<IconCrown \/>\s*<span/,
   );
-  assert.match(client, /max-width: 960px\) 55vw/);
+  assert.match(client, /1: "\(max-width: 960px\) 55vw, 510px"/);
+  assert.match(
+    client,
+    /2: "\(max-width: 640px\) 43vw, \(max-width: 960px\) 24\.5vw, 230px"/,
+  );
+  assert.match(client, /sizes=\{PORTRAIT_SIZES\[item\.rank\]\}/);
   assert.match(client, /<li className=\{styles\.podium__card\} data-rank=\{item\.rank\}>/);
   assert.match(client, /data-count=\{data\.items\.length\}/);
   assert.match(
