@@ -159,8 +159,10 @@ export default function HallOfFameClient({
       <section className={styles.honors} aria-labelledby="research-honors-title">
         <Box variant="gold" className={styles.honors__register}>
           <header className={styles.honors__header}>
-            <IconCrown className={styles.honors__crown} aria-hidden="true" />
-            <div>
+            <div className={styles.honors__seal} aria-hidden="true">
+              <IconCrown className={styles.honors__crown} />
+            </div>
+            <div className={styles.honors__heading}>
               <span className={styles.honors__eyebrow}>
                 RESEARCH HONORS REGISTER · ALL TIME
               </span>

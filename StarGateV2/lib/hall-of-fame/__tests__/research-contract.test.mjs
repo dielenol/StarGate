@@ -94,10 +94,16 @@ test("RSC 초기 데이터와 realtime 5분 fallback Query를 연결한다", asy
 });
 
 test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공한다", async () => {
-  const [page, client, css] = await Promise.all([
+  const [page, client, css, background] = await Promise.all([
     source("app/(erp)/erp/hall-of-fame/page.tsx"),
     source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
     source("app/(erp)/erp/hall-of-fame/page.module.css"),
+    readFile(
+      new URL(
+        "public/assets/research/hall-of-fame-background.webp",
+        ROOT,
+      ),
+    ),
   ]);
 
   assert.match(client, /연구 공로 순위를 불러오지 못했습니다/);
@@ -112,6 +118,7 @@ test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공�
   assert.match(client, /onError=\{\(\) => setHasImageError\(true\)\}/);
   assert.match(client, /loading=\{item\.rank === 1 \? "eager" : "lazy"\}/);
   assert.match(client, /podium__portraitFallback/);
+  assert.match(client, /className=\{styles\.honors__seal\}/);
   assert.doesNotMatch(
     client,
     /podium__portraitFallback\} aria-hidden="true">\s*<IconCrown \/>\s*<span/,
@@ -125,14 +132,18 @@ test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공�
   );
   assert.match(css, /max-width: 1280px/);
   assert.match(css, /container-type: inline-size/);
+  assert.match(page, /className=\{styles\.page\}/);
+  assert.match(css, /url\("\/assets\/research\/hall-of-fame-background\.webp"\)/);
+  assert.ok(background.byteLength > 10_000);
   assert.match(css, /@container \(max-width: 960px\)/);
   assert.match(css, /@container \(max-width: 640px\)/);
-  assert.match(css, /grid-template-columns: minmax\(0, 1\.6fr\) minmax\(300px, 0\.9fr\)/);
+  assert.match(css, /grid-template-columns: minmax\(0, 1\.62fr\) minmax\(310px, 0\.88fr\)/);
+  assert.match(css, /gap: 1px/);
   assert.match(css, /\.podium\[data-count="1"\][\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(css, /\.podium\[data-count="2"\][\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@container \(max-width: 960px\)[\s\S]*\.podium\[data-count="1"\],[\s\S]*\.podium\[data-count="2"\][\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="1"\][\s\S]*min-height: 256px/);
-  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="2"\][\s\S]*min-height: 150px/);
+  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="1"\][\s\S]*min-height: 276px/);
+  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="2"\][\s\S]*min-height: 156px/);
   assert.doesNotMatch(css, /grid-template-areas:/);
   assert.doesNotMatch(css, /@media \(max-width: 390px\)/);
   assert.match(

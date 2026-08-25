@@ -9,6 +9,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import HallOfFameClient from "./HallOfFameClient";
+import styles from "./page.module.css";
 
 export default async function HallOfFamePage() {
   const session = await getActiveSession();
@@ -29,12 +30,13 @@ export default async function HallOfFamePage() {
   }
 
   return (
-    <div data-pixel-font="ui">
+    <div className={styles.page} data-pixel-font="ui">
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "HALL OF FAME" },
         ]}
+        className={styles.page__toolbar}
         title="명예의 전당"
         right={<Tag tone="gold">DAILY · 21:00 KST</Tag>}
       />
