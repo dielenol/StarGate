@@ -166,3 +166,12 @@
 - `summary`와 `highlights` 본문은 상세에는 유지하되 목록 hydration에서 제외했으며, 저장소 표본 9건 기준 직렬화 크기는 72,748B에서 1,393B로 줄었다.
 - 검증: 지도 좌표·번호·visibility 계약, 집중 테스트 47/47, 타입 검사·lint·production build, JTEST 보고서 링크 16건 정상 렌더
 - 관련 커밋: `6f0bfc0e`
+
+## 2026-08-25 · 로어 동기화 · S1E6 변곡점 2부
+
+- `NOSB-S1E6-TURNING-POINT-PART2`를 정규 보고서 `06.5`로 식별하고, 같은 수메르 좌표의 `06`·`06.5` 지도 카드를 좌우로 분리했다.
+- V/private staging과 U/public publication payload, 잔광자 wiki·광채 표본 catalog, 기존 wiki 7건·Dossier 21건·관계·성격 관찰, 보고서·mirror 공용 장면 자산 18종을 준비했다.
+- 라이브 DB에는 적용하지 않았고 광채 표본 5개의 인벤토리 지급, 크레딧·주식·알림 mutation도 제외했다.
+- 검증: PDF 141페이지/1,909개 정규화 경계, 번호·링크 테스트 38건, schema corpus 87건, 자산 테스트 12건, lore 전체 감사, spec–payload parity, live read-only dry-run, `pnpm typecheck`, `pnpm lint`, critical risk review
+- 관련 커밋: `c96681e2`
+- 후속 작업: 모리아티·광체 Dossier 필수 필드를 결정하고, 별도 live 승인 뒤 비공개 reference target → V/private report staging → U/public publication 순서로 적용·재조회·역할별 인증 브라우저 검증을 진행한다.
