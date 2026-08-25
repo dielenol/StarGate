@@ -27,7 +27,7 @@ source: stargate-lore
 - 내보내기 시각: `2026-08-10 16:30:32`.
 - SHA-256: `ccd5272fae0043b0bb428cbe3e941b5ace5547790587bfb1a43a7d4754a0af86`.
 - 텍스트 무결성: 141쪽 전부 추출, 빈 텍스트 페이지 0, 본문 기록이 있는 페이지 139쪽. 표지와 마지막 인증 footer는 사건 기록에서 제외했다.
-- 시각 자료: `1035×503` 장면 프레임 25개, `58×57` 대화 아바타 966개, `58×58` 대화 아바타 526개를 분리 판독했다. 대화 아바타는 Dossier 원본 초상이 아니므로 발행하지 않는다.
+- 시각 자료: `1035×503` 장면 프레임 25개, `58×57` 대화 아바타 966개, `58×58` 대화 아바타 526개를 분리 판독했다. 대화 아바타는 Dossier 원본 초상이 아니며, TIER-3 장면 프레임도 현재 정적 `public/` 경로가 보고서 권한을 집행하지 못하므로 발행하지 않는다.
 - 보안 분류: 원본 표지의 `CLASSIFICATION · TIER-3 · EYES ONLY`에 따라 보고서는 `minRole: V`, operation-report mirror·신규 개체 wiki·신규 카탈로그는 비공개 staging 후보로 둔다. 모든 인증 역할 공개와 기존 공개 wiki·Dossier 반영은 별도 publication payload 및 별도 live 승인 대상으로 분리한다.
 
 ## Canonical Anchor
@@ -65,7 +65,7 @@ source: stargate-lore
 
 | subject | source evidence | target surface | action | status |
 |---|---|---|---|---|
-| 변곡점 2부 전체 기록 | 141쪽 전 구간과 본문 시작·종료 표기 | `session_reports.NOSB-S1E6-TURNING-POINT-PART2`, `wiki_pages.s1e6-turning-point-part2` | `06.5`, V/private staging, 동일 순서 장면 18개와 구조화 참조 작성 | prepared |
+| 변곡점 2부 전체 기록 | 141쪽 전 구간과 본문 시작·종료 표기 | `session_reports.NOSB-S1E6-TURNING-POINT-PART2`, `wiki_pages.s1e6-turning-point-part2` | `06.5`, V/private staging, 보호 장면 대신 공개 watermark 1개를 공유하는 본문과 구조화 참조 작성 | prepared |
 | 보고서 번호·지도 카드 | S1E6 2부와 1부 동일 수메르 좌표 | `lib/format/session-report.ts`, report map | `06.5` preset·제목 fallback, `06`과 겹치지 않는 카드 배치 | prepared |
 | 아르고 기지 NHI 기록 | NHI 우주 엔진 문서, 하이퍼보리아인 14, Montag-98, 기계 하이에나 | `wiki_pages.montauk-project-slaughter-hound`, report | 기존 몬탁 wiki에 별도 과거 기록으로 additive append; 도살견과 Montag-98 동일시 금지 | ready-for-publication |
 | 모리아티 대령 | 섹터 D 지휘관, 문서 탈취·부하 살해 시도, Montag-98에게 사망 | report, `MORIARTY` Dossier candidate | 보고서에 보존; 정식 이름·소속 코드·권한·초상·공개 결정을 받을 때까지 Dossier 미생성 | blocked |
@@ -180,24 +180,25 @@ source: stargate-lore
 
 | asset | source | source dimensions | source-frame crop | source role | report | report wiki mirror | dedicated wiki | catalog | Dossier/personnel | decision/evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `/assets/session-reports/s1e6-turning-point-part2/sector-d-offshore-platform.webp` | PDF p002 X5 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: no full-frame person | 섹터 D 해상 플랫폼 도입 장면 |
-| `/assets/session-reports/s1e6-turning-point-part2/yuhoe-argo-briefing.webp` | PDF p005 X80 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: staged briefing scene | 유회의 아르고 기지 침투 브리핑 |
-| `/assets/session-reports/s1e6-turning-point-part2/moriarty-kimlabak-infiltration.webp` | PDF p011 X241 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 2인 장면이고 초상 승인 없음 | 모리아티와 킴라박의 침투 장면 |
-| `/assets/session-reports/s1e6-turning-point-part2/yuhoe-argo-tunnel.webp` | PDF p012 X274 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 환경 포함 장면 | 아르고 지하 통로의 유회 |
-| `/assets/session-reports/s1e6-turning-point-part2/kimlabak-nhi-engine-file.webp` | PDF p014 X308 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | candidate-only | excluded: 문서 열람 장면 | NHI 우주 엔진 기밀 문서 열람 |
-| `/assets/session-reports/s1e6-turning-point-part2/hyperborean-14-containment.webp` | PDF p016 X351 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | 하이퍼보리아인 14 챔버 관측 |
-| `/assets/session-reports/s1e6-turning-point-part2/montag-98-attack.webp` | PDF p017 X380 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | Montag-98의 킴라박 공격 |
-| `/assets/session-reports/s1e6-turning-point-part2/wounded-yuhoe.webp` | PDF p021 X436 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 부상 close-up을 Dossier 초상으로 쓰지 않음 | 유회의 지원 요청 장면 |
-| `/assets/session-reports/s1e6-turning-point-part2/space-zero-rocket-security.webp` | PDF p023 X501 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no exact item sample | excluded: 경호 포함 장면 | 요한 스미스와 로켓 연구소 경호 |
-| `/assets/session-reports/s1e6-turning-point-part2/space-zero-shareholder-ark-rocket.webp` | PDF p025 X552 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 로켓 회수품 아님 | excluded: 인물 없음 | 주주의 방주 로켓 공개 |
-| `/assets/session-reports/s1e6-turning-point-part2/accel-forced-recruitment.webp` | PDF p029 X633 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | candidate-only | excluded: 구속 장면을 Dossier 초상으로 쓰지 않음 | 엘 볼라도르의 강제 편입 |
-| `/assets/session-reports/s1e6-turning-point-part2/novus-ordo-reinforcements.webp` | PDF p032 X730 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 집단 전투 장면 | 의식장으로 향하는 증원대 |
-| `/assets/session-reports/s1e6-turning-point-part2/last-battalion-defender.webp` | PDF p033 X737 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 적 장비 회수 없음 | excluded: 이름 없는 보병 | 마지막 대대 보병 저지선 |
-| `/assets/session-reports/s1e6-turning-point-part2/irma-siyu-choice.webp` | PDF p050 X1222 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 2인 서사 장면 | 이르마의 제안과 시유의 선택 |
-| `/assets/session-reports/s1e6-turning-point-part2/irma-self-injection.webp` | PDF p063 X1589 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | candidate-only | excluded: 행위 장면을 초상으로 쓰지 않음 | 이르마의 개조 바이러스 자가 투여 |
-| `/assets/session-reports/s1e6-turning-point-part2/afterglow-being-manifestation.webp` | PDF p083 X2168 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 광채 표본의 standalone 이미지 아님 | excluded: 잔광자 전투 장면은 이르마 초상 아님 | 잔광자 최초 현현의 정확한 장면 |
-| `/assets/session-reports/s1e6-turning-point-part2/sumer-temple-aftermath.webp` | PDF p130 X3501 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: no item subject | excluded: 인물 없음 | 수메르 지상 복귀와 후속 브리핑 |
-| `/assets/session-reports/s1e6-turning-point-part2/margaret-isolation-room.webp` | PDF p138 X3730 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 신체 일부 장면이며 초상 역할 불가 | 마가렛의 순백 격리실 면회 |
+| `/assets/StarGate_logo_watermark.webp` | repository brand asset | 512×425 | no — existing public asset | report-cutscene | included | included | excluded: no dedicated lore subject | excluded: no item subject | excluded: not a Dossier portrait | TIER-3 source frame 대신 기존 공개 브랜드 watermark만 사용 |
+| PDF p002 X5 | PDF p002 X5 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: no full-frame person | 섹터 D 해상 플랫폼 도입 장면 |
+| PDF p005 X80 | PDF p005 X80 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: staged briefing scene | 유회의 아르고 기지 침투 브리핑 |
+| PDF p011 X241 | PDF p011 X241 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 2인 장면이고 초상 승인 없음 | 모리아티와 킴라박의 침투 장면 |
+| PDF p012 X274 | PDF p012 X274 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 환경 포함 장면 | 아르고 지하 통로의 유회 |
+| PDF p014 X308 | PDF p014 X308 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | candidate-only | excluded: 문서 열람 장면 | NHI 우주 엔진 기밀 문서 열람 |
+| PDF p016 X351 | PDF p016 X351 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | 하이퍼보리아인 14 챔버 관측 |
+| PDF p017 X380 | PDF p017 X380 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | Montag-98의 킴라박 공격 |
+| PDF p021 X436 | PDF p021 X436 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 부상 close-up을 Dossier 초상으로 쓰지 않음 | 유회의 지원 요청 장면 |
+| PDF p023 X501 | PDF p023 X501 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no exact item sample | excluded: 경호 포함 장면 | 요한 스미스와 로켓 연구소 경호 |
+| PDF p025 X552 | PDF p025 X552 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 로켓 회수품 아님 | excluded: 인물 없음 | 주주의 방주 로켓 공개 |
+| PDF p029 X633 | PDF p029 X633 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | candidate-only | excluded: 구속 장면을 Dossier 초상으로 쓰지 않음 | 엘 볼라도르의 강제 편입 |
+| PDF p032 X730 | PDF p032 X730 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 집단 전투 장면 | 의식장으로 향하는 증원대 |
+| PDF p033 X737 | PDF p033 X737 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 적 장비 회수 없음 | excluded: 이름 없는 보병 | 마지막 대대 보병 저지선 |
+| PDF p050 X1222 | PDF p050 X1222 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 2인 서사 장면 | 이르마의 제안과 시유의 선택 |
+| PDF p063 X1589 | PDF p063 X1589 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | candidate-only | excluded: 행위 장면을 초상으로 쓰지 않음 | 이르마의 개조 바이러스 자가 투여 |
+| PDF p083 X2168 | PDF p083 X2168 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 광채 표본의 standalone 이미지 아님 | excluded: 잔광자 전투 장면은 이르마 초상 아님 | 잔광자 최초 현현의 정확한 장면 |
+| PDF p130 X3501 | PDF p130 X3501 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: no item subject | excluded: 인물 없음 | 수메르 지상 복귀와 후속 브리핑 |
+| PDF p138 X3730 | PDF p138 X3730 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 신체 일부 장면이며 초상 역할 불가 | 마가렛의 순백 격리실 면회 |
 | `PDF p013 X293` | PDF p013 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: p011 중복 구도 | excluded: p011 중복 구도 | excluded: duplicate | excluded: duplicate | excluded: duplicate | 모리아티·킴라박 장면의 동일 프레임 |
 | `PDF p019 X409` | PDF p019 first frame | 1035×503 | no — full PDF XObject | report-cutscene | excluded: p012 중복 구도 | excluded: p012 중복 구도 | excluded: duplicate | excluded: duplicate | excluded: duplicate | 유회 통로 장면의 동일 프레임 |
 | `PDF p019 X418` | PDF p019 second frame | 1035×503 | no — full PDF XObject | report-cutscene | excluded: p012 중복 구도 | excluded: p012 중복 구도 | excluded: duplicate | excluded: duplicate | excluded: duplicate | 같은 페이지 안의 유회 중복 프레임 |
@@ -209,8 +210,9 @@ source: stargate-lore
 ## Static Visibility And Link Plan
 
 - staging report: `minRole: V`; mirror, `afterglow-being`, `afterglow-radiance-sample`은 비공개다.
+- staging envelope는 filter·`$set`·postcondition에 `minRole: V` 또는 `isPublic: false`를 모두 고정한다. 같은 identity가 다른 공개 상태로 존재하면 update가 match되지 않고 unique identity/CAS 경계에서 중단되므로 새 본문을 stale 공개 레코드에 덮어쓰지 않는다.
 - publication candidate: report를 `U`, mirror·신규 wiki·catalog를 공개로 전환한 뒤에만 기존 공개 wiki·Dossier에 세션 내용을 append한다.
-- report와 mirror의 이미지 path·순서·alt·caption은 완전히 동일하게 유지한다.
+- report와 mirror는 기존 공개 브랜드 watermark 1개만 같은 path·순서·alt·caption으로 사용한다. TIER-3 source frame은 인증된 asset consumer가 생기기 전까지 repository·`public/`에 발행하지 않는다.
 - 보고서 구조화 참조에는 `s1e6-turning-point-part1`, `last-battalion`, `illuminati`, `aurora-virus`, `project-dead-hand`, `space-zero`, `inverted-sock`, `montauk-project-slaughter-hound`, `afterglow-being`과 `afterglow-radiance-sample`을 넣는다.
 - `afterglow-being` 전용 wiki는 report·관련 기존 wiki·catalog를 명시 링크하고, catalog spec/payload는 report·개체 wiki 식별자를 본문에 보존한다.
 - 모리아티와 광체는 renderer 대상이 없으므로 report에서 일반 텍스트로만 표기한다. 가짜 `personnel:` 링크를 만들지 않는다.
@@ -227,6 +229,6 @@ source: stargate-lore
 
 1. `MORIARTY`: 전체 이름, codename, 정확한 faction·institution·department, 대령 역할의 agentLevel, no-image 여부, 공개 범위, 신상·서술·관계 승인.
 2. `LIGHT_BODY_CHILD`: `광체`가 이름인지 종족명인지, canonical codename, 인간/NPC/개체 분류, 소속·권한등급 또는 외부 무등급, no-image 여부, 공개 범위, 신상·관계 승인.
-3. 시각 후보: `afterglow-being-manifestation`, `hyperborean-14-containment`, `montag-98-attack`, `space-zero-shareholder-ark-rocket`, `last-battalion-defender`, `sumer-temple-aftermath`를 전용 wiki archive 이미지로 재사용하려면 report-cutscene과 별도 역할 승인 필요.
+3. 시각 후보: 잔광자·하이퍼보리아인 14·Montag-98·주주의 방주 로켓·마지막 대대·수메르 후속 장면을 전용 wiki archive 이미지로 쓰려면 별도 역할 승인과 인증된 asset consumer가 필요하다.
 4. economy: 광채 표본 5개, 이르마 주사기, 잔광자 머리, NHI 문서의 exact ERP 수령자·공유 인벤토리 귀속·기존 ledger 반영 여부가 확인돼야 inventory mutation을 검토할 수 있다.
 5. live 적용: 비공개 reference targets → V/private report staging → 별도 U/public publication 순서마다 최신 사용자의 정확한 target·mutation 실행 승인이 필요하다.

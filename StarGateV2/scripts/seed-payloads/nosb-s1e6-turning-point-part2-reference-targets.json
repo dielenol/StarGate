@@ -3,11 +3,13 @@
     "collection": "wiki_pages",
     "type": "entity-wiki-staging-insert",
     "filter": {
-      "slug": "afterglow-being"
+      "slug": "afterglow-being",
+      "isPublic": false
     },
     "upsert": true,
     "update": {
       "$set": {
+        "isPublic": false,
         "title": "잔광자",
         "category": "개체",
         "tags": [
@@ -26,20 +28,25 @@
         "updatedAt": "2026-08-25T00:00:00.000Z"
       },
       "$setOnInsert": {
-        "isPublic": false,
         "createdAt": "2026-08-09T00:00:00.000Z"
       }
+    },
+    "postcondition": {
+      "slug": "afterglow-being",
+      "isPublic": false
     }
   },
   {
     "collection": "master_items",
     "type": "catalog-staging-insert",
     "filter": {
-      "slug": "afterglow-radiance-sample"
+      "slug": "afterglow-radiance-sample",
+      "isPublic": false
     },
     "upsert": true,
     "update": {
       "$set": {
+        "isPublic": false,
         "code": "AFTERGLOW_RADIANCE_SAMPLE",
         "slug": "afterglow-radiance-sample",
         "name": "잔광자 광채 표본",
@@ -70,9 +77,12 @@
         "updatedAt": "2026-08-25T00:00:00.000Z"
       },
       "$setOnInsert": {
-        "isPublic": false,
         "createdAt": "2026-08-09T00:00:00.000Z"
       }
+    },
+    "postcondition": {
+      "slug": "afterglow-radiance-sample",
+      "isPublic": false
     }
   }
 ]
