@@ -62,3 +62,12 @@
 - 검증: `pnpm test:worker` core 36건·worker 130건, `pnpm build:worker`, 웹 관리자 계약 테스트, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review
 - 관련 커밋: `3123e61d`
 - 운영 경계: Dokploy schedule 생성, production consumer 활성화, 라이브 DB 수정과 Discord 첫 발송은 수행하지 않았다. active worker를 일정 등록보다 먼저 전환하면 cadence WARNING이 발생하므로 운영 활성화 순서를 함께 승인해야 한다.
+
+## 2026-08-26 · 기능 확장 · 작전 공적 분석 consumer
+
+- `honor-analysis` consumer가 U 보고서·정확히 연결된 플레이어 AGENT만 claim하고, proposer·critic의 독립 판정과 엄격한 근거 검증을 통과한 결과만 공적 원장에 반영하도록 했다.
+- 보고서 revision·전체 동명 캐릭터·소유자 상태를 transaction CAS로 재검증하고 모든 Cloud 요청 직전에도 U 등급·source hash를 확인한다. 실패·stale 결과는 기존 확정 기록을 보존한 채 lease 재시도로 수렴한다.
+- 기본 dry-run backfill은 개별 원본 재검증 후 manifest만 만들며, issue가 있거나 원본 hash가 달라지면 `--execute` 적용을 거부한다.
+- 검증: worker 152건, manifest 5건, shared 공적 계약 7건·DB 환경 의존 1건 skip, `pnpm build:worker`, critical risk review P0/P1 없음
+- 관련 구현 커밋: `684efcd7`
+- 운영 경계: 인덱스 생성, Cloud dry-run, manifest 적용, Web/worker writer gate 활성화는 별도 운영 승인 전까지 실행하지 않았다.

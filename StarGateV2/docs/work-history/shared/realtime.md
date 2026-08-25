@@ -30,3 +30,11 @@
 - Discord `syncedRevision`·message ID 같은 전달 상태 변경은 공개 Query를 다시 불러오지 않으며, 연결 장애·게스트 환경에서는 기존 5분 polling fallback을 유지한다.
 - 검증: realtime mapper·Query key·fallback 계약 테스트, worker 114건, 웹 집중 테스트 22건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 커밋: `9b2b7897`
+
+## 2026-08-26 · 기능 확장 · 통합 공적 원장 무효화
+
+- `honor_records` 변경을 기존 `hall-of-fame` resource에 연결해 연구·NOVEX·작전·내 리본·보고서·캐릭터 문맥 Query가 root invalidation으로 함께 수렴하도록 했다.
+- 각 부문은 RSC 초기 데이터와 마지막 성공 데이터를 독립 유지하며, realtime 장애와 게스트 환경에서는 5분 polling을 계속 사용한다.
+- 검증: worker realtime 포함 152건, Hall Query·root invalidation 계약 14건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
+- 관련 구현 커밋: `684efcd7`
+- 운영 경계: production realtime 모드와 라이브 Change Stream 상태는 변경하지 않았다.

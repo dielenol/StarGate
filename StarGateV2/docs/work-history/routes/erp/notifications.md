@@ -35,3 +35,11 @@
 - 검증: 알림 crossing·재무장·동시 설정 저장 계약, worker 대상 Query invalidation, `pnpm typecheck`, 전체 `pnpm lint`, production build, 인증 로컬 알림 화면 확인
 - 관련 커밋: `fb012220`
 - 운영 경계: 라이브 개인 알림과 Discord 메시지는 생성하지 않았다.
+
+## 2026-08-26 · 기능 확장 · 작전 공적 HONOR 알림
+
+- 새 작전 공적을 당사자에게 한 번만 전달하는 `HONOR` 알림 유형과 명예의 전당 작전 부문 링크를 추가했다.
+- 공적 확정 transaction의 논리키와 알림 dedupe를 함께 묶어 중복 completion에도 한 건만 생성하며, 과거 backfill은 알림을 만들지 않는다.
+- 검증: shared 공적 계약 7건·DB 환경 의존 1건 skip, worker 152건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0/P1 없음
+- 관련 구현 커밋: `684efcd7`
+- 운영 경계: writer gate는 기본 비활성이며 라이브 알림·Discord·웹훅은 발송하지 않았다.

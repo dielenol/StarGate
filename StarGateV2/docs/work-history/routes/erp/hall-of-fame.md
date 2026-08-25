@@ -42,3 +42,12 @@
 - 검증: 명예의 전당·자산 집중 테스트 12건, `pnpm assets:audit`, `pnpm assets:test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 로컬 ERP 2560×1440·1280×720·1024×768·390×844 브라우저 확인 및 콘솔 경고/오류 0건
 - 관련 커밋: `61f81f12`
 - 운영 경계: 인증된 로컬 ERP를 읽기 전용으로 확인했으며 페이지 잠금, 라이브 DB·Discord·Dokploy 상태는 변경하지 않았다.
+
+## 2026-08-26 · 기능 확장 · 통합 공적 허브와 자동 헌액 기반
+
+- 기존 연구 TOP 3를 유지하면서 개요·연구·NOVEX·작전 공적·내 리본을 URL 기반 독립 부문으로 통합했다. 게스트는 연구와 NOVEX만, 회원은 공개 U 작전 공적과 본인 소유 AGENT의 리본까지 볼 수 있다.
+- NOVEX 확정 시즌 TOP 3를 영구 기록하고, U 작전보고서의 정확히 연결된 플레이어 AGENT만 이중 모델·근거 2개·신뢰도 0.90 기준으로 분석하는 공적 원장과 비활성 기본 writer gate를 추가했다.
+- 공개 응답에서는 내부 캐릭터·사용자·보고서 ID, 원문 근거, 모델·신뢰도·감사 필드를 제거하고, 원본 링크도 현재 권한을 재검증하는 불투명 키 경유로 제공한다.
+- 검증: Hall 계약 14건, core 36건·worker 152건, manifest 5건, `pnpm typecheck`, `pnpm lint`, `pnpm build:worker`, `pnpm build`, 회원·게스트 2560×1440·1280×720·1024×768·390×844 화면, 콘솔 경고·오류 0건, critical risk review P0/P1 없음
+- 관련 구현 커밋: `684efcd7`
+- 운영 경계: 라이브 인덱스 생성, Cloud 분석, backfill manifest 생성·적용, writer gate 활성화와 HONOR 알림 발송은 실행하지 않았다.

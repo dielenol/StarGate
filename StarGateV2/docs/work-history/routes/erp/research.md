@@ -62,3 +62,11 @@
 - 검증: `$stargate-images` skill validator, 불투명 sRGB·규격 QA, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, GM 인증 브라우저 1440×900·390×844에서 새 배경 로드·텍스트 대비·가로 overflow·console error 확인
 - 관련 커밋: `fcc7d940`
 - 운영 경계: 라이브 DB·크레딧·인벤토리·관계·worker flag는 변경하지 않았다.
+
+## 2026-08-26 · 기능 연결 · 연구 공로 기록 이동
+
+- 현재 연구 기여 요약에서 명예의 전당 연구 부문으로 바로 이동하는 링크를 추가해 일일 TOP 3 기록판과 연구 흐름을 연결했다.
+- 기존 모금·가속 계산, 크레딧·인벤토리 mutation, 게스트 연구 원장 투영은 변경하지 않았다.
+- 검증: Hall 교차 화면 계약 14건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증 회원·게스트 화면 확인
+- 관련 구현 커밋: `684efcd7`
+- 운영 경계: 라이브 연구·크레딧·인벤토리·Discord 상태는 변경하지 않았다.

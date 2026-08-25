@@ -142,3 +142,11 @@
 - 검증: 웹 주식·거래 계약 61건, `pnpm typecheck`, 전체 `pnpm lint`, production build
 - 관련 커밋: `d158aa43`
 - 운영 경계: 라이브 시세·이력은 변경하지 않았다.
+
+## 2026-08-26 · 기능 연결 · NOVEX 시즌 챔피언 기록
+
+- 시즌 리더보드에서 명예의 전당 NOVEX 역대 기록으로 이동할 수 있게 하고, 확정 transaction 안에서 TOP 3 공적을 시즌·캐릭터 논리키로 멱등 materialize하는 기반을 추가했다.
+- 수익률·순위·배지의 기준은 기존 `stock_season_performance`에 유지하고, 원장 쓰기가 비활성일 때도 확정 시즌 SSOT로 명예의 전당 조회를 제공한다.
+- 검증: core 36건·worker 152건, shared 공적 계약 7건·DB 환경 의존 1건 skip, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0/P1 없음
+- 관련 구현 커밋: `684efcd7`
+- 운영 경계: 라이브 시즌 확정·주가·거래·공적 원장·기존 시즌 알림은 변경하지 않았다.
