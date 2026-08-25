@@ -1,0 +1,142 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "MORIARTY",
+      "type": "NPC",
+      "role": "섹터 D 대령 / 아르고 기지 침투부대 지휘관",
+      "department": "SECTOR_D",
+      "factionCode": "NOVUS_ORDO",
+      "institutionCode": "MANUS",
+      "previewImage": "",
+      "agentLevel": "H",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-08-09T00:00:00.000Z",
+      "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2",
+      "isPublic": false,
+      "lore": {
+        "name": "모리어티",
+        "nameEn": "Moriarty",
+        "gender": "미상",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+          "appearance": "작전 기록에서는 시가를 피우는 행동이 확인된다. 얼굴과 복장에 관한 세부 기록은 남아 있지 않다.",
+        "personality": "거친 농담과 허물없는 태도로 부하들과 결속하고 힐링 팩터로 신뢰를 쌓았다. 한편 상급 관료를 경멸하고 지휘 계통을 우회했으며, 비밀 문서를 확보하자 부하들을 제거하려 했다. 마지막까지 자신의 배신을 불가피한 선택으로 정당화했다.",
+          "background": "모리어티는 섹터 D 소속 대령이자 킴라박 리의 직속 상관으로 아르고 기지 침투부대를 지휘했다. 킴라박에게 NHI 로켓 추진·우주 엔진 적응 문서를 비밀리에 회수시킨 뒤 부대원 둘과 킴라박을 제거하려 했다. 직후 Montag-98 머드크랩형 개체가 그의 가슴을 관통하고 몸을 두 동강 내 사망이 확정됐다. 정확한 과거 사망일은 기록되지 않았으며, 사무국 상태 기록에는 이 사망 사실이 보존본으로 확인된 2026-08-09가 확정일로 남아 있다.",
+        "quote": "자넨 좋은 부하였네.",
+        "mainImage": "",
+        "loreTags": [
+          "NOSB-S1E6-TURNING-POINT-PART2",
+          "섹터D",
+          "대령",
+          "아르고기지",
+          "NHI문서",
+          "Montag-98",
+          "힐링팩터",
+          "배신",
+          "모리어티",
+          "모리아티"
+        ],
+        "appearsInEvents": [
+          "NOSB-S1E6-TURNING-POINT-PART2"
+        ],
+        "personalityObservations": [
+          {
+            "id": "NOSB-S1E6-TURNING-POINT-PART2:MORIARTY:rough-comradeship",
+            "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+            "trait": "거친 친화성과 보호적 결속",
+            "summary": "농담과 허물없는 태도로 부하들과 결속하고 힐링 팩터로 여러 차례 그들의 목숨을 구했다.",
+            "evidence": [
+              {
+                "kind": "description",
+                  "text": "작전 기록에서 힐링 팩터로 킴라박과 부대원의 목숨을 여러 번 구한 사실이 확인됨"
+              },
+              {
+                "kind": "action",
+                  "text": "시가를 피우며 부하에게 거친 농담을 건넴"
+              }
+            ],
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed"
+          },
+          {
+            "id": "NOSB-S1E6-TURNING-POINT-PART2:MORIARTY:mission-first-betrayal",
+            "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+            "trait": "목적을 위해 부하를 제거하는 배신",
+            "summary": "비밀 문서를 확보하자 부대원과 킴라박을 제거하려 했고 자신의 선택을 불가피한 일로 정당화했다.",
+            "evidence": [
+              {
+                "kind": "action",
+                  "text": "NHI 문서를 받은 뒤 부대원 둘을 사살하고 킴라박에게 총을 겨눔"
+              },
+              {
+                "kind": "dialogue",
+                  "text": "킴라박에게 자네라도 같은 선택을 했을 것이라며 배신을 정당화함"
+              }
+            ],
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "KIMLEE",
+            "targetName": "킴라박 리",
+            "label": "직속 부하 / 배신 피해자",
+            "summary": "킴라박의 직속 상관으로 여러 전투에서 목숨을 구해 신뢰를 얻었으나, NHI 문서를 넘겨받은 직후 킴라박을 살해하려 했다. 살해 동기는 확인되지 않았다.",
+            "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed",
+            "updatedAt": "2026-08-25T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "YUHOE",
+            "targetName": "츠키시로 쿠즈하 / 유회",
+            "label": "아르고 침투 지휘 갈등",
+            "summary": "유회가 기계형 하이에나의 추격을 받으며 지원을 요청했지만 무전을 끊고 철수를 명령했다.",
+            "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed",
+            "updatedAt": "2026-08-25T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "JOHN_WONG",
+            "targetName": "존 웡",
+            "label": "미국 측 접촉자",
+            "summary": "섹터 D 해상 플랫폼에서 악수하고 재회를 기약했으나 구체적인 협력 관계는 확인되지 않았다.",
+            "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed",
+            "updatedAt": "2026-08-25T00:00:00.000Z"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+            "role": "섹터 D 아르고 침투부대 지휘관",
+            "summary": "킴라박에게 NHI 기밀 문서를 비밀 회수시킨 뒤 부대원을 제거하려 했고, Montag-98에게 살해됐다.",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "updatedAt": "2026-08-25T00:00:00.000Z"
+          }
+        ],
+          "roleDetail": "- 정규 소속: 노부스 오르도 / MANUS / 섹터 D\n- 확인된 직위: 대령, 킴라박 리의 직속 상관, 아르고 기지 침투부대 지휘관\n- 확인된 능력: 힐링 팩터\n- 권한등급: H. 대령이자 현장 침투부대 지휘관으로 확인되며, 섹터 D 전체를 감독했다는 기록은 없다.\n- 현재 상태: 아르고 기지에서 Montag-98에게 사망. 실제 사망일은 미상이며, 사무국 기록상 확정일은 2026-08-09",
+          "notes": "사무국 신원 기록의 대표 표기는 `모리어티`다. 변곡점 2부 보존본에는 `모리아티`라는 철자도 함께 남아 있다."
+      },
+        "loreMd": "## 대사\n> 자넨 좋은 부하였네.\n\n## 외형\n작전 기록에서는 시가를 피우는 행동이 확인된다. 얼굴과 복장에 관한 세부 기록은 남아 있지 않다.\n\n## 성격\n거친 농담과 허물없는 태도로 부하들과 결속하고 힐링 팩터로 신뢰를 쌓았다. 한편 상급 관료를 경멸하고 지휘 계통을 우회했으며, 비밀 문서를 확보하자 부하들을 제거하려 했다. 마지막까지 자신의 배신을 불가피한 선택으로 정당화했다.\n\n## 배경\n모리어티는 섹터 D 소속 대령이자 킴라박 리의 직속 상관으로 아르고 기지 침투부대를 지휘했다. 킴라박에게 NHI 로켓 추진·우주 엔진 적응 문서를 비밀리에 회수시킨 뒤 부대원 둘과 킴라박을 제거하려 했다. 직후 Montag-98 머드크랩형 개체에게 살해됐다. 정확한 과거 사망일은 기록되지 않았으며, 사무국 상태 기록에는 이 사망 사실이 보존본으로 확인된 2026-08-09가 확정일로 남아 있다.\n\n## 역할 상세\n- 정규 소속: 노부스 오르도 / MANUS / 섹터 D\n- 확인된 직위: 대령, 킴라박 리의 직속 상관, 아르고 기지 침투부대 지휘관\n- 확인된 능력: 힐링 팩터\n- 권한등급: H\n- 현재 상태: 사망. 실제 사망일은 미상, 사무국 기록상 확정일은 2026-08-09\n\n## 이름 설명\n사무국 신원 기록의 대표 표기는 `모리어티`다. 변곡점 2부 보존본에는 `모리아티`라는 철자도 함께 남아 있다.\n\n## 관계 (참고)\n- `KIMLEE` — 직속 부하이자 배신 피해자\n- `YUHOE` — 아르고 침투 지휘 갈등\n- `JOHN_WONG` — 미국 측 접촉자",
+      "source": "session-log",
+      "ownerId": null,
+      "createdAt": "2026-08-25T00:00:00.000Z",
+      "updatedAt": "2026-08-25T00:00:00.000Z"
+    },
+    "postcondition": {
+      "codename": "MORIARTY",
+      "isPublic": false,
+      "department": "SECTOR_D",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-08-09T00:00:00.000Z",
+      "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2"
+    }
+  }
+]

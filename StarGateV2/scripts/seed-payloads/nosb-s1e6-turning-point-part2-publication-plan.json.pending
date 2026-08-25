@@ -26,6 +26,28 @@
     }
   },
   {
+    "collection": "characters",
+    "type": "npc-dossier-publication",
+    "filter": {
+      "codename": "MORIARTY",
+      "isPublic": false
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    },
+    "postcondition": {
+      "codename": "MORIARTY",
+      "isPublic": true,
+      "department": "SECTOR_D",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-08-09T00:00:00.000Z",
+      "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2"
+    }
+  },
+  {
     "collection": "wiki_pages",
     "type": "operation-report-wiki-publication",
     "filter": {
@@ -82,7 +104,7 @@
                       ""
                     ]
                   },
-                  "\n\n## 변곡점 2부 아르고 기지 과거 기록\n섹터 D 과거 기록에서 킴라박 리와 유회는 모리아티 대령의 지휘 아래 아르고 기지에 침투했다. 킴라박은 `로켓 추진 및 우주 엔진에 대한 NHI 적응법` 기밀 문서, `하이퍼보리아인 14` 챔버와 집게에 `Montag - 98`이 적힌 머드크랩형 개체를 목격했다.\n\nMontag-98은 킴라박을 공격하고 모리아티를 살해했다. 같은 아르고 기지와 몬탁 프로젝트 표기가 확인되지만, 이번 개체를 기존 도살견과 동일 개체·동일 프로그램 산출물로 확정하지 않는다. 기밀 문서와 하이퍼보리아인 14, Montag-98의 후속 보관·격리 상태도 확인되지 않았다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                  "\n\n## 변곡점 2부 아르고 기지 과거 기록\n섹터 D 과거 기록에서 킴라박 리와 유회는 모리어티 대령의 지휘 아래 아르고 기지에 침투했다. 킴라박은 `로켓 추진 및 우주 엔진에 대한 NHI 적응법` 기밀 문서, `하이퍼보리아인 14` 챔버와 집게에 `Montag - 98`이 적힌 머드크랩형 개체를 목격했다.\n\nMontag-98은 킴라박을 공격하고 모리어티를 살해했다. 같은 아르고 기지와 몬탁 프로젝트 표기가 확인되지만, 이번 개체를 기존 도살견과 동일 개체·동일 프로그램 산출물로 확정하지 않는다. 기밀 문서와 하이퍼보리아인 14, Montag-98의 후속 보관·격리 상태도 확인되지 않았다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
                 ]
               }
             ]
@@ -495,7 +517,7 @@
         "lore.sessionAppearances": {
           "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
           "role": "아르고 기지 기밀 문서 회수자 및 잔광자 교전 요원",
-          "summary": "과거 아르고 기지에서 NHI 우주 엔진 문서를 회수하고 하이퍼보리아인 14와 Montag-98을 목격했다. 모리아티의 배신에서 살아남았으며 현재 수메르에서는 잔광자 교전에 참여했다.",
+          "summary": "과거 아르고 기지에서 NHI 우주 엔진 문서를 회수하고 하이퍼보리아인 14와 Montag-98을 목격했다. 모리어티의 배신에서 살아남았으며 현재 수메르에서는 잔광자 교전에 참여했다.",
           "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
         }
       },
@@ -525,7 +547,7 @@
         "lore.sessionAppearances": {
           "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
           "role": "아르고 기지 침투 지휘자",
-          "summary": "섹터 D 과거 기록에서 아르고 기지 주력 침투를 지휘했다. 기계형 하이에나에게 추격당하며 지원을 요청했지만 모리아티가 무전을 끊었다.",
+          "summary": "섹터 D 과거 기록에서 아르고 기지 주력 침투를 지휘했다. 기계형 하이에나에게 추격당하며 지원을 요청했지만 모리어티가 무전을 끊었다.",
           "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
         }
       },
@@ -764,7 +786,7 @@
         "lore.sessionAppearances": {
           "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
           "role": "잔광자 처리 협상자 및 광체 보호자",
-          "summary": "이르마의 주사기를 확보하고 잔광자 처리 방안을 협상했다. 붙잡힌 아이를 보호하며 광체라고 부르고 연구동 이송에 동행했다.",
+          "summary": "이르마가 사용한 주사기를 챙기고 잔광자 처리 방안을 협상했다. 붙잡힌 아이를 보호하고 노부스 오르도로 함께 가자고 제안했으며 아이가 수락했다. 연구동으로 데려가기로 결정됐지만 실제 도착은 확인되지 않았다.",
           "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
         }
       },
@@ -1003,7 +1025,7 @@
         },
         "lore.sessionAppearances": {
           "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
-          "role": "잔광자 회수와 광체 연구동 이송 지휘자",
+          "role": "잔광자 회수와 광체 연구동 이송 결정 지휘자",
           "summary": "수메르 전투 종료 뒤 광체를 연구동으로 옮기라고 지시했다. 잔광자 시체로 2차 백신과 가능한 3차 약제를 연구할 수 있다고 브리핑했다.",
           "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
         }
@@ -1622,6 +1644,78 @@
           ],
           "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
           "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "KIMLEE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MORIARTY",
+              "targetName": "모리어티",
+              "label": "직속 상관의 배신",
+              "summary": "여러 전투에서 자신과 부대원의 목숨을 구해 준 직속 상관이었으나, NHI 문서를 넘겨받은 직후 킴라박을 살해하려 했다. 살해 동기는 확인되지 않았다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "YUHOE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MORIARTY",
+              "targetName": "모리어티",
+              "label": "아르고 침투 지휘 갈등",
+              "summary": "기계형 하이에나에게 추격당하며 지원을 요청했지만 모리어티가 무전을 끊고 철수를 명령했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "JOHN_WONG"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MORIARTY",
+              "targetName": "모리어티",
+              "label": "섹터 D 접촉자",
+              "summary": "섹터 D 해상 플랫폼에서 모리어티와 악수하고 재회를 기약했으나 구체적인 협력 관계는 확인되지 않았다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
         }
       }
     }
