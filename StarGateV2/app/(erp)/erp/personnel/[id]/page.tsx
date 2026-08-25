@@ -98,6 +98,7 @@ export default async function PersonnelDetailPage({ params }: PageProps) {
       character={serialized}
       clearance={clearance}
       canEditDossier={canEditDossier}
+      canViewHonors={isMemberViewer}
       relatedReports={serializedRelatedReports}
       relatedCharacters={serializedRelatedCharacters}
     />

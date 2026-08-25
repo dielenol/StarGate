@@ -16,6 +16,8 @@ export * from "./domain/discord-dm-dialogue.js";
 export * from "./domain/equipment-research.js";
 export * from "./domain/research-discord-card.js";
 export * from "./domain/research-ranking.js";
+export * from "./domain/hall-of-fame.js";
+export * from "./domain/honor-analysis.js";
 export * from "./domain/shop-catalog.js";
 export * from "./domain/shop-stock.js";
 export * from "./domain/stock-catalog.js";

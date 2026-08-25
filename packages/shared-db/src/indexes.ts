@@ -283,6 +283,68 @@ export async function ensureNovexIndexes(inputDb?: Db): Promise<void> {
   ));
 }
 
+/**
+ * 명예의 전당 2.0 원장/분석 queue의 영속 계약.
+ * 운영 index 생성은 코드 배포와 분리 승인하므로 ensureAllIndexes에는 넣지 않는다.
+ */
+export const HONOR_INDEX_DEFINITIONS: Record<string, IndexDescription[]> = {
+  honor_records: [
+    {
+      key: { logicalKey: 1 },
+      name: "honor_records_logicalKey_unique",
+      unique: true,
+    },
+    {
+      key: { publicKey: 1 },
+      name: "honor_records_publicKey_unique",
+      unique: true,
+    },
+    {
+      key: { domain: 1, category: 1, status: 1, occurredAt: -1, publicKey: -1 },
+      name: "honor_records_domain_category_status_timeline",
+    },
+    {
+      key: { characterId: 1, status: 1, occurredAt: -1, publicKey: -1 },
+      name: "honor_records_character_status_timeline",
+    },
+    {
+      key: { minRole: 1, status: 1, occurredAt: -1, publicKey: -1 },
+      name: "honor_records_minRole_status_timeline",
+    },
+    {
+      key: { "source.type": 1, "source.key": 1, status: 1 },
+      name: "honor_records_source_status",
+    },
+  ],
+  honor_analysis_states: [
+    {
+      key: { sourceType: 1, sourceKey: 1 },
+      name: "honor_analysis_states_source_unique",
+      unique: true,
+    },
+    {
+      key: { status: 1, nextAttemptAt: 1, leaseUntil: 1, updatedAt: 1 },
+      name: "honor_analysis_states_due_lease",
+    },
+  ],
+};
+
+export async function ensureHonorIndexes(
+  database?: Db,
+  options: IndexEnsureOptions = {},
+): Promise<void> {
+  const db = database ?? (await getDb());
+  for (const [collection, indexes] of Object.entries(
+    HONOR_INDEX_DEFINITIONS,
+  )) {
+    for (const index of indexes) {
+      const { key, ...indexOptions } = index;
+      const name = await db.collection(collection).createIndex(key, indexOptions);
+      options.onEnsured?.({ collection, name });
+    }
+  }
+}
+
 export const BUREAUCRAT_VOTE_INDEX_DEFINITIONS: IndexDescription[] = [
   {
     key: { requestKey: 1 },

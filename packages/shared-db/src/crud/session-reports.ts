@@ -12,14 +12,26 @@ import {
   type SessionReport,
 } from "../types/index.js";
 
-import { sessionReportsCol } from "../collections.js";
+import {
+  honorAnalysisStatesCol,
+  sessionReportsCol,
+} from "../collections.js";
 import { getClient, getDb } from "../client.js";
+import { buildOperationHonorSourceMaterial } from "../honor-source.js";
+import { HONOR_ANALYZER_REVISION } from "../types/index.js";
 import { lockReportSessionSource } from "./sessions.js";
 import {
   SESSION_REPORT_REFERENCE_FIELDS,
   lockSessionReportReferenceTarget,
   type SessionReportReferenceField,
 } from "./session-report-reference-integrity.js";
+import {
+  findHonorCandidateCharactersByCodenames,
+  isHallOfFameV2WritesEnabled,
+  queueHonorAnalysis,
+  shouldForceHonorAnalysisAfterSourceRecovery,
+  skipHonorAnalysisSource,
+} from "./honors.js";
 
 export {
   assertNoSessionReportInboundReference,
@@ -207,13 +219,16 @@ export function filterSessionReportReferencesToResolvedTargets<
 
   return reports.map((report) => {
     const {
+      __honorAnalysisLockAt: _honorAnalysisLockAt,
       provenanceSourceId: _legacyProvenanceSourceId,
       provenanceSourceIds: _provenanceSourceIds,
       ...publicReport
     } = report as T & {
+      __honorAnalysisLockAt?: Date;
       provenanceSourceId?: string;
       provenanceSourceIds?: string[];
     };
+    void _honorAnalysisLockAt;
     void _legacyProvenanceSourceId;
     void _provenanceSourceIds;
     const filtered: SessionReportReferences = {};
@@ -630,6 +645,50 @@ export async function findVisibleReportById(
   return safeReport;
 }
 
+/** 보고서 write와 같은 transaction에서 분석 queue/기존 공적 노출을 전환한다. */
+async function reconcileSessionReportHonorAnalysis(
+  report: SessionReport,
+  session: ClientSession,
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (!isHallOfFameV2WritesEnabled()) return;
+  if (report.minRole != null && report.minRole !== "U") {
+    await skipHonorAnalysisSource({
+      sourceKey: report.sessionId,
+      reason: "SOURCE_NOT_ELIGIBLE",
+      session,
+    });
+    return;
+  }
+  const characters = await findHonorCandidateCharactersByCodenames(
+    report.relatedPersonnelCodenames ?? [],
+    { session },
+  );
+  const material = buildOperationHonorSourceMaterial({ report, characters });
+  if (!material || !report._id) {
+    await skipHonorAnalysisSource({
+      sourceKey: report.sessionId,
+      reason: "SOURCE_NOT_ANALYZABLE",
+      session,
+    });
+    return;
+  }
+  const previousState = await (await honorAnalysisStatesCol()).findOne(
+    { _id: `session-report:${report.sessionId}` },
+    { projection: { status: 1, lastError: 1 }, session },
+  );
+  const sourceBecameEligible =
+    shouldForceHonorAnalysisAfterSourceRecovery(previousState);
+  await queueHonorAnalysis({
+    sourceKey: report.sessionId,
+    sourceRecordId: String(report._id),
+    sourceHash: material.sourceHash,
+    analyzerRevision: HONOR_ANALYZER_REVISION,
+    force: options.force || sourceBecameEligible,
+    session,
+  });
+}
+
 export async function createSessionReport(
   input: CreateSessionReportInput,
   options: { session?: ClientSession; db?: Db } = {},
@@ -693,7 +752,9 @@ export async function createSessionReport(
     updatedAt: now,
   };
   const result = await col.insertOne(doc, { session: options.session });
-  return { ...doc, _id: result.insertedId };
+  const created = { ...doc, _id: result.insertedId };
+  await reconcileSessionReportHonorAnalysis(created, options.session);
+  return created;
 }
 
 const ALLOWED_REPORT_FIELDS = new Set([
@@ -704,6 +765,7 @@ const ALLOWED_REPORT_FIELDS = new Set([
   "mapX",
   "mapY",
   "mapPrecision",
+  "minRole",
   ...REPORT_REFERENCE_FIELDS,
 ]);
 
@@ -734,7 +796,11 @@ export async function updateSessionReport(
   const toUnset: Record<string, ""> = {};
   for (const key of Object.keys(update)) {
     if (!ALLOWED_REPORT_FIELDS.has(key)) continue;
-    if (update[key] === null) toUnset[key] = "";
+    if (key === "minRole" && update[key] !== null) {
+      const minRole = normalizeSessionReportMinRole(update[key]);
+      if (minRole === null) throw new Error("minRole 형식 오류");
+      toSet[key] = minRole;
+    } else if (update[key] === null) toUnset[key] = "";
     else if (REPORT_REFERENCE_FIELDS.includes(key as never)) {
       toSet[key] = normalizeReportReferences(
         update[key],
@@ -753,7 +819,6 @@ export async function updateSessionReport(
   }
   const current = await col.findOne(filter, { session: options.session });
   if (!current) return false;
-
   const finalReferences: SessionReportReferences = {};
   for (const field of REPORT_REFERENCE_FIELDS) {
     finalReferences[field] = Object.hasOwn(toSet, field)
@@ -762,16 +827,22 @@ export async function updateSessionReport(
         ? []
         : current[field] ?? [];
   }
+  const finalMinRole = Object.hasOwn(toSet, "minRole")
+    ? (toSet.minRole as RoleLevel)
+    : Object.hasOwn(toUnset, "minRole")
+      ? undefined
+      : current.minRole;
   await validateAndLockSessionReportReferences(
     finalReferences,
     options.session,
-    { ...options, reportMinRole: current.minRole },
+    { ...options, reportMinRole: finalMinRole },
   );
 
+  const updatedAt = new Date();
   const updateDoc: Record<string, unknown> = {
     $set: {
       ...toSet,
-      updatedAt: new Date(),
+      updatedAt,
     },
   };
   if (Object.keys(toUnset).length > 0) updateDoc.$unset = toUnset;
@@ -781,6 +852,18 @@ export async function updateSessionReport(
     updateDoc,
     { session: options.session },
   );
+  if (result.matchedCount > 0) {
+    const finalReport = { ...current, ...toSet, updatedAt } as SessionReport;
+    for (const key of Object.keys(toUnset)) {
+      delete (finalReport as unknown as Record<string, unknown>)[key];
+    }
+    await reconcileSessionReportHonorAnalysis(finalReport, options.session, {
+      force:
+        current.minRole != null &&
+        current.minRole !== "U" &&
+        finalMinRole === "U",
+    });
+  }
   return result.matchedCount > 0;
 }
 
@@ -790,9 +873,30 @@ export async function deleteSessionReport(
   options: { session?: ClientSession } = {},
 ): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
+  if (!options.session) {
+    const session = (await getClient()).startSession();
+    let deleted = false;
+    try {
+      await session.withTransaction(async () => {
+        deleted = await deleteSessionReport(id, expectedUpdatedAt, { session });
+      });
+      return deleted;
+    } finally {
+      await session.endSession();
+    }
+  }
   const col = await sessionReportsCol();
   const filter: Record<string, unknown> = { _id: new ObjectId(id) };
   if (expectedUpdatedAt !== undefined) filter.updatedAt = expectedUpdatedAt;
+  const current = await col.findOne(filter, { session: options.session });
+  if (!current) return false;
   const result = await col.deleteOne(filter, { session: options.session });
+  if (result.deletedCount > 0 && isHallOfFameV2WritesEnabled()) {
+    await skipHonorAnalysisSource({
+      sourceKey: current.sessionId,
+      reason: "SOURCE_DELETED",
+      session: options.session,
+    });
+  }
   return result.deletedCount > 0;
 }

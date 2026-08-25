@@ -42,3 +42,32 @@ test("research-lab consumer는 별도 운영 flag 전에는 mutation gate로 유
   assert.equal(active.name, "research-lab");
   assert.equal(active.constructor.name, "ResearchLabConsumer");
 });
+
+test("honor-analysis는 gate OFF에서 secret 없이 no-op이고 ON에서 dual analyzer를 구성한다", async () => {
+  const [gated] = createDefaultDomainConsumers(["honor-analysis"], {});
+  assert.equal(gated.constructor.name, "HonorAnalysisActivationGateConsumer");
+  assert.deepEqual(await gated.tick(), { observedDue: 0 });
+
+  const [active] = createDefaultDomainConsumers(["honor-analysis"], {
+    HALL_OF_FAME_V2_WRITES_ENABLED: "true",
+    OLLAMA_API_KEY: "test-key",
+  });
+  assert.equal(active.constructor.name, "HonorAnalysisConsumer");
+  assert.throws(
+    () =>
+      createDefaultDomainConsumers(["honor-analysis"], {
+        HALL_OF_FAME_V2_WRITES_ENABLED: "true",
+      }),
+    DomainConsumerConfigurationError,
+  );
+  assert.throws(
+    () =>
+      createDefaultDomainConsumers(["honor-analysis"], {
+        HALL_OF_FAME_V2_WRITES_ENABLED: "true",
+        OLLAMA_API_KEY: "test-key",
+        HALL_OF_FAME_PROPOSER_MODEL: "same",
+        HALL_OF_FAME_CRITIC_MODEL: "same",
+      }),
+    /MODELS_MUST_DIFFER/,
+  );
+});

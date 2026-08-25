@@ -123,6 +123,34 @@ export type {
 } from "./notification.js";
 
 export type {
+  HonorDomain,
+  OperationHonorCategory,
+  HonorCategory,
+  HonorRecordStatus,
+  HonorSourceType,
+  HonorRecordSource,
+  HonorEvidenceAudit,
+  HonorCharacterIdentity,
+  OperationHonorSourceCandidate,
+  OperationHonorSourceSegment,
+  OperationHonorSourceMaterial,
+  NovexHonorFallbackPerformance,
+  HonorRecord,
+  UpsertHonorRecordInput,
+  HonorAnalysisStatus,
+  HonorAnalysisState,
+  HonorRecordQuery,
+  HonorRecordPage,
+} from "./honor.js";
+export {
+  HONOR_DOMAINS,
+  OPERATION_HONOR_CATEGORIES,
+  HONOR_ANALYSIS_STATUSES,
+  HONOR_ANALYZER_REVISION,
+  HONOR_ANALYSIS_SOURCE_MAX_CHARS,
+} from "./honor.js";
+
+export type {
   SessionReport,
   SessionReportMapPrecision,
   CreateSessionReportInput,

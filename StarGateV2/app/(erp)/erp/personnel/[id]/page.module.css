@@ -362,6 +362,115 @@
   margin: 0 auto;
 }
 
+.honorRibbonBox {
+  border-color: color-mix(in srgb, var(--gold) 32%, var(--line));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--gold) 6%, transparent), transparent 56%),
+    var(--dossier-panel-pattern),
+    var(--bg-1);
+}
+
+.honorRibbonBox a {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.honorRibbonList,
+.honorRecordList {
+  display: grid;
+  gap: 8px;
+}
+
+.honorRibbon {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-2) 92%, var(--gold) 8%);
+  text-decoration: none;
+}
+
+.honorRibbon:hover,
+.honorRibbon:focus-visible {
+  border-color: var(--gold-dim);
+  outline: none;
+}
+
+.honorRibbon span,
+.honorRibbon small {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.honorRibbon strong {
+  color: var(--ink-0);
+  font-size: 13px;
+}
+
+.honorRecordBox {
+  border-color: color-mix(in srgb, var(--gold) 30%, var(--line));
+}
+
+.honorRecordWarning {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--line));
+  color: var(--gold);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.honorRecordCard {
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-2) 94%, var(--gold) 6%);
+}
+
+.honorRecordCard > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.honorRecordCard > div span {
+  color: var(--gold);
+}
+
+.honorRecordCard > strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink-0);
+  font-size: 16px;
+}
+
+.honorRecordCard p {
+  margin: 6px 0 0;
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.honorRecordCard > a {
+  display: inline-flex;
+  margin-top: 8px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-decoration: none;
+}
+
 .portraitName {
   margin: 16px 0 0;
   color: var(--ink-0);

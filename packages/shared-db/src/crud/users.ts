@@ -9,6 +9,10 @@ import { MongoServerError, ObjectId, type ClientSession } from "mongodb";
 import type { User, UserRole, UserStatus, UserPublic } from "../types/index.js";
 import { usersCol } from "../collections.js";
 import { getDb } from "../client.js";
+import {
+  withoutSessionReportReferenceStorageFields,
+  withoutSessionReportReferenceStorageFieldsMany,
+} from "./internal-storage.js";
 
 function toPublic(user: User): UserPublic {
   return {
@@ -29,14 +33,16 @@ export async function findUserByUsername(
   username: string
 ): Promise<User | null> {
   const col = await usersCol();
-  return col.findOne({ username });
+  const user = await col.findOne({ username });
+  return user ? withoutSessionReportReferenceStorageFields(user) : null;
 }
 
 export async function findUserByDiscordId(
   discordId: string
 ): Promise<User | null> {
   const col = await usersCol();
-  return col.findOne({ discordId });
+  const user = await col.findOne({ discordId });
+  return user ? withoutSessionReportReferenceStorageFields(user) : null;
 }
 
 /**
@@ -49,7 +55,9 @@ export async function findUsersByDiscordIds(
 ): Promise<User[]> {
   if (discordIds.length === 0) return [];
   const col = await usersCol();
-  return col.find({ discordId: { $in: discordIds } }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find({ discordId: { $in: discordIds } }).toArray(),
+  );
 }
 
 export async function findUserById(
@@ -58,10 +66,11 @@ export async function findUserById(
 ): Promise<User | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await usersCol();
-  return col.findOne(
+  const user = await col.findOne(
     { _id: new ObjectId(id) },
     { session: options.session },
   );
+  return user ? withoutSessionReportReferenceStorageFields(user) : null;
 }
 
 /**
@@ -78,7 +87,9 @@ export async function findUsersByIds(ids: string[]): Promise<User[]> {
   }
   if (objectIds.length === 0) return [];
   const col = await usersCol();
-  return col.find({ _id: { $in: objectIds } }).toArray();
+  return withoutSessionReportReferenceStorageFieldsMany(
+    await col.find({ _id: { $in: objectIds } }).toArray(),
+  );
 }
 
 export async function updateUserRole(
@@ -287,7 +298,7 @@ export async function upsertDiscordUser(
       { upsert: true, returnDocument: "after" }
     );
 
-    if (result) return result;
+    if (result) return withoutSessionReportReferenceStorageFields(result);
   } catch (err) {
     // E11000: 동시 upsert 경합 또는 username/discordId 충돌 → 재조회
     if (!(err instanceof MongoServerError) || err.code !== 11_000) {
@@ -297,7 +308,7 @@ export async function upsertDiscordUser(
 
   // Fallback: 이미 다른 트랜잭션이 생성했을 가능성 → discordId로 재조회
   const existing = await col.findOne({ discordId: input.discordId });
-  if (existing) return existing;
+  if (existing) return withoutSessionReportReferenceStorageFields(existing);
 
   throw new Error(
     `Failed to upsert Discord user (discordId=${input.discordId})`

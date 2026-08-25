@@ -14,6 +14,10 @@ import type {
 import type { WikiPage, WikiPageRevision } from "./types/wiki.js";
 import type { SessionReport } from "./types/session-report.js";
 import type { Notification } from "./types/notification.js";
+import type {
+  HonorAnalysisState,
+  HonorRecord,
+} from "./types/honor.js";
 import type { FactionDoc } from "./schemas/faction.schema.js";
 import type { InstitutionDoc } from "./schemas/institution.schema.js";
 import type { CreditPool } from "./types/credit-pool.js";
@@ -52,6 +56,14 @@ import type {
 } from "./types/research-lab.js";
 
 import { getDb, getDbSync } from "./client.js";
+
+type HonorAnalysisLockStorage = {
+  /** honor-analysis completion이 source identity 변경과 충돌하도록 쓰는 비공개 CAS 필드. */
+  __honorAnalysisLockAt?: Date;
+};
+type UserStorage = User & HonorAnalysisLockStorage;
+type CharacterStorage = Character & HonorAnalysisLockStorage;
+type SessionReportStorage = SessionReport & HonorAnalysisLockStorage;
 
 /* ── Collection names ── */
 
@@ -100,13 +112,15 @@ const COL = {
   NPC_RELATIONSHIPS: "npc_relationships",
   NPC_RELATIONSHIP_EVENTS: "npc_relationship_events",
   NPC_CONVERSATIONS: "npc_conversations",
+  HONOR_RECORDS: "honor_records",
+  HONOR_ANALYSIS_STATES: "honor_analysis_states",
 } as const;
 
 /* ── Async accessors (both modes) ── */
 
-export async function usersCol(): Promise<Collection<User>> {
+export async function usersCol(): Promise<Collection<UserStorage>> {
   const db = await getDb();
-  return db.collection<User>(COL.USERS);
+  return db.collection<UserStorage>(COL.USERS);
 }
 
 export async function sessionsCol(): Promise<Collection<Session>> {
@@ -129,9 +143,9 @@ export async function userTipsCol(): Promise<Collection<RegistrarUserTip>> {
   return db.collection<RegistrarUserTip>(COL.REGISTRAR_USER_TIPS);
 }
 
-export async function charactersCol(): Promise<Collection<Character>> {
+export async function charactersCol(): Promise<Collection<CharacterStorage>> {
   const db = await getDb();
-  return db.collection<Character>(COL.CHARACTERS);
+  return db.collection<CharacterStorage>(COL.CHARACTERS);
 }
 
 export async function creditTransactionsCol(): Promise<Collection<CreditTransaction>> {
@@ -169,14 +183,26 @@ export async function wikiPageRevisionsCol(): Promise<Collection<WikiPageRevisio
   return db.collection<WikiPageRevision>(COL.WIKI_PAGE_REVISIONS);
 }
 
-export async function sessionReportsCol(): Promise<Collection<SessionReport>> {
+export async function sessionReportsCol(): Promise<Collection<SessionReportStorage>> {
   const db = await getDb();
-  return db.collection<SessionReport>(COL.SESSION_REPORTS);
+  return db.collection<SessionReportStorage>(COL.SESSION_REPORTS);
 }
 
 export async function notificationsCol(): Promise<Collection<Notification>> {
   const db = await getDb();
   return db.collection<Notification>(COL.NOTIFICATIONS);
+}
+
+export async function honorRecordsCol(): Promise<Collection<HonorRecord>> {
+  const db = await getDb();
+  return db.collection<HonorRecord>(COL.HONOR_RECORDS);
+}
+
+export async function honorAnalysisStatesCol(): Promise<
+  Collection<HonorAnalysisState>
+> {
+  const db = await getDb();
+  return db.collection<HonorAnalysisState>(COL.HONOR_ANALYSIS_STATES);
 }
 
 export async function factionsCol(): Promise<Collection<FactionDoc>> {
@@ -334,8 +360,8 @@ export async function npcConversationsCol(): Promise<Collection<NpcConversation>
 
 /* ── Sync accessors (long-running only) ── */
 
-export function usersColSync(): Collection<User> {
-  return getDbSync().collection<User>(COL.USERS);
+export function usersColSync(): Collection<UserStorage> {
+  return getDbSync().collection<UserStorage>(COL.USERS);
 }
 
 export function sessionsColSync(): Collection<Session> {
@@ -354,8 +380,8 @@ export function userTipsColSync(): Collection<RegistrarUserTip> {
   return getDbSync().collection<RegistrarUserTip>(COL.REGISTRAR_USER_TIPS);
 }
 
-export function charactersColSync(): Collection<Character> {
-  return getDbSync().collection<Character>(COL.CHARACTERS);
+export function charactersColSync(): Collection<CharacterStorage> {
+  return getDbSync().collection<CharacterStorage>(COL.CHARACTERS);
 }
 
 export function creditTransactionsColSync(): Collection<CreditTransaction> {
@@ -386,12 +412,22 @@ export function wikiPageRevisionsColSync(): Collection<WikiPageRevision> {
   return getDbSync().collection<WikiPageRevision>(COL.WIKI_PAGE_REVISIONS);
 }
 
-export function sessionReportsColSync(): Collection<SessionReport> {
-  return getDbSync().collection<SessionReport>(COL.SESSION_REPORTS);
+export function sessionReportsColSync(): Collection<SessionReportStorage> {
+  return getDbSync().collection<SessionReportStorage>(COL.SESSION_REPORTS);
 }
 
 export function notificationsColSync(): Collection<Notification> {
   return getDbSync().collection<Notification>(COL.NOTIFICATIONS);
+}
+
+export function honorRecordsColSync(): Collection<HonorRecord> {
+  return getDbSync().collection<HonorRecord>(COL.HONOR_RECORDS);
+}
+
+export function honorAnalysisStatesColSync(): Collection<HonorAnalysisState> {
+  return getDbSync().collection<HonorAnalysisState>(
+    COL.HONOR_ANALYSIS_STATES,
+  );
 }
 
 export function factionsColSync(): Collection<FactionDoc> {

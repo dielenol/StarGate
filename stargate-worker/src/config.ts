@@ -5,6 +5,7 @@ export const WORKER_CONSUMER_NAMES = [
   "research-card",
   "research-lab",
   "research-ranking",
+  "honor-analysis",
   "shop-restock",
   "stock-market-wire",
 ] as const;
@@ -29,6 +30,7 @@ export interface WorkerConfig {
   pollIntervalMs: number;
   enabledConsumers: WorkerConsumerName[];
   researchLabWorkerEnabled: boolean;
+  hallOfFameV2WritesEnabled: boolean;
   mongo: {
     uri: string;
     dbName: string;
@@ -208,6 +210,8 @@ export function loadWorkerConfig(
     }),
     researchLabWorkerEnabled:
       env.RESEARCH_LAB_WORKER_ENABLED?.trim().toLowerCase() === "true",
+    hallOfFameV2WritesEnabled:
+      env.HALL_OF_FAME_V2_WRITES_ENABLED?.trim().toLowerCase() === "true",
     mongo: loadWorkerMongoConfig(env),
     realtime: {
       secret,

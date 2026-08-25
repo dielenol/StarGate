@@ -117,6 +117,103 @@
   border-radius: var(--radius-sm);
 }
 
+.honorPanel {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--gold) 36%, var(--line));
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--gold) 7%, transparent), transparent 54%),
+    var(--bg-1);
+}
+
+.honorPanel__list {
+  display: grid;
+  gap: 10px;
+}
+
+.honorPanel__status {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 12px;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--gold) 28%, var(--line));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--gold) 6%, var(--bg-2));
+}
+
+.honorPanel__status strong {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.honorPanel__status span {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.honorCitation {
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-2) 92%, var(--gold) 8%);
+}
+
+.honorCitation__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.honorCitation__meta span {
+  color: var(--gold);
+}
+
+.honorCitation > strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.honorCitation h3 {
+  margin: 4px 0 0;
+  color: var(--ink-0);
+  font-size: 17px;
+}
+
+.honorCitation p {
+  margin: 8px 0 0;
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.honorPanel__link {
+  display: inline-flex;
+  margin-top: 12px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  text-decoration: none;
+}
+
+.honorPanel__link:hover,
+.honorPanel__link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 @media (max-width: 1200px) {
   .dossierHero {
     grid-template-columns: auto minmax(0, 1fr);

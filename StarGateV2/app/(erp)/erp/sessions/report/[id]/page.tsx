@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 
+import type { HallOfFameHonorItem } from "@stargate/core";
+
 import { getActiveSession } from "@/lib/auth/active-session";
 import { isMemberErpViewer } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
@@ -20,6 +22,11 @@ import {
   formatOperationReportTitle,
   formatShortReporterName,
 } from "@/lib/format/session-report";
+import {
+  getHallOfFameCitationPage,
+  getHallOfFameReportAnalysisState,
+  type HallOfFameReportAnalysisState,
+} from "@/lib/hall-of-fame/honors";
 import {
   formatRelatedPersonnelMeta,
   type RelatedPersonnelLink,
@@ -69,6 +76,68 @@ function findPersonnelForParticipant(
   );
 }
 
+const HONOR_CATEGORY_LABEL: Record<string, string> = {
+  COMBAT: "전투 공적",
+  COMMAND: "지휘 공적",
+  RESCUE_PROTECTION: "구조·보호",
+  RESEARCH_TECH: "연구·기술",
+  SUPPORT_TEAMWORK: "지원·공조",
+  INTELLIGENCE_JUDGMENT: "정보·판단",
+};
+
+function ReportHonorCitations({
+  items,
+  analysisState,
+}: {
+  items: HallOfFameHonorItem[];
+  analysisState: HallOfFameReportAnalysisState;
+}) {
+  if (items.length === 0 && analysisState === null) return null;
+
+  return (
+    <Box className={styles.honorPanel}>
+      <PanelTitle right={<span className={styles.mono}>{items.length}</span>}>
+        공적 인용 · OFFICIAL HONORS
+      </PanelTitle>
+      {analysisState ? (
+        <div className={styles.honorPanel__status} role="status">
+          <strong>
+            {analysisState === "PENDING" ? "공적 재심사 중" : "자동 심사 지연"}
+          </strong>
+          <span>
+            {analysisState === "PENDING"
+              ? "보고서 갱신 내용을 검토하고 있습니다. 확정 전 기록은 공개하지 않습니다."
+              : "확정 기준을 통과한 결과만 공개하며, 내부 재시도 또는 운영 점검을 기다리고 있습니다."}
+          </span>
+        </div>
+      ) : null}
+      {items.length > 0 ? (
+        <div className={styles.honorPanel__list}>
+          {items.map((item) => (
+            <article key={item.key} className={styles.honorCitation}>
+              <div className={styles.honorCitation__meta}>
+                <span>{HONOR_CATEGORY_LABEL[item.category] ?? item.category}</span>
+                <time dateTime={item.occurredAt}>
+                  {formatDate(item.occurredAt, "numeric")}
+                </time>
+              </div>
+              <strong>{item.codename}</strong>
+              <h3>{item.title}</h3>
+              <p>{item.citation}</p>
+            </article>
+          ))}
+        </div>
+      ) : null}
+      <Link
+        className={styles.honorPanel__link}
+        href="/erp/hall-of-fame?view=operations"
+      >
+        전체 작전 공적 기록 보기 ↗
+      </Link>
+    </Box>
+  );
+}
+
 export default async function SessionReportDetailPage({ params }: Props) {
   const session = await getActiveSession();
 
@@ -107,12 +176,26 @@ export default async function SessionReportDetailPage({ params }: Props) {
   // 자동링크/연관 문서용 컬렉션 4종 — 서로 독립 조회라 병렬 로드 (실패 시 빈 목록).
   // 캐릭터/아이템/보고서는 ref projection (lore 서사/play/summary 등 미전송).
   // 위키는 relatedWikiForReport 가 본문(content) 스캔에 의존하므로 full 로드 유지.
-  const [allPages, allCharacters, allItems, allReports] = await Promise.all([
-    listWikiPages({ includePrivate: isGmOrAbove }).catch(() => []),
-    listCharacterRefs().catch(() => []),
-    listMasterItemRefs().catch(() => []),
-    listVisibleSessionReportRefs(session.user.role).catch(() => [report]),
-  ]);
+  const [
+    allPages,
+    allCharacters,
+    allItems,
+    allReports,
+    reportHonors,
+    honorAnalysisState,
+  ] =
+    await Promise.all([
+      listWikiPages({ includePrivate: isGmOrAbove }).catch(() => []),
+      listCharacterRefs().catch(() => []),
+      listMasterItemRefs().catch(() => []),
+      listVisibleSessionReportRefs(session.user.role).catch(() => [report]),
+      getHallOfFameCitationPage({
+        viewerRole: session.user.role,
+        reportId,
+        limit: 3,
+      }).catch(() => ({ generatedAt: new Date().toISOString(), items: [] })),
+      getHallOfFameReportAnalysisState(reportId).catch(() => null),
+    ]);
   const reportNumberMeta = findOperationReportNumberMeta<SessionReportRef>(
     report,
     allReports,
@@ -421,6 +504,10 @@ export default async function SessionReportDetailPage({ params }: Props) {
           <ReportBodyContent
             initialReport={serializedReport}
             links={autoLinkTargets}
+          />
+          <ReportHonorCitations
+            items={reportHonors.items}
+            analysisState={honorAnalysisState}
           />
         </div>
       </div>

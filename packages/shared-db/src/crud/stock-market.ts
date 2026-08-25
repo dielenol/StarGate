@@ -5,6 +5,10 @@ import { charactersCol, notificationsCol, stockHoldingsCol, stockPriceHistoryCol
 import { addCredit } from "./credits.js";
 import { claimTradableStockPrice } from "./stocks.js";
 import { enqueueIntegrationOutbox, type EnqueueIntegrationOutboxInput } from "./worker.js";
+import {
+  isHallOfFameV2WritesEnabled,
+  materializeNovexSeasonHonors,
+} from "./honors.js";
 import type {
   StockCorporateAction,
   StockCompanyProfile,
@@ -2175,12 +2179,29 @@ export async function finalizeStockInvestmentSeason(
   finalizedAt: Date,
   session: ClientSession,
 ): Promise<boolean> {
+  const seasons = await col<StockInvestmentSeason>(SEASONS);
+  const season = await seasons.findOne(
+    { _id: seasonId, status: "ACTIVE" },
+    { session },
+  );
+  if (!season) return false;
   await recalculateStockSeasonPerformance(performances, session);
-  const result = await (await col<StockInvestmentSeason>(SEASONS)).updateOne(
+  const result = await seasons.updateOne(
     { _id: seasonId, status: "ACTIVE" },
     { $set: { status: "FINALIZED", finalizedAt } },
     { session },
   );
+  if (
+    result.modifiedCount === 1 &&
+    isHallOfFameV2WritesEnabled()
+  ) {
+    await materializeNovexSeasonHonors({
+      season: { ...season, status: "FINALIZED", finalizedAt },
+      performances,
+      session,
+      issuedAt: finalizedAt,
+    });
+  }
   return result.modifiedCount === 1;
 }
 
@@ -2501,11 +2522,26 @@ export async function evaluateStockInvestmentSeasonForRound(input: {
     );
   }
   if (shouldFinalize) {
-    await seasons.updateOne(
+    const finalized = await seasons.updateOne(
       { _id: season._id, status: "ACTIVE" },
       { $set: { status: "FINALIZED", finalizedAt: valuationAt } },
       { session },
     );
+    if (
+      finalized.modifiedCount === 1 &&
+      isHallOfFameV2WritesEnabled()
+    ) {
+      await materializeNovexSeasonHonors({
+        season: {
+          ...season,
+          status: "FINALIZED",
+          finalizedAt: valuationAt,
+        },
+        performances: rows,
+        session,
+        issuedAt: valuationAt,
+      });
+    }
     const notifications = await notificationsCol();
     for (const row of rows.filter((performance) => (performance.rank ?? 99) <= 3)) {
       const ownerId = characterById.get(row.characterId)?.ownerId;
@@ -2519,7 +2555,7 @@ export async function evaluateStockInvestmentSeasonForRound(input: {
           type: "STOCK",
           title: row.rank === 1 ? "NOVEX 시즌 챔피언" : `NOVEX 시즌 ${row.rank}위`,
           message: `${row.codename}의 시즌 수익률 순위가 확정되었습니다.`,
-          link: "/erp/stock",
+          link: `/erp/hall-of-fame?view=novex&season=${encodeURIComponent(season._id)}`,
           isRead: false,
           createdAt: valuationAt,
         } },

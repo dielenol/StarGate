@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import Box from "@/components/ui/Box/Box";
 
@@ -178,6 +179,12 @@ export default function ResearchLabView({
             <p>SAMPLE CONTAINMENT LAB</p>
             <strong>제노의 샘플 연구소</strong>
           </div>
+          <Link
+            className={styles.locationHud__honorsLink}
+            href="/erp/hall-of-fame?view=research"
+          >
+            연구 공로 기록 ↗
+          </Link>
         </header>
 
         <nav className={styles.specimenDock} aria-label="연구 장치 선택">

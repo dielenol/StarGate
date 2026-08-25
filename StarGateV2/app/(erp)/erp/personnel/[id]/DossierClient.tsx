@@ -6,6 +6,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 
+import type { HallOfFameHonorItem } from "@stargate/core";
+
 import type {
   AgentLevel,
   Character,
@@ -22,6 +24,7 @@ import {
   personnelKeys,
   usePersonnelByIdQuery,
 } from "@/hooks/queries/useCharactersQuery";
+import { useHallOfFameCitations } from "@/hooks/queries/useHallOfFameQuery";
 
 import {
   canViewField,
@@ -580,8 +583,37 @@ interface Props {
   character: Character;
   clearance: AgentLevel;
   canEditDossier?: boolean;
+  canViewHonors?: boolean;
   relatedReports?: RelatedFieldReport[];
   relatedCharacters?: RelatedCharacterSummary[];
+}
+
+const HONOR_CATEGORY_LABEL: Record<string, string> = {
+  NOVEX_PODIUM: "NOVEX",
+  COMBAT: "전투",
+  COMMAND: "지휘",
+  RESCUE_PROTECTION: "구조·보호",
+  RESEARCH_TECH: "연구·기술",
+  SUPPORT_TEAMWORK: "지원·공조",
+  INTELLIGENCE_JUDGMENT: "정보·판단",
+};
+
+function HonorRibbon({ item }: { item: HallOfFameHonorItem }) {
+  const body = (
+    <>
+      <span>{HONOR_CATEGORY_LABEL[item.category] ?? item.category}</span>
+      <strong>{item.title}</strong>
+      <small>{formatDate(item.occurredAt)}</small>
+    </>
+  );
+
+  return item.sourceHref ? (
+    <Link className={styles.honorRibbon} href={item.sourceHref}>
+      {body}
+    </Link>
+  ) : (
+    <article className={styles.honorRibbon}>{body}</article>
+  );
 }
 
 interface RelatedFieldReport {
@@ -610,6 +642,7 @@ export default function DossierClient({
   character: initialCharacter,
   clearance,
   canEditDossier = false,
+  canViewHonors = false,
   relatedReports = [],
   relatedCharacters = [],
 }: Props) {
@@ -620,6 +653,10 @@ export default function DossierClient({
   const characterId = initialCharacter._id
     ? String(initialCharacter._id)
     : null;
+  const honorQuery = useHallOfFameCitations({
+    characterId: characterId ?? undefined,
+    enabled: canViewHonors && Boolean(characterId),
+  });
   const { data: detail } = usePersonnelByIdQuery(
     characterId ?? "",
     {
@@ -632,6 +669,8 @@ export default function DossierClient({
   );
   const character = detail?.character ?? initialCharacter;
   const currentRelatedReports = detail?.relatedReports ?? relatedReports;
+  const honorItems = honorQuery.data?.items ?? [];
+  const recentHonorItems = honorItems.slice(0, 3);
 
   /* ── 편집 상태 ──
    *
@@ -1568,13 +1607,67 @@ export default function DossierClient({
     }
 
     return (
-      <Box>
-        <PanelTitle right={<ReqClrBadge required={reqIdentity} locked={false} />}>
-          FIELD ACTIVITY · 현장 출현 이력
-        </PanelTitle>
-        {fieldActivityRows.length > 0 ? (
-          <div className={styles.eventList}>
-            {fieldActivityRows.map(({ eventCode, appearance }, index) => {
+      <>
+        {canViewHonors ? (
+          <Box className={styles.honorRecordBox}>
+            <PanelTitle
+              right={<span className={styles.mono}>{honorItems.length}</span>}
+            >
+              OFFICIAL HONORS · 공적 기록
+            </PanelTitle>
+            {honorQuery.isPending && !honorQuery.data ? (
+              <div className={styles.tabEmpty}>공적 기록 조회 중</div>
+            ) : honorItems.length > 0 ? (
+              <>
+                {honorQuery.isError ? (
+                  <div className={styles.honorRecordWarning} role="status">
+                    최신 갱신에 실패해 마지막 공적 기록을 표시합니다.
+                  </div>
+                ) : null}
+                <div className={styles.honorRecordList}>
+                  {honorItems.map((item) => (
+                    <article key={item.key} className={styles.honorRecordCard}>
+                      <div>
+                        <span>
+                          {HONOR_CATEGORY_LABEL[item.category] ?? item.category}
+                        </span>
+                        <time dateTime={item.occurredAt}>
+                          {formatDate(item.occurredAt)}
+                        </time>
+                      </div>
+                      <strong>{item.title}</strong>
+                      <p>{item.citation}</p>
+                      {item.sourceHref ? (
+                        <Link href={item.sourceHref}>원본 기록 보기 ↗</Link>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </>
+            ) : honorQuery.isError ? (
+              <div className={styles.tabEmpty} role="alert">
+                공적 기록을 불러오지 못했습니다
+              </div>
+            ) : (
+              <div className={styles.tabEmpty}>
+                공식 공적 기록 없음
+                <span className={styles.tabEmpty__hint}>
+                  확정된 NOVEX 또는 작전 공적이 여기에 기록됩니다
+                </span>
+              </div>
+            )}
+          </Box>
+        ) : null}
+
+        <Box>
+          <PanelTitle
+            right={<ReqClrBadge required={reqIdentity} locked={false} />}
+          >
+            FIELD ACTIVITY · 현장 출현 이력
+          </PanelTitle>
+          {fieldActivityRows.length > 0 ? (
+            <div className={styles.eventList}>
+              {fieldActivityRows.map(({ eventCode, appearance }, index) => {
               const report = relatedReportBySessionId.get(eventCode);
               const eventTitle =
                 appearance?.sourceLabel ?? report?.sessionTitle ?? eventCode;
@@ -1618,17 +1711,18 @@ export default function DossierClient({
                   {cardBody}
                 </article>
               );
-            })}
-          </div>
-        ) : (
-          <div className={styles.tabEmpty}>
-            현장 활동 기록 없음
-            <span className={styles.tabEmpty__hint}>
-              작전 출현 시 자동 등록됩니다
-            </span>
-          </div>
-        )}
-      </Box>
+              })}
+            </div>
+          ) : (
+            <div className={styles.tabEmpty}>
+              현장 활동 기록 없음
+              <span className={styles.tabEmpty__hint}>
+                작전 출현 시 자동 등록됩니다
+              </span>
+            </div>
+          )}
+        </Box>
+      </>
     );
   };
 
@@ -1816,6 +1910,25 @@ export default function DossierClient({
               </div>
             ) : null}
           </Box>
+
+          {canViewHonors && recentHonorItems.length > 0 ? (
+            <Box className={styles.honorRibbonBox}>
+              <PanelTitle
+                right={
+                  <Link href="/erp/hall-of-fame?view=operations">
+                    전체 {honorItems.length}
+                  </Link>
+                }
+              >
+                HONOR RIBBONS
+              </PanelTitle>
+              <div className={styles.honorRibbonList}>
+                {recentHonorItems.map((item) => (
+                  <HonorRibbon key={item.key} item={item} />
+                ))}
+              </div>
+            </Box>
+          ) : null}
 
           {isDeceased ? (
             <Box className={styles.statusRecord}>

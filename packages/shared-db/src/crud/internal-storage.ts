@@ -1,6 +1,7 @@
 const INTERNAL_SESSION_REPORT_REFERENCE_FIELDS = [
   "__sessionReportReferenceVersion",
   "__sessionReportReferenceLockAt",
+  "__honorAnalysisLockAt",
 ] as const;
 
 /**

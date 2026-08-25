@@ -98,6 +98,32 @@ export function createShadowDomainConsumers(): DueWorkConsumerPort[] {
       }),
     ),
     new ShadowBoundaryConsumer(
+      "honor-analysis",
+      "honor_analysis_states",
+      (now) => ({
+        $or: [
+          {
+            status: { $in: ["PENDING", "RETRY"] },
+            $and: [
+              {
+                $or: [
+                  { nextAttemptAt: { $exists: false } },
+                  { nextAttemptAt: { $lte: now } },
+                ],
+              },
+              {
+                $or: [
+                  { leaseUntil: { $exists: false } },
+                  { leaseUntil: { $lte: now } },
+                ],
+              },
+            ],
+          },
+          { status: "LEASED", leaseUntil: { $lte: now } },
+        ],
+      }),
+    ),
+    new ShadowBoundaryConsumer(
       "research-ranking",
       RESEARCH_RANKING_STATE_COLLECTION,
       (now) => ({

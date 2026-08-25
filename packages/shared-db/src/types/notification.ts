@@ -7,6 +7,7 @@ export type NotificationType =
   | "CONSUMABLE_USED"
   | "REPORT_PUBLISHED"
   | "STOCK"
+  | "HONOR"
   | "SYSTEM";
 
 export interface Notification {

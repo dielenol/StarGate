@@ -11,6 +11,7 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
     ["dashboard"],
     ["factions"],
     ["account"],
+    ["hall-of-fame"],
   ],
   characters: [
     ["characters"],
@@ -22,6 +23,7 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
     ["factions"],
     ["account"],
     ["wiki", "lore-search"],
+    ["hall-of-fame"],
   ],
   personnel: [["personnel"]],
   credits: [

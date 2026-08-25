@@ -14,6 +14,7 @@ import type {
 import {
   IconConsumable,
   IconCredit,
+  IconCrown,
   IconGridAll,
   IconInbox,
   IconLinked,
@@ -56,6 +57,7 @@ const FILTER_ORDER: FilterKey[] = [
   "CONSUMABLE_USED",
   "CREDIT_RECEIVED",
   "STOCK",
+  "HONOR",
   "REPORT_PUBLISHED",
   "ROLE_CHANGE",
   "SYSTEM",
@@ -67,6 +69,7 @@ const FILTER_LABEL: Record<FilterKey, string> = {
   CONSUMABLE_USED: "소모품",
   CREDIT_RECEIVED: "크레딧",
   STOCK: "주식",
+  HONOR: "공적",
   REPORT_PUBLISHED: "리포트",
   ROLE_CHANGE: "역할",
   SYSTEM: "시스템",
@@ -78,6 +81,7 @@ const FILTER_ICON: Record<FilterKey, IconComponent> = {
   CONSUMABLE_USED: IconConsumable,
   CREDIT_RECEIVED: IconCredit,
   STOCK: IconStock,
+  HONOR: IconCrown,
   REPORT_PUBLISHED: IconReportMini,
   ROLE_CHANGE: IconUserAdmin,
   SYSTEM: IconSystem,
@@ -92,6 +96,7 @@ const TYPE_TAG: Record<
   ROLE_CHANGE: { label: "ROLE", tone: "info" },
   CREDIT_RECEIVED: { label: "CREDITS", tone: "success" },
   STOCK: { label: "NOVEX", tone: "gold" },
+  HONOR: { label: "HONOR", tone: "gold" },
   REPORT_PUBLISHED: { label: "REPORT", tone: "gold" },
   SYSTEM: { label: "SYSTEM", tone: "default" },
 };
@@ -221,6 +226,7 @@ export default function NotificationsClient({
       ROLE_CHANGE: 0,
       CREDIT_RECEIVED: 0,
       STOCK: 0,
+      HONOR: 0,
       REPORT_PUBLISHED: 0,
       SYSTEM: 0,
     };

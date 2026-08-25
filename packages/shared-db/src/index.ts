@@ -214,6 +214,24 @@ export type {
   ResearchRankingDiscordPayload,
   ResearchRankingState,
   TeamResearchContribution,
+  HonorDomain,
+  OperationHonorCategory,
+  HonorCategory,
+  HonorRecordStatus,
+  HonorSourceType,
+  HonorRecordSource,
+  HonorEvidenceAudit,
+  HonorCharacterIdentity,
+  OperationHonorSourceCandidate,
+  OperationHonorSourceSegment,
+  OperationHonorSourceMaterial,
+  NovexHonorFallbackPerformance,
+  HonorRecord,
+  UpsertHonorRecordInput,
+  HonorAnalysisStatus,
+  HonorAnalysisState,
+  HonorRecordQuery,
+  HonorRecordPage,
 } from "./types/index.js";
 
 export {
@@ -273,6 +291,11 @@ export {
   STOCK_MARKET_STATE_ID,
   RESEARCH_RANKING_STATE_COLLECTION,
   RESEARCH_RANKING_STATE_ID,
+  HONOR_DOMAINS,
+  OPERATION_HONOR_CATEGORIES,
+  HONOR_ANALYSIS_STATUSES,
+  HONOR_ANALYZER_REVISION,
+  HONOR_ANALYSIS_SOURCE_MAX_CHARS,
 } from "./types/index.js";
 
 /* ── Client ── */
@@ -306,6 +329,8 @@ export {
   wikiPageRevisionsCol,
   sessionReportsCol,
   notificationsCol,
+  honorRecordsCol,
+  honorAnalysisStatesCol,
   factionsCol,
   institutionsCol,
   creditPoolsCol,
@@ -355,6 +380,8 @@ export {
   wikiPageRevisionsColSync,
   sessionReportsColSync,
   notificationsColSync,
+  honorRecordsColSync,
+  honorAnalysisStatesColSync,
   factionsColSync,
   institutionsColSync,
   creditPoolsColSync,
@@ -395,12 +422,14 @@ export {
   ensureBureaucratVoteIndexes,
   ensureResearchLabIndexes,
   ensureNovexIndexes,
+  ensureHonorIndexes,
   findLoreUniqueIndexConflicts,
   LORE_INDEX_DEFINITIONS,
   SESSION_REPORT_INDEX_DEFINITIONS,
   BUREAUCRAT_VOTE_INDEX_DEFINITIONS,
   RESEARCH_LAB_INDEX_DEFINITIONS,
   NOVEX_INDEX_DEFINITIONS,
+  HONOR_INDEX_DEFINITIONS,
 } from "./indexes.js";
 export { ensureChangeLogsIndexes } from "./migrations/ensure-change-logs-indexes.js";
 export {
@@ -434,6 +463,10 @@ export type {
 /* ── Utils ── */
 
 export { isValidObjectId } from "./utils.js";
+export {
+  buildOperationHonorSourceMaterial,
+  sanitizeOperationHonorSourceText,
+} from "./honor-source.js";
 
 /* ── Discord delivery routing ── */
 

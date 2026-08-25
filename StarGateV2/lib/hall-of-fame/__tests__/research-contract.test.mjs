@@ -93,7 +93,7 @@ test("RSC 초기 데이터와 realtime 5분 fallback Query를 연결한다", asy
   assert.match(queryKeys, /"hall-of-fame": \[\["hall-of-fame"\]\]/);
 });
 
-test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공한다", async () => {
+test("화면은 오류·빈 결과와 통합 공적 허브 계약을 제공한다", async () => {
   const [page, client, css, background] = await Promise.all([
     source("app/(erp)/erp/hall-of-fame/page.tsx"),
     source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
@@ -107,33 +107,25 @@ test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공�
   ]);
 
   assert.match(client, /연구 공로 순위를 불러오지 못했습니다/);
-  assert.match(client, /if \(!data\)/);
-  assert.doesNotMatch(client, /if \(isError \|\| !data\)/);
-  assert.match(client, /const refreshWarning = isError/);
-  assert.match(client, /마지막으로 확인된 일일 순위를 유지합니다/);
-  assert.match(client, /아직 기록된 팀 연구 공로가 없습니다/);
-  assert.match(page, /DAILY · 21:00 KST/);
-  assert.match(client, /getPixelProfilePath\(item\.codename\)/);
+  assert.match(client, /첫 연구 공적을 기다리고 있습니다/);
+  assert.match(client, /StaleNotice/);
+  assert.match(client, /마지막 성공 데이터를 표시합니다/);
+  assert.match(page, /OFFICIAL · LIVING ARCHIVE/);
+  assert.match(client, /DAILY · 21:00 KST/);
+  assert.match(client, /NOVUS ORDO HONORS ARCHIVE/);
+  assert.match(client, /VIEWS = \["overview", "research", "novex", "operations", "mine"\]/);
+  assert.match(client, /isGuest && \(view === "operations" \|\| view === "mine"\)/);
+  assert.match(client, /enabled: !isGuest/);
+  assert.match(client, /getPixelProfilePath\(codename\)/);
   assert.match(client, /preferOptimizedPublicImagePath\(profilePath\)/);
   assert.match(client, /onError=\{\(\) => setHasImageError\(true\)\}/);
-  assert.match(client, /loading=\{item\.rank === 1 \? "eager" : "lazy"\}/);
-  assert.match(client, /podium__portraitFallback/);
-  assert.match(client, /className=\{styles\.honors__seal\}/);
-  assert.doesNotMatch(
-    client,
-    /podium__portraitFallback\} aria-hidden="true">\s*<IconCrown \/>\s*<span/,
-  );
-  assert.match(client, /1: "\(max-width: 960px\) 55vw, 510px"/);
+  assert.match(client, /loading=\{rank === 1 \? "eager" : "lazy"\}/);
+  assert.match(client, /className=\{styles\.portraitFallback\}/);
+  assert.match(client, /sizes=\{PORTRAIT_SIZES\[rank\]\}/);
+  assert.match(client, /className=\{styles\.researchPodium__card\} data-rank=\{item\.rank\}/);
   assert.match(
     client,
-    /2: "\(max-width: 640px\) 43vw, \(max-width: 960px\) 24\.5vw, 230px"/,
-  );
-  assert.match(client, /sizes=\{PORTRAIT_SIZES\[item\.rank\]\}/);
-  assert.match(client, /<li className=\{styles\.podium__card\} data-rank=\{item\.rank\}>/);
-  assert.match(client, /data-count=\{data\.items\.length\}/);
-  assert.match(
-    client,
-    /data\.items\.map\(\(item\) => \([\s\S]*<HonoreeCard item=\{item\}/,
+    /data\.items\.map\(\(item\) => <li[\s\S]*key=\{`\$\{item\.rank\}-\$\{item\.codename\}`\}/,
   );
   assert.match(css, /max-width: 1280px/);
   assert.match(css, /container-type: inline-size/);
@@ -142,19 +134,14 @@ test("화면은 오류·빈 결과와 기관 수상 기록판 계약을 제공�
   assert.ok(background.byteLength > 10_000);
   assert.match(css, /@container \(max-width: 960px\)/);
   assert.match(css, /@container \(max-width: 640px\)/);
-  assert.match(css, /grid-template-columns: minmax\(0, 1\.62fr\) minmax\(310px, 0\.88fr\)/);
-  assert.match(css, /gap: 1px/);
-  assert.match(css, /\.podium\[data-count="1"\][\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(css, /\.podium\[data-count="2"\][\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(css, /@container \(max-width: 960px\)[\s\S]*\.podium\[data-count="1"\],[\s\S]*\.podium\[data-count="2"\][\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="1"\][\s\S]*min-height: 276px/);
-  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.podium\[data-count="2"\] \.podium__card\[data-rank="2"\][\s\S]*min-height: 156px/);
+  assert.match(css, /grid-template-columns: repeat\(12, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.researchPodium\[data-count="1"\]/);
+  assert.match(css, /\.researchPodium\[data-count="2"\]/);
+  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.overview__grid \{ display: flex; flex-direction: column/);
+  assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.researchPodium \{ display: flex; flex-direction: column/);
   assert.doesNotMatch(css, /grid-template-areas:/);
   assert.doesNotMatch(css, /@media \(max-width: 390px\)/);
-  assert.match(
-    css,
-    /@container \(max-width: 640px\)[\s\S]*\.podium \{[\s\S]*display: flex;[\s\S]*flex-direction: column/,
-  );
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/);
 });
 
 test("명예의 전당 모바일 GM 잠금 HUD는 기록판을 가리지 않도록 축소한다", async () => {

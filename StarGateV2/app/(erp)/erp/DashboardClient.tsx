@@ -155,6 +155,7 @@ const NOTIFICATION_TAG: Record<
   ROLE_CHANGE: { label: "역할", tone: "info" },
   CREDIT_RECEIVED: { label: "크레딧", tone: "success" },
   STOCK: { label: "주식", tone: "gold" },
+  HONOR: { label: "공적", tone: "gold" },
   REPORT_PUBLISHED: { label: "리포트", tone: "gold" },
   SYSTEM: { label: "시스템", tone: "default" },
 };

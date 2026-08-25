@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useStockSeasonLeaderboard } from "@/hooks/queries/useStockSeasonQuery";
 
 import styles from "./page.module.css";
@@ -34,7 +36,10 @@ export default function StockSeasonLeaderboard() {
           <span>INVESTMENT SEASON</span>
           <h2 id="stock-season-title">시즌 순위</h2>
         </div>
-        <strong>{seasonStatusLabel(data?.season?.status)}</strong>
+        <div className={styles.seasonBoard__actions}>
+          <strong>{seasonStatusLabel(data?.season?.status)}</strong>
+          <Link href="/erp/hall-of-fame?view=novex">역대 기록 ↗</Link>
+        </div>
       </div>
       {query.isPending ? (
         <div className={styles.seasonBoard__empty}>시즌 순위를 불러오는 중입니다.</div>

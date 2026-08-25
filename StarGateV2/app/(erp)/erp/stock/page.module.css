@@ -516,6 +516,38 @@
   letter-spacing: .08em;
 }
 
+.seasonBoard__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seasonBoard__actions strong,
+.seasonBoard__actions a {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+}
+
+.seasonBoard__actions strong {
+  color: var(--gold);
+}
+
+.seasonBoard__actions a {
+  padding: 5px 7px;
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.seasonBoard__actions a:hover,
+.seasonBoard__actions a:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold);
+  outline: none;
+}
+
 .marketStatus--closed .marketStatus__head strong { color: var(--danger); }
 .marketStatus__reason { margin: 8px 0 0; color: var(--ink-1); font-size: var(--font-size-sm); line-height: 1.5; }
 .marketStatus__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
