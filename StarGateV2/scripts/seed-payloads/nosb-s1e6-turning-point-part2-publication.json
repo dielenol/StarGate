@@ -1,0 +1,1629 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-publication",
+    "filter": {
+      "slug": "afterglow-being"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-publication",
+    "filter": {
+      "slug": "afterglow-radiance-sample"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-publication",
+    "filter": {
+      "slug": "s1e6-turning-point-part2"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-publication",
+    "filter": {
+      "sessionId": "NOSB-S1E6-TURNING-POINT-PART2"
+    },
+    "update": {
+      "$set": {
+        "minRole": "U",
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "montauk-project-slaughter-hound"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART2"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 변곡점 2부 아르고 기지 과거 기록\n섹터 D 과거 기록에서 킴라박 리와 유회는 모리아티 대령의 지휘 아래 아르고 기지에 침투했다. 킴라박은 `로켓 추진 및 우주 엔진에 대한 NHI 적응법` 기밀 문서, `하이퍼보리아인 14` 챔버와 집게에 `Montag - 98`이 적힌 머드크랩형 개체를 목격했다.\n\nMontag-98은 킴라박을 공격하고 모리아티를 살해했다. 같은 아르고 기지와 몬탁 프로젝트 표기가 확인되지만, 이번 개체를 기존 도살견과 동일 개체·동일 프로그램 산출물로 확정하지 않는다. 기밀 문서와 하이퍼보리아인 14, Montag-98의 후속 보관·격리 상태도 확인되지 않았다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART2",
+                "아르고기지",
+                "Montag-98",
+                "하이퍼보리아인14",
+                "NHI"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-25T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "space-zero"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART2"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 주주의 방주 로켓 계약\n요한 스미스는 스타크 일로니손을 텍사스 연구소로 데려가 건조 중인 로켓을 공개했다. 그는 인류 멸망 가능성에 대비한 로켓을 `주주의 방주`라고 설명하고, 완성을 위해 `뒤집어진 양말` 같은 부유체를 확보해 넘기라고 요구했다.\n\n스타크는 구두 약속을 거부해 서면 계약을 받았다. 계약의 대가와 주식 수량, 부유체의 실제 인도는 이번 기록에서 확인되지 않았으며, 비공개 접촉만으로 시장 공시나 완성된 발사 계획을 뜻하지 않는다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART2",
+                "요한스미스",
+                "스타크",
+                "주주의방주",
+                "로켓",
+                "서면계약"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-25T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "inverted-sock"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART2"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 스페이스 제로의 부유체 요구\n요한 스미스는 스페이스 제로 로켓을 띄우기 위해 `뒤집어진 양말`과 같은 종류의 부유체가 필요하다고 말하고 스타크에게 확보를 요구했다. 수메르의 비밀 발사대에서는 불타는 비행체와 뒤집어진 양말의 사체가 목격됐다.\n\n현장팀은 의식장 구조를 우선했으며, 개체의 사체가 스페이스 제로로 인도됐거나 소유권이 이전됐다는 기록은 없다. 이번 접촉은 외부 확보 요구와 현장 발견으로만 보존한다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART2",
+                "스페이스제로",
+                "주주의방주",
+                "부유체",
+                "수메르"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-25T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "last-battalion"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART2"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 변곡점 2부 의식장 교전\n노부스 오르도 증원대는 수메르 지하 의식장으로 진입하며 마지막 대대 보병과 중기관총병의 저지선을 돌파했다. 현장팀은 포로가 된 마리아·오틸리아·시유와 합류했고, 이후 이르마 코흐의 잔광자 변환과 최종 교전에 들어갔다.\n\n이번 기록에서 의식장 전력과 광명회 수괴는 제압됐지만 마지막 대대 전체 병력·지휘망·다른 거점의 소탕 여부는 확인되지 않았다. 따라서 조직 전체가 해체됐다고 단정하지 않는다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART2",
+                "수메르",
+                "의식장",
+                "잔존병력",
+                "잔광자"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-25T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "illuminati"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART2"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 이르마 코흐의 잔광자 변환\n이르마 코흐는 시유에게 어머니의 형상을 보여주고 개조 광원화 바이러스와 천사화를 제안했다. 시유가 제안을 거부하자 이르마는 자신에게 주사액을 투여했고, 총격 뒤 `잔광자`로 변환했다.\n\n현장팀은 냉각 공격과 행동교정물질로 잔광자의 활동을 멈췄고 키아나가 이사회 명령을 근거로 참수했다. 광명회 수장 이르마의 사망은 확인됐지만 조직 전체 해체는 확인되지 않았다. 사무총장은 광명회와 결탁한 범죄조직 `페데라치오`가 일루미나티와 첩자 사이를 중개했다는 후속 단서를 제시했다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART2",
+                "이르마코흐",
+                "잔광자",
+                "광체",
+                "페데라치오"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-25T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "aurora-virus"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART2"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 잔광자 변환과 현장 대응\n이르마 코흐는 개조 광원화 바이러스를 자신에게 투여한 뒤 광채로 된 변환 개체 `잔광자`로 다시 일어났다. 잔광자는 다수의 눈, 레이저, 정신 공격과 환각·잔향을 사용했다.\n\n현장 관측에서는 냉기·전기·화염이 유효한 반응을 보였고, 오틸리아가 전달한 행동교정물질 뒤 개체가 발작하며 얼음 속에서 잿빛으로 변했다. 사백신도 대응 과정에 사용됐지만 다른 공격과 분리한 단독 효과는 확정하지 않는다. 사무총장은 회수 시체가 2차 백신과 가능한 3차 약제 연구에 쓰일 수 있다고 말했으나, 이는 완성된 백신이나 효능 확정이 아니다. 관련 표본은 [[catalog:afterglow-radiance-sample|잔광자 광채 표본]]으로 구분한다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART2",
+                "이르마코흐",
+                "잔광자",
+                "광채",
+                "사백신",
+                "행동교정물질"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-25T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "existing-wiki-session-append",
+    "filter": {
+      "slug": "project-dead-hand"
+    },
+    "update": [
+      {
+        "$set": {
+          "content": {
+            "$cond": [
+              {
+                "$regexMatch": {
+                  "input": {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "regex": "NOSB-S1E6-TURNING-POINT-PART2"
+                }
+              },
+              "$content",
+              {
+                "$concat": [
+                  {
+                    "$ifNull": [
+                      "$content",
+                      ""
+                    ]
+                  },
+                  "\n\n## 순백 격리실 면회 기록\n피펫은 순백의 격리실에 있는 마가렛을 다시 방문했다. 마가렛은 직접 그린 에펠탑을 보여주고 피펫이 떠나는 것을 두려워했다. 피펫은 닥터 제노에게서 빼낼 방법을 찾겠다고 약속했다.\n\n닥터 제노는 면회 시간이 끝났다고 통보한 뒤 피펫을 내보내고 마가렛을 홀로 남겼다. 마가렛의 격리와 제노의 직접 통제는 계속됐으며, 1부에서 예고된 수술의 실행 여부는 이번 기록에서도 확인되지 않았다.\n\n관련 기록: [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]].\n\n기록 출처: NOVUS ORDO 사무국 기록통제실 보존본 「변곡점 2부」."
+                ]
+              }
+            ]
+          },
+          "tags": {
+            "$setUnion": [
+              {
+                "$ifNull": [
+                  "$tags",
+                  []
+                ]
+              },
+              [
+                "NOSB-S1E6-TURNING-POINT-PART2",
+                "마가렛",
+                "피펫",
+                "닥터제노",
+                "격리실",
+                "면회통제"
+              ]
+            ]
+          },
+          "updatedAt": {
+            "$toDate": "2026-08-25T00:00:00.000Z"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "KIMLEE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "아르고기지",
+            "Montag-98",
+            "잔광자"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "아르고 기지 기밀 문서 회수자 및 잔광자 교전 요원",
+          "summary": "과거 아르고 기지에서 NHI 우주 엔진 문서를 회수하고 하이퍼보리아인 14와 Montag-98을 목격했다. 모리아티의 배신에서 살아남았으며 현재 수메르에서는 잔광자 교전에 참여했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "YUHOE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "아르고기지",
+            "섹터D",
+            "기계하이에나"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "아르고 기지 침투 지휘자",
+          "summary": "섹터 D 과거 기록에서 아르고 기지 주력 침투를 지휘했다. 기계형 하이에나에게 추격당하며 지원을 요청했지만 모리아티가 무전을 끊었다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "JOHN_WONG"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "섹터D",
+            "아르고기지"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "섹터 D 해상 플랫폼 과거 기록 접촉자",
+          "summary": "아르고 기지 침투가 시작되기 전 섹터 D 해상 플랫폼 기록에 짧게 등장했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "JOHAN_SMITH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "스페이스제로",
+            "주주의방주",
+            "서면계약"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "주주의 방주 로켓 계약 제안자",
+          "summary": "스타크에게 텍사스 연구소의 로켓을 공개하고 뒤집어진 양말 같은 부유체 확보를 요구했다. 스타크의 요구에 따라 서면 계약서를 작성했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "스페이스제로",
+            "서면계약",
+            "잔광자"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "스페이스 제로 계약 당사자 및 잔광자 처리 협상자",
+          "summary": "요한 스미스에게 주주의 방주 로켓을 위한 부유체 확보를 제안받고 서면 계약을 받아냈다. 수메르에서는 잔광자의 생포와 연구 가치를 주장했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "MR_ODD"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "ACCEL",
+            "강제편입",
+            "이사회명령"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "ACCEL 강제 편입 집행자 및 잔광자 파괴 명령 전달자",
+          "summary": "엘 볼라도르에게 폭탄 칩셋을 주입하고 명령 불복종 시 즉결처형을 경고했다. 잔광자 처리 국면에서는 이사회 명령이라며 파괴를 지시했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "ACCEL"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "ACCEL",
+            "강제편입",
+            "수메르"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "강제 편입된 수메르 증원 요원",
+          "summary": "Mr. 오드의 지시로 목에 폭탄 칩셋을 주입받고 노부스 오르도 자산으로 편입됐다. 코드명 ACCEL을 사용해 수메르 의식장과 잔광자 교전에 합류했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "INDEXER"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "사백신",
+            "광채표본"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 대응 분석과 표본 회수 지휘",
+          "summary": "킴라박에게 사백신을 투여해 감염 대응을 시도하고 잔광자에게도 사백신을 사용했다. 전투 뒤 피펫에게 잔광자 머리 회수를 지시했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "광채표본",
+            "마가렛"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 분석·표본 회수자 및 마가렛 면회자",
+          "summary": "잔광자의 약점과 격리 방법을 분석하고 머리와 광채 표본 5개를 회수했다. 종료부에는 격리 중인 마가렛을 찾아 구출 방법을 찾겠다고 약속했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "광체",
+            "이르마코흐"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 처리 협상자 및 광체 보호자",
+          "summary": "이르마의 주사기를 확보하고 잔광자 처리 방안을 협상했다. 붙잡힌 아이를 보호하며 광체라고 부르고 연구동 이송에 동행했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "행동교정물질",
+            "이르마코흐"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 행동교정물질 전달자",
+          "summary": "잔광자를 생포하려 모든 체력과 정신력을 소모해 까마귀를 통해 행동교정물질을 전달했다. 개체가 잿빛으로 변한 뒤 쓰러졌고 참수 장면을 목격했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "이르마코흐",
+            "잔광자",
+            "소속선택"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "이르마의 천사화 제안 거부자 및 잔광자 교전 요원",
+          "summary": "어머니 환영과 개조 광원화 바이러스 제안을 받았지만 이르마를 밀치고 마리아·오틸리아와 섹터 동료에게 돌아갔다. 이후 잔광자와 교전했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "이사회명령",
+            "참수"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "이사회 명령에 따른 잔광자 처치자",
+          "summary": "잔광자를 위험 개체로 판단하고 이사회 파괴 명령이 전파됐음을 확인한 뒤 대검으로 참수했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "WD-(𝓃)"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "표본회수",
+            "수메르"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 교전 및 회수 지원 요원",
+          "summary": "잔광자 교전 중 동료를 회복시키고 공격을 대신 받았으며, 전투 뒤 피펫의 잔광자 머리 회수를 도왔다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "LEE DONGSIK"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "정신공격",
+            "수메르"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 교전 방어 요원",
+          "summary": "잔광자의 정신 공격과 잔향에 노출돼 절망 상태와 일시 시스템 다운을 겪었으나 전투 종료 뒤 재가동했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "TIME"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "정신공격",
+            "미래관측"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 교전 미래 관측 요원",
+          "summary": "잔광자의 정신 공격과 감염 영향에 노출됐다. 포스코어 사용 시 전원이 파괴되는 미래를 관측해 사용을 중단했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "UNYEON"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "반혼연",
+            "발화상실"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 교전 회복 지원 요원",
+          "summary": "반혼연으로 교전 인원을 회복시켰다. 잔광자의 잔향 이후 일시적으로 말을 하지 못했지만 전투 종료 뒤 동료와 함께 복귀했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "AMALIA_FREDRIKA_VON_ESSEN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "광체",
+            "백신연구"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "잔광자 회수와 광체 연구동 이송 지휘자",
+          "summary": "수메르 전투 종료 뒤 광체를 연구동으로 옮기라고 지시했다. 잔광자 시체로 2차 백신과 가능한 3차 약제를 연구할 수 있다고 브리핑했다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "IRMA_KOCH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "잔광자",
+            "광원화바이러스",
+            "수메르"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "개조 광원화 바이러스 투여자 및 잔광자 원형",
+          "summary": "시유에게 어머니 환영과 천사화를 제안한 뒤 자신에게 개조 광원화 바이러스를 투여했다. 총격 뒤 잔광자로 변환해 교전했고 최종적으로 참수됐다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "프로젝트데드핸드",
+            "격리실",
+            "피펫"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "프로젝트 데드 핸드 순백 격리실 수용자",
+          "summary": "피펫의 면회를 받고 직접 그린 에펠탑을 보여줬다. 피펫이 떠나는 것을 두려워했고 닥터 제노가 면회를 끝낸 뒤 홀로 남았다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-sync",
+    "filter": {
+      "codename": "DOCTOR_ZENO"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E6-TURNING-POINT-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "변곡점",
+            "프로젝트데드핸드",
+            "마가렛",
+            "면회통제"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "role": "마가렛 면회와 격리 통제자",
+          "summary": "피펫과 마가렛의 면회 시간을 종료시켰다. 피펫이 나간 뒤 마가렛을 순백 격리실에 홀로 남기고 문을 닫았다.",
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-25T00:00:00.000Z"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "JOHAN_SMITH",
+              "targetName": "요한 스미스",
+              "label": "주주의 방주 서면 계약",
+              "summary": "뒤집어진 양말과 같은 부유체 확보를 조건으로 한 스페이스 제로 로켓 계약에서 구두 약속을 거부하고 서면 계약서를 받아냈다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "JOHAN_SMITH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "CLOWN",
+              "targetName": "스타크 일로니손",
+              "label": "부유체 확보 계약",
+              "summary": "주주의 방주 로켓을 공개하고 뒤집어진 양말과 같은 부유체를 확보해 달라고 요구한 뒤 서면 계약서를 작성했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "ACCEL"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MR_ODD",
+              "targetName": "Mr. 오드",
+              "label": "폭탄 칩셋 강제 통제",
+              "summary": "Mr. 오드의 지시로 목에 폭탄 칩셋을 주입받고 명령 불복종 시 즉결처형되는 조건으로 노부스 오르도에 편입됐다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "MR_ODD"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "ACCEL",
+              "targetName": "엘 볼라도르 / ACCEL",
+              "label": "강제 편입과 즉결처형 통제",
+              "summary": "엘 볼라도르에게 폭탄 칩셋을 주입하고 코드명 ACCEL로 편입하며 명령 불복종 시 즉결처형을 경고했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "IRMA_KOCH",
+              "targetName": "이르마 코흐",
+              "label": "천사화 제안 거부",
+              "summary": "어머니 환영과 개조 광원화 바이러스 제안을 받았지만 이르마를 밀치고 마리아·오틸리아와 섹터 동료에게 돌아갔다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "IRMA_KOCH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "TIGER298",
+              "targetName": "시유 / 타이거",
+              "label": "어머니 환영과 천사화 회유",
+              "summary": "시유에게 어머니의 형상을 보여주고 개조 광원화 바이러스와 천사화를 제안했으나 거부당했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "OTILIA",
+              "targetName": "오틸리아 발트만",
+              "label": "변환과 최종 결별",
+              "summary": "오틸리아가 생포를 위해 행동교정물질을 전달했지만 잔광자로 변환한 뒤 이사회 명령을 집행한 키아나에게 참수됐다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "네베드",
+              "targetName": "키아나 오 캘러핸 / 네베드",
+              "label": "잔광자 변환 뒤 교전",
+            "summary": "개조 광원화 바이러스 투여 뒤 잔광자로 변환해 키아나와 교전했고, 최종적으로 키아나의 대검에 참수됐다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "IRMA_KOCH",
+              "targetName": "이르마 코흐",
+              "label": "생포를 위한 자기 소진",
+              "summary": "변환한 이르마를 생포하려 모든 체력과 정신력을 소모해 행동교정물질을 전달했으나 참수를 목격했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "IRMA_KOCH",
+              "targetName": "이르마 코흐",
+              "label": "이사회 명령에 따른 참수",
+              "summary": "잔광자를 위험 개체로 판단하고 이사회 파괴 명령을 근거로 변환한 이르마를 참수했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARGARET",
+              "targetName": "마가렛",
+              "label": "격리 방문과 구출 약속",
+              "summary": "순백 격리실의 마가렛을 다시 방문하고 닥터 제노에게서 빼낼 방법을 찾겠다고 약속했다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "MARGARET"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "PIPETTE",
+              "targetName": "휘트모어 핀치",
+              "label": "재방문 요청과 이탈 불안",
+              "summary": "면회 온 피펫에게 직접 그린 에펠탑을 보여주고 다시 찾아올 때를 물었으며 그가 떠나자 두려움과 좌절을 보였다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "DOCTOR_ZENO",
+              "targetName": "닥터 제노",
+              "label": "통제 아래 격리 지속",
+              "summary": "닥터 제노가 면회를 종료하고 순백 격리실에 홀로 남기면서 직접 통제 아래의 격리가 계속됐다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "DOCTOR_ZENO"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "MARGARET",
+              "targetName": "마가렛",
+              "label": "면회 통제와 단독 격리",
+              "summary": "피펫과 마가렛의 면회를 종료하고 피펫이 나간 뒤 마가렛을 순백 격리실에 홀로 남겼다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "CLOWN"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:CLOWN:written-contract-pragmatism",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "서면 계약을 요구하는 거래 실용주의",
+          "summary": "중대한 외부 거래에서 구두 약속을 거부하고 서면 조건을 확보한 뒤 움직였다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "저는 혀보다 펜을 믿는 사람입니다."
+            },
+            {
+              "kind": "action",
+              "text": "요한에게 계약서를 받아냄"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "ACCEL"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:ACCEL:defiance-under-coercion",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "강압 아래의 도발적 저항",
+          "summary": "폭탄 칩셋과 즉결처형 위협 아래에서도 지휘자와 전투원을 조롱하고 물리적으로 맞받았다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "영감탱이의 개라도 되란 말인가?"
+            },
+            {
+              "kind": "action",
+              "text": "자신을 때린 전투원의 헬멧을 이마로 맞받음"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "OTILIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:OTILIA:costly-containment-responsibility",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "자신을 소진하는 격리 책임",
+          "summary": "잔광자를 생포하고 피해를 줄이기 위해 자신의 모든 체력과 정신력 자원을 투입했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "사용하겠습니다."
+            },
+            {
+              "kind": "action",
+              "text": "모든 체력·정신력을 써 행동교정물질을 전달하고 쓰러짐"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "네베드"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:NEVED:institutional-command-priority",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "위험 판단과 상급 명령 우선",
+          "summary": "생포 요구보다 위험 개체 제거와 이사회 명령을 우선해 잔광자를 참수했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "위험한 존재입니다. 파괴해야 합니다."
+            },
+            {
+              "kind": "action",
+              "text": "잔광자를 참수하고 이사회 명령을 근거로 밝힘"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "PIPETTE"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:PIPETTE:protective-persistence",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "통제 아래 대상에 대한 지속적 보호",
+          "summary": "격리된 마가렛을 반복해서 찾아가고 닥터 제노의 통제에서 빼낼 방법을 찾겠다고 약속했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "어떻게 방법이 생기면, 그 망할 닥터에게서 빼내줄게."
+            },
+            {
+              "kind": "action",
+              "text": "유리창 너머 마가렛에게 손을 포갬"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "TIGER298"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:TIGER298:chosen-belonging",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "유혹보다 스스로 택한 소속을 지킴",
+          "summary": "어머니 환영과 천사화 제안에 흔들렸지만 마리아·오틸리아와 섹터 동료를 선택해 돌아갔다.",
+          "evidence": [
+            {
+              "kind": "description",
+              "text": "마리아·오틸리아 쪽을 돌아보고 이르마를 밀친 뒤 섹터로 복귀"
+            },
+            {
+              "kind": "action",
+              "text": "이르마를 밀친 뒤 섹터로 복귀"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "IRMA_KOCH"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:IRMA_KOCH:self-sacrificial-fanaticism",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "자신의 신념을 신체 변환으로 증명하는 광신",
+          "summary": "개조 광원화 바이러스의 천사화 주장을 자신의 몸에 직접 시험해 잔광자로 변환했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "발키리로다...!"
+            },
+            {
+              "kind": "action",
+              "text": "총격 뒤 잔광자로 다시 일어남"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "DOCTOR_ZENO"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E6-TURNING-POINT-PART2:DOCTOR_ZENO:controlled-isolation",
+          "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+          "trait": "면회와 격리를 통한 통제",
+          "summary": "정해진 면회 시간을 강제로 끝내고 마가렛을 순백의 격리실에 다시 혼자 남겼다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "면회 시간이 다 됐어요."
+            },
+            {
+              "kind": "action",
+              "text": "웃으며 마가렛을 순백 공간에 홀로 남기고 문을 닫음"
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  }
+]
