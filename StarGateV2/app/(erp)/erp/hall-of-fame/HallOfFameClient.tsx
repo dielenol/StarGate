@@ -10,6 +10,7 @@ import type {
   HallOfFameHonorItem,
   HallOfFameMineResponse,
   HallOfFameNovexResponse,
+  HallOfFameOverviewResponse,
   OperationHonorCategory,
   ResearchHallOfFameResponse,
 } from "@stargate/core";
@@ -18,6 +19,7 @@ import {
   useHallOfFameCitations,
   useHallOfFameMine,
   useHallOfFameNovex,
+  useHallOfFameOverview,
   useResearchHallOfFame,
 } from "@/hooks/queries/useHallOfFameQuery";
 
@@ -31,6 +33,8 @@ import { formatDateTime } from "@/lib/format/date";
 import styles from "./page.module.css";
 
 interface Props {
+  initialOverviewData?: HallOfFameOverviewResponse;
+  initialOverviewDataUpdatedAt?: number;
   initialData?: ResearchHallOfFameResponse;
   initialDataUpdatedAt?: number;
   initialNovexData?: HallOfFameNovexResponse;
@@ -89,7 +93,7 @@ function ResearchWing({ research, isLoading, isError, error, refetch, isFetching
   return <section className={styles.wing} aria-labelledby="research-honors-title"><header className={styles.wing__header}><span>RESEARCH HONORS REGISTER · ALL TIME</span><h2 id="research-honors-title">팀 연구 공로 헌액자</h2><p>공동 연구의 모금과 가속에 실제 사용된 CR을 전 기간 합산합니다.</p></header>{isError ? <StaleNotice retry={refetch} isRetrying={isFetching} /> : null}<ResearchPodium data={research} /><footer className={styles.wing__meta}><span>ALL TIME</span><span>FUND + RUSH</span><span>DAILY · 21:00 KST</span><span>기준 {formatDateTime(research.generatedAt, "padded")} KST</span></footer></section>;
 }
 
-export default function HallOfFameClient({ initialData, initialDataUpdatedAt, initialNovexData, initialNovexDataUpdatedAt, initialCitationsData, initialCitationsDataUpdatedAt, initialMineData, initialMineDataUpdatedAt, isGuest }: Props) {
+export default function HallOfFameClient({ initialOverviewData, initialOverviewDataUpdatedAt, initialData, initialDataUpdatedAt, initialNovexData, initialNovexDataUpdatedAt, initialCitationsData, initialCitationsDataUpdatedAt, initialMineData, initialMineDataUpdatedAt, isGuest }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const candidateView = searchParams.get("view");
@@ -99,20 +103,21 @@ export default function HallOfFameClient({ initialData, initialDataUpdatedAt, in
   const categoryParam = searchParams.get("category");
   const operationCategory = OPERATION_CATEGORIES.includes(categoryParam as OperationHonorCategory) ? (categoryParam as OperationHonorCategory) : undefined;
   const operationCursor = permittedView === "operations" ? searchParams.get("cursor")?.trim() || undefined : undefined;
+  const overview = useHallOfFameOverview({ initialData: initialOverviewData, initialDataUpdatedAt: initialOverviewDataUpdatedAt });
   const research = useResearchHallOfFame({ initialData, initialDataUpdatedAt });
   const novex = useHallOfFameNovex({ seasonKey, initialData: seasonKey ? undefined : initialNovexData, initialDataUpdatedAt: seasonKey ? undefined : initialNovexDataUpdatedAt });
   const citations = useHallOfFameCitations({ category: permittedView === "operations" ? operationCategory : undefined, cursor: operationCursor, initialData: permittedView === "operations" && (operationCategory || operationCursor) ? undefined : initialCitationsData, initialDataUpdatedAt: permittedView === "operations" && (operationCategory || operationCursor) ? undefined : initialCitationsDataUpdatedAt, enabled: !isGuest });
   const mine = useHallOfFameMine({ initialData: initialMineData, initialDataUpdatedAt: initialMineDataUpdatedAt, enabled: !isGuest });
   const latestHonor = [...(isGuest ? [] : citations.data?.items ?? []), ...(novex.data?.items ?? [])].sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime())[0];
   const navViews = VIEWS.filter((candidate) => !isGuest || (candidate !== "operations" && candidate !== "mine"));
-  const generatedAtCandidates = [research.data?.generatedAt, novex.data?.generatedAt, !isGuest ? citations.data?.generatedAt : undefined].filter((value): value is string => Boolean(value));
+  const generatedAtCandidates = [overview.data?.generatedAt, research.data?.generatedAt, novex.data?.generatedAt, !isGuest ? citations.data?.generatedAt : undefined].filter((value): value is string => Boolean(value));
   const latestGeneratedAt = generatedAtCandidates.sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
   const nextCitationHref = citations.data?.nextCursor
     ? `/erp/hall-of-fame?view=operations${operationCategory ? `&category=${operationCategory}` : ""}&cursor=${encodeURIComponent(citations.data.nextCursor)}`
     : undefined;
 
   return <main className={styles.archive}><nav className={styles.archive__tabs} aria-label="명예의 전당 부문">{navViews.map((candidate) => <Link aria-current={permittedView === candidate ? "page" : undefined} className={styles.archive__tab} href={candidate === "overview" ? "/erp/hall-of-fame" : `/erp/hall-of-fame?view=${candidate}`} key={candidate}>{VIEW_LABELS[candidate]}</Link>)}</nav>
-    {permittedView === "overview" ? <section className={styles.overview} data-guest={isGuest ? "true" : undefined} aria-label="명예의 전당 개요"><header className={styles.overview__header}><div className={styles.overview__seal} aria-hidden="true"><IconCrown /></div><div><span>NOVUS ORDO HONORS ARCHIVE</span><h2>명예의 전당 기록 보관소</h2><p>공동 연구, 시즌 성과, 작전 공적을 하나의 공식 기록으로 보존합니다.</p></div><dl><div><dt>연구 기록</dt><dd>{research.data?.items.length ?? "—"}</dd></div><div><dt>시즌 기록</dt><dd>{novex.data?.seasons.length ?? "—"}</dd></div>{!isGuest ? <div><dt>최근 공적</dt><dd>{citations.data?.items.length ?? "—"}</dd></div> : null}<div className={styles.overview__updated}><dt>최신 갱신</dt><dd>{latestGeneratedAt ? formatDateTime(latestGeneratedAt, "padded") : "—"}</dd></div></dl></header><div className={styles.overview__grid}>
+    {permittedView === "overview" ? <section className={styles.overview} data-guest={isGuest ? "true" : undefined} aria-label="명예의 전당 개요"><header className={styles.overview__header}><div className={styles.overview__seal} aria-hidden="true"><IconCrown /></div><div><span>NOVUS ORDO HONORS ARCHIVE</span><h2>명예의 전당 기록 보관소</h2><p>공동 연구, 시즌 성과, 작전 공적을 하나의 공식 기록으로 보존합니다.</p></div><dl><div><dt>전체 기록</dt><dd>{overview.data?.totalRecords ?? "—"}</dd></div><div><dt>확정 시즌</dt><dd>{overview.data?.seasonCount ?? "—"}</dd></div><div className={styles.overview__updated}><dt>최신 갱신</dt><dd>{latestGeneratedAt ? formatDateTime(latestGeneratedAt, "padded") : "—"}</dd></div></dl></header>{overview.isLoading && !overview.data ? <HallState compact title="공식 기록을 집계하고 있습니다." detail="공개 가능한 공적 원장을 확인하는 중입니다." /> : overview.isError && !overview.data ? <HallState compact title="전체 기록 집계를 불러오지 못했습니다." detail="각 부문 기록은 아래에서 계속 확인할 수 있습니다." retry={() => void overview.refetch()} isRetrying={overview.isFetching} /> : overview.isError ? <StaleNotice compact retry={() => void overview.refetch()} isRetrying={overview.isFetching} /> : null}<div className={styles.overview__grid}>
       <section className={`${styles.panel} ${styles["panel--featured"]}`} aria-labelledby="featured-title"><div className={styles.panel__eyebrow}>LATEST OFFICIAL RECORD</div><h3 id="featured-title">{latestHonor ? latestHonor.codename : "기록을 준비하고 있습니다"}</h3>{latestHonor ? <><strong>{latestHonor.title}</strong><p>{latestHonor.citation}</p><span>{CATEGORY_LABELS[latestHonor.category]} · {latestHonor.sourceLabel}</span></> : <p>{novex.isLoading || (!isGuest && citations.isLoading) ? "대표 공적 기록을 확인하고 있습니다." : "확정된 공적이 등록되면 최신 기록을 이곳에 표시합니다."}</p>}</section>
       {!isGuest ? <section className={`${styles.panel} ${styles["panel--mine"]}`} aria-labelledby="mine-title"><div className={styles.panel__eyebrow}>PERSONAL RIBBONS</div><h3 id="mine-title">내 공적 리본</h3>{mine.isLoading && !mine.data ? <p>기록을 불러오는 중입니다.</p> : mine.data ? <>{mine.isError ? <StaleNotice compact retry={() => void mine.refetch()} isRetrying={mine.isFetching} /> : null}<strong>{mine.data.total}건</strong><HonorList items={mine.data.ribbons} limit={3} emptyMessage="아직 발급된 리본이 없습니다." /></> : <HallState compact title="개인 기록을 불러오지 못했습니다." detail="잠시 후 다시 확인해 주세요." retry={() => void mine.refetch()} isRetrying={mine.isFetching} />}<Link href="/erp/hall-of-fame?view=mine">내 기록 열기</Link></section> : null}
       <section className={`${styles.panel} ${styles["panel--research"]}`} aria-labelledby="overview-research-title"><div className={styles.panel__heading}><div><span>DAILY · 21:00 KST</span><h3 id="overview-research-title">실시간 연구 기록</h3></div><Link href="/erp/hall-of-fame?view=research">전체 기록</Link></div>{research.isLoading && !research.data ? <HallState compact title="연구 기록을 불러오는 중입니다." detail="누적 공로 스냅샷을 확인하고 있습니다." /> : research.isError && !research.data ? <HallState compact title="연구 기록을 불러오지 못했습니다." detail="잠시 후 다시 확인해 주세요." retry={() => void research.refetch()} isRetrying={research.isFetching} /> : <>{research.isError ? <StaleNotice compact retry={() => void research.refetch()} isRetrying={research.isFetching} /> : null}{research.data ? <ResearchPodium compact data={research.data} /> : null}</>}</section>

@@ -103,8 +103,8 @@ async function loadBackfillOperationReportRevision(
 function usage(): string {
   return [
     "사용법:",
-    "  node --experimental-strip-types scripts/hall-of-fame/backfill.ts [--output <path>]",
-    "  node --experimental-strip-types scripts/hall-of-fame/backfill.ts --execute --manifest <path> --yes",
+    "  pnpm hall-of-fame:backfill -- [--output <path>]",
+    "  pnpm hall-of-fame:backfill -- --execute --manifest <path> --yes",
     "",
     "기본 모드는 DB를 읽고 Cloud 분석 manifest만 생성합니다.",
     "적용 모드는 ERP/worker 원본 쓰기를 중단한 maintenance 구간에서만 실행합니다.",

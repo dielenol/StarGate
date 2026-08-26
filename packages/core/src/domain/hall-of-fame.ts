@@ -31,10 +31,23 @@ export interface HallOfFameNovexResponse {
   items: HallOfFameHonorItem[];
 }
 
+export interface HallOfFameOverviewResponse {
+  generatedAt: string;
+  totalRecords: number;
+  seasonCount: number;
+}
+
 export interface HallOfFameCitationPageResponse {
   generatedAt: string;
   items: HallOfFameHonorItem[];
   nextCursor?: string;
+}
+
+export type HallOfFameReportAnalysisState = "PENDING" | "DELAYED" | null;
+
+export interface HallOfFameReportAnalysisResponse {
+  generatedAt: string;
+  state: HallOfFameReportAnalysisState;
 }
 
 export interface HallOfFameMineResponse {

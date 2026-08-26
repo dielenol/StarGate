@@ -12,6 +12,7 @@ import {
 } from "../honor-analysis/store.js";
 
 const MAX_ANALYSES_PER_TICK = 3;
+const HONOR_RECONCILE_INTERVAL_MS = 5 * 60_000;
 
 /** gate OFF 상태에서도 consumer health/readiness를 유지하는 명시적 no-op 경계. */
 export class HonorAnalysisActivationGateConsumer
@@ -26,11 +27,13 @@ export class HonorAnalysisActivationGateConsumer
 
 export class HonorAnalysisConsumer implements DueWorkConsumerPort {
   readonly name = "honor-analysis";
+  private nextReconcileAt = 0;
 
   constructor(
     private readonly analyzer: HonorAnalyzerPort,
     private readonly store: HonorAnalysisStorePort =
       new SharedDbHonorAnalysisStore(),
+    private readonly options: { reconcileIntervalMs?: number } = {},
   ) {}
 
   async tick(context: {
@@ -40,7 +43,18 @@ export class HonorAnalysisConsumer implements DueWorkConsumerPort {
     if (context.mode !== "active") return { observedDue: 0 };
     const now = new Date();
     const dead = await this.store.haltExhausted(now);
-    const reconciliation = await this.store.reconcile(now);
+    const shouldReconcile = now.getTime() >= this.nextReconcileAt;
+    const reconciliation = shouldReconcile
+      ? await this.store.reconcile(now)
+      : { scanned: 0, queued: 0, withdrawn: 0, observedDue: 0 };
+    if (shouldReconcile) {
+      this.nextReconcileAt =
+        now.getTime() +
+        Math.max(
+          1_000,
+          this.options.reconcileIntervalMs ?? HONOR_RECONCILE_INTERVAL_MS,
+        );
+    }
     let claimed = 0;
     let delivered = 0;
     let failed = 0;
@@ -109,7 +123,7 @@ export class HonorAnalysisConsumer implements DueWorkConsumerPort {
     }
 
     return {
-      observedDue: reconciliation.observedDue,
+      observedDue: Math.max(reconciliation.observedDue, claimed),
       claimed,
       delivered,
       failed,

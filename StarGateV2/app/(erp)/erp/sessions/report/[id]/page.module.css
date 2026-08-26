@@ -154,6 +154,10 @@
   line-height: 1.55;
 }
 
+.honorPanel__actions {
+  margin-top: 4px;
+}
+
 .honorCitation {
   padding: 13px 14px;
   border: 1px solid var(--line);

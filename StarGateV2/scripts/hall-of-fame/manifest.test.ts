@@ -178,3 +178,19 @@ test("manifest apply는 maintenance 전제를 밝히고 첫 mutation 전에 cove
       transaction.indexOf("await loadCurrentNovex"),
   );
 });
+
+test("backfill 진입점은 clean checkout에서도 worker dist를 먼저 빌드한다", async () => {
+  const [packageJsonSource, backfill] = await Promise.all([
+    readFile(new URL("../../package.json", import.meta.url), "utf8"),
+    readFile(new URL("./backfill.ts", import.meta.url), "utf8"),
+  ]);
+  const packageJson = JSON.parse(packageJsonSource) as {
+    scripts?: Record<string, string>;
+  };
+  const command = packageJson.scripts?.["hall-of-fame:backfill"] ?? "";
+
+  assert.match(command, /^pnpm --dir \.\. build:worker && node /);
+  assert.doesNotMatch(command, /--env-file-if-exists/);
+  assert.match(command, /scripts\/hall-of-fame\/backfill\.ts$/);
+  assert.match(backfill, /pnpm hall-of-fame:backfill -- \[--output <path>\]/);
+});

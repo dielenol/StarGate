@@ -88,13 +88,14 @@ test("작전 원본 링크는 공개 응답에 DB ID 대신 opaque public key만
 });
 
 test("guest는 작전·내 공적 endpoint에서 일반 404만 받고 query도 비활성화할 수 있다", async () => {
-  const [citations, mine, query] = await Promise.all([
+  const [citations, status, mine, query] = await Promise.all([
     source("app/api/erp/hall-of-fame/citations/route.ts"),
+    source("app/api/erp/hall-of-fame/citations/status/route.ts"),
     source("app/api/erp/hall-of-fame/mine/route.ts"),
     source("hooks/queries/useHallOfFameQuery.ts"),
   ]);
 
-  for (const route of [citations, mine]) {
+  for (const route of [citations, status, mine]) {
     assert.match(route, /isMemberErpViewer\(session\.user\)/);
     assert.match(route, /error: "Not Found", code: "NOT_FOUND"/);
     assert.match(route, /status: 404/);
@@ -133,8 +134,9 @@ test("내 리본은 소유 캐릭터 전체와 모든 cursor 페이지를 합산
 });
 
 test("보고서·Dossier·연구·주식·알림이 명예의 전당 read model에 연결된다", async () => {
-  const [report, dossier, research, stock, notifications] = await Promise.all([
+  const [report, reportHonors, dossier, research, stock, notifications] = await Promise.all([
     source("app/(erp)/erp/sessions/report/[id]/page.tsx"),
+    source("app/(erp)/erp/sessions/report/[id]/ReportHonorCitations.tsx"),
     source("app/(erp)/erp/personnel/[id]/DossierClient.tsx"),
     source("app/(erp)/erp/research/ResearchLabView.tsx"),
     source("app/(erp)/erp/stock/StockSeasonLeaderboard.tsx"),
@@ -142,9 +144,14 @@ test("보고서·Dossier·연구·주식·알림이 명예의 전당 read model�
   ]);
 
   assert.match(report, /getHallOfFameCitationPage/);
-  assert.match(report, /getHallOfFameReportAnalysisState/);
-  assert.match(report, /공적 인용 · OFFICIAL HONORS/);
-  assert.match(report, /공적 재심사 중/);
+  assert.match(report, /getHallOfFameReportAnalysisResponse/);
+  assert.match(report, /initialHonors=\{reportHonors\}/);
+  assert.match(reportHonors, /useHallOfFameCitations/);
+  assert.match(reportHonors, /useHallOfFameReportAnalysisState/);
+  assert.match(reportHonors, /공적 인용 · OFFICIAL HONORS/);
+  assert.match(reportHonors, /공적 재심사 중/);
+  assert.match(reportHonors, /확정된 공적 인용 없음/);
+  assert.match(reportHonors, /마지막 성공 기록 표시 중/);
   assert.match(dossier, /enabled: canViewHonors && Boolean\(characterId\)/);
   assert.match(dossier, /최신 갱신에 실패해 마지막 공적 기록을 표시합니다/);
   assert.match(research, /hall-of-fame\?view=research/);
@@ -170,4 +177,29 @@ test("Hall 관련 원본 변경은 root query invalidation으로 수렴한다", 
   );
   assert.match(mapper, /session_reports: \["reports", "hall-of-fame"\]/);
   assert.match(mapper, /honor_records: \["hall-of-fame"\]/);
+  assert.match(mapper, /honor_analysis_states: \["hall-of-fame"\]/);
+});
+
+test("개요 집계는 page slice가 아니라 전체 공개 원장의 정확한 합계를 사용한다", async () => {
+  const [service, shared, route, query, client] = await Promise.all([
+    source("lib/hall-of-fame/honors.ts"),
+    source("../packages/shared-db/src/crud/honors.ts"),
+    source("app/api/erp/hall-of-fame/overview/route.ts"),
+    source("hooks/queries/useHallOfFameQuery.ts"),
+    source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
+  ]);
+
+  assert.match(shared, /countFinalizedNovexSeasons/);
+  assert.match(shared, /countFinalizedNovexTop3Performances/);
+  assert.match(service, /listAllHonorRecords\(\{ domain: "OPERATION", minRole: "U" \}\)/);
+  assert.match(service, /await toVisibleHonorItems\(operationRecords\)/);
+  assert.match(
+    service,
+    /research\.items\.length \+ novexRecordCount \+ operationRecordCount/,
+  );
+  assert.match(route, /isGuest: session\.user\.isGuest === true/);
+  assert.match(query, /overview: \["hall-of-fame", "overview"\] as const/);
+  assert.match(client, /overview\.data\?\.totalRecords/);
+  assert.match(client, /overview\.data\?\.seasonCount/);
+  assert.doesNotMatch(client, /citations\.data\?\.items\.length \?\? "—"/);
 });

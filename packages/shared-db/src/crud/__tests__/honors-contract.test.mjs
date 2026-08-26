@@ -377,7 +377,24 @@ test(
       false,
     );
 
-    await skipHonorAnalysisSource({ sourceKey: "REPORT-LEASE", reason: "halted" });
+    const skippedAt = new Date("2026-08-25T00:01:00.000Z");
+    await skipHonorAnalysisSource({
+      sourceKey: "REPORT-LEASE",
+      reason: "halted",
+      now: skippedAt,
+    });
+    assert.equal(
+      await skipHonorAnalysisSource({
+        sourceKey: "REPORT-LEASE",
+        reason: "halted",
+        now: new Date("2026-08-25T00:02:00.000Z"),
+      }),
+      false,
+    );
+    const stableSkip = await (await getDb())
+      .collection("honor_analysis_states")
+      .findOne({ _id: "session-report:REPORT-LEASE" });
+    assert.equal(stableSkip?.updatedAt.toISOString(), skippedAt.toISOString());
     const same = await queueHonorAnalysis({
       sourceKey: "REPORT-LEASE",
       sourceRecordId: "507f1f77bcf86cd799439011",

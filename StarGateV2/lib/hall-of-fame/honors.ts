@@ -7,12 +7,17 @@ import {
   type HallOfFameHonorItem,
   type HallOfFameMineResponse,
   type HallOfFameNovexResponse,
+  type HallOfFameOverviewResponse,
+  type HallOfFameReportAnalysisResponse,
+  type HallOfFameReportAnalysisState,
   type OperationHonorCategory,
 } from "@stargate/core";
 import {
   buildHonorPublicKey,
   buildNovexHonorLogicalKey,
   buildOperationHonorSourceMaterial,
+  countFinalizedNovexSeasons,
+  countFinalizedNovexTop3Performances,
   findCharacterById,
   findHonorCandidateCharactersByCodenames,
   getHonorRecordByPublicKey,
@@ -34,12 +39,11 @@ import {
 
 import { hasRole } from "@/lib/auth/rbac";
 import { canViewCharacter } from "@/lib/auth/access-policy";
+import { getResearchHallOfFameResponse } from "@/lib/hall-of-fame/research";
 
 const NOVEX_SEASON_LIMIT = 100;
 const HONOR_PAGE_LIMIT = 20;
 const HONOR_PUBLIC_KEY_PATTERN = /^honor_[a-f0-9]{24}$/u;
-
-export type HallOfFameReportAnalysisState = "PENDING" | "DELAYED" | null;
 
 export interface HallOfFameCitationQuery {
   viewerRole: RoleLevel;
@@ -170,6 +174,15 @@ export async function getHallOfFameReportAnalysisState(
   return state.status === "SKIPPED" ? "DELAYED" : null;
 }
 
+export async function getHallOfFameReportAnalysisResponse(
+  reportId: string,
+): Promise<HallOfFameReportAnalysisResponse> {
+  return {
+    generatedAt: new Date().toISOString(),
+    state: await getHallOfFameReportAnalysisState(reportId),
+  };
+}
+
 async function toVisibleHonorItems(
   records: HonorRecord[],
 ): Promise<HallOfFameHonorItem[]> {
@@ -247,6 +260,32 @@ async function listAllHonorRecords(
     cursor = page.nextCursor;
   } while (cursor);
   return records;
+}
+
+export async function getHallOfFameOverviewResponse(input: {
+  viewerRole: RoleLevel;
+  isGuest: boolean;
+}): Promise<HallOfFameOverviewResponse> {
+  const canViewOperations = !input.isGuest && hasRole(input.viewerRole, "U");
+  const [research, seasonCount, novexRecordCount, operationRecords] =
+    await Promise.all([
+      getResearchHallOfFameResponse(),
+      countFinalizedNovexSeasons(),
+      countFinalizedNovexTop3Performances(),
+      canViewOperations
+        ? listAllHonorRecords({ domain: "OPERATION", minRole: "U" })
+        : Promise.resolve([]),
+    ]);
+  const operationRecordCount = canViewOperations
+    ? (await toVisibleHonorItems(operationRecords)).length
+    : 0;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    totalRecords:
+      research.items.length + novexRecordCount + operationRecordCount,
+    seasonCount,
+  };
 }
 
 export async function getHallOfFameNovexResponse(

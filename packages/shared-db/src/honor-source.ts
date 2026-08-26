@@ -19,24 +19,133 @@ function stableJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function findBalancedMarkdownEnd(
+  value: string,
+  start: number,
+  open: "[" | "(",
+  close: "]" | ")",
+): number {
+  let depth = 0;
+  for (let index = start; index < value.length; index += 1) {
+    const character = value[index]!;
+    if (character === "\n") return -1;
+    let slashCount = 0;
+    for (
+      let cursor = index - 1;
+      cursor >= 0 && value[cursor] === "\\";
+      cursor -= 1
+    ) {
+      slashCount += 1;
+    }
+    if (slashCount % 2 === 1) continue;
+    if (character === open) depth += 1;
+    else if (character === close) {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  return -1;
+}
+
+/** 중첩 label/destination과 미종결 링크까지 label을 남기지 않고 제거한다. */
+function stripMarkdownLinksAndImages(value: string): string {
+  let safe = "";
+  for (let index = 0; index < value.length; index += 1) {
+    const isImage = value[index] === "!" && value[index + 1] === "[";
+    const labelStart = isImage ? index + 1 : index;
+    if (value[labelStart] !== "[") {
+      safe += value[index];
+      continue;
+    }
+    const labelEnd = findBalancedMarkdownEnd(value, labelStart, "[", "]");
+    if (labelEnd < 0) {
+      const newline = value.indexOf("\n", labelStart);
+      const lineEnd = newline >= 0 ? newline : value.length;
+      const remainder = value.slice(labelStart, lineEnd);
+      if (/https?:\/\//iu.test(remainder)) {
+        safe += " ";
+        index = lineEnd - 1;
+        continue;
+      }
+      safe += value[index];
+      continue;
+    }
+    const targetStart = labelEnd + 1;
+    const targetMarker = value[targetStart];
+    if (targetMarker !== "(" && targetMarker !== "[") {
+      if (isImage) {
+        safe += " ";
+        index = labelEnd;
+      } else {
+        safe += value[index];
+      }
+      continue;
+    }
+    const targetEnd = findBalancedMarkdownEnd(
+      value,
+      targetStart,
+      targetMarker,
+      targetMarker === "(" ? ")" : "]",
+    );
+    safe += " ";
+    if (targetEnd >= 0) {
+      index = targetEnd;
+      continue;
+    }
+    const newline = value.indexOf("\n", targetStart);
+    index = (newline >= 0 ? newline : value.length) - 1;
+  }
+  return safe;
+}
+
+function isRestrictedSourceTitle(value: string): boolean {
+  return /^(?:(?:기록\s*)?출처|관련\s*(?:문서|자료|인물|인원|항목)|시각\s*(?:자료|이미지)|이미지|sources?|references?)(?:\s|$|[:：·-])/iu.test(
+    value.trim(),
+  );
+}
+
 function stripRestrictedMarkdownSections(value: string): string {
   const lines = value.normalize("NFC").replace(/\r\n?/g, "\n").split("\n");
   const safe: string[] = [];
   let skippingLevel: number | null = null;
+  let skippingPlainBlock = false;
+  let fence: "`" | "~" | null = null;
   for (const rawLine of lines) {
-    const heading = /^(#{1,6})\s+(.+?)\s*$/.exec(rawLine);
+    const fenceMatch = /^\s*(`{3,}|~{3,})/u.exec(rawLine);
+    if (fenceMatch) {
+      const marker = fenceMatch[1]![0] as "`" | "~";
+      if (fence === null) fence = marker;
+      else if (fence === marker) fence = null;
+      continue;
+    }
+    if (fence !== null) continue;
+
+    if (skippingPlainBlock) {
+      if (rawLine.trim().length === 0) skippingPlainBlock = false;
+      continue;
+    }
+
+    const heading = /^\s{0,3}(#{1,6})\s+(.+?)\s*$/.exec(rawLine);
     if (heading) {
       const level = heading[1]!.length;
       const title = heading[2]!.trim();
-      if (
-        /^(?:출처|관련\s*(?:문서|자료|인물|항목)|이미지|sources?|references?)(?:\s|$|[:：])/iu.test(
-          title,
-        )
-      ) {
+      if (isRestrictedSourceTitle(title)) {
         skippingLevel = level;
         continue;
       }
       if (skippingLevel !== null && level <= skippingLevel) skippingLevel = null;
+    }
+    const plainLabel =
+      /^\s*(?:[-*+>]\s*)?(?:\*\*|__)?(.+?)(?:\*\*|__)?\s*[:：](?:\s|$)/u.exec(
+        rawLine,
+      );
+    if (
+      skippingLevel === null &&
+      plainLabel &&
+      isRestrictedSourceTitle(plainLabel[1]!)
+    ) {
+      skippingPlainBlock = true;
+      continue;
     }
     if (skippingLevel === null) safe.push(rawLine);
   }
@@ -45,13 +154,13 @@ function stripRestrictedMarkdownSections(value: string): string {
 
 /** 이미지·관련문서·출처 표현과 fenced code를 Cloud 분석 입력에서 제거한다. */
 export function sanitizeOperationHonorSourceText(value: string): string {
-  return stripRestrictedMarkdownSections(value)
-    .replace(/!\[[^\]]*\]\([^)]*\)/gu, " ")
-    .replace(/<img\b[^>]*>/giu, " ")
-    .replace(/\[([^\]]+)\]\([^)]*\)/gu, "$1")
-    .replace(/\[\[(?:wiki|catalog|personnel|report):[^|\]]+\|?([^\]]*)\]\]/giu, "$1")
+  return stripMarkdownLinksAndImages(stripRestrictedMarkdownSections(value))
+    .replace(/<a\b[^>]*>[\s\S]*?(?:<\/a>|$)/giu, " ")
+    .replace(/<img\b[^>]*(?:>|$)/giu, " ")
+    .replace(/\[\[(?:wiki|catalog|personnel|report):[^\]\n]*(?:\]\]|$)/gimu, " ")
+    .replace(/^\s*\[[^\]]+\]:\s*\S+.*$/gmu, " ")
+    .replace(/<https?:\/\/[^>]+>/giu, " ")
     .replace(/https?:\/\/[^\s)>\]]+/giu, " ")
-    .replace(/```[\s\S]*?```/gu, " ")
     .replace(/[\t ]+/gu, " ")
     .replace(/\n{3,}/gu, "\n\n")
     .trim();

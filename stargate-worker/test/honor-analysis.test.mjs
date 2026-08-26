@@ -121,6 +121,49 @@ test("U 보고서와 exact related codename의 player-owned AGENT만 source에 �
   );
 });
 
+test("Cloud source는 링크 라벨·관련 문서·출처 block까지 전부 제거한다", () => {
+  const material = buildOperationHonorSourceMaterial({
+    report: report({
+      summary: [
+        "PIPETTE는 격리문을 닫아 대피 시간을 확보했다.",
+        "관련 문서: [기밀 작전 부록](https://internal.example/appendix)",
+        "- 비공개 문서명과 내부 식별자",
+        "",
+        "PIPETTE는 후속 인원을 안전 구역으로 안내했다.",
+        "출처: [[wiki:secret|기밀 위키 문서]]",
+        "내부 출처 상세",
+        "",
+        "참고 <a href=\"https://internal.example/report\">비공개 보고서명</a> 제거",
+        "  ## 기록 출처",
+        "사무국 기밀 보존본",
+        "  ## 관련 인원",
+        "비공개 인원 명단",
+        "  ## 시각 자료",
+        "비공개 장면 캡션",
+        "  ## 후속 조치",
+        "PIPETTE는 격리 상태를 다시 확인했다.",
+      ].join("\n"),
+      highlights: [
+        "![내부 장면][asset]\n[asset]: https://internal.example/private.png",
+        "~~~json\n{\"secret\":\"내부 전개\"}",
+        "불완전 [미종결 문서명](https://internal.example/unclosed",
+        "중첩 [기밀 [부록]](https://internal.example/nested) 제거",
+        "<a href=\"https://internal.example/unclosed-anchor\">미종결 링크 라벨",
+      ],
+    }),
+    characters: [identity()],
+  });
+
+  assert.ok(material);
+  assert.match(material.text, /격리문을 닫아 대피 시간을 확보했다/);
+  assert.match(material.text, /후속 인원을 안전 구역으로 안내했다/);
+  assert.match(material.text, /격리 상태를 다시 확인했다/);
+  assert.doesNotMatch(
+    material.text,
+    /기밀 작전 부록|비공개 문서명|기밀 위키 문서|내부 출처 상세|비공개 보고서명|사무국 기밀 보존본|비공개 인원 명단|비공개 장면 캡션|기밀 \[부록\]|내부 장면|내부 전개|미종결 문서명|미종결 링크 라벨|internal\.example/,
+  );
+});
+
 test("동일 코드네임이 서로 다른 캐릭터에 중복되면 임의 수상자로 귀속하지 않는다", () => {
   const ambiguousRows = [
     identity({ _id: new ObjectId(), ownerId: String(new ObjectId()) }),
@@ -693,6 +736,36 @@ test("consumer는 Cloud 반출 guard가 등급 변경을 감지하면 분석 없
   });
   assert.equal(skips, 1);
   assert.equal(result.failed ?? 0, 0);
+});
+
+test("consumer는 짧은 poll 사이에 전체 source reconcile을 반복하지 않는다", async () => {
+  let reconciliations = 0;
+  const store = {
+    async haltExhausted() { return 0; },
+    async reconcile() {
+      reconciliations += 1;
+      return { scanned: 12, queued: 0, withdrawn: 0, observedDue: 0 };
+    },
+    async claim() { return null; },
+    async loadSource() { assert.fail("claim 없는 source를 읽으면 안 됩니다."); },
+    async complete() { return false; },
+    async release() { return null; },
+    async skip() { return false; },
+  };
+  const consumer = new HonorAnalysisConsumer(
+    { async analyze() { assert.fail("due work가 없으면 분석하면 안 됩니다."); } },
+    store,
+    { reconcileIntervalMs: 60_000 },
+  );
+  const context = {
+    mode: "active",
+    signal: new AbortController().signal,
+  };
+
+  await consumer.tick(context);
+  await consumer.tick(context);
+
+  assert.equal(reconciliations, 1);
 });
 
 test("gate consumer는 Cloud/DB mutation 없이 no-op한다", async () => {

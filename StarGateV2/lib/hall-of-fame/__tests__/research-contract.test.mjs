@@ -85,8 +85,11 @@ test("RSC 초기 데이터와 realtime 5분 fallback Query를 연결한다", asy
   ]);
 
   assert.match(page, /getResearchHallOfFameResponse\(\)/);
+  assert.match(page, /getHallOfFameOverviewResponse/);
   assert.match(page, /initialData=\{initialData\}/);
+  assert.match(page, /initialOverviewData=\{initialOverviewData\}/);
   assert.match(client, /useResearchHallOfFame\(\{ initialData, initialDataUpdatedAt \}\)/);
+  assert.match(client, /useHallOfFameOverview/);
   assert.match(query, /research: \["hall-of-fame", "research"\] as const/);
   assert.match(query, /5 \* 60 \* 1000/);
   assert.match(query, /useRealtimeRefetchInterval/);

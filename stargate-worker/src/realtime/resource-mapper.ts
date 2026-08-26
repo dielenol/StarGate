@@ -49,6 +49,7 @@ export const COLLECTION_RESOURCE_MAP = {
   research_discord_cards: ["equipment-shop"],
   research_ranking_states: ["hall-of-fame"],
   honor_records: ["hall-of-fame"],
+  honor_analysis_states: ["hall-of-fame"],
   wiki_pages: ["wiki"],
   wiki_page_revisions: ["wiki"],
   factions: ["factions"],

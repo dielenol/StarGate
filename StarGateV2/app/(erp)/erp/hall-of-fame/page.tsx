@@ -5,6 +5,7 @@ import {
   getHallOfFameCitationPage,
   getHallOfFameMineResponse,
   getHallOfFameNovexResponse,
+  getHallOfFameOverviewResponse,
 } from "@/lib/hall-of-fame/honors";
 import { getResearchHallOfFameResponse } from "@/lib/hall-of-fame/research";
 
@@ -21,8 +22,12 @@ export default async function HallOfFamePage() {
     redirect("/login");
   }
 
-  const [researchResult, novexResult, citationsResult, mineResult] =
+  const [overviewResult, researchResult, novexResult, citationsResult, mineResult] =
     await Promise.all([
+      getHallOfFameOverviewResponse({
+        viewerRole: session.user.role,
+        isGuest: session.user.isGuest === true,
+      }).catch(() => undefined),
       getResearchHallOfFameResponse().catch(() => undefined),
       getHallOfFameNovexResponse().catch(() => undefined),
       session.user.isGuest
@@ -38,6 +43,10 @@ export default async function HallOfFamePage() {
           }).catch(() => undefined),
     ]);
 
+  const initialOverviewData = overviewResult;
+  const initialOverviewDataUpdatedAt = initialOverviewData
+    ? new Date(initialOverviewData.generatedAt).getTime()
+    : undefined;
   const initialData = researchResult;
   const initialDataUpdatedAt = initialData
     ? new Date(initialData.generatedAt).getTime()
@@ -69,6 +78,8 @@ export default async function HallOfFamePage() {
         right={<Tag tone="gold">OFFICIAL · LIVING ARCHIVE</Tag>}
       />
       <HallOfFameClient
+        initialOverviewData={initialOverviewData}
+        initialOverviewDataUpdatedAt={initialOverviewDataUpdatedAt}
         initialData={initialData}
         initialDataUpdatedAt={initialDataUpdatedAt}
         initialNovexData={initialNovexData}

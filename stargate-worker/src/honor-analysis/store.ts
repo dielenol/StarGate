@@ -9,10 +9,12 @@ import {
   getClient,
   haltExhaustedHonorAnalyses,
   honorAnalysisStatesCol,
+  honorRecordsCol,
   listHonorAnalysisStates,
   queueHonorAnalysis,
   claimDueHonorAnalysis,
   releaseHonorAnalysisLease,
+  sessionReportVisibilityFilter,
   sessionReportsCol,
   shouldForceHonorAnalysisAfterSourceRecovery,
   skipClaimedHonorAnalysis,
@@ -66,24 +68,100 @@ export class SharedDbHonorAnalysisStore implements HonorAnalysisStorePort {
   ) {}
 
   async reconcile(now: Date): Promise<HonorAnalysisReconcileResult> {
-    const [reportKeys, states] = await Promise.all([
+    const [reportHeaders, reports, states, activeSourceKeys] = await Promise.all([
       (await sessionReportsCol())
         .find()
-        .project<{ sessionId: string }>({ _id: 0, sessionId: 1 })
+        .project<Pick<SessionReport, "_id" | "sessionId" | "minRole">>({
+          _id: 1,
+          sessionId: 1,
+          minRole: 1,
+        })
+        .toArray(),
+      (await sessionReportsCol())
+        .find(sessionReportVisibilityFilter("U"))
+        .project<SessionReport>({
+          _id: 1,
+          sessionId: 1,
+          minRole: 1,
+          summary: 1,
+          highlights: 1,
+          relatedPersonnelCodenames: 1,
+          updatedAt: 1,
+        })
         .toArray(),
       listHonorAnalysisStates(),
+      (await honorRecordsCol()).distinct("source.key", {
+        domain: "OPERATION",
+        "source.type": "SESSION_REPORT",
+        status: "ACTIVE",
+      }),
     ]);
+    const reportByKey = new Map(
+      reports.map((report) => [report.sessionId, report]),
+    );
     const keys = [
       ...new Set([
-        ...reportKeys.map((report) => report.sessionId),
+        ...reports.map((report) => report.sessionId),
+        ...reportHeaders.map((report) => report.sessionId),
         ...states.map((state) => state.sourceKey),
+        ...activeSourceKeys,
       ]),
     ].sort();
+    const reportHeaderKeys = new Set(
+      reportHeaders.map((report) => report.sessionId),
+    );
     const stateByKey = new Map(states.map((state) => [state.sourceKey, state]));
+    const activeSourceKeySet = new Set(activeSourceKeys);
     const client = await getClient();
     let queued = 0;
     let withdrawn = 0;
     for (const sourceKey of keys) {
+      const report = reportByKey.get(sourceKey) ?? null;
+      const previous = stateByKey.get(sourceKey);
+      if (!isPublicOperationReport(report)) {
+        const reason = reportHeaderKeys.has(sourceKey)
+          ? "SOURCE_NOT_ELIGIBLE"
+          : "SOURCE_DELETED";
+        const alreadyStable =
+          previous?.status === "SKIPPED" &&
+          previous.lastError === reason &&
+          !previous.leaseToken &&
+          !previous.leaseUntil &&
+          !previous.nextAttemptAt;
+        if (
+          !activeSourceKeySet.has(sourceKey) &&
+          (alreadyStable || !previous)
+        ) {
+          continue;
+        }
+      } else {
+        const characters = await findHonorCandidateCharactersByCodenames(
+          report.relatedPersonnelCodenames ?? [],
+        );
+        const source = reduceOperationHonorSource({ report, characters });
+        if (!source) {
+          const alreadyStable =
+            previous?.status === "SKIPPED" &&
+            previous.lastError === "SOURCE_NOT_ANALYZABLE" &&
+            !previous.leaseToken &&
+            !previous.leaseUntil &&
+            !previous.nextAttemptAt;
+          if (
+            !activeSourceKeySet.has(sourceKey) &&
+            (alreadyStable || !previous)
+          ) {
+            continue;
+          }
+        } else if (
+          previous?.sourceRecordId === source.sourceRecordId &&
+          previous.sourceHash === source.sourceHash &&
+          previous.analyzerRevision === HONOR_ANALYZER_REVISION &&
+          !shouldForceHonorAnalysisAfterSourceRecovery(previous)
+        ) {
+          continue;
+        }
+      }
+
       const session = client.startSession();
       try {
         await session.withTransaction(async () => {
@@ -124,14 +202,17 @@ export class SharedDbHonorAnalysisStore implements HonorAnalysisStorePort {
             }
             return;
           }
-          const previous = stateByKey.get(sourceKey);
+          const currentState = await (await honorAnalysisStatesCol()).findOne(
+            { _id: `session-report:${sourceKey}` },
+            { session },
+          );
           const result = await queueHonorAnalysis({
             sourceKey,
             sourceRecordId: source.sourceRecordId,
             sourceHash: source.sourceHash,
             analyzerRevision: HONOR_ANALYZER_REVISION,
             now,
-            force: shouldForceHonorAnalysisAfterSourceRecovery(previous),
+            force: shouldForceHonorAnalysisAfterSourceRecovery(currentState),
             session,
           });
           if (result.queued) queued += 1;

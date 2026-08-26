@@ -184,6 +184,47 @@ export async function listFinalizedNovexSeasons(
     .toArray();
 }
 
+export async function countFinalizedNovexSeasons(): Promise<number> {
+  return (await getDb())
+    .collection<StockInvestmentSeason>("stock_investment_seasons")
+    .countDocuments({ status: "FINALIZED" });
+}
+
+export async function countFinalizedNovexTop3Performances(): Promise<number> {
+  const result = await (await getDb())
+    .collection<StockSeasonPerformance>("stock_season_performance")
+    .aggregate<{ count: number }>([
+      {
+        $match: {
+          eligible: true,
+          rank: { $in: [1, 2, 3] },
+        },
+      },
+      {
+        $lookup: {
+          from: "stock_investment_seasons",
+          localField: "seasonId",
+          foreignField: "_id",
+          as: "season",
+        },
+      },
+      { $match: { "season.status": "FINALIZED" } },
+      { $group: { _id: "$seasonId", podiumEntries: { $sum: 1 } } },
+      {
+        $group: {
+          _id: null,
+          count: {
+            $sum: {
+              $cond: [{ $gt: ["$podiumEntries", 3] }, 3, "$podiumEntries"],
+            },
+          },
+        },
+      },
+    ])
+    .next();
+  return result?.count ?? 0;
+}
+
 export async function listNovexHonorRecords(
   seasonId: string,
 ): Promise<HonorRecord[]> {
@@ -714,20 +755,47 @@ export async function skipHonorAnalysisSource(input: {
     }
   }
   const now = input.now ?? new Date();
-  const result = await (await honorAnalysisStatesCol()).updateOne(
-    { _id: `session-report:${input.sourceKey}` },
+  const collection = await honorAnalysisStatesCol();
+  const id = `session-report:${input.sourceKey}`;
+  const reason = input.reason?.slice(0, MAX_ERROR_LENGTH);
+  const existing = await collection.findOne(
+    { _id: id },
     {
-      $set: {
-        status: "SKIPPED",
-        updatedAt: now,
-        ...(input.reason
-          ? { lastError: input.reason.slice(0, MAX_ERROR_LENGTH) }
-          : {}),
+      projection: {
+        status: 1,
+        lastError: 1,
+        leaseToken: 1,
+        leaseUntil: 1,
+        nextAttemptAt: 1,
       },
-      $unset: { leaseToken: "", leaseUntil: "", nextAttemptAt: "" },
+      session: input.session,
     },
-    { session: input.session },
   );
+  const alreadyStable =
+    existing?.status === "SKIPPED" &&
+    existing.lastError === reason &&
+    !existing.leaseToken &&
+    !existing.leaseUntil &&
+    !existing.nextAttemptAt;
+  const result = alreadyStable
+    ? null
+    : await collection.updateOne(
+        { _id: id },
+        {
+          $set: {
+            status: "SKIPPED",
+            updatedAt: now,
+            ...(reason ? { lastError: reason } : {}),
+          },
+          $unset: {
+            ...(!reason ? { lastError: "" } : {}),
+            leaseToken: "",
+            leaseUntil: "",
+            nextAttemptAt: "",
+          },
+        },
+        { session: input.session },
+      );
   const withdrawn = await withdrawHonorRecordsBySource({
     sourceType: "SESSION_REPORT",
     sourceKey: input.sourceKey,
@@ -735,7 +803,7 @@ export async function skipHonorAnalysisSource(input: {
     now,
     session: input.session,
   });
-  return result.matchedCount === 1 || withdrawn > 0;
+  return (result?.modifiedCount ?? 0) === 1 || withdrawn > 0;
 }
 
 /**
