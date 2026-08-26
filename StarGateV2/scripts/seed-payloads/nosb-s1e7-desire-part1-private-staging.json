@@ -1,0 +1,320 @@
+[
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-staging-insert",
+    "filter": {
+      "slug": "federatio"
+    },
+    "upsert": true,
+    "update": {
+      "$set": {
+        "title": "페데라치오",
+        "category": "세력",
+        "tags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "S1E7",
+          "욕구",
+          "페데라치오",
+          "마피아",
+          "파리",
+          "광명회"
+        ],
+        "authorId": "novus-ordo-record-control-m-vey",
+        "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Vey",
+        "content": "# 페데라치오\n\n페데라치오는 1920년 시칠리아에서 시작된 마피아 조직이다. 사무총장 브리핑에 따르면 광명회 협력자에게 금과 물품을 공급했고, 최근에는 무기를 들여와 광원화 바이러스를 이용한 테러 세력의 물류망으로 기능했다.\n\n## 파리 조직\n[[report:NOSB-S1E7-DESIRE-PART1|욕구 1부 작전]]에서 파리 조직은 하수도 무기고, Avenue du Colonel-Henri-Rol-Tanguy 인근 길목, Bar Hemingway를 사용했다. 하수도에서는 방독면·방호복·폭탄·소총 다수가 발견됐다. 술집에서는 시청 습격과 파리 폭파 계획이 논의됐다.\n\n물주먹 래키는 겉보기 보스가 꼭두각시이며 실권자는 ‘변호사’라고 증언했다. 변호사와 조직원 마테오의 실명·계급·전체 지휘 범위는 확인되지 않았다.\n\n## 관계\n- [[wiki:illuminati|광명회]] — 협력자에게 금·물품·무기를 공급한 것으로 보고됨\n- [[wiki:aurora-virus|광원화 바이러스]] — 바이러스 테러 세력의 물류망으로 지목됨\n- [[personnel:WATER_FIST_RACKY|물주먹 래키]] — 조직을 추적하다 폭행당한 뒤 실권자 정보를 제공한 인물\n- [[personnel:ACCEL|ACCEL]] — 조직의 의뢰를 수락하는 형식으로 잠입한 현장 요원\n\n## 현재 상태\n욕구 1부 종료 시점에는 파리의 계획과 거점이 드러났지만 조직 전체가 궤멸됐다는 기록은 없다. 시청 공격·폭파가 실행됐는지, 변호사와 마테오가 이후 어떻게 됐는지는 후속 기록이 필요하다.\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 1부」.",
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      },
+      "$setOnInsert": {
+        "createdAt": "2026-08-23T11:40:00.000Z",
+        "isPublic": false
+      }
+    },
+    "postcondition": {
+      "slug": "federatio",
+      "isPublic": false
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-staging-insert",
+    "filter": {
+      "slug": "weaverwood"
+    },
+    "upsert": true,
+    "update": {
+      "$set": {
+        "title": "위버우드",
+        "category": "개체",
+        "tags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "S1E7",
+          "욕구",
+          "위버우드",
+          "우디",
+          "공생",
+          "식물개체"
+        ],
+        "authorId": "novus-ordo-record-control-m-vey",
+        "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Vey",
+        "content": "# 위버우드\n\n위버우드는 우디가 수년 만에 찾아가 정신 감응으로 대화한 지성 있는 나무 개체다. 이름은 세션 화자 표기에서 확인되며 기원·종 분류·정확한 위치는 아직 기록되지 않았다.\n\n## 우디와의 대화\n[[personnel:WD-(𝓃)|우디]]는 인간이 식물을 뒤덮는 이끼와 같지만, 서로 없이는 살 수 없는 관계라고 설명했다. 그는 이 공생이 결국 서서히 죽어 가는 결말로 이어질 것이라고 보았다. 위버우드는 ‘공생’이라는 개념을 기억했다.\n\n## 확인된 특성\n- 우디와 정신 감응으로 대화한다.\n- 인간의 물건과 인간·식물의 관계를 질문하고 새 개념을 학습한다.\n- 인간 사회의 가치 판단을 그대로 공유하는지는 확인되지 않았다.\n\n## 미확인 사항\n개체의 수령, 이동 가능성, 노부스 오르도 소속 여부, ZULU 등록 여부, 현재 격리·보호 상태는 모두 미상이다. 이번 기록은 우디와의 대화만 보존하며 별도 조직·종족으로 확대하지 않는다.\n\n## 관련 문서\n- [[report:NOSB-S1E7-DESIRE-PART1|작전 보고서 S1E7: 욕구 1부]]\n- [[personnel:WD-(𝓃)|우디]]\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 1부」.",
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      },
+      "$setOnInsert": {
+        "createdAt": "2026-08-23T11:40:00.000Z",
+        "isPublic": false
+      }
+    },
+    "postcondition": {
+      "slug": "weaverwood",
+      "isPublic": false
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-staging-insert",
+    "filter": {
+      "slug": "zulu-0060-snallygaster"
+    },
+    "upsert": true,
+    "update": {
+      "$set": {
+        "title": "ZULU-0060 스넬리 게스터",
+        "category": "줄루",
+        "tags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "S1E7",
+          "욕구",
+          "ZULU-0060",
+          "스넬리게스터",
+          "격리붕괴",
+          "블랙피라미드"
+        ],
+        "authorId": "novus-ordo-record-control-m-vey",
+        "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Vey",
+        "content": "# ZULU-0060 스넬리 게스터\n\nZULU-0060은 블랙 피라미드에 다수 개체가 격리돼 있던 스넬리 게스터 분류다. 욕구 1부에서 배관을 부수고 집단 탈출해 통로를 습격했다.\n\n## 격리 붕괴\n초기 현장 보고는 사상자 20명이었고, 정리 뒤 최종 평가는 30명 미만이었다. 정확한 사망자·부상자 구분은 기록되지 않았다. [[personnel:ACCEL|ACCEL]]이 무리를 제압했고 [[personnel:MR_ODD|Mr. 오드]]는 구역 정리를 지시했다.\n\n## 확인된 특성\n- 하나의 단일 개체가 아니라 여러 개체가 같은 번호로 관리된다.\n- 배관과 시설 구조물을 파괴하며 통로로 침입했다.\n- 이번 사고에서 전체 보유 수와 탈출 수는 확인되지 않았다.\n\n## 현재 상태\n현장에 나타난 무리는 제압됐지만 개별 사망 여부와 잔여 격리 개체 수는 미상이다. 격리 붕괴의 원인도 이번 기록에서 밝혀지지 않았다.\n\n## 관련 문서\n- [[report:NOSB-S1E7-DESIRE-PART1|작전 보고서 S1E7: 욕구 1부]]\n- [[wiki:zulu-0007-mothman|ZULU-0007 나방/모스맨]]\n- [[personnel:ACCEL|ACCEL]]\n- [[personnel:MR_ODD|Mr. 오드]]\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 1부」.",
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      },
+      "$setOnInsert": {
+        "createdAt": "2026-08-23T11:40:00.000Z",
+        "isPublic": false
+      }
+    },
+    "postcondition": {
+      "slug": "zulu-0060-snallygaster",
+      "isPublic": false
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-staging-insert",
+    "filter": {
+      "slug": "zulu-0007-mothman"
+    },
+    "upsert": true,
+    "update": {
+      "$set": {
+        "title": "ZULU-0007 나방/모스맨",
+        "category": "줄루",
+        "tags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "S1E7",
+          "욕구",
+          "ZULU-0007",
+          "나방",
+          "모스맨",
+          "정신공격",
+          "블랙피라미드"
+        ],
+        "authorId": "novus-ordo-record-control-m-vey",
+        "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Vey",
+        "content": "# ZULU-0007 나방/모스맨\n\nZULU-0007은 블랙 피라미드 격리 붕괴 중 나타난 개체다. 기록에서는 처음 ‘나방’으로, 이후 ‘모스맨’으로 불렸다. 이 호칭만으로 외부 전승의 모스맨과 동일 개체라고 확정하지 않는다.\n\n## 격리 붕괴\n개체는 [[personnel:네베드|네베드]]와 [[personnel:TIGER298|타이거]]에게 정신 공격을 사용했다. 두 요원이 교전해 제압했으나 개체의 사망·재격리 여부는 명확히 기록되지 않았다.\n\n## 확인된 특성\n- 나방 또는 모스맨으로 불리는 외형을 가진다.\n- 직접 정신 공격을 가할 수 있다.\n- ZULU-0060의 집단 탈출과 같은 시간대에 격리 구역 밖에서 관측됐다.\n\n## 미확인 사항\n정확한 종 분류, 능력의 작동 거리·후유증, 격리 붕괴 원인, 현재 상태는 미상이다.\n\n## 관련 문서\n- [[report:NOSB-S1E7-DESIRE-PART1|작전 보고서 S1E7: 욕구 1부]]\n- [[wiki:zulu-0060-snallygaster|ZULU-0060 스넬리 게스터]]\n- [[personnel:네베드|네베드]]\n- [[personnel:TIGER298|타이거]]\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 1부」.",
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      },
+      "$setOnInsert": {
+        "createdAt": "2026-08-23T11:40:00.000Z",
+        "isPublic": false
+      }
+    },
+    "postcondition": {
+      "slug": "zulu-0007-mothman",
+      "isPublic": false
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "entity-wiki-staging-insert",
+    "filter": {
+      "slug": "eleanor-aurora-alligator"
+    },
+    "upsert": true,
+    "update": {
+      "$set": {
+        "title": "엘레노어",
+        "category": "개체",
+        "tags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "S1E7",
+          "욕구",
+          "엘레노어",
+          "악어",
+          "광원화바이러스",
+          "파리하수도"
+        ],
+        "authorId": "novus-ordo-record-control-m-vey",
+        "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Vey",
+        "content": "# 엘레노어\n\n엘레노어는 파리 하수도에서 발견된 광원화 감염 악어다. 사람의 말을 이해하고 자신의 고통을 표현했으며, 오틸리아에게 자신을 죽여 달라고 호소했다.\n\n## 발견\n[[report:NOSB-S1E7-DESIRE-PART1|욕구 1부 작전]] 중 페데라치오 하수도 무기고 인근 수로에서 나타났다. 주변 쥐들은 [[personnel:OTILIA|오틸리아 발트만]]을 역병의 여왕·여신으로 불렀다. 엘레노어가 왜 감염됐는지, 페데라치오가 감염에 관여했는지는 확인되지 않았다.\n\n## 마지막 선택\n오틸리아는 먼저 백신을 사용할 수 있는지 물었지만 실제 치료를 진행할 수 없었다. 이후 반지와 미끼로 엘레노어를 배전기 쪽으로 유인해 감전사시켰다. 마리아는 유인 과정에 미스터비스트 소다 1개를 사용했다.\n\n## 현재 상태\n감전으로 사망했다. 사체 회수·검사·보관 여부는 기록되지 않았다. 이름이 있는 독립 개체 기록으로 보존한다.\n\n## 관련 문서\n- [[report:NOSB-S1E7-DESIRE-PART1|작전 보고서 S1E7: 욕구 1부]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:federatio|페데라치오]]\n- [[personnel:OTILIA|오틸리아 발트만]]\n- [[personnel:MARIA|마리아]]\n\n## 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 1부」.",
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      },
+      "$setOnInsert": {
+        "createdAt": "2026-08-23T11:40:00.000Z",
+        "isPublic": false
+      }
+    },
+    "postcondition": {
+      "slug": "eleanor-aurora-alligator",
+      "isPublic": false
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report-staging-insert",
+    "filter": {
+      "sessionId": "NOSB-S1E7-DESIRE-PART1"
+    },
+    "upsert": true,
+    "update": {
+      "$set": {
+        "sessionTitle": "작전 보고서 S1E7: 욕구 1부",
+        "reportNumber": "07",
+        "summary": "# 작전 보고서 S1E7: 욕구 1부\n\n237년 전 마리아가 겪은 파리의 흑미사 기록이 현재의 광원화·페데라치오 소탕 작전과 맞물렸다. 블랙 피라미드에서는 ZULU 격리 붕괴가 발생했고, 킴라박 리는 되돌아온 NHI 문서를 웩슬러 부통령에게 넘기며 미국 군부의 제안을 받아들였다. 파리 현장팀은 페데라치오의 폭파 계획과 하수도 무기고를 확인한 뒤 카타콤으로 진입했고, 종료 직전 해쉬는 화이트로즈 단말의 안내를 거쳐 리처드에게 감염자 은폐 증거를 공개하라는 임무를 받았다.\n\n## 시각 자료\n![작전 보고서 로고](/assets/StarGate_logo_watermark.webp \"NOVUS ORDO 기록통제실 작전 보고서 표식\")\n\n![237년 전 파리 근교의 붉은 장미](/assets/session-reports/s1e7-desire-part1/maria-origin-red-roses.webp \"마리아의 과거가 시작된 237년 전 파리 근교\")\n\n![237년 전 파리에 내리는 비](/assets/session-reports/s1e7-desire-part1/paris-rain-237-years-ago.webp \"비가 내리던 237년 전 파리 근교\")\n\n![몽테스팡 저택의 인육 만찬실](/assets/session-reports/s1e7-desire-part1/montespan-estate-banquet-room.webp \"마리아가 후작·성직자·코르티잔의 만찬을 목격한 몽테스팡 저택\")\n\n![흑미사 유적으로 끌려가는 마리아](/assets/session-reports/s1e7-desire-part1/maria-led-into-catacombs.webp \"세 귀족에게 이끌려 흑미사 유적으로 향하는 마리아\")\n\n![파리 카타콤으로 내려가는 돌계단](/assets/session-reports/s1e7-desire-part1/catacomb-descent.webp \"마리아가 세 귀족과 내려간 지하 돌계단\")\n\n![이골로냑을 부르는 흑미사 의식진](/assets/session-reports/s1e7-desire-part1/ygolonac-black-mass-ritual.webp \"마리아를 제물로 이골로냑을 부르려 한 흑미사 의식\")\n\n![현재의 블랙 피라미드 통로](/assets/session-reports/s1e7-desire-part1/black-pyramid-present-day.webp \"237년 전 기록에서 현재의 블랙 피라미드로 전환된 장면\")\n\n![스타마트에 들어선 크로노스](/assets/session-reports/s1e7-desire-part1/chronos-enters-starmart.webp \"새 소다를 찾으러 스타마트에 들어선 크로노스\")\n\n![트리플 시트러스 제로 칼로리 소다 진열대](/assets/session-reports/s1e7-desire-part1/triple-citrus-soda-display.webp \"미스터비스트 소다를 대신해 진열된 트리플 시트러스 소다\")\n\n![게임에 몰두한 스타마트 직원](/assets/session-reports/s1e7-desire-part1/starmart-clerk-ignores-chronos.webp \"크로노스의 질문을 듣지 않고 게임에 몰두한 직원\")\n\n![크로노스와 스타마트 직원의 충돌](/assets/session-reports/s1e7-desire-part1/chronos-starmart-confrontation.webp \"소다를 둘러싸고 벌어진 크로노스와 직원의 충돌\")\n\n![거울 속 악마와 마주한 오틸리아](/assets/session-reports/s1e7-desire-part1/otilia-demon-mirror.webp \"인류 절멸 계약을 경고하는 거울 속 악마\")\n\n![오틸리아에게 계약 이행을 명령하는 악마](/assets/session-reports/s1e7-desire-part1/demon-renews-otilia-contract.webp \"광원화 바이러스를 빼앗아 강화하라고 명령하는 계약 상대\")\n\n![지옥의 경고를 들은 오틸리아](/assets/session-reports/s1e7-desire-part1/otilia-hell-contract-warning.webp \"계약과 지옥의 위협 앞에서 자신의 선택을 돌아보는 오틸리아\")\n\n![오틸리아를 찾아온 마리아](/assets/session-reports/s1e7-desire-part1/maria-interrupts-otilia.webp \"지옥에 대한 두려움을 나누고 함께 방을 나서는 오틸리아와 마리아\")\n\n![프로젝트 데드 핸드 실험을 보고하는 닥터 제노](/assets/session-reports/s1e7-desire-part1/doctor-zeno-dead-hand-policy.webp \"마가렛의 고문 모의실험과 통제 확대를 발표한 닥터 제노\")\n\n![위버우드를 찾아온 우디](/assets/session-reports/s1e7-desire-part1/woody-visits-weaverwood.webp \"수년 만에 위버우드와 감응한 우디\")\n\n![위버우드에게 인간 물건을 보여 주는 우디](/assets/session-reports/s1e7-desire-part1/woody-teaches-weaverwood-symbiosis.webp \"인간을 이끼에 비유하며 공생을 설명한 우디\")\n\n![블랙 피라미드의 ZULU 격리 붕괴 현장](/assets/session-reports/s1e7-desire-part1/zulu-containment-breach.webp \"ZULU-0060 탈출로 사상자가 발생한 블랙 피라미드 통로\")\n\n![ZULU-0007 나방의 정신 공격](/assets/session-reports/s1e7-desire-part1/zulu-0007-mothman-contact.webp \"네베드와 타이거가 제압한 ZULU-0007 나방\")\n\n![배관을 부수고 나타난 스넬리 게스터 무리](/assets/session-reports/s1e7-desire-part1/snallygaster-swarm-attack.webp \"블랙 피라미드 통로를 습격한 ZULU-0060 무리\")\n\n![제압된 스넬리 게스터 무리](/assets/session-reports/s1e7-desire-part1/snallygaster-breach-contained.webp \"ACCEL에게 제압된 ZULU-0060 스넬리 게스터\")\n\n![비번 중 NHI 문서 소포를 받은 킴라박](/assets/session-reports/s1e7-desire-part1/kimlabak-off-duty-nhi-package.webp \"잃어버린 NHI 문서가 돌아온 뒤 연락을 결심한 킴라박\")\n\n![백악관에 도착한 킴라박](/assets/session-reports/s1e7-desire-part1/kimlabak-arrives-white-house.webp \"존 웡의 안내로 백악관에 도착한 킴라박\")\n\n![백악관의 미국 매파 모임](/assets/session-reports/s1e7-desire-part1/white-house-neocon-gathering.webp \"웩슬러 대통령 일가와 미국 매파가 모인 백악관 연회\")\n\n![킴라박을 군부로 영입하는 웩슬러 부통령](/assets/session-reports/s1e7-desire-part1/wexler-recruits-kimlabak.webp \"고급차와 보상을 제시하며 킴라박을 영입한 캘빈 R. 웩슬러\")\n\n![페데라치오 소탕 작전 브리핑룸](/assets/session-reports/s1e7-desire-part1/federatio-mission-briefing.webp \"사무총장이 파리의 페데라치오 궤멸을 명령한 브리핑\")\n\n![ZULU-0040 왕관에서 추출한 작전용 백신](/assets/session-reports/s1e7-desire-part1/crown-derived-vaccine-reserve.webp \"현장팀이 쓰기에 충분하다고 보고된 왕관 유래 백신 비축\")\n\n![파리 작전을 지원하는 레지스트라](/assets/session-reports/s1e7-desire-part1/registra-paris-mission-support.webp \"판정 보정과 전투 중 1회 보급을 제공한 레지스트라\")\n\n![파리 센강에 도착한 현장팀](/assets/session-reports/s1e7-desire-part1/paris-operation-arrival.webp \"군용 보트로 비밀 작전지 파리에 도착한 현장팀\")\n\n![페데라치오를 추적하는 파리 길목팀](/assets/session-reports/s1e7-desire-part1/paris-street-team-deployment.webp \"Avenue du Colonel-Henri-Rol-Tanguy 인근을 수색한 길목팀\")\n\n![Bar Hemingway의 페데라치오 잠입](/assets/session-reports/s1e7-desire-part1/federatio-bar-infiltration.webp \"페데라치오의 파리 폭파 계획을 들은 Bar Hemingway 잠입팀\")\n\n![페데라치오 하수도 무기고](/assets/session-reports/s1e7-desire-part1/paris-sewer-arsenal-search.webp \"방독면·방호복·폭탄·소총을 발견한 하수도팀\")\n\n![엘레노어가 숨어 있던 하수도 수로](/assets/session-reports/s1e7-desire-part1/eleanor-sewer-lair.webp \"광원화에 감염된 엘레노어가 나타난 하수도 수로\")\n\n![광원화에 감염된 악어 엘레노어](/assets/session-reports/s1e7-desire-part1/eleanor-aurora-infected-alligator.webp \"고통을 끝내 달라고 호소한 하수도 악어 엘레노어\")\n\n![파리 카타콤의 좁은 진입 통로](/assets/session-reports/s1e7-desire-part1/catacomb-reinforcement-descent.webp \"마리아의 과거 의식 장소로 이어진 카타콤 통로\")\n\n![카타콤에서 과거 기억에 휩싸인 마리아](/assets/session-reports/s1e7-desire-part1/maria-catacomb-trauma.webp \"흑미사 유적으로 돌아와 공황을 보인 마리아\")\n\n![파리 길목에서 해쉬를 만난 리처드](/assets/session-reports/s1e7-desire-part1/richard-white-rose-contact.webp \"화이트로즈 단말의 안내 직후 해쉬에게 마지막 임무를 제안한 리처드\")\n\n## 진행 정보\n보고 순번: 07\n세션 ID: NOSB-S1E7-DESIRE-PART1\n진행일: 2026년 8월 23일 ~ 2026년 8월 24일\n주 작전지: 프랑스 파리, Bar Hemingway, Avenue du Colonel-Henri-Rol-Tanguy, 하수도와 카타콤\n부 작전지: 237년 전 파리 근교 몽테스팡 저택·흑미사 유적, 블랙 피라미드, 미국 백악관\n열람 범위: 내용을 다듬는 동안 V 이상 내부 검토자만 열람\n\n## 237년 전 몽테스팡 저택\n237년 전 파리 근교에서 하녀였던 [[personnel:MARIA|마리아]]는 몽테스팡 저택의 후작·성직자·코르티잔이 벌인 인육 만찬을 목격했다. 세 사람은 마리아를 카타콤의 흑미사 유적으로 데려가 제물로 삼고 이골로냑을 부르는 의식을 진행했다. 귀족 세 명의 실명과 의식 이후 행적은 기록되지 않았다.\n\n현재의 마리아는 같은 유적으로 이어지는 카타콤 앞에서 심한 과호흡과 식은땀, 후퇴 반응을 보였다. 이 기록은 마리아의 파리 기원과 카타콤 공황을 연결하지만, 의식이 실제로 어떤 결과를 냈는지는 이번 1부에서 확정되지 않았다.\n\n## 크로노스의 스타마트 소동과 오틸리아의 계약\n[[personnel:TIME|크로노스]]는 스타마트에서 기존 미스터비스트 소다를 찾았으나 진열대에는 트리플 시트러스 제로 칼로리 소다가 놓여 있었다. 직원과의 충돌까지 벌어졌지만 가격·효과·정식 판매 조건은 확인되지 않았다.\n\n[[personnel:OTILIA|오틸리아 발트만]]은 거울 속 계약 상대에게 인류를 절멸할 역병을 만들라는 약속이 아직 유효하다는 경고를 받았다. 상대는 오틸리아가 스승으로 여기는 이름 미상의 인물에게서 [[wiki:aurora-virus|광원화 바이러스]]를 빼앗아 강화하라고 명령했다. 오틸리아는 자신이 원한 일이 아니라고 반발했고, 이후 마리아에게 자신도 지옥이 두렵다고 고백했다. 마리아는 곁에 머물렀고 두 사람은 함께 방을 나섰다.\n\n## 프로젝트 데드 핸드와 위버우드\n[[personnel:DOCTOR_ZENO|닥터 제노]]는 [[personnel:MARGARET|마가렛]]에게 하루 16시간의 고문 모의실험을 가해 송과선과 강령 능력을 활성화했다고 보고했다. 그는 성과가 낮은 능력자에게 같은 방식을 확대하고 [[personnel:WD-(𝓃)|우디]]도 시설 밖으로 나가지 못하게 하겠다고 밝혔다. 이는 [[wiki:project-dead-hand|프로젝트 데드 핸드]]의 실제 시행 범위가 확대됐다는 직접 기록이다.\n\n우디는 수년 만에 [[wiki:weaverwood|위버우드]]를 찾아 정신 감응으로 대화했다. 우디는 인간을 식물 표면을 덮는 이끼에 비유하며 서로 없이는 살 수 없는 공생 관계이지만 결국 서서히 죽게 된다고 설명했다. 위버우드는 ‘공생’이라는 말을 기억했다. 개체의 기원·종 분류·현재 위치는 확인되지 않았다.\n\n## ZULU 격리 붕괴\n블랙 피라미드에서 [[wiki:zulu-0060-snallygaster|ZULU-0060 스넬리 게스터]] 무리가 배관을 부수고 탈출했다. 초기 보고는 사상자 20명, 정리 뒤 최종 보고는 30명 미만이었다. [[personnel:ACCEL|ACCEL]]이 무리를 제압했고, [[personnel:MR_ODD|Mr. 오드]]는 구역 정리를 지시했다.\n\n한편 [[wiki:zulu-0007-mothman|ZULU-0007 나방/모스맨]]은 정신 공격을 사용했다. [[personnel:네베드|네베드]]와 [[personnel:TIGER298|타이거]]가 교전해 제압했지만, 기록 속 ‘모스맨’ 호칭을 외부 전승의 동일 개체로 확대하지 않는다. 두 ZULU 항목 모두 정확한 전체 보유 수와 사망 여부는 확인되지 않았다.\n\n## 킴라박의 백악관 접촉\n과거 아르고 기지에서 사라졌던 [[catalog:nhi-rocket-engine-adaptation-document|NHI 로켓·우주 엔진 적응 문서]]가 비번 중이던 [[personnel:KIMLEE|킴라박 리]]에게 소포로 돌아왔다. [[personnel:JOHN_WONG|존 웡]]은 킴라박을 백악관으로 안내했다. 현장에는 웩슬러 대통령과 그의 아버지인 [[personnel:WEXLER|캘빈 R. 웩슬러 부통령]], 미국 매파 인사들이 모여 있었다.\n\n웩슬러 부통령은 고급차 열쇠와 더 나은 보수를 제시하며 킴라박에게 대통령을 위해 일하라고 권했다. 킴라박은 제안을 받아들이고 NHI 문서와 자신의 계좌번호를 넘겼다. GM은 킴라박의 소속이 군부로 바뀐다고 명시했다. 문서의 마지막 확인 경로는 ‘킴라박 → 웩슬러 부통령’이다. 내부 J 등급의 후속 처리와 군부 내 정확한 직책은 별도 인사 기록이 필요하다.\n\n## 페데라치오 소탕 명령\n[[personnel:AMALIA_FREDRIKA_VON_ESSEN|사무총장 아말리아]]는 [[wiki:federatio|페데라치오]]가 1920년 시칠리아에서 시작된 마피아이며, [[wiki:illuminati|광명회]] 협력자에게 금과 물품을 공급했고 최근에는 무기를 들여왔다고 설명했다. 사무총장은 광원화 바이러스를 이용한 테러 세력과의 연결을 끊기 위해 파리 조직을 소탕하라고 명령했다.\n\n프랑스 경찰·군·정부에는 작전을 알리지 않았고, 파리에는 노부스 오르도의 통제력이 미치고 있었다. [[personnel:REGISTRAR|레지스트라 아그네타 스톨]]은 현장 판정 지원과 전투 중 인당 1회 소모품 보급을 제공하고 하수도·길목·Bar Hemingway 세 지점을 안내했다. [[wiki:zulu-0040-crown|ZULU-0040 왕관]]에서 현장팀이 쓰기에 충분한 백신을 추출했다는 설명도 있었으나 인원별 수량과 실제 사용량은 기록되지 않았다.\n\n## 파리의 세 갈래 작전\n현장팀은 하수도, Avenue du Colonel-Henri-Rol-Tanguy 인근 길목, Bar Hemingway로 나뉘었다. 작전 도중 인원 이동과 카타콤 증원이 있었으므로 아래 기록은 각 장소에서 확인된 사건을 중심으로 정리한다.\n\n길목팀은 페데라치오에게 구타당하던 [[personnel:WATER_FIST_RACKY|물주먹 래키]]를 구했다. 래키는 조직의 겉보기 보스가 꼭두각시이며 실권자는 ‘변호사’라고 증언하고 현장팀에 합류했다.\n\nBar Hemingway 잠입팀은 페데라치오 잔당이 파리 시청을 습격하고 도시를 폭파하려 한다는 계획을 들었다. 조직원 마테오는 [[personnel:PIPETTE|휘트모어 핀치]]에게 연락처를 주고 새벽 전에 파리를 떠나라고 경고했다. ACCEL은 조직의 의뢰를 수락하는 형식으로 내부 잠입을 이어갔다. 마테오와 이름 없는 변호사의 신원은 아직 독립 신원조회로 만들 만큼 확정되지 않았다.\n\n하수도팀은 방독면·방호복·폭탄·소총이 쌓인 무기고를 발견했다. 마리아가 종류와 정확한 수량이 밝혀지지 않은 폭탄 몇 개를 챙겼고, 이후 보관처는 확인되지 않았다.\n\n## 엘레노어\n하수도에서는 쥐들이 오틸리아를 역병의 여왕·여신으로 불렀고, 광원화에 감염된 악어 [[wiki:eleanor-aurora-alligator|엘레노어]]가 나타났다. 엘레노어는 고통을 끝내 달라고 호소했다. 오틸리아는 먼저 백신 사용 가능성을 물었지만 실제 치료를 진행할 수 없었고, 반지와 미끼로 엘레노어를 배전기 쪽으로 유인해 감전사시켰다.\n\n마리아는 엘레노어를 유인하는 과정에서 미스터비스트 소다 1개를 사용했다. 시스템 기록에는 사용 시 HP 10·ST 10 회복이 남아 있으며, 이 소다는 현장에서 소비된 것으로 기록한다.\n\n## 카타콤과 화이트로즈의 제안\n이동식만 감지한 유령이 닫힌 통로를 열었고, 현장팀은 크로노스·네베드·아젠트·우디 등의 증원을 받아 카타콤 깊숙이 진입했다. 마리아는 과거 의식 장소와 같은 공간에서 공황을 보였다.\n\n화이트로즈 단말의 [[personnel:WHITE_ROSE_R|R]]은 [[personnel:INDEXER|해쉬 테거]]에게 한 코너를 돌라고 안내했다. 직후 총장 보좌관 리처드가 나타나 ‘우리 조직’의 마지막 임무를 제안했다. 그는 노부스 오르도가 섹터 C뿐 아니라 파리 카타콤과 세계 곳곳에 대규모 광원화 감염자를 숨겼다고 주장하고, 증거를 확보해 언론에 공개하라고 요구했다. 이 내용은 리처드의 주장으로 기록하며 독립 확인된 조직 사실로 단정하지 않는다.\n\n해쉬는 자신이 양심 때문에 움직이는 사람은 아니라고 선을 그으면서도 임무를 수락했다. R의 안내 직후 리처드가 등장하고 ‘우리 조직’이라고 말한 정황은 두 이름이 같은 인물일 가능성을 강하게 지지하지만, 신원 병합은 사용자 확정 전 보류한다.\n\n## 결과와 미확인 사항\nZULU 격리 붕괴는 현장 요원들의 개입으로 제압됐고, 페데라치오의 파리 폭파 계획·하수도 무기고·카타콤 진입로가 확인됐다. 엘레노어는 사망했고, 킴라박은 미국 군부의 제안을 수락했으며 NHI 문서는 웩슬러 부통령에게 전달됐다. 해쉬는 감염자 은폐 증거를 공개하라는 리처드의 제안을 수락했다.\n\n그러나 페데라치오 전체의 궤멸 여부, 폭탄 몇 개의 후속 보관처, 왕관 유래 백신의 수량과 사용, 웩슬러 대통령의 실명, 오틸리아의 계약 상대와 바이러스를 빼앗으라는 대상, R과 리처드의 동일인 여부는 1부 종료 시점에 확정되지 않았다.\n\n## 관련 문서\n- [[wiki:federatio|페데라치오]]\n- [[wiki:weaverwood|위버우드]]\n- [[wiki:zulu-0060-snallygaster|ZULU-0060 스넬리 게스터]]\n- [[wiki:zulu-0007-mothman|ZULU-0007 나방/모스맨]]\n- [[wiki:eleanor-aurora-alligator|엘레노어]]\n- [[wiki:project-dead-hand|프로젝트 데드 핸드]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:zulu-0040-crown|ZULU-0040 왕관]]\n- [[wiki:illuminati|광명회]]\n- [[wiki:white-rose|화이트로즈]]\n- [[catalog:nhi-rocket-engine-adaptation-document|NHI 로켓·우주 엔진 적응 문서]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:OTILIA|오틸리아 발트만]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:WEXLER|캘빈 R. 웩슬러]]\n- [[personnel:REGISTRAR|레지스트라 / 아그네타 스톨]]\n- [[personnel:WATER_FIST_RACKY|물주먹 래키]]\n- [[personnel:WHITE_ROSE_R|R]]\n- [[personnel:INDEXER|해쉬 테거]]\n- [[personnel:DOCTOR_ZENO|닥터 제노]]\n- [[personnel:MARGARET|마가렛]]\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 1부」.",
+        "highlights": [
+          "237년 전 마리아는 몽테스팡 저택의 인육 만찬과 이골로냑 흑미사 의식을 목격했다.",
+          "오틸리아는 인류 절멸 역병 계약과 광원화 바이러스를 빼앗아 강화하라는 명령을 다시 확인했다.",
+          "닥터 제노는 마가렛에게 하루 16시간의 고문 모의실험을 시행하고 통제 대상을 확대했다.",
+          "우디는 위버우드에게 인간과 식물의 공생을 설명했다.",
+          "ZULU-0060 스넬리 게스터 무리와 ZULU-0007 나방/모스맨의 격리 붕괴로 30명 미만의 사상자가 보고됐다.",
+          "킴라박은 되돌아온 NHI 문서를 웩슬러 부통령에게 넘기고 미국 군부의 채용 제안을 수락했다.",
+          "페데라치오의 시청 습격·파리 폭파 계획과 하수도 무기고가 확인됐다.",
+          "광원화에 감염된 악어 엘레노어는 오틸리아의 선택으로 감전사했다.",
+          "해쉬는 R의 안내 직후 만난 리처드에게서 감염자 은폐 증거를 언론에 공개하라는 임무를 받았다."
+        ],
+        "participants": [
+          "마리아",
+          "오틸리아 발트만",
+          "해쉬 테거",
+          "휘트모어 핀치",
+          "엘 볼라도르 / ACCEL",
+          "키아나 오 캘러핸 / 네베드",
+          "시유 / 타이거",
+          "킴라박 리",
+          "이동식",
+          "크로노스",
+          "우디",
+          "발레리아 아젠트",
+          "닥터 제노",
+          "마가렛",
+          "물주먹 래키",
+          "존 웡",
+          "캘빈 R. 웩슬러",
+          "레지스트라 / 아그네타 스톨",
+          "아말리아 프레드리카 본 에센",
+          "Mr. 오드",
+          "R",
+          "리처드",
+          "페데라치오 조직원",
+          "위버우드",
+          "엘레노어"
+        ],
+        "relatedWikiSlugs": [
+          "federatio",
+          "weaverwood",
+          "zulu-0060-snallygaster",
+          "zulu-0007-mothman",
+          "eleanor-aurora-alligator",
+          "project-dead-hand",
+          "aurora-virus",
+          "zulu-0040-crown",
+          "illuminati",
+          "white-rose"
+        ],
+        "relatedPersonnelCodenames": [
+          "MARIA",
+          "OTILIA",
+          "INDEXER",
+          "PIPETTE",
+          "ACCEL",
+          "네베드",
+          "TIGER298",
+          "KIMLEE",
+          "LEE DONGSIK",
+          "TIME",
+          "WD-(𝓃)",
+          "AEGIS",
+          "DOCTOR_ZENO",
+          "MARGARET",
+          "WATER_FIST_RACKY",
+          "JOHN_WONG",
+          "WEXLER",
+          "REGISTRAR",
+          "AMALIA_FREDRIKA_VON_ESSEN",
+          "MR_ODD",
+          "WHITE_ROSE_R"
+        ],
+        "relatedCatalogSlugs": [
+          "nhi-rocket-engine-adaptation-document"
+        ],
+        "locationLabel": "프랑스 / 파리",
+        "mapX": 48.7,
+        "mapY": 34.2,
+        "mapPrecision": "estimated",
+        "gmId": "novus-ordo-record-control-m-vey",
+        "gmName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Vey"
+      },
+      "$setOnInsert": {
+        "createdAt": "2026-08-23T11:40:00.000Z",
+        "minRole": "V"
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E7-DESIRE-PART1",
+      "reportNumber": "07",
+      "minRole": "V"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki-staging-insert",
+    "filter": {
+      "slug": "s1e7-desire-part1"
+    },
+    "upsert": true,
+    "update": {
+      "$set": {
+        "title": "작전 보고서 S1E7: 욕구 1부",
+        "category": "작전 보고서",
+        "tags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "S1E7",
+          "욕구",
+          "파리",
+          "페데라치오",
+          "카타콤",
+          "화이트로즈"
+        ],
+        "authorId": "novus-ordo-record-control-m-vey",
+        "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Vey",
+        "content": "# 작전 보고서 S1E7: 욕구 1부\n\n237년 전 마리아가 겪은 파리의 흑미사 기록이 현재의 광원화·페데라치오 소탕 작전과 맞물렸다. 블랙 피라미드에서는 ZULU 격리 붕괴가 발생했고, 킴라박 리는 되돌아온 NHI 문서를 웩슬러 부통령에게 넘기며 미국 군부의 제안을 받아들였다. 파리 현장팀은 페데라치오의 폭파 계획과 하수도 무기고를 확인한 뒤 카타콤으로 진입했고, 종료 직전 해쉬는 화이트로즈 단말의 안내를 거쳐 리처드에게 감염자 은폐 증거를 공개하라는 임무를 받았다.\n\n## 시각 자료\n![작전 보고서 로고](/assets/StarGate_logo_watermark.webp \"NOVUS ORDO 기록통제실 작전 보고서 표식\")\n\n![237년 전 파리 근교의 붉은 장미](/assets/session-reports/s1e7-desire-part1/maria-origin-red-roses.webp \"마리아의 과거가 시작된 237년 전 파리 근교\")\n\n![237년 전 파리에 내리는 비](/assets/session-reports/s1e7-desire-part1/paris-rain-237-years-ago.webp \"비가 내리던 237년 전 파리 근교\")\n\n![몽테스팡 저택의 인육 만찬실](/assets/session-reports/s1e7-desire-part1/montespan-estate-banquet-room.webp \"마리아가 후작·성직자·코르티잔의 만찬을 목격한 몽테스팡 저택\")\n\n![흑미사 유적으로 끌려가는 마리아](/assets/session-reports/s1e7-desire-part1/maria-led-into-catacombs.webp \"세 귀족에게 이끌려 흑미사 유적으로 향하는 마리아\")\n\n![파리 카타콤으로 내려가는 돌계단](/assets/session-reports/s1e7-desire-part1/catacomb-descent.webp \"마리아가 세 귀족과 내려간 지하 돌계단\")\n\n![이골로냑을 부르는 흑미사 의식진](/assets/session-reports/s1e7-desire-part1/ygolonac-black-mass-ritual.webp \"마리아를 제물로 이골로냑을 부르려 한 흑미사 의식\")\n\n![현재의 블랙 피라미드 통로](/assets/session-reports/s1e7-desire-part1/black-pyramid-present-day.webp \"237년 전 기록에서 현재의 블랙 피라미드로 전환된 장면\")\n\n![스타마트에 들어선 크로노스](/assets/session-reports/s1e7-desire-part1/chronos-enters-starmart.webp \"새 소다를 찾으러 스타마트에 들어선 크로노스\")\n\n![트리플 시트러스 제로 칼로리 소다 진열대](/assets/session-reports/s1e7-desire-part1/triple-citrus-soda-display.webp \"미스터비스트 소다를 대신해 진열된 트리플 시트러스 소다\")\n\n![게임에 몰두한 스타마트 직원](/assets/session-reports/s1e7-desire-part1/starmart-clerk-ignores-chronos.webp \"크로노스의 질문을 듣지 않고 게임에 몰두한 직원\")\n\n![크로노스와 스타마트 직원의 충돌](/assets/session-reports/s1e7-desire-part1/chronos-starmart-confrontation.webp \"소다를 둘러싸고 벌어진 크로노스와 직원의 충돌\")\n\n![거울 속 악마와 마주한 오틸리아](/assets/session-reports/s1e7-desire-part1/otilia-demon-mirror.webp \"인류 절멸 계약을 경고하는 거울 속 악마\")\n\n![오틸리아에게 계약 이행을 명령하는 악마](/assets/session-reports/s1e7-desire-part1/demon-renews-otilia-contract.webp \"광원화 바이러스를 빼앗아 강화하라고 명령하는 계약 상대\")\n\n![지옥의 경고를 들은 오틸리아](/assets/session-reports/s1e7-desire-part1/otilia-hell-contract-warning.webp \"계약과 지옥의 위협 앞에서 자신의 선택을 돌아보는 오틸리아\")\n\n![오틸리아를 찾아온 마리아](/assets/session-reports/s1e7-desire-part1/maria-interrupts-otilia.webp \"지옥에 대한 두려움을 나누고 함께 방을 나서는 오틸리아와 마리아\")\n\n![프로젝트 데드 핸드 실험을 보고하는 닥터 제노](/assets/session-reports/s1e7-desire-part1/doctor-zeno-dead-hand-policy.webp \"마가렛의 고문 모의실험과 통제 확대를 발표한 닥터 제노\")\n\n![위버우드를 찾아온 우디](/assets/session-reports/s1e7-desire-part1/woody-visits-weaverwood.webp \"수년 만에 위버우드와 감응한 우디\")\n\n![위버우드에게 인간 물건을 보여 주는 우디](/assets/session-reports/s1e7-desire-part1/woody-teaches-weaverwood-symbiosis.webp \"인간을 이끼에 비유하며 공생을 설명한 우디\")\n\n![블랙 피라미드의 ZULU 격리 붕괴 현장](/assets/session-reports/s1e7-desire-part1/zulu-containment-breach.webp \"ZULU-0060 탈출로 사상자가 발생한 블랙 피라미드 통로\")\n\n![ZULU-0007 나방의 정신 공격](/assets/session-reports/s1e7-desire-part1/zulu-0007-mothman-contact.webp \"네베드와 타이거가 제압한 ZULU-0007 나방\")\n\n![배관을 부수고 나타난 스넬리 게스터 무리](/assets/session-reports/s1e7-desire-part1/snallygaster-swarm-attack.webp \"블랙 피라미드 통로를 습격한 ZULU-0060 무리\")\n\n![제압된 스넬리 게스터 무리](/assets/session-reports/s1e7-desire-part1/snallygaster-breach-contained.webp \"ACCEL에게 제압된 ZULU-0060 스넬리 게스터\")\n\n![비번 중 NHI 문서 소포를 받은 킴라박](/assets/session-reports/s1e7-desire-part1/kimlabak-off-duty-nhi-package.webp \"잃어버린 NHI 문서가 돌아온 뒤 연락을 결심한 킴라박\")\n\n![백악관에 도착한 킴라박](/assets/session-reports/s1e7-desire-part1/kimlabak-arrives-white-house.webp \"존 웡의 안내로 백악관에 도착한 킴라박\")\n\n![백악관의 미국 매파 모임](/assets/session-reports/s1e7-desire-part1/white-house-neocon-gathering.webp \"웩슬러 대통령 일가와 미국 매파가 모인 백악관 연회\")\n\n![킴라박을 군부로 영입하는 웩슬러 부통령](/assets/session-reports/s1e7-desire-part1/wexler-recruits-kimlabak.webp \"고급차와 보상을 제시하며 킴라박을 영입한 캘빈 R. 웩슬러\")\n\n![페데라치오 소탕 작전 브리핑룸](/assets/session-reports/s1e7-desire-part1/federatio-mission-briefing.webp \"사무총장이 파리의 페데라치오 궤멸을 명령한 브리핑\")\n\n![ZULU-0040 왕관에서 추출한 작전용 백신](/assets/session-reports/s1e7-desire-part1/crown-derived-vaccine-reserve.webp \"현장팀이 쓰기에 충분하다고 보고된 왕관 유래 백신 비축\")\n\n![파리 작전을 지원하는 레지스트라](/assets/session-reports/s1e7-desire-part1/registra-paris-mission-support.webp \"판정 보정과 전투 중 1회 보급을 제공한 레지스트라\")\n\n![파리 센강에 도착한 현장팀](/assets/session-reports/s1e7-desire-part1/paris-operation-arrival.webp \"군용 보트로 비밀 작전지 파리에 도착한 현장팀\")\n\n![페데라치오를 추적하는 파리 길목팀](/assets/session-reports/s1e7-desire-part1/paris-street-team-deployment.webp \"Avenue du Colonel-Henri-Rol-Tanguy 인근을 수색한 길목팀\")\n\n![Bar Hemingway의 페데라치오 잠입](/assets/session-reports/s1e7-desire-part1/federatio-bar-infiltration.webp \"페데라치오의 파리 폭파 계획을 들은 Bar Hemingway 잠입팀\")\n\n![페데라치오 하수도 무기고](/assets/session-reports/s1e7-desire-part1/paris-sewer-arsenal-search.webp \"방독면·방호복·폭탄·소총을 발견한 하수도팀\")\n\n![엘레노어가 숨어 있던 하수도 수로](/assets/session-reports/s1e7-desire-part1/eleanor-sewer-lair.webp \"광원화에 감염된 엘레노어가 나타난 하수도 수로\")\n\n![광원화에 감염된 악어 엘레노어](/assets/session-reports/s1e7-desire-part1/eleanor-aurora-infected-alligator.webp \"고통을 끝내 달라고 호소한 하수도 악어 엘레노어\")\n\n![파리 카타콤의 좁은 진입 통로](/assets/session-reports/s1e7-desire-part1/catacomb-reinforcement-descent.webp \"마리아의 과거 의식 장소로 이어진 카타콤 통로\")\n\n![카타콤에서 과거 기억에 휩싸인 마리아](/assets/session-reports/s1e7-desire-part1/maria-catacomb-trauma.webp \"흑미사 유적으로 돌아와 공황을 보인 마리아\")\n\n![파리 길목에서 해쉬를 만난 리처드](/assets/session-reports/s1e7-desire-part1/richard-white-rose-contact.webp \"화이트로즈 단말의 안내 직후 해쉬에게 마지막 임무를 제안한 리처드\")\n\n## 진행 정보\n보고 순번: 07\n세션 ID: NOSB-S1E7-DESIRE-PART1\n진행일: 2026년 8월 23일 ~ 2026년 8월 24일\n주 작전지: 프랑스 파리, Bar Hemingway, Avenue du Colonel-Henri-Rol-Tanguy, 하수도와 카타콤\n부 작전지: 237년 전 파리 근교 몽테스팡 저택·흑미사 유적, 블랙 피라미드, 미국 백악관\n열람 범위: 내용을 다듬는 동안 V 이상 내부 검토자만 열람\n\n## 237년 전 몽테스팡 저택\n237년 전 파리 근교에서 하녀였던 [[personnel:MARIA|마리아]]는 몽테스팡 저택의 후작·성직자·코르티잔이 벌인 인육 만찬을 목격했다. 세 사람은 마리아를 카타콤의 흑미사 유적으로 데려가 제물로 삼고 이골로냑을 부르는 의식을 진행했다. 귀족 세 명의 실명과 의식 이후 행적은 기록되지 않았다.\n\n현재의 마리아는 같은 유적으로 이어지는 카타콤 앞에서 심한 과호흡과 식은땀, 후퇴 반응을 보였다. 이 기록은 마리아의 파리 기원과 카타콤 공황을 연결하지만, 의식이 실제로 어떤 결과를 냈는지는 이번 1부에서 확정되지 않았다.\n\n## 크로노스의 스타마트 소동과 오틸리아의 계약\n[[personnel:TIME|크로노스]]는 스타마트에서 기존 미스터비스트 소다를 찾았으나 진열대에는 트리플 시트러스 제로 칼로리 소다가 놓여 있었다. 직원과의 충돌까지 벌어졌지만 가격·효과·정식 판매 조건은 확인되지 않았다.\n\n[[personnel:OTILIA|오틸리아 발트만]]은 거울 속 계약 상대에게 인류를 절멸할 역병을 만들라는 약속이 아직 유효하다는 경고를 받았다. 상대는 오틸리아가 스승으로 여기는 이름 미상의 인물에게서 [[wiki:aurora-virus|광원화 바이러스]]를 빼앗아 강화하라고 명령했다. 오틸리아는 자신이 원한 일이 아니라고 반발했고, 이후 마리아에게 자신도 지옥이 두렵다고 고백했다. 마리아는 곁에 머물렀고 두 사람은 함께 방을 나섰다.\n\n## 프로젝트 데드 핸드와 위버우드\n[[personnel:DOCTOR_ZENO|닥터 제노]]는 [[personnel:MARGARET|마가렛]]에게 하루 16시간의 고문 모의실험을 가해 송과선과 강령 능력을 활성화했다고 보고했다. 그는 성과가 낮은 능력자에게 같은 방식을 확대하고 [[personnel:WD-(𝓃)|우디]]도 시설 밖으로 나가지 못하게 하겠다고 밝혔다. 이는 [[wiki:project-dead-hand|프로젝트 데드 핸드]]의 실제 시행 범위가 확대됐다는 직접 기록이다.\n\n우디는 수년 만에 [[wiki:weaverwood|위버우드]]를 찾아 정신 감응으로 대화했다. 우디는 인간을 식물 표면을 덮는 이끼에 비유하며 서로 없이는 살 수 없는 공생 관계이지만 결국 서서히 죽게 된다고 설명했다. 위버우드는 ‘공생’이라는 말을 기억했다. 개체의 기원·종 분류·현재 위치는 확인되지 않았다.\n\n## ZULU 격리 붕괴\n블랙 피라미드에서 [[wiki:zulu-0060-snallygaster|ZULU-0060 스넬리 게스터]] 무리가 배관을 부수고 탈출했다. 초기 보고는 사상자 20명, 정리 뒤 최종 보고는 30명 미만이었다. [[personnel:ACCEL|ACCEL]]이 무리를 제압했고, [[personnel:MR_ODD|Mr. 오드]]는 구역 정리를 지시했다.\n\n한편 [[wiki:zulu-0007-mothman|ZULU-0007 나방/모스맨]]은 정신 공격을 사용했다. [[personnel:네베드|네베드]]와 [[personnel:TIGER298|타이거]]가 교전해 제압했지만, 기록 속 ‘모스맨’ 호칭을 외부 전승의 동일 개체로 확대하지 않는다. 두 ZULU 항목 모두 정확한 전체 보유 수와 사망 여부는 확인되지 않았다.\n\n## 킴라박의 백악관 접촉\n과거 아르고 기지에서 사라졌던 [[catalog:nhi-rocket-engine-adaptation-document|NHI 로켓·우주 엔진 적응 문서]]가 비번 중이던 [[personnel:KIMLEE|킴라박 리]]에게 소포로 돌아왔다. [[personnel:JOHN_WONG|존 웡]]은 킴라박을 백악관으로 안내했다. 현장에는 웩슬러 대통령과 그의 아버지인 [[personnel:WEXLER|캘빈 R. 웩슬러 부통령]], 미국 매파 인사들이 모여 있었다.\n\n웩슬러 부통령은 고급차 열쇠와 더 나은 보수를 제시하며 킴라박에게 대통령을 위해 일하라고 권했다. 킴라박은 제안을 받아들이고 NHI 문서와 자신의 계좌번호를 넘겼다. GM은 킴라박의 소속이 군부로 바뀐다고 명시했다. 문서의 마지막 확인 경로는 ‘킴라박 → 웩슬러 부통령’이다. 내부 J 등급의 후속 처리와 군부 내 정확한 직책은 별도 인사 기록이 필요하다.\n\n## 페데라치오 소탕 명령\n[[personnel:AMALIA_FREDRIKA_VON_ESSEN|사무총장 아말리아]]는 [[wiki:federatio|페데라치오]]가 1920년 시칠리아에서 시작된 마피아이며, [[wiki:illuminati|광명회]] 협력자에게 금과 물품을 공급했고 최근에는 무기를 들여왔다고 설명했다. 사무총장은 광원화 바이러스를 이용한 테러 세력과의 연결을 끊기 위해 파리 조직을 소탕하라고 명령했다.\n\n프랑스 경찰·군·정부에는 작전을 알리지 않았고, 파리에는 노부스 오르도의 통제력이 미치고 있었다. [[personnel:REGISTRAR|레지스트라 아그네타 스톨]]은 현장 판정 지원과 전투 중 인당 1회 소모품 보급을 제공하고 하수도·길목·Bar Hemingway 세 지점을 안내했다. [[wiki:zulu-0040-crown|ZULU-0040 왕관]]에서 현장팀이 쓰기에 충분한 백신을 추출했다는 설명도 있었으나 인원별 수량과 실제 사용량은 기록되지 않았다.\n\n## 파리의 세 갈래 작전\n현장팀은 하수도, Avenue du Colonel-Henri-Rol-Tanguy 인근 길목, Bar Hemingway로 나뉘었다. 작전 도중 인원 이동과 카타콤 증원이 있었으므로 아래 기록은 각 장소에서 확인된 사건을 중심으로 정리한다.\n\n길목팀은 페데라치오에게 구타당하던 [[personnel:WATER_FIST_RACKY|물주먹 래키]]를 구했다. 래키는 조직의 겉보기 보스가 꼭두각시이며 실권자는 ‘변호사’라고 증언하고 현장팀에 합류했다.\n\nBar Hemingway 잠입팀은 페데라치오 잔당이 파리 시청을 습격하고 도시를 폭파하려 한다는 계획을 들었다. 조직원 마테오는 [[personnel:PIPETTE|휘트모어 핀치]]에게 연락처를 주고 새벽 전에 파리를 떠나라고 경고했다. ACCEL은 조직의 의뢰를 수락하는 형식으로 내부 잠입을 이어갔다. 마테오와 이름 없는 변호사의 신원은 아직 독립 신원조회로 만들 만큼 확정되지 않았다.\n\n하수도팀은 방독면·방호복·폭탄·소총이 쌓인 무기고를 발견했다. 마리아가 종류와 정확한 수량이 밝혀지지 않은 폭탄 몇 개를 챙겼고, 이후 보관처는 확인되지 않았다.\n\n## 엘레노어\n하수도에서는 쥐들이 오틸리아를 역병의 여왕·여신으로 불렀고, 광원화에 감염된 악어 [[wiki:eleanor-aurora-alligator|엘레노어]]가 나타났다. 엘레노어는 고통을 끝내 달라고 호소했다. 오틸리아는 먼저 백신 사용 가능성을 물었지만 실제 치료를 진행할 수 없었고, 반지와 미끼로 엘레노어를 배전기 쪽으로 유인해 감전사시켰다.\n\n마리아는 엘레노어를 유인하는 과정에서 미스터비스트 소다 1개를 사용했다. 시스템 기록에는 사용 시 HP 10·ST 10 회복이 남아 있으며, 이 소다는 현장에서 소비된 것으로 기록한다.\n\n## 카타콤과 화이트로즈의 제안\n이동식만 감지한 유령이 닫힌 통로를 열었고, 현장팀은 크로노스·네베드·아젠트·우디 등의 증원을 받아 카타콤 깊숙이 진입했다. 마리아는 과거 의식 장소와 같은 공간에서 공황을 보였다.\n\n화이트로즈 단말의 [[personnel:WHITE_ROSE_R|R]]은 [[personnel:INDEXER|해쉬 테거]]에게 한 코너를 돌라고 안내했다. 직후 총장 보좌관 리처드가 나타나 ‘우리 조직’의 마지막 임무를 제안했다. 그는 노부스 오르도가 섹터 C뿐 아니라 파리 카타콤과 세계 곳곳에 대규모 광원화 감염자를 숨겼다고 주장하고, 증거를 확보해 언론에 공개하라고 요구했다. 이 내용은 리처드의 주장으로 기록하며 독립 확인된 조직 사실로 단정하지 않는다.\n\n해쉬는 자신이 양심 때문에 움직이는 사람은 아니라고 선을 그으면서도 임무를 수락했다. R의 안내 직후 리처드가 등장하고 ‘우리 조직’이라고 말한 정황은 두 이름이 같은 인물일 가능성을 강하게 지지하지만, 신원 병합은 사용자 확정 전 보류한다.\n\n## 결과와 미확인 사항\nZULU 격리 붕괴는 현장 요원들의 개입으로 제압됐고, 페데라치오의 파리 폭파 계획·하수도 무기고·카타콤 진입로가 확인됐다. 엘레노어는 사망했고, 킴라박은 미국 군부의 제안을 수락했으며 NHI 문서는 웩슬러 부통령에게 전달됐다. 해쉬는 감염자 은폐 증거를 공개하라는 리처드의 제안을 수락했다.\n\n그러나 페데라치오 전체의 궤멸 여부, 폭탄 몇 개의 후속 보관처, 왕관 유래 백신의 수량과 사용, 웩슬러 대통령의 실명, 오틸리아의 계약 상대와 바이러스를 빼앗으라는 대상, R과 리처드의 동일인 여부는 1부 종료 시점에 확정되지 않았다.\n\n## 관련 문서\n- [[wiki:federatio|페데라치오]]\n- [[wiki:weaverwood|위버우드]]\n- [[wiki:zulu-0060-snallygaster|ZULU-0060 스넬리 게스터]]\n- [[wiki:zulu-0007-mothman|ZULU-0007 나방/모스맨]]\n- [[wiki:eleanor-aurora-alligator|엘레노어]]\n- [[wiki:project-dead-hand|프로젝트 데드 핸드]]\n- [[wiki:aurora-virus|광원화 바이러스]]\n- [[wiki:zulu-0040-crown|ZULU-0040 왕관]]\n- [[wiki:illuminati|광명회]]\n- [[wiki:white-rose|화이트로즈]]\n- [[catalog:nhi-rocket-engine-adaptation-document|NHI 로켓·우주 엔진 적응 문서]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:OTILIA|오틸리아 발트만]]\n- [[personnel:KIMLEE|킴라박 리]]\n- [[personnel:WEXLER|캘빈 R. 웩슬러]]\n- [[personnel:REGISTRAR|레지스트라 / 아그네타 스톨]]\n- [[personnel:WATER_FIST_RACKY|물주먹 래키]]\n- [[personnel:WHITE_ROSE_R|R]]\n- [[personnel:INDEXER|해쉬 테거]]\n- [[personnel:DOCTOR_ZENO|닥터 제노]]\n- [[personnel:MARGARET|마가렛]]\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 1부」.",
+        "imageUrl": "/assets/session-reports/s1e7-desire-part1/maria-origin-red-roses.webp",
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      },
+      "$setOnInsert": {
+        "createdAt": "2026-08-23T11:40:00.000Z",
+        "isPublic": false
+      }
+    },
+    "postcondition": {
+      "slug": "s1e7-desire-part1",
+      "isPublic": false
+    }
+  }
+]
