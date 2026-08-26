@@ -1,0 +1,224 @@
+[
+  {
+    "collection": "characters",
+    "type": "dossier-repair",
+    "filter": {
+      "codename": "WHITE_ROSE_R",
+      "type": "NPC",
+      "role": "화이트로즈 수장(자칭) / 레짐 체인지 제안자",
+      "factionCode": "CIVIL",
+      "institutionCode": "WHITE_ROSE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "mainImage": {
+        "$exists": false
+      },
+      "lore.name": "R",
+      "lore.nickname": {
+        "$exists": false
+      },
+      "lore.nameEn": {
+        "$exists": false
+      },
+      "updatedAt": "2026-08-12T05:15:13.834Z"
+    },
+    "update": {
+      "$set": {
+        "role": "화이트로즈 수장 / 노부스 오르도 총장 보좌관",
+        "lore.name": "리처드",
+        "lore.nickname": "R",
+        "lore.nameEn": "Richard",
+        "lore.appearance": "리처드는 파리 길목에서 해쉬 테거와 직접 대면했다. 다만 보존된 장면은 작전 상황을 보여 주는 기록 화면이므로 신원조회 전용 초상으로 사용하지 않으며, 세부 외형은 확인되지 않았다.",
+        "lore.personality": "리처드는 섹터 C 지도부 교체안을 제안하고 절차 질문에 답했으며, 파리에서는 내부 증거를 확보해 언론에 공개하라는 임무를 지시했다. 조직 내부의 직접 충돌보다 인사 교체와 여론을 이용하는 간접 전략을 반복해서 선택하지만, 이 행동만으로 성격 전반을 단정하지 않는다.",
+        "lore.background": "리처드는 섹터 C 사태 중 `R`이라는 식별명으로 자신을 화이트로즈의 수장이라고 밝히며 해쉬 테거에게 연락한 인물이다. 그는 로드리온과 게라쉬모프를 함께 실각시키고 화이트로즈 측 인사를 후임으로 파견하는 방안을 제안했다. 현장팀은 후계 적임자와 실각 절차의 선례를 질문했고, 이후 레짐 체인지 프로토콜이 가동되면서 니콜라이 바자로프가 새 감독관이 되었다.\n\nR은 2028년 전쟁 계획과 병사 가족의 인질화에 관한 내용을 설명했지만, 이 내용은 통신 당사자의 증언으로 보존하며 독립적으로 확인된 사실로 일반화하지 않는다.\n\n파리 카타콤 작전에서 화이트로즈 단말의 R이 해쉬에게 한 코너를 돌라고 안내한 직후, 노부스 오르도 총장 보좌관으로 활동하던 리처드가 직접 나타나 `우리 조직`의 마지막 임무를 제안했다. 리처드는 노부스 오르도가 광원화 감염자를 숨겼다고 주장하며 증거를 확보해 언론에 공개하라고 요구했다. R의 단말 지시와 리처드의 대면은 같은 인물의 연속 행동으로 확정한다. 총장 보좌관 직책이 정식 겸임인지 화이트로즈 활동을 위한 잠입 신분인지는 확인되지 않았다.",
+        "lore.roleDetail": "- 정규 소속: 시민사회(CIVIL) 산하 화이트로즈\n- 확인 직책: 화이트로즈 수장\n- 노부스 오르도 내 신분: 총장 보좌관(정식 겸임·잠입 여부 미확정)\n- 현장 개입: 섹터 C 지도부 동시 실각·후임 파견 제안, 파리 감염자 은폐 증거 공개 임무 지시\n- 노부스 오르도 권한등급: 해당 없음(외부 조직 인물)\n- 현재 상태: 실명 리처드 확인, 성(姓)·나이·신체 정보는 미상",
+        "lore.notes": "`리처드`는 확인된 실명이며, `R`은 화이트로즈 교신에서 사용한 식별명이다. 성은 확인되지 않았다.",
+        "updatedAt": "2026-08-26T11:35:08.000Z"
+      }
+    },
+    "postcondition": {
+      "codename": "WHITE_ROSE_R",
+      "type": "NPC",
+      "role": "화이트로즈 수장 / 노부스 오르도 총장 보좌관",
+      "factionCode": "CIVIL",
+      "institutionCode": "WHITE_ROSE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Unknown-Person-profile.webp",
+      "mainImage": {
+        "$exists": false
+      },
+      "lore.name": "리처드",
+      "lore.nickname": "R",
+      "lore.nameEn": "Richard",
+      "lore.appearance": "리처드는 파리 길목에서 해쉬 테거와 직접 대면했다. 다만 보존된 장면은 작전 상황을 보여 주는 기록 화면이므로 신원조회 전용 초상으로 사용하지 않으며, 세부 외형은 확인되지 않았다.",
+      "lore.personality": "리처드는 섹터 C 지도부 교체안을 제안하고 절차 질문에 답했으며, 파리에서는 내부 증거를 확보해 언론에 공개하라는 임무를 지시했다. 조직 내부의 직접 충돌보다 인사 교체와 여론을 이용하는 간접 전략을 반복해서 선택하지만, 이 행동만으로 성격 전반을 단정하지 않는다.",
+      "lore.background": "리처드는 섹터 C 사태 중 `R`이라는 식별명으로 자신을 화이트로즈의 수장이라고 밝히며 해쉬 테거에게 연락한 인물이다. 그는 로드리온과 게라쉬모프를 함께 실각시키고 화이트로즈 측 인사를 후임으로 파견하는 방안을 제안했다. 현장팀은 후계 적임자와 실각 절차의 선례를 질문했고, 이후 레짐 체인지 프로토콜이 가동되면서 니콜라이 바자로프가 새 감독관이 되었다.\n\nR은 2028년 전쟁 계획과 병사 가족의 인질화에 관한 내용을 설명했지만, 이 내용은 통신 당사자의 증언으로 보존하며 독립적으로 확인된 사실로 일반화하지 않는다.\n\n파리 카타콤 작전에서 화이트로즈 단말의 R이 해쉬에게 한 코너를 돌라고 안내한 직후, 노부스 오르도 총장 보좌관으로 활동하던 리처드가 직접 나타나 `우리 조직`의 마지막 임무를 제안했다. 리처드는 노부스 오르도가 광원화 감염자를 숨겼다고 주장하며 증거를 확보해 언론에 공개하라고 요구했다. R의 단말 지시와 리처드의 대면은 같은 인물의 연속 행동으로 확정한다. 총장 보좌관 직책이 정식 겸임인지 화이트로즈 활동을 위한 잠입 신분인지는 확인되지 않았다.",
+      "lore.roleDetail": "- 정규 소속: 시민사회(CIVIL) 산하 화이트로즈\n- 확인 직책: 화이트로즈 수장\n- 노부스 오르도 내 신분: 총장 보좌관(정식 겸임·잠입 여부 미확정)\n- 현장 개입: 섹터 C 지도부 동시 실각·후임 파견 제안, 파리 감염자 은폐 증거 공개 임무 지시\n- 노부스 오르도 권한등급: 해당 없음(외부 조직 인물)\n- 현재 상태: 실명 리처드 확인, 성(姓)·나이·신체 정보는 미상",
+      "lore.notes": "`리처드`는 확인된 실명이며, `R`은 화이트로즈 교신에서 사용한 식별명이다. 성은 확인되지 않았다."
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "WHITE_ROSE_R",
+      "type": "NPC",
+      "factionCode": "CIVIL",
+      "institutionCode": "WHITE_ROSE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true,
+      "$and": [
+        {
+          "$or": [
+            {
+              "lore.sessionAppearances": {
+                "$not": {
+                  "$elemMatch": {
+                    "sessionId": "NOSB-S1E7-DESIRE-PART1"
+                  }
+                }
+              }
+            },
+            {
+              "lore.sessionAppearances": {
+                "sessionId": "NOSB-S1E7-DESIRE-PART1",
+                "role": "화이트로즈 수장 / 총장 보좌관 신분 / 증거 공개 임무 지시자",
+                "summary": "R 단말로 해쉬를 파리 길목으로 안내한 뒤 리처드로 직접 대면해, 카타콤의 광원화 감염자 은폐 증거를 확보하고 언론에 공개하라는 임무를 지시했다.",
+                "sourceLabel": "작전 보고서 S1E7: 욕구 1부"
+              }
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "lore.relations": {
+                "$not": {
+                  "$elemMatch": {
+                    "targetCodename": "INDEXER",
+                    "sourceEvent": "NOSB-S1E7-DESIRE-PART1",
+                    "label": "증거 공개 임무"
+                  }
+                }
+              }
+            },
+            {
+              "lore.relations": {
+                "targetCodename": "INDEXER",
+                "targetName": "해쉬 테거",
+                "label": "증거 공개 임무",
+                "summary": "R 단말로 이동을 안내한 뒤 리처드의 신분으로 직접 대면해, 파리 카타콤 감염자 은폐 증거를 확보하고 언론에 공개하라고 지시했다.",
+                "sourceEvent": "NOSB-S1E7-DESIRE-PART1",
+                "sourceLabel": "작전 보고서 S1E7: 욕구 1부",
+                "confidence": "confirmed"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-S1E7-DESIRE-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "총장보좌관",
+            "NOSB-S1E7-DESIRE-PART1"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-S1E7-DESIRE-PART1",
+          "role": "화이트로즈 수장 / 총장 보좌관 신분 / 증거 공개 임무 지시자",
+          "summary": "R 단말로 해쉬를 파리 길목으로 안내한 뒤 리처드로 직접 대면해, 카타콤의 광원화 감염자 은폐 증거를 확보하고 언론에 공개하라는 임무를 지시했다.",
+          "sourceLabel": "작전 보고서 S1E7: 욕구 1부"
+        },
+        "lore.relations": {
+          "targetCodename": "INDEXER",
+          "targetName": "해쉬 테거",
+          "label": "증거 공개 임무",
+          "summary": "R 단말로 이동을 안내한 뒤 리처드의 신분으로 직접 대면해, 파리 카타콤 감염자 은폐 증거를 확보하고 언론에 공개하라고 지시했다.",
+          "sourceEvent": "NOSB-S1E7-DESIRE-PART1",
+          "sourceLabel": "작전 보고서 S1E7: 욕구 1부",
+          "confidence": "confirmed"
+        }
+      },
+      "$set": {
+        "updatedAt": "2026-08-26T11:35:08.000Z"
+      }
+    },
+    "postcondition": {
+      "codename": "WHITE_ROSE_R",
+      "factionCode": "CIVIL",
+      "institutionCode": "WHITE_ROSE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "lore.appearsInEvents": "NOSB-S1E7-DESIRE-PART1",
+      "lore.loreTags": {
+        "$all": [
+          "총장보좌관",
+          "NOSB-S1E7-DESIRE-PART1"
+        ]
+      },
+      "lore.sessionAppearances": {
+        "sessionId": "NOSB-S1E7-DESIRE-PART1",
+        "role": "화이트로즈 수장 / 총장 보좌관 신분 / 증거 공개 임무 지시자",
+        "summary": "R 단말로 해쉬를 파리 길목으로 안내한 뒤 리처드로 직접 대면해, 카타콤의 광원화 감염자 은폐 증거를 확보하고 언론에 공개하라는 임무를 지시했다.",
+        "sourceLabel": "작전 보고서 S1E7: 욕구 1부"
+      },
+      "lore.relations": {
+        "targetCodename": "INDEXER",
+        "targetName": "해쉬 테거",
+        "label": "증거 공개 임무",
+        "summary": "R 단말로 이동을 안내한 뒤 리처드의 신분으로 직접 대면해, 파리 카타콤 감염자 은폐 증거를 확보하고 언론에 공개하라고 지시했다.",
+        "sourceEvent": "NOSB-S1E7-DESIRE-PART1",
+        "sourceLabel": "작전 보고서 S1E7: 욕구 1부",
+        "confidence": "confirmed"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "WHITE_ROSE_R",
+      "type": "NPC",
+      "factionCode": "CIVIL",
+      "institutionCode": "WHITE_ROSE",
+      "agentLevel": {
+        "$exists": false
+      },
+      "isPublic": true
+    },
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-S1E7-DESIRE-PART1:WHITE_ROSE_R:strategic-exposure",
+          "sessionId": "NOSB-S1E7-DESIRE-PART1",
+          "trait": "여론과 내부 증거로 조직 정책을 바꾸려는 전략적 폭로",
+          "summary": "조직 정책을 바꾸기 위해 내부 증거를 확보하고 언론에 공개하는 간접 전략을 선택했다.",
+          "evidence": [
+            {
+              "kind": "action",
+              "text": "R 단말로 해쉬를 한 코너 너머로 안내한 직후 리처드로 직접 대면했다."
+            },
+            {
+              "kind": "dialogue",
+              "text": "파리 카타콤의 감염자 은폐 증거를 확보해 언론에 공개하라고 지시했다."
+            }
+          ],
+          "sourceLabel": "작전 보고서 S1E7: 욕구 1부",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  }
+]
