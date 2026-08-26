@@ -16,7 +16,7 @@ source: stargate-lore
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E6-TURNING-POINT-PART2` | `StarGateV2/scripts/seed-payloads/nosb-s1e6-turning-point-part2-sync.json` | available | complete |
+| `NOSB-S1E6-TURNING-POINT-PART2` | `StarGateV2/scripts/seed-payloads/nosb-s1e6-turning-point-part2-private-staging.json` | available | complete |
 
 ## 원본 확인
 
@@ -29,8 +29,8 @@ source: stargate-lore
 - 내보내기 시각: `2026-08-10 16:30:32`.
 - SHA-256: `ccd5272fae0043b0bb428cbe3e941b5ace5547790587bfb1a43a7d4754a0af86`.
 - 텍스트 무결성: 141쪽 전부 추출, 빈 텍스트 페이지 0, 본문 기록이 있는 페이지 139쪽. 표지와 마지막 인증 footer는 사건 기록에서 제외했다.
-- 시각 자료: PDF 안에는 `1035×503` 크기의 가로형 장면 삽화 25개가 있다. 이전 답변의 `TIER-3 장면 프레임`은 바로 이 삽화를 뜻한다. 작은 대화 아바타 1,492개는 신원조회용 단독 초상이 아니다. 파일을 `public/`에 넣으면 주소를 아는 누구나 볼 수 있으므로, 비공개로 다듬는 동안에는 장면 삽화를 복사하지 않는다. 전체 공개가 확정될 때 사용할 장면을 골라 함께 공개한다.
-- 공개 흐름: 원본 표지에는 `CLASSIFICATION · TIER-3 · EYES ONLY`가 적혀 있다. 네 종류의 비판매 카탈로그 항목은 `2026-08-26`에 비공개 상태로 운영 ERP에 저장했다. 작전 보고서, 같은 내용을 담은 위키판, 잔광자 위키, 모리어티·광체 소녀 신원조회는 아직 등록 파일만 준비한 상태다. 내용·연결·이미지가 모두 정리되면 이 묶음을 한 번에 전체 공개한다.
+- 시각 자료: PDF 안에는 `1035×503` 크기의 가로형 장면 삽화 25개가 있다. 이전 답변의 `TIER-3 장면 프레임`은 바로 이 삽화를 뜻한다. 작은 대화 아바타 1,492개는 신원조회용 단독 초상이 아니다. 반복 구도 7개를 제외한 장면 18개를 PDF 안의 전체 장면 그대로 추출해 작전보고서와 같은 보고서의 위키판에 같은 순서·설명으로 배치했다. 이 파일들은 아직 로컬 저장소에만 있고 원격 배포와 운영 ERP 공개 전환은 하지 않았다.
+- 공개 흐름: 원본 표지에는 `CLASSIFICATION · TIER-3 · EYES ONLY`가 적혀 있다. 네 종류의 비판매 카탈로그 항목은 `2026-08-26`에 비공개 상태로 운영 ERP에 저장했다. 작전보고서, 같은 내용을 담은 위키판, 잔광자 위키, 모리어티·광체 소녀 신원조회는 최종 본문·연결·이미지와 공개 전환 파일까지 로컬에서 준비한 상태다. 운영 ERP 저장과 전체 공개는 정확한 변경 대상을 다시 제시하고 실행 승인을 받은 뒤 진행한다.
 
 ## 이전 답변에서 쓴 말의 정확한 뜻
 
@@ -78,7 +78,7 @@ source: stargate-lore
 
 | 대상 | 세션 근거 | ERP에서 들어갈 곳 | 처리 내용 | 현재 상태 |
 |---|---|---|---|---|
-| 변곡점 2부 전체 기록 | 141쪽 전 구간과 본문 시작·종료 표기 | 작전보고서, 같은 내용의 위키판 | 보고 순번 `06.5`로 본문·관련 링크 작성. 사용자가 정한 비공개 다듬기 단계에서는 내부 검토 권한인 V 이상만 볼 수 있게 준비 | 비공개 초안 준비됨 |
+| 변곡점 2부 전체 기록 | 141쪽 전 구간과 본문 시작·종료 표기 | 작전보고서, 같은 내용의 위키판 | 보고 순번 `06.5`로 본문·관련 링크 작성. 장면 18개를 두 화면에 같은 순서·설명으로 배치한다. 비공개 신원조회 링크까지 끊김 없이 확인할 수 있도록 다듬기 단계에서는 GM만 볼 수 있게 준비 | 최종 등록 자료 준비됨; 운영 ERP 저장은 별도 승인 전까지 보류 |
 | 보고서 번호·지도 카드 | S1E6 2부와 1부의 수메르 권역이 같음 | 보고서 목록·지도 | `06.5`가 1부의 `06` 카드와 겹치지 않도록 표시 | 코드 준비됨 |
 | 아르고 기지 NHI 기록 | NHI 우주 엔진 문서, 하이퍼보리아인 14, Montag-98, 기계 하이에나 | 기존 몬탁 프로젝트 위키, 작전보고서 | 별도 과거 기록으로 추가하되 Montag-98을 기존 도살견과 같은 개체로 단정하지 않음 | 최종 전체 공개 때 함께 반영 |
 | 모리어티 대령 | 섹터 D 대령, 킴라박의 직속 상관, 문서 탈취·부하 살해 시도, Montag-98에게 사망 | 신규 모리어티 신원조회, 작전보고서, 기존 인물 관계 | `NOVUS_ORDO / MANUS / SECTOR_D`, `사망 확인`, 확인일 `2026-08-09`, 전용 투명 초상을 반영했다. 같은 대령·현장 지휘관 근거로 제안한 권한등급 `H`를 사용자가 `2026-08-26`에 확정했다. | 비공개 신원조회 등록 자료 준비됨; 운영 ERP 저장은 별도 승인 전까지 보류 |
@@ -86,7 +86,7 @@ source: stargate-lore
 | 뒤집어진 양말 | 로켓 부유체 요구와 발사대 사체 | 기존 뒤집어진 양말 위키, 작전보고서 | 요구와 현장 발견만 추가. 인도·소유권 변화는 미확정 | 최종 전체 공개 때 함께 반영 |
 | 엘 볼라도르 편입 | 폭탄 칩셋 강제 주입, `ACCEL` 코드명, 첫 현장 증원 | ACCEL·Mr. 오드 신원조회, 작전보고서 | 등장 기록·강압 관계·성격 관찰 추가 | 최종 전체 공개 때 함께 반영 |
 | 마지막 대대 | 의식장 주변 잔존 보병·중기관총병 | 기존 마지막 대대 위키, 작전보고서 | 2부 교전을 추가하되 조직 전체가 소탕됐다고 단정하지 않음 | 최종 전체 공개 때 함께 반영 |
-| 광명회와 이르마 코흐 | 시유 회유, 자가 주사, 잔광자 전환·사망 | 기존 광명회 위키, 이르마·관련 인물 신원조회, 작전보고서 | 등장 기록·관계·성격 관찰 추가 | 최종 전체 공개 때 함께 반영 |
+| 광명회와 이르마 코흐 | 시유 회유, 자가 주사, 잔광자 전환·사망 | 기존 광명회 위키, 이르마·관련 인물 신원조회, 작전보고서 | 등장 기록·관계·성격 관찰과 구조화 사망 상태 `DECEASED`를 추가한다. 세션에서 사망이 확정된 시각은 `2026-08-10 01:06`이며, 신원조회 상태 확인일은 `2026-08-10`, 근거 사건은 `NOSB-S1E6-TURNING-POINT-PART2`로 묶는다. 기존 생사 상태가 비어 있거나 이 값과 정확히 같을 때만 처리하고 다른 값이면 중단한다. | 최종 전체 공개 때 함께 반영 |
 | 잔광자 | 광채 신체, 다수의 눈, 정신 공격, 냉기·전기·화염 반응, 참수 | 신규 잔광자 위키, 작전보고서 | 이르마에게서 확인된 단일 변환 사례로만 비공개 문서 작성 | 비공개 초안 준비됨 |
 | 광원화 바이러스 | 개조 주사, 이르마 변환, 사백신·행동교정물질 반응 | 기존 광원화 바이러스 위키, 작전보고서 | 실제 관측과 연구 가설을 나눠 추가 | 최종 전체 공개 때 함께 반영 |
 | 잔광자 광채 표본 | 피펫이 1개를 직접 채취하고 전방 수호대에게 4개를 받음 | 신규 비판매 카탈로그 항목, 피펫 개인 인벤토리, 공용 인벤토리, 작전보고서 | 사용자 지시에 따라 직접 채취한 1개는 피펫에게, 전방 수호대가 전달한 4개는 공용 인벤토리에 귀속. 같은 항목을 두 곳에서 수량만 나눠 관리 | `2026-08-26` 운영 ERP 반영 및 재조회 완료: 피펫 1개, 공용 4개 |
@@ -139,8 +139,13 @@ source: stargate-lore
 | `네베드` | `IRMA_KOCH` | 위험 개체 파괴와 이사회 명령을 근거로 변환된 이르마를 참수 | 확정 | 양측 신원조회 relation | 최종 전체 공개 때 함께 반영 |
 | `PIPETTE` | `MARGARET` | 반복 방문과 닥터 제노에게서 구출하겠다는 약속 | 확정 | 양측 신원조회 relation | 최종 전체 공개 때 함께 반영 |
 | `DOCTOR_ZENO` | `MARGARET` | 면회 종료 뒤 마가렛을 순백 격리실에 홀로 남김 | 확정 | 양측 신원조회 relation | 최종 전체 공개 때 함께 반영 |
-| `KIMLEE` | `MORIARTY` | 충성하던 지휘관에게 문서를 넘긴 뒤 살해 대상이 됨 | 확정 | 양쪽 신원조회 관계 | 비공개 모리어티 초안과 실행 대상에서 제외한 전체 공개 보류 파일에 준비됨 |
-| `MARIA` | `GWANGCHE_GIRL` | 소녀를 보호하고 자신을 어머니로 호명하며 노부스 오르도로 함께 가자고 제안했고, 소녀가 고개를 끄덕여 수락 | 확정 | 광체 소녀 신원조회 관계. 기존 마리아 쪽 역방향 관계는 전체 공개 묶음에서 함께 연결 | 광체 소녀 쪽 관계만 준비됨. 마리아 쪽 역방향 관계는 아직 미완료 |
+| `KIMLEE` | `MORIARTY` | 충성하던 지휘관에게 문서를 넘긴 뒤 살해 대상이 됨 | 확정 | 양쪽 신원조회 관계 | 양방향 관계 준비됨; 전체 공개 때 함께 반영 |
+| `YUHOE` | `MORIARTY` | 기계형 하이에나의 추격 중 지원을 요청했지만 모리어티가 무전을 끊고 철수를 명령 | 확정 | 양쪽 신원조회 관계 | 양방향 관계 준비됨; 전체 공개 때 함께 반영 |
+| `JOHN_WONG` | `MORIARTY` | 섹터 D 해상 플랫폼에서 악수하고 재회를 기약했으나 구체적인 협력 관계는 확인되지 않음 | 확정된 접촉 / 관계 성격 미확정 | 양쪽 신원조회 관계에 확인된 접촉 범위만 기록 | 양방향 관계 준비됨; 전체 공개 때 함께 반영 |
+| `MARIA` | `GWANGCHE_GIRL` | 소녀를 보호하고 자신을 어머니로 호명하며 노부스 오르도로 함께 가자고 제안했고, 소녀가 고개를 끄덕여 수락 | 확정 | 양쪽 신원조회 관계 | 양방향 관계 준비됨; 전체 공개 때 함께 반영 |
+| `IRMA_KOCH` | `GWANGCHE_GIRL` | 소녀가 이르마를 교주님이라고 부르고 주사기 반환·시유 설득에 협력 | 확정 | 양쪽 신원조회 관계 | 양방향 관계 준비됨; 전체 공개 때 함께 반영 |
+| `TIGER298` | `GWANGCHE_GIRL` | 소녀의 천사화 설득을 거부하고 섹터 동료에게 복귀 | 확정 | 양쪽 신원조회 관계 | 양방향 관계 준비됨; 전체 공개 때 함께 반영 |
+| `OTILIA` | `GWANGCHE_GIRL` | 자신의 유전자로 만들어졌을 가능성을 제기 | 현장 증언 — 독립 검증 없음 | 양쪽 신원조회 관계에 추정임을 명시 | 양방향 관계 준비됨; 전체 공개 때 함께 반영 |
 
 ## 회수품·작전 크레딧 처리 판단
 
@@ -182,7 +187,7 @@ source: stargate-lore
 | `TIME` | 크로노스 | 기존 ERP 별칭 보존 | 실험체 / 시간 여행자 유지 | 화자명과 기존 신원조회 일치 | 기존 `NOVUS_ORDO / MANUS / SECTOR_A` 보존 | 잔광자 교전과 위험 미래 확인 | `G` 유지 — 미래 관측과 정신 영향은 접근 권한·직책 범위에 영향 없음 | 기존 ERP 초상 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | appearance 누적 | ready-for-apply |
 | `UNYEON` | 백진연 | 운연 | 실험체 / 연기인간 유지 | 화자명·별칭과 기존 신원조회 일치 | 기존 `NOVUS_ORDO / MANUS / SECTOR_A` 보존 | 잔광자 교전·회복 지원 | `J` 유지 — 일시 발화 상실은 접근 권한·직책 범위에 영향 없음 | 기존 ERP 초상 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | appearance 누적; 영속 상태 변경 없음 | ready-for-apply |
 | `AMALIA_FREDRIKA_VON_ESSEN` | 아말리아 프레드리카 본 에센 | 없음 — 사무총장은 직함 | 제7대 노부스 오르도 사무총장 유지 | 현재 시점 `사무총장` 화자와 기존 재임자·직함 일치 | 기존 `NOVUS_ORDO / SECRETARIAT / HQ` 보존 | 수메르 종료 브리핑과 연구동 이송 지시 | `V` 유지 — 기존 최고 행정 책임 범위 내 지시이며 권한등급 변경 없음 | 기존 ERP 공식 초상 보존 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | appearance 누적; 광체 관계는 상대 신원조회 차단으로 미생성 | ready-for-apply |
-| `IRMA_KOCH` | 이르마 코흐 | 없음 — 광명회 수장은 직함 | 아넨에르베 광명회 수장 유지; 잔광자 변환 뒤 사망 | 화자명·1부 기존 신원조회와 연속 | 기존 외부 `AHNENERBE` 소속 보존 | 수메르 의식장 자가 주사·변환 | 외부 NPC: agentLevel 없음; 변환·사망은 사무국 권한등급 변경 대상 아님 | 기존 사용자 제공 신원조회 초상 보존; 잔광자 컷 재사용 없음 | 기존 `isPublic: true` 보존 | 기존 신상 보존; 사망 서사는 appearance·관계로만 누적 | OTILIA·TIGER298·네베드 관계와 관찰 누적 | ready-for-apply |
+| `IRMA_KOCH` | 이르마 코흐 | 없음 — 광명회 수장은 직함 | 아넨에르베 광명회 수장 유지; 잔광자 변환 뒤 사망 | 화자명·1부 기존 신원조회와 연속 | 기존 외부 `AHNENERBE` 소속 보존 | 수메르 의식장 자가 주사·변환 | 외부 NPC: agentLevel 없음; 변환·사망은 사무국 권한등급 변경 대상 아님 | 기존 사용자 제공 신원조회 초상 보존; 잔광자 컷 재사용 없음 | 기존 `isPublic: true` 보존 | 기존 신상 보존. 현재 구조화 생사 상태는 미기록이며, 전체 공개 작업에서 `DECEASED / 2026-08-10 / NOSB-S1E6-TURNING-POINT-PART2`를 한 묶음으로 추가 | OTILIA·TIGER298·네베드 관계와 관찰 누적 | ready-for-apply |
 | `MARGARET` | 마가렛 | 메리골드 | 실험체 / 네크로맨서 유지 | 화자명과 기존 신원조회 일치 | 기존 `NOVUS_ORDO / MANUS / SECTOR_A` 보존 | 프로젝트 데드 핸드 순백 격리실 | `J` 유지 — 격리 지속은 접근 권한·직책 범위 변경 없음 | 기존 ERP 초상 보존; 격리 장면 재사용 없음 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | PIPETTE·DOCTOR_ZENO 양방향 관계와 appearance 누적 | ready-for-apply |
 | `DOCTOR_ZENO` | 제노 | 없음 — 닥터는 직함 | 연구 기구 사무차장 / 데드 핸드 직접 지휘자 유지 | `Dr.제노` 화자와 기존 신원조회 일치 | 기존 `NOVUS_ORDO / SECRETARIAT / RESEARCH` 보존 | 마가렛 면회 통제 | `V` 유지 — 기존 데드 핸드 관리 책임 범위 내 통제이며 권한등급 변경 없음 | 기존 ERP 초상 보존; 격리 장면 재사용 없음 | 기존 `isPublic: true` 보존 | 기존 신상 보존 | MARGARET 양방향 관계·appearance·통제 격리 관찰 누적 | ready-for-apply |
 | `MORIARTY` | 모리어티 — 기존 캐논·사용자 표기를 대표 이름으로 유지하고, 이번 PDF의 `모리아티`는 검색용 철자 변형으로 보존 | 없음 — 대령은 직함이지 별칭이 아님 | 섹터 D 대령, 킴라박 직속 상관, 아르고 침투부대 지휘관 | 6부 2화 화자명, 킴라박의 직속상관 진술, 기존 프라토·존 웡 기록, 사용자의 섹터 D 확정 | 사용자 확정 `NOVUS_ORDO / MANUS / SECTOR_D` | NHI 문서 비밀 회수 지시, 유회 지원 요청 차단, 부하 제거 시도, Montag-98에게 사망 | `H` 확정 — 같은 대령·현장 통솔 역할인 페초린과 같고 섹터 전체 감독관이라는 근거는 없다는 제안을 사용자가 `2026-08-26` 승인 | 사용자 제공 단독 초상을 배경 제거해 `/assets/npcs/Moriarty-profile.webp`로 준비 | 다듬는 동안 비공개, 최종 묶음 전체 공개 때 공개 | 성별·연령·신장·체중·전체 이름은 `미상` | 힐링 팩터, 거친 동료애, 목적 우선 배신, `KIMLEE`·`YUHOE`·`JOHN_WONG` 관계. `사망 확인`과 근거 사건을 함께 기록하고, `2026-08-09`는 실제 사망일이 아니라 사망 사실을 보존 기록에서 확인한 날. 입력값은 모두 준비됐고 실제 신원조회 저장만 별도 승인 대상 | ready-for-apply |
@@ -205,9 +210,11 @@ source: stargate-lore
 | `NOSB-S1E6-TURNING-POINT-PART2:MORIARTY:rough-comradeship` | `MORIARTY` | `NOSB-S1E6-TURNING-POINT-PART2` | 거친 친화성과 보호적 결속 | description + action | 작전 기록에서 힐링 팩터로 킴라박과 부대원의 목숨을 여러 번 구한 사실이 확인됨<br>시가를 피우며 부하에게 거친 농담을 건넴 | 작전 보고서 S1E6: 변곡점 2부 | confirmed | ready-for-apply |
 | `NOSB-S1E6-TURNING-POINT-PART2:MORIARTY:mission-first-betrayal` | `MORIARTY` | `NOSB-S1E6-TURNING-POINT-PART2` | 목적을 위해 부하를 제거하는 배신 | action + dialogue | NHI 문서를 받은 뒤 부대원 둘을 사살하고 킴라박에게 총을 겨눔<br>킴라박에게 자네라도 같은 선택을 했을 것이라며 배신을 정당화함 | 작전 보고서 S1E6: 변곡점 2부 | confirmed | ready-for-apply |
 
+네베드의 실제 신원조회 식별자는 `네베드`지만 성격 관찰 ID 형식은 영문·숫자·일부 기호만 허용한다. 따라서 가운데 식별자에는 기존 세 관찰 기록과 같은 안정된 영문 표기 `NEVED`를 사용하고, 실제 연결 대상은 별도 `codename: 네베드` 필터로 고정한다.
+
 ## Visual Asset Ledger
 
-PDF에는 가로형 장면 삽화가 25개 있다. 그중 반복 장면과 더 설명력이 높은 장면으로 대체할 컷 7개를 제외한 18개가 최종 사용 후보다. 이 18개가 이전 답변에서 설명 없이 쓴 `TIER-3 장면 프레임`이다. 비공개 검토 중에는 공개 파일 경로에 복사하지 않고 로고만 표시한다. 최종 전체 공개 때 후보 18개를 작전보고서와 위키판에 같은 순서로 싣는 것이 기본안이다. 이번 사용자 제공 초상 2개와 요청에 따라 만든 카탈로그 그림 4개는 이 PDF 장면 삽화와 별개이며, 각각 신원조회와 카탈로그 화면에만 사용한다.
+PDF에는 가로형 장면 삽화가 25개 있다. 그중 반복 구도와 더 설명력이 높은 장면으로 대체할 컷 7개를 제외한 18개를 최종 사용한다. 이 18개가 이전 답변에서 설명 없이 쓴 `TIER-3 장면 프레임`이다. 각 장면은 PDF 안의 `1035×503` 전체 그림을 추가로 자르지 않고 WebP로 변환했으며, 작전보고서와 같은 보고서의 위키판에 동일한 경로·순서·대체 설명·캡션으로 배치했다. 현재는 로컬 저장소에만 준비돼 있고 운영 ERP와 원격 공개 화면에는 아직 반영되지 않았다. 이번 사용자 제공 초상 2개와 요청에 따라 만든 카탈로그 그림 4개는 이 PDF 장면 삽화와 별개이며, 각각 신원조회와 카탈로그 화면에만 사용한다.
 
 아래 표도 자동 검사 전용이다. `report`는 작전보고서, `report wiki mirror`는 같은 내용을 담는 위키판, `dedicated wiki`는 인물·개체 전용 위키, `catalog`는 아이템 정보, `Dossier/personnel`은 신원조회를 뜻한다. `included`는 사용, `excluded`는 용도 불일치로 제외, `candidate-only`는 최종 공개 전에 전용 위키 용도로만 다시 검토한다는 뜻이다.
 
@@ -220,24 +227,24 @@ PDF에는 가로형 장면 삽화가 25개 있다. 그중 반복 장면과 더 �
 | `/assets/catalog/samples/afterglow-head.webp` | 사용자 요청에 따라 생성한 단독 아이템 그림 | 1254×1254 | no crop — 생성 원본의 투명 배경 유지 | catalog-sample | excluded: 카탈로그 전용 | excluded: 카탈로그 전용 | excluded: 세션 장면 근거가 아님 | included | excluded: 인물 초상 아님 | 잔광자 머리 생체 표본을 저고어 밀봉 용기로 표현. 세부 용기 디자인은 캐논 사실이 아님 |
 | `/assets/catalog/special/nhi-rocket-engine-adaptation-document.webp` | 사용자 요청에 따라 생성한 단독 아이템 그림 | 1254×1254 | no crop — 배경 제거 | catalog-sample | excluded: 카탈로그 전용 | excluded: 카탈로그 전용 | excluded: 세션 장면 근거가 아님 | included | excluded: 인물 아님 | 기밀 문서철과 로켓·엔진 도면으로 표현. 읽을 수 있는 임의 문구는 넣지 않음 |
 | `/assets/catalog/special/used-aurora-virus-syringe.webp` | 사용자 요청에 따라 생성한 단독 아이템 그림 | 1254×1254 | no crop — 배경 제거 | catalog-sample | excluded: 카탈로그 전용 | excluded: 카탈로그 전용 | excluded: 세션 장면 근거가 아님 | included | excluded: 인물 아님 | 눌린 피스톤과 잔류물로 사용 후 상태를 표현. 실제 재사용 가능한 소비품이 아님 |
-| PDF p002 X5 | PDF p002 X5 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: no full-frame person | 섹터 D 해상 플랫폼 도입 장면 |
-| PDF p005 X80 | PDF p005 X80 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: staged briefing scene | 유회의 아르고 기지 침투 브리핑 |
-| PDF p011 X241 | PDF p011 X241 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 사용자가 단독 모리어티 초상을 별도로 제공 | 모리어티와 킴라박의 침투 장면 |
-| PDF p012 X274 | PDF p012 X274 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 환경 포함 장면 | 아르고 지하 통로의 유회 |
-| PDF p014 X308 | PDF p014 X308 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | candidate-only | excluded: 문서 열람 장면 | NHI 우주 엔진 기밀 문서 열람 |
-| PDF p016 X351 | PDF p016 X351 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | 하이퍼보리아인 14 챔버 관측 |
-| PDF p017 X380 | PDF p017 X380 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | Montag-98의 킴라박 공격 |
-| PDF p021 X436 | PDF p021 X436 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 부상 close-up을 신원조회 초상으로 쓰지 않음 | 유회의 지원 요청 장면 |
-| PDF p023 X501 | PDF p023 X501 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no exact item sample | excluded: 경호 포함 장면 | 요한 스미스와 로켓 연구소 경호 |
-| PDF p025 X552 | PDF p025 X552 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 로켓 회수품 아님 | excluded: 인물 없음 | 주주의 방주 로켓 공개 |
-| PDF p029 X633 | PDF p029 X633 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | candidate-only | excluded: 구속 장면을 신원조회 초상으로 쓰지 않음 | 엘 볼라도르의 강제 편입 |
-| PDF p032 X730 | PDF p032 X730 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 집단 전투 장면 | 의식장으로 향하는 증원대 |
-| PDF p033 X737 | PDF p033 X737 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 적 장비 회수 없음 | excluded: 이름 없는 보병 | 마지막 대대 보병 저지선 |
-| PDF p050 X1222 | PDF p050 X1222 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 2인 서사 장면 | 이르마의 제안과 시유의 선택 |
-| PDF p063 X1589 | PDF p063 X1589 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | candidate-only | excluded: 행위 장면을 초상으로 쓰지 않음 | 이르마의 개조 바이러스 자가 투여 |
-| PDF p083 X2168 | PDF p083 X2168 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: 광채 표본의 standalone 이미지 아님 | excluded: 잔광자 전투 장면은 이르마 초상 아님 | 잔광자 최초 현현의 정확한 장면 |
-| PDF p130 X3501 | PDF p130 X3501 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | candidate-only | excluded: no item subject | excluded: 인물 없음 | 수메르 지상 복귀와 후속 브리핑 |
-| PDF p138 X3730 | PDF p138 X3730 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: TIER-3 protected source | excluded: TIER-3 protected source | excluded: report scene only | excluded: no item subject | excluded: 신체 일부 장면이며 초상 역할 불가 | 마가렛의 순백 격리실 면회 |
+| `/assets/session-reports/s1e6-turning-point-part2/sector-d-sea-platform.webp` | PDF p002 X5 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: no full-frame person | 섹터 D 해상 플랫폼 도입 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/yuhoe-argo-infiltration-briefing.webp` | PDF p005 X80 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: staged briefing scene | 유회의 아르고 기지 침투 브리핑을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/moriarty-kimlee-argo-infiltration.webp` | PDF p011 X241 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 사용자가 단독 모리어티 초상을 별도로 제공 | 모리어티와 킴라박의 침투 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/yuhoe-argo-underground-passage.webp` | PDF p012 X274 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 환경 포함 장면 | 아르고 지하 통로의 유회 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/nhi-engine-document-inspection.webp` | PDF p014 X308 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: 카탈로그에는 별도 단독 문서 이미지 사용 | excluded: 문서 열람 장면 | NHI 우주 엔진 기밀 문서 열람 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/hyperborean-14-chamber.webp` | PDF p016 X351 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | 하이퍼보리아인 14 챔버 관측 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/montag-98-attacks-kimlee.webp` | PDF p017 X380 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 회수품 아님 | excluded: 인물 초상 아님 | Montag-98의 킴라박 공격 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/yuhoe-support-request.webp` | PDF p021 X436 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 부상 close-up을 신원조회 초상으로 쓰지 않음 | 유회의 지원 요청 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/johan-smith-space-zero-lab.webp` | PDF p023 X501 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no exact item sample | excluded: 경호 포함 장면 | 요한 스미스와 로켓 연구소 경호 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/shareholder-ark-rocket.webp` | PDF p025 X552 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 로켓 회수품 아님 | excluded: 인물 없음 | 주주의 방주 로켓 공개 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/accel-forced-conscription.webp` | PDF p029 X633 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: 별도 장비 회수 없음 | excluded: 구속 장면을 신원조회 초상으로 쓰지 않음 | 엘 볼라도르 강제 편입 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/sumer-reinforcement-team.webp` | PDF p032 X730 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 집단 전투 장면 | 의식장으로 향하는 증원대 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/last-battalion-defensive-line.webp` | PDF p033 X737 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 적 장비 회수 없음 | excluded: 이름 없는 보병 | 마지막 대대 보병 저지선을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/irma-offers-transformation-to-siyu.webp` | PDF p050 X1222 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 2인 서사 장면 | 이르마의 제안과 시유의 선택을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/irma-self-injection.webp` | PDF p063 X1589 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 주사기 카탈로그에는 별도 단독 이미지 사용 | excluded: 행위 장면을 초상으로 쓰지 않음 | 이르마의 개조 바이러스 자가 투여를 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/afterglow-first-manifestation.webp` | PDF p083 X2168 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: 광채 표본의 standalone 이미지 아님 | excluded: 잔광자 전투 장면은 이르마 초상 아님 | 잔광자 최초 현현을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/sumer-surface-return.webp` | PDF p130 X3501 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | candidate-only | excluded: no item subject | excluded: 인물 없음 | 수메르 지상 복귀와 후속 브리핑 장면을 전체 프레임으로 추출 |
+| `/assets/session-reports/s1e6-turning-point-part2/margaret-white-isolation-visit.webp` | PDF p138 X3730 | 1035×503 | no — full PDF XObject | report-cutscene | included | included | excluded: report scene only | excluded: no item subject | excluded: 신체 일부 장면이며 초상 역할 불가 | 마가렛의 순백 격리실 면회 장면을 전체 프레임으로 추출 |
 | `PDF p013 X293` | PDF p013 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: p011 중복 구도 | excluded: p011 중복 구도 | excluded: duplicate | excluded: duplicate | excluded: duplicate | 모리어티·킴라박 장면의 동일 프레임 |
 | `PDF p019 X409` | PDF p019 first frame | 1035×503 | no — full PDF XObject | report-cutscene | excluded: p012 중복 구도 | excluded: p012 중복 구도 | excluded: duplicate | excluded: duplicate | excluded: duplicate | 유회 통로 장면의 동일 프레임 |
 | `PDF p019 X418` | PDF p019 second frame | 1035×503 | no — full PDF XObject | report-cutscene | excluded: p012 중복 구도 | excluded: p012 중복 구도 | excluded: duplicate | excluded: duplicate | excluded: duplicate | 같은 페이지 안의 유회 중복 프레임 |
@@ -248,11 +255,11 @@ PDF에는 가로형 장면 삽화가 25개 있다. 그중 반복 장면과 더 �
 
 ## 비공개로 다듬고 전체 공개하는 순서
 
-- 검토 중에는 사용자가 정한 원칙대로 작전보고서는 내부 검토 권한인 V 이상만 볼 수 있게, 보고서 위키판·잔광자 위키·카탈로그 4건·모리어티·광체 소녀 신원조회는 비공개로 둔다.
+- 운영 ERP에 처음 저장할 때는 사용자가 정한 원칙대로 작전보고서를 GM만 볼 수 있게 하고, 보고서 위키판·잔광자 위키·카탈로그 4건·모리어티·광체 소녀 신원조회는 비공개로 둔다. 비공개 신원조회가 GM에게만 열리므로 보고서도 같은 권한으로 맞춰 링크가 끊기지 않게 한다.
 - 카탈로그 4건은 모두 가격 0, 판매 불가, 전체 공개 안 함으로 준비했다. 인벤토리에 들어가도 상점 재고나 소비품 목록에는 나타나지 않는다.
-- 각 등록 파일은 같은 식별자의 기존 상태가 예상과 다르면 덮어쓰지 않고 중단하도록 만들었다. 특히 카탈로그나 인벤토리 수량이 이미 생겨 있으면 중복 지급하지 않는다.
-- 모든 문장·관련 링크·신원조회·아이템 정보·이미지가 정리되고 사용자가 완성됐다고 확인하면 보고서와 관련 기록을 한 묶음으로 전체 공개한다. 그때 기존 공개 위키와 신원조회에도 이번 세션의 등장 기록·관계·성격 관찰을 함께 추가한다.
-- 검토 중인 작전보고서와 위키판에는 기존 로고 1개만 표시한다. 최종 전체 공개 때 PDF의 서로 다른 장면 삽화 18개를 양쪽 문서에 같은 순서·설명으로 넣는 것이 기본안이다.
+- 두 신원조회·잔광자 위키·작전보고서·보고서 위키판은 `nosb-s1e6-turning-point-part2-private-staging.json` 한 파일에 대상부터 참조 순서로 묶었다. 다섯 기록을 저장 전에 한 번에 검사하고 한 트랜잭션으로 모두 저장하거나 모두 취소할 수 있다. 같은 식별자의 기존 상태가 예상과 다르면 덮어쓰지 않고 중단한다.
+- 모든 문장·관련 링크·신원조회·아이템 정보·이미지 정리를 끝냈다. 실제 저장 뒤 로그인 상태에서 비공개 화면을 확인하고, 같은 승인 범위 안에서 보고서와 관련 기록을 한 묶음으로 전체 공개한다. 그때 기존 공개 위키와 신원조회에도 이번 세션의 등장 기록·관계·성격 관찰을 함께 추가한다.
+- 작전보고서와 위키판에는 로고 1개와 PDF의 서로 다른 장면 삽화 18개를 같은 순서·설명으로 넣었다. 장면 파일은 로컬 저장소에만 있으며 아직 원격 배포하지 않았다.
 - 광체 소녀 신원조회는 화면에 `광체 소녀`로 표시하고, 내부 연결용 식별자는 사용자 화면의 이름으로 노출하지 않는다. `광체`가 고유명인지 존재 분류인지는 계속 미확정으로 표시한다.
 - 모리어티는 섹터 D·사망·초상·권한등급 `H`까지 확정돼 비공개 신원조회 등록 자료가 준비됐다. 실제 신원조회 생성과 링크 연결은 별도 운영 승인 뒤 진행한다.
 
@@ -263,17 +270,17 @@ PDF에는 가로형 장면 삽화가 25개 있다. 그중 반복 장면과 더 �
 3. 실제 저장 직전 운영 DB를 읽어 카탈로그 4건이 없고, 피펫 표본 0개·공용 표본 0개·공용 머리 0개·공용 사용 주사기 0개·NHI 문서 인벤토리 0개임을 확인했다.
 4. 사용자가 정확한 `0→수량`을 보고 실행을 승인해 `2026-08-26` 한 번의 DB 작업으로 카탈로그 4건과 피펫 표본 1개·공용 표본 4개·공용 머리 1개·공용 사용 주사기 1개를 저장했다. NHI 문서는 카탈로그만 만들고 인벤토리 수량은 만들지 않았다.
 5. 저장 직후 DB를 다시 읽어 수량·아이템 이름·보관 근거 메모·비공개·판매 불가 상태를 비교했고 모두 일치했다. 같은 명령을 한 번 더 읽기 모드로 실행했을 때도 중복 지급 없이 완료된 결과만 반환됐다. 사용자 화면에는 보이지 않는 인벤토리 잠금 기준점 1건과 작업 완료 기록 1건도 정상적으로 남아 있다. 인증된 ERP 화면에서는 네 카탈로그 이미지와 피펫·공용 인벤토리 수량을 확인했고, 비로그인 화면에서는 네 비공개 품목이 노출되지 않음을 확인했다.
-6. `nosb-s1e6-turning-point-part2-gwangche-girl-dossier.json`에는 광체 소녀 신원조회와 세션 근거 관계·성격 관찰을 준비했다. 모리어티는 권한등급 `H`까지 확정해 `nosb-s1e6-turning-point-part2-moriarty-dossier.json.pending`에 반영했지만, 두 신원조회의 실제 운영 ERP 저장은 별도 승인 전까지 실행하지 않는다.
-7. 신원조회와 관련 기록의 운영 반영을 별도로 승인받은 뒤, 광체 소녀와 모리어티를 먼저 만들고 `nosb-s1e6-turning-point-part2-reference-targets.json`의 잔광자 위키, `nosb-s1e6-turning-point-part2-sync.json`의 작전보고서·보고서 위키판을 순서대로 연결한다.
-8. 전체 공개 작업의 기존 참고 목록은 이번 카탈로그 4건과 광체 소녀 신원조회가 생기기 전에 작성됐으므로 그대로 실행하지 않는다. 장면 18개와 최종 연결 대상을 포함해 다시 만든 뒤, 로그인 상태와 비로그인 상태에서 링크·이미지·공개 범위를 확인한다.
+6. `nosb-s1e6-turning-point-part2-private-staging.json` 한 파일에 광체 소녀·모리어티 신원조회, 잔광자 위키, 작전보고서, 보고서 위키판을 대상부터 참조 순서로 묶었다. 다섯 기록은 저장 전 한 번에 검사되고 실제 실행 때도 한 트랜잭션으로 모두 저장되거나 모두 취소된다. 모리어티의 섹터 D·권한등급 `H`·사망 상태와 광체 소녀의 미확정 소속·권한 없음 처리까지 확정됐지만, 실제 운영 ERP 저장은 별도 승인 전까지 실행하지 않는다.
+7. 장면 18개를 `public/assets/session-reports/s1e6-turning-point-part2/`에 원본 비율 그대로 준비하고, 작전보고서와 보고서 위키판에 로고를 포함한 19개 이미지를 같은 순서·설명으로 연결했다. 모리어티 링크와 광체 소녀의 마리아·이르마·시유·오틸리아 반대편 관계도 보강했다.
+8. `nosb-s1e6-turning-point-part2-publication.json`을 현재 범위에 맞게 다시 만들었다. 전체 공개 때 잔광자 위키 1건, 카탈로그 4건, 신원조회 2건, 보고서와 위키판, 기존 위키 7건, 기존 인물 21명의 등장 사건, 기존 인물 15명에게 추가할 관계 설명 21개, 성격 관찰 8개와 이르마 코흐의 구조화 사망 상태를 함께 처리한다. 실제 실행 뒤 로그인 상태와 비로그인 상태에서 링크·이미지·공개 범위를 확인한다.
 
 `2026-08-26` 현재 운영 ERP에는 카탈로그 4건과 승인된 인벤토리 수량만 반영했다. 작전 보고서·보고서 위키판·잔광자 위키·모리어티 및 광체 소녀 신원조회·기존 인물 관계는 아직 저장하거나 수정하지 않았다.
 
 ## 사용자에게 정말 필요한 확인
 
-1. **신원조회 운영 적용**: 모리어티와 광체 소녀의 비공개 신원조회를 실제 운영 ERP에 만들기 전, 두 레코드의 생성 전·후 값을 제시하고 별도 실행 승인을 받아야 한다.
-2. **보고서·위키 운영 적용**: 비공개 작전 보고서, 같은 내용의 위키판, 잔광자 위키와 기존 인물 관계를 실제 운영 ERP에 저장하기 전, 정확한 대상과 연결 범위를 제시하고 별도 실행 승인을 받아야 한다.
+1. **운영 ERP 저장과 전체 공개 실행**: 모리어티·광체 소녀 신원조회, 작전보고서, 보고서 위키판, 잔광자 위키와 기존 인물·위키 연결을 실제 운영 ERP에 저장하기 전, 아래의 생성 전→후 값과 공개 전환 범위를 한 문장으로 제시하고 별도 실행 승인을 받아야 한다.
+2. **원격 배포**: 새 장면 18개와 신원조회·카탈로그 이미지를 운영 공개 화면에서 보이게 하려면 현재 로컬 커밋을 원격 저장소에 올려 배포해야 한다. 저장소 규칙상 사용자가 원격 반영을 명시하기 전에는 올리지 않는다.
 
-모리어티 사망과 `H`는 확정됐으므로 더 묻지 않는다. 정확한 과거 사망일은 미상이지만 신원조회에는 공식 기록에서 사망 사실을 확인한 `2026-08-09`를 넣는다. 광체 소녀는 사용자 지정 표기와 전용 초상이 해결됐고, 정규 소속·권한등급을 억지로 만들지 않는 방식으로 준비했다. 표본·머리·주사기 보관처와 수량도 반영·확인까지 끝났으므로 더 묻지 않는다. 작전 크레딧·주식·상점 재고·알림·메시지·웹훅은 바꾸지 않았다.
+모리어티 사망과 `H`는 확정됐으므로 더 묻지 않는다. 정확한 과거 사망일은 미상이지만 신원조회에는 공식 기록에서 사망 사실을 확인한 `2026-08-09`를 넣는다. 이르마 코흐는 세션 중 `2026-08-10 01:06`에 잔광자 상태로 참수된 것이 확인되므로 신원조회에 `사망 확인 / 확인일 2026-08-10 / 근거 사건 NOSB-S1E6-TURNING-POINT-PART2`를 함께 추가하도록 준비했다. 광체 소녀는 사용자 지정 표기와 전용 초상이 해결됐고, 정규 소속·권한등급을 억지로 만들지 않는 방식으로 준비했다. 표본·머리·주사기 보관처와 수량도 반영·확인까지 끝났으므로 더 묻지 않는다. 작전 크레딧·주식·상점 재고·알림·메시지·웹훅은 바꾸지 않았다.
 
-공개 여부는 더 묻지 않는다. 사용자가 정한 대로 다듬는 동안 전부 비공개로 유지하고, 위 확인과 이미지·링크 정리가 끝나면 묶음 전체를 공개한다.
+공개 방식 자체는 더 묻지 않는다. 사용자가 정한 대로 처음에는 비공개로 저장해 확인하고, 같은 승인 범위에서 묶음 전체를 공개한다. 다만 운영 ERP 저장·전체 공개와 원격 배포는 실제 외부 상태를 바꾸므로 실행 직전의 정확한 변경 범위를 제시하고 승인을 받아야 한다.

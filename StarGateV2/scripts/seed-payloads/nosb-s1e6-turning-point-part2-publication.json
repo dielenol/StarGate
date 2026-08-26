@@ -8,8 +8,13 @@
     "update": {
       "$set": {
         "isPublic": true,
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
+    },
+    "postcondition": {
+      "slug": "afterglow-being",
+      "isPublic": true,
+      "category": "개체"
     }
   },
   {
@@ -21,8 +26,71 @@
     "update": {
       "$set": {
         "isPublic": true,
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
+    },
+    "postcondition": {
+      "slug": "afterglow-radiance-sample",
+      "isPublic": true,
+      "isAvailable": false,
+      "price": 0
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-publication",
+    "filter": {
+      "slug": "afterglow-head"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      }
+    },
+    "postcondition": {
+      "slug": "afterglow-head",
+      "isPublic": true,
+      "isAvailable": false,
+      "price": 0
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-publication",
+    "filter": {
+      "slug": "nhi-rocket-engine-adaptation-document"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      }
+    },
+    "postcondition": {
+      "slug": "nhi-rocket-engine-adaptation-document",
+      "isPublic": true,
+      "isAvailable": false,
+      "price": 0
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-publication",
+    "filter": {
+      "slug": "used-aurora-virus-syringe"
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      }
+    },
+    "postcondition": {
+      "slug": "used-aurora-virus-syringe",
+      "isPublic": true,
+      "isAvailable": false,
+      "price": 0
     }
   },
   {
@@ -35,7 +103,7 @@
     "update": {
       "$set": {
         "isPublic": true,
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     },
     "postcondition": {
@@ -44,7 +112,28 @@
       "department": "SECTOR_D",
       "lifeStatus": "DECEASED",
       "lifeStatusAt": "2026-08-09T00:00:00.000Z",
-      "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2"
+      "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2",
+      "agentLevel": "H",
+      "previewImage": "/assets/npcs/Moriarty-profile.webp"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier-publication",
+    "filter": {
+      "codename": "GWANGCHE_GIRL",
+      "isPublic": false
+    },
+    "update": {
+      "$set": {
+        "isPublic": true,
+        "updatedAt": "2026-08-26T00:00:00.000Z"
+      }
+    },
+    "postcondition": {
+      "codename": "GWANGCHE_GIRL",
+      "isPublic": true,
+      "previewImage": "/assets/npcs/Gwangche-Girl-profile.webp"
     }
   },
   {
@@ -56,8 +145,14 @@
     "update": {
       "$set": {
         "isPublic": true,
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
+    },
+    "postcondition": {
+      "slug": "s1e6-turning-point-part2",
+      "isPublic": true,
+      "category": "작전 보고서",
+      "imageUrl": "/assets/session-reports/s1e6-turning-point-part2/sector-d-sea-platform.webp"
     }
   },
   {
@@ -69,8 +164,13 @@
     "update": {
       "$set": {
         "minRole": "U",
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+      "minRole": "U",
+      "reportNumber": "06.5"
     }
   },
   {
@@ -127,7 +227,7 @@
             ]
           },
           "updatedAt": {
-            "$toDate": "2026-08-25T00:00:00.000Z"
+            "$toDate": "2026-08-26T00:00:00.000Z"
           }
         }
       }
@@ -188,7 +288,7 @@
             ]
           },
           "updatedAt": {
-            "$toDate": "2026-08-25T00:00:00.000Z"
+            "$toDate": "2026-08-26T00:00:00.000Z"
           }
         }
       }
@@ -248,7 +348,7 @@
             ]
           },
           "updatedAt": {
-            "$toDate": "2026-08-25T00:00:00.000Z"
+            "$toDate": "2026-08-26T00:00:00.000Z"
           }
         }
       }
@@ -308,7 +408,7 @@
             ]
           },
           "updatedAt": {
-            "$toDate": "2026-08-25T00:00:00.000Z"
+            "$toDate": "2026-08-26T00:00:00.000Z"
           }
         }
       }
@@ -368,7 +468,7 @@
             ]
           },
           "updatedAt": {
-            "$toDate": "2026-08-25T00:00:00.000Z"
+            "$toDate": "2026-08-26T00:00:00.000Z"
           }
         }
       }
@@ -429,7 +529,7 @@
             ]
           },
           "updatedAt": {
-            "$toDate": "2026-08-25T00:00:00.000Z"
+            "$toDate": "2026-08-26T00:00:00.000Z"
           }
         }
       }
@@ -490,7 +590,7 @@
             ]
           },
           "updatedAt": {
-            "$toDate": "2026-08-25T00:00:00.000Z"
+            "$toDate": "2026-08-26T00:00:00.000Z"
           }
         }
       }
@@ -522,7 +622,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -552,7 +652,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -581,7 +681,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -611,7 +711,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -641,7 +741,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -671,7 +771,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -701,7 +801,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -731,7 +831,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -761,7 +861,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -791,7 +891,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -821,7 +921,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -851,7 +951,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -881,7 +981,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -911,7 +1011,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -941,7 +1041,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -971,7 +1071,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -1001,7 +1101,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -1031,7 +1131,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -1039,7 +1139,25 @@
     "collection": "characters",
     "type": "dossier-session-sync",
     "filter": {
-      "codename": "IRMA_KOCH"
+      "codename": "IRMA_KOCH",
+      "$or": [
+        {
+          "lifeStatus": {
+            "$exists": false
+          },
+          "lifeStatusAt": {
+            "$exists": false
+          },
+          "lifeStatusEventId": {
+            "$exists": false
+          }
+        },
+        {
+          "lifeStatus": "DECEASED",
+          "lifeStatusAt": "2026-08-10T00:00:00.000Z",
+          "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2"
+        }
+      ]
     },
     "update": {
       "$addToSet": {
@@ -1061,8 +1179,17 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-08-10T00:00:00.000Z",
+        "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2",
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
+    },
+    "postcondition": {
+      "codename": "IRMA_KOCH",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-08-10T00:00:00.000Z",
+      "lifeStatusEventId": "NOSB-S1E6-TURNING-POINT-PART2"
     }
   },
   {
@@ -1091,7 +1218,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -1121,7 +1248,7 @@
         }
       },
       "$set": {
-        "updatedAt": "2026-08-25T00:00:00.000Z"
+        "updatedAt": "2026-08-26T00:00:00.000Z"
       }
     }
   },
@@ -1239,6 +1366,15 @@
               "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
               "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
               "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "GWANGCHE_GIRL",
+              "targetName": "광체 소녀",
+              "label": "천사화 회유 거부",
+              "summary": "광체 소녀가 이르마의 제안을 받아들이도록 설득했지만, 시유는 거부하고 마리아·오틸리아와 섹터 동료에게 돌아갔다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
             }
           ]
         }
@@ -1277,7 +1413,16 @@
               "targetCodename": "네베드",
               "targetName": "키아나 오 캘러핸 / 네베드",
               "label": "잔광자 변환 뒤 교전",
-            "summary": "개조 광원화 바이러스 투여 뒤 잔광자로 변환해 키아나와 교전했고, 최종적으로 키아나의 대검에 참수됐다.",
+              "summary": "개조 광원화 바이러스 투여 뒤 잔광자로 변환해 키아나와 교전했고, 최종적으로 키아나의 대검에 참수됐다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "GWANGCHE_GIRL",
+              "targetName": "광체 소녀",
+              "label": "현장 추종자와 설득 협력",
+              "summary": "광체 소녀가 이르마를 교주님이라고 부르며 곁을 지켰고, 주사기를 돌려주며 시유의 천사화를 함께 설득했다.",
               "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
               "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
               "confidence": "confirmed"
@@ -1305,6 +1450,15 @@
               "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
               "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
               "confidence": "confirmed"
+            },
+            {
+              "targetCodename": "GWANGCHE_GIRL",
+              "targetName": "광체 소녀",
+              "label": "유전적 연관 가능성 추정",
+              "summary": "광체 소녀가 자신의 유전자를 이용해 만들어졌을 가능성을 추정했으나 독립 확인 자료는 없다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "testimony"
             }
           ]
         }
@@ -1407,6 +1561,30 @@
               "targetName": "마가렛",
               "label": "면회 통제와 단독 격리",
               "summary": "피펫과 마가렛의 면회를 종료하고 피펫이 나간 뒤 마가렛을 순백 격리실에 홀로 남겼다.",
+              "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+              "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation-sync",
+    "filter": {
+      "codename": "MARIA"
+    },
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "$each": [
+            {
+              "targetCodename": "GWANGCHE_GIRL",
+              "targetName": "광체 소녀",
+              "label": "보호와 동행 제안",
+              "summary": "광체 소녀를 이르마와 잔광자 전투에서 보호하고 자신을 어머니로 호명한 뒤 노부스 오르도로 함께 가자고 제안했다. 소녀는 고개를 끄덕여 수락했다.",
               "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
               "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
               "confidence": "confirmed"
