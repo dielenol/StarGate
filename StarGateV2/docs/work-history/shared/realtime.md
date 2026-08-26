@@ -38,3 +38,11 @@
 - 검증: worker realtime 포함 152건, Hall Query·root invalidation 계약 14건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 구현 커밋: `684efcd7`
 - 운영 경계: production realtime 모드와 라이브 Change Stream 상태는 변경하지 않았다.
+
+## 2026-08-26 · 안정성 개선 · 공적 심사 상태 무효화
+
+- `honor_analysis_states` 변경도 `hall-of-fame` resource로 매핑해 보고서의 재심사·지연 상태와 Hall 집계 Query가 root invalidation으로 수렴하도록 했다.
+- 보고서 문맥 Query는 RSC 초기 성공 데이터를 유지하며 realtime 장애에서는 5분 polling으로 상태를 재검증한다.
+- 검증: worker realtime 포함 154건, Hall root invalidation 계약 15건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
+- 관련 구현 커밋: `f0036d11`
+- 운영 경계: production realtime 모드와 라이브 Change Stream 상태는 변경하지 않았다.

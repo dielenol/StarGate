@@ -194,3 +194,12 @@
 - 검증: Hall·권한 계약 14건, worker 작전 분석 포함 152건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0/P1 없음
 - 관련 구현 커밋: `684efcd7`
 - 운영 경계: 운영 보고서 수정, Cloud 분석, 공적 원장·알림 쓰기는 실행하지 않았다.
+
+## 2026-08-26 · 안정성 개선 · 공적 심사 상태 실시간화
+
+- 공적 인용 패널을 독립 Query로 전환해 확정 기록 없음, 재심사 중, 자동 심사 지연, 최초 조회 실패와 마지막 성공 기록 표시 상태를 구분한다.
+- 보고서별 안전한 상태 API는 비로그인 401·게스트 404를 유지하고, 삭제·미존재·V 이상 원본은 모두 같은 `state: null`로 응답해 제한 보고서의 존재 여부를 노출하지 않는다.
+- 보고서 원문과 공적 심사 상태 변경은 Hall root invalidation으로 갱신하며 realtime 장애에서는 5분 polling으로 복구한다.
+- 검증: Hall·보고서 계약 15건, worker 154건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0/P1 없음
+- 관련 구현 커밋: `f0036d11`
+- 운영 경계: 운영 보고서 수정, Cloud 분석, 공적 원장·알림 쓰기는 실행하지 않았다.

@@ -71,3 +71,13 @@
 - 검증: worker 152건, manifest 5건, shared 공적 계약 7건·DB 환경 의존 1건 skip, `pnpm build:worker`, critical risk review P0/P1 없음
 - 관련 구현 커밋: `684efcd7`
 - 운영 경계: 인덱스 생성, Cloud dry-run, manifest 적용, Web/worker writer gate 활성화는 별도 운영 승인 전까지 실행하지 않았다.
+
+## 2026-08-26 · 안정성 개선 · 공적 분석 최소화와 멱등 reconcile
+
+- `honor-analysis`는 claim 처리는 매 poll 유지하되 전체 source reconcile은 5분 간격으로 제한하고, 같은 SKIPPED 사유·lease 정리 상태는 `updatedAt`을 다시 쓰지 않는다.
+- 전체 보고서에서는 ID·세션 키·등급 헤더만 읽고, 분석 본문·전개 기록은 U 또는 legacy 공개 보고서만 별도 조회해 V 이상 원문을 worker heap에 적재하지 않는다.
+- Cloud 입력에서 실제 보고서의 `시각 자료`, `관련 문서·인원·항목`, `기록 출처`, fenced code와 정상·중첩·미종결 링크 라벨을 제거한다. 핵심 행위가 링크 라벨에만 있으면 보안 우선으로 근거에서 제외된다.
+- clean checkout backfill은 shared/core/worker dist를 먼저 빌드하고 프로젝트 최소 Node 22.6에서 지원되는 CLI 옵션만 사용한다.
+- 검증: core 36건·worker 154건, shared 공적 계약 7건·Mongo 환경 의존 1건 skip, manifest 6건, `pnpm build:worker`, critical risk review P0/P1 없음
+- 관련 구현 커밋: `f0036d11`
+- 운영 경계: Cloud 호출, manifest 생성·적용, 라이브 DB·index·writer gate 변경은 실행하지 않았다.

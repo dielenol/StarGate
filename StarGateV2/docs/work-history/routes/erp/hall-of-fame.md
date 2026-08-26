@@ -51,3 +51,12 @@
 - 검증: Hall 계약 14건, core 36건·worker 152건, manifest 5건, `pnpm typecheck`, `pnpm lint`, `pnpm build:worker`, `pnpm build`, 회원·게스트 2560×1440·1280×720·1024×768·390×844 화면, 콘솔 경고·오류 0건, critical risk review P0/P1 없음
 - 관련 구현 커밋: `684efcd7`
 - 운영 경계: 라이브 인덱스 생성, Cloud 분석, backfill manifest 생성·적용, writer gate 활성화와 HONOR 알림 발송은 실행하지 않았다.
+
+## 2026-08-26 · 안정성 개선 · 전체 원장 집계와 부분 상태
+
+- 개요의 기록 수를 현재 화면에 로드된 배열 길이가 아니라 공개 가능한 전체 연구 TOP 3·확정 NOVEX 시상 기록·현재 U 원본과 hash가 일치하는 작전 공적의 합계로 계산한다. 게스트 집계는 작전 원장을 조회하지 않는다.
+- 전체 집계를 독립 RSC·Query로 분리해 실패해도 연구·NOVEX·작전 부문은 계속 표시하고, 마지막 성공 집계와 재시도 상태를 유지한다.
+- 로컬 게스트 화면에서 공개 탭이 `개요·연구 기록·NOVEX`로 제한되고, 현재 데이터가 전체 기록 3건·확정 시즌 0건임을 확인했다. 작전 공적·내 리본은 회원 전용이며 운영 backfill 전에는 임의 기록을 만들지 않는다.
+- 검증: Hall 계약 15건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 1280×720·390×844에서 집계 3/0·가로 넘침 0·게스트 탭 제한·신규 콘솔 경고/오류 0건, critical risk review P0/P1 없음
+- 관련 구현 커밋: `f0036d11`
+- 운영 경계: 라이브 인덱스·DB 쓰기, Cloud 분석, backfill manifest 생성·적용, writer gate 활성화는 실행하지 않았다.
