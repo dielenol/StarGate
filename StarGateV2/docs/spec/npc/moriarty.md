@@ -14,7 +14,6 @@ weight: 미상
 factionCode: NOVUS_ORDO
 institutionCode: MANUS
 department: SECTOR_D
-agentLevel: H
 lifeStatus: DECEASED
 lifeStatusAt: 2026-08-09T00:00:00.000Z
 lifeStatusEventId: NOSB-S1E6-TURNING-POINT-PART2
@@ -22,17 +21,17 @@ isPublic: false
 loreTags: [섹터D, 대령, 아르고기지, NHI문서, Montag-98, 힐링팩터, 배신, 모리어티, 모리아티]
 appearsInEvents: [NOSB-S1E6-TURNING-POINT-PART2]
 source: session-log
-previewImage:
-mainImage:
+previewImage: /assets/npcs/Moriarty-profile.webp
+mainImage: /assets/npcs/Moriarty-profile.webp
 createdAt: 2026-08-25T00:00:00.000Z
-updatedAt: 2026-08-25T00:00:00.000Z
+updatedAt: 2026-08-26T00:00:00.000Z
 ---
 
 ## 대사
 > 자넨 좋은 부하였네.
 
 ## 외형
-작전 기록에서는 시가를 피우는 행동이 확인된다. 얼굴과 복장에 관한 세부 기록은 남아 있지 않다.
+검은 베레모와 검은 전술 조끼, 회백색 위장 전투복을 착용한다. 베레모에는 금색 성형 문장이 있고 어깨에는 대령 계급장이 달려 있다. 각진 얼굴과 굳게 다문 입, 정면을 압박하는 시선이 두드러진다. 작전 기록에서는 시가를 피우는 행동도 확인된다.
 
 ## 성격
 거친 농담과 허물없는 태도로 부하들과 결속하고, 힐링 팩터로 여러 차례 부하의 생명을 구해 신뢰를 쌓았다. 한편 상급 관료를 경멸하고 정식 지휘 계통을 우회했으며, 비밀 문서를 확보하자 부하들을 제거하려 했다. 마지막까지 동료 의식을 말하면서 자신의 배신을 불가피한 선택으로 정당화했다.
@@ -46,7 +45,7 @@ updatedAt: 2026-08-25T00:00:00.000Z
 - 정규 소속: 노부스 오르도 / MANUS / 섹터 D
 - 확인된 직위: 대령, 킴라박 리의 직속 상관, 아르고 기지 침투부대 지휘관
 - 확인된 능력: 힐링 팩터. 과거 여러 전투에서 킴라박과 부대원의 생명을 구한 전력이 있다.
-- 권한등급: `H`. 대령이자 현장 침투부대 지휘관으로 확인되며, 섹터 D 전체를 감독했다는 기록은 없다.
+- 권한등급 추천: `H`. 같은 대령·현장 통솔 역할의 승인 사례와 가장 가깝지만, 사용자 확정 전에는 신원조회 값으로 저장하지 않는다. 섹터 D 전체를 감독했다는 기록은 없다.
 - 비밀 임무: NHI 로켓 추진·우주 엔진 적응 문서 회수
 - 현재 상태: 아르고 기지에서 Montag-98에게 사망. 실제 사망일은 미상. 사무국 기록상 확정일은 `2026-08-09`
 

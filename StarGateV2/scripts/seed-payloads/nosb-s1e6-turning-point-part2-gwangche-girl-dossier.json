@@ -1,0 +1,138 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "GWANGCHE_GIRL",
+      "type": "NPC",
+      "role": "광체를 자칭한 미확인 소녀 / 연구동 이송 예정 대상",
+      "previewImage": "/assets/npcs/Gwangche-Girl-profile.webp",
+      "isPublic": false,
+      "lore": {
+        "name": "광체 소녀",
+        "gender": "여성",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "appearance": "긴 검은 머리와 가지런한 앞머리, 금빛 눈을 지닌 소녀다. 흰 원피스에는 검은색 어깨·허리·소맷단 장식과 붉은 리본이 달려 있으며, 머리 뒤에는 금색 고리와 방사형 광선 모양의 후광이 떠 있다.",
+        "personality": "시유를 설득하는 과정에 직접 참여하고, 마리아의 질문에는 고개를 끄덕여 자신의 선택을 표시했다. 이르마의 지시만 수행하는 장치가 아니라 스스로 말하고 반응하는 독립 인격체로 관측됐다.",
+        "background": "광체 소녀는 수메르 지하 의식장에서 이르마 코흐 곁에 있던 미확인 인물이다. 시유에게 이르마의 제안을 받아들이도록 설득했고, 이르마에게 주사기를 돌려주며 `교주님`이라고 불렀다. 이후 마리아의 보호를 받았고 자신을 `광체`라고 소개했다.\n\n마리아가 노부스 오르도로 함께 가자고 묻자 소녀는 고개를 끄덕였다. 아말리아 프레드리카 본 에센은 소녀를 연구동으로 데려가기로 결정했지만, 실제 도착과 정식 인계는 보존 기록에서 확인되지 않는다. 오틸리아 발트만은 소녀가 자신의 유전자를 이용해 만들어졌을 가능성을 추정했으나 이는 현장 발언일 뿐 독립 검증되지 않았다.",
+        "quote": "> 광체.",
+        "mainImage": "/assets/npcs/Gwangche-Girl-profile.webp",
+        "loreTags": [
+          "NOSB-S1E6-TURNING-POINT-PART2",
+          "S1E6",
+          "변곡점",
+          "광체",
+          "수메르",
+          "이르마코흐",
+          "연구동이송결정"
+        ],
+        "appearsInEvents": [
+          "NOSB-S1E6-TURNING-POINT-PART2"
+        ],
+        "nameEn": "",
+        "personalityObservations": [
+          {
+            "id": "NOSB-S1E6-TURNING-POINT-PART2:GWANGCHE_GIRL:self-identification",
+            "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+            "trait": "자기표현과 선택 의사",
+            "summary": "자신을 광체라고 소개하고 마리아의 동행 제안에 고개를 끄덕여 의사를 표시했다.",
+            "evidence": [
+              {
+                "kind": "dialogue",
+                "text": "마리아가 이름을 묻자 자신을 광체라고 소개함"
+              },
+              {
+                "kind": "action",
+                "text": "노부스 오르도로 함께 가자는 마리아의 질문에 고개를 끄덕임"
+              }
+            ],
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed"
+          },
+          {
+            "id": "NOSB-S1E6-TURNING-POINT-PART2:GWANGCHE_GIRL:irma-devotion",
+            "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+            "trait": "이르마에 대한 충성",
+            "summary": "이르마를 교주님이라고 부르고 주사기를 돌려주며 시유를 함께 설득했다.",
+            "evidence": [
+              {
+                "kind": "dialogue",
+                "text": "이르마를 교주님이라고 호칭함"
+              },
+              {
+                "kind": "action",
+                "text": "이르마에게 주사기를 돌려주고 시유에게 제안을 받아들이도록 설득함"
+              }
+            ],
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed"
+          }
+        ],
+        "relations": [
+          {
+            "targetCodename": "MARIA",
+            "targetName": "마리아",
+            "label": "보호자 / 동행 제안자",
+            "summary": "마리아가 소녀를 보호하고 노부스 오르도로 함께 가자고 제안했으며, 소녀는 고개를 끄덕였다.",
+            "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed",
+            "updatedAt": "2026-08-26T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "IRMA_KOCH",
+            "targetName": "이르마 코흐",
+            "label": "교주 / 현장 동행자",
+            "summary": "수메르 의식장에서 이르마의 곁을 지켰고, 이르마를 교주님이라고 부르며 시유 설득과 주사기 전달에 참여했다.",
+            "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed",
+            "updatedAt": "2026-08-26T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "TIGER298",
+            "targetName": "시유 / 타이거",
+            "label": "설득 대상",
+            "summary": "이르마의 제안을 받아들이도록 시유를 설득했으나 시유는 거부하고 동료에게 돌아갔다.",
+            "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "confirmed",
+            "updatedAt": "2026-08-26T00:00:00.000Z"
+          },
+          {
+            "targetCodename": "OTILIA",
+            "targetName": "오틸리아 발트만",
+            "label": "유전적 연관 가능성 제기",
+            "summary": "오틸리아는 소녀가 자신의 유전자를 이용해 만들어졌을 가능성을 추정했으나 독립 확인 자료는 없다.",
+            "sourceEvent": "NOSB-S1E6-TURNING-POINT-PART2",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "confidence": "testimony",
+            "updatedAt": "2026-08-26T00:00:00.000Z"
+          }
+        ],
+        "sessionAppearances": [
+          {
+            "sessionId": "NOSB-S1E6-TURNING-POINT-PART2",
+            "role": "이르마 측 동행자 / 연구동 이송 예정 대상",
+            "summary": "시유 설득과 이르마의 자가 투여 과정에 관여한 뒤 마리아의 보호를 받았고, 노부스 오르도 연구동으로 데려가기로 결정됐다.",
+            "sourceLabel": "작전 보고서 S1E6: 변곡점 2부",
+            "updatedAt": "2026-08-26T00:00:00.000Z"
+          }
+        ],
+        "roleDetail": "- 확인된 정체: 자신을 `광체`라고 소개한 미확인 소녀. `광체`가 고유명인지 존재 분류인지는 미상\n- 정규 소속: 미상. 이르마·광명회 측 현장 동행은 확인되지만 정식 가입 기록은 없음\n- 현재 배치: 노부스 오르도 연구동 이송 결정만 확인. 실제 도착·격리·소속 편입은 미확정\n- 내부 권한등급: 없음. 노부스 오르도 요원으로 임명된 기록이 없음",
+        "notes": "`광체 소녀`는 사용자가 지정한 신원조회 대표 표기다. 세션에서 본인이 말한 `광체`는 고유명과 존재 분류 중 어느 쪽인지 아직 확인되지 않았다."
+      },
+      "loreMd": "## 대사\n> 광체.\n\n## 외형\n긴 검은 머리와 가지런한 앞머리, 금빛 눈을 지닌 소녀다. 흰 원피스에는 검은색 어깨·허리·소맷단 장식과 붉은 리본이 달려 있으며, 머리 뒤에는 금색 고리와 방사형 광선 모양의 후광이 떠 있다.\n\n## 성격\n시유를 설득하는 과정에 직접 참여하고, 마리아의 질문에는 고개를 끄덕여 자신의 선택을 표시했다. 이르마의 지시만 수행하는 장치가 아니라 스스로 말하고 반응하는 독립 인격체로 관측됐다.\n\n## 배경\n광체 소녀는 수메르 지하 의식장에서 이르마 코흐 곁에 있던 미확인 인물이다. 시유에게 이르마의 제안을 받아들이도록 설득했고, 이르마에게 주사기를 돌려주며 `교주님`이라고 불렀다. 이후 마리아의 보호를 받았고 자신을 `광체`라고 소개했다.\n\n마리아가 노부스 오르도로 함께 가자고 묻자 소녀는 고개를 끄덕였다. 아말리아 프레드리카 본 에센은 소녀를 연구동으로 데려가기로 결정했지만, 실제 도착과 정식 인계는 보존 기록에서 확인되지 않는다. 오틸리아 발트만은 소녀가 자신의 유전자를 이용해 만들어졌을 가능성을 추정했으나 이는 현장 발언일 뿐 독립 검증되지 않았다.\n\n## 역할 상세\n- 확인된 정체: 자신을 `광체`라고 소개한 미확인 소녀. `광체`가 고유명인지 존재 분류인지는 미상\n- 정규 소속: 미상. 이르마·광명회 측 현장 동행은 확인되지만 정식 가입 기록은 없음\n- 현재 배치: 노부스 오르도 연구동 이송 결정만 확인. 실제 도착·격리·소속 편입은 미확정\n- 내부 권한등급: 없음. 노부스 오르도 요원으로 임명된 기록이 없음\n\n## 이름 설명\n`광체 소녀`는 사용자가 지정한 신원조회 대표 표기다. 세션에서 본인이 말한 `광체`는 고유명과 존재 분류 중 어느 쪽인지 아직 확인되지 않았다.\n\n## 관계 (참고)\n- `MARIA` — 보호하고 노부스 오르도로 함께 가자고 제안한 인물\n- `IRMA_KOCH` — 수메르 의식장에서 곁을 지키며 `교주님`이라고 부른 인물\n- `TIGER298` — 이르마의 제안을 받아들이도록 함께 설득한 대상\n- `OTILIA` — 유전적 연관 가능성을 추정했으나 확정하지 못한 인물\n",
+      "source": "session-log",
+      "ownerId": null,
+      "createdAt": "2026-08-26T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    },
+    "postcondition": {
+      "codename": "GWANGCHE_GIRL",
+      "isPublic": false
+    }
+  }
+]

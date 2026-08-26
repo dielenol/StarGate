@@ -1,0 +1,146 @@
+[
+  {
+    "collection": "master_items",
+    "type": "private-session-evidence-catalog",
+    "payload": {
+      "code": "AFTERGLOW_RADIANCE_SAMPLE",
+      "slug": "afterglow-radiance-sample",
+      "name": "잔광자 광채 표본",
+      "nameEn": "Afterglow Radiance Sample",
+      "category": "MATERIAL",
+      "price": 0,
+      "description": "변곡점 2부 종료 국면에서 휘트모어 핀치가 잔광자에게서 회수한 광채 표본.",
+      "previewImage": "/assets/catalog/samples/afterglow-radiance-sample.webp",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-S1E6-TURNING-POINT-PART2",
+        "S1E6",
+        "변곡점",
+        "잔광자",
+        "광채",
+        "광원화바이러스",
+        "백신연구",
+        "피펫"
+      ],
+      "loreMd": "## 설명\n잔광자 광채 표본은 수메르 지하 의식장 전투가 끝난 뒤 잔광자의 신체에서 회수된 연구 재료다.\n\n## 배경\n이르마 코흐가 개조 광원화 바이러스를 자신에게 투여한 뒤 `잔광자`로 변환했다. 현장 분석에서는 개체가 광원화 바이러스로 뭉친 `광채`라고 설명됐고, 냉기·전기·화염과 행동교정물질에 반응했다.\n\n## 획득 경로\n일반 획득 불가. `NOSB-S1E6-TURNING-POINT-PART2` 종료 국면에서 휘트모어 핀치가 광채 1개를 직접 채취했고, 전방 수호대에게 같은 표본 4개를 더 전달받아 총 5개를 휴대했다. 작전 정산에서는 직접 채취한 1개를 휘트모어 핀치에게, 전방 수호대가 전달한 4개를 공용 연구 보관고에 귀속한다. 스타크에게는 안전하게 가공한 뒤 나누겠다고만 답했으며 실제 전달은 확인되지 않았다.\n\n## 비고\n사무총장은 잔광자 시체가 광원화 2차 백신과 가능한 3차 약제 연구에 쓰일 수 있다고 말했다. 이는 연구 가능성에 대한 발언이며 완성된 백신이나 효능 확정을 뜻하지 않는다. 개인 지급 1개와 공용 보관 4개 모두 비판매 연구 표본이며 일반 소비·상점 보급 대상으로 취급하지 않는다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]와 [[wiki:afterglow-being|잔광자]]를 참조한다.\n",
+      "lore": {
+        "background": "이르마 코흐가 개조 광원화 바이러스를 자신에게 투여한 뒤 `잔광자`로 변환했다. 현장 분석에서는 개체가 광원화 바이러스로 뭉친 `광채`라고 설명됐고, 냉기·전기·화염과 행동교정물질에 반응했다.",
+        "acquisition": "일반 획득 불가. `NOSB-S1E6-TURNING-POINT-PART2` 종료 국면에서 휘트모어 핀치가 광채 1개를 직접 채취했고, 전방 수호대에게 같은 표본 4개를 더 전달받아 총 5개를 휴대했다. 작전 정산에서는 직접 채취한 1개를 휘트모어 핀치에게, 전방 수호대가 전달한 4개를 공용 연구 보관고에 귀속한다. 스타크에게는 안전하게 가공한 뒤 나누겠다고만 답했으며 실제 전달은 확인되지 않았다.",
+        "notes": "사무총장은 잔광자 시체가 광원화 2차 백신과 가능한 3차 약제 연구에 쓰일 수 있다고 말했다. 이는 연구 가능성에 대한 발언이며 완성된 백신이나 효능 확정을 뜻하지 않는다. 개인 지급 1개와 공용 보관 4개 모두 비판매 연구 표본이며 일반 소비·상점 보급 대상으로 취급하지 않는다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]와 [[wiki:afterglow-being|잔광자]]를 참조한다."
+      },
+      "source": "session-log",
+      "effect": "광원화 백신 연구 후보로 보존된 잔광자의 광채 표본",
+      "createdAt": "2026-08-09T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "private-session-evidence-catalog",
+    "payload": {
+      "code": "AFTERGLOW_HEAD",
+      "slug": "afterglow-head",
+      "name": "잔광자 머리",
+      "nameEn": "Afterglow Head",
+      "category": "MATERIAL",
+      "price": 0,
+      "description": "변곡점 2부에서 참수된 잔광자의 머리를 회수해 보존한 연구 표본.",
+      "previewImage": "/assets/catalog/samples/afterglow-head.webp",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-S1E6-TURNING-POINT-PART2",
+        "S1E6",
+        "변곡점",
+        "잔광자",
+        "머리표본",
+        "광원화바이러스",
+        "백신연구",
+        "공용인벤토리"
+      ],
+      "loreMd": "## 설명\n잔광자 머리는 수메르 지하 의식장 전투가 끝난 뒤 회수된 비판매 생체 연구 표본이다.\n\n## 배경\n이르마 코흐가 개조 광원화 바이러스를 자신에게 투여해 변환한 잔광자는 냉기와 행동교정물질에 반응한 뒤 잿빛으로 변했다. 키아나 오 캘러핸은 이사회 명령과 현장 위험 판단을 근거로 개체를 참수했다.\n\n## 획득 경로\n일반 획득 불가. 해쉬 테거의 지시에 따라 휘트모어 핀치가 머리 1개를 회수했고 우디가 운반을 도왔다. 작전 정산에서는 개인 전리품이 아니라 공용 연구 보관고의 표본 1개로 귀속한다.\n\n## 비고\n사무총장은 잔광자 시체가 광원화 2차 백신과 가능한 3차 약제 연구에 쓰일 수 있다고 설명했다. 이는 연구 가능성에 대한 현장 판단이며 완성된 백신이나 효능 확정을 뜻하지 않는다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]와 [[wiki:afterglow-being|잔광자]]를 참조한다.\n",
+      "lore": {
+        "background": "이르마 코흐가 개조 광원화 바이러스를 자신에게 투여해 변환한 잔광자는 냉기와 행동교정물질에 반응한 뒤 잿빛으로 변했다. 키아나 오 캘러핸은 이사회 명령과 현장 위험 판단을 근거로 개체를 참수했다.",
+        "acquisition": "일반 획득 불가. 해쉬 테거의 지시에 따라 휘트모어 핀치가 머리 1개를 회수했고 우디가 운반을 도왔다. 작전 정산에서는 개인 전리품이 아니라 공용 연구 보관고의 표본 1개로 귀속한다.",
+        "notes": "사무총장은 잔광자 시체가 광원화 2차 백신과 가능한 3차 약제 연구에 쓰일 수 있다고 설명했다. 이는 연구 가능성에 대한 현장 판단이며 완성된 백신이나 효능 확정을 뜻하지 않는다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]와 [[wiki:afterglow-being|잔광자]]를 참조한다."
+      },
+      "source": "session-log",
+      "effect": "광원화 2차 백신과 후속 약제 연구 후보로 보존된 잔광자 생체 표본",
+      "createdAt": "2026-08-09T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "private-session-evidence-catalog",
+    "payload": {
+      "code": "NHI_ENGINE_DOCUMENT",
+      "slug": "nhi-rocket-engine-adaptation-document",
+      "name": "NHI 로켓·우주 엔진 적응 문서",
+      "nameEn": "NHI Rocket and Space Engine Adaptation Document",
+      "category": "SPECIAL",
+      "price": 0,
+      "description": "아르고 기지에서 킴라박 리가 회수해 모리어티에게 전달한 NHI 기술 기밀 문서.",
+      "previewImage": "/assets/catalog/special/nhi-rocket-engine-adaptation-document.webp",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-S1E6-TURNING-POINT-PART2",
+        "S1E6",
+        "변곡점",
+        "NHI",
+        "아르고기지",
+        "섹터D",
+        "우주엔진",
+        "소재불명"
+      ],
+      "loreMd": "## 설명\nNHI 로켓·우주 엔진 적응 문서는 로켓 추진과 우주 엔진에 비인간 지성체 기술을 적용하는 방법을 다룬 기밀 문헌이다.\n\n## 배경\n문서에는 1938년 이후의 미확인 비행체 회수와 NHI를 무기로 재구성하는 기록이 포함돼 있었다. 해당 내용은 아르고 기지 침투 당시 킴라박 리가 열람한 범위로 보존한다.\n\n## 획득 경로\n킴라박 리가 아르고 기지에서 1건을 회수해 직속 상관 모리어티에게 전달했다. 모리어티가 곧 Montag-98에게 살해된 뒤 문서를 다시 확보한 인물이나 장소는 확인되지 않았다.\n\n## 비고\n카탈로그는 이 문헌의 존재와 마지막 확인 경로만 기록한다. 현재 소유자와 보관처가 없으므로 개인·공용 인벤토리에는 수량을 만들지 않는다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]를 참조한다.\n",
+      "lore": {
+        "background": "문서에는 1938년 이후의 미확인 비행체 회수와 NHI를 무기로 재구성하는 기록이 포함돼 있었다. 해당 내용은 아르고 기지 침투 당시 킴라박 리가 열람한 범위로 보존한다.",
+        "acquisition": "킴라박 리가 아르고 기지에서 1건을 회수해 직속 상관 모리어티에게 전달했다. 모리어티가 곧 Montag-98에게 살해된 뒤 문서를 다시 확보한 인물이나 장소는 확인되지 않았다.",
+        "notes": "카탈로그는 이 문헌의 존재와 마지막 확인 경로만 기록한다. 현재 소유자와 보관처가 없으므로 개인·공용 인벤토리에는 수량을 만들지 않는다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]를 참조한다."
+      },
+      "source": "session-log",
+      "effect": "NHI 기술을 로켓 추진과 우주 엔진에 적용하는 방법을 다룬 기밀 문헌",
+      "createdAt": "2026-08-09T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "private-session-evidence-catalog",
+    "payload": {
+      "code": "USED_AURORA_SYRINGE",
+      "slug": "used-aurora-virus-syringe",
+      "name": "사용된 광원화 바이러스 주사기",
+      "nameEn": "Used Aurora Virus Syringe",
+      "category": "SPECIAL",
+      "price": 0,
+      "description": "이르마 코흐가 자신에게 사용한 뒤 마리아가 회수한 광원화 바이러스 주사기.",
+      "previewImage": "/assets/catalog/special/used-aurora-virus-syringe.webp",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-S1E6-TURNING-POINT-PART2",
+        "S1E6",
+        "변곡점",
+        "이르마코흐",
+        "광원화바이러스",
+        "사용주사기",
+        "현장물증",
+        "공용인벤토리"
+      ],
+      "loreMd": "## 설명\n사용된 광원화 바이러스 주사기는 이르마 코흐의 자가 투여와 잔광자 변환 뒤 회수된 비판매 현장 물증이다.\n\n## 배경\n이르마 코흐는 개조 광원화 바이러스가 시유의 봉인된 힘을 회복시킬 수 있다고 주장했다. 시유가 제안을 거부한 뒤 이르마는 주사액을 자신에게 투여했고, 총격으로 쓰러진 뒤 잔광자로 변환했다.\n\n## 획득 경로\n이르마가 사용한 뒤 마리아가 주사기 1개를 옷 안에 챙겼다. 마리아가 마지막으로 확인된 현장 보유자이며, 작전 정산에서는 개인 소유물이 아니라 공용 연구·증거 보관고의 물증 1개로 귀속한다.\n\n## 비고\n이미 사용된 물증이므로 일반 소비품, 투여 도구, 상점 보급품으로 사용할 수 없다. 잔류 성분의 정확한 조성과 안전한 보관 조건은 후속 분석 대상이다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]와 [[wiki:aurora-virus|광원화 바이러스]]를 참조한다.\n",
+      "lore": {
+        "background": "이르마 코흐는 개조 광원화 바이러스가 시유의 봉인된 힘을 회복시킬 수 있다고 주장했다. 시유가 제안을 거부한 뒤 이르마는 주사액을 자신에게 투여했고, 총격으로 쓰러진 뒤 잔광자로 변환했다.",
+        "acquisition": "이르마가 사용한 뒤 마리아가 주사기 1개를 옷 안에 챙겼다. 마리아가 마지막으로 확인된 현장 보유자이며, 작전 정산에서는 개인 소유물이 아니라 공용 연구·증거 보관고의 물증 1개로 귀속한다.",
+        "notes": "이미 사용된 물증이므로 일반 소비품, 투여 도구, 상점 보급품으로 사용할 수 없다. 잔류 성분의 정확한 조성과 안전한 보관 조건은 후속 분석 대상이다.\n\n관련 기록은 [[report:NOSB-S1E6-TURNING-POINT-PART2|작전 보고서 S1E6: 변곡점 2부]]와 [[wiki:aurora-virus|광원화 바이러스]]를 참조한다."
+      },
+      "source": "session-log",
+      "effect": "개조 광원화 바이러스 잔류물 분석을 위해 보존된 사용 후 현장 물증",
+      "createdAt": "2026-08-09T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    }
+  }
+]

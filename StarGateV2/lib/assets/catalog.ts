@@ -105,6 +105,11 @@ export const EQUIPMENT_ITEM_IMAGE_BY_SLUG = {
 export const CATALOG_ITEM_IMAGE_BY_SLUG = {
   ...CONSUMABLE_ITEM_IMAGE_BY_SLUG,
   ...EQUIPMENT_ITEM_IMAGE_BY_SLUG,
+  "afterglow-head": catalogAsset("samples", "afterglow-head"),
+  "afterglow-radiance-sample": catalogAsset(
+    "samples",
+    "afterglow-radiance-sample",
+  ),
   "aurora-virus-black-smoke-sample": catalogAsset(
     "samples",
     "aurora-virus-black-smoke-sample",
@@ -132,6 +137,14 @@ export const CATALOG_ITEM_IMAGE_BY_SLUG = {
   "montauk-slaughter-hound-appearance-plate": catalogAsset(
     "special",
     "montauk-slaughter-hound-appearance-plate",
+  ),
+  "nhi-rocket-engine-adaptation-document": catalogAsset(
+    "special",
+    "nhi-rocket-engine-adaptation-document",
+  ),
+  "used-aurora-virus-syringe": catalogAsset(
+    "special",
+    "used-aurora-virus-syringe",
   ),
   "zulu-0028-contained-entity": catalogAsset(
     "special",
