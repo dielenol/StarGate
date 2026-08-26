@@ -46,3 +46,11 @@
 - 검증: worker realtime 포함 154건, Hall root invalidation 계약 15건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 구현 커밋: `f0036d11`
 - 운영 경계: production realtime 모드와 라이브 Change Stream 상태는 변경하지 않았다.
+
+## 2026-08-26 · 성능 최적화 · NOVEX 명예 순위 정밀 무효화
+
+- `hall-of-fame-novex` resource를 추가해 `STOCK_SELL`·`STOCK_DIVIDEND` 변경만 개요와 NOVEX Query를 갱신한다. 일반 크레딧 거래와 시즌·시즌 성과 변경은 기존 `credits` 또는 `stocks` Query만 갱신한다.
+- 삭제·replace·type 변경과 Change Stream 원문이 불명확한 경우에는 누락 방지를 위해 NOVEX를 보수적으로 무효화한다. 거래 type은 worker 내부 분기에만 사용하고 WebSocket 공개 frame에는 사용자·거래·문서 식별자와 함께 포함하지 않는다.
+- 검증: core 40건·worker 156건, Query key 3건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0/P1 없음
+- 관련 구현 커밋: `4f4a5091`
+- 운영 경계: production realtime 모드와 라이브 Change Stream 상태는 변경하지 않았다.

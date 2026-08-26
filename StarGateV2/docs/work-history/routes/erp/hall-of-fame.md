@@ -78,3 +78,11 @@
 - 검증: core 40건·worker 154건, shared-db Hall 계약 7건 통과·DB 통합 1건 환경 미설정으로 skip, Hall·Query·manifest 집중 테스트 21건, `pnpm typecheck`, `pnpm lint`, `pnpm build:worker`, `pnpm build`, critical risk review P0/P1 없음
 - 관련 구현 커밋: `cb6dd3a8`
 - 운영 경계: 조회 기반 로컬 QA만 수행했으며 라이브 DB 정리·index·backfill·알림·주식 원장 mutation은 실행하지 않았다.
+
+## 2026-08-26 · 성능·안정성 개선 · NOVEX 누적 집계 단일화
+
+- 누적 실현수익 계산을 거래 원장, 거래 당시 사용자, 현재 캐릭터, 현재 소유자를 한 번에 검증하는 단일 Mongo aggregation으로 통합했다. 거래 당시 또는 현재 기준으로 GM·`*TEST`인 계정과 NPC·유효하지 않은 캐릭터는 집계에서 제외한다.
+- 개요와 NOVEX 초기 RSC가 같은 렌더에서 요청될 때는 React request cache로 전체 기간 집계를 한 번만 수행한다. 일반 크레딧과 구형 시즌 변경은 Hall을 갱신하지 않고 실제 매도·배당 변경만 NOVEX 개요와 순위를 무효화한다.
+- 검증: 실제 MongoDB 7에서 1,000건 초과 원장 fixture 1건, core 40건·worker 156건, Hall 계약 10건·Query key 3건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 GM 화면의 실제 연구·NOVEX 데이터와 가로 넘침 0 확인, critical risk review P0/P1 없음
+- 관련 구현 커밋: `4f4a5091`
+- 운영 경계: 조회 기반 로컬 QA만 수행했으며 라이브 DB·주식 원장·realtime 운영 설정은 변경하지 않았다. 실제 Mongo 통합 fixture의 상시 CI 실행과 별도 API 요청 사이의 전 기간 집계 공유는 후속 성능 과제로 남겼다.
