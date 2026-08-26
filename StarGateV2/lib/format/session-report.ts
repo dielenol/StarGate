@@ -102,6 +102,12 @@ const OPERATION_REPORT_NUMBER_PRESETS: Record<
     number: "06.5",
     sortOrder: 105,
   },
+  "NOSB-S1E7-DESIRE-PART1": {
+    series: "regular",
+    sequence: 7,
+    number: "07",
+    sortOrder: 107,
+  },
   "NOSB-MINI-S1E1-NEW-DUBLIN": {
     series: "mini",
     sequence: 1,
@@ -164,6 +170,13 @@ function getPresetByTitle(
   report: Pick<OperationReportNumberSource, "sessionTitle">,
 ): OperationReportNumberPreset | null {
   const title = normalizeReportTitle(report.sessionTitle);
+
+  if (
+    (title.includes("s1e7") || title.includes("욕구")) &&
+    /1\s*부|part\s*1/u.test(title)
+  ) {
+    return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E7-DESIRE-PART1"];
+  }
 
   if (
     (title.includes("s1e6") || title.includes("변곡점")) &&
