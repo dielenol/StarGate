@@ -14,6 +14,7 @@ weight: 미상
 factionCode: NOVUS_ORDO
 institutionCode: MANUS
 department: SECTOR_D
+agentLevel: H
 lifeStatus: DECEASED
 lifeStatusAt: 2026-08-09T00:00:00.000Z
 lifeStatusEventId: NOSB-S1E6-TURNING-POINT-PART2
@@ -45,7 +46,7 @@ updatedAt: 2026-08-26T00:00:00.000Z
 - 정규 소속: 노부스 오르도 / MANUS / 섹터 D
 - 확인된 직위: 대령, 킴라박 리의 직속 상관, 아르고 기지 침투부대 지휘관
 - 확인된 능력: 힐링 팩터. 과거 여러 전투에서 킴라박과 부대원의 생명을 구한 전력이 있다.
-- 권한등급 추천: `H`. 같은 대령·현장 통솔 역할의 승인 사례와 가장 가깝지만, 사용자 확정 전에는 신원조회 값으로 저장하지 않는다. 섹터 D 전체를 감독했다는 기록은 없다.
+- 권한등급: `H`. 같은 대령·현장 통솔 역할의 승인 사례를 근거로 제안했고, 사용자가 `2026-08-26`에 확정했다. 섹터 D 전체를 감독했다는 기록은 없다.
 - 비밀 임무: NHI 로켓 추진·우주 엔진 적응 문서 회수
 - 현재 상태: 아르고 기지에서 Montag-98에게 사망. 실제 사망일은 미상. 사무국 기록상 확정일은 `2026-08-09`
 
