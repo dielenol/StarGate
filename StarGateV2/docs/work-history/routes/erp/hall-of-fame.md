@@ -68,3 +68,13 @@
 - 검증: Hall 계약 15건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 GM ERP 1028×1113에서 PIPETTE 6,500 CR·6회와 연구 3명·NOVEX 0시즌·작전 0건 표시, 초상·NOVUS 로고 로드, 가로 넘침 0 확인
 - 관련 구현 커밋: `2dfee93a`
 - 운영 경계: 라이브 DB·Cloud 분석·backfill·writer gate·알림 상태는 변경하지 않았다.
+
+## 2026-08-26 · 기능 변경 · NOVEX 전 기간 누적 수익 TOP 3
+
+- NOVEX 명예 부문을 확정 시즌 기록에서 전 기간 누적 순위로 전환했다. 모든 `STOCK_SELL`의 숫자형 실현손익과 지급된 `STOCK_DIVIDEND`를 합산하고, 표시 단위로 반올림한 뒤 코드네임·내부 캐릭터 ID 순으로 동률을 결정해 TOP 3만 공개한다.
+- 거래 발생 시점의 `ownerId`와 현재 캐릭터 소유자 양쪽에서 GM 및 대소문자 무관 `*TEST` 계정을 제외한다. 공개 API에는 순위·코드네임·누적 확정 수익·수익 이벤트 수만 포함하며 게스트와 회원·GM이 같은 결과를 받는다.
+- 시즌 종료 시 NOVEX 공적 원장을 더 이상 생성하지 않고 기존 시즌 알림은 주식 화면으로 연결한다. 구형 시즌 공적은 신원조회·내 리본에서 숨기며, backfill도 NOVEX 시즌 manifest를 새로 만들지 않고 구형 manifest 적용을 첫 mutation 전에 거부한다.
+- 로컬 데이터에서는 게스트와 GM 모두 `WD-(𝓃)` 11,450.08 CR → `TIME` 5,974.03 CR → `MARIA` 5,943.44 CR 순으로 확인했다. 1280px 및 390×844에서 가로 넘침이 없었고, 격리된 브라우저의 신규 콘솔 오류는 0건이었다. 외부 Chrome의 한글 문서 확장 프로그램이 `<html>`에 속성을 주입해 만드는 hydration 경고는 애플리케이션 변경과 분리해 확인했다.
+- 검증: core 40건·worker 154건, shared-db Hall 계약 7건 통과·DB 통합 1건 환경 미설정으로 skip, Hall·Query·manifest 집중 테스트 21건, `pnpm typecheck`, `pnpm lint`, `pnpm build:worker`, `pnpm build`, critical risk review P0/P1 없음
+- 관련 구현 커밋: `cb6dd3a8`
+- 운영 경계: 조회 기반 로컬 QA만 수행했으며 라이브 DB 정리·index·backfill·알림·주식 원장 mutation은 실행하지 않았다.
