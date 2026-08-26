@@ -16,7 +16,7 @@ source: stargate-lore
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| `NOSB-S1E7-DESIRE-PART1` | `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part1-private-staging.json` | available | complete |
+| `NOSB-S1E7-DESIRE-PART1` | `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part1-publication.json` | available | complete |
 
 ## 원본 확인
 
@@ -41,7 +41,7 @@ source: stargate-lore
 - 부 작전지: 237년 전 파리 근교 몽테스팡 저택·흑미사 유적, 블랙 피라미드, 백악관
 - 지도 좌표: 파리를 세계 지도에서 표시하는 추정 좌표 `[48.7, 34.2]`. 원본에는 숫자 좌표가 없으므로 `estimated`로 저장한다.
 - 보고서 기록자: 기존 작전보고서와 같은 `NOVUS ORDO 사무국 기록통제실 연구원 M. Vey`.
-- 공개 기준: 내용을 다듬는 동안 작전보고서와 신규 위키 6건은 V 이상 내부 검토자만 볼 수 있게 준비한다. 신원·소속 결정과 링크 검토가 끝난 뒤 한 번에 전체 공개하는 안을 별도로 만든다.
+- 공개 기준: 신원·소속 결정과 링크 검토가 끝났으므로 작전보고서, 신규 위키 6건, 기존 위키 5건의 추가 기록, 관련 신원조회와 리처드 병합을 한 번에 전체 공개하는 등록 파일로 준비한다. 운영 ERP 저장과 자산 배포는 별도 실행 확인 전까지 하지 않는다.
 
 ## 세션 내용 요약
 
@@ -65,17 +65,18 @@ source: stargate-lore
 
 | 대상 | 세션 근거 | ERP에서 들어갈 곳 | 처리 내용 | 현재 상태 |
 |---|---|---|---|---|
-| 욕구 1부 전체 기록 | 142쪽 본문과 시작·종료 표기 | 작전보고서, 같은 내용을 위키에서 찾게 하는 위키판 | 보고 순번 `07`, V 이상 내부 검토자 제한 열람, 공개 가능한 장면 34개와 관련 링크 작성 | 등록 파일·읽기 전용 dry-run 완료; 운영 ERP 미변경 |
+| 욕구 1부 전체 기록 | 142쪽 본문과 시작·종료 표기 | 작전보고서, 같은 내용을 위키에서 찾게 하는 위키판 | 보고 순번 `07`, 전체 사용자 열람, 공개 가능한 장면 34개와 관련 링크 작성 | 전체 공개 등록 파일·운영 데이터 대비 읽기 전용 계산 완료; 운영 ERP 미변경 |
 | 보고서 번호·지도 | 정규 7부 1화, 파리 전역 작전 | 보고서 목록·지도 | `07`, 파리 추정 좌표 `[48.7, 34.2]`, 정규 보고서 아이콘 | 코드 preset·번호 테스트 완료 |
-| 페데라치오 | 1920년 시칠리아 기원, 광명회 물자 유통, 파리 무장·폭파 계획 | 신규 `페데라치오` 세력 위키 | 확인된 연혁·거점·실권자 호칭·시청 공격 계획을 기록. 조직 전체가 궤멸됐다고 단정하지 않음 | 비공개 등록 파일·dry-run 완료 |
-| 위버우드 | 우디와의 정신 감응, 인간과 공생 개념 학습 | 신규 `위버우드` 개체 위키 | 지성을 가진 나무 개체와 우디의 대화를 기록. 기원·종 분류는 미상 | 비공개 등록 파일·dry-run 완료 |
-| ZULU-0060 스넬리 게스터 | 다수 개체 탈출, 배관 파괴, 사상자 발생, ACCEL 제압 | 신규 줄루 위키 | 다수 개체형 분류와 이번 격리 붕괴를 기록. 전체 보유 개체 수는 미상 | 비공개 등록 파일·dry-run 완료 |
-| ZULU-0007 나방/모스맨 | 정신 공격, 네베드·타이거 교전 | 신규 줄루 위키 | 로그의 `나방`, 후속 호칭 `모스맨`을 함께 보존. 다른 모스맨 전승과 동일 개체로 확대하지 않음 | 비공개 등록 파일·dry-run 완료 |
-| 엘레노어 | 이름이 있는 하수도 악어, 광원화 감염, 고통 호소, 감전사 | 신규 개체 위키 | 감염·행동·사망 경위를 기록. 왜 감염됐는지는 미확정 | 비공개 등록 파일·dry-run 완료 |
-| 프로젝트 데드 핸드 | 마가렛의 16시간 고문 모의실험, 제노의 확대 방침 | 기존 프로젝트 데드 핸드 위키 | 실제 시행된 고문 실험과 제노의 정책을 추가 | 전체 공개 때 기존 공개 문서에 추가 예정 |
-| 광원화 바이러스·왕관 | 왕관에서 현장팀용 백신 추출, 엘레노어 감염, 파리 카타콤 은폐 주장 | 기존 광원화 바이러스·ZULU-0040 위키 | 관측 사실과 리처드의 주장을 분리해 추가 | 전체 공개 때 추가 예정 |
-| 화이트로즈 | R 단말 안내, 리처드 대면, 언론 공개 임무 | 기존 화이트로즈 위키·R 신원조회 | R과 리처드를 동일 인물로 확정하고, 기존 `WHITE_ROSE_R`에 실명·별칭·등장 사건·해쉬 관계를 합침 | 사용자 병합 결정 반영; 로컬 등록 자료 준비 |
-| 마리아의 과거 | 몽테스팡 저택·흑미사·이골로냑 의식, 카타콤 공황 | 마리아 신원조회·작전보고서 | 세션 등장과 배경·성격 관찰 추가. 이름 없는 귀족 3명은 독립 신원조회로 만들지 않음 | 전체 공개 때 추가 예정 |
+| 페데라치오 | 1920년 시칠리아 기원, 광명회 물자 유통, 파리 무장·폭파 계획 | 신규 `페데라치오` 세력 위키 | 확인된 연혁·거점·실권자 호칭·시청 공격 계획을 기록. 조직 전체가 궤멸됐다고 단정하지 않음 | 전체 공개 등록 파일·읽기 전용 계산 완료 |
+| 광명회 | 사무총장 브리핑에서 페데라치오가 광명회 협력자에게 금·물품을 공급했다고 설명 | 기존 `광명회` 위키 | 페데라치오와의 물자 연결을 추가하되 광명회의 직접 지휘와 전체 거래 규모는 미확정으로 보존 | 전체 공개 등록 파일에 포함 |
+| 위버우드 | 우디와의 정신 감응, 인간과 공생 개념 학습 | 신규 `위버우드` 개체 위키 | 지성을 가진 나무 개체와 우디의 대화를 기록. 기원·종 분류는 미상 | 전체 공개 등록 파일·읽기 전용 계산 완료 |
+| ZULU-0060 스넬리 게스터 | 다수 개체 탈출, 배관 파괴, 사상자 발생, ACCEL 제압 | 신규 줄루 위키 | 다수 개체형 분류와 이번 격리 붕괴를 기록. 전체 보유 개체 수는 미상 | 전체 공개 등록 파일·읽기 전용 계산 완료 |
+| ZULU-0007 나방/모스맨 | 정신 공격, 네베드·타이거 교전 | 신규 줄루 위키 | 로그의 `나방`, 후속 호칭 `모스맨`을 함께 보존. 다른 모스맨 전승과 동일 개체로 확대하지 않음 | 전체 공개 등록 파일·읽기 전용 계산 완료 |
+| 엘레노어 | 이름이 있는 하수도 악어, 광원화 감염, 고통 호소, 감전사 | 신규 개체 위키 | 감염·행동·사망 경위를 기록. 왜 감염됐는지는 미확정 | 전체 공개 등록 파일·읽기 전용 계산 완료 |
+| 프로젝트 데드 핸드 | 마가렛의 16시간 고문 모의실험, 제노의 확대 방침 | 기존 프로젝트 데드 핸드 위키 | 실제 시행된 고문 실험과 제노의 정책을 추가 | 전체 공개 등록 파일에 포함 |
+| 광원화 바이러스·왕관 | 왕관에서 현장팀용 백신 추출, 엘레노어 감염, 파리 카타콤 은폐 주장 | 기존 광원화 바이러스·ZULU-0040 위키 | 관측 사실과 리처드의 주장을 분리해 추가 | 전체 공개 등록 파일에 포함 |
+| 화이트로즈 | R 단말 안내, 리처드 대면, 언론 공개 임무 | 기존 화이트로즈 위키·R 신원조회 | R과 리처드를 동일 인물로 확정하고, 기존 `WHITE_ROSE_R`에 실명·별칭·등장 사건·해쉬 관계를 합침 | 전체 공개 등록 파일에 병합 |
+| 마리아의 과거 | 몽테스팡 저택·흑미사·이골로냑 의식, 카타콤 공황 | 마리아 신원조회·작전보고서 | 세션 등장과 성격 관찰 추가. 이름 없는 귀족 3명은 독립 신원조회로 만들지 않음 | 전체 공개 등록 파일에 포함 |
 | 킴라박 이중 소속 | GM의 군부 전환 확정, 웩슬러의 채용·차량 증여, 자료 전달 | 이 비공개 근거 문서만 | 공식 신원조회는 `NOVUS_ORDO / MANUS / SECTOR_A`, `J`를 유지한다. 실제 충성·지휘선은 `MILITARY / USA`이지만 세계관 안에서 발각되지 않았으므로 작전보고서·위키판·신원조회·관계·등장 사건에는 쓰지 않는다. | 사용자 결정 반영; ERP 변경 없음 |
 | NHI 로켓·우주 엔진 적응 문서 | 소포로 킴라박에게 돌아온 뒤 웩슬러에게 전달 | 이 비공개 근거 문서만 | 마지막 확인 경로는 비공개 근거로 보존하고, 기존 공개 카탈로그 설명과 인벤토리 수량은 바꾸지 않는다. | ERP 변경 없음 |
 | 웩슬러 대통령 | 부통령의 아들이자 현직 대통령으로 직접 등장 | 이 비공개 근거 문서만 | 법적 이름·전용 초상이 없고 킴라박의 숨은 접촉을 드러낼 수 있으므로 작전보고서와 독립 신원조회에서 제외한다. | 후속 공개 근거가 생길 때 재검토 |
@@ -159,14 +160,14 @@ source: stargate-lore
 
 | observation id | codename | sessionId | trait | evidence kind | evidence | source label | confidence | persistence |
 |---|---|---|---|---|---|---|---|---|
-| `NOSB-S1E7-DESIRE-PART1:OTILIA:hell-fear-and-doubt` | `OTILIA` | `NOSB-S1E7-DESIRE-PART1` | 지옥에 대한 공포와 계약 회의 | dialogue + description | 악마에게 자신은 이런 것을 원하지 않았다고 말하고, 마리아에게 자신도 지옥이 두렵다고 고백함 | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
-| `NOSB-S1E7-DESIRE-PART1:OTILIA:mercy-before-killing-eleanor` | `OTILIA` | `NOSB-S1E7-DESIRE-PART1` | 고통받는 존재에게 먼저 치료를 찾고 죽음으로 안식을 선택함 | dialogue + action | 엘레노어가 죽여 달라고 호소하자 먼저 백신 사용 가능성을 묻고, 불가능하자 배전기로 유인해 고통을 끝냄 | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
-| `NOSB-S1E7-DESIRE-PART1:MARIA:catacomb-trauma` | `MARIA` | `NOSB-S1E7-DESIRE-PART1` | 과거 의식 장소에 대한 신체적 공황 반응 | description + action | 카타콤 입구에서 심장을 짚고 뒷걸음질치며 과호흡·식은땀을 보이고 주저앉음 | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
-| `NOSB-S1E7-DESIRE-PART1:MARIA:ruthless-secrecy` | `MARIA` | `NOSB-S1E7-DESIRE-PART1` | 비밀 작전에서 민간 피해보다 발각 방지를 우선하는 냉혹한 실무 판단 | dialogue | `인적피해는 걸리지만 않으면 상관없겠죠`라고 말하고 실험체의 머리를 폭파할 수 있다고 경고함 | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
-| `NOSB-S1E7-DESIRE-PART1:DOCTOR_ZENO:coercive-performance-doctrine` | `DOCTOR_ZENO` | `NOSB-S1E7-DESIRE-PART1` | 고통을 성과 관리 수단으로 일반화하는 강압적 연구관 | dialogue + action | 마가렛에게 하루 16시간 고문 모의실험을 시행하고 성과가 낮은 능력자와 우디에게 같은 통제를 확대하겠다고 발표함 | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E7-DESIRE-PART1:OTILIA:hell-fear-and-doubt` | `OTILIA` | `NOSB-S1E7-DESIRE-PART1` | 지옥에 대한 공포와 계약 회의 | dialogue | 계약 상대에게 자신은 이런 일을 원하지 않았다고 반발했다. 마리아에게 자신도 지옥이 두렵다고 고백했다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E7-DESIRE-PART1:OTILIA:mercy-before-killing-eleanor` | `OTILIA` | `NOSB-S1E7-DESIRE-PART1` | 고통받는 존재에게 먼저 치료를 찾고 죽음으로 안식을 선택함 | dialogue + action | 엘레노어에게 백신을 사용할 수 있는지 먼저 물었다. 치료할 수 없자 엘레노어를 배전기 쪽으로 유인해 감전사시켰다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E7-DESIRE-PART1:MARIA:catacomb-trauma` | `MARIA` | `NOSB-S1E7-DESIRE-PART1` | 과거 의식 장소에 대한 신체적 공황 반응 | description + action | 카타콤 입구에서 과호흡과 식은땀을 보였다. 심장을 짚고 뒷걸음질치다 주저앉았다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E7-DESIRE-PART1:MARIA:ruthless-secrecy` | `MARIA` | `NOSB-S1E7-DESIRE-PART1` | 비밀 작전에서 민간 피해보다 발각 방지를 우선하는 냉혹한 실무 판단 | dialogue | 인적피해는 걸리지만 않으면 상관없겠죠. 실험체의 머리를 폭파할 수 있다고 경고했다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E7-DESIRE-PART1:DOCTOR_ZENO:coercive-performance-doctrine` | `DOCTOR_ZENO` | `NOSB-S1E7-DESIRE-PART1` | 고통을 성과 관리 수단으로 일반화하는 강압적 연구관 | action + dialogue | 마가렛에게 하루 16시간의 고문 모의실험을 시행했다. 성과가 낮은 능력자에게 같은 통제를 확대하고 우디의 외출을 막겠다고 발표했다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
 | `NOSB-S1E7-DESIRE-PART1:KIMLEE:transactional-hierarchical-loyalty` | `KIMLEE` | `NOSB-S1E7-DESIRE-PART1` | 명확한 지휘 체계와 보상에 자신을 맡기는 거래적 충성 | description + dialogue + action | 명령에 따르는 단순한 체계를 편하게 여긴다고 생각하고, 웩슬러 앞에 무릎 꿇어 쓰임에 맞게 거둬 달라며 자료와 계좌번호를 즉시 넘김 | 작전 보고서 S1E7: 욕구 1부 | confirmed | skipped: 사용자 결정으로 신원조회 미반영 |
-| `NOSB-S1E7-DESIRE-PART1:INDEXER:pragmatic-whistleblower-choice` | `INDEXER` | `NOSB-S1E7-DESIRE-PART1` | 양심보다 이해관계를 인정하면서도 폭로 임무를 선택하는 실용주의 | dialogue + action | 자신은 양심에 따라 행동하는 사람이 아니라고 선을 그은 뒤 파리 감염자 증거 공개 임무를 수락함 | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
-| `NOSB-S1E7-DESIRE-PART1:WD-N:ecological-fatalism` | `WD-(𝓃)` | `NOSB-S1E7-DESIRE-PART1` | 인간과 식물의 공생을 필연적 쇠락까지 포함해 바라보는 생태적 숙명론 | dialogue | 인간은 식물을 뒤덮는 이끼 같지만 없으면 살 수 없고, 공생하다 서서히 죽을 것이라고 위버우드에게 설명함 | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E7-DESIRE-PART1:INDEXER:pragmatic-whistleblower-choice` | `INDEXER` | `NOSB-S1E7-DESIRE-PART1` | 양심보다 이해관계를 인정하면서도 폭로 임무를 선택하는 실용주의 | dialogue + action | 자신은 양심 때문에 움직이는 사람이 아니라고 밝혔다. 리처드가 제안한 감염자 은폐 증거 공개 임무를 수락했다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
+| `NOSB-S1E7-DESIRE-PART1:WD-N:ecological-fatalism` | `WD-(𝓃)` | `NOSB-S1E7-DESIRE-PART1` | 인간과 식물의 공생을 필연적 쇠락까지 포함해 바라보는 생태적 숙명론 | dialogue | 인간은 식물을 뒤덮는 이끼 같지만 서로 없이는 살 수 없다고 위버우드에게 설명했다. 공생의 끝을 서서히 죽어 가는 것으로 전망했다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
 | `NOSB-S1E7-DESIRE-PART1:WEXLER:patronage-through-reward` | `WEXLER` | `NOSB-S1E7-DESIRE-PART1` | 돈·차량·지위로 충성을 사는 후견 정치 | dialogue + action | 킴라박에게 주급 인상과 고급차를 제시하고 대통령을 위해 일하라고 권한 뒤 NHI 자료를 받음 | 작전 보고서 S1E7: 욕구 1부 | confirmed | skipped: 미발각 군부 접촉 비공개 유지 |
 | `NOSB-S1E7-DESIRE-PART1:WHITE_ROSE_R:strategic-exposure` | `WHITE_ROSE_R` | `NOSB-S1E7-DESIRE-PART1` | 여론과 내부 증거로 조직 정책을 바꾸려는 전략적 폭로 | dialogue + action | R 단말로 해쉬를 한 코너 너머로 안내한 직후 리처드로 직접 대면했다. 파리 카타콤의 감염자 은폐 증거를 확보해 언론에 공개하라고 지시했다. | 작전 보고서 S1E7: 욕구 1부 | confirmed | ready-for-apply |
 
@@ -192,44 +193,44 @@ source: stargate-lore
 | asset | source | source dimensions | source-frame crop | source role | report | report wiki mirror | dedicated wiki | catalog | Dossier/personnel | decision/evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
 | `/assets/StarGate_logo_watermark.webp` | repository brand asset | 512×425 | no — 기존 공개 자산 | report-cutscene | included | included | excluded: 특정 로어 대상이 아님 | excluded: 아이템이 아님 | excluded: 인물 초상이 아님 | 보고서 표식으로만 사용 |
-| `/assets/session-reports/s1e7-desire-part1/maria-origin-red-roses.webp` | PDF p002 X5 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 237년 전 마리아의 기원 장면 |
-| `/assets/session-reports/s1e7-desire-part1/paris-rain-237-years-ago.webp` | PDF p002 X8 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 237년 전 파리로 진입하는 시대 전환 |
-| `/assets/session-reports/s1e7-desire-part1/montespan-estate-banquet-room.webp` | PDF p004 X37 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 몽테스팡 저택의 인육 만찬 목격 |
-| `/assets/session-reports/s1e7-desire-part1/maria-led-into-catacombs.webp` | PDF p005 X64 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 마리아가 흑미사 유적으로 끌려가는 장면 |
-| `/assets/session-reports/s1e7-desire-part1/catacomb-descent.webp` | PDF p008 X127 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 파리 카타콤 지하로 내려가는 동선 |
-| `/assets/session-reports/s1e7-desire-part1/ygolonac-black-mass-ritual.webp` | PDF p011 X199 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 이골로냑 소환 의식의 직접 장면 |
-| `/assets/session-reports/s1e7-desire-part1/black-pyramid-present-day.webp` | PDF p013 X246 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 과거 기록에서 현재 블랙 피라미드로 전환 |
-| `/assets/session-reports/s1e7-desire-part1/chronos-enters-starmart.webp` | PDF p014 X259 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 크로노스의 스타마트 방문 |
-| `/assets/session-reports/s1e7-desire-part1/triple-citrus-soda-display.webp` | PDF p015 X292 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 트리플 시트러스 소다 진열 장면 |
-| `/assets/session-reports/s1e7-desire-part1/starmart-clerk-ignores-chronos.webp` | PDF p016 X307 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 게임 중인 직원과 크로노스의 갈등 시작 |
-| `/assets/session-reports/s1e7-desire-part1/chronos-starmart-confrontation.webp` | PDF p017 X334 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 스타마트 충돌 장면 |
-| `/assets/session-reports/s1e7-desire-part1/otilia-demon-mirror.webp` | PDF p018 X345 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 오틸리아와 계약 상대의 대면 |
-| `/assets/session-reports/s1e7-desire-part1/demon-renews-otilia-contract.webp` | PDF p021 X412 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 광원화 바이러스 탈취·강화 명령 |
-| `/assets/session-reports/s1e7-desire-part1/otilia-hell-contract-warning.webp` | PDF p023 X451 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 계약과 지옥의 위협을 들은 오틸리아 |
-| `/assets/session-reports/s1e7-desire-part1/maria-interrupts-otilia.webp` | PDF p024 X464 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 마리아와 오틸리아의 대화·동행 |
-| `/assets/session-reports/s1e7-desire-part1/doctor-zeno-dead-hand-policy.webp` | PDF p026 X517 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 닥터 제노의 고문 실험·통제 확대 보고 |
-| `/assets/session-reports/s1e7-desire-part1/woody-visits-weaverwood.webp` | PDF p030 X638 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 우디와 위버우드의 재회 |
-| `/assets/session-reports/s1e7-desire-part1/woody-teaches-weaverwood-symbiosis.webp` | PDF p032 X661 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 공생 개념을 설명하는 우디 |
-| `/assets/session-reports/s1e7-desire-part1/zulu-containment-breach.webp` | PDF p034 X712 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU 격리 붕괴와 사상자 발생 |
-| `/assets/session-reports/s1e7-desire-part1/zulu-0007-mothman-contact.webp` | PDF p035 X739 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU-0007의 정신 공격 |
-| `/assets/session-reports/s1e7-desire-part1/snallygaster-swarm-attack.webp` | PDF p036 X760 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU-0060 스넬리 게스터 무리의 공격 |
-| `/assets/session-reports/s1e7-desire-part1/snallygaster-breach-contained.webp` | PDF p037 X777 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ACCEL의 ZULU-0060 제압 |
+| `/assets/session-reports/s1e7-desire-part1/maria-origin-red-roses.webp` | PDF p002 X5 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 237년 전 마리아의 기원 장면 |
+| `/assets/session-reports/s1e7-desire-part1/paris-rain-237-years-ago.webp` | PDF p002 X8 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 237년 전 파리로 진입하는 시대 전환 |
+| `/assets/session-reports/s1e7-desire-part1/montespan-estate-banquet-room.webp` | PDF p004 X37 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 몽테스팡 저택의 인육 만찬 목격 |
+| `/assets/session-reports/s1e7-desire-part1/maria-led-into-catacombs.webp` | PDF p005 X64 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 마리아가 흑미사 유적으로 끌려가는 장면 |
+| `/assets/session-reports/s1e7-desire-part1/catacomb-descent.webp` | PDF p008 X127 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 파리 카타콤 지하로 내려가는 동선 |
+| `/assets/session-reports/s1e7-desire-part1/ygolonac-black-mass-ritual.webp` | PDF p011 X199 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 이골로냑 소환 의식의 직접 장면 |
+| `/assets/session-reports/s1e7-desire-part1/black-pyramid-present-day.webp` | PDF p013 X246 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 과거 기록에서 현재 블랙 피라미드로 전환 |
+| `/assets/session-reports/s1e7-desire-part1/chronos-enters-starmart.webp` | PDF p014 X259 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 크로노스의 스타마트 방문 |
+| `/assets/session-reports/s1e7-desire-part1/triple-citrus-soda-display.webp` | PDF p015 X292 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 트리플 시트러스 소다 진열 장면 |
+| `/assets/session-reports/s1e7-desire-part1/starmart-clerk-ignores-chronos.webp` | PDF p016 X307 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 게임 중인 직원과 크로노스의 갈등 시작 |
+| `/assets/session-reports/s1e7-desire-part1/chronos-starmart-confrontation.webp` | PDF p017 X334 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 스타마트 충돌 장면 |
+| `/assets/session-reports/s1e7-desire-part1/otilia-demon-mirror.webp` | PDF p018 X345 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 오틸리아와 계약 상대의 대면 |
+| `/assets/session-reports/s1e7-desire-part1/demon-renews-otilia-contract.webp` | PDF p021 X412 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 광원화 바이러스 탈취·강화 명령 |
+| `/assets/session-reports/s1e7-desire-part1/otilia-hell-contract-warning.webp` | PDF p023 X451 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 계약과 지옥의 위협을 들은 오틸리아 |
+| `/assets/session-reports/s1e7-desire-part1/maria-interrupts-otilia.webp` | PDF p024 X464 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 마리아와 오틸리아의 대화·동행 |
+| `/assets/session-reports/s1e7-desire-part1/doctor-zeno-dead-hand-policy.webp` | PDF p026 X517 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 닥터 제노의 고문 실험·통제 확대 보고 |
+| `/assets/session-reports/s1e7-desire-part1/woody-visits-weaverwood.webp` | PDF p030 X638 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 우디와 위버우드의 재회 |
+| `/assets/session-reports/s1e7-desire-part1/woody-teaches-weaverwood-symbiosis.webp` | PDF p032 X661 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 공생 개념을 설명하는 우디 |
+| `/assets/session-reports/s1e7-desire-part1/zulu-containment-breach.webp` | PDF p034 X712 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU 격리 붕괴와 사상자 발생 |
+| `/assets/session-reports/s1e7-desire-part1/zulu-0007-mothman-contact.webp` | PDF p035 X739 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU-0007의 정신 공격 |
+| `/assets/session-reports/s1e7-desire-part1/snallygaster-swarm-attack.webp` | PDF p036 X760 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU-0060 스넬리 게스터 무리의 공격 |
+| `/assets/session-reports/s1e7-desire-part1/snallygaster-breach-contained.webp` | PDF p037 X777 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ACCEL의 ZULU-0060 제압 |
 | `p039-X830-confidential` | PDF p039 X830 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: 미발각 이중 소속 노출 방지 | excluded: 보고서와 동일하게 제외 | excluded: 비공개 근거 장면 | excluded: 공개 카탈로그에 쓰지 않음 | excluded: 신원조회에 쓰지 않음 | NHI 문서가 킴라박에게 돌아온 비공개 근거만 보존 |
 | `p042-X893-confidential` | PDF p042 X893 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: 미발각 이중 소속 노출 방지 | excluded: 보고서와 동일하게 제외 | excluded: 비공개 근거 장면 | excluded: 공개 카탈로그에 쓰지 않음 | excluded: 신원조회에 쓰지 않음 | 킴라박의 백악관 도착 비공개 근거만 보존 |
 | `p043-X916-confidential` | PDF p043 X916 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: 미발각 이중 소속 노출 방지 | excluded: 보고서와 동일하게 제외 | excluded: 비공개 근거 장면 | excluded: 공개 카탈로그에 쓰지 않음 | excluded: 신원조회에 쓰지 않음 | 웩슬러 일가와 미국 매파 모임 비공개 근거만 보존 |
 | `p045-X961-confidential` | PDF p045 X961 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: 미발각 이중 소속 노출 방지 | excluded: 보고서와 동일하게 제외 | excluded: 비공개 근거 장면 | excluded: 공개 카탈로그에 쓰지 않음 | excluded: 신원조회에 쓰지 않음 | 웩슬러 부통령의 킴라박 영입 비공개 근거만 보존 |
-| `/assets/session-reports/s1e7-desire-part1/federatio-mission-briefing.webp` | PDF p048 X1038 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 페데라치오 소탕 작전 브리핑 |
-| `/assets/session-reports/s1e7-desire-part1/crown-derived-vaccine-reserve.webp` | PDF p053 X1175 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU-0040 왕관 유래 백신 비축 설명 |
-| `/assets/session-reports/s1e7-desire-part1/registra-paris-mission-support.webp` | PDF p056 X1262 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 레지스트라의 파리 작전 지원 |
-| `/assets/session-reports/s1e7-desire-part1/paris-operation-arrival.webp` | PDF p061 X1390 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 현장팀의 파리 도착 |
-| `/assets/session-reports/s1e7-desire-part1/paris-street-team-deployment.webp` | PDF p082 X1973 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 파리 길목팀의 추적 작전 |
-| `/assets/session-reports/s1e7-desire-part1/federatio-bar-infiltration.webp` | PDF p096 X2372 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | Bar Hemingway 페데라치오 잠입 |
-| `/assets/session-reports/s1e7-desire-part1/paris-sewer-arsenal-search.webp` | PDF p114 X2899 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 페데라치오 하수도 무기고 발견 |
-| `/assets/session-reports/s1e7-desire-part1/eleanor-sewer-lair.webp` | PDF p121 X3080 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 엘레노어가 나타난 하수도 수로 |
-| `/assets/session-reports/s1e7-desire-part1/eleanor-aurora-infected-alligator.webp` | PDF p124 X3175 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 광원화 감염 악어 엘레노어의 직접 장면 |
-| `/assets/session-reports/s1e7-desire-part1/catacomb-reinforcement-descent.webp` | PDF p131 X3366 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 카타콤 증원대의 진입 통로 |
-| `/assets/session-reports/s1e7-desire-part1/maria-catacomb-trauma.webp` | PDF p136 X3489 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 마리아의 카타콤 공황 반응 |
-| `/assets/session-reports/s1e7-desire-part1/richard-white-rose-contact.webp` | PDF p137 X3511 | 1035×503 | no — full PDF XObject | report-cutscene | included: 비공개 보고서 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | R의 안내 직후 리처드가 해쉬에게 임무를 제안한 장면 |
+| `/assets/session-reports/s1e7-desire-part1/federatio-mission-briefing.webp` | PDF p048 X1038 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 페데라치오 소탕 작전 브리핑 |
+| `/assets/session-reports/s1e7-desire-part1/crown-derived-vaccine-reserve.webp` | PDF p053 X1175 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | ZULU-0040 왕관 유래 백신 비축 설명 |
+| `/assets/session-reports/s1e7-desire-part1/registra-paris-mission-support.webp` | PDF p056 X1262 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 레지스트라의 파리 작전 지원 |
+| `/assets/session-reports/s1e7-desire-part1/paris-operation-arrival.webp` | PDF p061 X1390 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 현장팀의 파리 도착 |
+| `/assets/session-reports/s1e7-desire-part1/paris-street-team-deployment.webp` | PDF p082 X1973 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 파리 길목팀의 추적 작전 |
+| `/assets/session-reports/s1e7-desire-part1/federatio-bar-infiltration.webp` | PDF p096 X2372 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | Bar Hemingway 페데라치오 잠입 |
+| `/assets/session-reports/s1e7-desire-part1/paris-sewer-arsenal-search.webp` | PDF p114 X2899 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 페데라치오 하수도 무기고 발견 |
+| `/assets/session-reports/s1e7-desire-part1/eleanor-sewer-lair.webp` | PDF p121 X3080 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 엘레노어가 나타난 하수도 수로 |
+| `/assets/session-reports/s1e7-desire-part1/eleanor-aurora-infected-alligator.webp` | PDF p124 X3175 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 광원화 감염 악어 엘레노어의 직접 장면 |
+| `/assets/session-reports/s1e7-desire-part1/catacomb-reinforcement-descent.webp` | PDF p131 X3366 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 카타콤 증원대의 진입 통로 |
+| `/assets/session-reports/s1e7-desire-part1/maria-catacomb-trauma.webp` | PDF p136 X3489 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | 마리아의 카타콤 공황 반응 |
+| `/assets/session-reports/s1e7-desire-part1/richard-white-rose-contact.webp` | PDF p137 X3511 | 1035×503 | no — full PDF XObject | report-cutscene | included: 전체 공개 등록 파일에 포함 | included: 보고서와 동일 순서·설명 | excluded: 보고서 장면으로만 사용 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | R의 안내 직후 리처드가 해쉬에게 임무를 제안한 장면 |
 | `p009-X154-duplicate` | PDF p009 X154 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: 앞선 동일 장면을 사용 | excluded: 보고서와 동일 제외 | excluded: 중복 장면 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | p005 X64와 같은 카타콤 구도 |
 | `p057-X1267-duplicate` | PDF p057 X1267 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: 앞선 동일 장면을 사용 | excluded: 보고서와 동일 제외 | excluded: 중복 장면 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | p048 X1038과 같은 브리핑룸 구도 |
 | `p071-X1671-duplicate` | PDF p071 X1671 | 1035×503 | no — full PDF XObject | report-cutscene | excluded: 앞선 동일 장면을 사용 | excluded: 보고서와 동일 제외 | excluded: 중복 장면 | excluded: 독립 아이템 도판이 아님 | excluded: 신원조회 전용 초상이 아님 | p056 X1262와 같은 레지스트라 지원 구도 |
@@ -244,28 +245,30 @@ source: stargate-lore
 | 쟁점 | 원본에서 확인된 사실 | 현재 판단 | 남은 결정 |
 |---|---|---|---|
 | 킴라박의 군부 전환 | GM이 소속 변경을 직접 선언했고, 킴라박은 웩슬러의 채용을 수락해 NHI 자료를 넘겼다. | 실제 충성·지휘선은 `MILITARY / USA`지만 공식 신원조회는 `NOVUS_ORDO / MANUS / SECTOR_A`, `J`를 유지한다. | 사용자 결정 완료. 세계관 안에서 발각되지 않은 비밀이므로 신원조회에는 변경·관계·등장 사건을 추가하지 않는다. |
-| R과 리처드 | R 단말의 이동 지시 직후 리처드가 나타나 `우리 조직`의 마지막 임무를 제안했다. | 사용자 결정으로 동일인 확정. 기존 `WHITE_ROSE_R`에 실명 리처드·별칭 R·총장 보좌관 신분을 합친다. 정식 겸임인지 잠입인지는 미확정으로 남긴다. | 로컬 신원조회 명세와 별도 등록 파일에 반영; 운영 ERP에는 아직 저장하지 않음. |
+| R과 리처드 | R 단말의 이동 지시 직후 리처드가 나타나 `우리 조직`의 마지막 임무를 제안했다. | 사용자 결정으로 동일인 확정. 기존 `WHITE_ROSE_R`에 실명 리처드·별칭 R·총장 보좌관 신분을 합친다. 정식 겸임인지 잠입인지는 미확정으로 남긴다. | 로컬 신원조회 명세와 전체 공개 등록 파일에 반영; 운영 ERP에는 아직 저장하지 않음. |
 | 웩슬러 대통령 | 현직 대통령이며 캘빈 R. 웩슬러의 아들로 등장했다. | 킴라박의 숨은 접촉을 드러내지 않도록 작전보고서와 신원조회에서 제외한다. | 실명·전용 초상과 별도 공개 사건이 확인될 때 독립 신원조회를 검토한다. |
 | NHI 문서 보관 경로 | 킴라박에게 돌아온 문서를 웩슬러 부통령이 수령했다. | 미발각 군부 접촉의 일부이므로 기존 공개 카탈로그의 마지막 확인 경로를 바꾸지 않는다. | 이 비공개 근거 문서에만 보존한다. |
 | 폭탄·차량·백신 | 폭탄은 `몇 개`, 차량은 고급차, 백신은 충분한 비축분으로만 나온다. | 종류·정확한 수량·작전 종료 보관처가 없는 물품은 인벤토리로 만들지 않는다. | 후속 회차에서 구체값이 확인될 때 다시 검토한다. |
 
 ## Verification Contract
 
-- 등록 파일은 신규 비공개 위키 6건과 V 이상 제한 작전보고서 1건만 포함해야 하며, 크레딧·주식·상점 재고·알림·인벤토리를 변경해서는 안 된다.
+- 전체 공개 등록 파일은 작전보고서 1건, 신규 위키 6건, 기존 위키 5건의 새 기록, 리처드 병합, 관련 신원조회의 등장 사건·관계·성격 관찰만 포함해야 하며, 크레딧·주식·상점 재고·알림·인벤토리를 변경해서는 안 된다.
 - 보고서와 위키판은 로고 1개와 공개 가능한 장면 34개의 경로·순서·대체 설명·캡션이 정확히 같아야 한다.
 - 장면 WebP 34개는 모두 1035×503이어야 한다. 반복 8개와 킴라박의 비밀 접촉 장면 4개는 공개 자산으로 생성하지 않는다.
 - 보고서 번호 계산은 세션 ID와 `S1E7/욕구 part 1` 제목 모두 `07`을 반환해야 한다.
-- 신규 위키는 `federatio`, `weaverwood`, `zulu-0060-snallygaster`, `zulu-0007-mothman`, `eleanor-aurora-alligator`, `s1e7-desire-part1`이고 모두 `isPublic: false`여야 한다.
-- 비공개 보고서·위키 등록 파일은 `KIMLEE`와 `WHITE_ROSE_R` 신원조회를 변경하지 않는다. 별도 리처드 병합 파일만 `WHITE_ROSE_R`의 실명·별칭·S1E7 등장·해쉬 관계·행동 관찰을 추가하며, `CIVIL / WHITE_ROSE`, 외부 무등급, 기존 공개 범위와 초상은 보존해야 한다.
+- 신규 위키는 `federatio`, `weaverwood`, `zulu-0060-snallygaster`, `zulu-0007-mothman`, `eleanor-aurora-alligator`, `s1e7-desire-part1`이고 모두 `isPublic: true`여야 한다. 작전보고서는 `minRole: U`여야 한다.
+- 기존 공개 위키 추가 대상은 `project-dead-hand`, `aurora-virus`, `zulu-0040-crown`, `white-rose`, `illuminati` 다섯 건이며, 각 문단에는 작전보고서와 관련 인물·위키로 가는 명시적 링크가 있어야 한다.
+- 작전보고서의 공개 가능한 관련 인물 18명은 모두 같은 세션 ID로 신원조회 등장 사건을 연결한다. 그중 근거가 있는 관계 7건과 성격 관찰 8건만 추가하고, `KIMLEE`, `WEXLER`, `JOHN_WONG`의 숨은 접촉 기록은 어떤 신원조회 단계에도 포함하지 않는다.
+- 전체 공개 등록 파일은 `KIMLEE` 신원조회를 변경하지 않는다. 같은 파일 안의 리처드 병합 단계만 `WHITE_ROSE_R`의 실명·별칭·S1E7 등장·해쉬 관계·행동 관찰을 추가하며, `CIVIL / WHITE_ROSE`, 외부 무등급, 기존 공개 범위와 초상은 보존해야 한다.
 - `KIMLEE` 캐릭터 등록은 만들지 않는다. 운영 신원조회는 `NOVUS_ORDO / MANUS / SECTOR_A`, `J`를 그대로 유지하고, 숨은 `MILITARY / USA` 소속과 백악관 접촉은 이 확인표 밖의 작전보고서·위키판·카탈로그·신원조회·관계·등장 사건 필드에 쓰지 않는다.
-- 운영 ERP 저장을 승인받아 실행한 뒤에는 같은 기록을 다시 읽어 실제 저장값이 등록 파일과 같은지 비교하고, GM 및 V 화면에서 보고서·위키·이미지·상호 링크를 확인해야 한다.
-- 전체 공개는 문서 다듬기와 공개 범위 확인이 끝난 뒤 별도 등록 파일로 수행한다. 그때 기존 공개 위키·신원조회의 공개 가능한 새 사건 연결을 함께 갱신하되, 킴라박·웩슬러·NHI 문서의 비공개 접촉 기록은 사용자 결정대로 제외한다.
+- 운영 ERP 저장을 승인받아 실행한 뒤에는 같은 기록을 다시 읽어 실제 저장값이 등록 파일과 같은지 비교한다. GM·V뿐 아니라 최소 권한 U 계정에서도 보고서와 위키가 검색·목록에 나타나는지, 관련 신원조회 18명·위키 10건·작전보고서 사이의 링크가 열리는지, 로고 1개와 장면 34개가 모두 표시되는지 확인해야 한다.
+- 문서 다듬기와 공개 범위 확인이 끝나 전체 공개 등록 파일을 작성했다. 기존 공개 위키·신원조회의 공개 가능한 새 사건 연결을 함께 갱신하되, 킴라박·웩슬러·NHI 문서의 비공개 접촉 기록은 사용자 결정대로 제외한다.
 
 ## 실제 운영 ERP 반영 상태
 
-- 이번 작업은 로컬 커밋까지만 진행하며, push·배포·운영 DB 저장은 하지 않는다.
-- 이 확인표와 비공개 등록 파일, 리처드 병합용 신원조회 등록 파일, 정적 장면 자산은 로컬 저장소에만 준비한다.
+- 이번 작업은 로컬 커밋까지만 진행하며, 별도 실행 확인 전에는 push·배포·운영 DB 저장을 하지 않는다.
+- 이 확인표와 전체 공개 등록 파일, 리처드 신원조회 명세, 정적 장면 자산은 로컬 저장소에만 준비한다.
 - 현재 운영 ERP/DB에는 이 회차의 새 보고서·위키·신원·아이템 변경을 쓰지 않았다.
 - `public/assets/session-reports/s1e7-desire-part1/`의 공개 가능한 장면 34개도 배포되는 즉시 주소를 아는 사람이 직접 열 수 있으므로, 현재 비공개 보고서만 운영 DB에 저장하거나 이미지 파일만 먼저 배포해서는 안 된다. 킴라박의 백악관 장면 4개는 이 공개 폴더에서 제거했다.
-- 문서 다듬기와 공개 범위 확인을 끝낸 뒤 전체 공개와 이미지를 동시에 배포하거나, V 이상만 이미지를 읽을 수 있는 보호 경로를 마련한 경우에만 운영 반영을 재개한다.
+- 작전보고서·위키·신원조회 전체 공개 저장과 이미지 배포를 같은 배포 순서로 진행해야 한다. 이미지 파일만 먼저 배포하거나 보고서만 먼저 저장하지 않는다.
 - 사용자가 그 실행 범위를 명시적으로 승인하면 저장하고, 저장 직후 실제 DB 값을 다시 읽어 등록 파일과 같은지 확인한다.

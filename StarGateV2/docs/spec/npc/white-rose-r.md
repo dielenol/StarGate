@@ -19,9 +19,9 @@ loreTags: [시민사회, 화이트로즈, 수장, 레짐체인지, 긴급통신,
 appearsInEvents: [NOSB-S1E5-EVIL-PART2, NOSB-S1E7-DESIRE-PART1]
 source: manual
 previewImage: /assets/npcs/Unknown-Person-profile.webp
-mainImage:
+mainImage: /assets/npcs/Unknown-Person-profile.webp
 createdAt: 2026-07-12T00:00:00.000Z
-updatedAt: 2026-08-26T11:35:08.000Z
+updatedAt: 2026-08-26T14:40:45.000Z
 ---
 
 ## 대사
