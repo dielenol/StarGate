@@ -14,6 +14,7 @@ test("실시간 resource 계약은 허용 목록만 통과시킨다", () => {
   assert.equal(isRealtimeResource("inventory"), true);
   assert.equal(isRealtimeResource("gallery"), true);
   assert.equal(isRealtimeResource("hall-of-fame"), true);
+  assert.equal(isRealtimeResource("hall-of-fame-novex"), true);
   assert.equal(isRealtimeResource("credit-balance"), false);
   assert.equal(new Set(REALTIME_RESOURCES).size, REALTIME_RESOURCES.length);
 });

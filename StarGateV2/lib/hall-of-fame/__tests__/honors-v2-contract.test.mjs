@@ -36,9 +36,10 @@ test("Hall public mapper는 내부 식별자와 분석 감사를 직렬화하지
 });
 
 test("NOVEX read model은 전 기간 확정 수익을 집계하고 GM·테스트 계정을 양쪽 소유 시점에서 제외한다", async () => {
-  const [service, stockAccount, core, query, route, client, stockWriter, backfill] = await Promise.all([
+  const [service, stockAccount, lifetimeReturn, core, query, route, client, stockWriter, backfill] = await Promise.all([
     source("lib/hall-of-fame/honors.ts"),
     source("lib/db/stock-account.ts"),
+    source("lib/db/stock-lifetime-return.ts"),
     source("../packages/core/src/domain/hall-of-fame.ts"),
     source("hooks/queries/useHallOfFameQuery.ts"),
     source("app/api/erp/hall-of-fame/novex/route.ts"),
@@ -46,29 +47,34 @@ test("NOVEX read model은 전 기간 확정 수익을 집계하고 GM·테스트
     source("../packages/shared-db/src/crud/stock-market.ts"),
     source("scripts/hall-of-fame/backfill.ts"),
   ]);
-  const lifetimeReadModel = stockAccount.slice(
-    stockAccount.indexOf("export async function listStockLifetimeReturnCandidates"),
+  const lifetimeReadModel = lifetimeReturn.slice(
+    lifetimeReturn.indexOf("export async function listStockLifetimeReturnCandidatesFromDb"),
+  );
+  const transactionOwnerFilter = lifetimeReadModel.slice(
+    lifetimeReadModel.indexOf('as: "transactionOwner"'),
   );
 
-  assert.match(stockAccount, /collection<User>\("users"\)/);
-  assert.match(stockAccount, /isNovexHallExcludedAccount/);
-  assert.match(stockAccount, /const eligibleOwnerIds/);
-  assert.match(stockAccount, /\$in: \["STOCK_SELL", "STOCK_DIVIDEND"\]/);
-  assert.match(stockAccount, /ownerId: \{ \$in: eligibleOwnerIds \}/);
-  assert.match(stockAccount, /\$isNumber: "\$metadata\.profit"/);
-  assert.match(stockAccount, /\$eq: \["\$type", "STOCK_DIVIDEND"\]/);
-  assert.match(stockAccount, /then: "\$amount"/);
-  assert.match(stockAccount, /from: "characters"/);
-  assert.match(stockAccount, /"character\.type": "AGENT"/);
-  assert.match(stockAccount, /"character\.ownerId": \{ \$in: eligibleOwnerIds \}/);
-  assert.doesNotMatch(stockAccount, /from: "users"/);
+  assert.match(stockAccount, /listStockLifetimeReturnCandidatesFromDb\(await getDb\(\)\)/);
+  assert.match(lifetimeReturn, /\$in: \["STOCK_SELL", "STOCK_DIVIDEND"\]/);
+  assert.match(lifetimeReturn, /\$isNumber: "\$metadata\.profit"/);
+  assert.match(lifetimeReturn, /\$eq: \["\$type", "STOCK_DIVIDEND"\]/);
+  assert.match(lifetimeReturn, /then: "\$amount"/);
+  assert.match(lifetimeReturn, /as: "transactionOwner"/);
+  assert.match(lifetimeReturn, /as: "currentOwner"/);
+  assert.match(lifetimeReturn, /\$ne: \["\$transactionOwner\.role", "GM"\]/);
+  assert.match(lifetimeReturn, /\$ne: \["\$currentOwner\.role", "GM"\]/);
+  assert.match(lifetimeReturn, /regex: "TEST\$"/);
+  assert.match(lifetimeReturn, /from: "characters"/);
+  assert.match(lifetimeReturn, /"character\.type": "AGENT"/);
   assert.ok(
-    lifetimeReadModel.indexOf("ownerId: { $in: eligibleOwnerIds }") <
-      lifetimeReadModel.indexOf("$group"),
-    "거래 시점 owner 필터는 캐릭터 집계보다 먼저 실행해야 한다",
+    transactionOwnerFilter.indexOf("$regexMatch") <
+      transactionOwnerFilter.indexOf('_id: "$_id.characterId"'),
+    "거래 시점 owner 필터는 캐릭터 최종 집계보다 먼저 실행해야 한다",
   );
   assert.match(service, /listStockLifetimeReturnCandidates\(\)/);
   assert.match(service, /rankNovexLifetimeReturnCandidates\(candidates\)/);
+  assert.match(service, /const loadHallOfFameNovexResponse = cache\(/);
+  assert.match(service, /return loadHallOfFameNovexResponse\(\)/);
   assert.match(core, /input\.role === "GM"/);
   assert.match(core, /toUpperCase\(\)\.endsWith\("TEST"\)/);
   assert.ok(
@@ -212,7 +218,7 @@ test("보고서·Dossier·연구·주식·알림이 명예의 전당 read model�
   assert.match(notifications, /HONOR: \{ label: "HONOR", tone: "gold" \}/);
 });
 
-test("Hall 관련 원본 변경은 root query invalidation으로 수렴한다", async () => {
+test("Hall 관련 원본 변경은 필요한 Query 범위로 수렴한다", async () => {
   const [queryKeys, mapper] = await Promise.all([
     source("lib/realtime/query-keys.ts"),
     source("../stargate-worker/src/realtime/resource-mapper.ts"),
@@ -220,17 +226,13 @@ test("Hall 관련 원본 변경은 root query invalidation으로 수렴한다", 
 
   assert.match(queryKeys, /users:[\s\S]*?\["hall-of-fame"\]/);
   assert.match(queryKeys, /characters:[\s\S]*?\["hall-of-fame"\]/);
+  assert.match(mapper, /stock_investment_seasons: \["stocks"\]/);
+  assert.match(mapper, /stock_season_performance: \["stocks"\]/);
+  assert.match(mapper, /credit_transactions: \["credits"\]/);
+  assert.match(mapper, /resources\.push\("hall-of-fame-novex"\)/);
   assert.match(
-    mapper,
-    /stock_investment_seasons: \["stocks", "hall-of-fame"\]/,
-  );
-  assert.match(
-    mapper,
-    /stock_season_performance: \["stocks", "hall-of-fame"\]/,
-  );
-  assert.match(
-    mapper,
-    /credit_transactions: \["credits", "hall-of-fame"\]/,
+    queryKeys,
+    /"hall-of-fame-novex": \[[\s\S]*?\["hall-of-fame", "overview"\][\s\S]*?\["hall-of-fame", "novex"\]/,
   );
   assert.match(mapper, /session_reports: \["reports", "hall-of-fame"\]/);
   assert.match(mapper, /honor_records: \["hall-of-fame"\]/);

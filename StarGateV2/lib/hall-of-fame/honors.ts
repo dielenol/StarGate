@@ -1,6 +1,8 @@
 import "server-only";
 import "@/lib/db/init";
 
+import { cache } from "react";
+
 import {
   rankNovexLifetimeReturnCandidates,
   toHallOfFameHonorItem,
@@ -190,6 +192,18 @@ async function listAllHonorRecords(
   return records;
 }
 
+const loadHallOfFameNovexResponse = cache(
+  async (): Promise<HallOfFameNovexResponse> => {
+    const candidates = await listStockLifetimeReturnCandidates();
+    return {
+      period: "ALL_TIME",
+      basis: "TOTAL_REALIZED_RETURN",
+      generatedAt: new Date().toISOString(),
+      items: rankNovexLifetimeReturnCandidates(candidates),
+    };
+  },
+);
+
 export async function getHallOfFameOverviewResponse(input: {
   viewerRole: RoleLevel;
   isGuest: boolean;
@@ -215,13 +229,8 @@ export async function getHallOfFameOverviewResponse(input: {
 }
 
 export async function getHallOfFameNovexResponse(): Promise<HallOfFameNovexResponse> {
-  const candidates = await listStockLifetimeReturnCandidates();
-  return {
-    period: "ALL_TIME",
-    basis: "TOTAL_REALIZED_RETURN",
-    generatedAt: new Date().toISOString(),
-    items: rankNovexLifetimeReturnCandidates(candidates),
-  };
+  // overview와 NOVEX 패널이 같은 RSC 렌더에서 요청해도 원장 집계는 한 번만 수행한다.
+  return loadHallOfFameNovexResponse();
 }
 
 export async function getHallOfFameCitationPage(

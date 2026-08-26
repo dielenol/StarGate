@@ -20,6 +20,7 @@ export const REALTIME_RESOURCES = [
   "factions",
   "page-locks",
   "hall-of-fame",
+  "hall-of-fame-novex",
 ] as const;
 
 export type RealtimeResource = (typeof REALTIME_RESOURCES)[number];

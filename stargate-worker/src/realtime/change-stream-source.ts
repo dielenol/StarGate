@@ -67,6 +67,16 @@ export function extractRealtimeAudienceUserIds(
   return undefined;
 }
 
+export function extractRealtimeDocumentType(
+  collectionName: string,
+  fullDocument: Document | null | undefined,
+): string | undefined {
+  if (collectionName !== "credit_transactions" || !fullDocument) {
+    return undefined;
+  }
+  return stringField(fullDocument.type);
+}
+
 export class MongoRealtimeChangeStreamSource
   implements RealtimeChangeStreamSource
 {
@@ -186,6 +196,10 @@ export class MongoRealtimeChangeStreamSource
       collectionName,
       operationType: change.operationType,
       documentId: documentId(detail.documentKey?._id),
+      documentType: extractRealtimeDocumentType(
+        collectionName,
+        detail.fullDocument,
+      ),
       updatedFields: Object.keys(
         detail.updateDescription?.updatedFields ?? {},
       ),

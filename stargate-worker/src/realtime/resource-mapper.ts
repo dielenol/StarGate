@@ -4,7 +4,7 @@ export const COLLECTION_RESOURCE_MAP = {
   users: ["users", "personnel"],
   characters: ["characters", "personnel"],
   character_change_logs: ["characters"],
-  credit_transactions: ["credits", "hall-of-fame"],
+  credit_transactions: ["credits"],
   credit_balances: ["credits"],
   credit_pools: ["credits"],
   character_inventory: ["inventory"],
@@ -28,8 +28,8 @@ export const COLLECTION_RESOURCE_MAP = {
   stock_market_preferences: ["stocks"],
   stock_corporate_actions: ["stocks"],
   stock_dividend_entitlements: ["stocks"],
-  stock_investment_seasons: ["stocks", "hall-of-fame"],
-  stock_season_performance: ["stocks", "hall-of-fame"],
+  stock_investment_seasons: ["stocks"],
+  stock_season_performance: ["stocks"],
   stock_season_flows: ["stocks"],
   stock_discord_market_wires: ["stocks"],
   player_trades: ["trades"],
@@ -68,6 +68,7 @@ export interface RealtimeDatabaseChange {
   collectionName: string;
   operationType: string;
   documentId?: string;
+  documentType?: string;
   updatedFields: string[];
   audienceUserIds?: string[];
 }
@@ -100,18 +101,44 @@ function changesHallOfFameSnapshot(change: RealtimeDatabaseChange): boolean {
   );
 }
 
+function changesNovexLifetimeReturn(change: RealtimeDatabaseChange): boolean {
+  if (change.collectionName !== "credit_transactions") return false;
+  if (
+    change.operationType === "delete" ||
+    change.operationType === "replace"
+  ) {
+    return true;
+  }
+  if (
+    change.updatedFields.some(
+      (field) => field === "type" || field.startsWith("type."),
+    )
+  ) {
+    return true;
+  }
+  if (!change.documentType) return true;
+  return (
+    change.documentType === "STOCK_SELL" ||
+    change.documentType === "STOCK_DIVIDEND"
+  );
+}
+
 export function mapRealtimeChange(
   change: RealtimeDatabaseChange,
 ): MappedRealtimeChange | null {
   if (!changesHallOfFameSnapshot(change)) return null;
-  const resources =
+  const mappedResources =
     COLLECTION_RESOURCE_MAP[
       change.collectionName as keyof typeof COLLECTION_RESOURCE_MAP
     ];
-  if (!resources) return null;
+  if (!mappedResources) return null;
+  const resources: RealtimeResource[] = [...mappedResources];
+  if (changesNovexLifetimeReturn(change)) {
+    resources.push("hall-of-fame-novex");
+  }
 
   return {
-    resources: [...resources],
+    resources,
     ...(change.audienceUserIds
       ? { audienceUserIds: [...new Set(change.audienceUserIds)] }
       : {}),

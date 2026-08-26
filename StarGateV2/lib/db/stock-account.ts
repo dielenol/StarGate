@@ -9,12 +9,10 @@
 import "./init";
 
 import { getDb } from "@stargate/shared-db";
+import type { NovexLifetimeReturnCandidate } from "@stargate/core";
+import type { CreditTransaction } from "@stargate/shared-db/types";
 
-import {
-  isNovexHallExcludedAccount,
-  type NovexLifetimeReturnCandidate,
-} from "@stargate/core";
-import type { CreditTransaction, User } from "@stargate/shared-db/types";
+import { listStockLifetimeReturnCandidatesFromDb } from "./stock-lifetime-return";
 
 export type StockLedgerTransaction = Pick<
   CreditTransaction,
@@ -123,135 +121,5 @@ export async function getStockRealizedProfitSummary(
 export async function listStockLifetimeReturnCandidates(): Promise<
   NovexLifetimeReturnCandidate[]
 > {
-  const db = await getDb();
-  const owners = await db
-    .collection<User>("users")
-    .find(
-      {},
-      {
-        projection: {
-          _id: 1,
-          username: 1,
-          role: 1,
-        },
-      },
-    )
-    .toArray();
-  const eligibleOwnerIds = owners
-    .filter(
-      (owner) =>
-        owner._id &&
-        !isNovexHallExcludedAccount({
-          username: owner.username,
-          role: owner.role,
-        }),
-    )
-    .map((owner) => String(owner._id));
-  if (eligibleOwnerIds.length === 0) return [];
-
-  return db
-    .collection<CreditTransaction>("credit_transactions")
-    .aggregate<NovexLifetimeReturnCandidate>([
-      {
-        $match: {
-          type: { $in: ["STOCK_SELL", "STOCK_DIVIDEND"] },
-          ownerId: { $in: eligibleOwnerIds },
-        },
-      },
-      {
-        $group: {
-          _id: "$characterId",
-          totalRealizedReturn: {
-            $sum: {
-              $switch: {
-                branches: [
-                  {
-                    case: {
-                      $and: [
-                        { $eq: ["$type", "STOCK_SELL"] },
-                        { $isNumber: "$metadata.profit" },
-                      ],
-                    },
-                    then: "$metadata.profit",
-                  },
-                  {
-                    case: {
-                      $and: [
-                        { $eq: ["$type", "STOCK_DIVIDEND"] },
-                        { $isNumber: "$amount" },
-                      ],
-                    },
-                    then: "$amount",
-                  },
-                ],
-                default: 0,
-              },
-            },
-          },
-          profitEventCount: {
-            $sum: {
-              $cond: [
-                {
-                  $or: [
-                    {
-                      $and: [
-                        { $eq: ["$type", "STOCK_SELL"] },
-                        { $isNumber: "$metadata.profit" },
-                      ],
-                    },
-                    {
-                      $and: [
-                        { $eq: ["$type", "STOCK_DIVIDEND"] },
-                        { $isNumber: "$amount" },
-                      ],
-                    },
-                  ],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-        },
-      },
-      { $match: { profitEventCount: { $gt: 0 } } },
-      {
-        $set: {
-          characterObjectId: {
-            $convert: {
-              input: "$_id",
-              to: "objectId",
-              onError: null,
-              onNull: null,
-            },
-          },
-        },
-      },
-      { $match: { characterObjectId: { $ne: null } } },
-      {
-        $lookup: {
-          from: "characters",
-          localField: "characterObjectId",
-          foreignField: "_id",
-          as: "character",
-        },
-      },
-      { $unwind: "$character" },
-      {
-        $match: {
-          "character.type": "AGENT",
-          "character.ownerId": { $in: eligibleOwnerIds },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          characterId: "$_id",
-          codename: "$character.codename",
-          totalRealizedReturn: 1,
-          profitEventCount: 1,
-        },
-      },
-    ])
-    .toArray();
+  return listStockLifetimeReturnCandidatesFromDb(await getDb());
 }

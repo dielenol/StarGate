@@ -13,6 +13,7 @@ import {
 import {
   MongoRealtimeChangeStreamSource,
   extractRealtimeAudienceUserIds,
+  extractRealtimeDocumentType,
 } from "../dist/realtime/change-stream-source.js";
 
 const ticketConfig = {
@@ -121,6 +122,54 @@ test("Mongo 컬렉션 변경은 공개 데이터 없이 Query resource로만 매
   );
 });
 
+test("NOVEX 원장 변경만 Hall의 누적 수익 Query를 무효화한다", () => {
+  for (const documentType of ["STOCK_SELL", "STOCK_DIVIDEND"]) {
+    assert.deepEqual(
+      mapRealtimeChange({
+        collectionName: "credit_transactions",
+        operationType: "insert",
+        documentType,
+        updatedFields: [],
+      }),
+      { resources: ["credits", "hall-of-fame-novex"] },
+    );
+  }
+  assert.deepEqual(
+    mapRealtimeChange({
+      collectionName: "credit_transactions",
+      operationType: "insert",
+      documentType: "DAILY_ALLOWANCE",
+      updatedFields: [],
+    }),
+    { resources: ["credits"] },
+  );
+  assert.deepEqual(
+    mapRealtimeChange({
+      collectionName: "credit_transactions",
+      operationType: "delete",
+      updatedFields: [],
+    }),
+    { resources: ["credits", "hall-of-fame-novex"] },
+  );
+  assert.deepEqual(
+    mapRealtimeChange({
+      collectionName: "credit_transactions",
+      operationType: "replace",
+      documentType: "DAILY_ALLOWANCE",
+      updatedFields: [],
+    }),
+    { resources: ["credits", "hall-of-fame-novex"] },
+  );
+  assert.deepEqual(
+    mapRealtimeChange({
+      collectionName: "stock_season_performance",
+      operationType: "update",
+      updatedFields: ["linkedReturn"],
+    }),
+    { resources: ["stocks"] },
+  );
+});
+
 test("role/status 변경은 해당 사용자의 재인증을 요구한다", () => {
   assert.deepEqual(
     mapRealtimeChange({
@@ -161,6 +210,24 @@ test("알림과 거래의 대상 사용자 ID는 worker 내부 라우팅 정보�
       initiator: {},
       counterparty: {},
     }),
+    undefined,
+  );
+});
+
+test("Change Stream은 크레딧 원장의 타입만 내부 분기 정보로 추출한다", () => {
+  assert.equal(
+    extractRealtimeDocumentType("credit_transactions", {
+      type: "STOCK_SELL",
+      ownerId: "비공개",
+    }),
+    "STOCK_SELL",
+  );
+  assert.equal(
+    extractRealtimeDocumentType("notifications", { type: "HONOR" }),
+    undefined,
+  );
+  assert.equal(
+    extractRealtimeDocumentType("credit_transactions", null),
     undefined,
   );
 });

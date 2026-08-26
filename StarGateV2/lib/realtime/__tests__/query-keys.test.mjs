@@ -14,6 +14,7 @@ test("realtime resource는 기존 TanStack Query root key로만 확장된다", (
     ["factions"],
     ["account"],
     ["wiki", "lore-search"],
+    ["hall-of-fame"],
   ]);
   assert.deepEqual(
     queryKeysForRealtimeResources(["credits", "page-locks"]),
@@ -28,6 +29,10 @@ test("realtime resource는 기존 TanStack Query root key로만 확장된다", (
   assert.deepEqual(queryKeysForRealtimeResources(["gallery"]), [["gallery"]]);
   assert.deepEqual(queryKeysForRealtimeResources(["hall-of-fame"]), [
     ["hall-of-fame"],
+  ]);
+  assert.deepEqual(queryKeysForRealtimeResources(["hall-of-fame-novex"]), [
+    ["hall-of-fame", "overview"],
+    ["hall-of-fame", "novex"],
   ]);
 });
 
@@ -44,6 +49,7 @@ test("복합 resource가 같은 Query root를 공유해도 한 번만 반환한�
       ["factions"],
       ["account"],
       ["wiki", "lore-search"],
+      ["hall-of-fame"],
       ["users"],
       ["credits"],
       ["credits-admin"],

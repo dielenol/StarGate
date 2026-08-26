@@ -55,6 +55,10 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
   ],
   gallery: [["gallery"]],
   "hall-of-fame": [["hall-of-fame"]],
+  "hall-of-fame-novex": [
+    ["hall-of-fame", "overview"],
+    ["hall-of-fame", "novex"],
+  ],
   "equipment-shop": [["equipment-shop"]],
   wiki: [["wiki"], ["dashboard"], ["factions"], ["wiki", "lore-search"]],
   factions: [["factions"], ["wiki", "lore-search"]],
