@@ -16,8 +16,7 @@ export const hallOfFameKeys = {
   all: ["hall-of-fame"] as const,
   overview: ["hall-of-fame", "overview"] as const,
   research: ["hall-of-fame", "research"] as const,
-  novex: (seasonKey?: string) =>
-    ["hall-of-fame", "novex", seasonKey ?? "latest"] as const,
+  novex: ["hall-of-fame", "novex"] as const,
   citations: (category?: OperationHonorCategory) =>
     ["hall-of-fame", "citations", category ?? "all"] as const,
   citationPage: (category: OperationHonorCategory | undefined, cursor: string) =>
@@ -72,15 +71,10 @@ async function fetchHallOfFameOverview(): Promise<HallOfFameOverviewResponse> {
   );
 }
 
-async function fetchHallOfFameNovex(
-  seasonKey?: string,
-): Promise<HallOfFameNovexResponse> {
-  const params = new URLSearchParams();
-  if (seasonKey) params.set("season", seasonKey);
-  const query = params.size > 0 ? `?${params.toString()}` : "";
+async function fetchHallOfFameNovex(): Promise<HallOfFameNovexResponse> {
   return hallOfFameJson(
-    `/api/erp/hall-of-fame/novex${query}`,
-    "NOVEX 시즌 공적을 불러올 수 없습니다.",
+    "/api/erp/hall-of-fame/novex",
+    "NOVEX 누적 수익 순위를 불러올 수 없습니다.",
   );
 }
 
@@ -159,7 +153,6 @@ export function useHallOfFameOverview(options?: {
 }
 
 export function useHallOfFameNovex(options?: {
-  seasonKey?: string;
   initialData?: HallOfFameNovexResponse;
   initialDataUpdatedAt?: number;
 }) {
@@ -168,8 +161,8 @@ export function useHallOfFameNovex(options?: {
   );
 
   return useQuery({
-    queryKey: hallOfFameKeys.novex(options?.seasonKey),
-    queryFn: () => fetchHallOfFameNovex(options?.seasonKey),
+    queryKey: hallOfFameKeys.novex,
+    queryFn: fetchHallOfFameNovex,
     staleTime: HALL_OF_FAME_STALE_TIME_MS,
     refetchInterval,
     refetchIntervalInBackground: false,

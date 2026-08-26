@@ -2,6 +2,7 @@ import "server-only";
 import "@/lib/db/init";
 
 import {
+  rankNovexLifetimeReturnCandidates,
   toHallOfFameHonorItem,
   type HallOfFameCitationPageResponse,
   type HallOfFameHonorItem,
@@ -13,11 +14,7 @@ import {
   type OperationHonorCategory,
 } from "@stargate/core";
 import {
-  buildHonorPublicKey,
-  buildNovexHonorLogicalKey,
   buildOperationHonorSourceMaterial,
-  countFinalizedNovexSeasons,
-  countFinalizedNovexTop3Performances,
   findCharacterById,
   findHonorCandidateCharactersByCodenames,
   getHonorRecordByPublicKey,
@@ -26,22 +23,18 @@ import {
   HONOR_ANALYZER_REVISION,
   honorAnalysisStatesCol,
   listCharactersByOwner,
-  listFinalizedNovexSeasons,
   listHonorRecords,
-  listNovexHonorRecords,
-  listNovexHonorFallbackPerformances,
   normalizeSessionReportMinRole,
   type HonorRecord,
   type HonorRecordQuery,
   type RoleLevel,
-  type StockInvestmentSeason,
 } from "@stargate/shared-db";
 
 import { hasRole } from "@/lib/auth/rbac";
 import { canViewCharacter } from "@/lib/auth/access-policy";
+import { listStockLifetimeReturnCandidates } from "@/lib/db/stock-account";
 import { getResearchHallOfFameResponse } from "@/lib/hall-of-fame/research";
 
-const NOVEX_SEASON_LIMIT = 100;
 const HONOR_PAGE_LIMIT = 20;
 const HONOR_PUBLIC_KEY_PATTERN = /^honor_[a-f0-9]{24}$/u;
 
@@ -59,77 +52,11 @@ export interface HallOfFameMineQuery {
   viewerRole: RoleLevel;
 }
 
-function formatKstDate(value: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .format(value)
-    .replace(/\s/g, "");
-}
-
-function seasonLabel(season: StockInvestmentSeason): string {
-  return `NOVEX · ${formatKstDate(season.startsAt)}–${formatKstDate(season.endsAt)}`;
-}
-
-function selectedSeasonSummary(season: StockInvestmentSeason) {
-  return {
-    key: season._id,
-    label: seasonLabel(season),
-    finalizedAt: (season.finalizedAt ?? season.endsAt).toISOString(),
-  };
-}
-
 function withSourceHref(record: HonorRecord, sourceHref: string): HonorRecord {
   return {
     ...record,
     source: { ...record.source, href: sourceHref },
   };
-}
-
-function fallbackNovexItems(
-  season: StockInvestmentSeason,
-  rows: Awaited<ReturnType<typeof listNovexHonorFallbackPerformances>>,
-): HallOfFameHonorItem[] {
-  const sourceLabel = seasonLabel(season);
-  return rows.flatMap((row) => {
-    if (row.rank !== 1 && row.rank !== 2 && row.rank !== 3) return [];
-    const returnPercent = new Intl.NumberFormat("ko-KR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-      signDisplay: "always",
-    }).format(row.linkedReturn * 100);
-    const key = buildHonorPublicKey(
-      buildNovexHonorLogicalKey(season._id, row.characterId),
-    );
-    return [
-      {
-        key,
-        domain: "NOVEX",
-        category: "NOVEX_PODIUM",
-        codename: row.codename,
-        title:
-          row.title ??
-          (row.rank === 1 ? "NOVEX 시즌 챔피언" : `NOVEX 시즌 ${row.rank}위`),
-        citation: `${sourceLabel}에서 ${returnPercent}% 수익률로 ${row.rank}위를 기록했습니다.`,
-        rank: row.rank,
-        occurredAt: (season.finalizedAt ?? season.endsAt).toISOString(),
-        sourceLabel,
-        sourceHref: `/erp/hall-of-fame?view=novex&season=${encodeURIComponent(season._id)}`,
-      } satisfies HallOfFameHonorItem,
-    ];
-  });
-}
-
-async function toVisibleHonorItem(
-  record: HonorRecord,
-): Promise<HallOfFameHonorItem | null> {
-  if (record.domain === "NOVEX") {
-    return toHallOfFameHonorItem(record, { includeSourceHref: true });
-  }
-  return null;
 }
 
 async function resolveCurrentOperationSource(sourceKey: string) {
@@ -196,7 +123,8 @@ async function toVisibleHonorItems(
         record.domain !== "OPERATION" ||
         record.source.type !== "SESSION_REPORT"
       ) {
-        return toVisibleHonorItem(record);
+        // NOVEX는 honor_records의 시즌 리본이 아니라 공개 누적 수익 read model만 사용한다.
+        return null;
       }
       let pendingSource = operationReports.get(record.source.key);
       if (!pendingSource) {
@@ -267,15 +195,13 @@ export async function getHallOfFameOverviewResponse(input: {
   isGuest: boolean;
 }): Promise<HallOfFameOverviewResponse> {
   const canViewOperations = !input.isGuest && hasRole(input.viewerRole, "U");
-  const [research, seasonCount, novexRecordCount, operationRecords] =
-    await Promise.all([
-      getResearchHallOfFameResponse(),
-      countFinalizedNovexSeasons(),
-      countFinalizedNovexTop3Performances(),
-      canViewOperations
-        ? listAllHonorRecords({ domain: "OPERATION", minRole: "U" })
-        : Promise.resolve([]),
-    ]);
+  const [research, novex, operationRecords] = await Promise.all([
+    getResearchHallOfFameResponse(),
+    getHallOfFameNovexResponse(),
+    canViewOperations
+      ? listAllHonorRecords({ domain: "OPERATION", minRole: "U" })
+      : Promise.resolve([]),
+  ]);
   const operationRecordCount = canViewOperations
     ? (await toVisibleHonorItems(operationRecords)).length
     : 0;
@@ -283,37 +209,18 @@ export async function getHallOfFameOverviewResponse(input: {
   return {
     generatedAt: new Date().toISOString(),
     totalRecords:
-      research.items.length + novexRecordCount + operationRecordCount,
-    seasonCount,
+      research.items.length + novex.items.length + operationRecordCount,
+    novexHonoreeCount: novex.items.length,
   };
 }
 
-export async function getHallOfFameNovexResponse(
-  seasonKey?: string,
-): Promise<HallOfFameNovexResponse> {
-  const seasons = await listFinalizedNovexSeasons(NOVEX_SEASON_LIMIT);
-  const selected = seasonKey
-    ? seasons.find((season) => season._id === seasonKey) ?? null
-    : seasons[0] ?? null;
-  const records = selected ? await listNovexHonorRecords(selected._id) : [];
-  const fallbackRows =
-    selected && records.length === 0
-      ? await listNovexHonorFallbackPerformances(selected._id)
-      : [];
-
+export async function getHallOfFameNovexResponse(): Promise<HallOfFameNovexResponse> {
+  const candidates = await listStockLifetimeReturnCandidates();
   return {
+    period: "ALL_TIME",
+    basis: "TOTAL_REALIZED_RETURN",
     generatedAt: new Date().toISOString(),
-    selectedSeason: selected ? selectedSeasonSummary(selected) : null,
-    seasons: seasons.map((season) => ({
-      key: season._id,
-      label: seasonLabel(season),
-    })),
-    items:
-      selected && records.length === 0
-        ? fallbackNovexItems(selected, fallbackRows)
-        : records.map((record) =>
-            toHallOfFameHonorItem(record, { includeSourceHref: true }),
-          ),
+    items: rankNovexLifetimeReturnCandidates(candidates),
   };
 }
 
@@ -337,21 +244,13 @@ export async function getHallOfFameCitationPage(
     if (!character || !canViewCharacter(input.viewerRole, character)) {
       return { generatedAt: new Date().toISOString(), items: [] };
     }
-    const [operationRecords, novexRecords] = await Promise.all([
-      listAllHonorRecords({
-        domain: "OPERATION",
-        minRole: "U",
-        characterId: input.characterId,
-        ...(input.category ? { category: input.category } : {}),
-      }),
-      input.category
-        ? Promise.resolve([])
-        : listAllHonorRecords({
-            domain: "NOVEX",
-            characterId: input.characterId,
-          }),
-    ]);
-    const records = [...operationRecords, ...novexRecords].sort(
+    const records = await listAllHonorRecords({
+      domain: "OPERATION",
+      minRole: "U",
+      characterId: input.characterId,
+      ...(input.category ? { category: input.category } : {}),
+    });
+    records.sort(
       (left, right) =>
         right.occurredAt.getTime() - left.occurredAt.getTime() ||
         right.publicKey.localeCompare(left.publicKey),
@@ -406,18 +305,13 @@ export async function getHallOfFameMineResponse(
   for (const character of characters) {
     if (!character._id) continue;
     const characterId = String(character._id);
-    const [operationRecords, novexRecords] = await Promise.all([
-      listAllHonorRecords({
+    records.push(
+      ...(await listAllHonorRecords({
         domain: "OPERATION",
         minRole: "U",
         characterId,
-      }),
-      listAllHonorRecords({
-        domain: "NOVEX",
-        characterId: String(character._id),
-      }),
-    ]);
-    records.push(...operationRecords, ...novexRecords);
+      })),
+    );
   }
   records.sort(
     (left, right) =>

@@ -260,7 +260,7 @@ test("원장 index는 논리키·공개키·공개등급 timeline·lease queue�
   );
 });
 
-test("report CRUD와 NOVEX finalization은 gate 안에서 같은 transaction 원장 hook을 가진다", async () => {
+test("report CRUD만 원장 hook을 사용하고 NOVEX 시즌 기록은 Hall에 materialize하지 않는다", async () => {
   const [reports, stocks, honors, backfill] = await Promise.all([
     readFile(new URL("../session-reports.ts", import.meta.url), "utf8"),
     readFile(new URL("../stock-market.ts", import.meta.url), "utf8"),
@@ -278,12 +278,15 @@ test("report CRUD와 NOVEX finalization은 gate 안에서 같은 transaction 원
   assert.match(reports, /reason: "SOURCE_DELETED"/);
   assert.match(reports, /if \(!isHallOfFameV2WritesEnabled\(\)\) return/);
   assert.match(reports, /__honorAnalysisLockAt: _honorAnalysisLockAt/);
-  assert.match(stocks, /await materializeNovexSeasonHonors\(\{/);
-  assert.match(stocks, /isHallOfFameV2WritesEnabled\(\)/);
-  assert.match(stocks, /view=novex&season=/);
+  assert.doesNotMatch(stocks, /materializeNovexSeasonHonors/);
+  assert.doesNotMatch(stocks, /isHallOfFameV2WritesEnabled\(\)/);
+  assert.doesNotMatch(stocks, /view=novex&season=/);
+  assert.match(stocks, /link: "\/erp\/stock"/);
   assert.doesNotMatch(reports, /honor_source_fences|fenceHonorSources/);
   assert.doesNotMatch(stocks, /honor_source_fences|fenceHonorSources/);
   assert.match(backfill, /await assertManifestCoverageCurrent\(manifest, session\)/);
+  assert.match(backfill, /BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED/);
+  assert.doesNotMatch(backfill, /buildNovexHonorRecords|materializeNovexSeasonHonors/);
   assert.match(backfill, /maintenance 구간에서만 실행/);
 
   const complete = honors.slice(

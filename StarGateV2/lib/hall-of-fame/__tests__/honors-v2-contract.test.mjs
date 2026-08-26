@@ -35,18 +35,70 @@ test("Hall public mapper는 내부 식별자와 분석 감사를 직렬화하지
   }
 });
 
-test("NOVEX read model은 원장 쓰기 없이 확정 시즌 SSOT fallback을 제공한다", async () => {
-  const service = await source("lib/hall-of-fame/honors.ts");
-
-  assert.match(service, /listFinalizedNovexSeasons/);
-  assert.match(service, /listNovexHonorRecords/);
-  assert.match(
-    service,
-    /records\.length === 0[\s\S]*listNovexHonorFallbackPerformances/,
+test("NOVEX read model은 전 기간 확정 수익을 집계하고 GM·테스트 계정을 양쪽 소유 시점에서 제외한다", async () => {
+  const [service, stockAccount, core, query, route, client, stockWriter, backfill] = await Promise.all([
+    source("lib/hall-of-fame/honors.ts"),
+    source("lib/db/stock-account.ts"),
+    source("../packages/core/src/domain/hall-of-fame.ts"),
+    source("hooks/queries/useHallOfFameQuery.ts"),
+    source("app/api/erp/hall-of-fame/novex/route.ts"),
+    source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
+    source("../packages/shared-db/src/crud/stock-market.ts"),
+    source("scripts/hall-of-fame/backfill.ts"),
+  ]);
+  const lifetimeReadModel = stockAccount.slice(
+    stockAccount.indexOf("export async function listStockLifetimeReturnCandidates"),
   );
-  assert.match(service, /buildNovexHonorLogicalKey\(season\._id, row\.characterId\)/);
-  assert.match(service, /fallbackNovexItems/);
+
+  assert.match(stockAccount, /collection<User>\("users"\)/);
+  assert.match(stockAccount, /isNovexHallExcludedAccount/);
+  assert.match(stockAccount, /const eligibleOwnerIds/);
+  assert.match(stockAccount, /\$in: \["STOCK_SELL", "STOCK_DIVIDEND"\]/);
+  assert.match(stockAccount, /ownerId: \{ \$in: eligibleOwnerIds \}/);
+  assert.match(stockAccount, /\$isNumber: "\$metadata\.profit"/);
+  assert.match(stockAccount, /\$eq: \["\$type", "STOCK_DIVIDEND"\]/);
+  assert.match(stockAccount, /then: "\$amount"/);
+  assert.match(stockAccount, /from: "characters"/);
+  assert.match(stockAccount, /"character\.type": "AGENT"/);
+  assert.match(stockAccount, /"character\.ownerId": \{ \$in: eligibleOwnerIds \}/);
+  assert.doesNotMatch(stockAccount, /from: "users"/);
+  assert.ok(
+    lifetimeReadModel.indexOf("ownerId: { $in: eligibleOwnerIds }") <
+      lifetimeReadModel.indexOf("$group"),
+    "거래 시점 owner 필터는 캐릭터 집계보다 먼저 실행해야 한다",
+  );
+  assert.match(service, /listStockLifetimeReturnCandidates\(\)/);
+  assert.match(service, /rankNovexLifetimeReturnCandidates\(candidates\)/);
+  assert.match(core, /input\.role === "GM"/);
+  assert.match(core, /toUpperCase\(\)\.endsWith\("TEST"\)/);
+  assert.ok(
+    core.indexOf("totalRealizedReturn: roundStockValue(candidate.totalRealizedReturn)") <
+      core.indexOf("right.totalRealizedReturn - left.totalRealizedReturn"),
+    "표시 단위 정규화는 순위 정렬 전에 실행해야 한다",
+  );
+  assert.match(core, /right\.totalRealizedReturn - left\.totalRealizedReturn/);
+  assert.match(core, /\.slice\(0, 3\)/);
+  const publicNovex = core.slice(
+    core.indexOf("export interface HallOfFameNovexResponse"),
+    core.indexOf("export interface NovexLifetimeReturnCandidate"),
+  );
+  assert.match(publicNovex, /period: "ALL_TIME"/);
+  assert.match(publicNovex, /basis: "TOTAL_REALIZED_RETURN"/);
+  assert.match(publicNovex, /totalRealizedReturn/);
+  assert.match(publicNovex, /profitEventCount/);
+  assert.doesNotMatch(publicNovex, /characterId|ownerUsername|ownerRole/);
+  assert.match(query, /novex: \["hall-of-fame", "novex"\] as const/);
+  assert.doesNotMatch(query, /seasonKey/);
+  assert.doesNotMatch(route, /searchParams|get\("season"\)/);
+  assert.doesNotMatch(client, /seasonPicker|시즌 선택/);
+  assert.match(client, /GM \+ TEST EXCLUDED/);
   assert.doesNotMatch(service, /upsertHonorRecord|materializeNovexSeasonHonors/);
+  assert.doesNotMatch(service, /domain: "NOVEX"/);
+  assert.doesNotMatch(stockWriter, /materializeNovexSeasonHonors/);
+  assert.doesNotMatch(stockWriter, /view=novex&season=/);
+  assert.match(stockWriter, /link: "\/erp\/stock"/);
+  assert.doesNotMatch(backfill, /buildNovexHonorRecords|materializeNovexSeasonHonors/);
+  assert.match(backfill, /BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED/);
 });
 
 test("작전 공적은 DB U 필터와 현재 보고서 U 재검증을 함께 적용한다", async () => {
@@ -122,7 +174,7 @@ test("문맥 조회는 보고서 등급과 신원조회 접근권한을 서버�
   );
 });
 
-test("내 리본은 소유 캐릭터 전체와 모든 cursor 페이지를 합산한다", async () => {
+test("내 리본은 소유 캐릭터의 작전 공적 전체 cursor 페이지를 합산한다", async () => {
   const service = await source("lib/hall-of-fame/honors.ts");
 
   assert.match(service, /listCharactersByOwner\(input\.userId\)/);
@@ -130,6 +182,7 @@ test("내 리본은 소유 캐릭터 전체와 모든 cursor 페이지를 합산
   assert.match(service, /async function listAllHonorRecords/);
   assert.match(service, /do \{[\s\S]*listHonorRecords[\s\S]*while \(cursor\)/);
   assert.match(service, /domain: "OPERATION"[\s\S]*minRole: "U"/);
+  assert.doesNotMatch(service, /domain: "NOVEX"/);
   assert.match(service, /return \{ total: ribbons\.length, ribbons \}/);
 });
 
@@ -175,31 +228,35 @@ test("Hall 관련 원본 변경은 root query invalidation으로 수렴한다", 
     mapper,
     /stock_season_performance: \["stocks", "hall-of-fame"\]/,
   );
+  assert.match(
+    mapper,
+    /credit_transactions: \["credits", "hall-of-fame"\]/,
+  );
   assert.match(mapper, /session_reports: \["reports", "hall-of-fame"\]/);
   assert.match(mapper, /honor_records: \["hall-of-fame"\]/);
   assert.match(mapper, /honor_analysis_states: \["hall-of-fame"\]/);
 });
 
-test("개요 집계는 page slice가 아니라 전체 공개 원장의 정확한 합계를 사용한다", async () => {
-  const [service, shared, route, query, client] = await Promise.all([
+test("개요 집계는 연구·NOVEX 누적 TOP3·전체 공개 작전 원장의 정확한 합계를 사용한다", async () => {
+  const [service, route, query, client] = await Promise.all([
     source("lib/hall-of-fame/honors.ts"),
-    source("../packages/shared-db/src/crud/honors.ts"),
     source("app/api/erp/hall-of-fame/overview/route.ts"),
     source("hooks/queries/useHallOfFameQuery.ts"),
     source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
   ]);
 
-  assert.match(shared, /countFinalizedNovexSeasons/);
-  assert.match(shared, /countFinalizedNovexTop3Performances/);
+  assert.match(service, /getHallOfFameNovexResponse\(\)/);
   assert.match(service, /listAllHonorRecords\(\{ domain: "OPERATION", minRole: "U" \}\)/);
   assert.match(service, /await toVisibleHonorItems\(operationRecords\)/);
   assert.match(
     service,
-    /research\.items\.length \+ novexRecordCount \+ operationRecordCount/,
+    /research\.items\.length \+ novex\.items\.length \+ operationRecordCount/,
   );
+  assert.match(service, /novexHonoreeCount: novex\.items\.length/);
   assert.match(route, /isGuest: session\.user\.isGuest === true/);
   assert.match(query, /overview: \["hall-of-fame", "overview"\] as const/);
   assert.match(client, /overview\.data\?\.totalRecords/);
-  assert.match(client, /overview\.data\?\.seasonCount/);
+  assert.match(client, /overview\.data\?\.novexHonoreeCount/);
+  assert.doesNotMatch(client, /overview\.data\?\.seasonCount/);
   assert.doesNotMatch(client, /citations\.data\?\.items\.length \?\? "—"/);
 });

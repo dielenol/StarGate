@@ -1,9 +1,10 @@
 /**
  * Hall of Fame 2.0 historical materialization tool.
  *
- * Default mode reads finalized NOVEX seasons and U operation reports, performs
- * Cloud analysis, then writes a private manifest only. Applying that manifest
- * is a separate, explicit operation and never creates notifications/webhooks.
+ * Default mode reads U operation reports, performs Cloud analysis, then writes
+ * a private manifest only. NOVEX is a live all-time read model and is not
+ * materialized into honor_records. Applying an operation manifest is a separate,
+ * explicit operation and never creates notifications/webhooks.
  */
 
 import { readFileSync } from "node:fs";
@@ -19,24 +20,19 @@ import {
   validateOperationHonorResults,
 } from "@stargate/core";
 import {
-  buildNovexHonorRecords,
   close,
   connect,
   findHonorCandidateCharactersByCodenames,
   getClient,
-  getDb,
   honorAnalysisStatesCol,
   honorRecordsCol,
   isHallOfFameV2WritesEnabled,
-  materializeNovexSeasonHonors,
   sessionReportVisibilityFilter,
   sessionReportsCol,
   upsertHonorRecord,
   withdrawHonorRecordsBySource,
   type HonorRecord,
   type SessionReport,
-  type StockInvestmentSeason,
-  type StockSeasonPerformance,
   type UpsertHonorRecordInput,
 } from "@stargate/shared-db";
 import type {
@@ -47,7 +43,6 @@ import type {
 
 import {
   buildHonorRecordMaterializationFingerprint,
-  buildNovexSourceFingerprint,
   buildSkippedOperationSourceFingerprint,
   createHallOfFameBackfillManifest,
   deserializeManifestRecords,
@@ -56,7 +51,6 @@ import {
   type HallOfFameBackfillIssue,
   type HallOfFameBackfillManifest,
   type HallOfFameBackfillSkippedSource,
-  type HallOfFameNovexManifestEntry,
   type HallOfFameOperationManifestEntry,
 } from "./manifest.ts";
 import {
@@ -75,8 +69,6 @@ interface CliOptions {
 }
 
 interface ApplySummary {
-  novexApplied: number;
-  novexNoop: number;
   operationsApplied: number;
   operationsNoop: number;
   skippedApplied: number;
@@ -230,12 +222,6 @@ async function createManifest(input: {
     criticModel: process.env.HALL_OF_FAME_CRITIC_MODEL?.trim(),
     timeoutMs: ollamaTimeoutMs(),
   });
-  const db = await getDb();
-  const seasons = await db
-    .collection<StockInvestmentSeason>("stock_investment_seasons")
-    .find({ status: "FINALIZED" })
-    .sort({ finalizedAt: 1, endsAt: 1, _id: 1 })
-    .toArray();
   const reportRefs = await (await sessionReportsCol())
     .find(sessionReportVisibilityFilter("U"))
     .project<BackfillOperationReportRef>({
@@ -246,35 +232,10 @@ async function createManifest(input: {
     .sort({ createdAt: 1, sessionId: 1 })
     .toArray();
 
-  const novex: HallOfFameNovexManifestEntry[] = [];
+  const novex: [] = [];
   const operations: HallOfFameOperationManifestEntry[] = [];
   const skipped: HallOfFameBackfillSkippedSource[] = [];
   const issues: HallOfFameBackfillIssue[] = [];
-
-  for (const season of seasons) {
-    try {
-      const performances = await db
-        .collection<StockSeasonPerformance>("stock_season_performance")
-        .find({ seasonId: season._id })
-        .toArray();
-      const records = buildNovexHonorRecords({
-        season,
-        performances,
-        issuedAt: generatedAt,
-      });
-      novex.push({
-        seasonId: season._id,
-        sourceFingerprint: buildNovexSourceFingerprint(records),
-        records: records.map(serializeHonorRecord),
-      });
-    } catch (error) {
-      issues.push({
-        domain: "NOVEX",
-        sourceKey: season._id,
-        code: issueCode(error),
-      });
-    }
-  }
 
   for (const reportRef of reportRefs) {
     try {
@@ -431,31 +392,18 @@ async function assertManifestCoverageCurrent(
   manifest: HallOfFameBackfillManifest,
   session: ClientSession,
 ): Promise<void> {
-  const db = await getDb();
-  const [seasons, reports] = await Promise.all([
-    db
-      .collection<StockInvestmentSeason>("stock_investment_seasons")
-      .find(
-        { status: "FINALIZED" },
-        { projection: { _id: 1 }, session },
-      )
-      .toArray(),
-    (await sessionReportsCol())
-      .find(
-        sessionReportVisibilityFilter("U"),
-        { projection: { sessionId: 1 }, session },
-      )
-      .toArray(),
-  ]);
+  const reports = await (await sessionReportsCol())
+    .find(
+      sessionReportVisibilityFilter("U"),
+      { projection: { sessionId: 1 }, session },
+    )
+    .toArray();
   const manifestReportKeys = [
     ...manifest.operations.map((entry) => entry.sourceKey),
     ...manifest.skipped.map((entry) => entry.sourceKey),
   ];
   if (
-    !sameStringSet(
-      seasons.map((season) => season._id),
-      manifest.novex.map((entry) => entry.seasonId),
-    ) ||
+    manifest.novex.length > 0 ||
     !sameStringSet(
       reports.map((report) => report.sessionId),
       manifestReportKeys,
@@ -484,7 +432,7 @@ export function sameLogicalSourceSet(
 }
 
 async function activeSourceRecords(
-  sourceType: "STOCK_SEASON" | "SESSION_REPORT",
+  sourceType: "SESSION_REPORT",
   sourceKey: string,
   session: ClientSession,
 ): Promise<HonorRecord[]> {
@@ -498,40 +446,6 @@ async function activeSourceRecords(
       { session },
     )
     .toArray();
-}
-
-async function loadCurrentNovex(input: {
-  entry: HallOfFameNovexManifestEntry;
-  generatedAt: Date;
-  session: ClientSession;
-}): Promise<{
-  season: StockInvestmentSeason;
-  performances: StockSeasonPerformance[];
-  records: UpsertHonorRecordInput[];
-}> {
-  const db = await getDb();
-  const season = await db
-    .collection<StockInvestmentSeason>("stock_investment_seasons")
-    .findOne(
-      { _id: input.entry.seasonId, status: "FINALIZED" },
-      { session: input.session },
-    );
-  if (!season) throw new Error("BACKFILL_NOVEX_SOURCE_CHANGED");
-  const performances = await db
-    .collection<StockSeasonPerformance>("stock_season_performance")
-    .find({ seasonId: season._id }, { session: input.session })
-    .toArray();
-  const records = buildNovexHonorRecords({
-    season,
-    performances,
-    issuedAt: input.generatedAt,
-  });
-  if (
-    buildNovexSourceFingerprint(records) !== input.entry.sourceFingerprint
-  ) {
-    throw new Error("BACKFILL_NOVEX_SOURCE_CHANGED");
-  }
-  return { season, performances, records };
 }
 
 async function loadCurrentOperation(input: {
@@ -710,6 +624,9 @@ async function applyManifest(
   if (manifest.issues.length > 0) {
     throw new Error("BACKFILL_MANIFEST_HAS_ISSUES");
   }
+  if (manifest.novex.length > 0) {
+    throw new Error("BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED");
+  }
   if (isHallOfFameV2WritesEnabled()) {
     throw new Error(
       "BACKFILL_REQUIRES_HALL_OF_FAME_V2_WRITES_ENABLED_FALSE",
@@ -720,8 +637,6 @@ async function applyManifest(
   const client = await getClient();
   const session = client.startSession();
   const summary: ApplySummary = {
-    novexApplied: 0,
-    novexNoop: 0,
     operationsApplied: 0,
     operationsNoop: 0,
     skippedApplied: 0,
@@ -730,39 +645,11 @@ async function applyManifest(
   try {
     await session.withTransaction(async () => {
       await assertManifestCoverageCurrent(manifest, session);
-      const novexSources = [];
-      for (const entry of manifest.novex) {
-        novexSources.push(
-          await loadCurrentNovex({ entry, generatedAt, session }),
-        );
-      }
       for (const entry of manifest.operations) {
         await loadCurrentOperation({ entry, session });
       }
       for (const entry of manifest.skipped) {
         await loadCurrentSkipped({ entry, session });
-      }
-
-      for (let index = 0; index < manifest.novex.length; index += 1) {
-        const entry = manifest.novex[index]!;
-        const current = novexSources[index]!;
-        const desired = deserializeManifestRecords(entry.records);
-        const existing = await activeSourceRecords(
-          "STOCK_SEASON",
-          entry.seasonId,
-          session,
-        );
-        if (sameLogicalSourceSet(existing, desired)) {
-          summary.novexNoop += 1;
-          continue;
-        }
-        await materializeNovexSeasonHonors({
-          season: current.season,
-          performances: current.performances,
-          issuedAt: generatedAt,
-          session,
-        });
-        summary.novexApplied += 1;
       }
 
       for (const entry of manifest.operations) {
@@ -869,7 +756,7 @@ export async function main(
           database,
           outputPath,
           manifestHash: manifest.manifestHash,
-          finalizedSeasons: manifest.novex.length,
+          novexSeasonHonors: 0,
           analyzedReports: manifest.operations.length,
           skippedReports: manifest.skipped.length,
           issues: manifest.issues.length,

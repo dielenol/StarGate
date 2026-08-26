@@ -155,7 +155,7 @@ test("manifest apply는 maintenance 전제를 밝히고 첫 mutation 전에 cove
   );
   const transaction = backfill.slice(
     backfill.indexOf("await session.withTransaction"),
-    backfill.indexOf("for (let index = 0; index < manifest.novex.length"),
+    backfill.indexOf("return summary"),
   );
 
   assert.match(backfill, /maintenance 구간에서만 실행/);
@@ -169,13 +169,15 @@ test("manifest apply는 maintenance 전제를 밝히고 첫 mutation 전에 cove
     /const beforeEgress[\s\S]*currentSource\.sourceHash === source\.sourceHash[\s\S]*analyzer\.analyze\([\s\S]*beforeEgress/,
   );
   assert.doesNotMatch(backfill, /honor_source_fences|fenceHonorSources/);
+  assert.match(backfill, /const novex: \[\] = \[\]/);
+  assert.match(backfill, /BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED/);
+  assert.doesNotMatch(backfill, /loadCurrentNovex|materializeNovexSeasonHonors/);
   assert.match(transaction, /await assertManifestCoverageCurrent/);
-  assert.match(transaction, /await loadCurrentNovex/);
   assert.match(transaction, /await loadCurrentOperation/);
   assert.match(transaction, /await loadCurrentSkipped/);
   assert.ok(
     transaction.indexOf("await assertManifestCoverageCurrent") <
-      transaction.indexOf("await loadCurrentNovex"),
+      transaction.indexOf("await loadCurrentOperation"),
   );
 });
 

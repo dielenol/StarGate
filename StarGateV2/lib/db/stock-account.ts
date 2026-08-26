@@ -10,7 +10,11 @@ import "./init";
 
 import { getDb } from "@stargate/shared-db";
 
-import type { CreditTransaction } from "@stargate/shared-db/types";
+import {
+  isNovexHallExcludedAccount,
+  type NovexLifetimeReturnCandidate,
+} from "@stargate/core";
+import type { CreditTransaction, User } from "@stargate/shared-db/types";
 
 export type StockLedgerTransaction = Pick<
   CreditTransaction,
@@ -106,4 +110,148 @@ export async function getStockRealizedProfitSummary(
     .toArray();
 
   return summary ?? { realizedProfit: 0, countedSales: 0, totalSales: 0 };
+}
+
+/**
+ * NOVEX 명예의 전당용 전 기간 실현손익 후보.
+ *
+ * 숫자형 metadata.profit이 있는 STOCK_SELL과 지급된 STOCK_DIVIDEND amount를
+ * 확정 수익에 포함한다. 거래 시점 ownerId가 GM·테스트 계정인 원장은 캐릭터별
+ * 집계 전에 제외해 이후 캐릭터 소유권 변경이 과거 공적 귀속을 바꾸지 않는다.
+ * 최종 TOP 3 정렬은 core의 단일 도메인 함수가 담당한다.
+ */
+export async function listStockLifetimeReturnCandidates(): Promise<
+  NovexLifetimeReturnCandidate[]
+> {
+  const db = await getDb();
+  const owners = await db
+    .collection<User>("users")
+    .find(
+      {},
+      {
+        projection: {
+          _id: 1,
+          username: 1,
+          role: 1,
+        },
+      },
+    )
+    .toArray();
+  const eligibleOwnerIds = owners
+    .filter(
+      (owner) =>
+        owner._id &&
+        !isNovexHallExcludedAccount({
+          username: owner.username,
+          role: owner.role,
+        }),
+    )
+    .map((owner) => String(owner._id));
+  if (eligibleOwnerIds.length === 0) return [];
+
+  return db
+    .collection<CreditTransaction>("credit_transactions")
+    .aggregate<NovexLifetimeReturnCandidate>([
+      {
+        $match: {
+          type: { $in: ["STOCK_SELL", "STOCK_DIVIDEND"] },
+          ownerId: { $in: eligibleOwnerIds },
+        },
+      },
+      {
+        $group: {
+          _id: "$characterId",
+          totalRealizedReturn: {
+            $sum: {
+              $switch: {
+                branches: [
+                  {
+                    case: {
+                      $and: [
+                        { $eq: ["$type", "STOCK_SELL"] },
+                        { $isNumber: "$metadata.profit" },
+                      ],
+                    },
+                    then: "$metadata.profit",
+                  },
+                  {
+                    case: {
+                      $and: [
+                        { $eq: ["$type", "STOCK_DIVIDEND"] },
+                        { $isNumber: "$amount" },
+                      ],
+                    },
+                    then: "$amount",
+                  },
+                ],
+                default: 0,
+              },
+            },
+          },
+          profitEventCount: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    {
+                      $and: [
+                        { $eq: ["$type", "STOCK_SELL"] },
+                        { $isNumber: "$metadata.profit" },
+                      ],
+                    },
+                    {
+                      $and: [
+                        { $eq: ["$type", "STOCK_DIVIDEND"] },
+                        { $isNumber: "$amount" },
+                      ],
+                    },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      { $match: { profitEventCount: { $gt: 0 } } },
+      {
+        $set: {
+          characterObjectId: {
+            $convert: {
+              input: "$_id",
+              to: "objectId",
+              onError: null,
+              onNull: null,
+            },
+          },
+        },
+      },
+      { $match: { characterObjectId: { $ne: null } } },
+      {
+        $lookup: {
+          from: "characters",
+          localField: "characterObjectId",
+          foreignField: "_id",
+          as: "character",
+        },
+      },
+      { $unwind: "$character" },
+      {
+        $match: {
+          "character.type": "AGENT",
+          "character.ownerId": { $in: eligibleOwnerIds },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          characterId: "$_id",
+          codename: "$character.codename",
+          totalRealizedReturn: 1,
+          profitEventCount: 1,
+        },
+      },
+    ])
+    .toArray();
 }

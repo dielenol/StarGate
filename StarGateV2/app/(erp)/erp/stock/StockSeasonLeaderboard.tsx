@@ -38,7 +38,7 @@ export default function StockSeasonLeaderboard() {
         </div>
         <div className={styles.seasonBoard__actions}>
           <strong>{seasonStatusLabel(data?.season?.status)}</strong>
-          <Link href="/erp/hall-of-fame?view=novex">역대 기록 ↗</Link>
+          <Link href="/erp/hall-of-fame?view=novex">누적 수익 명예 기록 ↗</Link>
         </div>
       </div>
       {query.isPending ? (

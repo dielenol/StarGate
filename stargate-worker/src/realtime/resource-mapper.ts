@@ -4,7 +4,7 @@ export const COLLECTION_RESOURCE_MAP = {
   users: ["users", "personnel"],
   characters: ["characters", "personnel"],
   character_change_logs: ["characters"],
-  credit_transactions: ["credits"],
+  credit_transactions: ["credits", "hall-of-fame"],
   credit_balances: ["credits"],
   credit_pools: ["credits"],
   character_inventory: ["inventory"],

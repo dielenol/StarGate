@@ -124,7 +124,7 @@ test("화면은 오류·빈 결과와 통합 공적 허브 계약을 제공한�
   assert.match(client, /formatCredits\(researchLeader\.totalCredits\)/);
   assert.match(client, /researchLeader\.contributionCount\.toLocaleString/);
   assert.match(client, /research\.isError \? "마지막 성공 기록 확인 필요"/);
-  assert.match(client, /novex\.isError \? "시즌 원장 조회 실패"/);
+  assert.match(client, /novex\.isError \? "수익 원장 조회 실패"/);
   assert.match(client, /citations\.isError \? "작전 원장 조회 실패"/);
   assert.doesNotMatch(client, /styles\["panel--mine"\]/);
   assert.match(client, /VIEWS = \["overview", "research", "novex", "operations", "mine"\]/);
