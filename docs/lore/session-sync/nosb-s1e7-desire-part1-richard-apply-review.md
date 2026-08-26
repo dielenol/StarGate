@@ -7,7 +7,7 @@ source: stargate-lore
 
 # 리처드 신원 병합 적용 확인표
 
-이 문서는 전체 회차 확인표에서 사용자 결정으로 신원조회 반영을 생략한 킴라박 기록과 분리해, `WHITE_ROSE_R` 병합 파일에 실제로 들어가는 리처드 항목만 검사한다. 세션 전체 근거와 제외 결정의 기준 문서는 `nosb-s1e7-desire-part1-coverage.md`다.
+이 문서는 전체 회차 확인표에서 사용자 결정으로 신원조회 반영을 생략한 킴라박 기록과 분리해, 전체 공개 등록 파일 안의 `WHITE_ROSE_R` 병합 항목만 검사한다. 세션 전체 근거와 제외 결정의 기준 문서는 `nosb-s1e7-desire-part1-coverage.md`, 실제 등록 파일은 `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part1-publication.json`이다.
 
 ## NPC Approval Ledger
 
