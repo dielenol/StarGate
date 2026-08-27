@@ -81,3 +81,11 @@
 - 검증: core 36건·worker 154건, shared 공적 계약 7건·Mongo 환경 의존 1건 skip, manifest 6건, `pnpm build:worker`, critical risk review P0/P1 없음
 - 관련 구현 커밋: `f0036d11`
 - 운영 경계: Cloud 호출, manifest 생성·적용, 라이브 DB·index·writer gate 변경은 실행하지 않았다.
+
+## 2026-08-27 · 정확도 개선 · NOVEX 충격·냉각 공시 정합성
+
+- 같은 슬롯의 시장 충격 공시가 종목 공시에 가려졌으면 실제 가격 계산에서 선택된 공시 ID를 기준으로 해당 종목의 충격 webhook도 제외해, 다른 원인으로 움직인 가격을 시장 충격 결과로 오보하지 않게 했다.
+- 자동 냉각 기준 상향에 맞춰 `15% 이상` 사유를 Discord 문구로 표시하고, rolling deploy 전에 적재된 기존 `12% 이상` 사유도 계속 해석한다. 회차별 냉각 시작 1건·해제 1건 통합은 유지했다.
+- 검증: shared NOVEX 26건, worker 156건, `pnpm typecheck`, 전체 `pnpm lint`, production build 108페이지, critical risk review 재검토 통과
+- 관련 구현 커밋: `8c22c17f`
+- 운영 경계: 라이브 outbox·Discord·시세·거래 상태와 worker 배포는 변경하지 않았다.
