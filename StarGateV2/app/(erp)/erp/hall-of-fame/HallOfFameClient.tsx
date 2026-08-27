@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState, type TouchEvent } from "react";
 
 import type {
   HallOfFameCitationPageResponse,
@@ -52,9 +52,15 @@ const RANK_LABELS = { 1: "GOLD LAUREATE", 2: "SILVER HONOREE", 3: "BRONZE HONORE
 const CATEGORY_LABELS: Record<HallOfFameHonorItem["category"], string> = { NOVEX_PODIUM: "NOVEX 투자 공적", COMBAT: "전투 공적", COMMAND: "지휘 공적", RESCUE_PROTECTION: "구조 · 보호", RESEARCH_TECH: "연구 · 기술", SUPPORT_TEAMWORK: "지원 · 공조", INTELLIGENCE_JUDGMENT: "정보 · 판단" };
 const OPERATION_CATEGORIES: OperationHonorCategory[] = ["COMBAT", "COMMAND", "RESCUE_PROTECTION", "RESEARCH_TECH", "SUPPORT_TEAMWORK", "INTELLIGENCE_JUDGMENT"];
 const PORTRAIT_SIZES: Record<1 | 2 | 3, string> = { 1: "(max-width: 640px) 50vw, (max-width: 960px) 42vw, 510px", 2: "(max-width: 640px) 34vw, 210px", 3: "(max-width: 640px) 34vw, 210px" };
+const SPOTLIGHT_INTERVAL_MS = 6_500;
 
 type ResearchHonorItem = ResearchHallOfFameResponse["items"][number];
 type NovexHonorItem = HallOfFameNovexResponse["items"][number];
+type SpotlightSlide =
+  | { key: string; kind: "operation"; honor: HallOfFameHonorItem }
+  | { key: string; kind: "ribbon"; honor: HallOfFameHonorItem }
+  | { key: string; kind: "novex"; item: NovexHonorItem }
+  | { key: string; kind: "research"; item: ResearchHonorItem; generatedAt?: string };
 
 function formatCredits(value: number): string { return `${value.toLocaleString("ko-KR")} CR`; }
 function formatProfit(value: number): string { return `${value > 0 ? "+" : ""}${value.toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CR`; }
@@ -94,41 +100,53 @@ function NovexPanel({ data }: { data: HallOfFameNovexResponse | undefined }) {
   return <div className={styles.novexPanel}><div className={styles.novexPanel__topline}><span>ALL TIME · TOTAL REALIZED RETURN</span><span>TOP 3</span></div><ol>{data.items.map((item) => <li key={`${item.rank}-${item.codename}`}><b>{String(item.rank).padStart(2, "0")}</b><span>{item.codename}</span><small>{formatProfit(item.totalRealizedReturn)} · 수익 확정 {item.profitEventCount.toLocaleString("ko-KR")}건</small></li>)}</ol></div>;
 }
 
-function FeaturedRecord({
-  honor,
-  novexLeader,
-  researchLeader,
-  researchGeneratedAt,
-  isLoading,
+function SpotlightRecord({
+  slide,
+  index,
+  total,
+  isActive,
 }: {
-  honor?: HallOfFameHonorItem;
-  novexLeader?: NovexHonorItem;
-  researchLeader?: ResearchHonorItem;
-  researchGeneratedAt?: string;
-  isLoading: boolean;
+  slide: SpotlightSlide;
+  index: number;
+  total: number;
+  isActive: boolean;
 }) {
-  const codename = honor?.codename ?? novexLeader?.codename ?? researchLeader?.codename;
-  const isNovexLead = !honor && Boolean(novexLeader);
-  const isResearchLead = !honor && !novexLeader && Boolean(researchLeader);
+  const honor = slide.kind === "operation" || slide.kind === "ribbon" ? slide.honor : undefined;
+  const novexLeader = slide.kind === "novex" ? slide.item : undefined;
+  const researchLeader = slide.kind === "research" ? slide.item : undefined;
+  const codename = slide.kind === "operation" || slide.kind === "ribbon"
+    ? slide.honor.codename
+    : slide.item.codename;
+  const titleId = `spotlight-title-${index}`;
 
   return (
-    <section
-      className={`${styles.panel} ${styles["panel--featured"]}`}
-      data-source={isResearchLead ? "research" : isNovexLead ? "novex" : honor?.domain.toLowerCase()}
-      aria-labelledby="featured-title"
+    <article
+      aria-hidden={!isActive}
+      aria-labelledby={titleId}
+      className={styles.featured__slide}
+      data-source={slide.kind}
     >
       <div className={styles.featured__orbit} aria-hidden="true">
         <span className={styles.featured__emblem}><NovusEmblem /></span>
-        {codename ? <span className={styles.featured__portrait}><HallPortrait codename={codename} rank={1} /></span> : null}
-        <span className={styles.featured__axis}>NO·01</span>
+        <span className={styles.featured__portrait}><HallPortrait codename={codename} rank={isActive ? 1 : 2} /></span>
+        <span className={styles.featured__axis}>{String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}</span>
       </div>
       <div className={styles.featured__copy}>
-        <div className={styles.panel__eyebrow}>{honor ? "LATEST OFFICIAL RECORD" : isNovexLead ? "NOVEX ALL-TIME LEAD" : isResearchLead ? "LIVE RESEARCH LEAD" : "OFFICIAL RECORD CHANNEL"}</div>
-        <h3 id="featured-title">{codename ?? (isLoading ? "기록 조회중" : "첫 공적 대기중")}</h3>
+        <div className={styles.panel__eyebrow}>
+          {slide.kind === "operation"
+            ? "LATEST OPERATION CITATION"
+            : slide.kind === "ribbon"
+              ? "PERSONAL HONOR RIBBON"
+              : slide.kind === "novex"
+                ? "NOVEX ALL-TIME LEAD"
+                : "LIVE RESEARCH LEAD"}
+        </div>
+        <h3 id={titleId}>{codename}</h3>
         {honor ? <>
           <strong>{honor.title}</strong>
           <p>{honor.citation}</p>
           <span>{CATEGORY_LABELS[honor.category]} · {honor.sourceLabel}</span>
+          {honor.sourceHref ? <Link className={styles.featured__link} href={honor.sourceHref} tabIndex={isActive ? 0 : -1}>원문 기록 열기 →</Link> : null}
         </> : novexLeader ? <>
           <strong>NOVEX 누적 실현수익 1위</strong>
           <p>전 기간 주식 매도 실현손익과 지급 배당을 합산한 현재 선두 기록입니다.</p>
@@ -144,9 +162,119 @@ function FeaturedRecord({
             <div><dt>누적 공로</dt><dd>{formatCredits(researchLeader.totalCredits)}</dd></div>
             <div><dt>기여 횟수</dt><dd>{researchLeader.contributionCount.toLocaleString("ko-KR")}회</dd></div>
           </dl>
-          <span>RESEARCH · ALL TIME{researchGeneratedAt ? ` · ${formatDateTime(researchGeneratedAt, "padded")}` : ""}</span>
-        </> : <p>{isLoading ? "공개 가능한 연구·투자·작전 기록을 대조하고 있습니다." : "공식 기준을 통과한 첫 기록이 생성되면 이 좌표에 헌액됩니다."}</p>}
+          <span>RESEARCH · ALL TIME{slide.kind === "research" && slide.generatedAt ? ` · ${formatDateTime(slide.generatedAt, "padded")}` : ""}</span>
+        </> : null}
       </div>
+    </article>
+  );
+}
+
+function HonorsSpotlight({ slides, isLoading }: { slides: SpotlightSlide[]; isLoading: boolean }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isInteractionPaused, setIsInteractionPaused] = useState(false);
+  const [isManuallyPaused, setIsManuallyPaused] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+  const touchStartX = useRef<number | null>(null);
+  const slideCount = slides.length;
+  const safeIndex = slideCount > 0 ? activeIndex % slideCount : 0;
+  const translatePercent = safeIndex === 0 ? 0 : safeIndex * -100;
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncPreference = () => setPrefersReducedMotion(media.matches);
+    syncPreference();
+    media.addEventListener("change", syncPreference);
+    return () => media.removeEventListener("change", syncPreference);
+  }, []);
+
+  useEffect(() => {
+    if (slideCount < 2 || prefersReducedMotion || isInteractionPaused || isManuallyPaused) return;
+    const timer = window.setInterval(
+      () => setActiveIndex((current) => (current + 1) % slideCount),
+      SPOTLIGHT_INTERVAL_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, [isInteractionPaused, isManuallyPaused, prefersReducedMotion, slideCount]);
+
+  const showPrevious = () => {
+    if (slideCount < 2) return;
+    setActiveIndex((current) => (current - 1 + slideCount) % slideCount);
+  };
+  const showNext = () => {
+    if (slideCount < 2) return;
+    setActiveIndex((current) => (current + 1) % slideCount);
+  };
+  const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
+    setIsInteractionPaused(true);
+    touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+  };
+  const handleTouchEnd = (event: TouchEvent<HTMLElement>) => {
+    const startX = touchStartX.current;
+    touchStartX.current = null;
+    if (startX === null) {
+      setIsInteractionPaused(false);
+      return;
+    }
+    const distance = (event.changedTouches[0]?.clientX ?? startX) - startX;
+    if (Math.abs(distance) >= 44) {
+      if (distance > 0) showPrevious();
+      else showNext();
+    }
+    setIsInteractionPaused(false);
+  };
+
+  if (slideCount === 0) {
+    return (
+      <section className={`${styles.panel} ${styles["panel--featured"]} ${styles.spotlight}`} aria-label="대표 공적 기록">
+        <div className={`${styles.featured__slide} ${styles["featured__slide--empty"]}`}>
+          <div className={styles.featured__orbit} aria-hidden="true"><span className={styles.featured__emblem}><NovusEmblem /></span><span className={styles.featured__axis}>00 / 00</span></div>
+          <div className={styles.featured__copy}><div className={styles.panel__eyebrow}>OFFICIAL RECORD CHANNEL</div><h3>{isLoading ? "기록 조회중" : "첫 공적 대기중"}</h3><p>{isLoading ? "공개 가능한 연구·투자·작전 기록을 대조하고 있습니다." : "공식 기준을 통과한 첫 기록이 생성되면 이 좌표에 헌액됩니다."}</p></div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      aria-label="대표 공적 자동 순환 기록"
+      aria-roledescription="carousel"
+      className={`${styles.panel} ${styles["panel--featured"]} ${styles.spotlight}`}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsInteractionPaused(false);
+      }}
+      onFocusCapture={() => setIsInteractionPaused(true)}
+      onMouseEnter={() => setIsInteractionPaused(true)}
+      onMouseLeave={(event) => {
+        if (!event.currentTarget.contains(document.activeElement)) setIsInteractionPaused(false);
+      }}
+    >
+      <div
+        className={styles.spotlight__viewport}
+        onTouchCancel={() => {
+          touchStartX.current = null;
+          setIsInteractionPaused(false);
+        }}
+        onTouchEnd={handleTouchEnd}
+        onTouchStart={handleTouchStart}
+      >
+        <div
+          aria-live="off"
+          className={styles.spotlight__track}
+          style={{ transform: `translateX(${translatePercent}%)` }}
+        >
+          {slides.map((slide, index) => <SpotlightRecord index={index} isActive={safeIndex === index} key={slide.key} slide={slide} total={slideCount} />)}
+        </div>
+      </div>
+      {slideCount > 1 ? <footer className={styles.spotlight__controls}>
+        <div className={styles.spotlight__arrows}>
+          <button aria-label="이전 공적 기록" onClick={showPrevious} type="button">←</button>
+          <button aria-label="다음 공적 기록" onClick={showNext} type="button">→</button>
+        </div>
+        <div aria-label="공적 기록 선택" className={styles.spotlight__dots} role="group">
+          {slides.map((slide, index) => <button aria-label={`${index + 1}번째 공적 기록 보기`} aria-pressed={safeIndex === index} key={slide.key} onClick={() => setActiveIndex(index)} type="button"><span /></button>)}
+        </div>
+        {prefersReducedMotion ? <span className={styles.spotlight__mode}>MANUAL · REDUCED MOTION</span> : <button aria-pressed={isManuallyPaused} className={styles.spotlight__pause} onClick={() => setIsManuallyPaused((paused) => !paused)} type="button">{isManuallyPaused ? "자동 순환 재개" : "자동 순환 정지"}</button>}
+      </footer> : null}
     </section>
   );
 }
@@ -194,21 +322,37 @@ export default function HallOfFameClient({ initialOverviewData, initialOverviewD
   const novex = useHallOfFameNovex({ initialData: initialNovexData, initialDataUpdatedAt: initialNovexDataUpdatedAt });
   const citations = useHallOfFameCitations({ category: permittedView === "operations" ? operationCategory : undefined, cursor: operationCursor, initialData: permittedView === "operations" && (operationCategory || operationCursor) ? undefined : initialCitationsData, initialDataUpdatedAt: permittedView === "operations" && (operationCategory || operationCursor) ? undefined : initialCitationsDataUpdatedAt, enabled: !isGuest });
   const mine = useHallOfFameMine({ initialData: initialMineData, initialDataUpdatedAt: initialMineDataUpdatedAt, enabled: !isGuest });
-  const latestHonor = [...(isGuest ? [] : citations.data?.items ?? [])].sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime())[0];
   const novexLeader = novex.data?.items.find((item) => item.rank === 1);
   const researchLeader = research.data?.items.find((item) => item.rank === 1);
   const hasNovexRecords = Boolean(novex.data?.items.length);
   const hasOperationRecords = !isGuest && Boolean(citations.data?.items.length);
-  const registryHealthy = !overview.isError && !research.isError && !novex.isError && (isGuest || !citations.isError);
+  const hasMineRecords = !isGuest && Boolean(mine.data?.ribbons.length);
+  const registryHealthy = !overview.isError && !research.isError && !novex.isError && (isGuest || (!citations.isError && !mine.isError));
   const researchChannelValue = research.data ? `${research.data.items.length}명 헌액` : research.isLoading ? "원장 조회중" : "확인 불가";
   const researchChannelStatus = research.isError ? "마지막 성공 기록 확인 필요" : research.data ? "매일 21:00 KST 갱신" : "연구 원장 연결중";
   const novexChannelValue = overview.data ? `${overview.data.novexHonoreeCount}명 헌액` : overview.isLoading ? "수익 조회중" : "확인 불가";
   const novexChannelStatus = novex.isError ? "수익 원장 조회 실패" : !novex.data ? "수익 원장 연결중" : hasNovexRecords ? "전 기간 실현손익 집계" : "실현손익 기록 대기";
   const operationChannelValue = citations.data ? hasOperationRecords ? "공적 기록 활성" : "헌액 기록 0건" : citations.isLoading ? "원장 조회중" : "확인 불가";
   const operationChannelStatus = citations.isError ? "작전 원장 조회 실패" : !citations.data ? "작전 원장 연결중" : hasOperationRecords ? "U 공개 원본 검증 완료" : "자동 심사 결과 대기";
+  const mineChannelValue = mine.data ? `${mine.data.total.toLocaleString("ko-KR")}개 리본` : mine.isLoading ? "개인 원장 조회중" : "확인 불가";
+  const mineChannelStatus = mine.isError ? "개인 원장 조회 실패" : !mine.data ? "리본 원장 연결중" : hasMineRecords ? "내 AGENT 공적 연결됨" : "발급된 리본 없음";
   const navViews = VIEWS.filter((candidate) => !isGuest || (candidate !== "operations" && candidate !== "mine"));
   const generatedAtCandidates = [overview.data?.generatedAt, research.data?.generatedAt, novex.data?.generatedAt, !isGuest ? citations.data?.generatedAt : undefined].filter((value): value is string => Boolean(value));
   const latestGeneratedAt = generatedAtCandidates.sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
+  const operationHighlights = [...(isGuest ? [] : citations.data?.items ?? [])]
+    .sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime())
+    .slice(0, 3);
+  const operationKeys = new Set(operationHighlights.map((item) => item.key));
+  const ribbonHighlights = (isGuest ? [] : mine.data?.ribbons ?? [])
+    .filter((item) => !operationKeys.has(item.key))
+    .slice(0, 2);
+  const spotlightSlides: SpotlightSlide[] = [
+    ...operationHighlights.slice(0, 1).map((honor) => ({ key: `operation-${honor.key}`, kind: "operation" as const, honor })),
+    ...(novexLeader ? [{ key: `novex-${novexLeader.codename}`, kind: "novex" as const, item: novexLeader }] : []),
+    ...(researchLeader ? [{ key: `research-${researchLeader.codename}`, kind: "research" as const, item: researchLeader, generatedAt: research.data?.generatedAt }] : []),
+    ...operationHighlights.slice(1).map((honor) => ({ key: `operation-${honor.key}`, kind: "operation" as const, honor })),
+    ...ribbonHighlights.map((honor) => ({ key: `ribbon-${honor.key}`, kind: "ribbon" as const, honor })),
+  ];
   const nextCitationHref = citations.data?.nextCursor
     ? `/erp/hall-of-fame?view=operations${operationCategory ? `&category=${operationCategory}` : ""}&cursor=${encodeURIComponent(citations.data.nextCursor)}`
     : undefined;
@@ -222,13 +366,14 @@ export default function HallOfFameClient({ initialOverviewData, initialOverviewD
       </header>
       {overview.isLoading && !overview.data ? <HallState compact title="공식 기록을 집계하고 있습니다." detail="공개 가능한 공적 원장을 확인하는 중입니다." /> : overview.isError && !overview.data ? <HallState compact title="전체 기록 집계를 불러오지 못했습니다." detail="각 부문 기록은 아래에서 계속 확인할 수 있습니다." retry={() => void overview.refetch()} isRetrying={overview.isFetching} /> : overview.isError ? <StaleNotice compact retry={() => void overview.refetch()} isRetrying={overview.isFetching} /> : null}
       <div className={styles.overview__grid}>
-        <FeaturedRecord honor={latestHonor} novexLeader={novexLeader} researchLeader={researchLeader} researchGeneratedAt={research.data?.generatedAt} isLoading={research.isLoading || novex.isLoading || (!isGuest && citations.isLoading)} />
+        <HonorsSpotlight slides={spotlightSlides} isLoading={research.isLoading || novex.isLoading || (!isGuest && (citations.isLoading || mine.isLoading))} />
         <aside className={`${styles.panel} ${styles["panel--registry"]}`} aria-labelledby="registry-title">
           <div className={styles.panel__heading}><div><span>ARCHIVE CHANNELS</span><h3 id="registry-title">공적 원장 좌표</h3></div><span className={styles.registry__pulse} data-healthy={registryHealthy ? "true" : "false"} aria-label={registryHealthy ? "원장 온라인" : "원장 부분 연결"}>{registryHealthy ? "ONLINE" : "PARTIAL"}</span></div>
           <div className={styles.registry__channels}>
             <ArchiveChannel active={Boolean(research.data?.items.length) && !research.isError} href="/erp/hall-of-fame?view=research" index="01" label="RESEARCH" value={researchChannelValue} status={researchChannelStatus} />
             <ArchiveChannel active={hasNovexRecords && !novex.isError} href="/erp/hall-of-fame?view=novex" index="02" label="NOVEX" value={novexChannelValue} status={novexChannelStatus} />
             {!isGuest ? <ArchiveChannel active={hasOperationRecords && !citations.isError} href="/erp/hall-of-fame?view=operations" index="03" label="OPERATIONS" value={operationChannelValue} status={operationChannelStatus} /> : null}
+            {!isGuest ? <ArchiveChannel active={hasMineRecords && !mine.isError} href="/erp/hall-of-fame?view=mine" index="04" label="MY RIBBONS" value={mineChannelValue} status={mineChannelStatus} /> : null}
           </div>
           <footer className={styles.registry__footer}><span>OFFICIAL · READ ONLY</span><small>공식 조건을 통과한 실제 기록만 표시합니다.</small></footer>
         </aside>
