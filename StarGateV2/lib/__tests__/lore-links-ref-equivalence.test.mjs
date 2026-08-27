@@ -439,6 +439,51 @@ test("L-3b: relatedPersonnelForReports (위키 상세 경로) — ref 등가 + d
   }
 });
 
+test("참여자 복합 표기의 성씨만 같은 인물을 관련 기록에 섞지 않는다", () => {
+  const report = makeReport({
+    sessionId: "NOSB-S1E7-DESIRE-PART1",
+    participants: ["키아나 오 캘러핸 / 네베드"],
+  });
+  const characters = [
+    {
+      _id: "neved",
+      codename: "네베드",
+      type: "AGENT",
+      role: "operative",
+      isPublic: true,
+      lore: { name: "키아나 오 캘러핸", nickname: "네베드" },
+    },
+    {
+      _id: "connor",
+      codename: "CONNOR_OCALLAHAN",
+      type: "NPC",
+      role: "갈로글라 지도자",
+      isPublic: true,
+      lore: { name: "코너 오 캘러핸" },
+    },
+    {
+      _id: "nerin",
+      codename: "NERIN_OCALLAHAN",
+      type: "NPC",
+      role: "갈로글라 공동체 주민",
+      isPublic: true,
+      lore: { name: "네린 오 캘러핸" },
+    },
+  ];
+
+  assert.deepEqual(
+    relatedPersonnelForReport(report, characters).map((entry) => entry.id),
+    ["neved"],
+  );
+  assert.deepEqual(
+    relatedPersonnelForReports(
+      [toRelatedReportLink(toSessionReportRef(report))],
+      characters.map(toCharacterRef),
+    ).map((entry) => entry.id),
+    ["neved"],
+  );
+});
+
 test("L-4: 마스킹된 캐릭터의 연관 인물 카드 — 실명 대신 [CLASSIFIED] 유지", () => {
   const chars = makeCharacters();
 

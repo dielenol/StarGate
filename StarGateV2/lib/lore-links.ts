@@ -165,7 +165,11 @@ function participantCandidateKeys(value: string): string[] {
     addPersonnelKey(keys, match[1] ?? match[2]);
   }
 
-  for (const part of normalizedSource.split(/[\s,/|·]+/u)) {
+  // 공백까지 낱말 경계로 취급하면 `키아나 오 캘러핸 / 네베드`의
+  // `캘러핸`만으로 같은 성을 가진 인물 전원이 연관 인물로 붙는다.
+  // 참여자 표기에서 독립 신원을 나누는 명시 구분자만 분리하고,
+  // 띄어쓰기가 포함된 이름은 하나의 식별 후보로 유지한다.
+  for (const part of normalizedSource.split(/[,/|·]+/u)) {
     addPersonnelKey(keys, part);
   }
 
