@@ -95,3 +95,12 @@
 - 검증: Hall 계약 15건, `pnpm typecheck`, `pnpm lint`, 변경 파일 ESLint, `pnpm build`, 인증된 GM ERP 2056×1113·390×844에서 자동 순환·라운드 테두리·터치 영역·가로 넘침 0 확인, 확장 없는 브라우저 콘솔 경고·오류 0건
 - 관련 구현 커밋: `d46c9428`
 - 운영 경계: 조회와 로컬 UI 제어만 수행했으며 라이브 DB·Cloud 분석·backfill·writer gate·알림 상태는 변경하지 않았다.
+
+## 2026-08-27 · 데이터 이관 · 작전 공적 원장 최초 헌액
+
+- U 등급 작전보고서 18건을 수동 검토 manifest로 고정하고, 정확히 연결된 플레이어 AGENT만 대상으로 작전 공적 11건을 `honor_records`에 멱등 반영했다. 보고서 12건에는 누락된 관련 인물 연결 137개와 출처 provenance를 원자적으로 보강했다.
+- `honor_records`·`honor_analysis_states`의 필수 인덱스 8개를 생성하고, 분석 상태 18건이 모두 `SUCCEEDED` 및 `operation-honor-manual-v1` revision인지 재조회했다. 활성 작전 공적은 11건이며 원본 연결 누락은 0건이다.
+- 인증된 로컬 GM ERP의 `/erp/hall-of-fame?view=operations`에서 MARIA·PIPETTE·네베드 등 11건, 6개 부문 필터와 불투명 원본 링크를 확인했다. 빈 상태는 사라졌고 브라우저 콘솔 오류는 0건이었다.
+- 검증: Hall 계약 15건, worker 158건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인덱스 재점검 `missing 0`·`conflicting 0`, critical risk review P0–P2 없음
+- 관련 구현 커밋: `54d73a15`
+- 운영 결과: HONOR 알림 0건·웹훅 0건으로 과거 이관의 무발송 계약을 지켰고, `HALL_OF_FAME_V2_WRITES_ENABLED` gate는 비활성 상태로 유지했다. 크레딧·인벤토리·주식 원장은 변경하지 않았다.
