@@ -4,7 +4,12 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { getVttRuntimeStatus } from "@/lib/vtt-runtime/control-client";
+import {
+  getVttHostStatus,
+  isVttHostControlModeEnabled,
+} from "@/lib/vtt-runtime/host-control-client";
 
+import VttHostControlClient from "./VttHostControlClient";
 import VttRuntimeClient from "./VttRuntimeClient";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +19,9 @@ export default async function VttRuntimePage() {
   if (!session?.user) redirect("/login");
   if (!hasRole(session.user.role, "GM")) redirect("/erp");
 
-  const initialStatus = await getVttRuntimeStatus();
+  const control = isVttHostControlModeEnabled()
+    ? <VttHostControlClient initialStatus={await getVttHostStatus()} />
+    : <VttRuntimeClient initialStatus={await getVttRuntimeStatus()} />;
   return (
     <>
       <PageHead
@@ -25,7 +32,7 @@ export default async function VttRuntimePage() {
         ]}
         title="VTT 운영"
       />
-      <VttRuntimeClient initialStatus={initialStatus} />
+      {control}
     </>
   );
 }

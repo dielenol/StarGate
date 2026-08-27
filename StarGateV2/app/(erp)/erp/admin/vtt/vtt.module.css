@@ -96,6 +96,7 @@
 }
 
 .runtime[data-state="degraded"] .runtime__primary,
+.runtime[data-state="recovery_required"] .runtime__primary,
 .runtime[data-state="unreachable"] .runtime__primary {
   background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
@@ -115,12 +116,14 @@
 }
 
 .runtime[data-state="starting"] .runtime__pulse,
-.runtime[data-state="stopping"] .runtime__pulse {
+.runtime[data-state="stopping"] .runtime__pulse,
+.runtime[data-state="switching"] .runtime__pulse {
   background: var(--info);
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--info) 12%, transparent);
 }
 
 .runtime[data-state="degraded"] .runtime__pulse,
+.runtime[data-state="recovery_required"] .runtime__pulse,
 .runtime[data-state="unreachable"] .runtime__pulse {
   background: var(--danger);
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 12%, transparent);
@@ -220,6 +223,134 @@
   color: var(--danger);
 }
 
+.transition {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 22px;
+  border-left: 3px solid var(--info);
+}
+
+.transition[data-tone="error"] {
+  border-left-color: var(--danger);
+}
+
+.transition > div {
+  display: grid;
+  gap: 6px;
+}
+
+.transition small,
+.hostCard small,
+.hostCard__metrics dt {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.transition strong,
+.hostCard strong,
+.offlineControl strong {
+  color: var(--ink-1);
+}
+
+.transition p,
+.hostCard p,
+.offlineControl p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.transition > span {
+  flex: 0 0 auto;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.hostGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hostCard {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.hostCard[data-active="true"] {
+  border-color: color-mix(in srgb, var(--success) 55%, var(--line));
+  background: color-mix(in srgb, var(--success) 4%, var(--bg-1));
+}
+
+.hostCard__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hostCard__heading > div {
+  display: grid;
+  gap: 5px;
+}
+
+.hostCard__heading strong {
+  font-size: 20px;
+}
+
+.hostCard__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  margin: 0;
+  background: var(--line);
+}
+
+.hostCard__metrics > div {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 12px;
+  background: var(--bg-1);
+}
+
+.hostCard__metrics dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hostCard > button {
+  justify-content: center;
+  width: 100%;
+}
+
+.offlineControl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 22px;
+}
+
+.offlineControl > div:first-child {
+  display: grid;
+  max-width: 680px;
+  gap: 6px;
+}
+
 .confirm {
   display: grid;
   gap: 18px;
@@ -287,7 +418,8 @@
 
 @media (max-width: 860px) {
   .hero,
-  .controls {
+  .controls,
+  .offlineControl {
     align-items: stretch;
     flex-direction: column;
   }
@@ -312,9 +444,18 @@
   .confirm__actions {
     justify-content: flex-start;
   }
+
+  .transition {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 620px) {
+  .hostGrid {
+    grid-template-columns: 1fr;
+  }
+
   .metrics,
   .lastAction dl {
     grid-template-columns: 1fr;

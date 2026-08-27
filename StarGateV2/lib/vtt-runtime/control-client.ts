@@ -87,7 +87,10 @@ function unavailableStatus(
 function readControlConfiguration(
   env: NodeJS.ProcessEnv = process.env,
 ): ControlConfiguration {
-  const requested = env.NOCHICHIM_CONTROL_ENABLED === "true";
+  const requested = (
+    env.NOCHICHIM_CONTROL_ENABLED === "true" &&
+    env.NOCHICHIM_HOST_CONTROL_ENABLED !== "true"
+  );
   if (!requested || env.VERCEL_ENV !== "production") {
     return {
       enabled: false,
