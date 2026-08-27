@@ -121,9 +121,11 @@ function addPersonnelKey(keys: Set<string>, value?: string | null): void {
   const koreanDoctorPrefix = source.match(/^닥터\s*/u)?.[0];
 
   if (englishDoctorPrefix) {
-    variants.push(`닥터 ${source.slice(englishDoctorPrefix.length)}`);
+    const name = source.slice(englishDoctorPrefix.length).trim();
+    variants.push(`닥터 ${name}`, name);
   } else if (koreanDoctorPrefix) {
-    variants.push(`Dr. ${source.slice(koreanDoctorPrefix.length)}`);
+    const name = source.slice(koreanDoctorPrefix.length).trim();
+    variants.push(`Dr. ${name}`, name);
   }
 
   for (const variant of variants) {

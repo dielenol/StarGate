@@ -118,3 +118,21 @@ test("Dr.와 닥터 표기를 같은 참가자 별칭으로 처리한다", () =>
     true,
   );
 });
+
+test("닥터 호칭 뒤 이름만 저장된 인물도 참가자 링크로 연결한다", () => {
+  const doctorZeno = toRelatedPersonnelLink(
+    character({
+      codename: "DOCTOR_ZENO",
+      lore: {
+        name: "제노",
+        loreTags: [],
+      },
+    }),
+  );
+
+  assert.ok(doctorZeno);
+  assert.equal(
+    relatedPersonnelLinkMatchesParticipant("닥터 제노", doctorZeno),
+    true,
+  );
+});
