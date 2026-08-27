@@ -956,24 +956,27 @@
               }
             ]
           },
-          "tags": {
-            "$setUnion": [
-              {
-                "$ifNull": [
-                  "$tags",
-                  []
-                ]
-              },
-              [
-                "NOSB-S1E7-DESIRE-PART1",
-                "S1E7",
-                "닥터제노",
-                "마가렛",
-                "우디",
-                "강압실험"
-              ]
-            ]
-          },
+          "tags": [
+            "NOSB-S1E2-MINI",
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "S1E2-MINI",
+            "격리실",
+            "닥터제노",
+            "마가렛",
+            "메리골드",
+            "면회통제",
+            "미확인수술",
+            "세계이사회",
+            "엑토플라즘",
+            "지휘이관",
+            "피펫",
+            "해쉬테거",
+            "NOSB-S1E7-DESIRE-PART1",
+            "S1E7",
+            "우디",
+            "강압실험"
+          ],
           "updatedAt": {
             "$toDate": "2026-08-26T14:40:45.000Z"
           }
@@ -1066,23 +1069,31 @@
               }
             ]
           },
-          "tags": {
-            "$setUnion": [
-              {
-                "$ifNull": [
-                  "$tags",
-                  []
-                ]
-              },
-              [
-                "NOSB-S1E7-DESIRE-PART1",
-                "S1E7",
-                "엘레노어",
-                "파리카타콤",
-                "왕관백신"
-              ]
-            ]
-          },
+          "tags": [
+            "NOSB-S1E4-PRATO-PART2",
+            "NOSB-S1E5-EVIL-PART1",
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "S1E4",
+            "S1E5",
+            "개조바이러스",
+            "광원화",
+            "광채",
+            "뒤집어진양말",
+            "미확인효능",
+            "사백신",
+            "섹터C",
+            "오로라바이러스",
+            "이르마코흐",
+            "임시백신",
+            "잔광자",
+            "행동교정물질",
+            "NOSB-S1E7-DESIRE-PART1",
+            "S1E7",
+            "엘레노어",
+            "파리카타콤",
+            "왕관백신"
+          ],
           "updatedAt": {
             "$toDate": "2026-08-26T14:40:45.000Z"
           }
@@ -1176,22 +1187,27 @@
               }
             ]
           },
-          "tags": {
-            "$setUnion": [
-              {
-                "$ifNull": [
-                  "$tags",
-                  []
-                ]
-              },
-              [
-                "NOSB-S1E7-DESIRE-PART1",
-                "S1E7",
-                "파리작전",
-                "광원화백신"
-              ]
-            ]
-          },
+          "tags": [
+            "ZULU-0040",
+            "S1E2",
+            "NOSB-S1E2-CHOICE",
+            "왕관",
+            "줄루",
+            "오디세이시설",
+            "맥각균류",
+            "위성기생군체",
+            "정신지배",
+            "감염은폐",
+            "비유기체감염",
+            "슈퍼감염",
+            "화염취약",
+            "행동교정물질",
+            "격리표본",
+            "NOSB-S1E7-DESIRE-PART1",
+            "S1E7",
+            "파리작전",
+            "광원화백신"
+          ],
           "updatedAt": {
             "$toDate": "2026-08-26T14:40:45.000Z"
           }
@@ -1282,23 +1298,28 @@
               }
             ]
           },
-          "tags": {
-            "$setUnion": [
-              {
-                "$ifNull": [
-                  "$tags",
-                  []
-                ]
-              },
-              [
-                "NOSB-S1E7-DESIRE-PART1",
-                "S1E7",
-                "리처드",
-                "총장보좌관",
-                "증거공개"
-              ]
-            ]
-          },
+          "tags": [
+            "NOSB-S1E2-CHOICE",
+            "NOSB-S1E5-EVIL-PART2",
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "R",
+            "S1E1",
+            "S1E2",
+            "ZULU-0040",
+            "기자",
+            "레짐체인지",
+            "리처드",
+            "명단노출",
+            "섹터C",
+            "시민사회",
+            "신원미확정",
+            "인권단체",
+            "정신저항제",
+            "NOSB-S1E7-DESIRE-PART1",
+            "S1E7",
+            "총장보좌관",
+            "증거공개"
+          ],
           "updatedAt": {
             "$toDate": "2026-08-26T14:40:45.000Z"
           }
@@ -1394,23 +1415,32 @@
               }
             ]
           },
-          "tags": {
-            "$setUnion": [
-              {
-                "$ifNull": [
-                  "$tags",
-                  []
-                ]
-              },
-              [
-                "NOSB-S1E7-DESIRE-PART1",
-                "S1E7",
-                "페데라치오",
-                "파리",
-                "물자연결"
-              ]
-            ]
-          },
+          "tags": [
+            "AHNENERBE",
+            "NOSB-S1E2-CHOICE",
+            "NOSB-S1E3-PHANTOM",
+            "NOSB-S1E5-EVIL-PART2",
+            "NOSB-S1E6-TURNING-POINT-PART1",
+            "NOSB-S1E6-TURNING-POINT-PART2",
+            "개조광원화주장",
+            "광명회",
+            "광체",
+            "나치금괴",
+            "마지막대대",
+            "사보타주",
+            "섹터C",
+            "수메르",
+            "아넨에르베",
+            "아르넨엘베",
+            "이르마코흐",
+            "잔광자",
+            "적대세력",
+            "페데라치오",
+            "NOSB-S1E7-DESIRE-PART1",
+            "S1E7",
+            "파리",
+            "물자연결"
+          ],
           "updatedAt": {
             "$toDate": "2026-08-26T14:40:45.000Z"
           }
