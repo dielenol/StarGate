@@ -86,3 +86,12 @@
 - 검증: 실제 MongoDB 7에서 1,000건 초과 원장 fixture 1건, core 40건·worker 156건, Hall 계약 10건·Query key 3건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 인증된 GM 화면의 실제 연구·NOVEX 데이터와 가로 넘침 0 확인, critical risk review P0/P1 없음
 - 관련 구현 커밋: `4f4a5091`
 - 운영 경계: 조회 기반 로컬 QA만 수행했으며 라이브 DB·주식 원장·realtime 운영 설정은 변경하지 않았다. 실제 Mongo 통합 fixture의 상시 CI 실행과 별도 API 요청 사이의 전 기간 집계 공유는 후속 성능 과제로 남겼다.
+
+## 2026-08-27 · UI 개선 · 라운드 공적 캐러셀과 통합 원장 채널
+
+- 개요의 직사각형 연결형 기록면을 15~28px 라운드 카드 체계로 바꾸고, 데스크톱·태블릿·모바일에 남아 있던 구형 `border-right: 0` 연결 규칙을 제거해 각 카드의 네 면과 모서리를 온전히 표시한다.
+- 대표 공적은 작전 공적 → NOVEX 누적 1위 → 연구 누적 1위 → 추가 작전 공적 → 중복되지 않는 내 리본 순으로 구성되는 캐러셀로 통합했다. 6.5초 자동 순환, 이전·다음·인디케이터, 44px 터치 스와이프, 수동 정지와 hover·focus·touch 일시 정지를 제공하며 reduced-motion 환경은 수동 모드로 고정한다.
+- `ARCHIVE CHANNELS`에는 회원·GM의 `MY RIBBONS`를 추가해 연구·NOVEX·작전·개인 원장 상태를 한 화면에 표시한다. 로컬 GM 데이터는 연구 3명·NOVEX 3명·작전 0건·내 리본 0건이므로 캐러셀에는 실제 기록이 있는 연구와 NOVEX만 노출되며 빈 기록을 임의 생성하지 않는다.
+- 검증: Hall 계약 15건, `pnpm typecheck`, `pnpm lint`, 변경 파일 ESLint, `pnpm build`, 인증된 GM ERP 2056×1113·390×844에서 자동 순환·라운드 테두리·터치 영역·가로 넘침 0 확인, 확장 없는 브라우저 콘솔 경고·오류 0건
+- 관련 구현 커밋: `d46c9428`
+- 운영 경계: 조회와 로컬 UI 제어만 수행했으며 라이브 DB·Cloud 분석·backfill·writer gate·알림 상태는 변경하지 않았다.
