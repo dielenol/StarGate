@@ -627,6 +627,7 @@ function buildStockManualIntervention(
       return `• ${stock?.name ?? item.ticker} · ${item.ticker} — ${direction} ${signedPercent} · ${item.previousPrice.toLocaleString("ko-KR")} CR → ${item.price.toLocaleString("ko-KR")} CR`;
     });
     const reasonLabels = Array.from(new Set(items.map((item) => {
+      if (item.reason === "VOLATILITY_15_PERCENT") return "회차 변동률 15% 이상";
       if (item.reason === "VOLATILITY_12_PERCENT") return "회차 변동률 12% 이상";
       if (item.reason === "GM_FORCE_COOLDOWN") return "시장감시실 강제 냉각";
       return item.reason;

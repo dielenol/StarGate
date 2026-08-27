@@ -92,22 +92,31 @@ test("NOVEX 회차와 격주 정규 세션 폐장 규칙을 KST로 계산한다"
   );
 });
 
-test("가격 산식은 수급 ±3%, 회차 cap, GM exact override와 structural reference를 지킨다", () => {
+test("가격 산식은 수급 ±4%, 고변동성 cap, 지배 공시와 structural reference를 지킨다", () => {
   const current = { ticker: "NVS", price: 100, prevPrice: 100, referencePrice: 100, eventText: "", lastUpdate: "" };
-  const flow = calculateNovexPrice({ current, flowPercent: 0.03, random: () => 0.5, now: new Date(0) });
-  assert.equal(flow.price, 103);
-  assert.equal(flow.flowPercent, 0.03);
+  const flow = calculateNovexPrice({ current, flowPercent: 0.04, random: () => 0.5, now: new Date(0) });
+  assert.equal(flow.price, 104);
+  assert.equal(flow.flowPercent, 0.04);
   const cappedNormal = calculateNovexPrice({
     current: { ...current, price: 50 },
-    flowPercent: 0.03,
+    flowPercent: 0.04,
     random: () => 1,
     now: new Date(0),
   });
-  assert.equal(cappedNormal.finalPercent, 0.08);
+  assert.equal(cappedNormal.finalPercent, 0.1);
+  assert.ok(Math.abs(cappedNormal.basePercent - 0.06) < 1e-12);
+  assert.ok(
+    Math.abs(
+      cappedNormal.basePercent +
+      cappedNormal.flowPercent +
+      cappedNormal.disclosurePercent -
+      cappedNormal.finalPercent,
+    ) < 1e-12,
+  );
 
   const structural = calculateNovexPrice({
     current,
-    flowPercent: 0.03,
+    flowPercent: 0.04,
     random: () => 0.5,
     now: new Date(0),
     disclosure: {
@@ -116,10 +125,13 @@ test("가격 산식은 수급 ±3%, 회차 cap, GM exact override와 structural 
       createdById: "system", createdAt: new Date(0), updatedAt: new Date(0), shock: false,
     },
   });
-  assert.equal(structural.price, 112);
+  assert.equal(structural.price, 110);
   assert.equal(structural.referencePrice, 110);
-  assert.equal(structural.finalPercent, 0.12);
-  assert.ok(structural.cooldownUntil);
+  assert.equal(structural.finalPercent, 0.1);
+  assert.equal(structural.basePercent, 0);
+  assert.equal(structural.flowPercent, 0);
+  assert.equal(structural.consumeFlow, false);
+  assert.equal(structural.cooldownUntil, undefined);
 
   const mergedStructural = calculateNovexPrice({
     current,
@@ -138,7 +150,7 @@ test("가격 산식은 수급 ±3%, 회차 cap, GM exact override와 structural 
 
   const gm = calculateNovexPrice({
     current,
-    flowPercent: 0.03,
+    flowPercent: 0.04,
     random: () => 1,
     now: new Date(0),
     disclosure: {
@@ -149,28 +161,84 @@ test("가격 산식은 수급 ±3%, 회차 cap, GM exact override와 structural 
   });
   assert.equal(gm.price, 125);
   assert.equal(gm.consumeFlow, false);
-  assert.equal(gm.pendingBasePercent, 0.03);
+  assert.equal(gm.pendingBasePercent, 0.05);
   assert.equal(gm.flowPercent, 0);
   const shock = calculateNovexPrice({
     current,
-    flowPercent: 0.03,
+    flowPercent: 0.04,
     random: () => 1,
     now: new Date(0),
     disclosure: {
       _id: "shock", title: "충격", body: "", kind: "PRICE", status: "SCHEDULED", source: "AUTO",
-      effects: [{ scope: "TICKER", ticker: "NVS", changePercent: 20, structural: false }],
+      effects: [{ scope: "TICKER", ticker: "NVS", changePercent: 25, structural: false }],
       createdById: "system", createdAt: new Date(0), updatedAt: new Date(0), shock: true,
     },
   });
-  assert.equal(shock.finalPercent, 0.2);
+  assert.equal(shock.finalPercent, 0.25);
+  assert.equal(shock.cooldownReason, "VOLATILITY_15_PERCENT");
   assert.ok(shock.cooldownUntil);
+});
+
+test("자동 특별공시는 평시·수급을 이월하고 지정 등락률을 보존한다", () => {
+  const result = calculateNovexPrice({
+    current: { ticker: "ART", price: 100, prevPrice: 100, referencePrice: 100 },
+    flowPercent: -0.04,
+    disclosure: {
+      _id: "auto-art",
+      title: "대형 공급 계약 체결",
+      body: "계약",
+      kind: "PRICE",
+      status: "SCHEDULED",
+      source: "AUTO",
+      effects: [{ scope: "TICKER", ticker: "ART", changePercent: 4.14, structural: true }],
+      createdById: "system",
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    },
+    random: () => 0,
+    now: new Date(0),
+  });
+  assert.equal(result.finalPercent, 0.0414);
+  assert.equal(result.price, 104.14);
+  assert.equal(result.referencePrice, 104.14);
+  assert.equal(result.eventText, "대형 공급 계약 체결 +4.14%");
+  assert.equal(result.basePercent, 0);
+  assert.equal(result.flowPercent, 0);
+  assert.equal(result.disclosurePercent, 0.0414);
+  assert.equal(result.pendingBasePercent, -0.05);
+  assert.equal(result.consumeFlow, false);
+
+  const negative = calculateNovexPrice({
+    current: { ticker: "ART", price: 100, prevPrice: 100, referencePrice: 100 },
+    flowPercent: 0.04,
+    disclosure: {
+      _id: "auto-art-down",
+      title: "주요 공급 계약 해지",
+      body: "계약 해지",
+      kind: "PRICE",
+      status: "SCHEDULED",
+      source: "AUTO",
+      effects: [{ scope: "TICKER", ticker: "ART", changePercent: -4.14, structural: true }],
+      createdById: "system",
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    },
+    random: () => 1,
+    now: new Date(0),
+  });
+  assert.equal(negative.finalPercent, -0.0414);
+  assert.equal(negative.price, 95.86);
+  assert.equal(negative.referencePrice, 95.86);
+  assert.equal(negative.eventText, "주요 공급 계약 해지 -4.14%");
+  assert.equal(negative.pendingBasePercent, 0.05);
+  assert.equal(negative.consumeFlow, false);
 });
 
 test("유상증자 PRICE 공시는 기본 랜덤·수급 없이 exact structural 조정한다", () => {
   const current = { ticker: "NVS", price: 50, prevPrice: 50, referencePrice: 50 };
   const result = calculateNovexPrice({
     current,
-    flowPercent: 0.03,
+    flowPercent: 0.04,
     disclosure: {
       _id: "rights",
       title: "유상증자 실행",
@@ -210,7 +278,7 @@ test("병합 AUTO+GM 공시는 기본 변동과 수급을 소비하지 않고 �
   ], "NVS");
   const result = calculateNovexPrice({
     current: { ticker: "NVS", price: 100, prevPrice: 100, referencePrice: 100, eventText: "", lastUpdate: "" },
-    flowPercent: 0.03,
+    flowPercent: 0.04,
     disclosure: combined.disclosure,
     structuralDisclosurePercent: combined.structuralDisclosurePercent,
     random: () => 1,
@@ -220,7 +288,7 @@ test("병합 AUTO+GM 공시는 기본 변동과 수급을 소비하지 않고 �
   assert.equal(result.price, 93);
   assert.equal(result.consumeFlow, false);
   assert.equal(result.flowPercent, 0);
-  assert.equal(result.pendingBasePercent, 0.03);
+  assert.equal(result.pendingBasePercent, 0.05);
 });
 
 test("자동 공시 분포 경계와 생성 큐는 4건/대형1건/slot-target 충돌 금지를 지킨다", () => {
@@ -236,6 +304,11 @@ test("자동 공시 분포 경계와 생성 큐는 4건/대형1건/slot-target �
   });
   assert.ok(queue.length <= 4);
   assert.ok(queue.filter((row) => row.shock).length <= 1);
+  for (const row of queue) {
+    const magnitude = Math.abs(row.effects[0].changePercent);
+    if (row.shock) assert.ok(magnitude >= 10 && magnitude <= 25);
+    else assert.ok(magnitude >= 4 && magnitude <= 9);
+  }
   for (let i = 0; i < queue.length; i += 1) {
     for (let j = i + 1; j < queue.length; j += 1) {
       if (queue[i].slotKey !== queue[j].slotKey) continue;
@@ -255,16 +328,27 @@ test("자동 공시 분포 경계와 생성 큐는 4건/대형1건/slot-target �
   assert.ok(carriedShockQueue.every((row) => row.shock !== true));
 });
 
-test("장기 Monte Carlo에서 일반 회차 등락은 ±8%이고 가격은 양수로 유지된다", () => {
+test("장기 Monte Carlo에서 일반 회차 등락은 ±10%이고 평시 변동성이 충분히 유지된다", () => {
   let seed = 7;
   const random = () => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 2 ** 32);
   let current = { ticker: "NVS", price: 100, prevPrice: 100, referencePrice: 100, eventText: "", lastUpdate: "" };
+  let movesAtLeastThreePercent = 0;
   for (let i = 0; i < 20_000; i += 1) {
     const result = calculateNovexPrice({ current, flowPercent: 0, random, now: new Date(i) });
-    assert.ok(Math.abs(result.finalPercent) <= 0.08 + Number.EPSILON);
+    assert.ok(Math.abs(result.finalPercent) <= 0.1 + Number.EPSILON);
     assert.ok(result.price > 0);
+    assert.ok(
+      Math.abs(
+        result.basePercent +
+        result.flowPercent +
+        result.disclosurePercent -
+        result.finalPercent,
+      ) < 1e-12,
+    );
+    if (Math.abs(result.finalPercent) >= 0.03) movesAtLeastThreePercent += 1;
     current = { ...current, prevPrice: current.price, price: result.price, pendingBasePercent: result.pendingBasePercent };
   }
+  assert.ok(movesAtLeastThreePercent / 20_000 > 0.35);
   assert.ok(current.price > 50 && current.price < 150);
 });
 

@@ -513,7 +513,7 @@ test("같은 회차의 다종목 냉각 시작과 해제는 각각 한 카드로
       price: index === 1 ? 120 : 80,
       eventText: ticker === "SPZ"
         ? "GM_FORCE_COOLDOWN"
-        : "VOLATILITY_12_PERCENT",
+        : "VOLATILITY_15_PERCENT",
       cooldownUntil: "2026-08-21T04:10:00.000Z",
     }));
   for (const [eventKind, occurredAt] of [
@@ -544,6 +544,10 @@ test("같은 회차의 다종목 냉각 시작과 해제는 각각 한 카드로
   assert.match(startTarget.value, /토와스키 · TWS — 하락 -20\.00%/);
   assert.match(startTarget.value, /스타마트 · STM — 상승 \+20\.00%/);
   assert.match(startTarget.value, /스페이스 제로 · SPZ — 하락 -20\.00%/);
+  assert.equal(
+    requests[0].body.embeds[0].fields.find((field) => field.name === "적용 사유").value,
+    "회차 변동률 15% 이상 · 시장감시실 강제 냉각",
+  );
   assert.equal(releaseTarget.name, "해제 종목 · 9개");
   assert.match(releaseTarget.value, /토와스키 · TWS/);
   assert.match(releaseTarget.value, /스타마트 · STM/);

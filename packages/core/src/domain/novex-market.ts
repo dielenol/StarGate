@@ -15,6 +15,14 @@ export const NOVEX_SLOT_HOURS = [9, 13, 18, 23] as const;
 export const NOVEX_REGULAR_SESSION_ANCHOR = "2026-08-23";
 export const NOVEX_REGULAR_SESSION_TITLE = "노부스 오르도 - 정규 세션";
 const DAY_MS = 24 * 60 * 60 * 1000;
+const NOVEX_REVERSION_FACTOR = 0.1;
+const NOVEX_NOISE_SPAN = 0.1;
+const NOVEX_BASE_PERCENT_CAP = 0.07;
+const NOVEX_PENDING_BASE_PERCENT_CAP = 0.1;
+const NOVEX_ROUTINE_PERCENT_CAP = 0.1;
+const NOVEX_DISCLOSURE_PERCENT_CAP = 0.15;
+const NOVEX_SHOCK_PERCENT_CAP = 0.25;
+const NOVEX_COOLDOWN_PERCENT = 0.15;
 
 function parseKstDate(date: string, hour = 0, minute = 0): Date {
   return new Date(`${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
@@ -187,7 +195,7 @@ function effectForTicker(disclosure: StockDisclosure | undefined, ticker: string
     ?? disclosure.effects.find((effect) => effect.scope === "MARKET");
 }
 
-/** 적정가 회귀+0중심 잡음, 수급, 공시 기여를 명시적으로 분리한다. */
+/** 적정가 회귀+0중심 잡음, 수급, 공시 기여를 명시적으로 분리한다. PRICE 공시는 다른 기여를 이월한다. */
 export function calculateNovexPrice(input: {
   current: StockPrice;
   flowPercent: number;
@@ -198,9 +206,16 @@ export function calculateNovexPrice(input: {
   now: Date;
 }): NovexPriceContributions {
   const reference = input.current.referencePrice ?? input.current.price;
-  const reversion = ((reference - input.current.price) / Math.max(input.current.price, 0.01)) * 0.12;
-  const noise = (input.random() - 0.5) * 0.06;
-  const basePercent = clamp(reversion + noise, -0.05, 0.05);
+  const reversion =
+    ((reference - input.current.price) /
+      Math.max(input.current.price, 0.01)) *
+    NOVEX_REVERSION_FACTOR;
+  const noise = (input.random() - 0.5) * NOVEX_NOISE_SPAN;
+  const basePercent = clamp(
+    reversion + noise,
+    -NOVEX_BASE_PERCENT_CAP,
+    NOVEX_BASE_PERCENT_CAP,
+  );
   const carriedBase = input.current.pendingBasePercent ?? 0;
   const effect = effectForTicker(input.disclosure, input.current.ticker);
   const disclosurePercent = (effect?.changePercent ?? 0) / 100;
@@ -209,17 +224,35 @@ export function calculateNovexPrice(input: {
       input.disclosure?.source === "CORPORATE_ACTION") &&
     input.disclosure.kind === "PRICE" &&
     effect?.changePercent !== undefined;
+  const automaticPriceOverride =
+    input.disclosure?.source === "AUTO" &&
+    input.disclosure.kind === "PRICE" &&
+    effect?.changePercent !== undefined;
+  const dominantPriceDisclosure = exactPriceOverride || automaticPriceOverride;
 
   let finalPercent: number;
   let pendingBasePercent = 0;
   let consumeFlow = true;
-  if (exactPriceOverride) {
-    finalPercent = clamp(disclosurePercent, -0.5, 0.75);
-    pendingBasePercent = clamp(carriedBase + basePercent, -0.08, 0.08);
+  if (dominantPriceDisclosure) {
+    const cap = exactPriceOverride
+      ? { min: -0.5, max: 0.75 }
+      : input.disclosure?.shock
+        ? { min: -NOVEX_SHOCK_PERCENT_CAP, max: NOVEX_SHOCK_PERCENT_CAP }
+        : { min: -NOVEX_DISCLOSURE_PERCENT_CAP, max: NOVEX_DISCLOSURE_PERCENT_CAP };
+    finalPercent = clamp(disclosurePercent, cap.min, cap.max);
+    pendingBasePercent = clamp(
+      carriedBase + basePercent,
+      -NOVEX_PENDING_BASE_PERCENT_CAP,
+      NOVEX_PENDING_BASE_PERCENT_CAP,
+    );
     consumeFlow = false;
   } else {
     const requested = carriedBase + basePercent + input.flowPercent + disclosurePercent;
-    const cap = input.disclosure?.shock ? 0.2 : input.disclosure?.kind === "PRICE" ? 0.12 : 0.08;
+    const cap = input.disclosure?.shock
+      ? NOVEX_SHOCK_PERCENT_CAP
+      : input.disclosure?.kind === "PRICE"
+        ? NOVEX_DISCLOSURE_PERCENT_CAP
+        : NOVEX_ROUTINE_PERCENT_CAP;
     finalPercent = clamp(requested, -cap, cap);
   }
 
@@ -230,21 +263,39 @@ export function calculateNovexPrice(input: {
   const referencePrice = referenceChangePercent !== 0
     ? normalizeStockPrice(reference * (1 + referenceChangePercent))
     : reference;
-  const cooling = Math.abs(finalPercent) >= 0.12 || input.disclosure?.forceCooldown === true;
+  const cooling =
+    Math.abs(finalPercent) >= NOVEX_COOLDOWN_PERCENT ||
+    input.disclosure?.forceCooldown === true;
   const cooldownUntil = cooling ? new Date(input.now.getTime() + 10 * 60 * 1000) : undefined;
-  const eventTier = Math.abs(finalPercent) >= 0.12 ? "shock" : input.disclosure ? "scenario" : "routine";
+  const eventTier = Math.abs(finalPercent) >= NOVEX_COOLDOWN_PERCENT
+    ? "shock"
+    : input.disclosure
+      ? "scenario"
+      : "routine";
+  const appliedFlowPercent = dominantPriceDisclosure ? 0 : input.flowPercent;
+  const appliedDisclosurePercent = dominantPriceDisclosure
+    ? finalPercent
+    : disclosurePercent;
+  // 회차 cap으로 잘린 부분은 기본 기여에서 차감해 이력 기여 합계를 실현 등락과 맞춘다.
+  const appliedBasePercent = dominantPriceDisclosure
+    ? 0
+    : finalPercent - appliedFlowPercent - appliedDisclosurePercent;
   const signed = `${finalPercent >= 0 ? "+" : ""}${(finalPercent * 100).toFixed(2)}%`;
   return {
     price,
     referencePrice,
-    basePercent: exactPriceOverride ? 0 : basePercent + carriedBase,
-    flowPercent: exactPriceOverride ? 0 : input.flowPercent,
-    disclosurePercent: exactPriceOverride ? finalPercent : disclosurePercent,
+    basePercent: appliedBasePercent,
+    flowPercent: appliedFlowPercent,
+    disclosurePercent: appliedDisclosurePercent,
     finalPercent,
     eventTier,
     eventText: input.disclosure ? `${input.disclosure.title} ${signed}` : `정기 변동 ${signed}`,
     cooldownUntil,
-    cooldownReason: cooling ? (input.disclosure?.forceCooldown ? "GM_FORCE_COOLDOWN" : "VOLATILITY_12_PERCENT") : undefined,
+    cooldownReason: cooling
+      ? input.disclosure?.forceCooldown
+        ? "GM_FORCE_COOLDOWN"
+        : "VOLATILITY_15_PERCENT"
+      : undefined,
     pendingBasePercent,
     consumeFlow,
   };
@@ -274,7 +325,7 @@ export const NOVEX_AUTO_DISCLOSURE_TEMPLATES: readonly AutoDisclosureTemplate[] 
 ] as const;
 
 /**
- * 하루치 자동 공시 건수 분포. 기대값 약 2.0건.
+ * 하루치 자동 공시 건수 분포. 기대값 2.04건, 1건 이상 발생 확률 92%.
  *
  * 호출부는 날짜를 시드로 고정한 의사난수를 넘긴다(`seededNovexRandom(date)`).
  * 이 고정 시드는 의도된 것으로, 전날 23시 생성이 누락돼도 당일 아무 회차에서나
@@ -317,8 +368,8 @@ export function buildNovexAutoDisclosureQueue(input: {
     ]!;
     const big: boolean = !bigUsed && input.random() < 0.2;
     const magnitude = big
-      ? 8 + input.random() * 12
-      : 3 + input.random() * 4;
+      ? 10 + input.random() * 15
+      : 4 + input.random() * 5;
     const sign = template.direction === "up" ? 1 : -1;
     const hour = slotHours[Math.floor(input.random() * slotHours.length)]!;
     const ticker = template.scope === "TICKER"

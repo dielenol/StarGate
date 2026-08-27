@@ -46,6 +46,8 @@ const SEASON_PERFORMANCE = "stock_season_performance";
 const SEASON_FLOWS = "stock_season_flows";
 const SCHEDULED_JOB_RUNS = "scheduled_job_runs";
 const NOVEX_MIGRATION_READINESS = "stock_market_migration_readiness";
+const STOCK_ORDER_FLOW_MAX_PERCENT = 0.04;
+const STOCK_ORDER_FLOW_SENSITIVITY_SHARES = 150;
 
 interface NovexMigrationRuntimeFence {
   _id: "novex-2";
@@ -592,7 +594,9 @@ export function aggregateStockOrderFlow(
   }
   return [...new Set([...nets.keys(), ...volumes.keys()])].map((ticker) => {
     const netShares = nets.get(ticker) ?? 0;
-    const percent = 0.03 * Math.tanh(netShares / 200);
+    const percent =
+      STOCK_ORDER_FLOW_MAX_PERCENT *
+      Math.tanh(netShares / STOCK_ORDER_FLOW_SENSITIVITY_SHARES);
     const magnitude = Math.abs(percent);
     return {
       ticker,
@@ -2844,8 +2848,8 @@ export interface CombinedStockDisclosureForTicker {
 }
 
 /**
- * 병합 회차의 선택 공시를 가격 계산용 단일 효과로 합친다. 하나라도 GM이면
- * 합계 전체를 GM exact override로 취급해 기본 변동·수급을 다음 회차로 넘긴다.
+ * 병합 회차의 선택 공시를 가격 계산용 단일 효과로 합친다. GM·기업행동 또는
+ * AUTO-only 합계는 가격 엔진의 지배 공시로 처리돼 기본 변동·수급을 이월한다.
  */
 export function combineStockDisclosuresForTicker(
   disclosures: readonly StockDisclosure[],
@@ -2888,6 +2892,45 @@ export function combineStockDisclosuresForTicker(
     ids: selected.map((row) => row._id),
     structuralDisclosurePercent: contribution.structuralChangePercent / 100,
   };
+}
+
+export interface StockShockDisclosureTarget {
+  disclosure: StockDisclosure;
+  ticker: string;
+}
+
+/** 가격 계산 우선순위에서 실제 선택된 충격 공시와 종목만 외부 공시 대상으로 삼는다. */
+export function selectStockShockDisclosureTargets(
+  disclosures: readonly StockDisclosure[],
+  tickers: readonly string[],
+): StockShockDisclosureTarget[] {
+  const priceDisclosures = disclosures.filter(
+    (disclosure) => disclosure.kind === "PRICE",
+  );
+  const selectedIdsByTicker = new Map(
+    tickers.map((ticker) => [
+      ticker,
+      new Set(
+        combineStockDisclosuresForTicker(priceDisclosures, ticker)?.ids ?? [],
+      ),
+    ]),
+  );
+  const targets: StockShockDisclosureTarget[] = [];
+  for (const disclosure of priceDisclosures.filter((row) => row.shock === true)) {
+    const marketWide = disclosure.effects.some(
+      (effect) => effect.scope === "MARKET",
+    );
+    const affectedTickers = marketWide
+      ? tickers
+      : disclosure.effects
+        .filter((effect) => effect.scope === "TICKER" && effect.ticker)
+        .map((effect) => effect.ticker!);
+    for (const ticker of new Set(affectedTickers)) {
+      if (!selectedIdsByTicker.get(ticker)?.has(disclosure._id)) continue;
+      targets.push({ disclosure, ticker });
+    }
+  }
+  return targets;
 }
 
 export function evaluateStockMarketAlertRules(
@@ -3412,32 +3455,27 @@ export async function applyStockMarketRoundTransaction(
       }
       await history.insertMany(histories, { session });
       await emitStockAlertsForRound(histories, session);
-      for (const disclosure of dueDisclosures.filter((row) => row.kind === "PRICE" && row.shock === true)) {
-        const marketWide = disclosure.effects.some((effect) => effect.scope === "MARKET");
-        const affectedTickers = marketWide
-          ? input.seeds.map((seed) => seed.ticker)
-          : disclosure.effects
-            .filter((effect) => effect.scope === "TICKER" && effect.ticker)
-            .map((effect) => effect.ticker!);
-        for (const ticker of new Set(affectedTickers)) {
-          const move = roundMoveByTicker.get(ticker);
-          await enqueueIntegrationOutbox({
-            kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
-            dedupeKey: `stock:shock-disclosure:${disclosure._id}:${ticker}`,
-            partitionKey: roundOutboxPartitionKey,
-            partitionOrderAt: input.now,
-            payload: {
-              eventKind: "SHOCK_DISCLOSURE",
-              ticker,
-              ...(move
-                ? { previousPrice: move.previousPrice, price: move.price }
-                : {}),
-              eventText: `${disclosure.title} · ${disclosure.body}`,
-              actor: { displayName: "NOVEX", role: disclosure.source },
-              occurredAt: input.now.toISOString(),
-            },
-          }, { session });
-        }
+      for (const { disclosure, ticker } of selectStockShockDisclosureTargets(
+        dueDisclosures,
+        input.seeds.map((seed) => seed.ticker),
+      )) {
+        const move = roundMoveByTicker.get(ticker);
+        await enqueueIntegrationOutbox({
+          kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+          dedupeKey: `stock:shock-disclosure:${disclosure._id}:${ticker}`,
+          partitionKey: roundOutboxPartitionKey,
+          partitionOrderAt: input.now,
+          payload: {
+            eventKind: "SHOCK_DISCLOSURE",
+            ticker,
+            ...(move
+              ? { previousPrice: move.previousPrice, price: move.price }
+              : {}),
+            eventText: `${disclosure.title} · ${disclosure.body}`,
+            actor: { displayName: "NOVEX", role: disclosure.source },
+            occurredAt: input.now.toISOString(),
+          },
+        }, { session });
       }
       if (cooldownOutboxItems.length > 0) {
         // 충격 공시를 먼저 적재한 뒤 같은 회차의 냉각 종목 전체를 시작 1건,

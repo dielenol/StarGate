@@ -14,6 +14,7 @@ import {
   reconstructStockSeasonSharesAtCutoff,
   doStockDisclosureEffectsConflict,
   selectStockDisclosuresForTicker,
+  selectStockShockDisclosureTargets,
   combineStockDisclosuresForTicker,
   summarizeStockDisclosureEffects,
   NOVEX_INDEX_DEFINITIONS,
@@ -33,7 +34,7 @@ import {
   claimNovex2MigrationReadiness,
 } from "../../../dist/index.js";
 
-test("수급은 캐릭터별 순매매를 먼저 상계하고 개인 ±100주·전체 tanh 3%를 적용한다", () => {
+test("수급은 캐릭터별 순매매를 먼저 상계하고 개인 ±100주·전체 tanh 4%를 적용한다", () => {
   const [neutral] = aggregateStockOrderFlow([
     { characterId: "a", ticker: "NVS", side: "BUY", shares: 200 },
     { characterId: "a", ticker: "NVS", side: "SELL", shares: 50 },
@@ -47,8 +48,8 @@ test("수급은 캐릭터별 순매매를 먼저 상계하고 개인 ±100주·�
     { characterId: "b", ticker: "NVS", side: "BUY", shares: 500 },
   ]);
   assert.equal(positive.netShares, 200);
-  assert.ok(Math.abs(positive.percent - 0.03 * Math.tanh(1)) < 1e-12);
-  assert.ok(positive.percent < 0.03);
+  assert.ok(Math.abs(positive.percent - 0.04 * Math.tanh(200 / 150)) < 1e-12);
+  assert.ok(positive.percent < 0.04);
 });
 
 test("23시 실패로 전날 OPEN state가 남아도 다음날 09시에는 opening pending으로 분류한다", () => {
@@ -172,6 +173,15 @@ test("시장 공시와 개별 공시는 공존하고 같은 회차에는 개별 
   assert.equal(doStockDisclosureEffectsConflict(ticker.effects, otherTicker.effects), false);
   assert.deepEqual(selectStockDisclosuresForTicker([market, ticker], "NVS").map((row) => row._id), ["ticker"]);
   assert.deepEqual(selectStockDisclosuresForTicker([market, otherTicker], "NVS").map((row) => row._id), ["market"]);
+
+  const marketShock = { ...market, shock: true };
+  assert.deepEqual(
+    selectStockShockDisclosureTargets(
+      [marketShock, ticker],
+      ["NVS", "OTH"],
+    ).map((target) => `${target.disclosure._id}:${target.ticker}`),
+    ["market:OTH"],
+  );
 });
 
 test("병합 공시는 현재가 총효과와 구조적 적정가 효과를 분리한다", () => {
@@ -813,7 +823,7 @@ test("같은 회차의 냉각 종목은 시작 1건과 해제 1건으로 묶어 
         ticker: "TWS",
         previousPrice: 100,
         price: 112,
-        reason: "VOLATILITY_12_PERCENT",
+        reason: "VOLATILITY_15_PERCENT",
         cooldownUntil,
       },
       {
@@ -827,7 +837,7 @@ test("같은 회차의 냉각 종목은 시작 1건과 해제 1건으로 묶어 
         ticker: "SPZ",
         previousPrice: 1_000,
         price: 800,
-        reason: "VOLATILITY_12_PERCENT",
+        reason: "VOLATILITY_15_PERCENT",
         cooldownUntil,
       },
     ],
@@ -862,7 +872,7 @@ test("냉각 묶음 outbox는 빈 목록과 중복 종목을 거부한다", () =
     ticker: "TWS",
     previousPrice: 100,
     price: 112,
-    reason: "VOLATILITY_12_PERCENT",
+    reason: "VOLATILITY_15_PERCENT",
     cooldownUntil: new Date("2026-08-15T04:10:00Z"),
   };
   assert.throws(
