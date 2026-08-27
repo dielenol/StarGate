@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
@@ -71,6 +72,74 @@ test("backfill manifest는 결정적 hash와 날짜 직렬화를 검증한다", 
   assert.equal(
     parsed.novex[0]?.records[0]?.occurredAt,
     "2026-08-25T12:00:00.000Z",
+  );
+});
+
+test("수동 심사 revision은 record와 manifest가 일치할 때만 허용한다", () => {
+  const { records } = fixture();
+  const operationRecord = {
+    ...records[0]!,
+    domain: "OPERATION" as const,
+    category: "RESEARCH_TECH" as const,
+    rank: undefined,
+    logicalKey: "operation:REPORT-1:character-1",
+    publicKey: "",
+    source: {
+      type: "SESSION_REPORT" as const,
+      key: "REPORT-1",
+      recordId: "report-record-1",
+      label: "작전 보고서",
+    },
+    analyzerRevision: "operation-honor-manual-v1",
+    minRole: "U" as const,
+    evidenceAudit: [
+      { hash: "a".repeat(64), section: "SUMMARY" as const },
+      { hash: "b".repeat(64), section: "HIGHLIGHT" as const },
+    ],
+  };
+  operationRecord.publicKey = `honor_${createHash("sha256")
+    .update(operationRecord.logicalKey)
+    .digest("hex")
+    .slice(0, 24)}`;
+  const manifest = createHallOfFameBackfillManifest({
+    analyzerRevision: "operation-honor-manual-v1",
+    generatedAt: "2026-08-27T00:00:00.000Z",
+    database: "stargate-test",
+    novex: [],
+    operations: [
+      {
+        sourceKey: "REPORT-1",
+        sourceRecordId: "report-record-1",
+        sourceRevision: "2026-08-27T00:00:00.000Z",
+        sourceHash: operationRecord.sourceHash,
+        records: [serializeHonorRecord(operationRecord)],
+      },
+    ],
+    skipped: [],
+    issues: [],
+  });
+  assert.equal(
+    parseHallOfFameBackfillManifest(manifest).analyzerRevision,
+    "operation-honor-manual-v1",
+  );
+  const mismatched = structuredClone(manifest);
+  mismatched.analyzerRevision = "operation-honor-v1";
+  assert.throws(
+    () => parseHallOfFameBackfillManifest(mismatched),
+    /HALL_OF_FAME_MANIFEST_OPERATION_HASH_MISMATCH|HALL_OF_FAME_MANIFEST_HASH_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      createHallOfFameBackfillManifest({
+        analyzerRevision: "operation-honor-unreviewed-v99",
+        generatedAt: "2026-08-27T00:00:00.000Z",
+        database: "stargate-test",
+        novex: [],
+        operations: [],
+        skipped: [],
+        issues: [],
+      }),
+    /HALL_OF_FAME_MANIFEST_ANALYZER_REVISION_INVALID/,
   );
 });
 
@@ -168,16 +237,36 @@ test("manifest apply는 maintenance 전제를 밝히고 첫 mutation 전에 cove
     backfill,
     /const beforeEgress[\s\S]*currentSource\.sourceHash === source\.sourceHash[\s\S]*analyzer\.analyze\([\s\S]*beforeEgress/,
   );
-  assert.doesNotMatch(backfill, /honor_source_fences|fenceHonorSources/);
+  assert.match(
+    backfill,
+    /fenceOperationDependencies[\s\S]*__honorAnalysisLockAt/,
+  );
   assert.match(backfill, /const novex: \[\] = \[\]/);
   assert.match(backfill, /BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED/);
   assert.doesNotMatch(backfill, /loadCurrentNovex|materializeNovexSeasonHonors/);
   assert.match(transaction, /await assertManifestCoverageCurrent/);
   assert.match(transaction, /await loadCurrentOperation/);
   assert.match(transaction, /await loadCurrentSkipped/);
+  assert.match(transaction, /await fenceOperationDependencies/);
   assert.ok(
     transaction.indexOf("await assertManifestCoverageCurrent") <
       transaction.indexOf("await loadCurrentOperation"),
+  );
+  assert.ok(
+    transaction.indexOf("await loadCurrentSkipped") <
+      transaction.indexOf("await fenceOperationDependencies"),
+  );
+  assert.ok(
+    transaction.indexOf("await fenceOperationDependencies") <
+      transaction.indexOf("await withdrawHonorRecordsBySource"),
+  );
+  assert.match(
+    backfill,
+    /charactersCol[\s\S]*resolution\.matchingCharacters[\s\S]*__honorAnalysisLockAt/,
+  );
+  assert.match(
+    backfill,
+    /usersCol[\s\S]*resolution\.ownerStates[\s\S]*__honorAnalysisLockAt/,
   );
 });
 

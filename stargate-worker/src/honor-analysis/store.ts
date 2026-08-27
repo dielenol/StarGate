@@ -7,6 +7,7 @@ import {
   completeClaimedHonorAnalysis,
   findHonorCandidateCharactersByCodenames,
   getClient,
+  HONOR_MANUAL_REVIEW_REVISION,
   haltExhaustedHonorAnalyses,
   honorAnalysisStatesCol,
   honorRecordsCol,
@@ -59,6 +60,30 @@ function isPublicOperationReport(report: SessionReport | null): report is Sessio
     report &&
       report._id &&
       (report.minRole == null || report.minRole === "U"),
+  );
+}
+
+/**
+ * 같은 원문 hash에 대한 수동 심사 확정은 자동 모델 revision으로 덮지 않는다.
+ * 보고서 원문이나 연결 후보가 바뀌어 sourceHash가 달라지면 다시 queue된다.
+ */
+export function isHonorAnalysisSourceStable(input: {
+  state?: HonorAnalysisState;
+  source: HonorAnalysisSource;
+}): boolean {
+  const { state, source } = input;
+  if (
+    state?.sourceRecordId !== source.sourceRecordId ||
+    state.sourceHash !== source.sourceHash
+  ) {
+    return false;
+  }
+  if (state.analyzerRevision === HONOR_MANUAL_REVIEW_REVISION) {
+    return state.status === "SUCCEEDED";
+  }
+  return (
+    state.analyzerRevision === HONOR_ANALYZER_REVISION &&
+    !shouldForceHonorAnalysisAfterSourceRecovery(state)
   );
 }
 
@@ -152,12 +177,7 @@ export class SharedDbHonorAnalysisStore implements HonorAnalysisStorePort {
           ) {
             continue;
           }
-        } else if (
-          previous?.sourceRecordId === source.sourceRecordId &&
-          previous.sourceHash === source.sourceHash &&
-          previous.analyzerRevision === HONOR_ANALYZER_REVISION &&
-          !shouldForceHonorAnalysisAfterSourceRecovery(previous)
-        ) {
+        } else if (isHonorAnalysisSourceStable({ state: previous, source })) {
           continue;
         }
       }
@@ -206,6 +226,14 @@ export class SharedDbHonorAnalysisStore implements HonorAnalysisStorePort {
             { _id: `session-report:${sourceKey}` },
             { session },
           );
+          if (
+            isHonorAnalysisSourceStable({
+              state: currentState ?? undefined,
+              source,
+            })
+          ) {
+            return;
+          }
           const result = await queueHonorAnalysis({
             sourceKey,
             sourceRecordId: source.sourceRecordId,

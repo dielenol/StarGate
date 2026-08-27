@@ -3,6 +3,11 @@ import type { ObjectId } from "mongodb";
 import type { RoleLevel } from "./character.js";
 
 export const HONOR_ANALYZER_REVISION = "operation-honor-v1";
+/**
+ * 근거 검증을 마친 과거 보고서의 수동 이관 revision.
+ * 같은 sourceHash에서는 worker가 자동 분석으로 덮어쓰지 않는다.
+ */
+export const HONOR_MANUAL_REVIEW_REVISION = "operation-honor-manual-v1";
 export const HONOR_ANALYSIS_SOURCE_MAX_CHARS = 32_000;
 
 export const HONOR_DOMAINS = ["NOVEX", "OPERATION"] as const;

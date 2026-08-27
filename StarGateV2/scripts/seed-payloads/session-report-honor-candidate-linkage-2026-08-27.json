@@ -1,0 +1,552 @@
+[
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-MINI-5959-CONTAINMENT",
+      "updatedAt": "2026-08-06T03:58:56.066Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "KIMLEE",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "PIPETTE",
+            "TIGER298",
+            "TIME",
+            "UNYEON",
+            "WD-(𝓃)",
+            "YUHOE"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-MINI-5959-CONTAINMENT",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.066Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "KIMLEE",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "PIPETTE",
+          "TIGER298",
+          "TIME",
+          "UNYEON",
+          "WD-(𝓃)",
+          "YUHOE"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-MINI-HWAYANGYEONHWA",
+      "updatedAt": "2026-08-06T03:58:56.094Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "TIME",
+            "UNYEON",
+            "YUHOE"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-MINI-HWAYANGYEONHWA",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.094Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "TIME",
+          "UNYEON",
+          "YUHOE"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-MINI-MINI-LEGACY",
+      "updatedAt": "2026-08-06T03:58:56.126Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "KIMLEE",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "PIPETTE",
+            "TIGER298",
+            "TIME",
+            "UNYEON"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-MINI-MINI-LEGACY",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.126Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "KIMLEE",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "PIPETTE",
+          "TIGER298",
+          "TIME",
+          "UNYEON"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+      "updatedAt": "2026-08-06T03:58:56.193Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "HUNTER",
+            "MARGARET",
+            "OTILIA",
+            "PIPETTE",
+            "TIGER298",
+            "TIME",
+            "WD-(𝓃)",
+            "YUHOE"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-MINI-S1E1-NEW-DUBLIN",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.193Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "HUNTER",
+          "MARGARET",
+          "OTILIA",
+          "PIPETTE",
+          "TIGER298",
+          "TIME",
+          "WD-(𝓃)",
+          "YUHOE"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E1-MINI",
+      "updatedAt": "2026-08-06T03:58:56.225Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "TIGER298",
+            "TIME",
+            "UNYEON",
+            "WD-(𝓃)"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E1-MINI",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.225Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "TIGER298",
+          "TIME",
+          "UNYEON",
+          "WD-(𝓃)"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E1-ORDER",
+      "updatedAt": "2026-08-06T03:58:56.261Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "TIGER298",
+            "UNYEON",
+            "WD-(𝓃)"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E1-ORDER",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.261Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "TIGER298",
+          "UNYEON",
+          "WD-(𝓃)"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E2-CHOICE",
+      "updatedAt": "2026-08-06T03:58:56.289Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "TIGER298",
+            "TIME",
+            "UNYEON",
+            "WD-(𝓃)"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E2-CHOICE",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.289Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "TIGER298",
+          "TIME",
+          "UNYEON",
+          "WD-(𝓃)"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E2-MINI",
+      "updatedAt": "2026-08-06T03:58:56.319Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "PIPETTE",
+            "TIGER298",
+            "TIME",
+            "WD-(𝓃)"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E2-MINI",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.319Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "PIPETTE",
+          "TIGER298",
+          "TIME",
+          "WD-(𝓃)"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E3-PHANTOM",
+      "updatedAt": "2026-08-06T03:58:56.350Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "KIMLEE",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "PIPETTE",
+            "TIGER298",
+            "TIME",
+            "UNYEON",
+            "WD-(𝓃)",
+            "YUHOE"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E3-PHANTOM",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.350Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "KIMLEE",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "PIPETTE",
+          "TIGER298",
+          "TIME",
+          "UNYEON",
+          "WD-(𝓃)",
+          "YUHOE"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART1",
+      "updatedAt": "2026-08-06T03:58:56.371Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "KIMLEE",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "OTILIA",
+            "PIPETTE",
+            "TIGER298",
+            "TIME",
+            "UNYEON",
+            "WD-(𝓃)",
+            "YUHOE"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E4-PRATO-PART1",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.371Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "KIMLEE",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "OTILIA",
+          "PIPETTE",
+          "TIGER298",
+          "TIME",
+          "UNYEON",
+          "WD-(𝓃)",
+          "YUHOE"
+        ]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E4-PRATO-PART2",
+      "updatedAt": "2026-08-06T03:58:56.396Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": ["CLOWN", "KIMLEE", "OTILIA", "WD-(𝓃)", "YUHOE"]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E4-PRATO-PART2",
+      "updatedAt": { "$ne": "2026-08-06T03:58:56.396Z" },
+      "relatedPersonnelCodenames": {
+        "$all": ["CLOWN", "KIMLEE", "OTILIA", "WD-(𝓃)", "YUHOE"]
+      }
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "hall-of-fame-operation-candidate-linkage",
+    "filter": {
+      "sessionId": "NOSB-S1E5-EVIL-PART1",
+      "updatedAt": "2026-08-12T05:15:13.999Z"
+    },
+    "update": {
+      "$addToSet": {
+        "relatedPersonnelCodenames": {
+          "$each": [
+            "네베드",
+            "AEGIS",
+            "BIG BOY",
+            "CLOWN",
+            "INDEXER",
+            "KIMLEE",
+            "LEE DONGSIK",
+            "MARGARET",
+            "MARIA",
+            "PIPETTE",
+            "TIGER298",
+            "TIME",
+            "UNYEON",
+            "WD-(𝓃)",
+            "YUHOE"
+          ]
+        }
+      }
+    },
+    "postcondition": {
+      "sessionId": "NOSB-S1E5-EVIL-PART1",
+      "updatedAt": { "$ne": "2026-08-12T05:15:13.999Z" },
+      "relatedPersonnelCodenames": {
+        "$all": [
+          "네베드",
+          "AEGIS",
+          "BIG BOY",
+          "CLOWN",
+          "INDEXER",
+          "KIMLEE",
+          "LEE DONGSIK",
+          "MARGARET",
+          "MARIA",
+          "PIPETTE",
+          "TIGER298",
+          "TIME",
+          "UNYEON",
+          "WD-(𝓃)",
+          "YUHOE"
+        ]
+      }
+    }
+  }
+]

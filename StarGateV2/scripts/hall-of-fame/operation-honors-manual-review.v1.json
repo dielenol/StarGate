@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "reviewedSources": [
+    {
+      "sourceKey": "NOSB-MINI-5959-CONTAINMENT",
+      "contentHash": "b88bd3fb7196f1e84c4dc5d42618c7240f83d53e551d47b7590582297a59898f",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-MINI-HWAYANGYEONHWA",
+      "contentHash": "4bbb18e803bb7c870a9172598871c184145b689274bdfdbdd33b6d6ef7f116e9",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-MINI-MINI-LEGACY",
+      "contentHash": "4c40633a1bb24515a5678536054195b39ed9d15fcfaed239fd236036e8fa8deb",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-MINI-NEVED",
+      "contentHash": "2ef7ba2581dc8bdf13dfd8fedfb0ffaf8eff5f4a56dd495f0d0a2526cf8f6e0b",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-MINI-ROMANTID",
+      "contentHash": "eddd7ef5895f64c64a3d2b7cffadd1cee24b53b3bbd672552a200b7fc7ea70f6",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-MINI-S1E1-NEW-DUBLIN",
+      "contentHash": "3732ab48f297f7d0590da982b4204e1646d0c363fcfba27cb7c4e1ae83809add",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-S1E1-MINI",
+      "contentHash": "6b0f64f4b23ea2c800cbc190e9d8a7aaa9f306e571988db9579b814172f5bb82",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-S1E1-ORDER",
+      "contentHash": "85882f538c9c30c689fc274d1469da6f7562aaa0009bf71d1fafa00d672ad771",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-S1E2-CHOICE",
+      "contentHash": "b1af663dde8d60bca11bec7ca0e6d2a2acf4ae1627d523c86f9e2802749c9201",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-S1E2-MINI",
+      "contentHash": "df62b2d75647280ec99eba0a48ca66b3205b376f234bca5a83fff3966acf145f",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-S1E3-PHANTOM",
+      "contentHash": "979f994328684b1b19354cf04eba8666652f40064130fcb66639cfa40da31533",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-S1E4-PRATO-PART1",
+      "contentHash": "2243f12a9b3c7ccb0b94d08c0101d2db8a9b5a695c5d3cf0bba9883112e963b6",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-S1E4-PRATO-PART2",
+      "contentHash": "d5cba6c38304885cfa914709c34e4c6b71cedc8503f21a3e9ff37711e05af370",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-S1E5-EVIL-PART1",
+      "contentHash": "fd0c4fd758acee13b6d937c49b6ea100953c682aa398c680cc1ff6d38e1bfe69",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-S1E5-EVIL-PART2",
+      "contentHash": "67573f4ba4ee6ef777f692cb8584fec1391c9609707e57279806fc9196130927",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-S1E6-TURNING-POINT-PART1",
+      "contentHash": "f38862745faa182fc70ff71821a58ac637d3971180c0112f3e2f0d9f02d9574f",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-S1E6-TURNING-POINT-PART2",
+      "contentHash": "d9d1a5a3ebce0d7f94f67ff22ae2b734c3a6ed31a87abc5d1bcac9bd6b1c752b",
+      "outcome": "AWARDED"
+    },
+    {
+      "sourceKey": "NOSB-S1E7-DESIRE-PART1",
+      "contentHash": "311b201b84b7ced297f5f99cddf0608c91bf4b92f641537d42f810dddbca8d5d",
+      "outcome": "NO_AWARD"
+    }
+  ],
+  "items": [
+    {
+      "sourceKey": "NOSB-MINI-5959-CONTAINMENT",
+      "codename": "PIPETTE",
+      "category": "RESCUE_PROTECTION",
+      "title": "장밋빛 시냅스 격리 공적",
+      "citation": "ZULU-5959의 핵을 임시 용기에 봉인해 전원의 원상복귀와 표본 회수에 결정적으로 기여했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 5 },
+        {
+          "section": "SUMMARY",
+          "contains": "개체는 무력화되었고, 핀치가 페트병"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-MINI-HWAYANGYEONHWA",
+      "codename": "MARIA",
+      "category": "INTELLIGENCE_JUDGMENT",
+      "title": "화양연화 비살상 수습 공적",
+      "citation": "운전자의 기억에서 확산 원인을 포착하고, 백진연의 슬픔을 기억하겠다는 대화로 비살상 수습에 기여했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 3 },
+        {
+          "section": "SUMMARY",
+          "contains": "마리아는 그의 슬픔과 아픔"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-MINI-NEVED",
+      "codename": "네베드",
+      "category": "RESCUE_PROTECTION",
+      "title": "수호자의 선택 공적",
+      "citation": "살해를 강요한 성인 의식에서 포로의 쇠사슬만 끊어 생명을 지키고, 힘이 아닌 보호를 전사의 길로 선택했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 3 },
+        {
+          "section": "SUMMARY",
+          "contains": "키아나는 활로 욤스의 쇠사슬만"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E1-ORDER",
+      "codename": "CLOWN",
+      "category": "COMMAND",
+      "title": "한반도 주민 대피 지휘 공적",
+      "citation": "전자기 폭풍 커버스토리로 대외 브리핑과 주민 대피를 지휘해 지역 패닉을 1단계까지 낮췄습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 5 },
+        {
+          "section": "SUMMARY",
+          "contains": "은폐 발표와 주민 대피: 스타크 일로니손"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E1-ORDER",
+      "codename": "OTILIA",
+      "category": "RESEARCH_TECH",
+      "title": "검열된 비명 격리 설계 공적",
+      "citation": "검열된 비명의 청각 의존성과 불안정 조건을 규명하고, 백색소음 기반 생포 방식을 설계했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 8 },
+        {
+          "section": "SUMMARY",
+          "contains": "격리 방식 선택: 오틸리아"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E1-ORDER",
+      "codename": "LEE DONGSIK",
+      "category": "SUPPORT_TEAMWORK",
+      "title": "백색소음 격리 운용 공적",
+      "citation": "GP03-RX780 백색소음 프로토콜을 현장에서 안정적으로 유지해 ZULU-0028의 비파괴 생포를 완수했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 9 },
+        {
+          "section": "SUMMARY",
+          "contains": "이동식은 GP03-RX780 백색소음 프로토콜을 가동"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E4-PRATO-PART2",
+      "codename": "TIME",
+      "category": "RESCUE_PROTECTION",
+      "title": "프라토 시간선 구조 공적",
+      "citation": "시유가 사망한 시간선을 되돌리기 위해 신체를 잃는 위험을 감수하고, 생존과 격리에 필요한 정보를 다음 시간선에 전달했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 4 },
+        {
+          "section": "SUMMARY",
+          "contains": "회귀 후 크로노스는 마을 희생"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E5-EVIL-PART1",
+      "codename": "INDEXER",
+      "category": "RESEARCH_TECH",
+      "title": "광원화 임시 백신 공적",
+      "citation": "감염 요원에게 보랏빛 물질을 투여해 광원화 감염을 해제하고, 수치를 검증해 임시 백신과 예방제 5인분을 확보했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 4 },
+        {
+          "section": "SUMMARY",
+          "contains": "해쉬가 가져온 보랏빛 물질을 두 사람에게 투여"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E5-EVIL-PART2",
+      "codename": "MARGARET",
+      "category": "RESCUE_PROTECTION",
+      "title": "섹터 C 비상 냉각 복구 공적",
+      "citation": "모든 정신력을 소모해 페초린의 시신을 움직이고 수동 비상 냉각을 복구해 대규모 감염자 해동을 저지했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 0 },
+        {
+          "section": "SUMMARY",
+          "contains": "마가렛은 모든 정신력을 사용해 망자를 움직였고"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E6-TURNING-POINT-PART2",
+      "codename": "PIPETTE",
+      "category": "RESEARCH_TECH",
+      "title": "잔광자 표본 회수 공적",
+      "citation": "적대 의식장 교전 직후 광채 표본과 잔광자 머리를 안전하게 회수·분류해 후속 연구 기반을 확보했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 8 },
+        { "section": "HIGHLIGHT", "index": 9 }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E6-TURNING-POINT-PART2",
+      "codename": "MARIA",
+      "category": "SUPPORT_TEAMWORK",
+      "title": "현장 증원과 광체 보호 공적",
+      "citation": "전투원 증원을 즉시 투입해 현장 전력을 보강하고, 광체 소녀에게 비강압적 보호·이송 선택지를 제시했습니다.",
+      "evidence": [
+        { "section": "HIGHLIGHT", "index": 4 },
+        { "section": "HIGHLIGHT", "index": 10 }
+      ]
+    }
+  ]
+}

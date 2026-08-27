@@ -265,7 +265,7 @@ export async function listNovexHonorFallbackPerformances(
     .toArray();
 }
 
-interface HonorCandidateResolution {
+export interface HonorCandidateResolution {
   matchingCharacters: HonorCharacterIdentity[];
   ownerStates: Array<{ _id: ObjectId; status: UserStatus }>;
   eligibleCharacters: HonorCharacterIdentity[];
@@ -275,7 +275,7 @@ interface HonorCandidateResolution {
  * 관련 코드네임의 전체 identity dependency와 최종 eligible 후보를 함께 해석한다.
  * completion은 NPC/ownerless/inactive-owner도 잠가 자격 전환 race를 막는다.
  */
-async function resolveHonorCandidateCharactersByCodenames(
+export async function resolveHonorCandidateCharactersByCodenames(
   codenames: readonly string[],
   options: { session?: ClientSession } = {},
 ): Promise<HonorCandidateResolution> {

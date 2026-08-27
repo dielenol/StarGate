@@ -22,15 +22,20 @@ import {
 import {
   close,
   connect,
+  charactersCol,
   findHonorCandidateCharactersByCodenames,
   getClient,
+  HONOR_INDEX_DEFINITIONS,
   honorAnalysisStatesCol,
   honorRecordsCol,
   isHallOfFameV2WritesEnabled,
+  resolveHonorCandidateCharactersByCodenames,
   sessionReportVisibilityFilter,
   sessionReportsCol,
   upsertHonorRecord,
+  usersCol,
   withdrawHonorRecordsBySource,
+  type HonorCandidateResolution,
   type HonorRecord,
   type SessionReport,
   type UpsertHonorRecordInput,
@@ -53,6 +58,7 @@ import {
   type HallOfFameBackfillSkippedSource,
   type HallOfFameOperationManifestEntry,
 } from "./manifest.ts";
+import { inspectHonorIndexContract } from "./index-contract.ts";
 import {
   OllamaHonorAnalyzer,
 } from "../../../stargate-worker/dist/honor-analysis/ollama.js";
@@ -79,6 +85,11 @@ interface BackfillOperationReportRef {
   _id: ObjectId;
   sessionId: string;
   updatedAt: Date;
+}
+
+interface BackfillOperationFence {
+  report: BackfillOperationReportRef;
+  resolution: HonorCandidateResolution;
 }
 
 async function loadBackfillOperationReportRevision(
@@ -251,6 +262,7 @@ async function createManifest(input: {
           domain: "OPERATION",
           sourceKey: report.sessionId,
           sourceRecordId: String(report._id),
+          sourceRevision: report.updatedAt.toISOString(),
           sourceFingerprint: buildSkippedOperationSourceFingerprint({
             report,
             characters,
@@ -265,6 +277,7 @@ async function createManifest(input: {
           domain: "OPERATION",
           sourceKey: report.sessionId,
           sourceRecordId: String(report._id),
+          sourceRevision: report.updatedAt.toISOString(),
           sourceFingerprint: buildSkippedOperationSourceFingerprint({
             report,
             characters,
@@ -311,6 +324,7 @@ async function createManifest(input: {
       operations.push({
         sourceKey: source.sourceKey,
         sourceRecordId: source.sourceRecordId,
+        sourceRevision: report.updatedAt.toISOString(),
         sourceHash: source.sourceHash,
         records: records.map(serializeHonorRecord),
       });
@@ -346,13 +360,6 @@ async function readManifest(path: string): Promise<HallOfFameBackfillManifest> {
   return parseHallOfFameBackfillManifest(JSON.parse(raw));
 }
 
-function hasRequiredUniqueIndex(
-  indexes: readonly IndexDescriptionInfo[],
-  name: string,
-): boolean {
-  return indexes.some((index) => index.name === name && index.unique === true);
-}
-
 async function assertHonorIndexesReady(): Promise<void> {
   let recordIndexes: IndexDescriptionInfo[];
   let analysisIndexes: IndexDescriptionInfo[];
@@ -364,15 +371,20 @@ async function assertHonorIndexesReady(): Promise<void> {
   } catch {
     throw new Error("HONOR_INDEXES_NOT_READY");
   }
-  if (
-    !hasRequiredUniqueIndex(
+  const contracts = [
+    inspectHonorIndexContract(
       recordIndexes,
-      "honor_records_logicalKey_unique",
-    ) ||
-    !hasRequiredUniqueIndex(recordIndexes, "honor_records_publicKey_unique") ||
-    !hasRequiredUniqueIndex(
+      HONOR_INDEX_DEFINITIONS.honor_records ?? [],
+    ),
+    inspectHonorIndexContract(
       analysisIndexes,
-      "honor_analysis_states_source_unique",
+      HONOR_INDEX_DEFINITIONS.honor_analysis_states ?? [],
+    ),
+  ];
+  if (
+    contracts.some(
+      (contract) =>
+        contract.missing.length > 0 || contract.conflicting.length > 0,
     )
   ) {
     throw new Error("HONOR_INDEXES_NOT_READY");
@@ -451,10 +463,11 @@ async function activeSourceRecords(
 async function loadCurrentOperation(input: {
   entry: HallOfFameOperationManifestEntry;
   session: ClientSession;
-}): Promise<void> {
+}): Promise<BackfillOperationFence> {
   const report = await (await sessionReportsCol()).findOne(
     {
       sessionId: input.entry.sourceKey,
+      updatedAt: new Date(input.entry.sourceRevision),
       ...sessionReportVisibilityFilter("U"),
     },
     { session: input.session },
@@ -462,11 +475,14 @@ async function loadCurrentOperation(input: {
   if (!report || String(report._id) !== input.entry.sourceRecordId) {
     throw new Error("BACKFILL_OPERATION_SOURCE_CHANGED");
   }
-  const characters = await findHonorCandidateCharactersByCodenames(
+  const resolution = await resolveHonorCandidateCharactersByCodenames(
     report.relatedPersonnelCodenames ?? [],
     { session: input.session },
   );
-  const source = reduceOperationHonorSource({ report, characters });
+  const source = reduceOperationHonorSource({
+    report,
+    characters: resolution.eligibleCharacters,
+  });
   if (
     !source ||
     source.sourceHash !== input.entry.sourceHash ||
@@ -488,15 +504,24 @@ async function loadCurrentOperation(input: {
   ) {
     throw new Error("BACKFILL_OPERATION_CANDIDATE_CHANGED");
   }
+  return {
+    report: {
+      _id: report._id!,
+      sessionId: report.sessionId,
+      updatedAt: report.updatedAt,
+    },
+    resolution,
+  };
 }
 
 async function loadCurrentSkipped(input: {
   entry: HallOfFameBackfillSkippedSource;
   session: ClientSession;
-}): Promise<void> {
+}): Promise<BackfillOperationFence> {
   const report = await (await sessionReportsCol()).findOne(
     {
       sessionId: input.entry.sourceKey,
+      updatedAt: new Date(input.entry.sourceRevision),
       ...sessionReportVisibilityFilter("U"),
     },
     { session: input.session },
@@ -504,21 +529,99 @@ async function loadCurrentSkipped(input: {
   if (!report || String(report._id) !== input.entry.sourceRecordId) {
     throw new Error("BACKFILL_SKIPPED_SOURCE_CHANGED");
   }
-  const characters = await findHonorCandidateCharactersByCodenames(
+  const resolution = await resolveHonorCandidateCharactersByCodenames(
     report.relatedPersonnelCodenames ?? [],
     { session: input.session },
   );
   if (
-    buildSkippedOperationSourceFingerprint({ report, characters }) !==
+    buildSkippedOperationSourceFingerprint({
+      report,
+      characters: resolution.eligibleCharacters,
+    }) !==
       input.entry.sourceFingerprint ||
-    reduceOperationHonorSource({ report, characters }) !== null
+    reduceOperationHonorSource({
+      report,
+      characters: resolution.eligibleCharacters,
+    }) !== null
   ) {
     throw new Error("BACKFILL_SKIPPED_SOURCE_CHANGED");
+  }
+  return {
+    report: {
+      _id: report._id!,
+      sessionId: report.sessionId,
+      updatedAt: report.updatedAt,
+    },
+    resolution,
+  };
+}
+
+async function fenceOperationDependencies(
+  fences: readonly BackfillOperationFence[],
+  session: ClientSession,
+): Promise<void> {
+  const collection = await sessionReportsCol();
+  for (const fence of fences) {
+    const report = fence.report;
+    const result = await collection.updateOne(
+      {
+        _id: report._id,
+        sessionId: report.sessionId,
+        updatedAt: report.updatedAt,
+        ...sessionReportVisibilityFilter("U"),
+      },
+      { $currentDate: { __honorAnalysisLockAt: true } },
+      { session },
+    );
+    if (result.matchedCount !== 1) {
+      throw new Error("BACKFILL_OPERATION_SOURCE_CHANGED");
+    }
+  }
+
+  const characterCollection = await charactersCol();
+  const userCollection = await usersCol();
+  for (const { resolution } of fences) {
+    if (resolution.matchingCharacters.length > 0) {
+      const candidateLocks = await characterCollection.bulkWrite(
+        resolution.matchingCharacters.map((character) => ({
+          updateOne: {
+            filter: {
+              _id: character._id,
+              codename: character.codename,
+              type: character.type,
+              ownerId: character.ownerId,
+            },
+            update: { $currentDate: { __honorAnalysisLockAt: true } },
+          },
+        })),
+        { ordered: true, session },
+      );
+      if (
+        candidateLocks.matchedCount !== resolution.matchingCharacters.length
+      ) {
+        throw new Error("BACKFILL_OPERATION_CANDIDATE_CHANGED");
+      }
+    }
+    if (resolution.ownerStates.length > 0) {
+      const ownerLocks = await userCollection.bulkWrite(
+        resolution.ownerStates.map((owner) => ({
+          updateOne: {
+            filter: { _id: owner._id, status: owner.status },
+            update: { $currentDate: { __honorAnalysisLockAt: true } },
+          },
+        })),
+        { ordered: true, session },
+      );
+      if (ownerLocks.matchedCount !== resolution.ownerStates.length) {
+        throw new Error("BACKFILL_OPERATION_CANDIDATE_CHANGED");
+      }
+    }
   }
 }
 
 async function markBackfilledAnalysisSucceeded(input: {
   entry: HallOfFameOperationManifestEntry;
+  analyzerRevision: string;
   now: Date;
   session: ClientSession;
 }): Promise<boolean> {
@@ -528,7 +631,7 @@ async function markBackfilledAnalysisSucceeded(input: {
   if (
     current?.sourceRecordId === input.entry.sourceRecordId &&
     current.sourceHash === input.entry.sourceHash &&
-    current.analyzerRevision === HONOR_ANALYZER_REVISION &&
+    current.analyzerRevision === input.analyzerRevision &&
     current.status === "SUCCEEDED" &&
     current.analyzedAt instanceof Date &&
     !current.lastError &&
@@ -546,7 +649,7 @@ async function markBackfilledAnalysisSucceeded(input: {
         sourceKey: input.entry.sourceKey,
         sourceRecordId: input.entry.sourceRecordId,
         sourceHash: input.entry.sourceHash,
-        analyzerRevision: HONOR_ANALYZER_REVISION,
+        analyzerRevision: input.analyzerRevision,
         status: "SUCCEEDED",
         analyzedAt: input.now,
         updatedAt: input.now,
@@ -566,6 +669,7 @@ async function markBackfilledAnalysisSucceeded(input: {
 
 async function markBackfilledAnalysisSkipped(input: {
   entry: HallOfFameBackfillSkippedSource;
+  analyzerRevision: string;
   now: Date;
   session: ClientSession;
 }): Promise<boolean> {
@@ -578,7 +682,7 @@ async function markBackfilledAnalysisSkipped(input: {
   if (
     current?.sourceRecordId === input.entry.sourceRecordId &&
     current.sourceHash === input.entry.sourceFingerprint &&
-    current.analyzerRevision === HONOR_ANALYZER_REVISION &&
+    current.analyzerRevision === input.analyzerRevision &&
     current.status === "SKIPPED" &&
     current.lastError === reason &&
     !current.analyzedAt &&
@@ -596,7 +700,7 @@ async function markBackfilledAnalysisSkipped(input: {
         sourceKey: input.entry.sourceKey,
         sourceRecordId: input.entry.sourceRecordId,
         sourceHash: input.entry.sourceFingerprint,
-        analyzerRevision: HONOR_ANALYZER_REVISION,
+        analyzerRevision: input.analyzerRevision,
         status: "SKIPPED",
         lastError: reason,
         updatedAt: input.now,
@@ -645,12 +749,14 @@ async function applyManifest(
   try {
     await session.withTransaction(async () => {
       await assertManifestCoverageCurrent(manifest, session);
+      const operationFences: BackfillOperationFence[] = [];
       for (const entry of manifest.operations) {
-        await loadCurrentOperation({ entry, session });
+        operationFences.push(await loadCurrentOperation({ entry, session }));
       }
       for (const entry of manifest.skipped) {
-        await loadCurrentSkipped({ entry, session });
+        operationFences.push(await loadCurrentSkipped({ entry, session }));
       }
+      await fenceOperationDependencies(operationFences, session);
 
       for (const entry of manifest.operations) {
         const desired = deserializeManifestRecords(entry.records);
@@ -674,6 +780,7 @@ async function applyManifest(
         }
         const stateChanged = await markBackfilledAnalysisSucceeded({
           entry,
+          analyzerRevision: manifest.analyzerRevision,
           now: generatedAt,
           session,
         });
@@ -698,6 +805,7 @@ async function applyManifest(
         }
         const stateChanged = await markBackfilledAnalysisSkipped({
           entry,
+          analyzerRevision: manifest.analyzerRevision,
           now: generatedAt,
           session,
         });

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import {
   HONOR_ANALYZER_REVISION,
+  HONOR_MANUAL_REVIEW_REVISION,
   assertHonorRecordInvariants,
   type HonorCharacterIdentity,
   type HonorRecord,
@@ -9,7 +10,11 @@ import {
   type UpsertHonorRecordInput,
 } from "@stargate/shared-db";
 
-export const HALL_OF_FAME_BACKFILL_MANIFEST_VERSION = 1 as const;
+export const HALL_OF_FAME_BACKFILL_MANIFEST_VERSION = 2 as const;
+const BACKFILL_ANALYZER_REVISIONS = new Set<string>([
+  HONOR_ANALYZER_REVISION,
+  HONOR_MANUAL_REVIEW_REVISION,
+]);
 
 export interface SerializedHonorRecord
   extends Omit<
@@ -30,6 +35,7 @@ export interface HallOfFameNovexManifestEntry {
 export interface HallOfFameOperationManifestEntry {
   sourceKey: string;
   sourceRecordId: string;
+  sourceRevision: string;
   sourceHash: string;
   records: SerializedHonorRecord[];
 }
@@ -38,6 +44,7 @@ export interface HallOfFameBackfillSkippedSource {
   domain: "OPERATION";
   sourceKey: string;
   sourceRecordId: string;
+  sourceRevision: string;
   sourceFingerprint: string;
   reason: "NO_ELIGIBLE_AGENT" | "NO_ANALYZABLE_TEXT";
 }
@@ -50,7 +57,7 @@ export interface HallOfFameBackfillIssue {
 
 export interface HallOfFameBackfillManifestBody {
   schemaVersion: typeof HALL_OF_FAME_BACKFILL_MANIFEST_VERSION;
-  analyzerRevision: typeof HONOR_ANALYZER_REVISION;
+  analyzerRevision: string;
   generatedAt: string;
   database: string;
   novex: HallOfFameNovexManifestEntry[];
@@ -106,6 +113,16 @@ function requireIsoDate(value: unknown, field: string): string {
     throw new Error(`HALL_OF_FAME_MANIFEST_${field}_INVALID`);
   }
   return raw;
+}
+
+function requireAnalyzerRevision(value: unknown): string {
+  const revision = requireString(value, "ANALYZER_REVISION", {
+    maxLength: 120,
+  });
+  if (!BACKFILL_ANALYZER_REVISIONS.has(revision)) {
+    throw new Error("HALL_OF_FAME_MANIFEST_ANALYZER_REVISION_INVALID");
+  }
+  return revision;
 }
 
 export function serializeHonorRecord(
@@ -237,11 +254,16 @@ export function buildSkippedOperationSourceFingerprint(input: {
 }
 
 export function createHallOfFameBackfillManifest(
-  input: Omit<HallOfFameBackfillManifestBody, "schemaVersion" | "analyzerRevision">,
+  input: Omit<HallOfFameBackfillManifestBody, "schemaVersion" | "analyzerRevision"> & {
+    analyzerRevision?: string;
+  },
 ): HallOfFameBackfillManifest {
+  const analyzerRevision = requireAnalyzerRevision(
+    input.analyzerRevision ?? HONOR_ANALYZER_REVISION,
+  );
   const body: HallOfFameBackfillManifestBody = {
     schemaVersion: HALL_OF_FAME_BACKFILL_MANIFEST_VERSION,
-    analyzerRevision: HONOR_ANALYZER_REVISION,
+    analyzerRevision,
     generatedAt: requireIsoDate(input.generatedAt, "GENERATED_AT"),
     database: requireString(input.database, "DATABASE", { maxLength: 120 }),
     novex: [...input.novex].sort((left, right) =>
@@ -304,7 +326,6 @@ export function parseHallOfFameBackfillManifest(
   }
   if (
     value.schemaVersion !== HALL_OF_FAME_BACKFILL_MANIFEST_VERSION ||
-    value.analyzerRevision !== HONOR_ANALYZER_REVISION ||
     !Array.isArray(value.novex) ||
     !Array.isArray(value.operations) ||
     !Array.isArray(value.skipped) ||
@@ -312,6 +333,7 @@ export function parseHallOfFameBackfillManifest(
   ) {
     throw new Error("HALL_OF_FAME_MANIFEST_SCHEMA_INVALID");
   }
+  const analyzerRevision = requireAnalyzerRevision(value.analyzerRevision);
   const generatedAt = requireIsoDate(value.generatedAt, "GENERATED_AT");
   const database = requireString(value.database, "DATABASE", {
     maxLength: 120,
@@ -353,6 +375,10 @@ export function parseHallOfFameBackfillManifest(
       const sourceHash = requireString(entry.sourceHash, "SOURCE_HASH", {
         pattern: /^[a-f0-9]{64}$/u,
       });
+      const sourceRevision = requireIsoDate(
+        entry.sourceRevision,
+        "SOURCE_REVISION",
+      );
       const records = parseSerializedRecords(entry.records, {
         domain: "OPERATION",
         sourceKey,
@@ -362,12 +388,18 @@ export function parseHallOfFameBackfillManifest(
           (record) =>
             record.sourceHash !== sourceHash ||
             record.source.recordId !== sourceRecordId ||
-            record.analyzerRevision !== HONOR_ANALYZER_REVISION,
+            record.analyzerRevision !== analyzerRevision,
         )
       ) {
         throw new Error("HALL_OF_FAME_MANIFEST_OPERATION_HASH_MISMATCH");
       }
-      return { sourceKey, sourceRecordId, sourceHash, records };
+      return {
+        sourceKey,
+        sourceRecordId,
+        sourceRevision,
+        sourceHash,
+        records,
+      };
     },
   );
   const skipped = value.skipped.map(
@@ -389,6 +421,10 @@ export function parseHallOfFameBackfillManifest(
           entry.sourceRecordId,
           "SOURCE_RECORD_ID",
           { maxLength: 200 },
+        ),
+        sourceRevision: requireIsoDate(
+          entry.sourceRevision,
+          "SOURCE_REVISION",
         ),
         sourceFingerprint: requireString(
           entry.sourceFingerprint,
@@ -419,7 +455,7 @@ export function parseHallOfFameBackfillManifest(
   });
   const body: HallOfFameBackfillManifestBody = {
     schemaVersion: HALL_OF_FAME_BACKFILL_MANIFEST_VERSION,
-    analyzerRevision: HONOR_ANALYZER_REVISION,
+    analyzerRevision,
     generatedAt,
     database,
     novex,

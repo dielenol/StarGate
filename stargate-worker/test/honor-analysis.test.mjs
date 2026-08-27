@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { ObjectId } from "mongodb";
@@ -14,6 +15,7 @@ import {
   buildOperationHonorSourceMaterial,
   HONOR_ANALYSIS_SOURCE_MAX_CHARS,
   HONOR_ANALYZER_REVISION,
+  HONOR_MANUAL_REVIEW_REVISION,
 } from "@stargate/shared-db";
 
 import {
@@ -24,6 +26,7 @@ import {
   OllamaHonorAnalyzer,
   honorAnalysisLeaseMs,
 } from "../dist/honor-analysis/ollama.js";
+import { isHonorAnalysisSourceStable } from "../dist/honor-analysis/store.js";
 
 const characterId = new ObjectId();
 const ownerId = new ObjectId();
@@ -79,6 +82,56 @@ function modelCandidate(overrides = {}) {
     ...overrides,
   };
 }
+
+test("같은 sourceHash의 수동 확정은 유지하고 원문 변경은 자동 재심사 대상으로 돌린다", () => {
+  const currentSource = source();
+  const manualState = {
+    _id: `session-report:${currentSource.sourceKey}`,
+    sourceType: "SESSION_REPORT",
+    sourceKey: currentSource.sourceKey,
+    sourceRecordId: currentSource.sourceRecordId,
+    sourceHash: currentSource.sourceHash,
+    analyzerRevision: HONOR_MANUAL_REVIEW_REVISION,
+    status: "SUCCEEDED",
+    attempts: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  assert.equal(
+    isHonorAnalysisSourceStable({ state: manualState, source: currentSource }),
+    true,
+  );
+  assert.equal(
+    isHonorAnalysisSourceStable({
+      state: manualState,
+      source: { ...currentSource, sourceHash: "b".repeat(64) },
+    }),
+    false,
+  );
+  assert.equal(
+    isHonorAnalysisSourceStable({
+      state: { ...manualState, status: "PENDING" },
+      source: currentSource,
+    }),
+    false,
+  );
+});
+
+test("reconcile transaction은 queue 직전 최신 수동 확정을 다시 확인한다", async () => {
+  const storeSource = await readFile(
+    new URL("../src/honor-analysis/store.ts", import.meta.url),
+    "utf8",
+  );
+  const transaction = storeSource.slice(
+    storeSource.indexOf("const currentState ="),
+    storeSource.indexOf("if (result.queued) queued += 1"),
+  );
+  assert.ok(
+    transaction.indexOf("isHonorAnalysisSourceStable") <
+      transaction.indexOf("queueHonorAnalysis"),
+  );
+});
 
 test("U 보고서와 exact related codename의 player-owned AGENT만 source에 포함한다", () => {
   const material = buildOperationHonorSourceMaterial({
