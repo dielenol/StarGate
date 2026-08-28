@@ -104,7 +104,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node ../../scripts/clean-package-dist.mjs && tsc",
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && node --test test/**/*.test.mjs"
   },

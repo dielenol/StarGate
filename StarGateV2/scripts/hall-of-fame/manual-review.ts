@@ -1,7 +1,7 @@
 /**
- * Evidence-grounded historical operation-honor review.
+ * Evidence-grounded stargate-lore operation-honor review.
  *
- * This tool never writes MongoDB. It converts a human-reviewed plan into the
+ * This tool never writes MongoDB. It converts a lore-reviewed plan into the
  * same hash-locked manifest consumed by backfill.ts. A planned report-linkage
  * payload can be overlaid for preflight only; a materializable manifest always
  * uses the current persisted report revision and candidate links.
@@ -17,17 +17,17 @@ import { fileURLToPath } from "node:url";
 import {
   buildOperationHonorRecords,
   reduceOperationHonorSource,
-  sanitizeHonorAnalysisText,
-  validateOperationHonorResults,
-  type HonorAnalysisSource,
-  type HonorModelCandidate,
+  sanitizeHonorReviewText,
+  validateOperationHonorReview,
+  type OperationHonorReviewItem,
+  type OperationHonorReviewSource,
 } from "@stargate/core";
 import {
   close,
   connect,
   charactersCol,
   findHonorCandidateCharactersByCodenames,
-  HONOR_MANUAL_REVIEW_REVISION,
+  HONOR_LORE_REVIEW_REVISION,
   sessionReportVisibilityFilter,
   sessionReportsCol,
   type OperationHonorCategory,
@@ -47,6 +47,10 @@ export const MANUAL_OPERATION_HONOR_REVIEW_VERSION = 1 as const;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "../..");
+const defaultReviewPath = resolve(
+  __dirname,
+  "operation-honors-manual-review.v1.json",
+);
 const CATEGORY_SET = new Set<OperationHonorCategory>([
   "COMBAT",
   "COMMAND",
@@ -236,8 +240,8 @@ function stableJson(value: unknown): string {
 }
 
 /**
- * 인물 연결 보강으로 updatedAt/sourceHash가 바뀌어도, 사람이 검토한 실제
- * 서술·발생일·공개 source label이 달라지면 반드시 계획을 다시 만들게 한다.
+ * 사람이 검토한 서술·발생일·공개 source label·정확한 후보 연결이
+ * 달라지면 반드시 계획을 다시 만들게 한다.
  */
 export function buildManualReviewContentHash(
   report: Pick<
@@ -247,6 +251,7 @@ export function buildManualReviewContentHash(
     | "minRole"
     | "summary"
     | "highlights"
+    | "relatedPersonnelCodenames"
     | "createdAt"
   >,
 ): string {
@@ -257,8 +262,11 @@ export function buildManualReviewContentHash(
         sourceLabel: report.sessionTitle.normalize("NFC").trim(),
         minRole: report.minRole ?? "U",
         occurredAt: report.createdAt.toISOString(),
-        summary: sanitizeHonorAnalysisText(report.summary),
-        highlights: report.highlights.map(sanitizeHonorAnalysisText),
+        summary: sanitizeHonorReviewText(report.summary),
+        highlights: report.highlights.map(sanitizeHonorReviewText),
+        relatedPersonnelCodenames: [
+          ...(report.relatedPersonnelCodenames ?? []),
+        ].sort((left, right) => left.localeCompare(right, "ko")),
       }),
     )
     .digest("hex");
@@ -273,7 +281,7 @@ function summarySentences(value: string): string[] {
 }
 
 export function resolveManualEvidenceQuote(
-  source: HonorAnalysisSource,
+  source: OperationHonorReviewSource,
   selector: ManualEvidenceSelector,
 ): string {
   if (selector.section === "HIGHLIGHT") {
@@ -300,26 +308,28 @@ export function resolveManualEvidenceQuote(
 }
 
 export function validateManualReviewItems(input: {
-  source: HonorAnalysisSource;
+  source: OperationHonorReviewSource;
   items: readonly ManualOperationHonorReviewItem[];
 }) {
-  const modelItems: HonorModelCandidate[] = input.items.map((item) => ({
+  const reviewItems: OperationHonorReviewItem[] = input.items.map((item) => ({
     codename: item.codename,
     category: item.category,
     title: item.title,
     citation: item.citation,
-    confidence: 1,
     evidenceQuotes: item.evidence.map((selector) =>
       resolveManualEvidenceQuote(input.source, selector),
     ),
   }));
-  // MANUAL_REVIEW is intentionally distinct from dual-model analysis. Reuse
-  // the exact candidate/evidence/public-prose gate without claiming model votes.
-  const validated = validateOperationHonorResults({
-    source: input.source,
-    proposal: { items: modelItems },
-    critique: { items: modelItems },
-  });
+  const validated = (() => {
+    try {
+      return validateOperationHonorReview({
+        source: input.source,
+        items: reviewItems,
+      });
+    } catch {
+      throw new Error("MANUAL_REVIEW_ITEM_REJECTED");
+    }
+  })();
   if (validated.length !== input.items.length) {
     throw new Error("MANUAL_REVIEW_ITEM_REJECTED");
   }
@@ -358,7 +368,7 @@ function loadEnvFile(path: string): void {
 
 function parseArgs(args: readonly string[]): CliOptions {
   const values = args.filter((value) => value !== "--");
-  let reviewPath: string | undefined;
+  let reviewPath = defaultReviewPath;
   let outputPath: string | undefined;
   let plannedLinkagePath: string | undefined;
   let help = false;
@@ -382,18 +392,18 @@ function parseArgs(args: readonly string[]): CliOptions {
       throw new Error(`알 수 없는 인자입니다: ${value}`);
     }
   }
-  if (!help && !reviewPath) throw new Error("--review 경로가 필요합니다.");
   if (plannedLinkagePath && outputPath) {
     throw new Error("계획 linkage preflight에서는 manifest를 출력할 수 없습니다.");
   }
-  return { reviewPath: reviewPath ?? "", outputPath, plannedLinkagePath, help };
+  return { reviewPath, outputPath, plannedLinkagePath, help };
 }
 
 function usage(): string {
   return [
     "사용법:",
-    "  pnpm hall-of-fame:manual-review -- --review <path> [--output <path>]",
-    "  pnpm hall-of-fame:manual-review -- --review <path> --planned-linkage <seed.json>",
+    "  pnpm hall-of-fame:lore-review",
+    "  pnpm hall-of-fame:lore-review -- --review <path> [--output <path>]",
+    "  pnpm hall-of-fame:lore-review -- --review <path> --planned-linkage <seed.json>",
     "",
     "기본 모드는 현재 DB를 읽어 hash-locked private manifest만 생성합니다.",
     "--planned-linkage는 아직 적용하지 않은 보고서 인물 연결을 겹쳐 보는 read-only preflight입니다.",
@@ -576,7 +586,7 @@ async function createManualManifest(input: {
     const records = buildOperationHonorRecords({
       source,
       honors,
-      analyzerRevision: HONOR_MANUAL_REVIEW_REVISION,
+      analyzerRevision: HONOR_LORE_REVIEW_REVISION,
       issuedAt: generatedAt,
     });
     awardedRecords += records.length;
@@ -589,7 +599,7 @@ async function createManualManifest(input: {
     });
   }
   const manifest = createHallOfFameBackfillManifest({
-    analyzerRevision: HONOR_MANUAL_REVIEW_REVISION,
+    analyzerRevision: HONOR_LORE_REVIEW_REVISION,
     generatedAt: generatedAt.toISOString(),
     database: input.database,
     novex: [],
@@ -654,7 +664,7 @@ export async function main(rawArgs = process.argv.slice(2)): Promise<number> {
           analyzerRevision: result.manifest.analyzerRevision,
           reportCoverage:
             result.manifest.operations.length + result.manifest.skipped.length,
-          analyzedReports: result.manifest.operations.length,
+          reviewableReports: result.manifest.operations.length,
           skippedReports: result.manifest.skipped.length,
           awardedRecords: result.awardedRecords,
           ...(result.outputPath
@@ -683,7 +693,7 @@ const directEntry = process.argv[1]
 if (directEntry) {
   void main().catch((error: unknown) => {
     console.error(
-      `[hall-of-fame-manual-review] ${
+      `[hall-of-fame-lore-review] ${
         error instanceof Error ? error.message : "알 수 없는 오류"
       }`,
     );

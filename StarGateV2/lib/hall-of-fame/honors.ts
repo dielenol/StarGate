@@ -11,8 +11,8 @@ import {
   type HallOfFameMineResponse,
   type HallOfFameNovexResponse,
   type HallOfFameOverviewResponse,
-  type HallOfFameReportAnalysisResponse,
-  type HallOfFameReportAnalysisState,
+  type HallOfFameReportReviewResponse,
+  type HallOfFameReportReviewState,
   type OperationHonorCategory,
 } from "@stargate/core";
 import {
@@ -22,8 +22,7 @@ import {
   getHonorRecordByPublicKey,
   findReportById,
   findReportBySessionId,
-  HONOR_ANALYZER_REVISION,
-  HONOR_MANUAL_REVIEW_REVISION,
+  HONOR_LORE_REVIEW_REVISION,
   honorAnalysisStatesCol,
   listCharactersByOwner,
   listHonorRecords,
@@ -74,10 +73,10 @@ async function resolveCurrentOperationSource(sourceKey: string) {
   return source ? { report, source } : null;
 }
 
-/** 공개 응답 필드를 늘리지 않고 보고서 상세에 안전한 심사 진행 상태만 제공한다. */
-export async function getHallOfFameReportAnalysisState(
+/** 공개 응답 필드를 늘리지 않고 보고서 상세에 lore 검토 대기 상태만 제공한다. */
+export async function getHallOfFameReportReviewState(
   reportId: string,
-): Promise<HallOfFameReportAnalysisState> {
+): Promise<HallOfFameReportReviewState> {
   const report = await findReportById(reportId);
   if (!report || normalizeSessionReportMinRole(report.minRole) !== "U") {
     return null;
@@ -91,28 +90,19 @@ export async function getHallOfFameReportAnalysisState(
   const state = await (await honorAnalysisStatesCol()).findOne({
     _id: `session-report:${report.sessionId}`,
   });
-  if (!state) return null;
-  const isCurrentAnalyzerRevision =
-    state.analyzerRevision === HONOR_ANALYZER_REVISION ||
-    state.analyzerRevision === HONOR_MANUAL_REVIEW_REVISION;
-  if (
-    state.sourceHash !== source.sourceHash ||
-    !isCurrentAnalyzerRevision ||
-    state.status === "PENDING" ||
-    state.status === "RETRY" ||
-    state.status === "LEASED"
-  ) {
-    return "PENDING";
-  }
-  return state.status === "SKIPPED" ? "DELAYED" : null;
+  const isCurrentReview =
+    state?.sourceHash === source.sourceHash &&
+    state.analyzerRevision === HONOR_LORE_REVIEW_REVISION &&
+    state.status === "SUCCEEDED";
+  return isCurrentReview ? null : "PENDING";
 }
 
-export async function getHallOfFameReportAnalysisResponse(
+export async function getHallOfFameReportReviewResponse(
   reportId: string,
-): Promise<HallOfFameReportAnalysisResponse> {
+): Promise<HallOfFameReportReviewResponse> {
   return {
     generatedAt: new Date().toISOString(),
-    state: await getHallOfFameReportAnalysisState(reportId),
+    state: await getHallOfFameReportReviewState(reportId),
   };
 }
 

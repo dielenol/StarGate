@@ -2,13 +2,12 @@ import type { ObjectId } from "mongodb";
 
 import type { RoleLevel } from "./character.js";
 
-export const HONOR_ANALYZER_REVISION = "operation-honor-v1";
 /**
- * 근거 검증을 마친 과거 보고서의 수동 이관 revision.
- * 같은 sourceHash에서는 worker가 자동 분석으로 덮어쓰지 않는다.
+ * stargate-lore로 근거 검증을 마친 작전 공적 review revision.
+ * 기존 운영 원장의 문자열을 유지해 재적용 시 불필요한 변경을 만들지 않는다.
  */
-export const HONOR_MANUAL_REVIEW_REVISION = "operation-honor-manual-v1";
-export const HONOR_ANALYSIS_SOURCE_MAX_CHARS = 32_000;
+export const HONOR_LORE_REVIEW_REVISION = "operation-honor-manual-v1";
+export const HONOR_REVIEW_SOURCE_MAX_CHARS = 32_000;
 
 export const HONOR_DOMAINS = ["NOVEX", "OPERATION"] as const;
 export type HonorDomain = (typeof HONOR_DOMAINS)[number];
@@ -79,7 +78,7 @@ export interface NovexHonorFallbackPerformance {
 }
 
 /**
- * 여러 ERP 화면이 함께 읽는 공적 원장. 내부 식별자와 분석 감사 필드는 공개
+ * 여러 ERP 화면이 함께 읽는 공적 원장. 내부 식별자와 검토 감사 필드는 공개
  * read model에서 반드시 제거한다.
  */
 export interface HonorRecord {
@@ -109,25 +108,27 @@ export interface HonorRecord {
 
 export interface UpsertHonorRecordInput extends Omit<HonorRecord, "_id"> {}
 
-export const HONOR_ANALYSIS_STATUSES = [
+export const HONOR_REVIEW_STATUSES = [
   "PENDING",
   "LEASED",
   "RETRY",
   "SUCCEEDED",
   "SKIPPED",
 ] as const;
-export type HonorAnalysisStatus =
-  (typeof HONOR_ANALYSIS_STATUSES)[number];
+export type HonorReviewStatus = (typeof HONOR_REVIEW_STATUSES)[number];
 
-/** 원문은 저장하지 않고 sourceHash/revision과 lease 상태만 보존한다. */
-export interface HonorAnalysisState {
+/**
+ * 원문은 저장하지 않고 sourceHash/revision과 lore 검토 상태만 보존한다.
+ * collection/field 이름은 기존 원장과의 무 migration 호환을 위해 유지한다.
+ */
+export interface HonorReviewState {
   _id: string;
   sourceType: "SESSION_REPORT";
   sourceKey: string;
   sourceRecordId: string;
   sourceHash: string;
   analyzerRevision: string;
-  status: HonorAnalysisStatus;
+  status: HonorReviewStatus;
   attempts: number;
   leaseToken?: string;
   leaseUntil?: Date;

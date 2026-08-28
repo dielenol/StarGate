@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { isMemberErpViewer } from "@/lib/auth/guest";
 import { isValidObjectId } from "@/lib/db/utils";
-import { getHallOfFameReportAnalysisResponse } from "@/lib/hall-of-fame/honors";
+import { getHallOfFameReportReviewResponse } from "@/lib/hall-of-fame/honors";
 
 const PRIVATE_NO_STORE_HEADERS = {
   "Cache-Control": "private, no-store",
@@ -35,14 +35,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await getHallOfFameReportAnalysisResponse(reportId);
+    const response = await getHallOfFameReportReviewResponse(reportId);
     return NextResponse.json(response, { headers: PRIVATE_NO_STORE_HEADERS });
   } catch (error) {
     console.error("[hall-of-fame/citations/status] failed to load state", error);
     return NextResponse.json(
       {
-        error: "공적 심사 상태를 불러오지 못했습니다.",
-        code: "HONOR_ANALYSIS_STATE_LOAD_FAILED",
+        error: "공적 검토 상태를 불러오지 못했습니다.",
+        code: "HONOR_REVIEW_STATE_LOAD_FAILED",
       },
       { status: 500, headers: PRIVATE_NO_STORE_HEADERS },
     );

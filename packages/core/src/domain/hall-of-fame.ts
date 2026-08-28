@@ -56,11 +56,11 @@ export interface HallOfFameCitationPageResponse {
   nextCursor?: string;
 }
 
-export type HallOfFameReportAnalysisState = "PENDING" | "DELAYED" | null;
+export type HallOfFameReportReviewState = "PENDING" | null;
 
-export interface HallOfFameReportAnalysisResponse {
+export interface HallOfFameReportReviewResponse {
   generatedAt: string;
-  state: HallOfFameReportAnalysisState;
+  state: HallOfFameReportReviewState;
 }
 
 export interface HallOfFameMineResponse {

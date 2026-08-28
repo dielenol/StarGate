@@ -6,7 +6,7 @@ import type {
   OperationHonorSourceSegment,
   SessionReport,
 } from "./types/index.js";
-import { HONOR_ANALYSIS_SOURCE_MAX_CHARS } from "./types/index.js";
+import { HONOR_REVIEW_SOURCE_MAX_CHARS } from "./types/index.js";
 
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -152,7 +152,7 @@ function stripRestrictedMarkdownSections(value: string): string {
   return safe.join("\n");
 }
 
-/** 이미지·관련문서·출처 표현과 fenced code를 Cloud 분석 입력에서 제거한다. */
+/** 이미지·관련문서·출처 표현과 fenced code를 공적 검토 본문에서 제거한다. */
 export function sanitizeOperationHonorSourceText(value: string): string {
   return stripMarkdownLinksAndImages(stripRestrictedMarkdownSections(value))
     .replace(/<a\b[^>]*>[\s\S]*?(?:<\/a>|$)/giu, " ")
@@ -195,7 +195,7 @@ function fitSegmentsToSourceLimit(
 }
 
 /**
- * worker와 Web stale 검사가 함께 쓰는 canonical source material/hash helper.
+ * 수동 검토와 Web stale 검사가 함께 쓰는 canonical source material/hash helper.
  * minRole이 없거나 U인 보고서와 명시적으로 연결된 player-owned AGENT만 허용한다.
  */
 export function buildOperationHonorSourceMaterial(input: {
@@ -261,8 +261,8 @@ export function buildOperationHonorSourceMaterial(input: {
   if (segments.length === 0) return null;
 
   const maxChars = Math.min(
-    HONOR_ANALYSIS_SOURCE_MAX_CHARS,
-    Math.max(1_000, input.maxChars ?? HONOR_ANALYSIS_SOURCE_MAX_CHARS),
+    HONOR_REVIEW_SOURCE_MAX_CHARS,
+    Math.max(1_000, input.maxChars ?? HONOR_REVIEW_SOURCE_MAX_CHARS),
   );
   const limited = fitSegmentsToSourceLimit(segments, maxChars);
   if (!limited.text) return null;

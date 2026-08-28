@@ -5,12 +5,12 @@ import Link from "next/link";
 import type {
   HallOfFameCitationPageResponse,
   HallOfFameHonorItem,
-  HallOfFameReportAnalysisResponse,
+  HallOfFameReportReviewResponse,
 } from "@stargate/core";
 
 import {
   useHallOfFameCitations,
-  useHallOfFameReportAnalysisState,
+  useHallOfFameReportReviewState,
 } from "@/hooks/queries/useHallOfFameQuery";
 
 import Box from "@/components/ui/Box/Box";
@@ -24,7 +24,7 @@ import styles from "./page.module.css";
 interface Props {
   reportId: string;
   initialHonors?: HallOfFameCitationPageResponse;
-  initialAnalysis?: HallOfFameReportAnalysisResponse;
+  initialReview?: HallOfFameReportReviewResponse;
 }
 
 const HONOR_CATEGORY_LABEL: Record<string, string> = {
@@ -55,7 +55,7 @@ function HonorCitation({ item }: { item: HallOfFameHonorItem }) {
 export default function ReportHonorCitations({
   reportId,
   initialHonors,
-  initialAnalysis,
+  initialReview,
 }: Props) {
   const honors = useHallOfFameCitations({
     reportId,
@@ -64,29 +64,29 @@ export default function ReportHonorCitations({
       ? new Date(initialHonors.generatedAt).getTime()
       : undefined,
   });
-  const analysis = useHallOfFameReportAnalysisState({
+  const review = useHallOfFameReportReviewState({
     reportId,
-    initialData: initialAnalysis,
-    initialDataUpdatedAt: initialAnalysis
-      ? new Date(initialAnalysis.generatedAt).getTime()
+    initialData: initialReview,
+    initialDataUpdatedAt: initialReview
+      ? new Date(initialReview.generatedAt).getTime()
       : undefined,
   });
   const items = honors.data?.items ?? [];
-  const analysisState = analysis.data?.state ?? null;
+  const reviewState = review.data?.state ?? null;
   const isInitialLoading =
     (!honors.data && honors.isLoading) ||
-    (!analysis.data && analysis.isLoading);
-  const hasLoadError = honors.isError || analysis.isError;
-  const isRetrying = honors.isFetching || analysis.isFetching;
+    (!review.data && review.isLoading);
+  const hasLoadError = honors.isError || review.isError;
+  const isRetrying = honors.isFetching || review.isFetching;
   const showEmpty =
     Boolean(honors.data) &&
-    Boolean(analysis.data) &&
+    Boolean(review.data) &&
     items.length === 0 &&
-    analysisState === null;
+    reviewState === null;
 
   const retry = () => {
     void honors.refetch();
-    void analysis.refetch();
+    void review.refetch();
   };
 
   return (
@@ -117,15 +117,12 @@ export default function ReportHonorCitations({
           </div>
         </div>
       ) : null}
-      {analysisState ? (
+      {reviewState ? (
         <div className={styles.honorPanel__status} role="status">
-          <strong>
-            {analysisState === "PENDING" ? "공적 재심사 중" : "자동 심사 지연"}
-          </strong>
+          <strong>공적 검토 대기</strong>
           <span>
-            {analysisState === "PENDING"
-              ? "보고서 갱신 내용을 검토하고 있습니다. 확정 전 기록은 공개하지 않습니다."
-              : "확정 기준을 통과한 결과만 공개하며, 내부 재시도 또는 운영 점검을 기다리고 있습니다."}
+            로어·세션 기록의 정확한 근거를 대조하고 있습니다. 확정 전
+            기록은 공개하지 않습니다.
           </span>
         </div>
       ) : null}

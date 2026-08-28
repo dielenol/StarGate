@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import type { HonorAnalysisSource } from "@stargate/core";
+import {
+  buildOperationHonorRecords,
+  type OperationHonorReviewSource,
+} from "@stargate/core";
+import type { HonorRecord } from "@stargate/shared-db";
 
 import {
   buildManualReviewContentHash,
@@ -11,10 +15,14 @@ import {
   validateManualReviewItems,
 } from "./manual-review.ts";
 import { inspectHonorIndexContract } from "./index-contract.ts";
+import {
+  operationHonorLedgerMatches,
+  resolveReviewStatusDatabaseName,
+} from "./review-status.ts";
 
 const contentHash = "a".repeat(64);
 
-function sourceFixture(): HonorAnalysisSource {
+function sourceFixture(): OperationHonorReviewSource {
   return {
     sourceKey: "REPORT-1",
     sourceRecordId: "report-record-1",
@@ -34,7 +42,7 @@ function sourceFixture(): HonorAnalysisSource {
   };
 }
 
-test("manual review는 정해진 부문·보고서당 최대 3건·중복 논리키를 검증한다", () => {
+test("lore review는 정해진 부문·보고서당 최대 3건·중복 논리키를 검증한다", () => {
   const valid = parseManualOperationHonorReviewPlan({
     schemaVersion: 1,
     reviewedSources: [
@@ -85,7 +93,7 @@ test("summary selector는 정확히 한 문장만 고르고 모호하거나 없�
   );
 });
 
-test("manual review도 허용 AGENT·exact quote·공개 문구 gate를 그대로 통과해야 한다", () => {
+test("lore review도 허용 AGENT·exact quote·공개 문구 gate를 그대로 통과해야 한다", () => {
   const source = sourceFixture();
   const [item] = parseManualOperationHonorReviewPlan({
     schemaVersion: 1,
@@ -120,7 +128,7 @@ test("manual review도 허용 AGENT·exact quote·공개 문구 gate를 그대�
   );
 });
 
-test("manual review는 0건 판정도 명시하고 사람이 읽은 서술 hash를 고정한다", () => {
+test("lore review는 0건 판정도 명시하고 검토한 서술 hash를 고정한다", () => {
   const plan = parseManualOperationHonorReviewPlan({
     schemaVersion: 1,
     reviewedSources: [
@@ -164,6 +172,76 @@ test("manual review는 0건 판정도 명시하고 사람이 읽은 서술 hash�
     buildManualReviewContentHash(report),
     buildManualReviewContentHash({ ...report, summary: "수정된 본문" }),
   );
+});
+
+test("lore review CLI는 저장된 검토 계획을 안전한 기본 입력으로 사용한다", async () => {
+  const source = await readFile(new URL("./manual-review.ts", import.meta.url), "utf8");
+  assert.match(
+    source,
+    /defaultReviewPath[\s\S]*operation-honors-manual-review\.v1\.json/,
+  );
+  assert.match(source, /let reviewPath = defaultReviewPath/);
+  assert.doesNotMatch(source, /--review 경로가 필요합니다/);
+});
+
+test("review status는 DB 대상 불일치와 공적 원장 materialization drift를 거부한다", async () => {
+  assert.equal(
+    resolveReviewStatusDatabaseName({ DB_NAME: "stargate" }),
+    "stargate",
+  );
+  assert.throws(
+    () =>
+      resolveReviewStatusDatabaseName({
+        DB_NAME: "stargate",
+        MONGODB_DB_NAME: "another-db",
+      }),
+    /DB_NAME과 MONGODB_DB_NAME이 일치해야 합니다/,
+  );
+
+  const source = sourceFixture();
+  const item = parseManualOperationHonorReviewPlan({
+    schemaVersion: 1,
+    reviewedSources: [
+      { sourceKey: source.sourceKey, contentHash, outcome: "AWARDED" },
+    ],
+    items: [
+      {
+        sourceKey: source.sourceKey,
+        codename: "AGENT-1",
+        category: "RESEARCH_TECH",
+        title: "현장 분석 공적",
+        citation: "위협을 분석하고 안전하게 격리했습니다.",
+        evidence: [
+          { section: "HIGHLIGHT", index: 0 },
+          { section: "HIGHLIGHT", index: 1 },
+        ],
+      },
+    ],
+  }).items[0]!;
+  const expected = buildOperationHonorRecords({
+    source,
+    honors: validateManualReviewItems({ source, items: [item] }),
+    issuedAt: new Date(0),
+  });
+  assert.equal(
+    operationHonorLedgerMatches(expected as HonorRecord[], expected),
+    true,
+  );
+  assert.equal(
+    operationHonorLedgerMatches(
+      [{ ...expected[0]!, citation: "변조된 공적 문구" }] as HonorRecord[],
+      expected,
+    ),
+    false,
+  );
+
+  const statusSource = await readFile(
+    new URL("./review-status.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(statusSource, /LEDGER_DRIFT/);
+  assert.match(statusSource, /orphanedActiveSources/);
+  assert.match(statusSource, /!currentKeys\.has\(sourceKey\)/);
 });
 
 test("원장 인덱스 rollout은 기본 dry-run이며 execute와 yes를 함께 요구한다", async () => {
@@ -248,13 +326,13 @@ test("운영 심사 계획은 U 보고서 18건과 13개 공적을 명시하고 
       {
         sourceKey: "NOSB-MINI-ROMANTID",
         contentHash:
-          "eddd7ef5895f64c64a3d2b7cffadd1cee24b53b3bbd672552a200b7fc7ea70f6",
+          "ca95a3e7d5e6d2583f1425d80d5ffa24633a7f4e2ef85e5899392c14338d1212",
         outcome: "AWARDED",
       },
       {
         sourceKey: "NOSB-S1E2-CHOICE",
         contentHash:
-          "b1af663dde8d60bca11bec7ca0e6d2a2acf4ae1627d523c86f9e2802749c9201",
+          "adf182e93900cdfad45863620c3e9c6bb9cc73d9a5a61999819301c9603a817d",
         outcome: "AWARDED",
       },
     ],

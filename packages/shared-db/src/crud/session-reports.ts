@@ -18,7 +18,7 @@ import {
 } from "../collections.js";
 import { getClient, getDb } from "../client.js";
 import { buildOperationHonorSourceMaterial } from "../honor-source.js";
-import { HONOR_ANALYZER_REVISION } from "../types/index.js";
+import { HONOR_LORE_REVIEW_REVISION } from "../types/index.js";
 import { lockReportSessionSource } from "./sessions.js";
 import {
   SESSION_REPORT_REFERENCE_FIELDS,
@@ -27,10 +27,9 @@ import {
 } from "./session-report-reference-integrity.js";
 import {
   findHonorCandidateCharactersByCodenames,
-  isHallOfFameV2WritesEnabled,
-  queueHonorAnalysis,
-  shouldForceHonorAnalysisAfterSourceRecovery,
-  skipHonorAnalysisSource,
+  queueHonorReview,
+  shouldForceHonorReviewAfterSourceRecovery,
+  skipHonorReviewSource,
 } from "./honors.js";
 
 export {
@@ -645,15 +644,14 @@ export async function findVisibleReportById(
   return safeReport;
 }
 
-/** 보고서 write와 같은 transaction에서 분석 queue/기존 공적 노출을 전환한다. */
-async function reconcileSessionReportHonorAnalysis(
+/** 보고서 write와 같은 transaction에서 lore 검토 대기/기존 공적 노출을 전환한다. */
+async function reconcileSessionReportHonorReview(
   report: SessionReport,
   session: ClientSession,
   options: { force?: boolean } = {},
 ): Promise<void> {
-  if (!isHallOfFameV2WritesEnabled()) return;
   if (report.minRole != null && report.minRole !== "U") {
-    await skipHonorAnalysisSource({
+    await skipHonorReviewSource({
       sourceKey: report.sessionId,
       reason: "SOURCE_NOT_ELIGIBLE",
       session,
@@ -666,7 +664,7 @@ async function reconcileSessionReportHonorAnalysis(
   );
   const material = buildOperationHonorSourceMaterial({ report, characters });
   if (!material || !report._id) {
-    await skipHonorAnalysisSource({
+    await skipHonorReviewSource({
       sourceKey: report.sessionId,
       reason: "SOURCE_NOT_ANALYZABLE",
       session,
@@ -678,12 +676,12 @@ async function reconcileSessionReportHonorAnalysis(
     { projection: { status: 1, lastError: 1 }, session },
   );
   const sourceBecameEligible =
-    shouldForceHonorAnalysisAfterSourceRecovery(previousState);
-  await queueHonorAnalysis({
+    shouldForceHonorReviewAfterSourceRecovery(previousState);
+  await queueHonorReview({
     sourceKey: report.sessionId,
     sourceRecordId: String(report._id),
     sourceHash: material.sourceHash,
-    analyzerRevision: HONOR_ANALYZER_REVISION,
+    analyzerRevision: HONOR_LORE_REVIEW_REVISION,
     force: options.force || sourceBecameEligible,
     session,
   });
@@ -753,7 +751,7 @@ export async function createSessionReport(
   };
   const result = await col.insertOne(doc, { session: options.session });
   const created = { ...doc, _id: result.insertedId };
-  await reconcileSessionReportHonorAnalysis(created, options.session);
+  await reconcileSessionReportHonorReview(created, options.session);
   return created;
 }
 
@@ -857,7 +855,7 @@ export async function updateSessionReport(
     for (const key of Object.keys(toUnset)) {
       delete (finalReport as unknown as Record<string, unknown>)[key];
     }
-    await reconcileSessionReportHonorAnalysis(finalReport, options.session, {
+    await reconcileSessionReportHonorReview(finalReport, options.session, {
       force:
         current.minRole != null &&
         current.minRole !== "U" &&
@@ -891,8 +889,8 @@ export async function deleteSessionReport(
   const current = await col.findOne(filter, { session: options.session });
   if (!current) return false;
   const result = await col.deleteOne(filter, { session: options.session });
-  if (result.deletedCount > 0 && isHallOfFameV2WritesEnabled()) {
-    await skipHonorAnalysisSource({
+  if (result.deletedCount > 0) {
+    await skipHonorReviewSource({
       sourceKey: current.sessionId,
       reason: "SOURCE_DELETED",
       session: options.session,

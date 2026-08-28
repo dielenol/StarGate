@@ -284,7 +284,8 @@ export async function ensureNovexIndexes(inputDb?: Db): Promise<void> {
 }
 
 /**
- * 명예의 전당 2.0 원장/분석 queue의 영속 계약.
+ * 명예의 전당 2.0 원장/lore 검토 상태의 영속 계약.
+ * honor_analysis_states와 due_lease 인덱스 이름은 live DB 무 migration 호환을 위해 유지한다.
  * 운영 index 생성은 코드 배포와 분리 승인하므로 ensureAllIndexes에는 넣지 않는다.
  */
 export const HONOR_INDEX_DEFINITIONS: Record<string, IndexDescription[]> = {

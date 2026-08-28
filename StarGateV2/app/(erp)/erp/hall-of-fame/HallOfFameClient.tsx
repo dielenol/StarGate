@@ -333,7 +333,7 @@ export default function HallOfFameClient({ initialOverviewData, initialOverviewD
   const novexChannelValue = overview.data ? `${overview.data.novexHonoreeCount}명 헌액` : overview.isLoading ? "수익 조회중" : "확인 불가";
   const novexChannelStatus = novex.isError ? "수익 원장 조회 실패" : !novex.data ? "수익 원장 연결중" : hasNovexRecords ? "전 기간 실현손익 집계" : "실현손익 기록 대기";
   const operationChannelValue = citations.data ? hasOperationRecords ? "공적 기록 활성" : "헌액 기록 0건" : citations.isLoading ? "원장 조회중" : "확인 불가";
-  const operationChannelStatus = citations.isError ? "작전 원장 조회 실패" : !citations.data ? "작전 원장 연결중" : hasOperationRecords ? "U 공개 원본 검증 완료" : "자동 심사 결과 대기";
+  const operationChannelStatus = citations.isError ? "작전 원장 조회 실패" : !citations.data ? "작전 원장 연결중" : hasOperationRecords ? "U 공개 원본 검증 완료" : "작전 공적 검토 대기";
   const mineChannelValue = mine.data ? `${mine.data.total.toLocaleString("ko-KR")}개 리본` : mine.isLoading ? "개인 원장 조회중" : "확인 불가";
   const mineChannelStatus = mine.isError ? "개인 원장 조회 실패" : !mine.data ? "리본 원장 연결중" : hasMineRecords ? "내 AGENT 공적 연결됨" : "발급된 리본 없음";
   const navViews = VIEWS.filter((candidate) => !isGuest || (candidate !== "operations" && candidate !== "mine"));

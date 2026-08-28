@@ -6,7 +6,6 @@ export function activeMutationConsumersForConfig(
     | "mode"
     | "enabledConsumers"
     | "researchLabWorkerEnabled"
-    | "hallOfFameV2WritesEnabled"
   >,
 ): WorkerConsumerName[] {
   if (config.mode !== "active") return [];
@@ -16,12 +15,6 @@ export function activeMutationConsumersForConfig(
     config.enabledConsumers.includes("research-lab")
   ) {
     active.push("research-lab");
-  }
-  if (
-    config.hallOfFameV2WritesEnabled &&
-    config.enabledConsumers.includes("honor-analysis")
-  ) {
-    active.push("honor-analysis");
   }
   return active;
 }

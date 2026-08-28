@@ -9,15 +9,6 @@ import { DiscordDesiredStateConsumer } from "./discord-desired-state.js";
 import type { DueWorkConsumerPort } from "./port.js";
 import { ResearchCardConsumer } from "./research-card.js";
 import { ResearchLabConsumer } from "./research-lab.js";
-import {
-  HonorAnalysisActivationGateConsumer,
-  HonorAnalysisConsumer,
-} from "./honor-analysis.js";
-import {
-  OllamaHonorAnalyzer,
-  honorAnalysisLeaseMs,
-} from "../honor-analysis/ollama.js";
-import { SharedDbHonorAnalysisStore } from "../honor-analysis/store.js";
 
 /** 코드 배포와 운영 mutation 활성화를 분리하는 명시적 research-lab gate. */
 export class ResearchLabActivationGateConsumer implements DueWorkConsumerPort {
@@ -71,18 +62,6 @@ function webhook(
   return value;
 }
 
-function honorTimeout(env: NodeJS.ProcessEnv): number {
-  const raw = env.HALL_OF_FAME_OLLAMA_TIMEOUT_MS?.trim();
-  if (!raw) return 60_000;
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value < 5_000 || value > 180_000) {
-    throw new DomainConsumerConfigurationError(
-      "honor-analysis consumer의 HALL_OF_FAME_OLLAMA_TIMEOUT_MS는 5000 이상 180000 이하 정수여야 합니다.",
-    );
-  }
-  return value;
-}
-
 export function createDefaultDomainConsumers(
   names: readonly WorkerConsumerName[],
   env: NodeJS.ProcessEnv = process.env,
@@ -123,28 +102,6 @@ export function createDefaultDomainConsumers(
           ),
           quarantineUnknownCreate: true,
         });
-      case "honor-analysis":
-        if (
-          env.HALL_OF_FAME_V2_WRITES_ENABLED?.trim().toLowerCase() !== "true"
-        ) {
-          return new HonorAnalysisActivationGateConsumer();
-        }
-        {
-          const timeoutMs = honorTimeout(env);
-          return new HonorAnalysisConsumer(
-            new OllamaHonorAnalyzer({
-              apiKey: required(env, "OLLAMA_API_KEY", name),
-              apiUrl: env.HALL_OF_FAME_OLLAMA_API_URL?.trim(),
-              proposerModel:
-                env.HALL_OF_FAME_PROPOSER_MODEL?.trim(),
-              criticModel: env.HALL_OF_FAME_CRITIC_MODEL?.trim(),
-              timeoutMs,
-            }),
-            new SharedDbHonorAnalysisStore({
-              leaseMs: honorAnalysisLeaseMs(timeoutMs),
-            }),
-          );
-        }
       case "shop-restock":
         return new DiscordDesiredStateConsumer(name, {
           collectionName: "shop_restock_notifications",

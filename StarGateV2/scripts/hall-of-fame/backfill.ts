@@ -1,34 +1,27 @@
 /**
- * Hall of Fame 2.0 historical materialization tool.
+ * Hall of Fame 2.0 lore-review manifest application tool.
  *
- * Default mode reads U operation reports, performs Cloud analysis, then writes
- * a private manifest only. NOVEX is a live all-time read model and is not
- * materialized into honor_records. Applying an operation manifest is a separate,
- * explicit operation and never creates notifications/webhooks.
+ * The stargate-lore workflow creates a private, source-hash-locked manifest.
+ * This tool only applies that already-reviewed manifest and never calls an
+ * external model. Notifications are opt-in for never-before-issued logical
+ * honors; webhooks are never emitted.
  */
 
 import { readFileSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  HONOR_ANALYZER_REVISION,
-  buildOperationHonorRecords,
-  reduceOperationHonorSource,
-  validateOperationHonorResults,
-} from "@stargate/core";
+import { reduceOperationHonorSource } from "@stargate/core";
 import {
   close,
   connect,
   charactersCol,
-  findHonorCandidateCharactersByCodenames,
   getClient,
   HONOR_INDEX_DEFINITIONS,
   honorAnalysisStatesCol,
   honorRecordsCol,
-  isHallOfFameV2WritesEnabled,
+  notificationsCol,
   resolveHonorCandidateCharactersByCodenames,
   sessionReportVisibilityFilter,
   sessionReportsCol,
@@ -37,7 +30,6 @@ import {
   withdrawHonorRecordsBySource,
   type HonorCandidateResolution,
   type HonorRecord,
-  type SessionReport,
   type UpsertHonorRecordInput,
 } from "@stargate/shared-db";
 import type {
@@ -49,19 +41,13 @@ import type {
 import {
   buildHonorRecordMaterializationFingerprint,
   buildSkippedOperationSourceFingerprint,
-  createHallOfFameBackfillManifest,
   deserializeManifestRecords,
   parseHallOfFameBackfillManifest,
-  serializeHonorRecord,
-  type HallOfFameBackfillIssue,
   type HallOfFameBackfillManifest,
   type HallOfFameBackfillSkippedSource,
   type HallOfFameOperationManifestEntry,
 } from "./manifest.ts";
 import { inspectHonorIndexContract } from "./index-contract.ts";
-import {
-  OllamaHonorAnalyzer,
-} from "../../../stargate-worker/dist/honor-analysis/ollama.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "../..");
@@ -70,7 +56,7 @@ interface CliOptions {
   execute: boolean;
   yes: boolean;
   manifestPath?: string;
-  outputPath?: string;
+  notifyNew: boolean;
   help: boolean;
 }
 
@@ -79,6 +65,7 @@ interface ApplySummary {
   operationsNoop: number;
   skippedApplied: number;
   skippedNoop: number;
+  notificationsCreated: number;
 }
 
 interface BackfillOperationReportRef {
@@ -92,26 +79,15 @@ interface BackfillOperationFence {
   resolution: HonorCandidateResolution;
 }
 
-async function loadBackfillOperationReportRevision(
-  report: BackfillOperationReportRef,
-): Promise<SessionReport | null> {
-  return (await sessionReportsCol()).findOne({
-    _id: report._id,
-    sessionId: report.sessionId,
-    updatedAt: report.updatedAt,
-    ...sessionReportVisibilityFilter("U"),
-  });
-}
-
 function usage(): string {
   return [
     "사용법:",
-    "  pnpm hall-of-fame:backfill -- [--output <path>]",
-    "  pnpm hall-of-fame:backfill -- --execute --manifest <path> --yes",
+    "  pnpm hall-of-fame:apply-review -- --execute --manifest <path> --yes [--notify-new]",
     "",
-    "기본 모드는 DB를 읽고 Cloud 분석 manifest만 생성합니다.",
+    "stargate-lore 검토가 생성한 hash-locked manifest만 적용합니다.",
     "적용 모드는 ERP/worker 원본 쓰기를 중단한 maintenance 구간에서만 실행합니다.",
     "--yes는 해당 쓰기 중단과 별도 운영 승인을 확인했다는 의미입니다.",
+    "--notify-new는 이력이 한 번도 없는 신규 헌액만 당사자에게 알립니다.",
     "manifest의 coverage와 모든 원본 hash는 원장 mutation 전에 transaction 안에서 재검증합니다.",
   ].join("\n");
 }
@@ -121,33 +97,34 @@ function parseArgs(args: readonly string[]): CliOptions {
   const options: CliOptions = {
     execute: false,
     yes: false,
+    notifyNew: false,
     help: false,
   };
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index]!;
     if (value === "--execute") options.execute = true;
     else if (value === "--yes") options.yes = true;
+    else if (value === "--notify-new") options.notifyNew = true;
     else if (value === "--help" || value === "-h") options.help = true;
-    else if (value === "--manifest" || value === "--output") {
+    else if (value === "--manifest") {
       const next = values[index + 1];
       if (!next || next.startsWith("--")) {
         throw new Error(`${value} 뒤에 경로가 필요합니다.`);
       }
-      if (value === "--manifest") options.manifestPath = resolve(next);
-      else options.outputPath = resolve(next);
+      options.manifestPath = resolve(next);
       index += 1;
     } else {
       throw new Error(`알 수 없는 인자입니다: ${value}`);
     }
   }
   if (options.execute) {
-    if (!options.yes || !options.manifestPath || options.outputPath) {
+    if (!options.yes || !options.manifestPath) {
       throw new Error(
         "적용에는 --execute --manifest <path> --yes만 함께 사용해야 합니다.",
       );
     }
-  } else if (options.yes || options.manifestPath) {
-    throw new Error("--manifest와 --yes는 --execute에서만 사용할 수 있습니다.");
+  } else if (!options.help) {
+    throw new Error("적용은 --execute --manifest <path> --yes가 필수입니다.");
   }
   return options;
 }
@@ -183,176 +160,16 @@ function loadEnvFile(path: string): void {
   }
 }
 
-function resolveDatabaseName(execute: boolean): string {
+function resolveDatabaseName(): string {
   const web = process.env.DB_NAME?.trim();
   const worker = process.env.MONGODB_DB_NAME?.trim();
   if (web && worker && web !== worker) {
     throw new Error("DB_NAME과 MONGODB_DB_NAME이 일치해야 합니다.");
   }
-  if (execute && !web && !worker) {
+  if (!web && !worker) {
     throw new Error("적용 모드는 DB_NAME 또는 MONGODB_DB_NAME을 명시해야 합니다.");
   }
   return web || worker || "stargate";
-}
-
-function issueCode(error: unknown): string {
-  const message = error instanceof Error ? error.message : "";
-  return /^[A-Z][A-Z0-9_]{2,119}$/u.test(message)
-    ? message
-    : "ANALYSIS_FAILED";
-}
-
-function ollamaTimeoutMs(): number | undefined {
-  const raw = process.env.HALL_OF_FAME_OLLAMA_TIMEOUT_MS?.trim();
-  if (!raw) return undefined;
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value < 5_000 || value > 180_000) {
-    throw new Error("HALL_OF_FAME_OLLAMA_TIMEOUT_MS_INVALID");
-  }
-  return value;
-}
-
-function manifestOutputPath(generatedAt: Date, explicit?: string): string {
-  if (explicit) return explicit;
-  const slot = generatedAt.toISOString().replace(/[:.]/gu, "-");
-  return resolve(
-    tmpdir(),
-    `stargate-hall-of-fame-backfill-${slot}.json`,
-  );
-}
-
-async function createManifest(input: {
-  database: string;
-  outputPath?: string;
-}): Promise<{ manifest: HallOfFameBackfillManifest; outputPath: string }> {
-  const generatedAt = new Date();
-  const analyzer = new OllamaHonorAnalyzer({
-    apiKey: process.env.OLLAMA_API_KEY?.trim() ?? "",
-    apiUrl: process.env.HALL_OF_FAME_OLLAMA_API_URL?.trim(),
-    proposerModel: process.env.HALL_OF_FAME_PROPOSER_MODEL?.trim(),
-    criticModel: process.env.HALL_OF_FAME_CRITIC_MODEL?.trim(),
-    timeoutMs: ollamaTimeoutMs(),
-  });
-  const reportRefs = await (await sessionReportsCol())
-    .find(sessionReportVisibilityFilter("U"))
-    .project<BackfillOperationReportRef>({
-      _id: 1,
-      sessionId: 1,
-      updatedAt: 1,
-    })
-    .sort({ createdAt: 1, sessionId: 1 })
-    .toArray();
-
-  const novex: [] = [];
-  const operations: HallOfFameOperationManifestEntry[] = [];
-  const skipped: HallOfFameBackfillSkippedSource[] = [];
-  const issues: HallOfFameBackfillIssue[] = [];
-
-  for (const reportRef of reportRefs) {
-    try {
-      const report = await loadBackfillOperationReportRevision(reportRef);
-      if (!report) {
-        throw new Error("SOURCE_CHANGED_BEFORE_CLOUD_ANALYSIS");
-      }
-      const characters = await findHonorCandidateCharactersByCodenames(
-        report.relatedPersonnelCodenames ?? [],
-      );
-      if (characters.length === 0) {
-        skipped.push({
-          domain: "OPERATION",
-          sourceKey: report.sessionId,
-          sourceRecordId: String(report._id),
-          sourceRevision: report.updatedAt.toISOString(),
-          sourceFingerprint: buildSkippedOperationSourceFingerprint({
-            report,
-            characters,
-          }),
-          reason: "NO_ELIGIBLE_AGENT",
-        });
-        continue;
-      }
-      const source = reduceOperationHonorSource({ report, characters });
-      if (!source) {
-        skipped.push({
-          domain: "OPERATION",
-          sourceKey: report.sessionId,
-          sourceRecordId: String(report._id),
-          sourceRevision: report.updatedAt.toISOString(),
-          sourceFingerprint: buildSkippedOperationSourceFingerprint({
-            report,
-            characters,
-          }),
-          reason: "NO_ANALYZABLE_TEXT",
-        });
-        continue;
-      }
-      const beforeEgress = async (): Promise<boolean> => {
-        const currentReport = await loadBackfillOperationReportRevision(
-          reportRef,
-        );
-        if (!currentReport) return false;
-        const currentCharacters =
-          await findHonorCandidateCharactersByCodenames(
-            currentReport.relatedPersonnelCodenames ?? [],
-          );
-        const currentSource = reduceOperationHonorSource({
-          report: currentReport,
-          characters: currentCharacters,
-        });
-        return Boolean(
-          currentSource &&
-          currentSource.sourceRecordId === source.sourceRecordId &&
-          currentSource.sourceHash === source.sourceHash,
-        );
-      };
-      const result = await analyzer.analyze(
-        source,
-        new AbortController().signal,
-        beforeEgress,
-      );
-      const honors = validateOperationHonorResults({
-        source,
-        proposal: result.proposal,
-        critique: result.critique,
-      });
-      const records = buildOperationHonorRecords({
-        source,
-        honors,
-        analyzerRevision: HONOR_ANALYZER_REVISION,
-        issuedAt: generatedAt,
-      });
-      operations.push({
-        sourceKey: source.sourceKey,
-        sourceRecordId: source.sourceRecordId,
-        sourceRevision: report.updatedAt.toISOString(),
-        sourceHash: source.sourceHash,
-        records: records.map(serializeHonorRecord),
-      });
-    } catch (error) {
-      issues.push({
-        domain: "OPERATION",
-        sourceKey: reportRef.sessionId,
-        code: issueCode(error),
-      });
-    }
-  }
-
-  const manifest = createHallOfFameBackfillManifest({
-    generatedAt: generatedAt.toISOString(),
-    database: input.database,
-    novex,
-    operations,
-    skipped,
-    issues,
-  });
-  const outputPath = manifestOutputPath(generatedAt, input.outputPath);
-  await mkdir(dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, {
-    encoding: "utf8",
-    flag: "wx",
-    mode: 0o600,
-  });
-  return { manifest, outputPath };
 }
 
 async function readManifest(path: string): Promise<HallOfFameBackfillManifest> {
@@ -619,7 +436,7 @@ async function fenceOperationDependencies(
   }
 }
 
-async function markBackfilledAnalysisSucceeded(input: {
+async function markLoreReviewSucceeded(input: {
   entry: HallOfFameOperationManifestEntry;
   analyzerRevision: string;
   now: Date;
@@ -667,7 +484,7 @@ async function markBackfilledAnalysisSucceeded(input: {
   return true;
 }
 
-async function markBackfilledAnalysisSkipped(input: {
+async function markLoreReviewSkipped(input: {
   entry: HallOfFameBackfillSkippedSource;
   analyzerRevision: string;
   now: Date;
@@ -721,6 +538,7 @@ async function markBackfilledAnalysisSkipped(input: {
 async function applyManifest(
   manifest: HallOfFameBackfillManifest,
   database: string,
+  options: { notifyNew: boolean },
 ): Promise<ApplySummary> {
   if (manifest.database !== database) {
     throw new Error("BACKFILL_MANIFEST_DATABASE_MISMATCH");
@@ -731,23 +549,21 @@ async function applyManifest(
   if (manifest.novex.length > 0) {
     throw new Error("BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED");
   }
-  if (isHallOfFameV2WritesEnabled()) {
-    throw new Error(
-      "BACKFILL_REQUIRES_HALL_OF_FAME_V2_WRITES_ENABLED_FALSE",
-    );
-  }
   await assertHonorIndexesReady();
   const generatedAt = new Date(manifest.generatedAt);
   const client = await getClient();
   const session = client.startSession();
-  const summary: ApplySummary = {
-    operationsApplied: 0,
-    operationsNoop: 0,
-    skippedApplied: 0,
-    skippedNoop: 0,
-  };
   try {
-    await session.withTransaction(async () => {
+    const summary = await session.withTransaction<ApplySummary>(async () => {
+      // withTransaction은 transient 오류에서 callback을 다시 실행할 수 있다.
+      // 시도별 집계를 callback 안에 두어 rollback/retry 수치를 결과에 섞지 않는다.
+      const attemptSummary: ApplySummary = {
+        operationsApplied: 0,
+        operationsNoop: 0,
+        skippedApplied: 0,
+        skippedNoop: 0,
+        notificationsCreated: 0,
+      };
       await assertManifestCoverageCurrent(manifest, session);
       const operationFences: BackfillOperationFence[] = [];
       for (const entry of manifest.operations) {
@@ -760,6 +576,16 @@ async function applyManifest(
 
       for (const entry of manifest.operations) {
         const desired = deserializeManifestRecords(entry.records);
+        const previousLogicalKeys = new Set(
+          (
+            await (await honorRecordsCol())
+              .find(
+                { logicalKey: { $in: desired.map((record) => record.logicalKey) } },
+                { projection: { logicalKey: 1 }, session },
+              )
+              .toArray()
+          ).map((record) => record.logicalKey),
+        );
         const existing = await activeSourceRecords(
           "SESSION_REPORT",
           entry.sourceKey,
@@ -778,14 +604,47 @@ async function applyManifest(
             await upsertHonorRecord(record, { session });
           }
         }
-        const stateChanged = await markBackfilledAnalysisSucceeded({
+        if (options.notifyNew) {
+          const fence = operationFences.find(
+            (candidate) => candidate.report.sessionId === entry.sourceKey,
+          );
+          const ownerByCharacter = new Map(
+            (fence?.resolution.eligibleCharacters ?? []).map((character) => [
+              String(character._id),
+              character.ownerId,
+            ]),
+          );
+          for (const record of desired) {
+            if (previousLogicalKeys.has(record.logicalKey)) continue;
+            const userId = ownerByCharacter.get(record.characterId);
+            if (!userId) continue;
+            const result = await (await notificationsCol()).updateOne(
+              { dedupeKey: `honor:${record.logicalKey}` },
+              {
+                $setOnInsert: {
+                  userId,
+                  dedupeKey: `honor:${record.logicalKey}`,
+                  type: "HONOR",
+                  title: record.title,
+                  message: `${record.codenameSnapshot}의 작전 공적이 명예의 전당에 헌액되었습니다.`,
+                  link: "/erp/hall-of-fame?view=operations",
+                  isRead: false,
+                  createdAt: generatedAt,
+                },
+              },
+              { upsert: true, session },
+            );
+            attemptSummary.notificationsCreated += result.upsertedCount;
+          }
+        }
+        const stateChanged = await markLoreReviewSucceeded({
           entry,
           analyzerRevision: manifest.analyzerRevision,
           now: generatedAt,
           session,
         });
-        if (recordsNoop && !stateChanged) summary.operationsNoop += 1;
-        else summary.operationsApplied += 1;
+        if (recordsNoop && !stateChanged) attemptSummary.operationsNoop += 1;
+        else attemptSummary.operationsApplied += 1;
       }
 
       for (const entry of manifest.skipped) {
@@ -803,16 +662,21 @@ async function applyManifest(
             session,
           });
         }
-        const stateChanged = await markBackfilledAnalysisSkipped({
+        const stateChanged = await markLoreReviewSkipped({
           entry,
           analyzerRevision: manifest.analyzerRevision,
           now: generatedAt,
           session,
         });
-        if (existing.length === 0 && !stateChanged) summary.skippedNoop += 1;
-        else summary.skippedApplied += 1;
+        if (existing.length === 0 && !stateChanged) {
+          attemptSummary.skippedNoop += 1;
+        } else {
+          attemptSummary.skippedApplied += 1;
+        }
       }
+      return attemptSummary;
     });
+    if (!summary) throw new Error("BACKFILL_TRANSACTION_ABORTED");
     return summary;
   } finally {
     await session.endSession();
@@ -831,52 +695,27 @@ export async function main(
   loadEnvFile(resolve(projectRoot, ".env"));
   const uri = process.env.MONGODB_URI?.trim();
   if (!uri) throw new Error("MONGODB_URI 환경변수가 필요합니다.");
-  const database = resolveDatabaseName(options.execute);
+  const database = resolveDatabaseName();
   await connect({ uri, dbName: database, maxPoolSize: 3 });
   try {
-    if (options.execute) {
-      const manifest = await readManifest(options.manifestPath!);
-      const summary = await applyManifest(manifest, database);
-      console.log(
-        JSON.stringify(
-          {
-            mode: "execute",
-            database,
-            manifestHash: manifest.manifestHash,
-            ...summary,
-            notificationsCreated: 0,
-            webhooksSent: 0,
-          },
-          null,
-          2,
-        ),
-      );
-      return 0;
-    }
-    const { manifest, outputPath } = await createManifest({
-      database,
-      outputPath: options.outputPath,
+    const manifest = await readManifest(options.manifestPath!);
+    const summary = await applyManifest(manifest, database, {
+      notifyNew: options.notifyNew,
     });
     console.log(
       JSON.stringify(
         {
-          mode: "dry-run-cloud-analysis",
+          mode: "execute-lore-review",
           database,
-          outputPath,
           manifestHash: manifest.manifestHash,
-          novexSeasonHonors: 0,
-          analyzedReports: manifest.operations.length,
-          skippedReports: manifest.skipped.length,
-          issues: manifest.issues.length,
-          databaseWrites: 0,
-          notificationsCreated: 0,
+          ...summary,
           webhooksSent: 0,
         },
         null,
         2,
       ),
     );
-    return manifest.issues.length === 0 ? 0 : 2;
+    return 0;
   } finally {
     await close();
   }
@@ -888,7 +727,7 @@ const directEntry = process.argv[1]
 if (directEntry) {
   void main().catch((error: unknown) => {
     console.error(
-      `[hall-of-fame-backfill] ${
+      `[hall-of-fame-apply-review] ${
         error instanceof Error ? error.message : "알 수 없는 오류"
       }`,
     );

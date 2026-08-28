@@ -5,7 +5,7 @@ import type {
   HallOfFameMineResponse,
   HallOfFameNovexResponse,
   HallOfFameOverviewResponse,
-  HallOfFameReportAnalysisResponse,
+  HallOfFameReportReviewResponse,
   OperationHonorCategory,
   ResearchHallOfFameResponse,
 } from "@stargate/core";
@@ -26,8 +26,8 @@ export const hallOfFameKeys = {
     ["hall-of-fame", "character", characterId] as const,
   report: (reportId: string) =>
     ["hall-of-fame", "report", reportId] as const,
-  reportAnalysisState: (reportId: string) =>
-    ["hall-of-fame", "report", reportId, "analysis-state"] as const,
+  reportReviewState: (reportId: string) =>
+    ["hall-of-fame", "report", reportId, "review-state"] as const,
 };
 
 const HALL_OF_FAME_STALE_TIME_MS = 5 * 60 * 1000;
@@ -105,12 +105,12 @@ async function fetchHallOfFameMine(): Promise<HallOfFameMineResponse> {
   );
 }
 
-async function fetchHallOfFameReportAnalysisState(
+async function fetchHallOfFameReportReviewState(
   reportId: string,
-): Promise<HallOfFameReportAnalysisResponse> {
+): Promise<HallOfFameReportReviewResponse> {
   return hallOfFameJson(
     `/api/erp/hall-of-fame/citations/status?reportId=${encodeURIComponent(reportId)}`,
-    "공적 심사 상태를 불러올 수 없습니다.",
+    "공적 검토 상태를 불러올 수 없습니다.",
   );
 }
 
@@ -225,9 +225,9 @@ export function useHallOfFameMine(options?: {
   });
 }
 
-export function useHallOfFameReportAnalysisState(options: {
+export function useHallOfFameReportReviewState(options: {
   reportId: string;
-  initialData?: HallOfFameReportAnalysisResponse;
+  initialData?: HallOfFameReportReviewResponse;
   initialDataUpdatedAt?: number;
 }) {
   const refetchInterval = useRealtimeRefetchInterval(
@@ -235,8 +235,8 @@ export function useHallOfFameReportAnalysisState(options: {
   );
 
   return useQuery({
-    queryKey: hallOfFameKeys.reportAnalysisState(options.reportId),
-    queryFn: () => fetchHallOfFameReportAnalysisState(options.reportId),
+    queryKey: hallOfFameKeys.reportReviewState(options.reportId),
+    queryFn: () => fetchHallOfFameReportReviewState(options.reportId),
     staleTime: HALL_OF_FAME_STALE_TIME_MS,
     refetchInterval,
     refetchIntervalInBackground: false,

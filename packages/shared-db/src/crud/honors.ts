@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 
 import {
   ObjectId,
@@ -10,15 +10,12 @@ import {
   charactersCol,
   honorAnalysisStatesCol,
   honorRecordsCol,
-  notificationsCol,
-  sessionReportsCol,
   usersCol,
 } from "../collections.js";
 import { getClient, getDb } from "../client.js";
-import { buildOperationHonorSourceMaterial } from "../honor-source.js";
 import { OPERATION_HONOR_CATEGORIES } from "../types/index.js";
 import type {
-  HonorAnalysisState,
+  HonorReviewState,
   HonorCharacterIdentity,
   HonorRecord,
   HonorRecordPage,
@@ -31,18 +28,8 @@ import type {
 } from "../types/index.js";
 
 const HONOR_RECORD_LIMIT_MAX = 100;
-// 기본 Ollama 60초 × proposer/repair/critic/repair + DB 반영 buffer.
-const HONOR_ANALYSIS_LEASE_MS = 4 * 60_000 + 30_000;
-const HONOR_ANALYSIS_RETRY_MS = 30_000;
-const HONOR_ANALYSIS_MAX_ATTEMPTS = 8;
 const MAX_ERROR_LENGTH = 1_000;
 const HONOR_HASH_PATTERN = /^[a-f0-9]{64}$/u;
-/** 코드 배포와 운영 원장 mutation을 분리하는 기본 OFF gate. */
-export function isHallOfFameV2WritesEnabled(
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  return env.HALL_OF_FAME_V2_WRITES_ENABLED?.trim().toLowerCase() === "true";
-}
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -590,7 +577,7 @@ export async function materializeNovexSeasonHonors(input: {
   return records.length;
 }
 
-export interface QueueHonorAnalysisInput {
+export interface QueueHonorReviewInput {
   sourceKey: string;
   sourceRecordId: string;
   sourceHash: string;
@@ -615,8 +602,8 @@ export function shouldSupersedeHonorsWhenQueueing(input: {
   );
 }
 
-export function shouldForceHonorAnalysisAfterSourceRecovery(
-  state?: Pick<HonorAnalysisState, "status" | "lastError"> | null,
+export function shouldForceHonorReviewAfterSourceRecovery(
+  state?: Pick<HonorReviewState, "status" | "lastError"> | null,
 ): boolean {
   return Boolean(
     state?.status === "SKIPPED" &&
@@ -626,27 +613,27 @@ export function shouldForceHonorAnalysisAfterSourceRecovery(
   );
 }
 
-/** source hash/revision이 바뀐 경우에만 queue하며, 원문 hash 변경만 기존 공적을 숨긴다. */
-export async function queueHonorAnalysis(
-  input: QueueHonorAnalysisInput,
-): Promise<{ state: HonorAnalysisState; queued: boolean }> {
+/** source hash/revision이 바뀔 때 lore 검토를 대기시키고, 기존 원문의 공적은 즉시 숨긴다. */
+export async function queueHonorReview(
+  input: QueueHonorReviewInput,
+): Promise<{ state: HonorReviewState; queued: boolean }> {
   if (
     !input.sourceKey.trim() ||
     !input.sourceRecordId.trim() ||
     !HONOR_HASH_PATTERN.test(input.sourceHash) ||
     !input.analyzerRevision.trim()
   ) {
-    throw new Error("HONOR_ANALYSIS_QUEUE_INPUT_INVALID");
+    throw new Error("HONOR_REVIEW_QUEUE_INPUT_INVALID");
   }
   if (!input.session) {
     const client = await getClient();
     const session = client.startSession();
-    let outcome: { state: HonorAnalysisState; queued: boolean } | undefined;
+    let outcome: { state: HonorReviewState; queued: boolean } | undefined;
     try {
       await session.withTransaction(async () => {
-        outcome = await queueHonorAnalysis({ ...input, session });
+        outcome = await queueHonorReview({ ...input, session });
       });
-      if (!outcome) throw new Error("HONOR_ANALYSIS_QUEUE_FAILED");
+      if (!outcome) throw new Error("HONOR_REVIEW_QUEUE_FAILED");
       return outcome;
     } finally {
       await session.endSession();
@@ -720,7 +707,7 @@ export async function queueHonorAnalysis(
   );
   if (!state) {
     const raced = await collection.findOne({ _id: id }, { session: input.session });
-    if (!raced) throw new Error("HONOR_ANALYSIS_QUEUE_FAILED");
+    if (!raced) throw new Error("HONOR_REVIEW_QUEUE_FAILED");
     return { state: raced, queued: false };
   }
   if (shouldSupersede) {
@@ -735,7 +722,7 @@ export async function queueHonorAnalysis(
   return { state, queued: true };
 }
 
-export async function skipHonorAnalysisSource(input: {
+export async function skipHonorReviewSource(input: {
   sourceKey: string;
   now?: Date;
   reason?: string;
@@ -747,7 +734,7 @@ export async function skipHonorAnalysisSource(input: {
     let skipped = false;
     try {
       await session.withTransaction(async () => {
-        skipped = await skipHonorAnalysisSource({ ...input, session });
+        skipped = await skipHonorReviewSource({ ...input, session });
       });
       return skipped;
     } finally {
@@ -804,413 +791,4 @@ export async function skipHonorAnalysisSource(input: {
     session: input.session,
   });
   return (result?.modifiedCount ?? 0) === 1 || withdrawn > 0;
-}
-
-/**
- * 분석 중 source가 비대상이 된 경우의 claim-aware 철회. 오래된 worker가
- * 이후에 생성된 queue/state를 덮지 않도록 lease/hash/revision을 모두 CAS한다.
- */
-export async function skipClaimedHonorAnalysis(input: {
-  id: string;
-  sourceKey: string;
-  leaseToken: string;
-  sourceHash: string;
-  analyzerRevision: string;
-  reason: string;
-  now?: Date;
-  session?: ClientSession;
-}): Promise<boolean> {
-  if (!input.session) {
-    const client = await getClient();
-    const session = client.startSession();
-    let skipped = false;
-    try {
-      await session.withTransaction(async () => {
-        skipped = await skipClaimedHonorAnalysis({ ...input, session });
-      });
-      return skipped;
-    } finally {
-      await session.endSession();
-    }
-  }
-  const now = input.now ?? new Date();
-  const result = await (await honorAnalysisStatesCol()).updateOne(
-    {
-      _id: input.id,
-      sourceKey: input.sourceKey,
-      status: "LEASED",
-      leaseToken: input.leaseToken,
-      sourceHash: input.sourceHash,
-      analyzerRevision: input.analyzerRevision,
-    },
-    {
-      $set: {
-        status: "SKIPPED",
-        lastError: input.reason.slice(0, MAX_ERROR_LENGTH),
-        updatedAt: now,
-      },
-      $unset: { leaseToken: "", leaseUntil: "", nextAttemptAt: "" },
-    },
-    { session: input.session },
-  );
-  if (result.modifiedCount !== 1) return false;
-  await withdrawHonorRecordsBySource({
-    sourceType: "SESSION_REPORT",
-    sourceKey: input.sourceKey,
-    status: "WITHDRAWN",
-    now,
-    session: input.session,
-  });
-  return true;
-}
-
-export async function listHonorAnalysisStates(): Promise<HonorAnalysisState[]> {
-  return (await honorAnalysisStatesCol()).find().sort({ updatedAt: 1 }).toArray();
-}
-
-export async function claimDueHonorAnalysis(input: {
-  now?: Date;
-  leaseMs?: number;
-} = {}): Promise<HonorAnalysisState | null> {
-  const now = input.now ?? new Date();
-  const leaseMs = Math.max(10_000, input.leaseMs ?? HONOR_ANALYSIS_LEASE_MS);
-  return (await honorAnalysisStatesCol()).findOneAndUpdate(
-    {
-      $or: [
-        { status: { $in: ["PENDING", "RETRY"] } },
-        { status: "LEASED", leaseUntil: { $lte: now } },
-      ],
-      attempts: { $lt: HONOR_ANALYSIS_MAX_ATTEMPTS },
-      $and: [
-        {
-          $or: [
-            { leaseUntil: { $exists: false } },
-            { leaseUntil: { $lte: now } },
-          ],
-        },
-        {
-          $or: [
-            { nextAttemptAt: { $exists: false } },
-            { nextAttemptAt: { $lte: now } },
-          ],
-        },
-      ],
-    },
-    {
-      $set: {
-        status: "LEASED",
-        leaseToken: randomUUID(),
-        leaseUntil: new Date(now.getTime() + leaseMs),
-        updatedAt: now,
-      },
-      $inc: { attempts: 1 },
-      $unset: { nextAttemptAt: "", lastError: "" },
-    },
-    { sort: { updatedAt: 1, _id: 1 }, returnDocument: "after" },
-  );
-}
-
-export async function releaseHonorAnalysisLease(input: {
-  id: string;
-  leaseToken: string;
-  error: unknown;
-  now?: Date;
-}): Promise<"RETRY" | "SKIPPED" | null> {
-  const now = input.now ?? new Date();
-  const state = await (await honorAnalysisStatesCol()).findOne({
-    _id: input.id,
-    status: "LEASED",
-    leaseToken: input.leaseToken,
-  });
-  if (!state) return null;
-  const exhausted = state.attempts >= HONOR_ANALYSIS_MAX_ATTEMPTS;
-  const message = input.error instanceof Error
-    ? input.error.message
-    : String(input.error);
-  const result = await (await honorAnalysisStatesCol()).updateOne(
-    { _id: input.id, status: "LEASED", leaseToken: input.leaseToken },
-    {
-      $set: {
-        status: exhausted ? "SKIPPED" : "RETRY",
-        lastError: message.slice(0, MAX_ERROR_LENGTH),
-        ...(exhausted
-          ? {}
-          : { nextAttemptAt: new Date(now.getTime() + HONOR_ANALYSIS_RETRY_MS) }),
-        updatedAt: now,
-      },
-      $unset: { leaseToken: "", leaseUntil: "" },
-    },
-  );
-  return result.modifiedCount === 1
-    ? exhausted
-      ? "SKIPPED"
-      : "RETRY"
-    : null;
-}
-
-export async function haltExhaustedHonorAnalyses(
-  now = new Date(),
-): Promise<number> {
-  const result = await (await honorAnalysisStatesCol()).updateMany(
-    {
-      status: "LEASED",
-      attempts: { $gte: HONOR_ANALYSIS_MAX_ATTEMPTS },
-      leaseUntil: { $lte: now },
-    },
-    {
-      $set: {
-        status: "SKIPPED",
-        lastError: "작전 공적 분석이 8회 연속 실패해 자동 재시도를 중단했습니다.",
-        updatedAt: now,
-      },
-      $unset: { leaseToken: "", leaseUntil: "", nextAttemptAt: "" },
-    },
-  );
-  return result.modifiedCount;
-}
-
-export async function completeClaimedHonorAnalysis(input: {
-  id: string;
-  leaseToken: string;
-  sourceHash: string;
-  analyzerRevision: string;
-  records: readonly UpsertHonorRecordInput[];
-  now?: Date;
-  notify?: boolean;
-}): Promise<boolean> {
-  const now = input.now ?? new Date();
-  const client = await getClient();
-  const session = client.startSession();
-  let completed = false;
-  try {
-    await session.withTransaction(async () => {
-      const state = await (await honorAnalysisStatesCol()).findOne(
-        {
-          _id: input.id,
-          status: "LEASED",
-          leaseToken: input.leaseToken,
-          leaseUntil: { $gt: now },
-          sourceHash: input.sourceHash,
-          analyzerRevision: input.analyzerRevision,
-        },
-        { session },
-      );
-      if (!state) return;
-      const report = await (await sessionReportsCol()).findOne(
-        {
-          sessionId: state.sourceKey,
-          $or: [
-            { minRole: { $exists: false } },
-            { minRole: { $type: 10 } },
-            { minRole: "U" },
-          ],
-        },
-        { session },
-      );
-      if (!report || String(report._id) !== state.sourceRecordId) {
-        throw new Error("HONOR_ANALYSIS_RESULT_SOURCE_STALE");
-      }
-      const currentResolution =
-        await resolveHonorCandidateCharactersByCodenames(
-          report.relatedPersonnelCodenames ?? [],
-          { session },
-        );
-      const currentCharacters = currentResolution.eligibleCharacters;
-      const currentSource = buildOperationHonorSourceMaterial({
-        report,
-        characters: currentCharacters,
-      });
-      if (!currentSource || currentSource.sourceHash !== state.sourceHash) {
-        throw new Error("HONOR_ANALYSIS_RESULT_SOURCE_STALE");
-      }
-      const currentCandidates = new Map(
-        currentSource.candidates.map((candidate) => [
-          candidate.characterId,
-          candidate.codename,
-        ]),
-      );
-      if (
-        input.records.some(
-          (record) =>
-            record.domain !== "OPERATION" ||
-            !OPERATION_HONOR_CATEGORIES.includes(
-              record.category as (typeof OPERATION_HONOR_CATEGORIES)[number],
-            ) ||
-            record.status !== "ACTIVE" ||
-            record.minRole !== "U" ||
-            !Array.isArray(record.evidenceAudit) ||
-            record.evidenceAudit.length < 2 ||
-            new Set(record.evidenceAudit.map((evidence) => evidence.hash)).size < 2 ||
-            record.source.type !== "SESSION_REPORT" ||
-            record.source.key !== state.sourceKey ||
-            record.source.recordId !== state.sourceRecordId ||
-            record.sourceHash !== state.sourceHash ||
-            record.analyzerRevision !== state.analyzerRevision ||
-            currentCandidates.get(record.characterId) !==
-              record.codenameSnapshot ||
-            record.logicalKey !==
-              buildOperationHonorLogicalKey(state.sourceKey, record.characterId) ||
-            record.publicKey !== buildHonorPublicKey(record.logicalKey),
-        )
-      ) {
-        throw new Error("HONOR_ANALYSIS_RESULT_SOURCE_MISMATCH");
-      }
-      const uniqueCharacters = new Set(
-        input.records.map((record) => record.characterId),
-      );
-      if (
-        uniqueCharacters.size !== input.records.length ||
-        input.records.length > 3
-      ) {
-        throw new Error("HONOR_ANALYSIS_RESULT_LIMIT_INVALID");
-      }
-      const recordCharacterIds = input.records.map(
-        (record) => record.characterId,
-      );
-      if (recordCharacterIds.some((id) => !ObjectId.isValid(id))) {
-        throw new Error("HONOR_ANALYSIS_RESULT_OWNER_STALE");
-      }
-      const currentCharacterById = new Map(
-        currentCharacters.map((character) => [
-          String(character._id),
-          character,
-        ]),
-      );
-      if (
-        input.records.some((record) => {
-          const character = currentCharacterById.get(record.characterId);
-          return (
-            !character ||
-            character.codename !== record.codenameSnapshot ||
-            character.type !== "AGENT" ||
-            !character.ownerId ||
-            !ObjectId.isValid(character.ownerId)
-          );
-        })
-      ) {
-        throw new Error("HONOR_ANALYSIS_RESULT_OWNER_STALE");
-      }
-      const ownerByCharacter = new Map(
-        currentCharacters.map((character) => [
-          String(character._id),
-          character.ownerId,
-        ]),
-      );
-
-      // Snapshot 검증만으로는 Web/worker gate 전환 중 동시 보고서 수정을
-      // 막을 수 없다. 원본 revision을 조건으로 같은 문서를 touch해 수정·삭제와
-      // transaction write conflict를 만들고, 재시도 시 최신 source를 재검증한다.
-      const sourceRevisionLock = await (await sessionReportsCol()).updateOne(
-        {
-          _id: report._id,
-          sessionId: state.sourceKey,
-          updatedAt: report.updatedAt,
-        },
-        { $currentDate: { __honorAnalysisLockAt: true } },
-        { session },
-      );
-      if (sourceRevisionLock.matchedCount !== 1) {
-        throw new Error("HONOR_ANALYSIS_RESULT_SOURCE_STALE");
-      }
-
-      const candidateLocks = await (await charactersCol()).bulkWrite(
-        currentResolution.matchingCharacters.map((character) => ({
-          updateOne: {
-            filter: {
-              _id: character._id,
-              codename: character.codename,
-              type: character.type,
-              ownerId: character.ownerId,
-            },
-            update: { $currentDate: { __honorAnalysisLockAt: true } },
-          },
-        })),
-        { ordered: true, session },
-      );
-      if (
-        candidateLocks.matchedCount !==
-        currentResolution.matchingCharacters.length
-      ) {
-        throw new Error("HONOR_ANALYSIS_RESULT_OWNER_STALE");
-      }
-
-      if (currentResolution.ownerStates.length > 0) {
-        const ownerLocks = await (await usersCol()).bulkWrite(
-          currentResolution.ownerStates.map((owner) => ({
-            updateOne: {
-              filter: { _id: owner._id, status: owner.status },
-              update: { $currentDate: { __honorAnalysisLockAt: true } },
-            },
-          })),
-          { ordered: true, session },
-        );
-        if (ownerLocks.matchedCount !== currentResolution.ownerStates.length) {
-          throw new Error("HONOR_ANALYSIS_RESULT_OWNER_STALE");
-        }
-      }
-
-      await withdrawHonorRecordsBySource({
-        sourceType: "SESSION_REPORT",
-        sourceKey: state.sourceKey,
-        status: "SUPERSEDED",
-        now,
-        session,
-      });
-      for (const record of input.records) {
-        await upsertHonorRecord(record, { session });
-      }
-
-      if (input.notify !== false && input.records.length > 0) {
-        const notifications = await notificationsCol();
-        for (const record of input.records) {
-          const ownerId = ownerByCharacter.get(record.characterId);
-          if (!ownerId) continue;
-          const dedupeKey = `honor:${record.logicalKey}`;
-          await notifications.updateOne(
-            { dedupeKey },
-            {
-              $setOnInsert: {
-                userId: ownerId,
-                dedupeKey,
-                type: "HONOR",
-                title: record.title,
-                message: `${record.codenameSnapshot}의 작전 공적이 명예의 전당에 헌액되었습니다.`,
-                link: "/erp/hall-of-fame?view=operations",
-                isRead: false,
-                createdAt: now,
-              },
-            },
-            { upsert: true, session },
-          );
-        }
-      }
-
-      const result = await (await honorAnalysisStatesCol()).updateOne(
-        {
-          _id: state._id,
-          status: "LEASED",
-          leaseToken: input.leaseToken,
-          sourceHash: input.sourceHash,
-          analyzerRevision: input.analyzerRevision,
-        },
-        {
-          $set: { status: "SUCCEEDED", analyzedAt: now, updatedAt: now },
-          $unset: {
-            leaseToken: "",
-            leaseUntil: "",
-            nextAttemptAt: "",
-            lastError: "",
-          },
-        },
-        { session },
-      );
-      if (result.modifiedCount !== 1) {
-        throw new Error("HONOR_ANALYSIS_COMPLETE_CAS_FAILED");
-      }
-      completed = true;
-    });
-    return completed;
-  } finally {
-    await session.endSession();
-  }
 }

@@ -119,13 +119,13 @@ test("작전 공적은 DB U 필터와 현재 보고서 U 재검증을 함께 적
   assert.match(service, /operationReports = new Map/);
   assert.match(service, /buildOperationHonorSourceMaterial/);
   assert.match(service, /current\.source\.sourceHash !== record\.sourceHash/);
-  assert.match(service, /getHallOfFameReportAnalysisState/);
-  assert.match(service, /HONOR_MANUAL_REVIEW_REVISION/);
+  assert.match(service, /getHallOfFameReportReviewState/);
+  assert.match(service, /HONOR_LORE_REVIEW_REVISION/);
   assert.match(
     service,
-    /state\.analyzerRevision === HONOR_ANALYZER_REVISION \|\|[\s\S]*state\.analyzerRevision === HONOR_MANUAL_REVIEW_REVISION/,
+    /state\.analyzerRevision === HONOR_LORE_REVIEW_REVISION/,
   );
-  assert.match(service, /state\.sourceHash !== source\.sourceHash/);
+  assert.match(service, /state\?\.sourceHash === source\.sourceHash/);
   assert.match(service, /const remaining = limit - items\.length/);
   assert.match(service, /limit: remaining/);
 });
@@ -208,15 +208,15 @@ test("보고서·Dossier·연구·주식·알림이 명예의 전당 read model�
   ]);
 
   assert.match(report, /getHallOfFameCitationPage/);
-  assert.match(report, /getHallOfFameReportAnalysisResponse/);
+  assert.match(report, /getHallOfFameReportReviewResponse/);
   assert.match(report, /initialHonors=\{reportHonors\}/);
   assert.match(reportHonors, /useHallOfFameCitations/);
-  assert.match(reportHonors, /useHallOfFameReportAnalysisState/);
+  assert.match(reportHonors, /useHallOfFameReportReviewState/);
   assert.match(reportHonors, /공적 인용 · OFFICIAL HONORS/);
-  assert.match(reportHonors, /공적 재심사 중/);
+  assert.match(reportHonors, /공적 검토 대기/);
   assert.match(reportHonors, /확정된 공적 인용 없음/);
   assert.match(reportHonors, /엄격한 헌액 기준/);
-  assert.doesNotMatch(reportHonors, /엄격한 자동 헌액 기준/);
+  assert.doesNotMatch(reportHonors, /자동 심사|자동 헌액/);
   assert.match(reportHonors, /마지막 성공 기록 표시 중/);
   assert.match(dossier, /enabled: canViewHonors && Boolean\(characterId\)/);
   assert.match(dossier, /최신 갱신에 실패해 마지막 공적 기록을 표시합니다/);

@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto";
 
 import {
-  HONOR_ANALYZER_REVISION,
-  HONOR_MANUAL_REVIEW_REVISION,
+  HONOR_LORE_REVIEW_REVISION,
   assertHonorRecordInvariants,
   type HonorCharacterIdentity,
   type HonorRecord,
@@ -12,8 +11,7 @@ import {
 
 export const HALL_OF_FAME_BACKFILL_MANIFEST_VERSION = 2 as const;
 const BACKFILL_ANALYZER_REVISIONS = new Set<string>([
-  HONOR_ANALYZER_REVISION,
-  HONOR_MANUAL_REVIEW_REVISION,
+  HONOR_LORE_REVIEW_REVISION,
 ]);
 
 export interface SerializedHonorRecord
@@ -259,7 +257,7 @@ export function createHallOfFameBackfillManifest(
   },
 ): HallOfFameBackfillManifest {
   const analyzerRevision = requireAnalyzerRevision(
-    input.analyzerRevision ?? HONOR_ANALYZER_REVISION,
+    input.analyzerRevision ?? HONOR_LORE_REVIEW_REVISION,
   );
   const body: HallOfFameBackfillManifestBody = {
     schemaVersion: HALL_OF_FAME_BACKFILL_MANIFEST_VERSION,

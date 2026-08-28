@@ -75,7 +75,7 @@ test("backfill manifest는 결정적 hash와 날짜 직렬화를 검증한다", 
   );
 });
 
-test("수동 심사 revision은 record와 manifest가 일치할 때만 허용한다", () => {
+test("lore 검토 revision은 record와 manifest가 일치할 때만 허용한다", () => {
   const { records } = fixture();
   const operationRecord = {
     ...records[0]!,
@@ -126,7 +126,7 @@ test("수동 심사 revision은 record와 manifest가 일치할 때만 허용한
   mismatched.analyzerRevision = "operation-honor-v1";
   assert.throws(
     () => parseHallOfFameBackfillManifest(mismatched),
-    /HALL_OF_FAME_MANIFEST_OPERATION_HASH_MISMATCH|HALL_OF_FAME_MANIFEST_HASH_MISMATCH/,
+    /HALL_OF_FAME_MANIFEST_ANALYZER_REVISION_INVALID|HALL_OF_FAME_MANIFEST_OPERATION_HASH_MISMATCH|HALL_OF_FAME_MANIFEST_HASH_MISMATCH/,
   );
   assert.throws(
     () =>
@@ -228,22 +228,22 @@ test("manifest apply는 maintenance 전제를 밝히고 첫 mutation 전에 cove
   );
 
   assert.match(backfill, /maintenance 구간에서만 실행/);
-  assert.match(backfill, /project<BackfillOperationReportRef>/);
-  assert.match(
-    backfill,
-    /loadBackfillOperationReportRevision[\s\S]*updatedAt: report\.updatedAt[\s\S]*sessionReportVisibilityFilter\("U"\)/,
-  );
-  assert.match(
-    backfill,
-    /const beforeEgress[\s\S]*currentSource\.sourceHash === source\.sourceHash[\s\S]*analyzer\.analyze\([\s\S]*beforeEgress/,
-  );
   assert.match(
     backfill,
     /fenceOperationDependencies[\s\S]*__honorAnalysisLockAt/,
   );
-  assert.match(backfill, /const novex: \[\] = \[\]/);
   assert.match(backfill, /BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED/);
   assert.doesNotMatch(backfill, /loadCurrentNovex|materializeNovexSeasonHonors/);
+  assert.doesNotMatch(backfill, /Ollama|OLLAMA_API_KEY|analyzer\.analyze/);
+  assert.match(backfill, /--notify-new/);
+  assert.match(backfill, /previousLogicalKeys\.has\(record\.logicalKey\)/);
+  assert.match(backfill, /\$setOnInsert:[\s\S]*type: "HONOR"/);
+  assert.match(
+    transaction,
+    /withTransaction<ApplySummary>[\s\S]*const attemptSummary: ApplySummary/,
+  );
+  assert.match(transaction, /attemptSummary\.notificationsCreated/);
+  assert.doesNotMatch(transaction, /summary\.notificationsCreated/);
   assert.match(transaction, /await assertManifestCoverageCurrent/);
   assert.match(transaction, /await loadCurrentOperation/);
   assert.match(transaction, /await loadCurrentSkipped/);
@@ -270,7 +270,7 @@ test("manifest apply는 maintenance 전제를 밝히고 첫 mutation 전에 cove
   );
 });
 
-test("backfill 진입점은 clean checkout에서도 worker dist를 먼저 빌드한다", async () => {
+test("lore review 적용 진입점은 core만 빌드하고 명시적 manifest를 요구한다", async () => {
   const [packageJsonSource, backfill] = await Promise.all([
     readFile(new URL("../../package.json", import.meta.url), "utf8"),
     readFile(new URL("./backfill.ts", import.meta.url), "utf8"),
@@ -278,10 +278,11 @@ test("backfill 진입점은 clean checkout에서도 worker dist를 먼저 빌드
   const packageJson = JSON.parse(packageJsonSource) as {
     scripts?: Record<string, string>;
   };
-  const command = packageJson.scripts?.["hall-of-fame:backfill"] ?? "";
+  const command = packageJson.scripts?.["hall-of-fame:apply-review"] ?? "";
 
-  assert.match(command, /^pnpm --dir \.\. build:worker && node /);
+  assert.match(command, /@stargate\/shared-db build/);
+  assert.match(command, /@stargate\/core build/);
   assert.doesNotMatch(command, /--env-file-if-exists/);
   assert.match(command, /scripts\/hall-of-fame\/backfill\.ts$/);
-  assert.match(backfill, /pnpm hall-of-fame:backfill -- \[--output <path>\]/);
+  assert.match(backfill, /pnpm hall-of-fame:apply-review -- --execute --manifest <path> --yes/);
 });

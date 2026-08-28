@@ -24,7 +24,6 @@ test("worker 설정은 shadow와 단일 replica를 기본 안전 경계로 사�
   assert.equal(config.pollIntervalMs, 30_000);
   assert.deepEqual(config.enabledConsumers, []);
   assert.equal(config.researchLabWorkerEnabled, false);
-  assert.equal(config.hallOfFameV2WritesEnabled, false);
   assert.equal(config.realtime.maxConnections, 500);
   assert.equal(config.realtime.maxConnectionsPerUser, 5);
   assert.deepEqual(config.realtime.allowedOrigins, [
@@ -71,7 +70,6 @@ test("research-lab consumer가 실제 enabled 목록에 있을 때만 active mut
       mode: "active",
       enabledConsumers: ["research-lab"],
       researchLabWorkerEnabled: true,
-      hallOfFameV2WritesEnabled: false,
     }),
     ["research-lab"],
   );
@@ -80,7 +78,6 @@ test("research-lab consumer가 실제 enabled 목록에 있을 때만 active mut
       mode: "active",
       enabledConsumers: ["ameri-dm"],
       researchLabWorkerEnabled: true,
-      hallOfFameV2WritesEnabled: false,
     }),
     [],
   );
@@ -89,28 +86,6 @@ test("research-lab consumer가 실제 enabled 목록에 있을 때만 active mut
       mode: "shadow",
       enabledConsumers: ["research-lab"],
       researchLabWorkerEnabled: true,
-      hallOfFameV2WritesEnabled: false,
-    }),
-    [],
-  );
-});
-
-test("명예의 전당 mutation heartbeat는 별도 gate와 consumer가 모두 있어야 광고한다", () => {
-  assert.deepEqual(
-    activeMutationConsumersForConfig({
-      mode: "active",
-      enabledConsumers: ["honor-analysis"],
-      researchLabWorkerEnabled: false,
-      hallOfFameV2WritesEnabled: true,
-    }),
-    ["honor-analysis"],
-  );
-  assert.deepEqual(
-    activeMutationConsumersForConfig({
-      mode: "active",
-      enabledConsumers: ["honor-analysis"],
-      researchLabWorkerEnabled: false,
-      hallOfFameV2WritesEnabled: false,
     }),
     [],
   );
@@ -128,7 +103,6 @@ test("active worker는 domain consumer 전체를 명시하지 않으면 기동�
       "research-card",
       "research-lab",
       "research-ranking",
-      "honor-analysis",
       "shop-restock",
       "stock-market-wire",
     ],

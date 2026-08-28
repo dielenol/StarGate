@@ -137,18 +137,17 @@ export type {
   NovexHonorFallbackPerformance,
   HonorRecord,
   UpsertHonorRecordInput,
-  HonorAnalysisStatus,
-  HonorAnalysisState,
+  HonorReviewStatus,
+  HonorReviewState,
   HonorRecordQuery,
   HonorRecordPage,
 } from "./honor.js";
 export {
   HONOR_DOMAINS,
   OPERATION_HONOR_CATEGORIES,
-  HONOR_ANALYSIS_STATUSES,
-  HONOR_ANALYZER_REVISION,
-  HONOR_MANUAL_REVIEW_REVISION,
-  HONOR_ANALYSIS_SOURCE_MAX_CHARS,
+  HONOR_REVIEW_STATUSES,
+  HONOR_LORE_REVIEW_REVISION,
+  HONOR_REVIEW_SOURCE_MAX_CHARS,
 } from "./honor.js";
 
 export type {

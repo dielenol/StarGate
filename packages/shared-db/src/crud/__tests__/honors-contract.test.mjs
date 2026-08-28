@@ -11,17 +11,14 @@ import {
   buildNovexHonorLogicalKey,
   buildNovexHonorRecords,
   buildOperationHonorSourceMaterial,
-  claimDueHonorAnalysis,
   close,
   connect,
   ensureHonorIndexes,
   getDb,
-  isHallOfFameV2WritesEnabled,
-  queueHonorAnalysis,
-  shouldForceHonorAnalysisAfterSourceRecovery,
+  queueHonorReview,
+  shouldForceHonorReviewAfterSourceRecovery,
   shouldSupersedeHonorsWhenQueueing,
-  skipClaimedHonorAnalysis,
-  skipHonorAnalysisSource,
+  skipHonorReviewSource,
 } from "../../../dist/index.js";
 
 const HAS_DB =
@@ -44,18 +41,6 @@ after(async () => {
   if (!HAS_DB) return;
   await (await getDb()).dropDatabase();
   await close();
-});
-
-test("명예의 전당 writer gate는 명시적 true에서만 열린다", () => {
-  assert.equal(isHallOfFameV2WritesEnabled({}), false);
-  assert.equal(
-    isHallOfFameV2WritesEnabled({ HALL_OF_FAME_V2_WRITES_ENABLED: "false" }),
-    false,
-  );
-  assert.equal(
-    isHallOfFameV2WritesEnabled({ HALL_OF_FAME_V2_WRITES_ENABLED: "true" }),
-    true,
-  );
 });
 
 test("NOVEX TOP3 materialization은 season+character 논리키와 publicKey가 결정적이다", () => {
@@ -109,7 +94,7 @@ test("NOVEX TOP3 materialization은 season+character 논리키와 publicKey가 �
   assert.equal(duplicateRank[0].codenameSnapshot, "AAA-DUPLICATE");
 });
 
-test("revision 재심사는 기존 공적을 유지하고 source hash 변경만 즉시 숨긴다", () => {
+test("revision 재검토는 기존 공적을 유지하고 source hash 변경만 즉시 숨긴다", () => {
   assert.equal(
     shouldSupersedeHonorsWhenQueueing({
       existingSourceHash: "same",
@@ -139,14 +124,14 @@ test("revision 재심사는 기존 공적을 유지하고 source hash 변경만 
     true,
   );
   assert.equal(
-    shouldForceHonorAnalysisAfterSourceRecovery({
+    shouldForceHonorReviewAfterSourceRecovery({
       status: "SKIPPED",
       lastError: "SOURCE_NOT_ANALYZABLE",
     }),
     true,
   );
   assert.equal(
-    shouldForceHonorAnalysisAfterSourceRecovery({
+    shouldForceHonorReviewAfterSourceRecovery({
       status: "SKIPPED",
       lastError: "upstream exhausted",
     }),
@@ -242,7 +227,7 @@ test("동일 코드네임의 서로 다른 캐릭터는 분석 후보에서 fail
   }
 });
 
-test("원장 index는 논리키·공개키·공개등급 timeline·lease queue를 고정한다", () => {
+test("원장 index는 논리키·공개키·공개등급 timeline과 legacy 상태 조회를 고정한다", () => {
   assert.ok(
     HONOR_INDEX_DEFINITIONS.honor_records.some(
       (index) => index.name === "honor_records_logicalKey_unique" && index.unique,
@@ -260,7 +245,7 @@ test("원장 index는 논리키·공개키·공개등급 timeline·lease queue�
   );
 });
 
-test("report CRUD만 원장 hook을 사용하고 NOVEX 시즌 기록은 Hall에 materialize하지 않는다", async () => {
+test("report CRUD는 lore 검토 대기를 생성하고 적용 도구만 확정 원장을 쓴다", async () => {
   const [reports, stocks, honors, backfill] = await Promise.all([
     readFile(new URL("../session-reports.ts", import.meta.url), "utf8"),
     readFile(new URL("../stock-market.ts", import.meta.url), "utf8"),
@@ -273,13 +258,13 @@ test("report CRUD만 원장 hook을 사용하고 NOVEX 시즌 기록은 Hall에 
       "utf8",
     ),
   ]);
-  assert.match(reports, /reconcileSessionReportHonorAnalysis\(created, options\.session\)/);
-  assert.match(reports, /await reconcileSessionReportHonorAnalysis\(finalReport/);
+  assert.match(reports, /reconcileSessionReportHonorReview\(created, options\.session\)/);
+  assert.match(reports, /await reconcileSessionReportHonorReview\(finalReport/);
   assert.match(reports, /reason: "SOURCE_DELETED"/);
-  assert.match(reports, /if \(!isHallOfFameV2WritesEnabled\(\)\) return/);
+  assert.match(reports, /analyzerRevision: HONOR_LORE_REVIEW_REVISION/);
+  assert.doesNotMatch(reports, /isHallOfFameV2WritesEnabled/);
   assert.match(reports, /__honorAnalysisLockAt: _honorAnalysisLockAt/);
   assert.doesNotMatch(stocks, /materializeNovexSeasonHonors/);
-  assert.doesNotMatch(stocks, /isHallOfFameV2WritesEnabled\(\)/);
   assert.doesNotMatch(stocks, /view=novex&season=/);
   assert.match(stocks, /link: "\/erp\/stock"/);
   assert.doesNotMatch(reports, /honor_source_fences|fenceHonorSources/);
@@ -288,10 +273,9 @@ test("report CRUD만 원장 hook을 사용하고 NOVEX 시즌 기록은 Hall에 
   assert.match(backfill, /BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED/);
   assert.doesNotMatch(backfill, /buildNovexHonorRecords|materializeNovexSeasonHonors/);
   assert.match(backfill, /maintenance 구간에서만 실행/);
+  assert.doesNotMatch(backfill, /Ollama|Cloud analysis|OLLAMA_API_KEY/);
+  assert.doesNotMatch(honors, /claimDueHonorAnalysis|completeClaimedHonorAnalysis/);
 
-  const complete = honors.slice(
-    honors.indexOf("export async function completeClaimedHonorAnalysis"),
-  );
   const candidateFinder = honors.slice(
     honors.indexOf("async function resolveHonorCandidateCharactersByCodenames"),
     honors.indexOf("export async function upsertHonorRecord"),
@@ -303,31 +287,26 @@ test("report CRUD만 원장 hook을 사용하고 NOVEX 시즌 기록은 Hall에 
   assert.match(candidateFinder, /codenameCounts\.get\(character\.codename\) === 1/);
   assert.match(candidateFinder, /character\.type === "AGENT"/);
   assert.match(candidateFinder, /activeOwnerIds\.has/);
-  assert.match(complete, /sessionReportsCol\(\)[\s\S]*state\.sourceKey/);
-  assert.match(complete, /buildOperationHonorSourceMaterial\(\{/);
-  assert.match(complete, /HONOR_ANALYSIS_RESULT_SOURCE_STALE/);
-  assert.match(complete, /record\.source\.recordId !== state\.sourceRecordId/);
-  assert.match(complete, /currentCandidates\.get\(record\.characterId\)/);
   assert.match(
-    complete,
+    backfill,
     /updatedAt: report\.updatedAt[\s\S]*\$currentDate: \{ __honorAnalysisLockAt: true \}/,
   );
   assert.match(
-    complete,
-    /currentResolution\.matchingCharacters\.map[\s\S]*type: character\.type[\s\S]*ownerId: character\.ownerId[\s\S]*\$currentDate: \{ __honorAnalysisLockAt: true \}/,
+    backfill,
+    /resolution\.matchingCharacters\.map[\s\S]*type: character\.type[\s\S]*ownerId: character\.ownerId[\s\S]*\$currentDate: \{ __honorAnalysisLockAt: true \}/,
   );
   assert.match(
-    complete,
-    /currentResolution\.ownerStates\.map[\s\S]*status: owner\.status[\s\S]*\$currentDate: \{ __honorAnalysisLockAt: true \}/,
+    backfill,
+    /resolution\.ownerStates\.map[\s\S]*status: owner\.status[\s\S]*\$currentDate: \{ __honorAnalysisLockAt: true \}/,
   );
   assert.match(
     honors,
     /characters\.flatMap[\s\S]*ownerStates[\s\S]*eligibleCharacters/,
   );
-  assert.ok(
-    complete.indexOf("const sourceRevisionLock") <
-      complete.indexOf("const notifications = await notificationsCol"),
-  );
+  assert.match(backfill, /if \(options\.notifyNew\)/);
+  assert.match(backfill, /previousLogicalKeys\.has\(record\.logicalKey\)/);
+  assert.match(backfill, /dedupeKey: `honor:\$\{record\.logicalKey\}`/);
+  assert.doesNotMatch(backfill, /webhookUrl|fetch\(/);
   assert.ok(
     stocks.indexOf("if (!season) return false") <
       stocks.indexOf("await recalculateStockSeasonPerformance"),
@@ -335,59 +314,45 @@ test("report CRUD만 원장 hook을 사용하고 NOVEX 시즌 기록은 Hall에 
 });
 
 test(
-  "만료 LEASED는 재claim되고 동일 hash/revision SKIPPED는 명시 force 전까지 no-op이다",
+  "동일 hash/revision 검토 대기와 SKIPPED는 불필요하게 갱신하지 않는다",
   { skip: !HAS_DB && "RUN_DB_INTEGRATION_TESTS=1 + MONGODB_TEST_URI 필요" },
   async () => {
     const queuedAt = new Date("2026-08-25T00:00:00.000Z");
     const firstHash = "a".repeat(64);
     const nextHash = "b".repeat(64);
-    await queueHonorAnalysis({
+    const first = await queueHonorReview({
       sourceKey: "REPORT-LEASE",
       sourceRecordId: "507f1f77bcf86cd799439011",
       sourceHash: firstHash,
       analyzerRevision: "revision-1",
       now: queuedAt,
     });
-    const first = await claimDueHonorAnalysis({ now: queuedAt, leaseMs: 10_000 });
-    assert.ok(first?.leaseToken);
-    assert.equal(
-      await claimDueHonorAnalysis({ now: new Date(queuedAt.getTime() + 9_999) }),
-      null,
-    );
-    const reclaimed = await claimDueHonorAnalysis({
-      now: new Date(queuedAt.getTime() + 10_001),
-      leaseMs: 10_000,
+    assert.equal(first.queued, true);
+    const unchanged = await queueHonorReview({
+      sourceKey: "REPORT-LEASE",
+      sourceRecordId: "507f1f77bcf86cd799439011",
+      sourceHash: firstHash,
+      analyzerRevision: "revision-1",
+      now: new Date(queuedAt.getTime() + 10_000),
     });
-    assert.ok(reclaimed?.leaseToken);
-    assert.notEqual(reclaimed.leaseToken, first.leaseToken);
+    assert.equal(unchanged.queued, false);
+    assert.equal(unchanged.state.updatedAt.toISOString(), queuedAt.toISOString());
 
-    const replaced = await queueHonorAnalysis({
+    const replaced = await queueHonorReview({
       sourceKey: "REPORT-LEASE",
       sourceRecordId: "507f1f77bcf86cd799439011",
       sourceHash: nextHash,
       analyzerRevision: "revision-1",
     });
     assert.equal(replaced.queued, true);
-    assert.equal(
-      await skipClaimedHonorAnalysis({
-        id: reclaimed._id,
-        sourceKey: reclaimed.sourceKey,
-        leaseToken: reclaimed.leaseToken,
-        sourceHash: reclaimed.sourceHash,
-        analyzerRevision: reclaimed.analyzerRevision,
-        reason: "SOURCE_NOT_ELIGIBLE",
-      }),
-      false,
-    );
-
     const skippedAt = new Date("2026-08-25T00:01:00.000Z");
-    await skipHonorAnalysisSource({
+    await skipHonorReviewSource({
       sourceKey: "REPORT-LEASE",
       reason: "halted",
       now: skippedAt,
     });
     assert.equal(
-      await skipHonorAnalysisSource({
+      await skipHonorReviewSource({
         sourceKey: "REPORT-LEASE",
         reason: "halted",
         now: new Date("2026-08-25T00:02:00.000Z"),
@@ -398,7 +363,7 @@ test(
       .collection("honor_analysis_states")
       .findOne({ _id: "session-report:REPORT-LEASE" });
     assert.equal(stableSkip?.updatedAt.toISOString(), skippedAt.toISOString());
-    const same = await queueHonorAnalysis({
+    const same = await queueHonorReview({
       sourceKey: "REPORT-LEASE",
       sourceRecordId: "507f1f77bcf86cd799439011",
       sourceHash: nextHash,

@@ -15,7 +15,7 @@ import type { WikiPage, WikiPageRevision } from "./types/wiki.js";
 import type { SessionReport } from "./types/session-report.js";
 import type { Notification } from "./types/notification.js";
 import type {
-  HonorAnalysisState,
+  HonorReviewState,
   HonorRecord,
 } from "./types/honor.js";
 import type { FactionDoc } from "./schemas/faction.schema.js";
@@ -57,13 +57,13 @@ import type {
 
 import { getDb, getDbSync } from "./client.js";
 
-type HonorAnalysisLockStorage = {
-  /** honor-analysis completion이 source identity 변경과 충돌하도록 쓰는 비공개 CAS 필드. */
+type HonorReviewLockStorage = {
+  /** 공적 검토 적용이 source identity 변경과 충돌하도록 쓰는 비공개 CAS 필드. */
   __honorAnalysisLockAt?: Date;
 };
-type UserStorage = User & HonorAnalysisLockStorage;
-type CharacterStorage = Character & HonorAnalysisLockStorage;
-type SessionReportStorage = SessionReport & HonorAnalysisLockStorage;
+type UserStorage = User & HonorReviewLockStorage;
+type CharacterStorage = Character & HonorReviewLockStorage;
+type SessionReportStorage = SessionReport & HonorReviewLockStorage;
 
 /* ── Collection names ── */
 
@@ -199,10 +199,10 @@ export async function honorRecordsCol(): Promise<Collection<HonorRecord>> {
 }
 
 export async function honorAnalysisStatesCol(): Promise<
-  Collection<HonorAnalysisState>
+  Collection<HonorReviewState>
 > {
   const db = await getDb();
-  return db.collection<HonorAnalysisState>(COL.HONOR_ANALYSIS_STATES);
+  return db.collection<HonorReviewState>(COL.HONOR_ANALYSIS_STATES);
 }
 
 export async function factionsCol(): Promise<Collection<FactionDoc>> {
@@ -424,8 +424,8 @@ export function honorRecordsColSync(): Collection<HonorRecord> {
   return getDbSync().collection<HonorRecord>(COL.HONOR_RECORDS);
 }
 
-export function honorAnalysisStatesColSync(): Collection<HonorAnalysisState> {
-  return getDbSync().collection<HonorAnalysisState>(
+export function honorAnalysisStatesColSync(): Collection<HonorReviewState> {
+  return getDbSync().collection<HonorReviewState>(
     COL.HONOR_ANALYSIS_STATES,
   );
 }

@@ -22,7 +22,7 @@ import {
 } from "@/lib/format/session-report";
 import {
   getHallOfFameCitationPage,
-  getHallOfFameReportAnalysisResponse,
+  getHallOfFameReportReviewResponse,
 } from "@/lib/hall-of-fame/honors";
 import {
   formatRelatedPersonnelMeta,
@@ -118,7 +118,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
     allItems,
     allReports,
     reportHonors,
-    honorAnalysisState,
+    honorReviewState,
   ] =
     await Promise.all([
       listWikiPages({ includePrivate: isGmOrAbove }).catch(() => []),
@@ -130,7 +130,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
         reportId,
         limit: 3,
       }).catch(() => undefined),
-      getHallOfFameReportAnalysisResponse(reportId).catch(() => undefined),
+      getHallOfFameReportReviewResponse(reportId).catch(() => undefined),
     ]);
   const reportNumberMeta = findOperationReportNumberMeta<SessionReportRef>(
     report,
@@ -442,7 +442,7 @@ export default async function SessionReportDetailPage({ params }: Props) {
             links={autoLinkTargets}
           />
           <ReportHonorCitations
-            initialAnalysis={honorAnalysisState}
+            initialReview={honorReviewState}
             initialHonors={reportHonors}
             reportId={reportId}
           />
