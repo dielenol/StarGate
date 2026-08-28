@@ -89,3 +89,11 @@
 - 검증: shared NOVEX 26건, worker 156건, `pnpm typecheck`, 전체 `pnpm lint`, production build 108페이지, critical risk review 재검토 통과
 - 관련 구현 커밋: `8c22c17f`
 - 운영 경계: 라이브 outbox·Discord·시세·거래 상태와 worker 배포는 변경하지 않았다.
+
+## 2026-08-28 · 아키텍처 변경 · 작전 공적 Cloud consumer 제거
+
+- `honor-analysis` consumer, proposer·critic Ollama 클라이언트, lease store와 전용 환경변수를 worker에서 제거했다. 작전 공적 판정은 worker poll이 아니라 `stargate-lore` 검토 계획과 승인형 manifest 적용 도구가 담당한다.
+- 삭제된 TypeScript source의 과거 산출물이 배포 bundle에 남지 않도록 core와 worker build 전에 각 package의 `dist`만 안전하게 정리한다. clean build 뒤 구형 `honor-analysis` 산출물이 없음을 확인했다.
+- 검증: worker 132건·core 44건, worker/core build, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0–P2 없음
+- 관련 구현 커밋: `d94e34c3`
+- 운영 경계: worker 배포·설정 변경, Cloud 호출, 라이브 DB·알림·웹훅 mutation은 실행하지 않았다.
