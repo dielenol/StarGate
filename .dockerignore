@@ -45,6 +45,7 @@
 docs
 deploy
 scripts
+!scripts/clean-package-dist.mjs
 *.md
 !**/package.json
 

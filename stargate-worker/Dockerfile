@@ -10,6 +10,7 @@ COPY .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/core/package.json ./packages/core/
 COPY packages/shared-db/package.json ./packages/shared-db/
 COPY stargate-worker/package.json ./stargate-worker/
+COPY scripts/clean-package-dist.mjs ./scripts/clean-package-dist.mjs
 
 RUN pnpm install --frozen-lockfile --filter=stargate-worker...
 
