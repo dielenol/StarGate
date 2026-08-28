@@ -132,7 +132,7 @@ export default function ReportHonorCitations({
       {showEmpty ? (
         <div className={styles.honorPanel__status} role="status">
           <strong>확정된 공적 인용 없음</strong>
-          <span>엄격한 자동 헌액 기준을 통과한 기록만 이곳에 표시합니다.</span>
+          <span>엄격한 헌액 기준을 통과한 기록만 이곳에 표시합니다.</span>
         </div>
       ) : null}
       {items.length > 0 ? (

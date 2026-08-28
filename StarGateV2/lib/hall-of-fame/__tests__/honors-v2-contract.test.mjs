@@ -120,6 +120,11 @@ test("작전 공적은 DB U 필터와 현재 보고서 U 재검증을 함께 적
   assert.match(service, /buildOperationHonorSourceMaterial/);
   assert.match(service, /current\.source\.sourceHash !== record\.sourceHash/);
   assert.match(service, /getHallOfFameReportAnalysisState/);
+  assert.match(service, /HONOR_MANUAL_REVIEW_REVISION/);
+  assert.match(
+    service,
+    /state\.analyzerRevision === HONOR_ANALYZER_REVISION \|\|[\s\S]*state\.analyzerRevision === HONOR_MANUAL_REVIEW_REVISION/,
+  );
   assert.match(service, /state\.sourceHash !== source\.sourceHash/);
   assert.match(service, /const remaining = limit - items\.length/);
   assert.match(service, /limit: remaining/);
@@ -210,6 +215,8 @@ test("보고서·Dossier·연구·주식·알림이 명예의 전당 read model�
   assert.match(reportHonors, /공적 인용 · OFFICIAL HONORS/);
   assert.match(reportHonors, /공적 재심사 중/);
   assert.match(reportHonors, /확정된 공적 인용 없음/);
+  assert.match(reportHonors, /엄격한 헌액 기준/);
+  assert.doesNotMatch(reportHonors, /엄격한 자동 헌액 기준/);
   assert.match(reportHonors, /마지막 성공 기록 표시 중/);
   assert.match(dossier, /enabled: canViewHonors && Boolean\(characterId\)/);
   assert.match(dossier, /최신 갱신에 실패해 마지막 공적 기록을 표시합니다/);
@@ -261,4 +268,18 @@ test("개요 집계는 연구·NOVEX 누적 TOP3·전체 공개 작전 원장의
   assert.match(client, /overview\.data\?\.novexHonoreeCount/);
   assert.doesNotMatch(client, /overview\.data\?\.seasonCount/);
   assert.doesNotMatch(client, /citations\.data\?\.items\.length \?\? "—"/);
+});
+
+test("작전 공적 원본 링크는 ERP 금색 토큰과 모바일 버튼 형태를 유지한다", async () => {
+  const [client, styles] = await Promise.all([
+    source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
+    source("app/(erp)/erp/hall-of-fame/page.module.css"),
+  ]);
+
+  assert.match(client, /className=\{styles\.honorList__link\}/);
+  assert.match(client, /충분한 근거를 검토해 확정한 공식 인용/);
+  assert.match(styles, /\.honorList__link\s*\{[\s\S]*?color:\s*var\(--gold\)/);
+  assert.match(styles, /\.honorList__link:visited\s*\{\s*color:\s*var\(--gold\)/);
+  assert.match(styles, /\.honorList__link\s*\{[\s\S]*?border-radius:\s*999px/);
+  assert.doesNotMatch(styles, /\.honorList__link\s*\{\s*grid-column:\s*2;\s*padding:\s*0;/);
 });

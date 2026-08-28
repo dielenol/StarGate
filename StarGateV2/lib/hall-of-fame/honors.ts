@@ -23,6 +23,7 @@ import {
   findReportById,
   findReportBySessionId,
   HONOR_ANALYZER_REVISION,
+  HONOR_MANUAL_REVIEW_REVISION,
   honorAnalysisStatesCol,
   listCharactersByOwner,
   listHonorRecords,
@@ -91,9 +92,12 @@ export async function getHallOfFameReportAnalysisState(
     _id: `session-report:${report.sessionId}`,
   });
   if (!state) return null;
+  const isCurrentAnalyzerRevision =
+    state.analyzerRevision === HONOR_ANALYZER_REVISION ||
+    state.analyzerRevision === HONOR_MANUAL_REVIEW_REVISION;
   if (
     state.sourceHash !== source.sourceHash ||
-    state.analyzerRevision !== HONOR_ANALYZER_REVISION ||
+    !isCurrentAnalyzerRevision ||
     state.status === "PENDING" ||
     state.status === "RETRY" ||
     state.status === "LEASED"
