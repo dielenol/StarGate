@@ -241,14 +241,66 @@ test("운영 심사 계획은 U 보고서 18건과 13개 공적을 명시하고 
     10,
   );
   assert.deepEqual(
-    plan.items
-      .filter((item) =>
-        ["NOSB-MINI-ROMANTID", "NOSB-S1E2-CHOICE"].includes(item.sourceKey),
-      )
-      .map((item) => `${item.sourceKey}:${item.codename}:${item.category}`),
+    plan.reviewedSources.filter((source) =>
+      ["NOSB-MINI-ROMANTID", "NOSB-S1E2-CHOICE"].includes(source.sourceKey),
+    ),
     [
-      "NOSB-MINI-ROMANTID:OTILIA:SUPPORT_TEAMWORK",
-      "NOSB-S1E2-CHOICE:INDEXER:RESEARCH_TECH",
+      {
+        sourceKey: "NOSB-MINI-ROMANTID",
+        contentHash:
+          "eddd7ef5895f64c64a3d2b7cffadd1cee24b53b3bbd672552a200b7fc7ea70f6",
+        outcome: "AWARDED",
+      },
+      {
+        sourceKey: "NOSB-S1E2-CHOICE",
+        contentHash:
+          "b1af663dde8d60bca11bec7ca0e6d2a2acf4ae1627d523c86f9e2802749c9201",
+        outcome: "AWARDED",
+      },
+    ],
+  );
+  assert.deepEqual(
+    plan.items.filter((item) =>
+      ["NOSB-MINI-ROMANTID", "NOSB-S1E2-CHOICE"].includes(item.sourceKey),
+    ),
+    [
+      {
+        sourceKey: "NOSB-MINI-ROMANTID",
+        codename: "OTILIA",
+        category: "SUPPORT_TEAMWORK",
+        title: "810번 도서 인원 회수 공적",
+        citation:
+          "해쉬를 대신하려는 존재의 전입을 거부하고, 자기혐오를 직시한 그에게 관계와 생존의 근거를 제시해 전원 귀환에 기여했습니다.",
+        evidence: [
+          {
+            section: "SUMMARY",
+            contains: "오틸리아는 해쉬를 대체할 수 없다고",
+          },
+          {
+            section: "SUMMARY",
+            contains: "오틸리아는 누구나 자기혐오를 지니며",
+          },
+        ],
+      },
+      {
+        sourceKey: "NOSB-S1E2-CHOICE",
+        codename: "INDEXER",
+        category: "RESEARCH_TECH",
+        title: "왕관 감염 격리 공적",
+        citation:
+          "오디세이 시설에서 광원화 관련 단서를 확보하고 붕괴한 ZULU-0040 본체를 회수해 감염 격리와 후속 연구 기반을 보존했습니다.",
+        evidence: [
+          {
+            section: "SUMMARY",
+            contains:
+              "해쉬 테거는 시설 책임자 슈타이너 박사의 기록과 증언을 통해",
+          },
+          {
+            section: "SUMMARY",
+            contains: "해쉬 테거는 본체를 회수했다",
+          },
+        ],
+      },
     ],
   );
 
