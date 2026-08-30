@@ -34,3 +34,13 @@
 - 운영 JTEST `/erp`에서 화면 표시 후 5초 동안 추가되던 script 12개·stylesheet 8개(원문 합계 약 528KB)를 기준선으로 확인했다.
 - 검증: 신규 prefetch·hero·KST 계약 5건 + 기존 대시보드 계약 2건, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - 관련 커밋: `9a80b2f2`, `4d8c01dd`
+
+## 2026-08-30 · 성능 최적화 · 공적 원본 batch와 대시보드 projection
+
+- 명예의 전당과 보고서·신원조회 공적 패널이 공유하는 현재 원본 검증을 일괄 조회로 바꿨다. 고유 보고서 10건 기준 원본 확인은 4회 조회로 묶이며 원장 목록 조회는 별도다. 현재 공개등급·정확한 인물 연결·ACTIVE owner와 source hash 판정을 완화하거나 영속 캐시를 추가하지 않았다.
+- 실제 공적 조회 20회 교차 비교에서 source material/공개 응답은 동일했고 p50 490.13→237.27ms, p95 604.85→251.29ms였다. 대시보드 캐릭터 DTO도 22회 동등성 확인 후 JSON 평균 9,009.68→230.32B로 축소했다.
+- 운영 ERP 회원 주요 경로, 로컬 GM 관리 포함 10개 경로, 운영 공개 9개 경로의 1280px·390px 화면, Hall 4개 viewport·필터/history·오류 복구·키보드 탐색을 읽기 전용으로 확인했다. API 5종의 미인증 401/private no-store도 확인했다. 운영 mutation 버튼은 누르지 않았다.
+- 검증: 집중 62건 통과·DB 통합 1건 skip, core 44건·worker 132건, web/worker build, typecheck, lint, critical risk review P0–P2 없음
+- 검증 제한: 기존 `hooks/__tests__/cache-invalidation.test.mjs`는 standalone Node의 `@/` 별칭과 tsx ESM export 해석 문제로 초기화에 실패했다. 해당 공용 runner는 이번 변경에 포함하지 않았다. Hall의 비활성 탭·RSC seed·필터 key·root invalidation·stale-data 보존은 별도 QueryObserver 런타임 11건으로 확인했다. 실데이터에 없는 MAIN 중복·null 사례는 mock으로 검증했다.
+- 관련 구현 커밋: `45d9fc0a`
+- 후속 작업: 공용 캐릭터 캐시 테스트 runner 정리. 운영 Web Vitals/LCP/TBT 전후 비교와 배포 후 성능 확인은 별도 배포 뒤 수행한다. 임의 cache/index 추가, 의존성 변경, 운영 DB 쓰기·push·배포는 하지 않았다.
