@@ -7,7 +7,9 @@ export type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 // `.tsx` 래퍼는 필요 없다 — 규칙/속성(viewBox, stroke="currentColor", aria-hidden 등)은 SVG 파일 자체에 명시되어 있음.
 export { default as IconAbility } from "@/public/assets/svg/ic_ability.svg";
 export { default as IconAccount } from "@/public/assets/svg/ic_account.svg";
+export { default as IconActiveArmor } from "@/public/assets/svg/ic_active-armor.svg";
 export { default as IconActiveOps } from "@/public/assets/svg/ic_active-ops.svg";
+export { default as IconActiveWeapon } from "@/public/assets/svg/ic_active-weapon.svg";
 export { default as IconAdmin } from "@/public/assets/svg/ic_admin.svg";
 export { default as IconAdminCatalog } from "@/public/assets/svg/ic_admin-catalog.svg";
 export { default as IconAdminCharacters } from "@/public/assets/svg/ic_admin-characters.svg";

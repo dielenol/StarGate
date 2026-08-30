@@ -15,7 +15,8 @@ import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 
 import {
-  IconInventoryEquipment,
+  IconActiveArmor,
+  IconActiveWeapon,
   IconSwordShield,
 } from "@/components/icons";
 import Box from "@/components/ui/Box/Box";
@@ -105,10 +106,11 @@ export default function CharacterEquipmentPanel({
         {(["WEAPON", "ARMOR"] as const).map((slot) => {
           const item = entries.find((entry) => entry.equippedSlot === slot);
           const imageSrc = item ? itemImageSrc(item) : null;
+          const SlotIcon = slot === "WEAPON" ? IconActiveWeapon : IconActiveArmor;
           return (
             <div key={slot} className={styles.loadoutSlot}>
               <div className={styles.loadoutSlot__head}>
-                <IconInventoryEquipment width={18} height={18} aria-hidden />
+                <SlotIcon width={18} height={18} aria-hidden />
                 <span>{SLOT_LABEL[slot]}</span>
                 <Tag tone={item ? "gold" : "default"}>
                   {item ? "EQUIPPED" : "EMPTY"}
@@ -129,7 +131,7 @@ export default function CharacterEquipmentPanel({
                     />
                   ) : (
                     <span className={styles.loadoutSlot__imageFallback} aria-hidden>
-                      <IconInventoryEquipment width={32} height={32} />
+                      <SlotIcon width={32} height={32} />
                     </span>
                   )}
                   <div>
