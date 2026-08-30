@@ -35,6 +35,20 @@ test("Hall public mapper는 내부 식별자와 분석 감사를 직렬화하지
   }
 });
 
+test("Hall 모바일 부문 헤더는 단일 열이며 타임라인 인장과 번호 스타일을 분리한다", async () => {
+  const [css, client] = await Promise.all([
+    source("app/(erp)/erp/hall-of-fame/page.module.css"),
+    source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
+  ]);
+  const mobileCss = css.slice(css.indexOf("@container (max-width: 640px)"));
+  assert.match(mobileCss, /\.wing__header\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/);
+  assert.doesNotMatch(css, /\.honorList__seal span\s*\{/);
+  assert.match(css, /\.honorList__seal > span:last-child/);
+  assert.match(css, /content-visibility: auto/);
+  assert.doesNotMatch(css, /backdrop-filter/);
+  assert.match(client, /inert=\{!isActive\}/);
+});
+
 test("NOVEX read model은 전 기간 확정 수익을 집계하고 GM·테스트 계정을 양쪽 소유 시점에서 제외한다", async () => {
   const [service, stockAccount, lifetimeReturn, core, query, route, client, stockWriter, backfill] = await Promise.all([
     source("lib/hall-of-fame/honors.ts"),
@@ -111,12 +125,13 @@ test("작전 공적은 DB U 필터와 현재 보고서 U 재검증을 함께 적
   const service = await source("lib/hall-of-fame/honors.ts");
 
   assert.match(service, /domain: "OPERATION",[\s\S]*minRole: "U"/);
-  assert.match(service, /findReportBySessionId\(sourceKey\)/);
+  assert.match(service, /findCurrentOperationHonorSources\(\[sourceKey\]\)/);
   assert.match(
     service,
     /normalizeSessionReportMinRole\(report\.minRole\) !== "U"/,
   );
-  assert.match(service, /operationReports = new Map/);
+  assert.match(service, /operationReports = await findCurrentOperationHonorSources/);
+  assert.match(service, /operationReports\.get\(record\.source\.key\)/);
   assert.match(service, /buildOperationHonorSourceMaterial/);
   assert.match(service, /current\.source\.sourceHash !== record\.sourceHash/);
   assert.match(service, /getHallOfFameReportReviewState/);
@@ -168,6 +183,40 @@ test("guest는 작전·내 공적 endpoint에서 일반 404만 받고 query도 �
   assert.match(
     query,
     /\["hall-of-fame", "citations", category \?\? "all"\] as const/,
+  );
+});
+
+test("Hall 탭은 현재 부문에 필요한 RSC와 Query만 활성화한다", async () => {
+  const [page, client, query] = await Promise.all([
+    source("app/(erp)/erp/hall-of-fame/page.tsx"),
+    source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
+    source("hooks/queries/useHallOfFameQuery.ts"),
+  ]);
+
+  assert.match(page, /searchParams: Promise</);
+  assert.match(page, /const shouldLoadOverview = view === "overview"/);
+  assert.match(page, /const shouldLoadResearch = shouldLoadOverview \|\| view === "research"/);
+  assert.match(page, /const shouldLoadNovex = shouldLoadOverview \|\| view === "novex"/);
+  assert.match(
+    page,
+    /const shouldLoadCitations =\s*!isGuest && \(shouldLoadOverview \|\| view === "operations"\)/,
+  );
+  assert.match(page, /const shouldLoadMine = !isGuest && \(shouldLoadOverview \|\| view === "mine"\)/);
+  assert.match(page, /shouldLoadOverview\s*\? getHallOfFameOverviewResponse/);
+  assert.match(page, /shouldLoadResearch\s*\? getResearchHallOfFameResponse/);
+  assert.match(page, /shouldLoadNovex\s*\? getHallOfFameNovexResponse/);
+  assert.match(page, /shouldLoadCitations\s*\? getHallOfFameCitationPage/);
+  assert.match(page, /shouldLoadMine\s*\? getHallOfFameMineResponse/);
+  assert.match(page, /\{ category: operationCategory \}/);
+  assert.match(page, /\{ cursor: operationCursor \}/);
+  assert.match(client, /enabled: shouldLoadOverview/);
+  assert.match(client, /enabled: shouldLoadResearch/);
+  assert.match(client, /enabled: shouldLoadNovex/);
+  assert.match(client, /enabled: shouldLoadCitations/);
+  assert.match(client, /enabled: shouldLoadMine/);
+  assert.ok(
+    (query.match(/enabled: options\?\.enabled \?\? true/g) ?? []).length >= 5,
+    "Hall Query 다섯 부문이 모두 명시적 비활성화를 지원해야 한다",
   );
 });
 

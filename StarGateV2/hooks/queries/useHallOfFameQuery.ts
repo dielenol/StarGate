@@ -117,6 +117,7 @@ async function fetchHallOfFameReportReviewState(
 export function useResearchHallOfFame(options?: {
   initialData?: ResearchHallOfFameResponse;
   initialDataUpdatedAt?: number;
+  enabled?: boolean;
 }) {
   const refetchInterval = useRealtimeRefetchInterval(
     HALL_OF_FAME_REFETCH_INTERVAL_MS,
@@ -130,12 +131,14 @@ export function useResearchHallOfFame(options?: {
     refetchIntervalInBackground: false,
     initialData: options?.initialData,
     initialDataUpdatedAt: options?.initialDataUpdatedAt,
+    enabled: options?.enabled ?? true,
   });
 }
 
 export function useHallOfFameOverview(options?: {
   initialData?: HallOfFameOverviewResponse;
   initialDataUpdatedAt?: number;
+  enabled?: boolean;
 }) {
   const refetchInterval = useRealtimeRefetchInterval(
     HALL_OF_FAME_REFETCH_INTERVAL_MS,
@@ -149,12 +152,14 @@ export function useHallOfFameOverview(options?: {
     refetchIntervalInBackground: false,
     initialData: options?.initialData,
     initialDataUpdatedAt: options?.initialDataUpdatedAt,
+    enabled: options?.enabled ?? true,
   });
 }
 
 export function useHallOfFameNovex(options?: {
   initialData?: HallOfFameNovexResponse;
   initialDataUpdatedAt?: number;
+  enabled?: boolean;
 }) {
   const refetchInterval = useRealtimeRefetchInterval(
     HALL_OF_FAME_REFETCH_INTERVAL_MS,
@@ -169,6 +174,7 @@ export function useHallOfFameNovex(options?: {
     placeholderData: keepPreviousData,
     initialData: options?.initialData,
     initialDataUpdatedAt: options?.initialDataUpdatedAt,
+    enabled: options?.enabled ?? true,
   });
 }
 

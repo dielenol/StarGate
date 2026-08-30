@@ -23,7 +23,6 @@ import {
   useResearchHallOfFame,
 } from "@/hooks/queries/useHallOfFameQuery";
 
-import { IconCrown } from "@/components/icons";
 import Button from "@/components/ui/Button/Button";
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getPixelProfilePath } from "@/lib/assets/characters";
@@ -92,7 +91,7 @@ function ResearchPodium({ data, compact = false }: { data: ResearchHallOfFameRes
 function HonorList({ items, emptyMessage, limit }: { items: HallOfFameHonorItem[]; emptyMessage: string; limit?: number }) {
   const visibleItems = limit ? items.slice(0, limit) : items;
   if (visibleItems.length === 0) return <HallState compact title={emptyMessage} detail="새 공적이 확정되면 여기에 기록됩니다." />;
-  return <ol className={styles.honorList}>{visibleItems.map((item) => <li className={styles.honorList__item} key={item.key}><div className={styles.honorList__seal} aria-hidden="true"><IconCrown /></div><div className={styles.honorList__content}><span>{CATEGORY_LABELS[item.category]}</span><strong>{item.codename}</strong><p>{item.title}</p><blockquote>{item.citation}</blockquote><small>{item.sourceLabel} · {formatDateTime(item.occurredAt, "padded")}</small></div>{item.sourceHref ? <Link className={styles.honorList__link} href={item.sourceHref}>기록 보기</Link> : null}</li>)}</ol>;
+  return <ol className={styles.honorList} data-count={visibleItems.length}>{visibleItems.map((item, index) => <li className={styles.honorList__item} data-category={item.category} key={item.key}><div className={styles.honorList__seal} aria-hidden="true"><NovusEmblem /><span>{String(index + 1).padStart(2, "0")}</span></div><div className={styles.honorList__content}><span>{CATEGORY_LABELS[item.category]}</span><strong>{item.codename}</strong><p>{item.title}</p><blockquote>{item.citation}</blockquote><small>{item.sourceLabel} · <time dateTime={item.occurredAt}>{formatDateTime(item.occurredAt, "padded")}</time></small></div>{item.sourceHref ? <Link className={styles.honorList__link} href={item.sourceHref}>기록 보기</Link> : null}</li>)}</ol>;
 }
 
 function NovexPanel({ data }: { data: HallOfFameNovexResponse | undefined }) {
@@ -125,6 +124,7 @@ function SpotlightRecord({
       aria-labelledby={titleId}
       className={styles.featured__slide}
       data-source={slide.kind}
+      inert={!isActive}
     >
       <div className={styles.featured__orbit} aria-hidden="true">
         <span className={styles.featured__emblem}><NovusEmblem /></span>
@@ -317,11 +317,16 @@ export default function HallOfFameClient({ initialOverviewData, initialOverviewD
   const categoryParam = searchParams.get("category");
   const operationCategory = OPERATION_CATEGORIES.includes(categoryParam as OperationHonorCategory) ? (categoryParam as OperationHonorCategory) : undefined;
   const operationCursor = permittedView === "operations" ? searchParams.get("cursor")?.trim() || undefined : undefined;
-  const overview = useHallOfFameOverview({ initialData: initialOverviewData, initialDataUpdatedAt: initialOverviewDataUpdatedAt });
-  const research = useResearchHallOfFame({ initialData, initialDataUpdatedAt });
-  const novex = useHallOfFameNovex({ initialData: initialNovexData, initialDataUpdatedAt: initialNovexDataUpdatedAt });
-  const citations = useHallOfFameCitations({ category: permittedView === "operations" ? operationCategory : undefined, cursor: operationCursor, initialData: permittedView === "operations" && (operationCategory || operationCursor) ? undefined : initialCitationsData, initialDataUpdatedAt: permittedView === "operations" && (operationCategory || operationCursor) ? undefined : initialCitationsDataUpdatedAt, enabled: !isGuest });
-  const mine = useHallOfFameMine({ initialData: initialMineData, initialDataUpdatedAt: initialMineDataUpdatedAt, enabled: !isGuest });
+  const shouldLoadOverview = permittedView === "overview";
+  const shouldLoadResearch = shouldLoadOverview || permittedView === "research";
+  const shouldLoadNovex = shouldLoadOverview || permittedView === "novex";
+  const shouldLoadCitations = !isGuest && (shouldLoadOverview || permittedView === "operations");
+  const shouldLoadMine = !isGuest && (shouldLoadOverview || permittedView === "mine");
+  const overview = useHallOfFameOverview({ initialData: initialOverviewData, initialDataUpdatedAt: initialOverviewDataUpdatedAt, enabled: shouldLoadOverview });
+  const research = useResearchHallOfFame({ initialData, initialDataUpdatedAt, enabled: shouldLoadResearch });
+  const novex = useHallOfFameNovex({ initialData: initialNovexData, initialDataUpdatedAt: initialNovexDataUpdatedAt, enabled: shouldLoadNovex });
+  const citations = useHallOfFameCitations({ category: permittedView === "operations" ? operationCategory : undefined, cursor: operationCursor, initialData: initialCitationsData, initialDataUpdatedAt: initialCitationsDataUpdatedAt, enabled: shouldLoadCitations });
+  const mine = useHallOfFameMine({ initialData: initialMineData, initialDataUpdatedAt: initialMineDataUpdatedAt, enabled: shouldLoadMine });
   const novexLeader = novex.data?.items.find((item) => item.rank === 1);
   const researchLeader = research.data?.items.find((item) => item.rank === 1);
   const hasNovexRecords = Boolean(novex.data?.items.length);

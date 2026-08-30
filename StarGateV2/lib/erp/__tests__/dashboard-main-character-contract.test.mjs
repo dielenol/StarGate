@@ -20,7 +20,7 @@ test("dashboard separates the display character from the economic main character
   );
   assert.match(
     dashboardData,
-    /const displayCharacter = \(resolvedDisplayCharacter \?\?\s*firstCharacterFallback\)/,
+    /const displayCharacter = resolvedDisplayCharacter \?\?\s*firstCharacterFallback/,
   );
   assert.match(dashboardData, /getCharacterBalance\(mainCharacterId\)/);
   assert.doesNotMatch(dashboardData, /getCharacterBalance\([^)]*displayCharacter/);

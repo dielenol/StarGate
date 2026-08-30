@@ -77,19 +77,24 @@ test("공개 응답은 TOP 3 표시 필드만 직렬화한다", async () => {
 });
 
 test("RSC 초기 데이터와 realtime 5분 fallback Query를 연결한다", async () => {
-  const [page, client, query, queryKeys] = await Promise.all([
+  const [page, client, query, queryKeys, researchService] = await Promise.all([
     source("app/(erp)/erp/hall-of-fame/page.tsx"),
     source("app/(erp)/erp/hall-of-fame/HallOfFameClient.tsx"),
     source("hooks/queries/useHallOfFameQuery.ts"),
     source("lib/realtime/query-keys.ts"),
+    source("lib/hall-of-fame/research.ts"),
   ]);
 
   assert.match(page, /getResearchHallOfFameResponse\(\)/);
   assert.match(page, /getHallOfFameOverviewResponse/);
   assert.match(page, /initialData=\{initialData\}/);
   assert.match(page, /initialOverviewData=\{initialOverviewData\}/);
-  assert.match(client, /useResearchHallOfFame\(\{ initialData, initialDataUpdatedAt \}\)/);
+  assert.match(
+    client,
+    /useResearchHallOfFame\(\{ initialData, initialDataUpdatedAt, enabled: shouldLoadResearch \}\)/,
+  );
   assert.match(client, /useHallOfFameOverview/);
+  assert.match(researchService, /const loadResearchHallOfFameResponse = cache\(/);
   assert.match(query, /research: \["hall-of-fame", "research"\] as const/);
   assert.match(query, /5 \* 60 \* 1000/);
   assert.match(query, /useRealtimeRefetchInterval/);
@@ -138,7 +143,8 @@ test("화면은 오류·빈 결과와 통합 공적 허브 계약을 제공한�
   assert.doesNotMatch(client, /styles\["panel--mine"\]/);
   assert.match(client, /VIEWS = \["overview", "research", "novex", "operations", "mine"\]/);
   assert.match(client, /isGuest && \(view === "operations" \|\| view === "mine"\)/);
-  assert.match(client, /enabled: !isGuest/);
+  assert.match(client, /enabled: shouldLoadCitations/);
+  assert.match(client, /enabled: shouldLoadMine/);
   assert.match(client, /getPixelProfilePath\(codename\)/);
   assert.match(client, /preferOptimizedPublicImagePath\(profilePath\)/);
   assert.match(client, /onError=\{\(\) => setHasImageError\(true\)\}/);

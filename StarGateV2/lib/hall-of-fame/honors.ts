@@ -18,10 +18,10 @@ import {
 import {
   buildOperationHonorSourceMaterial,
   findCharacterById,
+  findCurrentOperationHonorSources,
   findHonorCandidateCharactersByCodenames,
   getHonorRecordByPublicKey,
   findReportById,
-  findReportBySessionId,
   HONOR_LORE_REVIEW_REVISION,
   honorAnalysisStatesCol,
   listCharactersByOwner,
@@ -62,15 +62,8 @@ function withSourceHref(record: HonorRecord, sourceHref: string): HonorRecord {
 }
 
 async function resolveCurrentOperationSource(sourceKey: string) {
-  const report = await findReportBySessionId(sourceKey);
-  if (!report || normalizeSessionReportMinRole(report.minRole) !== "U") {
-    return null;
-  }
-  const characters = await findHonorCandidateCharactersByCodenames(
-    report.relatedPersonnelCodenames ?? [],
-  );
-  const source = buildOperationHonorSourceMaterial({ report, characters });
-  return source ? { report, source } : null;
+  const sources = await findCurrentOperationHonorSources([sourceKey]);
+  return sources.get(sourceKey) ?? null;
 }
 
 /** 공개 응답 필드를 늘리지 않고 보고서 상세에 lore 검토 대기 상태만 제공한다. */
@@ -109,41 +102,39 @@ export async function getHallOfFameReportReviewResponse(
 async function toVisibleHonorItems(
   records: HonorRecord[],
 ): Promise<HallOfFameHonorItem[]> {
-  const operationReports = new Map<
-    string,
-    ReturnType<typeof resolveCurrentOperationSource>
-  >();
-  const resolved = await Promise.all(
-    records.map(async (record) => {
-      if (
-        record.domain !== "OPERATION" ||
-        record.source.type !== "SESSION_REPORT"
-      ) {
-        // NOVEX는 honor_records의 시즌 리본이 아니라 공개 누적 수익 read model만 사용한다.
-        return null;
-      }
-      let pendingSource = operationReports.get(record.source.key);
-      if (!pendingSource) {
-        pendingSource = resolveCurrentOperationSource(record.source.key);
-        operationReports.set(record.source.key, pendingSource);
-      }
-      const current = await pendingSource;
-      if (
-        record.minRole !== "U" ||
-        !current ||
-        current.source.sourceHash !== record.sourceHash
-      ) {
-        return null;
-      }
-      return toHallOfFameHonorItem(
-        withSourceHref(
-          record,
-          `/erp/hall-of-fame/source/${encodeURIComponent(record.publicKey)}`,
-        ),
-        { includeSourceHref: true },
-      );
-    }),
+  const operationReports = await findCurrentOperationHonorSources(
+    records.flatMap((record) =>
+      record.domain === "OPERATION" &&
+      record.source.type === "SESSION_REPORT" &&
+      record.minRole === "U"
+        ? [record.source.key]
+        : [],
+    ),
   );
+  const resolved = records.map((record) => {
+    if (
+      record.domain !== "OPERATION" ||
+      record.source.type !== "SESSION_REPORT"
+    ) {
+      // NOVEX는 honor_records의 시즌 리본이 아니라 공개 누적 수익 read model만 사용한다.
+      return null;
+    }
+    const current = operationReports.get(record.source.key);
+    if (
+      record.minRole !== "U" ||
+      !current ||
+      current.source.sourceHash !== record.sourceHash
+    ) {
+      return null;
+    }
+    return toHallOfFameHonorItem(
+      withSourceHref(
+        record,
+        `/erp/hall-of-fame/source/${encodeURIComponent(record.publicKey)}`,
+      ),
+      { includeSourceHref: true },
+    );
+  });
   return resolved.filter((item): item is HallOfFameHonorItem => item !== null);
 }
 

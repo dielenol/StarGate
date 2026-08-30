@@ -83,7 +83,6 @@
   border-radius: 28px;
   background: var(--archive-grid) 0 0 / 28px 28px, rgba(8, 9, 11, 0.91);
   box-shadow: 0 34px 90px rgba(0, 0, 0, 0.55), 0 0 70px rgba(201, 168, 90, 0.05), inset 0 1px rgba(241, 236, 220, 0.035);
-  backdrop-filter: blur(18px) saturate(0.74);
 }
 
 .overview::before,
@@ -245,7 +244,61 @@
 
 .novexPanel { min-height: 180px; padding: 22px; }.novexPanel__topline { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px dashed rgba(201, 168, 90, 0.28); color: var(--gold); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.07em; }.novexPanel__topline span:last-child { color: var(--ink-3); }.novexPanel ol { display: grid; margin: 12px 0 14px; padding: 0; overflow: hidden; border: 1px solid rgba(201, 168, 90, 0.2); border-radius: 16px; list-style: none; }.novexPanel li { display: grid; grid-template-columns: 28px minmax(100px, 0.7fr) minmax(0, 1.3fr); align-items: center; gap: 9px; padding: 12px; background: linear-gradient(90deg, rgba(201, 168, 90, 0.045), rgba(8, 9, 11, 0.34)); }.novexPanel li + li { border-top: 1px dashed rgba(201, 168, 90, 0.18); }.novexPanel b { color: var(--gold); font-family: var(--font-mono); font-size: 14px; }.novexPanel li > span { overflow: hidden; color: var(--ink-0); font-family: var(--font-mono); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }.novexPanel small { overflow: hidden; color: var(--ink-3); font-size: 14px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 
-.honorList { display: grid; gap: 10px; margin: 0; padding: 18px 20px; list-style: none; }.honorList__item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 16px; border: 1px solid rgba(201, 168, 90, 0.18); border-radius: 16px; background: linear-gradient(100deg, rgba(201, 168, 90, 0.04), rgba(8, 9, 11, 0.42)); }.honorList__seal { display: grid; width: 42px; height: 42px; place-items: center; border: 1px dashed rgba(201, 168, 90, 0.48); border-radius: 50%; color: var(--gold); box-shadow: 0 0 0 4px rgba(201, 168, 90, 0.025); }.honorList__seal svg { width: 17px; height: 17px; }.honorList__content { min-width: 0; }.honorList__content > span, .honorList__content small { display: block; color: var(--gold-dim); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.055em; line-height: 1.4; }.honorList__content strong { display: inline-block; margin-top: 3px; color: var(--ink-0); font-family: var(--font-mono); font-size: 16px; }.honorList__content p { margin: 3px 0; overflow: hidden; color: var(--ink-1); font-size: 14px; line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }.honorList__content blockquote { margin: 5px 0 7px; padding-left: 9px; border-left: 1px dashed rgba(201, 168, 90, 0.34); color: var(--ink-2); font-size: 14px; line-height: 1.5; }.honorList__content small { color: var(--ink-3); }
+.honorList {
+  display: grid;
+  margin: 18px 20px;
+  padding: 0;
+  overflow: clip;
+  border: 1px solid rgba(201, 168, 90, 0.24);
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg, rgba(201, 168, 90, 0.065), transparent 26%),
+    repeating-linear-gradient(0deg, transparent 0 12px, rgba(241, 236, 220, 0.012) 12px 13px),
+    rgba(8, 9, 11, 0.4);
+  list-style: none;
+}
+
+.honorList__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  min-height: 134px;
+  padding: 18px 20px;
+  background: linear-gradient(90deg, rgba(201, 168, 90, 0.025), transparent 54%);
+  content-visibility: auto;
+  contain-intrinsic-block-size: 150px;
+}
+
+.honorList__item + .honorList__item { border-top: 1px dashed rgba(201, 168, 90, 0.2); }
+.honorList__item::before { position: absolute; top: 0; bottom: 0; left: 51px; border-left: 1px dashed rgba(201, 168, 90, 0.18); content: ""; }
+.honorList__item::after { position: absolute; top: 50%; left: 47px; width: 9px; height: 9px; border: 1px solid var(--gold); border-radius: 50%; background: rgba(8, 9, 11, 0.95); box-shadow: 0 0 0 4px rgba(201, 168, 90, 0.045); content: ""; transform: translateY(-50%); }
+.honorList__item:hover, .honorList__item:focus-within { background: linear-gradient(90deg, rgba(201, 168, 90, 0.095), rgba(201, 168, 90, 0.02) 54%, transparent); }
+.honorList__item[data-category="COMBAT"]::after { border-color: #c77c62; }
+.honorList__item[data-category="COMMAND"]::after { border-color: #cfab5d; }
+.honorList__item[data-category="RESCUE_PROTECTION"]::after { border-color: #8cb3ab; }
+.honorList__item[data-category="RESEARCH_TECH"]::after { border-color: #8eaac9; }
+.honorList__item[data-category="SUPPORT_TEAMWORK"]::after { border-color: #9bae74; }
+.honorList__item[data-category="INTELLIGENCE_JUDGMENT"]::after { border-color: #b596c4; }
+
+.honorList__seal {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px dashed rgba(201, 168, 90, 0.48);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 168, 90, 0.11), rgba(8, 9, 11, 0.86) 68%);
+  box-shadow: 0 0 0 5px rgba(201, 168, 90, 0.025);
+}
+
+.honorList__seal::before { position: absolute; inset: 7px; border: 1px solid rgba(201, 168, 90, 0.16); border-radius: 50%; content: ""; }
+.honorList__seal .novusEmblem { width: 52%; height: 52%; opacity: 0.55; }
+.honorList__seal > span:last-child { position: absolute; right: -8px; bottom: -3px; padding: 1px 4px; color: var(--gold); border-block: 1px solid rgba(201, 168, 90, 0.35); background: rgba(8, 9, 11, 0.95); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.05em; }
+.honorList__content { min-width: 0; }.honorList__content > span, .honorList__content small { display: block; color: var(--gold-dim); font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.055em; line-height: 1.4; }.honorList__content strong { display: inline-block; margin-top: 3px; color: var(--ink-0); font-family: var(--font-mono); font-size: 16px; }.honorList__content p { margin: 3px 0; overflow: hidden; color: var(--ink-1); font-size: 14px; line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }.honorList__content blockquote { margin: 5px 0 7px; padding-left: 9px; border-left: 1px dashed rgba(201, 168, 90, 0.34); color: var(--ink-2); font-size: 14px; line-height: 1.5; }.honorList__content small { color: var(--ink-3); }
 .honorList__link {
   display: inline-flex;
   min-height: 36px;
@@ -297,7 +350,9 @@
   .archive { padding-block: 7px 22px; }
   .archive__tabs { width: 100%; }
   .archive__tab { flex: 1 0 auto; padding-inline: 11px; text-align: center; }
-  .overview__header, .wing__header { grid-template-columns: auto minmax(0, 1fr); min-height: 0; gap: 15px; padding: 22px 19px; }
+  .overview__header, .wing__header { min-height: 0; gap: 15px; padding: 22px 19px; }
+  .overview__header { grid-template-columns: auto minmax(0, 1fr); }
+  .wing__header { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .overview__header::after, .wing__header::after { right: -125px; width: 240px; height: 240px; }
   .overview__header dl { display: grid; grid-column: 1 / -1; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .overview__header dl > div { min-width: 0; padding: 6px 7px; }
@@ -340,7 +395,12 @@
   .stats > div { padding-right: 12px; }
   .stats > div + div { padding-left: 12px; }
   .stats dd, .researchPodium__card[data-rank="1"] .stats dd { font-size: 14px; }
-  .honorList__item { grid-template-columns: auto minmax(0, 1fr); }
+  .honorList { margin: 12px; border-radius: 18px; }
+  .honorList__item { grid-template-columns: 50px minmax(0, 1fr); gap: 11px; min-height: 0; padding: 17px 14px; contain-intrinsic-block-size: 178px; }
+  .honorList__item::before { left: 38px; }
+  .honorList__item::after { left: 34px; }
+  .honorList__seal { width: 44px; height: 44px; }
+  .honorList__seal > span:last-child { right: -8px; bottom: -4px; }
   .honorList__link { grid-column: 2; justify-self: start; }
   .honorList__content p { white-space: normal; }
   .categoryFilters { margin-inline: 12px; }

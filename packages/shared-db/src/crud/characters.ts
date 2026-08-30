@@ -564,6 +564,84 @@ export async function findDisplayCharacterByOwner(
   return findMainCharacterByOwner(ownerId);
 }
 
+/** 대시보드가 표시하는 신원·초상·상태만 포함하며 시트/로어 전문은 제외한다. */
+export type DashboardCharacter = Pick<
+  Character,
+  "_id" | "codename" | "type" | "agentLevel" | "previewImage" | "pixelCharacterImage"
+> & {
+  lore: Pick<Character["lore"], "name">;
+  play?: Pick<AgentCharacter["play"], "hp" | "san" | "points">;
+};
+
+const DASHBOARD_CHARACTER_PROJECTION = {
+  _id: 1,
+  codename: 1,
+  type: 1,
+  agentLevel: 1,
+  previewImage: 1,
+  pixelCharacterImage: 1,
+  "lore.name": 1,
+  "play.hp": 1,
+  "play.san": 1,
+  "play.points": 1,
+} as const;
+
+/** 경제 메인의 선택·중복 오류 정책은 유지하고 대시보드용 필드만 읽는다. */
+export async function findMainDashboardCharacterByOwner(
+  ownerId: string,
+): Promise<DashboardCharacter | null> {
+  const col = await charactersCol();
+  const docs = await col
+    .find(mainAgentFilter(ownerId))
+    .project<DashboardCharacter>(DASHBOARD_CHARACTER_PROJECTION)
+    .toArray();
+  if (docs.length === 1) return docs[0];
+  if (docs.length > 1) {
+    throw mainCharacterIntegrityError(ownerId, docs, "MAIN agents");
+  }
+
+  if (!(await canUseOwnedNpcFallback(ownerId))) return null;
+  const fallbackDocs = await col
+    .find(ownedNpcFallbackFilter(ownerId))
+    .project<DashboardCharacter>(DASHBOARD_CHARACTER_PROJECTION)
+    .toArray();
+  if (fallbackDocs.length === 0) return null;
+  if (fallbackDocs.length > 1) {
+    throw mainCharacterIntegrityError(ownerId, fallbackDocs, "owned NPC fallback candidates");
+  }
+  return fallbackDocs[0];
+}
+
+/** ACTIVE GM의 선택 NPC는 표시만 변경하며 경제 메인의 선택에는 관여하지 않는다. */
+export async function findDisplayDashboardCharacterByOwner(
+  ownerId: string,
+): Promise<DashboardCharacter | null> {
+  const selectedIds = await selectedOwnedNpcIdsForDisplay(ownerId);
+  if (selectedIds.length > 0) {
+    const col = await charactersCol();
+    const docs = await col
+      .find({ _id: { $in: selectedIds }, type: "NPC", ownerId })
+      .project<DashboardCharacter>(DASHBOARD_CHARACTER_PROJECTION)
+      .toArray();
+    if (docs.length === 1) return docs[0];
+    if (docs.length > 1) {
+      throw selectedDisplayCharacterIntegrityError(ownerId, docs);
+    }
+  }
+  return findMainDashboardCharacterByOwner(ownerId);
+}
+
+/** 소유자 목록에서 이미 검증한 대시보드 fallback 캐릭터의 표시 필드를 읽는다. */
+export async function findDashboardCharacterById(
+  id: string,
+): Promise<DashboardCharacter | null> {
+  if (!ObjectId.isValid(id)) return null;
+  return (await charactersCol()).findOne<DashboardCharacter>(
+    { _id: new ObjectId(id) },
+    { projection: DASHBOARD_CHARACTER_PROJECTION },
+  );
+}
+
 /**
  * `findMainCharacterByOwner` 의 경량 projection 변형.
  *

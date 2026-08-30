@@ -286,3 +286,65 @@ test("Q-9: background refetch 실패는 error와 마지막 성공 data를 함께
   unsubscribe();
   client.clear();
 });
+
+test("Q-10: Hall 비활성 탭은 root invalidation을 기다리고 RSC seed로 중복 조회 없이 활성화된다", async () => {
+  const client = makeClient();
+  const researchFetcher = makeCountingFetcher({ items: ["research-refreshed"] });
+  const novexFetcher = makeCountingFetcher({ items: ["novex-refreshed"] });
+  const researchOptions = {
+    queryKey: ["hall-of-fame", "research"], queryFn: researchFetcher.fn,
+    staleTime: 300_000, initialData: { items: ["research-seed"] },
+  };
+  const novexOptions = {
+    queryKey: ["hall-of-fame", "novex"], queryFn: novexFetcher.fn,
+    staleTime: 300_000,
+  };
+  const research = new QueryObserver(client, { ...researchOptions, enabled: true });
+  const novex = new QueryObserver(client, { ...novexOptions, enabled: false });
+  const unsubscribeResearch = research.subscribe(() => {});
+  const unsubscribeNovex = novex.subscribe(() => {});
+  await tick();
+  assert.equal(researchFetcher.stats.calls, 0);
+  assert.equal(novexFetcher.stats.calls, 0);
+
+  research.setOptions({ ...researchOptions, enabled: false });
+  novex.setOptions({ ...novexOptions, enabled: true, initialData: { items: ["novex-seed"] } });
+  await tick();
+  assert.deepEqual(novex.getCurrentResult().data, { items: ["novex-seed"] });
+  assert.equal(novexFetcher.stats.calls, 0);
+
+  await client.invalidateQueries({ queryKey: ["hall-of-fame"] });
+  assert.equal(researchFetcher.stats.calls, 0);
+  assert.equal(novexFetcher.stats.calls, 1);
+  assert.deepEqual(research.getCurrentResult().data, { items: ["research-seed"] });
+
+  research.setOptions({ ...researchOptions, enabled: true });
+  await tick();
+  assert.equal(researchFetcher.stats.calls, 1);
+  assert.deepEqual(research.getCurrentResult().data, { items: ["research-refreshed"] });
+  unsubscribeResearch();
+  unsubscribeNovex();
+  client.clear();
+});
+
+test("Q-11: Hall 필터별 RSC seed는 각각의 Query key에 보관되고 재진입해도 섞이지 않는다", async () => {
+  const client = makeClient();
+  const { fn, stats } = makeCountingFetcher();
+  const options = (category, items) => ({
+    queryKey: ["hall-of-fame", "citations", category], queryFn: fn,
+    staleTime: 300_000, initialData: { items },
+  });
+  const observer = new QueryObserver(client, options("all", ["research", "combat"]));
+  const unsubscribe = observer.subscribe(() => {});
+  observer.setOptions(options("RESEARCH_TECH", ["research"]));
+  await tick();
+  assert.deepEqual(observer.getCurrentResult().data, { items: ["research"] });
+  observer.setOptions(options("COMBAT", ["combat"]));
+  await tick();
+  assert.deepEqual(observer.getCurrentResult().data, { items: ["combat"] });
+  observer.setOptions(options("all", ["research", "combat"]));
+  assert.deepEqual(observer.getCurrentResult().data, { items: ["research", "combat"] });
+  assert.equal(stats.calls, 0);
+  unsubscribe();
+  client.clear();
+});

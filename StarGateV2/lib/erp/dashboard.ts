@@ -1,4 +1,3 @@
-import type { Character } from "@/types/character";
 import type { UserRole } from "@/types/user";
 import type {
   ErpDashboardResponse,
@@ -6,9 +5,9 @@ import type {
 } from "@/types/erp-realtime";
 
 import {
-  findDisplayCharacterByOwnerCached as findDisplayCharacterByOwner,
-  findCharacterById,
-  findMainCharacterByOwnerCached as findMainCharacterByOwner,
+  findDisplayDashboardCharacterByOwnerCached as findDisplayCharacterByOwner,
+  findDashboardCharacterById,
+  findMainDashboardCharacterByOwnerCached as findMainCharacterByOwner,
   listCharactersByOwner,
 } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
@@ -27,6 +26,7 @@ import { listRecentWikiPagesLite } from "@/lib/db/wiki";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const RECENT_WIKI_LIMIT = 3;
+const NOTIFICATION_PREVIEW_LIMIT = 5;
 
 function daysSinceCreated(createdAt: Date | string): number {
   const date =
@@ -154,7 +154,7 @@ export async function getErpDashboardResponse(input: {
     listCharactersByOwner(userId).catch(() => []),
     mainCharacterPromise,
     displayCharacterPromise,
-    listUserNotifications(userId, 20).catch(() => []),
+    listUserNotifications(userId, NOTIFICATION_PREVIEW_LIMIT).catch(() => []),
     countUnread(userId).catch(() => 0),
     guildId
       ? findUpcomingSessionsByGuild(guildId, 20).catch(() => [])
@@ -204,12 +204,11 @@ export async function getErpDashboardResponse(input: {
           [] as Awaited<ReturnType<typeof enrichSessions>>,
         ),
     !resolvedDisplayCharacter && firstCharId
-      ? findCharacterById(firstCharId).catch(() => null)
+      ? findDashboardCharacterById(firstCharId).catch(() => null)
       : Promise.resolve(null),
   ]);
 
-  const displayCharacter = (resolvedDisplayCharacter ??
-    firstCharacterFallback) as Character | null;
+  const displayCharacter = resolvedDisplayCharacter ?? firstCharacterFallback;
   const myRsvpUpcoming = enrichedUpcoming
     .filter(
       ({ raw, myRsvp }) =>
@@ -231,7 +230,7 @@ export async function getErpDashboardResponse(input: {
     title: page.title,
     updatedAt: new Date(page.updatedAt).toISOString(),
   }));
-  const notificationPreview = notifications.slice(0, 5).map(
+  const notificationPreview = notifications.map(
     (notification) => ({
       ...notification,
       _id: notification._id?.toString() ?? "",
@@ -245,7 +244,7 @@ export async function getErpDashboardResponse(input: {
 
   return {
     displayCharacter: displayCharacter
-      ? (JSON.parse(JSON.stringify(displayCharacter)) as Character)
+      ? { ...displayCharacter, _id: String(displayCharacter._id) }
       : null,
     balance,
     characterPointBalance,

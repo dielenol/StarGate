@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import {
   ObjectId,
   type ClientSession,
+  type Db,
   type Filter,
 } from "mongodb";
 
@@ -15,6 +16,7 @@ import {
 import { getClient, getDb } from "../client.js";
 import { OPERATION_HONOR_CATEGORIES } from "../types/index.js";
 import type {
+  Character,
   HonorReviewState,
   HonorCharacterIdentity,
   HonorRecord,
@@ -24,6 +26,7 @@ import type {
   StockInvestmentSeason,
   StockSeasonPerformance,
   UpsertHonorRecordInput,
+  User,
   UserStatus,
 } from "../types/index.js";
 
@@ -264,7 +267,7 @@ export interface HonorCandidateResolution {
  */
 export async function resolveHonorCandidateCharactersByCodenames(
   codenames: readonly string[],
-  options: { session?: ClientSession } = {},
+  options: { session?: ClientSession; db?: Db } = {},
 ): Promise<HonorCandidateResolution> {
   const normalized = [...new Set(codenames.map((value) => value.trim()))]
     .filter(Boolean);
@@ -275,7 +278,10 @@ export async function resolveHonorCandidateCharactersByCodenames(
       eligibleCharacters: [],
     };
   }
-  const characters = await (await charactersCol())
+  const characterCollection = options.db
+    ? options.db.collection<Character>("characters")
+    : await charactersCol();
+  const characters = await characterCollection
     .find(
       { codename: { $in: normalized } },
       {
@@ -314,7 +320,9 @@ export async function resolveHonorCandidateCharactersByCodenames(
     ),
   ].map((id) => new ObjectId(id));
   const ownerStates = dependencyOwnerObjectIds.length > 0
-    ? await (await usersCol())
+    ? await (options.db
+        ? options.db.collection<User>("users")
+        : await usersCol())
         .find(
           { _id: { $in: dependencyOwnerObjectIds } },
           { projection: { _id: 1, status: 1 }, session: options.session },
@@ -359,7 +367,7 @@ export async function resolveHonorCandidateCharactersByCodenames(
 /** sourceHash와 worker 분석이 공유하는 exact/비중복 ACTIVE owner AGENT 조회. */
 export async function findHonorCandidateCharactersByCodenames(
   codenames: readonly string[],
-  options: { session?: ClientSession } = {},
+  options: { session?: ClientSession; db?: Db } = {},
 ): Promise<HonorCharacterIdentity[]> {
   return (
     await resolveHonorCandidateCharactersByCodenames(codenames, options)

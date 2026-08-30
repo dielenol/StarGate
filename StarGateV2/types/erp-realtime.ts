@@ -103,8 +103,13 @@ export interface ErpDashboardWikiChange {
   updatedAt: string;
 }
 
+export type ErpDashboardCharacter = Omit<
+  import("@stargate/shared-db").DashboardCharacter,
+  "_id"
+> & { _id: string };
+
 export interface ErpDashboardResponse {
-  displayCharacter: import("./character").Character | null;
+  displayCharacter: ErpDashboardCharacter | null;
   balance: number;
   characterPointBalance: number | null;
   characterPointHref: string;

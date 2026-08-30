@@ -32,3 +32,4 @@ export * from "./bureaucrat-votes.js";
 export * from "./research-lab.js";
 export * from "./research-ranking.js";
 export * from "./honors.js";
+export * from "./honor-sources.js";
