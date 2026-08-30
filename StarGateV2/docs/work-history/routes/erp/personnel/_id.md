@@ -43,3 +43,10 @@
 - 검증: Hall 문맥 권한·내부 식별자 비노출 계약, 실제 공적 13건·원본 10건의 source material/공개 응답 전체 동등성, typecheck/lint/build, critical risk review P0–P2 없음
 - 관련 구현 커밋: `45d9fc0a`
 - 운영 경계: 신원정보·원본 보고서·공적 원장과 알림을 변경하지 않았다.
+
+## 2026-08-30 · UI 개선 · 소속 경로 문장 동기화
+
+- Dossier 상단 경로의 기관·세력·하위 조직 표식을 조직도와 같은 헤럴딕 OrgIcon source로 통일했다.
+- 신원정보·등급별 마스킹·공적 리본·경로 이동 동작은 유지했다.
+- 검증: SVG·OrgIcon·마스터 parity, `pnpm typecheck`, `pnpm lint`, 인증된 1440×1000 상세의 공용 헤더에서 MANUS 문양 16px 렌더·색상 상속 확인, 가로 넘침·깨진 이미지·브라우저 오류 0건
+- 관련 구현 커밋: `eb144b4e`
