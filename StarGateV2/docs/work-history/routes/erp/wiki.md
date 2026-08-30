@@ -59,3 +59,11 @@
 - 분류·검색 화면은 기존 전역 최근 문서 조회를 유지해 결과 의미를 바꾸지 않았다.
 - 검증: 위키 visibility·pagination 계약, 집중 테스트 47/47, 타입 검사·lint·production build, JTEST 위키 목록 정상 렌더
 - 관련 커밋: `6f0bfc0e`
+
+## 2026-08-30 · UI 개선 · 예산 분류 문장과 아이콘 소비처 동기화
+
+- 예산 분류의 공용 IconFinance를 신원조회 재무 기구와 동일한 감사·균형 문장으로 교체했다.
+- NOVUS 마스터의 위키 장비 분류를 실제 IconInventoryEquipment에 연결해 기록보관소의 IconEquipment와 구분했다. 문서·분류 데이터와 검색 동작은 유지했다.
+- 검증: SVG·OrgIcon·마스터 parity 및 소비처 계약 36건, `pnpm typecheck`, `pnpm lint`, 인증된 1440×1000 위키 목록의 가로 넘침·깨진 이미지·브라우저 오류 0건. 현재 목록에 예산 분류가 없어 해당 glyph는 소스 매핑과 SVG parity로 확인했다.
+- 관련 구현 커밋: `27173b41`
+- 운영 경계: 검증용 문서·카테고리나 라이브 DB 레코드를 생성하지 않았다.
