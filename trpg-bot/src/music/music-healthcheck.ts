@@ -9,7 +9,7 @@
  * "정상"으로 넘기면 폴백까지 무너진 날 갑자기 전면 장애가 되기 때문이다.
  */
 
-import { sanitizedHttpHeaders } from "./audio-source.js";
+import { createChunkedMediaStream } from "./audio-source.js";
 import {
   MEDIA_RESOLVE_PROFILE_COUNT,
   mediaResolveProfile,
@@ -19,8 +19,9 @@ import {
 
 import type { OperatorAlertSink } from "../utils/operator-alerts.js";
 
-const PROBE_TIMEOUT_MS = 30_000;
-const PROBE_RANGE_HEADER = "bytes=0-1023";
+const PROBE_TIMEOUT_MS = 45_000;
+/** 기본 점검 영상은 끝까지, 긴 영상은 충분한 다중 Range 구간까지만 읽는다. */
+const PROBE_MAX_BYTES = 8 * 1024 * 1024;
 /** 일시적인 네트워크 오류로 알림이 뜨지 않게 프로필별로 한 번 더 시도한다. */
 const PROBE_ATTEMPTS_PER_PROFILE = 2;
 const PROBE_RETRY_DELAY_MS = 3_000;
@@ -68,7 +69,7 @@ function errorDetail(error: unknown): string {
   return String(error);
 }
 
-/** 한 프로필의 해석 + 첫 바이트 수신을 확인한다. */
+/** 한 프로필의 해석 + 다중 Range 미디어 수신을 확인한다. */
 async function probeProfile(
   videoUrl: string,
   profile: number,
@@ -95,44 +96,12 @@ async function probeProfile(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     timer.unref?.();
+    let media: YoutubeMediaSource;
     try {
-      const media = await resolveMedia(videoUrl, {
+      media = await resolveMedia(videoUrl, {
         signal: controller.signal,
         profile,
       });
-      const response = await fetchMedia(media.url, {
-        headers: {
-          ...sanitizedHttpHeaders(media.headers),
-          Range: PROBE_RANGE_HEADER,
-        },
-        redirect: "follow",
-        signal: controller.signal,
-      });
-      // 스트림을 열어둔 채 두면 소켓이 남으므로 본문은 즉시 버린다.
-      await response.body?.cancel();
-      if (!response.ok) {
-        last = {
-          profile,
-          label,
-          playerClients,
-          ok: false,
-          qualityMode: media.qualityMode,
-          httpStatus: response.status,
-          failureStage: "fetch",
-          detail: `미디어 응답이 HTTP ${response.status} 입니다.`,
-        };
-        continue;
-      }
-      return {
-        profile,
-        label,
-        playerClients,
-        ok: true,
-        qualityMode: media.qualityMode,
-        httpStatus: response.status,
-        failureStage: null,
-        detail: null,
-      };
     } catch (error) {
       last = {
         profile,
@@ -144,7 +113,51 @@ async function probeProfile(
         failureStage: "resolve",
         detail: errorDetail(error),
       };
+      clearTimeout(timer);
+      if (!controller.signal.aborted) controller.abort();
+      continue;
+    }
+
+    let httpStatus: number | null = null;
+    const stream = createChunkedMediaStream(media.url, media.headers, {
+      signal: controller.signal,
+      maxBytes: PROBE_MAX_BYTES,
+      fetchMedia,
+      onResponse: (status) => {
+        httpStatus = status;
+      },
+    });
+    try {
+      let receivedBytes = 0;
+      for await (const chunk of stream) {
+        receivedBytes += Buffer.byteLength(chunk);
+      }
+      if (receivedBytes === 0) {
+        throw new Error("미디어 응답에 오디오 데이터가 없습니다.");
+      }
+      return {
+        profile,
+        label,
+        playerClients,
+        ok: true,
+        qualityMode: media.qualityMode,
+        httpStatus,
+        failureStage: null,
+        detail: null,
+      };
+    } catch (error) {
+      last = {
+        profile,
+        label,
+        playerClients,
+        ok: false,
+        qualityMode: media.qualityMode,
+        httpStatus,
+        failureStage: "fetch",
+        detail: errorDetail(error),
+      };
     } finally {
+      stream.destroy();
       clearTimeout(timer);
       if (!controller.signal.aborted) controller.abort();
     }

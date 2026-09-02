@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 
-import { createAudioResourceFromMedia } from "../dist/music/audio-source.js";
+import {
+  createAudioResourceFromMedia,
+  createChunkedMediaStream,
+} from "../dist/music/audio-source.js";
 import {
   MusicOperationAbortedError,
   isMusicOperationAbortedError,
@@ -50,6 +53,205 @@ function passthroughMedia(url) {
     qualityMode: "opus-passthrough",
   };
 }
+
+function requestedRange(options) {
+  const value = options.headers.Range;
+  const match = /^bytes=(\d+)-(\d+)$/.exec(value);
+  assert.ok(match, `올바르지 않은 Range 헤더: ${value}`);
+  return { start: Number(match[1]), end: Number(match[2]), value };
+}
+
+async function readAll(stream) {
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks);
+}
+
+test("직접 미디어를 작은 연속 Range 요청으로 빠짐없이 읽는다", async () => {
+  const source = Buffer.from("abcdefghijklmnopqrst");
+  const ranges = [];
+  const stream = createChunkedMediaStream("https://media.example/audio.webm", {}, {
+    chunkSizeBytes: 8,
+    fetchMedia: async (_url, options) => {
+      const range = requestedRange(options);
+      ranges.push(range.value);
+      const end = Math.min(range.end, source.length - 1);
+      const body = source.subarray(range.start, end + 1);
+      return new Response(body, {
+        status: 206,
+        headers: {
+          "Content-Length": String(body.length),
+          "Content-Range": `bytes ${range.start}-${end}/${source.length}`,
+        },
+      });
+    },
+  });
+
+  assert.equal(stream.readableObjectMode, false);
+  assert.deepEqual(await readAll(stream), source);
+  assert.deepEqual(ranges, ["bytes=0-7", "bytes=8-15", "bytes=16-19"]);
+});
+
+test("실제 HTTP 서버에서도 연속 Range 응답을 하나의 바이트 스트림으로 합친다", async () => {
+  const source = Buffer.from("actual-http-range-stream");
+  const ranges = [];
+  await withHttpServer((request, response) => {
+    const match = /^bytes=(\d+)-(\d+)$/.exec(request.headers.range ?? "");
+    assert.ok(match, `올바르지 않은 Range 헤더: ${request.headers.range}`);
+    const start = Number(match[1]);
+    const end = Math.min(Number(match[2]), source.length - 1);
+    ranges.push(request.headers.range);
+    const body = source.subarray(start, end + 1);
+    response.writeHead(206, {
+      "Content-Length": body.length,
+      "Content-Range": `bytes ${start}-${end}/${source.length}`,
+      "Content-Type": "audio/webm",
+    });
+    response.end(body);
+  }, async (url) => {
+    const stream = createChunkedMediaStream(url, {}, { chunkSizeBytes: 8 });
+    assert.deepEqual(await readAll(stream), source);
+  });
+  assert.deepEqual(ranges, ["bytes=0-7", "bytes=8-15", "bytes=16-23"]);
+});
+
+test("Range 끝을 모두 받으면 서버의 EOF를 기다리지 않고 스트림을 종료한다", async () => {
+  const source = Buffer.from("abcdefgh");
+  let cancelled = false;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(source);
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const stream = createChunkedMediaStream("https://media.example/audio.webm", {}, {
+    chunkSizeBytes: source.length,
+    readTimeoutMs: 10_000,
+    fetchMedia: async () => new Response(body, {
+      status: 206,
+      headers: {
+        "Content-Range": `bytes 0-${source.length - 1}/${source.length}`,
+      },
+    }),
+  });
+  let timeout;
+  try {
+    const received = await Promise.race([
+      readAll(stream),
+      new Promise((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Range 끝에서 EOF를 기다렸습니다.")),
+          1_000,
+        );
+      }),
+    ]);
+    assert.deepEqual(received, source);
+    assert.equal(cancelled, true);
+  } finally {
+    clearTimeout(timeout);
+    stream.destroy();
+  }
+});
+
+test("서버가 요청 범위를 넘는 Content-Range를 보내면 거부한다", async () => {
+  let requests = 0;
+  const stream = createChunkedMediaStream("https://media.example/audio.webm", {}, {
+    chunkSizeBytes: 8,
+    fetchMedia: async () => {
+      requests += 1;
+      return new Response(Buffer.alloc(12), {
+        status: 206,
+        headers: { "Content-Range": "bytes 0-11/12" },
+      });
+    },
+  });
+
+  await assert.rejects(readAll(stream), /올바르지 않은 Range 응답/);
+  assert.equal(requests, 3);
+});
+
+test("Range 응답이 정상 EOF로 일찍 끝나도 마지막 바이트부터 이어받는다", async () => {
+  const source = Buffer.from("abcdefghijkl");
+  const ranges = [];
+  let first = true;
+  const stream = createChunkedMediaStream("https://media.example/audio.webm", {}, {
+    chunkSizeBytes: 8,
+    fetchMedia: async (_url, options) => {
+      const range = requestedRange(options);
+      ranges.push(range.value);
+      if (first) {
+        first = false;
+        return new Response(source.subarray(0, 4), {
+          status: 206,
+          headers: {
+            "Content-Length": "8",
+            "Content-Range": `bytes 0-7/${source.length}`,
+          },
+        });
+      }
+      const end = Math.min(range.end, source.length - 1);
+      const body = source.subarray(range.start, end + 1);
+      return new Response(body, {
+        status: 206,
+        headers: {
+          "Content-Length": String(body.length),
+          "Content-Range": `bytes ${range.start}-${end}/${source.length}`,
+        },
+      });
+    },
+  });
+
+  assert.deepEqual(await readAll(stream), source);
+  assert.deepEqual(ranges, ["bytes=0-7", "bytes=4-11"]);
+});
+
+test("Range 응답이 오류로 끊겨도 받은 바이트를 중복하지 않고 이어받는다", async () => {
+  const source = Buffer.from("abcdefghijkl");
+  const ranges = [];
+  let first = true;
+  const stream = createChunkedMediaStream("https://media.example/audio.webm", {}, {
+    chunkSizeBytes: 8,
+    fetchMedia: async (_url, options) => {
+      const range = requestedRange(options);
+      ranges.push(range.value);
+      if (first) {
+        first = false;
+        let delivered = false;
+        const body = new ReadableStream({
+          async pull(controller) {
+            if (!delivered) {
+              delivered = true;
+              controller.enqueue(source.subarray(0, 4));
+              return;
+            }
+            await new Promise((resolve) => setImmediate(resolve));
+            controller.error(new TypeError("terminated"));
+          },
+        });
+        return new Response(body, {
+          status: 206,
+          headers: {
+            "Content-Range": `bytes 0-7/${source.length}`,
+          },
+        });
+      }
+      const end = Math.min(range.end, source.length - 1);
+      const body = source.subarray(range.start, end + 1);
+      return new Response(body, {
+        status: 206,
+        headers: {
+          "Content-Length": String(body.length),
+          "Content-Range": `bytes ${range.start}-${end}/${source.length}`,
+        },
+      });
+    },
+  });
+
+  assert.deepEqual(await readAll(stream), source);
+  assert.deepEqual(ranges, ["bytes=0-7", "bytes=4-11"]);
+});
 
 test("응답 헤더가 없는 HTTP 오디오 요청은 제한 시간 뒤 중단한다", async () => {
   await withHttpServer(() => undefined, async (url) => {
