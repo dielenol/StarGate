@@ -18,34 +18,57 @@ function mediaSource(url = "https://media.example/audio.webm") {
   };
 }
 
-function fakeResponse(status) {
-  return { ok: status >= 200 && status < 300, status, body: null };
+function fakeResponse(status, options, source = Buffer.from("probe audio")) {
+  if (status !== 206) return new Response("error", { status });
+  const match = /^bytes=(\d+)-(\d+)$/.exec(options.headers.Range);
+  assert.ok(match, `올바르지 않은 Range 헤더: ${options.headers.Range}`);
+  const start = Number(match[1]);
+  const end = Math.min(Number(match[2]), source.length - 1);
+  const body = source.subarray(start, end + 1);
+  return new Response(body, {
+    status,
+    headers: {
+      "Content-Length": String(body.length),
+      "Content-Range": `bytes ${start}-${end}/${source.length}`,
+    },
+  });
 }
 
 /** 재시도 지연을 없애 테스트를 즉시 끝낸다. */
 const noDelay = { delay: async () => undefined };
 
-test("모든 프로필이 첫 바이트를 받으면 healthy 로 판정한다", async () => {
+test("모든 프로필이 미디어의 다중 Range를 끝까지 받으면 healthy 로 판정한다", async () => {
+  const source = Buffer.alloc(1024 * 1024 + 1, 1);
+  const ranges = [];
   const report = await probeMusicPipeline(VIDEO, {
     ...noDelay,
     resolveMedia: async () => mediaSource(),
-    fetchMedia: async () => fakeResponse(206),
+    fetchMedia: async (_url, options) => {
+      ranges.push(options.headers.Range);
+      return fakeResponse(206, options, source);
+    },
   });
   assert.equal(report.state, "healthy");
   assert.equal(report.profiles.length, 2);
   assert.ok(report.profiles.every((result) => result.ok));
   assert.equal(report.profiles[0].label, "primary");
   assert.equal(report.profiles[1].label, "fallback");
+  assert.deepEqual(ranges, [
+    "bytes=0-524287",
+    "bytes=524288-1048575",
+    "bytes=1048576-1048576",
+    "bytes=0-524287",
+    "bytes=524288-1048575",
+    "bytes=1048576-1048576",
+  ]);
 });
 
-test("기본 프로필만 403 이면 degraded 로 판정하고 실패 단계를 남긴다", async () => {
+test("모든 프로필이 403 이면 down과 미디어 수신 단계를 남긴다", async () => {
   const report = await probeMusicPipeline(VIDEO, {
     ...noDelay,
     resolveMedia: async () => mediaSource(),
-    fetchMedia: async (_url, options) =>
-      fakeResponse(options.headers.Range === "bytes=0-1023" ? 403 : 500),
+    fetchMedia: async (_url, options) => fakeResponse(403, options),
   });
-  // 두 프로필 모두 403 이므로 down. 기본만 실패하는 경우는 아래에서 확인한다.
   assert.equal(report.state, "down");
   assert.equal(report.profiles[0].failureStage, "fetch");
   assert.equal(report.profiles[0].httpStatus, 403);
@@ -58,7 +81,7 @@ test("폴백만 살아 있으면 degraded 로 판정한다", async () => {
       if (options.profile === 0) throw new Error("primary client 차단");
       return mediaSource();
     },
-    fetchMedia: async () => fakeResponse(206),
+    fetchMedia: async (_url, options) => fakeResponse(206, options),
   });
   assert.equal(report.state, "degraded");
   assert.equal(report.profiles[0].ok, false);
@@ -76,7 +99,7 @@ test("일시적 실패는 프로필별 재시도로 흡수한다", async () => {
       if (calls === 1) throw new Error("일시적 네트워크 오류");
       return mediaSource();
     },
-    fetchMedia: async () => fakeResponse(206),
+    fetchMedia: async (_url, options) => fakeResponse(206, options),
   });
   assert.equal(report.state, "healthy");
   assert.equal(calls, 3);

@@ -127,7 +127,7 @@ pnpm dev
 ### 운영 장애 알림
 
 - `TRPG_ALERT_USER_ID`를 설정하면 슬래시 커맨드 등록, 음악 런타임 초기화, Discord 클라이언트, 음악 상태판·명령, 음성 연결 장애를 해당 사용자에게 DM으로 보냅니다.
-- 재생 소스의 일시적인 단건 실패는 상태판에만 표시합니다. 5분 안에 3곡이 연속 실패할 때 운영 장애로 알립니다.
+- 재생 소스의 일시적인 단건 실패는 상태판에만 표시합니다. 중간 성공 여부와 관계없이 1시간 안에 3회 실패하면 반복 운영 장애로 알립니다.
 - 같은 종류의 장애는 10분 동안 한 번만 보내 Discord 오류 폭주를 막습니다.
 - `TRPG_ALERT_CHANNEL_ID`를 설정하면 DM 성공 여부와 관계없이 다채봇이 해당 채널에 별도 임베드 메시지도 남깁니다. 음악 상태판 메시지를 운영 로그로 덮어쓰지 않습니다.
 - 알림에는 오류 스택이나 미디어 URL을 싣지 않으며 URL·토큰·인증값을 제거한 짧은 오류 요약만 포함합니다.
@@ -137,7 +137,9 @@ pnpm dev
 
 - YouTube가 WebM/Opus를 제공하면 컨테이너만 분리하고 Opus 프레임을 Discord에 그대로 전달합니다.
 - AAC·HLS·라이브처럼 직접 전달할 수 없는 소스만 FFmpeg에서 48 kHz stereo, Opus 128 kbps VBR로 한 번 변환합니다.
-- 재생 준비 중 `건너뛰기`·`초기화`·`퇴장`·연결 종료가 발생하면 진행 중인 미디어 요청을 취소하며, 응답 헤더와 첫 오디오 데이터에는 각각 20초 제한을 적용합니다.
+- WebM/Opus 직접 경로는 512 KiB 연속 HTTP Range 요청으로 수신합니다. 응답이 오류나 조기 EOF로 끊기면 마지막으로 전달한 바이트부터 각 중단마다 최대 2회 이어받습니다.
+- Range 재시도 후에도 직접 Opus 스트림이 끊기거나 곡 길이보다 5초를 초과해 일찍 끝나면 현재 재생 위치부터 FFmpeg 안정 경로로 한 번 복구합니다.
+- 재생 준비 중 `건너뛰기`·`초기화`·`퇴장`·연결 종료가 발생하면 진행 중인 미디어 요청을 취소하며, 각 Range 응답과 오디오 데이터 수신에는 20초 제한을 적용합니다.
 - 음량이 기본값(100%)이면 인라인 볼륨·EQ·필터를 두지 않아 추가 디코딩/재인코딩을 피합니다. `/음악 볼륨`으로 100%가 아닌 값을 지정하면 그 세션에서만 FFmpeg 음량 필터를 사용합니다.
 - 사용자별 음량은 음성 채널에서 다채봇을 우클릭한 뒤 `사용자 음량` 슬라이더로 조절합니다.
 - Discord 음성 연결은 최신 `@discordjs/voice`의 DAVE 종단간 암호화를 사용합니다.
@@ -175,7 +177,7 @@ pnpm dev
 
 - **언제** — 기동 1분 뒤 1회, 이후 24시간 주기 (`TRPG_MUSIC_HEALTHCHECK_INTERVAL_MS`)
 - **어디서** — 봇 프로세스 안에서 실제 해석 코드로 수행합니다. YouTube 차단은 서버 IP 에서만 재현되므로 외부 CI(GitHub Actions 등)에서 돌리면 의미가 없습니다.
-- **무엇을** — 해석 프로필별로 미디어 URL 을 받아 첫 1KB 만 확인하고 즉시 끊습니다. 음성 채널 연결·실제 재생은 하지 않아 사용자에게 보이지 않습니다.
+- **무엇을** — 해석 프로필별로 실제 재생과 같은 연속 Range 경로를 최대 8 MiB까지 소비합니다. 기본 점검 영상은 전체 미디어를 확인하며, 음성 채널에는 연결하지 않아 사용자에게 보이지 않습니다.
 - **판정** — `healthy`(기본 프로필 정상) / `degraded`(폴백만 정상) / `down`(전부 실패). 프로필을 나눠 보는 이유는 1순위 client 가 죽었는데 폴백이 가려주는 상태를 미리 잡기 위해서입니다.
 - **알림** — `down`은 critical, `degraded`는 warning 으로 DM + `TRPG_ALERT_CHANNEL_ID` 에 보냅니다. 프로필별 실패 단계(URL 해석 / 미디어 수신), HTTP 상태, 실행 중인 yt-dlp 버전이 함께 실립니다. **정상일 때는 아무 메시지도 보내지 않습니다.** 실패 뒤 정상으로 돌아오면 복구 알림을 한 번 보냅니다.
 - 일시적 네트워크 오류로 알림이 뜨지 않게 프로필마다 최대 2회 시도합니다.
@@ -183,12 +185,12 @@ pnpm dev
 
 #### 진단
 
-재생 실패가 5분 안에 연속 임계치를 넘기면 운영 알림(DM·`TRPG_ALERT_CHANNEL_ID`)에 **실행 중인 yt-dlp 버전·player client·POT provider 주소**가 함께 실립니다. 서버 로그 없이 Discord에서 바로 확인할 수 있습니다.
+재생 실패가 중간 성공 여부와 관계없이 1시간 안에 3회 발생하면 운영 알림(DM·`TRPG_ALERT_CHANNEL_ID`)에 **실행 중인 yt-dlp 버전·player client·POT provider 주소**가 함께 실립니다. 서버 로그 없이 Discord에서 바로 확인할 수 있습니다.
 
 컨테이너에 접근할 수 있으면 다음으로 한 번에 판정합니다:
 
 ```bash
-docker exec $(docker ps --format '{{.Names}}' | grep -i trpg | head -1) bash -c 'yt-dlp --version; URL=$(yt-dlp --ignore-config --no-warnings --js-runtimes node --extractor-args "youtube:player_client=visionos" -f "bestaudio[ext=webm][acodec^=opus]/bestaudio" -g -- "https://www.youtube.com/watch?v=dQw4w9WgXcQ" | head -1); curl -s -o /dev/null -w "media=%{http_code}\n" -r 0-1023 "$URL"'
+docker exec $(docker ps --format '{{.Names}}' | grep -i trpg | head -1) bash -c 'yt-dlp --version; URL=$(yt-dlp --ignore-config --no-warnings --js-runtimes node --extractor-args "youtube:player_client=visionos" -f "bestaudio[ext=webm][acodec^=opus]/bestaudio" -g -- "https://www.youtube.com/watch?v=dQw4w9WgXcQ" | head -1); curl -s -o /dev/null -w "media=%{http_code}\n" -r 0-8388607 "$URL"'
 ```
 
 기동 로그의 `[pot-provider] Started POT server` 와 `음악 런타임 준비 완료 — yt-dlp=…` 두 줄로 provider와 런타임 버전을 확인합니다.

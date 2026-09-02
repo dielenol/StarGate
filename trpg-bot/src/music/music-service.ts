@@ -67,9 +67,9 @@ const EMPTY_CHANNEL_DISCONNECT_MS = 30_000;
 const VOICE_READY_TIMEOUT_MS = 30_000;
 const MAX_CONCURRENT_RESOLUTIONS_PER_GUILD = 2;
 const PLAYBACK_FAILURE_ALERT_THRESHOLD = 3;
-const PLAYBACK_FAILURE_WINDOW_MS = 5 * 60_000;
-const PREMATURE_PLAYBACK_MAX_MS = 30_000;
-const PREMATURE_PLAYBACK_MIN_REMAINING_MS = 30_000;
+const PLAYBACK_FAILURE_WINDOW_MS = 60 * 60_000;
+/** yt-dlp 정수 초 메타데이터와 컨테이너 패딩 차이만 정상 종료로 허용한다. */
+const PLAYBACK_END_TOLERANCE_MS = 5_000;
 
 export interface QueueSnapshot {
   current: MusicTrack | null;
@@ -230,8 +230,10 @@ export class GuildMusicSession {
   private forceTranscodeTrack: MusicTrack | null = null;
   private currentUsesForcedTranscode = false;
   private volumePercent = DEFAULT_VOLUME_PERCENT;
-  /** 음량 변경으로 현재 곡을 이어서 다시 열 때 사용할 재생 위치(초). */
+  /** 현재 곡을 이어서 다시 열 때 다음 resource에 적용할 재생 위치(초). */
   private pendingSeekSeconds = 0;
+  /** 현재 resource가 원본 트랙에서 시작한 재생 위치(초). */
+  private currentSeekSeconds = 0;
   private destroyed = false;
 
   constructor(
@@ -253,13 +255,17 @@ export class GuildMusicSession {
     this.connection.subscribe(this.player);
 
     this.player.on("stateChange", (oldState, newState) => {
-      const playbackDurationMs =
+      const resourcePlaybackDurationMs =
         oldState.status === AudioPlayerStatus.Idle
           ? 0
           : oldState.resource.playbackDuration;
+      const playbackPositionMs = this.currentPlaybackPositionMs(
+        resourcePlaybackDurationMs,
+      );
       console.info(
         `[music] 플레이어 상태 guild=${this.guildId} track=${this.current?.videoId ?? "none"} ` +
-          `${oldState.status}->${newState.status} playbackMs=${playbackDurationMs} ` +
+          `${oldState.status}->${newState.status} playbackMs=${playbackPositionMs} ` +
+          `resourcePlaybackMs=${resourcePlaybackDurationMs} seekSeconds=${this.currentSeekSeconds} ` +
           `quality=${this.currentQualityMode ?? "preparing"}`,
       );
       if (
@@ -267,13 +273,16 @@ export class GuildMusicSession {
         newState.status === AudioPlayerStatus.Idle &&
         this.current
       ) {
-        this.handlePlaybackEnded(playbackDurationMs);
+        this.handlePlaybackEnded(playbackPositionMs);
       } else if (this.current && oldState.status !== newState.status) {
         this.syncPanel();
       }
     });
     this.player.on("error", (error) => {
       const failedTrack = this.current;
+      const playbackPositionMs = this.currentPlaybackPositionMs(
+        this.activeResource?.resource.playbackDuration ?? 0,
+      );
       console.error(
         `[music] 오디오 플레이어 오류 guild=${this.guildId} track=${failedTrack?.videoId ?? "none"}:`,
         error,
@@ -286,7 +295,8 @@ export class GuildMusicSession {
         ) {
           this.retryCurrentWithForcedTranscode(
             failedTrack,
-            "원본 Opus 스트림 오류로 FFmpeg 안정 모드에서 한 번 다시 재생합니다.",
+            "원본 Opus 스트림 오류로 현재 위치부터 FFmpeg 안정 모드에서 한 번 복구합니다.",
+            playbackPositionMs,
           );
           return;
         }
@@ -475,12 +485,17 @@ export class GuildMusicSession {
     }
 
     const track = this.current;
-    const playedMs = this.activeResource?.resource.playbackDuration ?? 0;
-    const resumeSeconds = track.isLive ? 0 : Math.floor(playedMs / 1_000);
+    const playbackPositionMs = this.currentPlaybackPositionMs(
+      this.activeResource?.resource.playbackDuration ?? 0,
+    );
+    const resumeSeconds = track.isLive
+      ? 0
+      : Math.floor(playbackPositionMs / 1_000);
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = false;
+    this.currentSeekSeconds = 0;
     this.disposeActiveResource();
     // 이전 resource 의 늦은 Idle 전환이 새로 여는 곡을 끝낸 것으로 오인되지 않게
     // 재예약 전에 player 를 확실히 비운다 (조기 종료 재시도 경로와 같은 이유).
@@ -509,6 +524,8 @@ export class GuildMusicSession {
     this.current = null;
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = false;
+    this.currentSeekSeconds = 0;
+    this.pendingSeekSeconds = 0;
     this.recentError = null;
     this.disposeActiveResource();
     this.player.stop(true);
@@ -526,6 +543,7 @@ export class GuildMusicSession {
     this.currentUsesForcedTranscode = false;
     this.forceTranscodeTrack = null;
     this.pendingSeekSeconds = 0;
+    this.currentSeekSeconds = 0;
     this.recentError = null;
     this.repeatMode = MusicRepeatMode.off;
     this.disposeActiveResource();
@@ -587,17 +605,18 @@ export class GuildMusicSession {
     const token = ++this.playbackToken;
     const forceTranscode = this.forceTranscodeTrack === next;
     if (forceTranscode) this.forceTranscodeTrack = null;
+    const seekSeconds = next.isLive ? 0 : this.pendingSeekSeconds;
+    this.pendingSeekSeconds = 0;
     this.current = next;
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = forceTranscode;
+    this.currentSeekSeconds = seekSeconds;
     this.clearIdleTimer();
     this.syncPanel();
 
     const resourceController = new AbortController();
     this.resourceAbortController = resourceController;
     try {
-      const seekSeconds = this.pendingSeekSeconds;
-      this.pendingSeekSeconds = 0;
       const managed = await this.dependencies.createAudioResource(next, {
         signal: resourceController.signal,
         forceTranscode,
@@ -646,6 +665,7 @@ export class GuildMusicSession {
         this.current = null;
         this.currentQualityMode = null;
         this.currentUsesForcedTranscode = false;
+        this.currentSeekSeconds = 0;
         this.recentError =
           error instanceof YoutubeSourceError
             ? error.message
@@ -667,6 +687,8 @@ export class GuildMusicSession {
     this.current = null;
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = false;
+    this.currentSeekSeconds = 0;
+    this.pendingSeekSeconds = 0;
     if (clearRecentError) this.recentError = null;
     if (allowRepeat && this.repeatMode === MusicRepeatMode.track) {
       this.queue.unshift(finished);
@@ -679,7 +701,22 @@ export class GuildMusicSession {
     this.queueStart();
   }
 
-  private handlePlaybackEnded(playbackDurationMs: number): void {
+  private currentPlaybackPositionMs(resourcePlaybackDurationMs: number): number {
+    const safeResourcePlaybackMs = Number.isFinite(resourcePlaybackDurationMs)
+      ? Math.max(0, resourcePlaybackDurationMs)
+      : 0;
+    const playbackPositionMs =
+      this.currentSeekSeconds * 1_000 + safeResourcePlaybackMs;
+    const expectedDurationMs =
+      this.current?.durationSeconds === null || !this.current
+        ? null
+        : this.current.durationSeconds * 1_000;
+    return expectedDurationMs === null
+      ? playbackPositionMs
+      : Math.min(playbackPositionMs, expectedDurationMs);
+  }
+
+  private handlePlaybackEnded(playbackPositionMs: number): void {
     const track = this.current;
     if (!track) return;
     const expectedDurationMs =
@@ -687,21 +724,20 @@ export class GuildMusicSession {
     const endedPrematurely =
       !track.isLive &&
       expectedDurationMs !== null &&
-      playbackDurationMs < PREMATURE_PLAYBACK_MAX_MS &&
-      expectedDurationMs - playbackDurationMs >
-        PREMATURE_PLAYBACK_MIN_REMAINING_MS;
+      expectedDurationMs - playbackPositionMs >
+        PLAYBACK_END_TOLERANCE_MS;
     if (!endedPrematurely) {
       this.finishCurrent();
       return;
     }
 
     const error = new YoutubeSourceError(
-      `YouTube 오디오 스트림이 ${playbackDurationMs}ms 만에 조기 종료되었습니다 ` +
+      `YouTube 오디오 스트림이 ${playbackPositionMs}ms 만에 조기 종료되었습니다 ` +
         `(expected=${expectedDurationMs}ms).`,
     );
     console.warn(
       `[music] 스트림 조기 종료 guild=${this.guildId} track=${track.videoId} ` +
-        `playbackMs=${playbackDurationMs} expectedMs=${expectedDurationMs} ` +
+        `playbackMs=${playbackPositionMs} expectedMs=${expectedDurationMs} ` +
         `quality=${this.currentQualityMode ?? "unknown"}`,
     );
     this.reportPlaybackFailure(track, "stream", error);
@@ -712,7 +748,8 @@ export class GuildMusicSession {
     ) {
       this.retryCurrentWithForcedTranscode(
         track,
-        "원본 Opus 스트림이 조기 종료되어 FFmpeg 안정 모드로 한 번 다시 재생합니다.",
+        "원본 Opus 스트림이 조기 종료되어 현재 위치부터 FFmpeg 안정 모드로 한 번 복구합니다.",
+        playbackPositionMs,
       );
       return;
     }
@@ -725,18 +762,24 @@ export class GuildMusicSession {
   private retryCurrentWithForcedTranscode(
     track: MusicTrack,
     recentError: string,
+    playbackPositionMs = 0,
   ): void {
     if (this.current !== track || this.destroyed) return;
+    const resumeSeconds = track.isLive
+      ? 0
+      : Math.floor(Math.max(0, playbackPositionMs) / 1_000);
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = false;
+    this.currentSeekSeconds = 0;
     this.recentError = recentError;
     this.disposeActiveResource();
     // 오류 이벤트 직후 늦게 도착하는 이전 resource의 Idle 전환이 재시도 곡을
     // 종료한 것으로 오인되지 않게, 새 곡을 예약하기 전에 player를 확실히 비운다.
     this.player.stop(true);
     this.forceTranscodeTrack = track;
+    this.pendingSeekSeconds = resumeSeconds;
     this.queue.unshift(track);
     this.syncPanel();
     this.queueStart();
@@ -846,6 +889,8 @@ export class GuildMusicSession {
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = false;
     this.forceTranscodeTrack = null;
+    this.pendingSeekSeconds = 0;
+    this.currentSeekSeconds = 0;
     this.repeatMode = MusicRepeatMode.off;
     this.clearIdleTimer();
     this.clearEmptyChannelTimer();
@@ -1319,9 +1364,6 @@ export class MusicService {
         }
       },
       {
-        onPlaybackSucceeded: (event) => {
-          this.playbackFailures.delete(event.guildId);
-        },
         onPlaybackFailure: (event) => {
           this.recordPlaybackFailure(event);
         },
@@ -1544,9 +1586,9 @@ export class MusicService {
     if (next.timestamps.length < PLAYBACK_FAILURE_ALERT_THRESHOLD) return;
 
     void this.notifyOperator({
-      key: `music-playback-consecutive-${event.guildId}`,
-      title: "음악 재생이 연속으로 실패했습니다",
-      description: `최근 5분 안에 재생 실패가 ${next.timestamps.length}회 연속 발생했습니다. YouTube 추출 상태와 네트워크·FFmpeg 로그를 확인해 주세요.`,
+      key: `music-playback-recurring-${event.guildId}`,
+      title: "음악 재생 실패가 반복되고 있습니다",
+      description: `최근 1시간 안에 재생 실패가 ${next.timestamps.length}회 발생했습니다. 중간에 복구된 곡도 포함합니다. YouTube 추출 상태와 네트워크·FFmpeg 로그를 확인해 주세요.`,
       error: event.error,
       context: {
         길드: event.guildId,

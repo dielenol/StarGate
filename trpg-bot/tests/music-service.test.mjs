@@ -113,7 +113,7 @@ class FakePanel {
   async flush() {}
 }
 
-function track(index = 1) {
+function track(index = 1, overrides = {}) {
   return {
     videoId: `video-${index}`,
     title: `테스트 곡 ${index}`,
@@ -124,6 +124,7 @@ function track(index = 1) {
     preferredQualityMode: "opus-passthrough",
     requestedById: `user-${index}`,
     requestedByName: `요청자 ${index}`,
+    ...overrides,
   };
 }
 
@@ -307,6 +308,33 @@ test("재생 오류가 난 곡은 반복 대기열에 다시 넣지 않는다", 
   session.disconnect();
 });
 
+test("직접 Opus 스트림 오류는 현재 위치부터 FFmpeg 안정 모드로 복구한다", async () => {
+  const resourceOptions = [];
+  const { session, player } = createSession({
+    createAudioResource: async (item, options) => {
+      resourceOptions.push(options);
+      return {
+        ...managedResource(item),
+        qualityMode: options?.forceTranscode
+          ? "opus-transcode"
+          : "opus-passthrough",
+      };
+    },
+  });
+  session.enqueue(track(1));
+  await waitFor(() => player.played.length === 1, "첫 재생이 시작되지 않았습니다.");
+
+  player.state.resource.playbackDuration = 64_500;
+  player.emit("error", new Error("stream terminated"));
+  await waitFor(
+    () => player.played.length === 2,
+    "스트림 오류 뒤 안정 모드 복구가 시작되지 않았습니다.",
+  );
+  assert.equal(resourceOptions[1]?.forceTranscode, true);
+  assert.equal(resourceOptions[1]?.seekSeconds, 64);
+  session.disconnect();
+});
+
 test("세션은 실제 재생 실패와 외부 음성 연결 종료를 운영 이벤트로 보고한다", async () => {
   const playbackFailures = [];
   const voiceFailures = [];
@@ -363,23 +391,38 @@ test("직접 Opus 스트림이 조기 종료되면 FFmpeg 안정 모드로 한 �
     onPlaybackFailure: (event) => failures.push(event),
     onPlaybackSucceeded: (event) => successes.push(event),
   });
-  session.enqueue(track(1));
+  session.enqueue(track(1, { durationSeconds: 238 }));
   await waitFor(() => player.played.length === 1, "첫 재생이 시작되지 않았습니다.");
 
-  player.finish(1_000);
+  player.finish(220_240);
   await waitFor(
     () => player.played.length === 2,
     "조기 종료 뒤 안정 모드 재시도가 시작되지 않았습니다.",
   );
   assert.equal(resourceOptions[0]?.forceTranscode, false);
   assert.equal(resourceOptions[1]?.forceTranscode, true);
+  assert.equal(resourceOptions[1]?.seekSeconds, 220);
   assert.equal(session.snapshot().currentQualityMode, "opus-transcode");
   assert.equal(failures.length, 1);
   assert.equal(failures[0].stage, "stream");
   assert.equal(successes.length, 0);
 
-  player.finish();
+  player.finish(18_000);
   await waitFor(() => successes.length === 1, "안정 모드 정상 종료가 보고되지 않았습니다.");
+  session.disconnect();
+});
+
+test("곡 길이와 5초 이내인 EOF는 메타데이터 오차로 허용한다", async () => {
+  const successes = [];
+  const { session, player } = createSession({
+    onPlaybackSucceeded: (event) => successes.push(event),
+  });
+  session.enqueue(track(1));
+  await waitFor(() => player.played.length === 1, "재생이 시작되지 않았습니다.");
+
+  player.finish(116_000);
+  await waitFor(() => successes.length === 1, "허용 범위의 EOF가 정상 종료되지 않았습니다.");
+  assert.equal(player.played.length, 1);
   session.disconnect();
 });
 
@@ -396,7 +439,7 @@ test("FFmpeg 안정 모드도 조기 종료되면 같은 곡을 반복 재시도
   });
   session.enqueue(track(1));
   await waitFor(() => player.played.length === 1, "첫 재생이 시작되지 않았습니다.");
-  player.finish(1_000);
+  player.finish(60_000);
   await waitFor(() => player.played.length === 2, "안정 모드 재시도가 없습니다.");
 
   player.finish(1_000);
@@ -409,11 +452,13 @@ test("FFmpeg 안정 모드도 조기 종료되면 같은 곡을 반복 재시도
   session.disconnect();
 });
 
-test("5분 내 연속 재생 실패 3회부터 운영자 알림을 보낸다", async () => {
+test("중간 성공이 있어도 1시간 내 재생 실패 3회부터 운영자 알림을 보낸다", async () => {
   const alerts = [];
+  const outcomes = ["failure", "success", "failure", "success", "failure"];
   let resourceAttempts = 0;
   let metadataIndex = 0;
   const panel = new FakePanel();
+  const player = new FakePlayer();
   const service = new MusicService({}, "guild-id", "music-channel-id", {
     panel,
     operatorAlerts: {
@@ -427,44 +472,62 @@ test("5분 내 연속 재생 실패 3회부터 운영자 알림을 보낸다", a
       ytDlpVersion: "test",
       ffmpegVersion: "test",
     }),
-    connectSession: async (channel, sessionPanel, onDestroyed, events) =>
-      new GuildMusicSession(
+    connectSession: async (channel, sessionPanel, onDestroyed, events) => {
+      return new GuildMusicSession(
         channel.guild.id,
         channel.id,
         new FakeConnection(),
         sessionPanel,
         onDestroyed,
-        new FakePlayer(),
+        player,
         {
           ...events,
-          createAudioResource: async () => {
+          createAudioResource: async (item) => {
+            const outcome = outcomes[resourceAttempts];
             resourceAttempts += 1;
-            throw new Error(
-              "https://media.example.test/audio?token=secret playback failed",
-            );
+            if (outcome === "failure") {
+              throw new Error(
+                "https://media.example.test/audio?token=secret playback failed",
+              );
+            }
+            return managedResource(item);
           },
           idleDisconnectMs: 10_000,
           emptyChannelDisconnectMs: 10_000,
         },
-      ),
+      );
+    },
   });
   await service.initialize();
   const { guild, voiceA } = createGuildAndChannels(["user-1"]);
 
-  for (let index = 1; index <= 3; index += 1) {
+  let successfulPlays = 0;
+  for (let index = 0; index < outcomes.length; index += 1) {
     await service.resolveAndEnqueue(
-      enqueueRequest(guild, voiceA, "user-1", `실패 곡 ${index}`),
+      enqueueRequest(guild, voiceA, "user-1", `점검 곡 ${index + 1}`),
     );
     await waitFor(
-      () => resourceAttempts === index && service.getSnapshot(guild.id)?.current === null,
-      `${index}번째 재생 실패가 처리되지 않았습니다.`,
+      () => resourceAttempts === index + 1,
+      `${index + 1}번째 재생 준비가 처리되지 않았습니다.`,
+    );
+    if (outcomes[index] === "success") {
+      successfulPlays += 1;
+      await waitFor(
+        () => player.played.length === successfulPlays,
+        `${index + 1}번째 정상 재생이 시작되지 않았습니다.`,
+      );
+      player.finish();
+    }
+    await waitFor(
+      () => service.getSnapshot(guild.id)?.current === null,
+      `${index + 1}번째 곡이 정리되지 않았습니다.`,
     );
   }
 
-  await waitFor(() => alerts.length === 1, "연속 재생 실패 알림이 전송되지 않았습니다.");
-  assert.equal(alerts[0].key, "music-playback-consecutive-guild-id");
-  assert.match(alerts[0].description, /3회 연속/);
-  assert.equal(alerts[0].context.영상ID, "video-3");
+  await waitFor(() => alerts.length === 1, "반복 재생 실패 알림이 전송되지 않았습니다.");
+  assert.equal(alerts[0].key, "music-playback-recurring-guild-id");
+  assert.match(alerts[0].description, /3회 발생/);
+  assert.equal(alerts[0].context.영상ID, "video-5");
   await service.destroyAll();
 });
 

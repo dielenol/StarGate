@@ -7,7 +7,10 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { Readable } from "node:stream";
-import type { ReadableStream as NodeReadableStream } from "node:stream/web";
+import type {
+  ReadableStreamDefaultReader,
+  ReadableStreamReadResult,
+} from "node:stream/web";
 
 import { createAudioResource, StreamType } from "@discordjs/voice";
 
@@ -38,6 +41,10 @@ const MAX_RESOURCE_ATTEMPTS = 3;
 const FORBIDDEN_STDERR_PATTERN = /403 forbidden|http error 403|server returned 403/i;
 const DEFAULT_RESPONSE_TIMEOUT_MS = 20_000;
 const DEFAULT_FIRST_BYTE_TIMEOUT_MS = 20_000;
+/** YouTube 직접 URL의 장시간 단일 요청을 피하기 위한 HTTP Range 크기. */
+const DEFAULT_MEDIA_CHUNK_SIZE_BYTES = 512 * 1024;
+/** 한 구간이 끊겼을 때 같은 바이트 위치에서 이어받는 추가 시도 횟수. */
+const MAX_RANGE_RESUME_ATTEMPTS = 2;
 
 export interface AudioResourceRequestOptions {
   signal?: AbortSignal;
@@ -59,6 +66,17 @@ export interface ManagedAudioResource {
   resource: AudioResource<MusicTrack>;
   qualityMode: AudioQualityMode;
   dispose(): void;
+}
+
+export interface ChunkedMediaStreamOptions {
+  signal?: AbortSignal;
+  responseTimeoutMs?: number;
+  readTimeoutMs?: number;
+  chunkSizeBytes?: number;
+  /** 점검처럼 일부 구간만 읽을 때의 최대 바이트 수. */
+  maxBytes?: number;
+  fetchMedia?: typeof fetch;
+  onResponse?: (status: number) => void;
 }
 
 export function sanitizedHttpHeaders(
@@ -83,6 +101,12 @@ export function sanitizedHttpHeaders(
 }
 
 function timeoutValue(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : fallback;
+}
+
+function positiveInteger(value: number | undefined, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : fallback;
@@ -158,6 +182,304 @@ async function waitForFirstByte(
   });
 }
 
+interface ParsedContentRange {
+  start: number;
+  end: number;
+  total: number | null;
+}
+
+function parseContentRange(value: string | null): ParsedContentRange | null {
+  const match = /^bytes (\d+)-(\d+)\/(\d+|\*)$/i.exec(value?.trim() ?? "");
+  if (!match) return null;
+  const start = Number(match[1]);
+  const end = Number(match[2]);
+  const total = match[3] === "*" ? null : Number(match[3]);
+  if (
+    !Number.isSafeInteger(start) ||
+    !Number.isSafeInteger(end) ||
+    start < 0 ||
+    end < start ||
+    (total !== null && (!Number.isSafeInteger(total) || total <= end))
+  ) {
+    return null;
+  }
+  return { start, end, total };
+}
+
+function contentLength(response: Response): number | null {
+  const value = Number(response.headers.get("content-length"));
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+function mediaResponseError(status: number): YoutubeSourceError {
+  const message = `YouTube Opus 스트림 연결에 실패했습니다 (HTTP ${status}).`;
+  return status === 403
+    ? new YoutubeMediaForbiddenError(message)
+    : new YoutubeSourceError(message);
+}
+
+async function fetchRangeResponse(
+  fetchMedia: typeof fetch,
+  url: string,
+  headers: Record<string, string>,
+  controller: AbortController,
+  timeoutMs: number,
+): Promise<Response> {
+  const timeoutError = new YoutubeSourceError(
+    "YouTube 오디오 서버의 응답 시간이 초과되었습니다.",
+  );
+  const timer = setTimeout(() => {
+    if (!controller.signal.aborted) controller.abort(timeoutError);
+  }, timeoutMs);
+  timer.unref();
+  try {
+    return await fetchMedia(url, {
+      headers,
+      redirect: "follow",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.reason instanceof Error) {
+      throw controller.signal.reason;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readWithTimeout(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  controller: AbortController,
+  timeoutMs: number,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  return await new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (
+      result?: ReadableStreamReadResult<Uint8Array>,
+      error?: unknown,
+    ): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      controller.signal.removeEventListener("abort", handleAbort);
+      if (error) reject(error);
+      else resolve(result as ReadableStreamReadResult<Uint8Array>);
+    };
+    const handleAbort = (): void =>
+      settle(
+        undefined,
+        controller.signal.reason instanceof Error
+          ? controller.signal.reason
+          : new MusicOperationAbortedError(),
+      );
+    const timeoutError = new YoutubeSourceError(
+      "YouTube 오디오 데이터 수신이 중단되었습니다.",
+    );
+    const timer = setTimeout(() => {
+      settle(undefined, timeoutError);
+      if (!controller.signal.aborted) controller.abort(timeoutError);
+    }, timeoutMs);
+    timer.unref();
+    controller.signal.addEventListener("abort", handleAbort, { once: true });
+    void reader.read().then(
+      (result) => settle(result),
+      (error) => settle(undefined, error),
+    );
+    if (controller.signal.aborted) handleAbort();
+  });
+}
+
+/**
+ * 직접 미디어를 작은 연속 Range 요청으로 읽는다.
+ *
+ * 응답이 오류 또는 정상 EOF로 일찍 끝나도 수신한 마지막 바이트 다음부터 다시
+ * 요청한다. WebM 컨테이너에는 원본 바이트가 순서대로 한 번씩만 전달된다.
+ */
+async function* readMediaRanges(
+  url: string,
+  headers: Record<string, string>,
+  options: ChunkedMediaStreamOptions,
+): AsyncGenerator<Uint8Array> {
+  const fetchMedia = options.fetchMedia ?? fetch;
+  const responseTimeoutMs = timeoutValue(
+    options.responseTimeoutMs,
+    DEFAULT_RESPONSE_TIMEOUT_MS,
+  );
+  const readTimeoutMs = timeoutValue(
+    options.readTimeoutMs,
+    DEFAULT_FIRST_BYTE_TIMEOUT_MS,
+  );
+  const chunkSizeBytes = positiveInteger(
+    options.chunkSizeBytes,
+    DEFAULT_MEDIA_CHUNK_SIZE_BYTES,
+  );
+  const maxBytes =
+    typeof options.maxBytes === "number" &&
+    Number.isFinite(options.maxBytes) &&
+    options.maxBytes > 0
+      ? Math.floor(options.maxBytes)
+      : null;
+  const baseHeaders = Object.fromEntries(
+    Object.entries(sanitizedHttpHeaders(headers)).filter(
+      ([key]) => key.toLowerCase() !== "range",
+    ),
+  );
+
+  let offset = 0;
+  let totalBytes: number | null = null;
+  let consecutiveFailures = 0;
+
+  while (totalBytes === null || offset < totalBytes) {
+    throwIfAborted(options.signal);
+    if (maxBytes !== null && offset >= maxBytes) return;
+
+    const requestStart = offset;
+    const requestedEnd = Math.min(
+      requestStart + chunkSizeBytes - 1,
+      totalBytes === null ? Number.MAX_SAFE_INTEGER : totalBytes - 1,
+      maxBytes === null ? Number.MAX_SAFE_INTEGER : maxBytes - 1,
+    );
+    const requestController = new AbortController();
+    const detachAbortSignal = linkAbortSignal(
+      options.signal,
+      requestController,
+    );
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+
+    try {
+      const response = await fetchRangeResponse(
+        fetchMedia,
+        url,
+        {
+          ...baseHeaders,
+          "Accept-Encoding": "identity",
+          Range: `bytes=${requestStart}-${requestedEnd}`,
+        },
+        requestController,
+        responseTimeoutMs,
+      );
+      try {
+        options.onResponse?.(response.status);
+      } catch {
+        // 진단 콜백 실패가 재생 스트림을 중단하면 안 된다.
+      }
+      if (!response.ok || !response.body) {
+        throw mediaResponseError(response.status);
+      }
+
+      let expectedEndExclusive: number | null = null;
+      if (response.status === 206) {
+        const range = parseContentRange(response.headers.get("content-range"));
+        const changedTotal =
+          range !== null &&
+          totalBytes !== null &&
+          range.total !== null &&
+          range.total !== totalBytes;
+        if (
+          !range ||
+          range.start !== requestStart ||
+          range.end > requestedEnd ||
+          changedTotal
+        ) {
+          throw new YoutubeSourceError(
+            "YouTube 오디오 서버가 올바르지 않은 Range 응답을 보냈습니다.",
+          );
+        }
+        expectedEndExclusive = range.end + 1;
+        if (range.total !== null) totalBytes = range.total;
+      } else if (response.status === 200 && requestStart === 0) {
+        const length = contentLength(response);
+        if (length !== null) {
+          totalBytes = length;
+          expectedEndExclusive = length;
+        }
+      } else {
+        throw new YoutubeSourceError(
+          "YouTube 오디오 서버가 Range 요청을 지원하지 않습니다.",
+        );
+      }
+
+      reader = response.body.getReader();
+      while (true) {
+        const result = await readWithTimeout(
+          reader,
+          requestController,
+          readTimeoutMs,
+        );
+        if (result.done) break;
+        if (result.value.byteLength === 0) continue;
+
+        const responseRemaining =
+          expectedEndExclusive === null
+            ? result.value.byteLength
+            : Math.max(0, expectedEndExclusive - offset);
+        const maxRemaining =
+          maxBytes === null
+            ? result.value.byteLength
+            : Math.max(0, maxBytes - offset);
+        const byteLength = Math.min(
+          result.value.byteLength,
+          responseRemaining,
+          maxRemaining,
+        );
+        if (byteLength === 0) break;
+        const value = result.value.subarray(0, byteLength);
+        offset += value.byteLength;
+        yield value;
+        if (maxBytes !== null && offset >= maxBytes) return;
+        // Content-Range의 끝까지 받았다면 서버의 연결 종료를 기다리지 않는다.
+        if (expectedEndExclusive !== null && offset >= expectedEndExclusive) {
+          break;
+        }
+      }
+
+      if (expectedEndExclusive !== null && offset < expectedEndExclusive) {
+        throw new YoutubeSourceError(
+          `YouTube 오디오 Range 응답이 ${offset - requestStart}바이트 만에 조기 종료되었습니다.`,
+        );
+      }
+      if (offset === requestStart) {
+        if (totalBytes !== null && offset >= totalBytes) return;
+        throw new YoutubeSourceError("YouTube 오디오 데이터가 비어 있습니다.");
+      }
+
+      consecutiveFailures = 0;
+      if (response.status === 200) return;
+      if (totalBytes !== null && offset >= totalBytes) return;
+    } catch (error) {
+      if (options.signal?.aborted) throw abortedOperation(options.signal);
+      if (isYoutubeMediaForbiddenError(error)) throw error;
+      consecutiveFailures += 1;
+      if (consecutiveFailures > MAX_RANGE_RESUME_ATTEMPTS) throw error;
+      console.warn(
+        `[music] 오디오 Range 재요청 offset=${offset} ` +
+          `retry=${consecutiveFailures}/${MAX_RANGE_RESUME_ATTEMPTS}`,
+      );
+    } finally {
+      detachAbortSignal();
+      if (reader) {
+        try {
+          await reader.cancel();
+        } catch {
+          // 오류 응답의 reader 정리 실패는 원래 오류를 덮지 않는다.
+        }
+      }
+      if (!requestController.signal.aborted) requestController.abort();
+    }
+  }
+}
+
+export function createChunkedMediaStream(
+  url: string,
+  headers: Record<string, string>,
+  options: ChunkedMediaStreamOptions = {},
+): Readable {
+  return Readable.from(readMediaRanges(url, headers, options), {
+    objectMode: false,
+  });
+}
+
 async function createPassthroughResource(
   track: MusicTrack,
   url: string,
@@ -175,43 +497,11 @@ async function createPassthroughResource(
     options.firstByteTimeoutMs,
     DEFAULT_FIRST_BYTE_TIMEOUT_MS,
   );
-  const responseTimeoutError = new YoutubeSourceError(
-    "YouTube 오디오 서버의 응답 시간이 초과되었습니다.",
-  );
-  const responseTimer = setTimeout(() => {
-    if (!controller.signal.aborted) controller.abort(responseTimeoutError);
-  }, responseTimeoutMs);
-  responseTimer.unref();
-
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      headers: sanitizedHttpHeaders(headers),
-      redirect: "follow",
-      signal: controller.signal,
-    });
-  } catch (error) {
-    detachAbortSignal();
-    if (options.signal?.aborted) throw abortedOperation(options.signal);
-    if (controller.signal.reason instanceof YoutubeSourceError) {
-      throw controller.signal.reason;
-    }
-    throw error;
-  } finally {
-    clearTimeout(responseTimer);
-  }
-  if (!response.ok || !response.body) {
-    detachAbortSignal();
-    controller.abort();
-    const message = `YouTube Opus 스트림 연결에 실패했습니다 (HTTP ${response.status}).`;
-    throw response.status === 403
-      ? new YoutubeMediaForbiddenError(message)
-      : new YoutubeSourceError(message);
-  }
-
-  const stream = Readable.fromWeb(
-    response.body as NodeReadableStream<Uint8Array>,
-  );
+  const stream = createChunkedMediaStream(url, headers, {
+    signal: controller.signal,
+    responseTimeoutMs,
+    readTimeoutMs: firstByteTimeoutMs,
+  });
   try {
     await waitForFirstByte(
       stream,

@@ -188,6 +188,11 @@ test("재생 중 음량 변경은 현재 위치부터 같은 곡을 다시 연�
   assert.equal(calls[1].videoId, "video-1");
   assert.equal(calls[1].options.volumePercent, 20);
   assert.equal(calls[1].options.seekSeconds, 64);
+
+  const secondChange = session.setVolume(30);
+  assert.equal(secondChange.resumedFromSeconds, 128);
+  await waitFor(() => calls.length === 3, "재개 위치를 누적해 다시 열지 않았습니다");
+  assert.equal(calls[2].options.seekSeconds, 128);
 });
 
 test("이어듣기 지점은 한 번만 사용하고 다음 곡에는 넘기지 않는다", async () => {
