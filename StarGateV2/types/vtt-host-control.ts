@@ -84,6 +84,7 @@ export interface VttHostStatus {
   generation: number | null;
   manifest: VttStateManifest | null;
   lastSync: VttHostLastSync | null;
+  expectedSourceRevision: string | null;
   routeHost: VttObservedHost;
   transition: VttHostTransition | null;
   hosts: {

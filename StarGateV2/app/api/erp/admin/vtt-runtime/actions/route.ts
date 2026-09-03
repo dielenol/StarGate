@@ -33,9 +33,22 @@ function parseActionBody(value: unknown): VttRuntimeActionInput | null {
   const body = value as Record<string, unknown>;
   if (body.action !== "START" && body.action !== "STOP") return null;
   if (body.force !== undefined && typeof body.force !== "boolean") return null;
-  if (body.action === "START" && body.force === true) return null;
+  if (
+    body.homeStoppedConfirmed !== undefined &&
+    typeof body.homeStoppedConfirmed !== "boolean"
+  ) return null;
+  if (body.action === "START") {
+    if (body.force === true) return null;
+    return {
+      action: "START",
+      ...(body.homeStoppedConfirmed === true
+        ? { homeStoppedConfirmed: true }
+        : {}),
+    };
+  }
+  if (body.homeStoppedConfirmed !== undefined) return null;
   return {
-    action: body.action,
+    action: "STOP",
     ...(body.force === true ? { force: true } : {}),
   };
 }
@@ -65,7 +78,10 @@ export async function POST(request: Request) {
   const input = parseActionBody(await request.json().catch(() => null));
   if (!input) {
     return NextResponse.json(
-      { error: "action은 START 또는 STOP이며 force: true는 STOP에서만 허용됩니다.", code: "INVALID_BODY" },
+      {
+        error: "action은 START 또는 STOP이며 force는 STOP, HOME 종료 확인은 START에서만 허용됩니다.",
+        code: "INVALID_BODY",
+      },
       { status: 400 },
     );
   }
@@ -99,11 +115,41 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
+    if (!hostStatus.hosts.VPS.reachable) {
+      return NextResponse.json(
+        {
+          error: "VPS 앱 제어 상태를 확인할 수 없어 시작을 차단했습니다.",
+          code: "VPS_RUNTIME_UNREACHABLE",
+        },
+        { status: 503 },
+      );
+    }
+    if (
+      !hostStatus.expectedSourceRevision ||
+      hostStatus.hosts.VPS.sourceRevision !== hostStatus.expectedSourceRevision
+    ) {
+      return NextResponse.json(
+        {
+          error: "VPS 코드 revision이 호스트 제어기에 승인된 exact SHA와 일치하지 않습니다.",
+          code: "VPS_REVISION_MISMATCH",
+        },
+        { status: 409 },
+      );
+    }
     if (hostStatus.hosts.HOME.reachable && hostStatus.hosts.HOME.state !== "STOPPED") {
       return NextResponse.json(
         {
           error: "HOME 앱의 완전한 정지를 확인한 뒤 VPS 앱을 시작할 수 있습니다.",
           code: "HOME_NOT_STOPPED",
+        },
+        { status: 409 },
+      );
+    }
+    if (!hostStatus.hosts.HOME.reachable && input.homeStoppedConfirmed !== true) {
+      return NextResponse.json(
+        {
+          error: "HOME 상태를 확인할 수 없습니다. 기존 로컬 앱과 Tunnel 종료를 직접 확인해 주세요.",
+          code: "HOME_STOP_UNCONFIRMED",
         },
         { status: 409 },
       );
@@ -152,6 +198,12 @@ export async function POST(request: Request) {
               : `${result.body.status.connectedUsers}명`,
           },
           { name: "재확인 종료", value: input.force === true ? "예" : "아니오" },
+          ...(input.action === "START"
+            ? [{
+                name: "HOME 수동 종료 확인",
+                value: input.homeStoppedConfirmed === true ? "예" : "상태 helper 확인",
+              }]
+            : []),
         ],
         timestamp: new Date(),
       },

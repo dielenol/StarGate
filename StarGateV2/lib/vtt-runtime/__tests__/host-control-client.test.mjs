@@ -80,6 +80,7 @@ function controllerStatus(overrides = {}) {
       totalBytes: 220_000_000,
     },
     lastSync: null,
+    expectedSourceRevision: "b".repeat(40),
     routeHost: "HOME",
     transition: null,
     hosts: {
@@ -188,6 +189,7 @@ test("상태 GET은 v2 고정 path에 서버 인증을 붙이고 일시 실패�
 
   const status = await getVttHostStatus();
   assert.equal(status.activeHost, "HOME");
+  assert.equal(status.expectedSourceRevision, "b".repeat(40));
   assert.equal(status.controlEnabled, true);
   assert.equal(requests.length, 2);
   assert.equal(requests[1].url, "https://control.nochiijjim.com/v2/status");

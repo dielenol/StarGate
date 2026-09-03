@@ -107,9 +107,14 @@ registerHooks({
               routeHost: "VPS",
               transition: null,
               controlEnabled: true,
+              expectedSourceRevision: "b".repeat(40),
               hosts: {
                 HOME: { state: "STOPPED", reachable: true },
-                VPS: { state: "STOPPED", reachable: true }
+                VPS: {
+                  state: "STOPPED",
+                  reachable: true,
+                  sourceRevision: "b".repeat(40)
+                }
               }
             };
           }
@@ -191,6 +196,21 @@ test("조작 API는 인증과 same-origin 실패 시 controller를 호출하지 
   assert.equal(state.actionCalls.length, 0);
 });
 
+test("HOME 종료 확인 필드는 START의 boolean 값만 허용한다", async () => {
+  state.session = session("GM");
+  const invalidType = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-confirm-invalid-01",
+    body: { action: "START", homeStoppedConfirmed: "yes" },
+  }));
+  assert.equal(invalidType.status, 400);
+  const invalidStop = await actionRoute.POST(actionRequest({
+    requestId: "vtt-stop-confirm-invalid-01",
+    body: { action: "STOP", homeStoppedConfirmed: false },
+  }));
+  assert.equal(invalidStop.status, 400);
+  assert.equal(state.actionCalls.length, 0);
+});
+
 test("유효한 GM 요청만 서버 actor와 request ID를 붙여 controller를 호출한다", async () => {
   state.session = session("GM");
   const response = await actionRoute.POST(actionRequest({
@@ -214,9 +234,14 @@ test("분리 모드의 VPS START는 VPS 경로와 HOME 정지를 서버에서 �
     routeHost: "HOME",
     transition: null,
     controlEnabled: true,
+    expectedSourceRevision: "b".repeat(40),
     hosts: {
       HOME: { state: "RUNNING", reachable: true },
-      VPS: { state: "STOPPED", reachable: true },
+      VPS: {
+        state: "STOPPED",
+        reachable: true,
+        sourceRevision: "b".repeat(40),
+      },
     },
   };
   const wrongRoute = await actionRoute.POST(actionRequest({
@@ -248,26 +273,76 @@ test("분리 모드의 VPS START는 VPS 경로와 HOME 정지를 서버에서 �
   assert.equal(operationLocked.status, 423);
   assert.equal((await operationLocked.json()).code, "HOST_OPERATION_LOCKED");
   assert.equal(state.actionCalls.length, 0);
+
+  state.hostStatus = {
+    ...state.hostStatus,
+    state: "DEGRADED",
+    transition: null,
+    hosts: {
+      HOME: { state: "STOPPED", reachable: true },
+      VPS: { state: "UNREACHABLE", reachable: false },
+    },
+  };
+  const vpsUnreachable = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-vps-unreachable-01",
+  }));
+  assert.equal(vpsUnreachable.status, 503);
+  assert.equal((await vpsUnreachable.json()).code, "VPS_RUNTIME_UNREACHABLE");
+  assert.equal(state.actionCalls.length, 0);
+
+  state.hostStatus = {
+    ...state.hostStatus,
+    state: "RUNNING",
+    expectedSourceRevision: "b".repeat(40),
+    hosts: {
+      HOME: { state: "STOPPED", reachable: true },
+      VPS: {
+        state: "STOPPED",
+        reachable: true,
+        sourceRevision: "c".repeat(40),
+      },
+    },
+  };
+  const revisionMismatch = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-revision-mismatch-01",
+  }));
+  assert.equal(revisionMismatch.status, 409);
+  assert.equal((await revisionMismatch.json()).code, "VPS_REVISION_MISMATCH");
+  assert.equal(state.actionCalls.length, 0);
 });
 
-test("기존 로컬 Tunnel이 꺼져 HOME agent가 응답하지 않아도 VPS START를 허용한다", async () => {
+test("HOME agent가 응답하지 않는 VPS START는 운영자의 수동 종료 확인을 요구한다", async () => {
   state.session = session("GM");
   state.hostStatus = {
     state: "DEGRADED",
     routeHost: "VPS",
     transition: null,
     controlEnabled: true,
+    expectedSourceRevision: "b".repeat(40),
     hosts: {
       HOME: { state: "UNREACHABLE", reachable: false },
-      VPS: { state: "STOPPED", reachable: true },
+      VPS: {
+        state: "STOPPED",
+        reachable: true,
+        sourceRevision: "b".repeat(40),
+      },
     },
   };
-  const response = await actionRoute.POST(actionRequest({
+  const blocked = await actionRoute.POST(actionRequest({
     requestId: "vtt-start-home-legacy-off-01",
+  }));
+  assert.equal(blocked.status, 409);
+  assert.equal((await blocked.json()).code, "HOME_STOP_UNCONFIRMED");
+  assert.equal(state.actionCalls.length, 0);
+
+  const response = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-home-legacy-confirmed-01",
+    body: { action: "START", homeStoppedConfirmed: true },
   }));
   assert.equal(response.status, 200);
   assert.equal(state.actionCalls.length, 1);
   assert.equal(state.actionCalls[0].action, "START");
+  assert.equal(Object.hasOwn(state.actionCalls[0], "homeStoppedConfirmed"), false);
 });
 
 test("분리 모드가 꺼진 기존 배포는 v1 START 계약을 그대로 유지한다", async () => {

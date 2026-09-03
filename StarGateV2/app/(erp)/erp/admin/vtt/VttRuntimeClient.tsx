@@ -100,6 +100,8 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
   const [stopConfirmation, setStopConfirmation] =
     useState<StopConfirmation | null>(null);
   const [confirmationText, setConfirmationText] = useState("");
+  const [startConfirmation, setStartConfirmation] = useState(false);
+  const [startConfirmationText, setStartConfirmationText] = useState("");
 
   const transitioning = status.state === "STARTING" || status.state === "STOPPING";
   const description = statusDescription(status);
@@ -111,7 +113,11 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
     hostStatus.state !== "RECOVERY_REQUIRED" &&
     hostStatus.transition === null &&
     hostStatus.routeHost === "VPS" &&
+    hostStatus.hosts.VPS.reachable &&
     (!hostStatus.hosts.HOME.reachable || hostStatus.hosts.HOME.state === "STOPPED")
+  );
+  const homeStopConfirmationRequired = Boolean(
+    hostStatus && !hostStatus.hosts.HOME.reachable,
   );
   const startDisabled =
     locked || !separatedStartReady || status.state === "RUNNING" || status.state === "STARTING";
@@ -122,6 +128,8 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
     setFeedback(null);
     try {
       const result = await mutation.mutateAsync(input);
+      setStartConfirmation(false);
+      setStartConfirmationText("");
       setStopConfirmation(null);
       setConfirmationText("");
       setFeedback({
@@ -157,6 +165,16 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
             : "VTT 제어 요청에 실패했습니다.",
       });
     }
+  }
+
+  function requestStart() {
+    if (homeStopConfirmationRequired) {
+      setStartConfirmation(true);
+      setStartConfirmationText("");
+      setFeedback(null);
+      return;
+    }
+    void runAction({ action: "START" });
   }
 
   return (
@@ -256,7 +274,7 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
             <Button
               variant="primary"
               disabled={startDisabled}
-              onClick={() => void runAction({ action: "START" })}
+              onClick={requestStart}
             >
               {mutation.isPending && mutation.variables?.action === "START"
                 ? "시작 확인 중"
@@ -281,6 +299,63 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
           </div>
         </Box>
       </section>
+
+      {startConfirmation ? (
+        <section aria-labelledby="vtt-start-confirm-title">
+          <PanelTitle
+            id="vtt-start-confirm-title"
+            role="heading"
+            aria-level={2}
+          >
+            HOME 종료 확인
+          </PanelTitle>
+          <Box className={styles.confirm} role="alert">
+            <div>
+              <strong>사이트에서 HOME 앱의 종료 상태를 확인할 수 없습니다.</strong>
+              <p>
+                세 로컬 PC의 Nochichim 앱과 HOME Tunnel이 모두 꺼졌는지 직접 확인하세요.
+                남아 있는 HOME writer와 VPS를 함께 실행하면 데이터가 갈라질 수 있습니다.
+                확인했다면 아래에 <b>HOME 종료</b>를 입력하세요.
+              </p>
+            </div>
+            <label className={styles.confirm__field}>
+              <span>확인 문구</span>
+              <input
+                value={startConfirmationText}
+                autoComplete="off"
+                disabled={mutation.isPending}
+                onChange={event => setStartConfirmationText(event.target.value)}
+                placeholder="HOME 종료"
+              />
+            </label>
+            <div className={styles.confirm__actions}>
+              <Button
+                disabled={mutation.isPending}
+                onClick={() => {
+                  setStartConfirmation(false);
+                  setStartConfirmationText("");
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                variant="primary"
+                disabled={
+                  startConfirmationText !== "HOME 종료" ||
+                  mutation.isPending ||
+                  startDisabled
+                }
+                onClick={() => void runAction({
+                  action: "START",
+                  homeStoppedConfirmed: true,
+                })}
+              >
+                확인 후 VPS 시작
+              </Button>
+            </div>
+          </Box>
+        </section>
+      ) : null}
 
       {stopConfirmation ? (
         <section aria-labelledby="vtt-stop-confirm-title">

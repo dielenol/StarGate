@@ -35,10 +35,17 @@ export interface VttRuntimeStatus {
     | "INVALID_CONTROLLER_RESPONSE";
 }
 
-export interface VttRuntimeActionInput {
-  action: VttRuntimeAction;
-  force?: boolean;
-}
+export type VttRuntimeActionInput =
+  | {
+      action: "START";
+      force?: false;
+      homeStoppedConfirmed?: boolean;
+    }
+  | {
+      action: "STOP";
+      force?: boolean;
+      homeStoppedConfirmed?: never;
+    };
 
 export interface VttRuntimeActionSuccess {
   ok: true;

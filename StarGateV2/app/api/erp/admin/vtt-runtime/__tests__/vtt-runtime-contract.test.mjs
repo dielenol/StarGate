@@ -47,6 +47,11 @@ test("분리 모드의 VPS START는 공개 VPS 경로와 HOME 정지를 서버�
   assert.match(route, /hostStatus\.routeHost !== "VPS"/);
   assert.match(route, /hostStatus\.hosts\.HOME\.reachable &&/);
   assert.match(route, /hostStatus\.hosts\.HOME\.state !== "STOPPED"/);
+  assert.match(route, /!hostStatus\.hosts\.VPS\.reachable/);
+  assert.match(route, /hostStatus\.hosts\.VPS\.sourceRevision !== hostStatus\.expectedSourceRevision/);
+  assert.match(route, /VPS_REVISION_MISMATCH/);
+  assert.match(route, /input\.homeStoppedConfirmed !== true/);
+  assert.match(route, /HOME_STOP_UNCONFIRMED/);
   assert.match(route, /HOST_OPERATION_LOCKED/);
 });
 
@@ -78,6 +83,8 @@ test("브라우저 UI는 15초·전환 2초 polling, mutation 무재시도, 종�
   assert.match(client, /error\.code === "ACTIVE_CONNECTIONS"/);
   assert.match(client, /confirmationText !== "종료"/);
   assert.match(client, /force: true/);
+  assert.match(client, /startConfirmationText !== "HOME 종료"/);
+  assert.match(client, /homeStoppedConfirmed: true/);
   assert.match(client, /status\.state === "UNREACHABLE"/);
   assert.match(nav, /href: "\/erp\/admin\/vtt"/);
 });

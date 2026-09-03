@@ -147,6 +147,7 @@ function unavailableStatus(
     generation: null,
     manifest: null,
     lastSync: null,
+    expectedSourceRevision: null,
     routeHost: "UNKNOWN",
     transition: null,
     hosts: {
@@ -265,6 +266,14 @@ function parseSourceRevision(value: unknown): string | null | undefined {
   const revision = value.slice(0, 128);
   return /^[A-Za-z0-9][A-Za-z0-9._:@/+~-]{0,127}$/.test(revision)
     ? revision
+    : undefined;
+}
+
+function parseExactSourceRevision(value: unknown): string | null | undefined {
+  const revision = parseSourceRevision(value);
+  if (revision === null || revision === undefined) return revision;
+  return /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i.test(revision)
+    ? revision.toLowerCase()
     : undefined;
 }
 
@@ -473,6 +482,9 @@ function parseHostStatus(value: unknown): VttHostStatus | null {
   const generation = parseNonNegativeInteger(value.generation);
   const manifest = value.manifest === null ? null : parseManifest(value.manifest);
   const lastSync = value.lastSync === undefined ? null : parseLastSync(value.lastSync);
+  const expectedSourceRevision = value.expectedSourceRevision === undefined
+    ? null
+    : parseExactSourceRevision(value.expectedSourceRevision);
   const transition = parseTransition(value.transition);
   const home = parseRuntimeStatus(value.hosts.HOME);
   const vps = parseRuntimeStatus(value.hosts.VPS);
@@ -491,6 +503,7 @@ function parseHostStatus(value: unknown): VttHostStatus | null {
     generation === null ||
     (value.manifest !== null && manifest === null) ||
     (value.lastSync !== undefined && value.lastSync !== null && lastSync === null) ||
+    expectedSourceRevision === undefined ||
     transition === undefined ||
     !home ||
     !vps ||
@@ -512,6 +525,7 @@ function parseHostStatus(value: unknown): VttHostStatus | null {
     generation,
     manifest,
     lastSync,
+    expectedSourceRevision,
     routeHost: value.routeHost as VttObservedHost,
     transition,
     hosts: { HOME: home, VPS: vps },

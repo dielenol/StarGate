@@ -35,7 +35,11 @@ export class VttRuntimeMutationError extends Error {
 }
 
 function fingerprint(input: VttRuntimeActionInput): string {
-  return JSON.stringify({ action: input.action, force: input.force === true });
+  return JSON.stringify({
+    action: input.action,
+    force: input.force === true,
+    homeStoppedConfirmed: input.homeStoppedConfirmed === true,
+  });
 }
 
 export function useVttRuntimeMutation() {
