@@ -18,3 +18,12 @@
 - 검증: VTT 런타임 집중 테스트 55건, `pnpm typecheck`, 변경 TypeScript 파일 ESLint, production build
 - 관련 커밋: `e2a55603`
 - 운영 경계: 상용 배포·Cloudflare DNS/Tunnel·Vercel 환경변수·라이브 VTT 데이터는 변경하지 않았다.
+
+## 2026-09-03 · 운영 분리 · Tunnel 경로와 데이터 동기화
+
+- `HOME Tunnel ON`, `VPS Tunnel ON`, `공개 경로 OFF`가 공개 Cloudflare 매핑만 바꾸고 앱 수명주기나 데이터 복사를 함께 실행하지 않도록 제어 계약과 화면을 분리했다.
+- `로컬 → VPS`, `VPS → 로컬` 복사를 별도 수동 작업으로 제공하고, 공개 OFF·양쪽 앱 정지·명시적 방향 확인을 요구하도록 했다.
+- 경로 선택의 강제 우회를 제거하고 VPS 앱 시작 전에 VPS 경로 선택과 HOME 정지를 서버에서 재검사하도록 했다.
+- 검증: VTT 런타임 집중 테스트 63건, `pnpm typecheck`, 변경 TypeScript 파일 ESLint, production build
+- 관련 커밋: `35d92c7c`
+- 운영 경계: 제어면 코드와 서비스만 배포하며 공개 경로 `OFFLINE`·VTT 앱 `STOPPED`를 유지하고 데이터 동기화나 live writer 전환은 실행하지 않는다.
