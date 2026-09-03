@@ -27,3 +27,12 @@
 - 검증: VTT 런타임 집중 테스트 63건, `pnpm typecheck`, 변경 TypeScript 파일 ESLint, production build
 - 관련 커밋: `35d92c7c`
 - 운영 경계: 제어면 코드와 서비스만 배포하며 공개 경로 `OFFLINE`·VTT 앱 `STOPPED`를 유지하고 데이터 동기화나 live writer 전환은 실행하지 않는다.
+
+## 2026-09-03 · 호환성 수정 · 기존 HOME Tunnel 운영 복구
+
+- 각 로컬 PC가 기존 `nochichim` Tunnel 설정과 로컬 앱 실행 방식을 그대로 사용하도록 HOME lifecycle helper를 공개 경로 선택의 필수 조건에서 제외했다.
+- HOME 상태를 원격으로 확인할 수 없는 경우에도 HOME/VPS 경로를 선택할 수 있게 하되, 교차 전환은 반드시 공개 `OFFLINE`을 거치고 VPS 상태는 계속 서버에서 확인하도록 했다.
+- VPS 앱 제어는 기존 controller에 유지하고, HOME 데이터 동기화 helper가 없는 경우 공개 운영과 수동 동기화 가능 여부를 화면에서 구분했다.
+- 검증: VTT 런타임 집중 테스트 64건, `pnpm typecheck`, 변경 파일 ESLint, production build, 비인증 관리자 경로의 로그인 redirect 확인
+- 관련 커밋: `14b86323`
+- 운영 경계: 공개 경로 `OFFLINE`·HOME/VPS 앱 `STOPPED`를 유지하고 데이터 동기화나 live writer 전환은 실행하지 않았다.
