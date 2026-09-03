@@ -79,6 +79,7 @@ function controllerStatus(overrides = {}) {
       fileCount: 166,
       totalBytes: 220_000_000,
     },
+    lastSync: null,
     routeHost: "HOME",
     transition: null,
     hosts: {
@@ -100,14 +101,14 @@ function controllerStatus(overrides = {}) {
 function completedAction(overrides = {}) {
   return {
     requestId: "vtt-host-completed-01",
-    action: "SWITCH_HOST",
+    action: "SELECT_ROUTE",
     sourceHost: "HOME",
     targetHost: "VPS",
     force: false,
     actor: { id: "gm-1", displayName: "GM" },
     requestedAt: 1_787_321_400_000,
     completedAt: 1_787_321_460_000,
-    result: "SWITCHED",
+    result: "ROUTE_SELECTED",
     generation: 5,
     sourceRevision: "abc123",
     code: null,
@@ -117,10 +118,9 @@ function completedAction(overrides = {}) {
 
 function actionInput(overrides = {}) {
   return {
-    action: "SWITCH_HOST",
+    action: "SELECT_ROUTE",
     targetHost: "VPS",
     requestId: "vtt-host-action-01",
-    force: false,
     actor: { id: "gm-1", displayName: "GM" },
     ...overrides,
   };
@@ -311,7 +311,7 @@ test("controller의 최근 완료 receipt와 각 action generation을 보존한�
   assert.equal(status.auditBacklogBlocked, false);
 });
 
-test("전환 POST transport 실패는 자동 재시도하지 않고 결과 불명으로 매핑한다", async () => {
+test("경로·동기화 POST transport 실패는 자동 재시도하지 않고 결과 불명으로 매핑한다", async () => {
   configureProduction();
   let calls = 0;
   globalThis.fetch = async () => {
@@ -332,7 +332,7 @@ test("현재 요청과 timestamp 상관관계가 없는 성공 응답은 fail cl
     ok: true,
     requestId: "vtt-host-action-01",
     requestedAt: 1_787_321_400_000,
-    result: "SWITCHED",
+    result: "ROUTE_SELECTED",
     status: controllerStatus({
       lastAction: completedAction({
         requestId: "vtt-host-other-action-01",
@@ -348,6 +348,102 @@ test("현재 요청과 timestamp 상관관계가 없는 성공 응답은 fail cl
   assert.equal(result.status, 502);
   assert.equal(result.body.ok, false);
   assert.equal(result.body.code, "INVALID_CONTROLLER_RESPONSE");
+});
+
+test("같은 request ID라도 다른 동기화 방향의 성공 응답은 fail closed한다", async () => {
+  configureProduction();
+  const input = {
+    action: "SYNC_DATA",
+    sourceHost: "HOME",
+    targetHost: "VPS",
+    requestId: "vtt-host-sync-direction-01",
+    actor: { id: "gm-1", displayName: "GM" },
+  };
+  globalThis.fetch = async () => {
+    const wrongDirection = completedAction({
+      requestId: input.requestId,
+      action: "SYNC_DATA",
+      sourceHost: "VPS",
+      targetHost: "HOME",
+      result: "DATA_SYNCED",
+    });
+    return new Response(JSON.stringify({
+      ok: true,
+      requestId: input.requestId,
+      requestedAt: wrongDirection.requestedAt,
+      result: "DATA_SYNCED",
+      action: wrongDirection,
+      status: controllerStatus({ lastAction: wrongDirection }),
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  const result = await performVttHostAction(input);
+  assert.equal(result.status, 502);
+  assert.equal(result.body.ok, false);
+  assert.equal(result.body.code, "INVALID_CONTROLLER_RESPONSE");
+});
+
+test("명시적 동기화 성공은 방향과 lastSync manifest를 보존한다", async () => {
+  configureProduction();
+  const input = {
+    action: "SYNC_DATA",
+    sourceHost: "HOME",
+    targetHost: "VPS",
+    requestId: "vtt-host-sync-success-01",
+    actor: { id: "gm-1", displayName: "GM" },
+  };
+  let sentBody = null;
+  globalThis.fetch = async (_url, init) => {
+    sentBody = JSON.parse(init.body);
+    const action = completedAction({
+      requestId: input.requestId,
+      action: "SYNC_DATA",
+      result: "DATA_SYNCED",
+    });
+    const manifest = {
+      digest: "b".repeat(64),
+      fileCount: 170,
+      totalBytes: 230_000_000,
+    };
+    return new Response(JSON.stringify({
+      ok: true,
+      requestId: input.requestId,
+      requestedAt: action.requestedAt,
+      result: "DATA_SYNCED",
+      action,
+      status: controllerStatus({
+        state: "OFFLINE",
+        activeHost: "OFFLINE",
+        desiredHost: "OFFLINE",
+        routeHost: "OFFLINE",
+        generation: 5,
+        manifest,
+        lastSync: {
+          requestId: input.requestId,
+          sourceHost: "HOME",
+          targetHost: "VPS",
+          generation: 5,
+          manifest,
+          completedAt: action.completedAt,
+        },
+        lastAction: action,
+      }),
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  const result = await performVttHostAction(input);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.ok, true);
+  assert.equal(result.body.status.lastSync.sourceHost, "HOME");
+  assert.equal(result.body.status.lastSync.targetHost, "VPS");
+  assert.equal(result.body.status.lastSync.manifest.digest, "b".repeat(64));
+  assert.equal(Object.hasOwn(sentBody, "force"), false);
 });
 
 test("Content-Length 없는 과대 응답도 128KB에서 stream을 취소한다", async () => {
@@ -398,7 +494,7 @@ test("접속자 차단은 409와 인원수를 보존한다", async () => {
   assert.equal(result.body.connectedUsers, 4);
 });
 
-test("202 접수 응답은 재전송하지 않고 SWITCHING 상태와 request ID를 보존한다", async () => {
+test("202 접수 응답은 재전송하지 않고 작업 상태와 request ID를 보존한다", async () => {
   configureProduction();
   let calls = 0;
   globalThis.fetch = async (_url, init) => {
@@ -409,13 +505,14 @@ test("202 접수 응답은 재전송하지 않고 SWITCHING 상태와 request ID
       accepted: true,
       requestId: input.requestId,
       requestedAt: 1_787_321_400_000,
-      result: "TRANSITION_ACCEPTED",
+      result: "ACTION_ACCEPTED",
       status: controllerStatus({
         state: "SWITCHING",
         desiredHost: "VPS",
         routeHost: "OFFLINE",
         transition: {
           requestId: input.requestId,
+          action: "SELECT_ROUTE",
           sourceHost: "HOME",
           targetHost: "VPS",
           phase: "CLOSING_PUBLIC",
@@ -454,7 +551,7 @@ test("완료 뒤 replay도 receipt action의 최초 requestedAt을 보존한다"
       ok: true,
       requestId: input.requestId,
       requestedAt: 1_787_321_411_111,
-      result: "SWITCHED",
+      result: "ROUTE_SELECTED",
       replayed: true,
       action: replayedAction,
       status: controllerStatus({

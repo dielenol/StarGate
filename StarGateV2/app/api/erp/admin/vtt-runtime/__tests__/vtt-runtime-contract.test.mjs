@@ -36,6 +36,19 @@ test("POST는 same-origin과 유효한 request ID를 제어 호출 전에 검사
   assert.match(route, /Idempotency-Key/);
 });
 
+test("분리 모드의 VPS START는 공개 VPS 경로와 HOME 정지를 서버에서 먼저 확인한다", async () => {
+  const route = await readWeb("app/api/erp/admin/vtt-runtime/actions/route.ts");
+  const modeIndex = route.indexOf("isVttHostControlModeEnabled()");
+  const statusIndex = route.indexOf("await getVttHostStatus()");
+  const actionIndex = route.indexOf("await performVttRuntimeAction(");
+  assert.ok(modeIndex >= 0);
+  assert.ok(statusIndex > modeIndex);
+  assert.ok(actionIndex > statusIndex);
+  assert.match(route, /hostStatus\.routeHost !== "VPS"/);
+  assert.match(route, /hostStatus\.hosts\.HOME\.state !== "STOPPED"/);
+  assert.match(route, /HOST_OPERATION_LOCKED/);
+});
+
 test("성공한 조작은 request ID dedupe 감사로 기록하고 감사 실패는 재조작하지 않는다", async () => {
   const [route, audit] = await Promise.all([
     readWeb("app/api/erp/admin/vtt-runtime/actions/route.ts"),

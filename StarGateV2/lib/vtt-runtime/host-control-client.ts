@@ -2,10 +2,13 @@ import "server-only";
 
 import type {
   VttHostActionFailure,
+  VttHostAction,
+  VttHostActionInput,
   VttHostActionResponse,
   VttHostActionSuccess,
   VttHostControlState,
   VttHostLastAction,
+  VttHostLastSync,
   VttHostRuntimeStatus,
   VttHostStatus,
   VttHostTarget,
@@ -55,16 +58,28 @@ const VALID_TARGET_HOSTS = new Set<VttHostTarget>([
   "OFFLINE",
 ]);
 const VALID_ACTION_RESULTS = new Set([
+  "ACTION_ACCEPTED",
+  "ROUTE_SELECTED",
+  "ALREADY_SELECTED",
+  "DATA_SYNCED",
+  "ROUTE_FAILED",
+  "SYNC_FAILED",
   "SWITCHED",
   "ALREADY_ACTIVE",
   "RECOVERY_REQUIRED",
 ]);
+const VALID_ACTIONS = new Set<VttHostAction>([
+  "SELECT_ROUTE",
+  "SYNC_DATA",
+]);
 const VALID_TRANSITION_PHASES = new Set<VttHostTransitionPhase>([
   "CLOSING_PUBLIC",
   "STOPPING_SOURCE",
+  "LOCKING_DATA",
   "SNAPSHOTTING_SOURCE",
   "TRANSFERRING",
   "VERIFYING_TARGET",
+  "RELEASING_DATA_LOCKS",
   "STARTING_TARGET",
   "ROUTING_TARGET",
   "VERIFYING_PUBLIC",
@@ -93,13 +108,10 @@ interface ControllerResponse {
   payload: unknown;
 }
 
-export interface VttHostControllerActionInput {
-  action: "SWITCH_HOST";
-  targetHost: VttHostTarget;
+export type VttHostControllerActionInput = VttHostActionInput & {
   requestId: string;
-  force: boolean;
   actor: { id: string; displayName: string };
-}
+};
 
 export interface VttHostControllerActionResult {
   status: number;
@@ -134,6 +146,7 @@ function unavailableStatus(
     lastWriterHost: null,
     generation: null,
     manifest: null,
+    lastSync: null,
     routeHost: "UNKNOWN",
     transition: null,
     hosts: {
@@ -318,9 +331,14 @@ function parseTransition(value: unknown): VttHostTransition | null | undefined {
   const startedAt = parseTimestamp(value.startedAt);
   const updatedAt = parseTimestamp(value.updatedAt);
   const error = parseTransitionError(value.error);
+  const action = value.action === undefined || value.action === "SWITCH_HOST"
+    ? "SELECT_ROUTE"
+    : value.action;
   if (
     typeof value.requestId !== "string" ||
     !REQUEST_ID_PATTERN.test(value.requestId) ||
+    typeof action !== "string" ||
+    !VALID_ACTIONS.has(action as VttHostAction) ||
     typeof value.sourceHost !== "string" ||
     !VALID_OBSERVED_HOSTS.has(value.sourceHost as VttObservedHost) ||
     typeof value.targetHost !== "string" ||
@@ -336,6 +354,7 @@ function parseTransition(value: unknown): VttHostTransition | null | undefined {
   }
   return {
     requestId: value.requestId.slice(0, 128),
+    action: action as VttHostAction,
     sourceHost: value.sourceHost as VttObservedHost,
     targetHost: value.targetHost as VttHostTarget,
     phase: value.phase as VttHostTransitionPhase,
@@ -355,10 +374,12 @@ function parseLastAction(value: unknown): VttHostLastAction | null | undefined {
   const generation = value.generation === null || value.generation === undefined
     ? null
     : parseNonNegativeInteger(value.generation);
+  const action = value.action === "SWITCH_HOST" ? "SELECT_ROUTE" : value.action;
   if (
     typeof value.requestId !== "string" ||
     !REQUEST_ID_PATTERN.test(value.requestId) ||
-    value.action !== "SWITCH_HOST" ||
+    typeof action !== "string" ||
+    !VALID_ACTIONS.has(action as VttHostAction) ||
     typeof value.sourceHost !== "string" ||
     !VALID_OBSERVED_HOSTS.has(value.sourceHost as VttObservedHost) ||
     typeof value.targetHost !== "string" ||
@@ -388,7 +409,7 @@ function parseLastAction(value: unknown): VttHostLastAction | null | undefined {
   }
   return {
     requestId: value.requestId.slice(0, 128),
-    action: "SWITCH_HOST",
+    action: action as VttHostAction,
     sourceHost: value.sourceHost as VttObservedHost,
     targetHost: value.targetHost as VttHostTarget,
     force: value.force,
@@ -399,6 +420,34 @@ function parseLastAction(value: unknown): VttHostLastAction | null | undefined {
     generation,
     sourceRevision,
     code: typeof value.code === "string" ? value.code.slice(0, 64) : null,
+  };
+}
+
+function parseLastSync(value: unknown): VttHostLastSync | null {
+  if (value === null) return null;
+  if (!isRecord(value)) return null;
+  const generation = parseNonNegativeInteger(value.generation);
+  const manifest = parseManifest(value.manifest);
+  const completedAt = parseTimestamp(value.completedAt);
+  if (
+    typeof value.requestId !== "string" ||
+    !REQUEST_ID_PATTERN.test(value.requestId) ||
+    (value.sourceHost !== "HOME" && value.sourceHost !== "VPS") ||
+    (value.targetHost !== "HOME" && value.targetHost !== "VPS") ||
+    value.sourceHost === value.targetHost ||
+    generation === null ||
+    !manifest ||
+    completedAt === null
+  ) {
+    return null;
+  }
+  return {
+    requestId: value.requestId.slice(0, 128),
+    sourceHost: value.sourceHost,
+    targetHost: value.targetHost,
+    generation,
+    manifest,
+    completedAt,
   };
 }
 
@@ -423,6 +472,7 @@ function parseHostStatus(value: unknown): VttHostStatus | null {
   }
   const generation = parseNonNegativeInteger(value.generation);
   const manifest = value.manifest === null ? null : parseManifest(value.manifest);
+  const lastSync = value.lastSync === undefined ? null : parseLastSync(value.lastSync);
   const transition = parseTransition(value.transition);
   const home = parseRuntimeStatus(value.hosts.HOME);
   const vps = parseRuntimeStatus(value.hosts.VPS);
@@ -440,6 +490,7 @@ function parseHostStatus(value: unknown): VttHostStatus | null {
   if (
     generation === null ||
     (value.manifest !== null && manifest === null) ||
+    (value.lastSync !== undefined && value.lastSync !== null && lastSync === null) ||
     transition === undefined ||
     !home ||
     !vps ||
@@ -460,6 +511,7 @@ function parseHostStatus(value: unknown): VttHostStatus | null {
     lastWriterHost: value.lastWriterHost as "HOME" | "VPS" | null,
     generation,
     manifest,
+    lastSync,
     routeHost: value.routeHost as VttObservedHost,
     transition,
     hosts: { HOME: home, VPS: vps },
@@ -493,6 +545,24 @@ function sanitizeControllerFailure(
       : fallbackMessage,
     ...(connectedUsers === null ? {} : { connectedUsers }),
   };
+}
+
+function actionMatchesInput(
+  action: VttHostLastAction | VttHostTransition | null,
+  input: VttHostControllerActionInput,
+): boolean {
+  if (
+    !action ||
+    action.requestId !== input.requestId ||
+    action.action !== input.action ||
+    action.targetHost !== input.targetHost
+  ) {
+    return false;
+  }
+  if (input.action === "SYNC_DATA") {
+    return action.sourceHost === input.sourceHost && action.force === false;
+  }
+  return action.force === false;
 }
 
 async function readResponsePayload(response: Response): Promise<unknown> {
@@ -638,7 +708,7 @@ export async function performVttHostAction(
         ok: false,
         requestId: input.requestId,
         code: configuration.unavailableReason ?? "CONTROL_DISABLED",
-        error: "현재 환경에서는 VTT 호스트 전환이 비활성화되어 있습니다.",
+        error: "현재 환경에서는 VTT 경로·동기화 제어가 비활성화되어 있습니다.",
       },
     };
   }
@@ -659,7 +729,7 @@ export async function performVttHostAction(
         ok: false,
         requestId: input.requestId,
         code: "ACTION_RESULT_UNKNOWN",
-        error: "전환 요청 결과를 확정하지 못했습니다. 다시 보내지 말고 상태를 조회해 주세요.",
+        error: "작업 요청 결과를 확정하지 못했습니다. 다시 보내지 말고 상태를 조회해 주세요.",
       },
     };
   }
@@ -671,7 +741,7 @@ export async function performVttHostAction(
         body: sanitizeControllerFailure(
           response.payload,
           response.status === 504 ? "ACTION_RESULT_UNKNOWN" : "ACTION_FAILED",
-          "VTT 호스트 전환 요청을 처리하지 못했습니다.",
+          "VTT 경로·동기화 요청을 처리하지 못했습니다.",
         ),
       };
     }
@@ -691,13 +761,16 @@ export async function performVttHostAction(
   const responseAction = candidate?.action === undefined
     ? null
     : parseLastAction(candidate.action);
+  const matchingResponseAction = actionMatchesInput(responseAction ?? null, input);
+  const matchingTransition = actionMatchesInput(status?.transition ?? null, input);
+  const matchingLastAction = actionMatchesInput(status?.lastAction ?? null, input);
   const correlatedRequestedAt = (
-    responseAction?.requestId === input.requestId
-      ? responseAction.requestedAt
-      : status?.transition?.requestId === input.requestId
-        ? status.transition.startedAt
-        : status?.lastAction?.requestId === input.requestId
-          ? status.lastAction.requestedAt
+    matchingResponseAction
+      ? responseAction?.requestedAt ?? null
+      : matchingTransition
+        ? status?.transition?.startedAt ?? null
+        : matchingLastAction
+          ? status?.lastAction?.requestedAt ?? null
           : null
   );
   const requestedAt = parseTimestamp(candidate?.requestedAt);
@@ -708,12 +781,19 @@ export async function performVttHostAction(
     typeof candidate.requestId !== "string" ||
     candidate.requestId !== input.requestId ||
     typeof candidate.result !== "string" ||
-    !["TRANSITION_ACCEPTED", "SWITCHED", "ALREADY_ACTIVE"].includes(candidate.result) ||
+    ![
+      "ACTION_ACCEPTED",
+      "ROUTE_SELECTED",
+      "ALREADY_SELECTED",
+      "DATA_SYNCED",
+      "SWITCHED",
+      "ALREADY_ACTIVE",
+    ].includes(candidate.result) ||
     !status ||
     requestedAt === null ||
     correlatedRequestedAt === null ||
     correlatedRequestedAt !== requestedAt ||
-    (candidate.action !== undefined && responseAction?.requestId !== input.requestId) ||
+    (candidate.action !== undefined && !matchingResponseAction) ||
     (response.status === 202 && candidate.accepted !== true)
   ) {
     return {

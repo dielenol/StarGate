@@ -21,7 +21,16 @@ function isAuditableCompletedAction(
 } {
   return (
     action.actor !== null &&
-    (action.result === "SWITCHED" || action.result === "ALREADY_ACTIVE")
+    [
+      "ROUTE_SELECTED",
+      "ALREADY_SELECTED",
+      "DATA_SYNCED",
+      "ROUTE_FAILED",
+      "SYNC_FAILED",
+      "SWITCHED",
+      "ALREADY_ACTIVE",
+      "RECOVERY_REQUIRED",
+    ].includes(action.result)
   );
 }
 
@@ -59,14 +68,22 @@ export async function reconcileCompletedVttHostAudit(
 
   await Promise.all(missingActions.map(action => scheduleGmAdminAudit(
     {
-      action: "Nochichim VTT 호스트 전환 완료",
+      action: action.action === "SYNC_DATA"
+        ? "Nochichim VTT 데이터 동기화 완료"
+        : "Nochichim VTT 공개 경로 선택 완료",
       actor: { ...action.actor, role: "GM" },
       summary: `${action.sourceHost} → ${action.targetHost} · ${action.result}`,
       target: "nochiijjim.com",
       details: [
         { name: "요청 ID", value: action.requestId },
-        { name: "이전 호스트", value: action.sourceHost },
-        { name: "완료 호스트", value: action.targetHost },
+        {
+          name: action.action === "SYNC_DATA" ? "데이터 원본" : "이전 공개 경로",
+          value: action.sourceHost,
+        },
+        {
+          name: action.action === "SYNC_DATA" ? "데이터 대상" : "선택 공개 경로",
+          value: action.targetHost,
+        },
         {
           name: "데이터 세대",
           value: action.generation === null
@@ -74,7 +91,14 @@ export async function reconcileCompletedVttHostAudit(
             : String(action.generation),
         },
         { name: "소스 커밋", value: action.sourceRevision ?? "확인 불가" },
-        { name: "접속자 재확인", value: action.force ? "예" : "아니오" },
+        {
+          name: action.action === "SYNC_DATA" ? "실행 방식" : "안전 조건 우회",
+          value: action.action === "SYNC_DATA"
+            ? "명시적 수동 동기화"
+            : action.force
+              ? "구형 요청에서 사용됨"
+              : "허용 안 함",
+        },
       ],
       timestamp: new Date(action.completedAt),
     },

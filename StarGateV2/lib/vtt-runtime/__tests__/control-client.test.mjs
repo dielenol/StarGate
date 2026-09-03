@@ -85,27 +85,17 @@ test("Preview에서는 enabled 값이 있어도 fail closed하고 fetch하지 �
   assert.equal(calls, 0);
 });
 
-test("하이브리드 v2가 켜지면 legacy v1 직접 제어는 fail closed한다", async () => {
+test("경로·동기화 제어와 VPS 앱 수명주기 제어는 함께 사용할 수 있다", async () => {
   configureProduction();
   process.env.NOCHICHIM_HOST_CONTROL_ENABLED = "true";
-  let calls = 0;
-  globalThis.fetch = async () => {
-    calls += 1;
-    throw new Error("must not fetch");
-  };
+  globalThis.fetch = async () => new Response(JSON.stringify(controllerStatus()), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 
   const status = await getVttRuntimeStatus();
-  assert.equal(status.controlEnabled, false);
-  assert.equal(status.unavailableReason, "CONTROL_DISABLED");
-  const result = await performVttRuntimeAction({
-    action: "START",
-    requestId: "vtt-legacy-blocked-01",
-    force: false,
-    actor: { id: "gm-1", displayName: "GM" },
-  });
-  assert.equal(result.status, 503);
-  assert.equal(result.body.ok, false);
-  assert.equal(calls, 0);
+  assert.equal(status.controlEnabled, true);
+  assert.equal(status.state, "RUNNING");
 });
 
 test("고정 control host가 아닌 URL에는 서비스 인증값을 보내지 않는다", async () => {

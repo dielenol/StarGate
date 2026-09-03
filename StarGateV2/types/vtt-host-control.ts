@@ -2,6 +2,7 @@ import type { VttRuntimeState } from "@/types/vtt-runtime";
 
 export type VttHostTarget = "HOME" | "VPS" | "OFFLINE";
 export type VttObservedHost = VttHostTarget | "UNKNOWN";
+export type VttHostAction = "SELECT_ROUTE" | "SYNC_DATA";
 
 export type VttHostControlState =
   | "RUNNING"
@@ -14,9 +15,11 @@ export type VttHostControlState =
 export type VttHostTransitionPhase =
   | "CLOSING_PUBLIC"
   | "STOPPING_SOURCE"
+  | "LOCKING_DATA"
   | "SNAPSHOTTING_SOURCE"
   | "TRANSFERRING"
   | "VERIFYING_TARGET"
+  | "RELEASING_DATA_LOCKS"
   | "STARTING_TARGET"
   | "ROUTING_TARGET"
   | "VERIFYING_PUBLIC"
@@ -38,6 +41,7 @@ export interface VttHostRuntimeStatus {
 
 export interface VttHostTransition {
   requestId: string;
+  action: VttHostAction;
   sourceHost: VttObservedHost;
   targetHost: VttHostTarget;
   phase: VttHostTransitionPhase;
@@ -50,7 +54,7 @@ export interface VttHostTransition {
 
 export interface VttHostLastAction {
   requestId: string;
-  action: "SWITCH_HOST";
+  action: VttHostAction;
   sourceHost: VttObservedHost;
   targetHost: VttHostTarget;
   force: boolean;
@@ -63,6 +67,15 @@ export interface VttHostLastAction {
   code: string | null;
 }
 
+export interface VttHostLastSync {
+  requestId: string;
+  sourceHost: Exclude<VttHostTarget, "OFFLINE">;
+  targetHost: Exclude<VttHostTarget, "OFFLINE">;
+  generation: number;
+  manifest: VttStateManifest;
+  completedAt: number;
+}
+
 export interface VttHostStatus {
   state: VttHostControlState;
   activeHost: VttObservedHost;
@@ -70,6 +83,7 @@ export interface VttHostStatus {
   lastWriterHost: Exclude<VttHostTarget, "OFFLINE"> | null;
   generation: number | null;
   manifest: VttStateManifest | null;
+  lastSync: VttHostLastSync | null;
   routeHost: VttObservedHost;
   transition: VttHostTransition | null;
   hosts: {
@@ -89,10 +103,20 @@ export interface VttHostStatus {
     | "INVALID_CONTROLLER_RESPONSE";
 }
 
-export interface VttHostActionInput {
+export interface VttHostRouteActionInput {
+  action: "SELECT_ROUTE";
   targetHost: VttHostTarget;
-  force?: boolean;
 }
+
+export interface VttHostSyncActionInput {
+  action: "SYNC_DATA";
+  sourceHost: Exclude<VttHostTarget, "OFFLINE">;
+  targetHost: Exclude<VttHostTarget, "OFFLINE">;
+}
+
+export type VttHostActionInput =
+  | VttHostRouteActionInput
+  | VttHostSyncActionInput;
 
 export interface VttHostActionSuccess {
   ok: true;

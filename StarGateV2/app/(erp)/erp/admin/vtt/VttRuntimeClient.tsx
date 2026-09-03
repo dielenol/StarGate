@@ -12,6 +12,8 @@ import {
   VttRuntimeMutationError,
 } from "@/hooks/mutations/useVttRuntimeMutation";
 import { useVttRuntimeStatusQuery } from "@/hooks/queries/useVttRuntimeStatusQuery";
+import { useVttHostStatusQuery } from "@/hooks/queries/useVttHostStatusQuery";
+import type { VttHostStatus } from "@/types/vtt-host-control";
 import type {
   VttRuntimeActionInput,
   VttRuntimeState,
@@ -22,6 +24,7 @@ import styles from "./vtt.module.css";
 
 interface Props {
   initialStatus: VttRuntimeStatus;
+  initialHostStatus?: VttHostStatus | null;
 }
 
 interface StopConfirmation {
@@ -82,10 +85,14 @@ function statusDescription(status: VttRuntimeStatus): string {
   return STATE_DESCRIPTION[status.state];
 }
 
-export default function VttRuntimeClient({ initialStatus }: Props) {
+export default function VttRuntimeClient({ initialStatus, initialHostStatus = null }: Props) {
   const query = useVttRuntimeStatusQuery(initialStatus);
+  const hostQuery = useVttHostStatusQuery(initialHostStatus ?? undefined, {
+    enabled: initialHostStatus !== null,
+  });
   const mutation = useVttRuntimeMutation();
   const status = query.data ?? initialStatus;
+  const hostStatus = hostQuery.data ?? initialHostStatus;
   const [feedback, setFeedback] = useState<{
     tone: "success" | "warning" | "error";
     text: string;
@@ -98,8 +105,17 @@ export default function VttRuntimeClient({ initialStatus }: Props) {
   const description = statusDescription(status);
   const unavailable = status.state === "UNREACHABLE" || !status.controlEnabled;
   const locked = mutation.isPending || transitioning || unavailable;
+  const separatedStartReady = !hostStatus || (
+    hostStatus.controlEnabled &&
+    hostStatus.state !== "UNREACHABLE" &&
+    hostStatus.state !== "RECOVERY_REQUIRED" &&
+    hostStatus.transition === null &&
+    hostStatus.routeHost === "VPS" &&
+    hostStatus.hosts.HOME.reachable &&
+    hostStatus.hosts.HOME.state === "STOPPED"
+  );
   const startDisabled =
-    locked || status.state === "RUNNING" || status.state === "STARTING";
+    locked || !separatedStartReady || status.state === "RUNNING" || status.state === "STARTING";
   const stopDisabled =
     locked || status.state === "STOPPED" || status.state === "STOPPING";
 
@@ -145,7 +161,7 @@ export default function VttRuntimeClient({ initialStatus }: Props) {
   }
 
   return (
-    <main className={styles.root}>
+    <>
       <Box variant="gold" className={styles.hero}>
         <div className={styles.hero__copy}>
           <Eyebrow tone="gold">NOCHICHIM · VPS RUNTIME</Eyebrow>
@@ -173,6 +189,11 @@ export default function VttRuntimeClient({ initialStatus }: Props) {
           role={feedback.tone === "error" ? "alert" : "status"}
         >
           {feedback.text}
+        </Box>
+      ) : null}
+      {hostStatus && !separatedStartReady && status.state === "STOPPED" ? (
+        <Box className={styles.notice} data-tone="info" role="note">
+          VPS 앱을 시작하려면 HOME 앱을 완전히 종료하고 VPS Tunnel 경로를 먼저 ON으로 선택하세요.
         </Box>
       ) : null}
 
@@ -337,6 +358,6 @@ export default function VttRuntimeClient({ initialStatus }: Props) {
           )}
         </Box>
       </section>
-    </main>
+    </>
   );
 }
