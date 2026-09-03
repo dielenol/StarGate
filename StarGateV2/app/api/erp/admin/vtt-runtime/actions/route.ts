@@ -7,6 +7,10 @@ import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { performVttRuntimeAction } from "@/lib/vtt-runtime/control-client";
+import {
+  getVttHostStatus,
+  isVttHostControlModeEnabled,
+} from "@/lib/vtt-runtime/host-control-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +68,48 @@ export async function POST(request: Request) {
       { error: "action은 START 또는 STOP이며 force: true는 STOP에서만 허용됩니다.", code: "INVALID_BODY" },
       { status: 400 },
     );
+  }
+
+  if (input.action === "START" && isVttHostControlModeEnabled()) {
+    const hostStatus = await getVttHostStatus();
+    if (!hostStatus.controlEnabled || hostStatus.state === "UNREACHABLE") {
+      return NextResponse.json(
+        {
+          error: "공개 경로 제어 상태를 확인할 수 없어 VPS 시작을 차단했습니다.",
+          code: "HOST_CONTROL_UNREACHABLE",
+        },
+        { status: 503 },
+      );
+    }
+    if (hostStatus.transition || hostStatus.state === "RECOVERY_REQUIRED") {
+      return NextResponse.json(
+        {
+          error: "경로 변경·동기화 또는 수동 복구가 진행 중이라 VPS 시작을 차단했습니다.",
+          code: "HOST_OPERATION_LOCKED",
+        },
+        { status: 423 },
+      );
+    }
+    if (hostStatus.routeHost !== "VPS") {
+      return NextResponse.json(
+        {
+          error: "VPS Tunnel 경로를 먼저 ON으로 선택해야 앱을 시작할 수 있습니다.",
+          code: "VPS_ROUTE_NOT_SELECTED",
+        },
+        { status: 409 },
+      );
+    }
+    if (!hostStatus.hosts.HOME.reachable || hostStatus.hosts.HOME.state !== "STOPPED") {
+      return NextResponse.json(
+        {
+          error: "HOME 앱의 완전한 정지를 확인한 뒤 VPS 앱을 시작할 수 있습니다.",
+          code: hostStatus.hosts.HOME.reachable
+            ? "HOME_NOT_STOPPED"
+            : "HOME_UNREACHABLE",
+        },
+        { status: 409 },
+      );
+    }
   }
 
   const result = await performVttRuntimeAction({

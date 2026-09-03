@@ -7,6 +7,7 @@ import type {
   VttRuntimeActionSuccess,
 } from "@/types/vtt-runtime";
 
+import { vttHostKeys } from "@/hooks/queries/useVttHostStatusQuery";
 import { vttRuntimeKeys } from "@/hooks/queries/useVttRuntimeStatusQuery";
 import {
   clearRetainedIdempotencyOperation,
@@ -99,7 +100,10 @@ export function useVttRuntimeMutation() {
       }
     },
     onSettled: async (_data, error, input) => {
-      await queryClient.invalidateQueries({ queryKey: vttRuntimeKeys.status });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: vttRuntimeKeys.status }),
+        queryClient.invalidateQueries({ queryKey: vttHostKeys.status }),
+      ]);
       if (
         error instanceof VttRuntimeMutationError &&
         error.code === "ACTION_RESULT_UNKNOWN"

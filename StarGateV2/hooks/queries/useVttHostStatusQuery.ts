@@ -22,11 +22,15 @@ async function fetchVttHostStatus(): Promise<VttHostStatus> {
   return response.json();
 }
 
-export function useVttHostStatusQuery(initialData: VttHostStatus) {
+export function useVttHostStatusQuery(
+  initialData?: VttHostStatus,
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: vttHostKeys.status,
     queryFn: fetchVttHostStatus,
     initialData,
+    enabled,
     staleTime: 2_000,
     retry: 1,
     refetchInterval: query =>

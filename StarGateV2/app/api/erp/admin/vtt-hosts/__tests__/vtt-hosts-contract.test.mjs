@@ -37,15 +37,16 @@ test("v2 POST는 same-origin과 유효한 request ID 뒤에만 controller를 호
   assert.equal((route.match(/performVttHostAction\(/g) || []).length, 1);
 });
 
-test("성공한 전환 접수는 durable GM audit에 request ID로 중복 방지 기록한다", async () => {
+test("성공한 경로·동기화 접수는 durable GM audit에 request ID로 중복 방지 기록한다", async () => {
   const route = await readWeb("app/api/erp/admin/vtt-hosts/actions/route.ts");
   const actionIndex = route.indexOf("await performVttHostAction(");
   const auditIndex = route.indexOf("await scheduleGmAdminAudit(");
   assert.ok(actionIndex >= 0);
   assert.ok(auditIndex > actionIndex);
   assert.match(route, /dedupeKey: `vtt-host:\$\{requestId\}`/);
-  assert.match(route, /Nochichim VTT 호스트 전환 요청 접수/);
-  assert.match(route, /컨트롤러가 전환 요청을 접수한 사실/);
+  assert.match(route, /Nochichim VTT \$\{actionLabel\} 요청 접수/);
+  assert.match(route, /action: "SELECT_ROUTE"/);
+  assert.match(route, /action: "SYNC_DATA"/);
   assert.match(route, /timestamp: new Date\(result\.body\.requestedAt\)/);
   assert.doesNotMatch(route, /timestamp: new Date\(\)/);
   assert.match(route, /auditRecorded = false/);
@@ -60,7 +61,8 @@ test("완료 status는 조회와 독립 Cron에서 같은 durable audit 조정�
     readWeb("vercel.json"),
   ]);
   assert.match(route, /reconcileCompletedVttHostAudit\(status\)/);
-  assert.match(audit, /action\.result === "SWITCHED"/);
+  assert.match(audit, /"ROUTE_SELECTED"/);
+  assert.match(audit, /"DATA_SYNCED"/);
   assert.match(audit, /status\.completedActions/);
   assert.doesNotMatch(audit, /status\.lastAction/);
   assert.match(audit, /missingActions\.map\(action => scheduleGmAdminAudit/);
@@ -69,8 +71,10 @@ test("완료 status는 조회와 독립 Cron에서 같은 durable audit 조정�
   const ackIndex = audit.lastIndexOf("await acknowledgeVttHostAudits(");
   assert.ok(enqueueIndex >= 0);
   assert.ok(ackIndex > enqueueIndex);
-  assert.match(audit, /name: "이전 호스트"/);
-  assert.match(audit, /name: "완료 호스트"/);
+  assert.match(audit, /"이전 공개 경로"/);
+  assert.match(audit, /"데이터 원본"/);
+  assert.match(audit, /"선택 공개 경로"/);
+  assert.match(audit, /"데이터 대상"/);
   assert.match(audit, /action\.sourceRevision/);
   assert.match(audit, /return `vtt-host-completed:\$\{requestId\}`/);
   assert.match(audit, /dedupeKey: completedAuditDedupeKey\(action\.requestId\)/);
@@ -83,7 +87,7 @@ test("완료 status는 조회와 독립 Cron에서 같은 durable audit 조정�
   );
 });
 
-test("브라우저는 15초·전환 2초 polling, mutation 무재시도, 명시적 전환 재확인을 고정한다", async () => {
+test("브라우저는 분리된 경로·동기화·VPS 앱 제어 계약을 고정한다", async () => {
   const [query, mutation, client, page] = await Promise.all([
     readWeb("hooks/queries/useVttHostStatusQuery.ts"),
     readWeb("hooks/mutations/useVttHostMutation.ts"),
@@ -93,14 +97,19 @@ test("브라우저는 15초·전환 2초 polling, mutation 무재시도, 명시�
   assert.match(query, /\? 2_000 : 15_000/);
   assert.match(mutation, /retry: false/);
   assert.match(mutation, /Idempotency-Key/);
-  assert.match(client, /error\.code === "ACTIVE_CONNECTIONS"/);
-  assert.match(client, /confirmationText !== "전환"/);
-  assert.match(client, /force: true/);
+  assert.match(client, /action: "SELECT_ROUTE"/);
+  assert.match(client, /action: "SYNC_DATA"/);
+  assert.match(client, /confirmationText !== "동기화"/);
+  assert.doesNotMatch(client, /force: true/);
+  assert.match(client, /other\.state !== "STOPPED"/);
   assert.match(client, /status\.state === "RECOVERY_REQUIRED"/);
   assert.match(client, /status\.auditBacklogBlocked/);
-  assert.match(client, /!status\.hosts\[targetHost\]\.reachable/);
-  assert.match(client, /status\.hosts\[targetHost\]\.state !== "STOPPED"/);
+  assert.match(client, /status\.routeHost === "OFFLINE" && bothAppsStopped/);
+  assert.match(client, /status\.hosts\[host\]\.reachable && status\.hosts\[host\]\.state === "STOPPED"/);
+  assert.match(client, /if \(globallyLocked \|\| status\.routeHost === targetHost\) return true/);
   assert.match(page, /isVttHostControlModeEnabled\(\)/);
+  assert.match(page, /Promise\.all/);
+  assert.match(page, /VttHostControlClient/);
   assert.match(page, /VttRuntimeClient/);
 });
 

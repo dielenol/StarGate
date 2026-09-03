@@ -34,10 +34,16 @@ export class VttHostMutationError extends Error {
 }
 
 function fingerprint(input: VttHostActionInput): string {
-  return JSON.stringify({
-    targetHost: input.targetHost,
-    force: input.force === true,
-  });
+  return input.action === "SELECT_ROUTE"
+    ? JSON.stringify({
+        action: input.action,
+        targetHost: input.targetHost,
+      })
+    : JSON.stringify({
+        action: input.action,
+        sourceHost: input.sourceHost,
+        targetHost: input.targetHost,
+      });
 }
 
 export function useVttHostMutation() {
@@ -67,7 +73,7 @@ export function useVttHostMutation() {
       if (!response.ok || !body?.ok) {
         const failure = body && !body.ok ? body : null;
         throw new VttHostMutationError(
-          failure?.error ?? "VTT 호스트 전환 요청에 실패했습니다.",
+          failure?.error ?? "VTT 경로·동기화 요청에 실패했습니다.",
           response.status,
           failure?.code ?? "ACTION_FAILED",
           failure?.connectedUsers,

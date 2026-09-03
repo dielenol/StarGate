@@ -11,6 +11,7 @@ import {
 
 import VttHostControlClient from "./VttHostControlClient";
 import VttRuntimeClient from "./VttRuntimeClient";
+import styles from "./vtt.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +20,12 @@ export default async function VttRuntimePage() {
   if (!session?.user) redirect("/login");
   if (!hasRole(session.user.role, "GM")) redirect("/erp");
 
-  const control = isVttHostControlModeEnabled()
-    ? <VttHostControlClient initialStatus={await getVttHostStatus()} />
-    : <VttRuntimeClient initialStatus={await getVttRuntimeStatus()} />;
+  const hostControlEnabled = isVttHostControlModeEnabled();
+  const [hostStatus, runtimeStatus] = await Promise.all([
+    hostControlEnabled ? getVttHostStatus() : Promise.resolve(null),
+    getVttRuntimeStatus(),
+  ]);
+
   return (
     <>
       <PageHead
@@ -32,7 +36,15 @@ export default async function VttRuntimePage() {
         ]}
         title="VTT 운영"
       />
-      {control}
+      <main className={styles.root}>
+        {hostStatus ? (
+          <VttHostControlClient initialStatus={hostStatus} />
+        ) : null}
+        <VttRuntimeClient
+          initialStatus={runtimeStatus}
+          initialHostStatus={hostStatus}
+        />
+      </main>
     </>
   );
 }

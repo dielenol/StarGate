@@ -90,12 +90,14 @@ registerHooks({
                 fileCount: 166,
                 totalBytes: 220000000
               },
+              lastSync: null,
               routeHost: "OFFLINE",
               transition: {
                 requestId,
+                action: "SELECT_ROUTE",
                 sourceHost: "HOME",
                 targetHost: "VPS",
-                phase: "CLOSING_PUBLIC",
+                phase: "ROUTING_TARGET",
                 force: false,
                 actor: { id: "gm-1", displayName: "테스트 GM" },
                 startedAt: 1787321400000,
@@ -118,14 +120,14 @@ registerHooks({
             if (!globalThis.__vttHostRouteTestState.completed) return current;
             const completedAction = {
               requestId: "vtt-host-completed-01",
-              action: "SWITCH_HOST",
+              action: "SELECT_ROUTE",
               sourceHost: "HOME",
               targetHost: "VPS",
               force: false,
               actor: { id: "gm-1", displayName: "테스트 GM" },
               requestedAt: 1787321400000,
               completedAt: 1787321460000,
-              result: "SWITCHED",
+              result: "ROUTE_SELECTED",
               generation: 5,
               sourceRevision: "abc123",
               code: null
@@ -135,7 +137,7 @@ registerHooks({
               state: "RUNNING",
               activeHost: "VPS",
               desiredHost: "VPS",
-              lastWriterHost: "VPS",
+              lastWriterHost: "HOME",
               generation: 5,
               routeHost: "VPS",
               transition: null,
@@ -162,7 +164,7 @@ registerHooks({
                 accepted: true,
                 requestId: input.requestId,
                 requestedAt: 1787321400000,
-                result: "TRANSITION_ACCEPTED",
+                result: "ACTION_ACCEPTED",
                 status: status(input.requestId),
                 auditRecorded: false
               }
@@ -216,7 +218,7 @@ function session(role = "GM") {
 function actionRequest({
   origin = "https://www.ordonet.co.kr",
   requestId = "vtt-host-route-01",
-  body = { targetHost: "VPS" },
+  body = { action: "SELECT_ROUTE", targetHost: "VPS" },
 } = {}) {
   return new Request("https://www.ordonet.co.kr/api/erp/admin/vtt-hosts/actions", {
     method: "POST",
@@ -251,7 +253,7 @@ test("v2 상태 API는 비로그인 401, 비GM 403, GM 200을 반환한다", asy
   assert.equal((await response.json()).state, "SWITCHING");
 });
 
-test("완료된 전환은 status 조회에서 최종 상태를 request ID로 감사 조정한다", async () => {
+test("완료된 경로 선택은 status 조회에서 최종 상태를 request ID로 감사 조정한다", async () => {
   state.session = session("GM");
   state.completed = true;
   const response = await statusRoute.GET();
@@ -275,26 +277,53 @@ test("v2 조작 API는 인증·same-origin·body 실패 시 controller를 호출
   state.session = session("GM");
   assert.equal((await actionRoute.POST(actionRequest({ origin: "https://evil.example" }))).status, 403);
   assert.equal((await actionRoute.POST(actionRequest({ body: { targetHost: "LAPTOP" } }))).status, 400);
+  assert.equal((await actionRoute.POST(actionRequest({
+    body: { action: "SELECT_ROUTE", targetHost: "VPS", force: true },
+  }))).status, 400);
   assert.equal(state.actionCalls.length, 0);
 });
 
-test("유효한 GM 요청은 고정 SWITCH_HOST·actor·request ID를 붙이고 202를 보존한다", async () => {
+test("유효한 GM 경로 요청은 SELECT_ROUTE·actor·request ID를 붙이고 202를 보존한다", async () => {
   state.session = session("GM");
   const response = await actionRoute.POST(actionRequest({
     requestId: "vtt-host-route-vps-01",
   }));
   assert.equal(response.status, 202);
   assert.deepEqual(state.actionCalls, [{
-    action: "SWITCH_HOST",
+    action: "SELECT_ROUTE",
     targetHost: "VPS",
     requestId: "vtt-host-route-vps-01",
-    force: false,
     actor: { id: "gm-1", displayName: "테스트 GM" },
   }]);
   assert.equal(state.auditCalls.length, 1);
   assert.equal(state.auditCalls[0].options.dedupeKey, "vtt-host:vtt-host-route-vps-01");
-  assert.equal(state.auditCalls[0].payload.action, "Nochichim VTT 호스트 전환 요청 접수");
-  assert.equal(state.auditCalls[0].payload.details[1].value, "컨트롤러가 전환 요청을 접수한 사실");
+  assert.equal(state.auditCalls[0].payload.action, "Nochichim VTT 공개 경로 선택 요청 접수");
+  assert.equal(state.auditCalls[0].payload.details[1].value, "컨트롤러가 공개 경로 선택 요청을 접수한 사실");
+});
+
+test("유효한 GM 동기화 요청은 방향을 그대로 전달하고 별도 감사를 남긴다", async () => {
+  state.session = session("GM");
+  const response = await actionRoute.POST(actionRequest({
+    requestId: "vtt-host-sync-home-vps-01",
+    body: {
+      action: "SYNC_DATA",
+      sourceHost: "HOME",
+      targetHost: "VPS",
+    },
+  }));
+  assert.equal(response.status, 202);
+  assert.deepEqual(state.actionCalls, [{
+    action: "SYNC_DATA",
+    sourceHost: "HOME",
+    targetHost: "VPS",
+    requestId: "vtt-host-sync-home-vps-01",
+    actor: { id: "gm-1", displayName: "테스트 GM" },
+  }]);
+  assert.equal(state.auditCalls.length, 1);
+  assert.equal(state.auditCalls[0].payload.action, "Nochichim VTT 데이터 동기화 요청 접수");
+  assert.equal(state.auditCalls[0].payload.details[2].value, "데이터 동기화");
+  assert.equal(state.auditCalls[0].payload.details[3].value, "로컬 PC");
+  assert.equal(state.auditCalls[0].payload.details[4].value, "Contabo VPS");
 });
 
 test("같은 request ID replay의 접수 감사 payload는 outbox dedupe와 동일하게 유지된다", async () => {
@@ -313,23 +342,22 @@ test("같은 request ID replay의 접수 감사 payload는 outbox dedupe와 동�
   );
 });
 
-test("controller의 접속자 차단은 409를 보존하고 감사를 적재하지 않는다", async () => {
+test("controller의 다른 writer 차단은 409를 보존하고 감사를 적재하지 않는다", async () => {
   state.session = session("GM");
   state.actionFailure = {
     status: 409,
     body: {
       ok: false,
       requestId: "vtt-host-route-block-01",
-      code: "ACTIVE_CONNECTIONS",
-      error: "접속자가 있습니다.",
-      connectedUsers: 3,
+      code: "HOME_NOT_STOPPED",
+      error: "HOME 앱이 실행 중입니다.",
     },
   };
   const response = await actionRoute.POST(actionRequest({
     requestId: "vtt-host-route-block-01",
   }));
   assert.equal(response.status, 409);
-  assert.equal((await response.json()).connectedUsers, 3);
+  assert.equal((await response.json()).code, "HOME_NOT_STOPPED");
   assert.equal(state.actionCalls.length, 1);
   assert.equal(state.auditCalls.length, 0);
 });
@@ -343,7 +371,7 @@ test("감사 outbox 실패는 접수된 controller 명령을 재실행하지 않
   try {
     response = await actionRoute.POST(actionRequest({
       requestId: "vtt-host-route-audit-01",
-      body: { targetHost: "OFFLINE", force: true },
+      body: { action: "SELECT_ROUTE", targetHost: "OFFLINE" },
     }));
   } finally {
     console.error = originalConsoleError;

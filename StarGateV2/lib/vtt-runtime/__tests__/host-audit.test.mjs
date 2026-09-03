@@ -64,6 +64,7 @@ function status(lastAction, transition = null) {
     lastWriterHost: "VPS",
     generation: 5,
     manifest: null,
+    lastSync: null,
     routeHost: "VPS",
     transition,
     hosts: {},
@@ -78,14 +79,14 @@ function status(lastAction, transition = null) {
 function completedAction(overrides = {}) {
   return {
     requestId: "vtt-host-completed-01",
-    action: "SWITCH_HOST",
+    action: "SELECT_ROUTE",
     sourceHost: "HOME",
     targetHost: "VPS",
     force: false,
     actor: { id: "gm-1", displayName: "테스트 GM" },
     requestedAt: 1_787_321_400_000,
     completedAt: 1_787_321_460_000,
-    result: "SWITCHED",
+    result: "ROUTE_SELECTED",
     generation: 5,
     sourceRevision: "abc123",
     code: null,
@@ -101,7 +102,7 @@ test.beforeEach(() => {
   globalThis.__vttHostAuditAckFailure = false;
 });
 
-test("완료된 성공 전환은 request ID dedupe로 durable GM audit을 적재한다", async () => {
+test("완료된 공개 경로 선택은 request ID dedupe로 durable GM audit을 적재한다", async () => {
   const result = await reconcileCompletedVttHostAudit(status(completedAction()));
   assert.deepEqual(result, {
     status: "QUEUED",
@@ -116,6 +117,30 @@ test("완료된 성공 전환은 request ID dedupe로 durable GM audit을 적재
   assert.equal(calls[0].payload.details[2].value, "VPS");
   assert.equal(calls[0].payload.details[3].value, "5");
   assert.equal(calls[0].payload.details[4].value, "abc123");
+  assert.deepEqual(ackCalls, [["vtt-host-completed-01"]]);
+});
+
+test("완료된 데이터 동기화는 방향과 수동 실행 사실을 별도 감사로 기록한다", async () => {
+  const result = await reconcileCompletedVttHostAudit(status(completedAction({
+    action: "SYNC_DATA",
+    result: "DATA_SYNCED",
+  })));
+  assert.equal(result.status, "QUEUED");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].payload.action, "Nochichim VTT 데이터 동기화 완료");
+  assert.equal(calls[0].payload.details[1].name, "데이터 원본");
+  assert.equal(calls[0].payload.details[2].name, "데이터 대상");
+  assert.equal(calls[0].payload.details[5].name, "실행 방식");
+  assert.equal(calls[0].payload.details[5].value, "명시적 수동 동기화");
+});
+
+test("rolling 배포 전에 남은 SWITCH_HOST 완료 감사도 유실 없이 ACK한다", async () => {
+  const result = await reconcileCompletedVttHostAudit(status(completedAction({
+    action: "SELECT_ROUTE",
+    result: "SWITCHED",
+  })));
+  assert.equal(result.status, "QUEUED");
+  assert.equal(calls.length, 1);
   assert.deepEqual(ackCalls, [["vtt-host-completed-01"]]);
 });
 
@@ -165,7 +190,7 @@ test("이미 durable outbox에 있는 완료 request ID는 다시 적재하지 �
   assert.deepEqual(ackCalls, [["vtt-host-completed-01"]]);
 });
 
-test("새 전환 중에도 이전 완료를 회수하고 성공 완료가 아니면 건너뛴다", async () => {
+test("새 작업 중에도 이전 완료를 회수하고 감사 대상 완료가 아니면 건너뛴다", async () => {
   const transition = {
     requestId: "vtt-host-switching-01",
     phase: "TRANSFERRING",
@@ -178,7 +203,7 @@ test("새 전환 중에도 이전 완료를 회수하고 성공 완료가 아니
   calls.splice(0);
   assert.deepEqual(
     await reconcileCompletedVttHostAudit(status(completedAction({
-      result: "RECOVERY_REQUIRED",
+      result: "ACTION_ACCEPTED",
     }))),
     { status: "NO_COMPLETED_ACTION" },
   );

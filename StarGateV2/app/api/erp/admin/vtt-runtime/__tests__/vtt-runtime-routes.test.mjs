@@ -7,6 +7,8 @@ const state = {
   actionCalls: [],
   auditCalls: [],
   failAudit: false,
+  hostControlEnabled: true,
+  hostStatus: null,
 };
 globalThis.__vttRuntimeRouteTestState = state;
 
@@ -92,6 +94,29 @@ registerHooks({
         shortCircuit: true,
       };
     }
+    if (specifier === "@/lib/vtt-runtime/host-control-client") {
+      return {
+        url: moduleUrl(`
+          export function isVttHostControlModeEnabled() {
+            return globalThis.__vttRuntimeRouteTestState.hostControlEnabled;
+          }
+          export async function getVttHostStatus() {
+            const state = globalThis.__vttRuntimeRouteTestState;
+            return state.hostStatus ?? {
+              state: "OFFLINE",
+              routeHost: "VPS",
+              transition: null,
+              controlEnabled: true,
+              hosts: {
+                HOME: { state: "STOPPED", reachable: true },
+                VPS: { state: "STOPPED", reachable: true }
+              }
+            };
+          }
+        `),
+        shortCircuit: true,
+      };
+    }
     if (specifier === "@/lib/notifications/gm-admin-audit") {
       return {
         url: moduleUrl(`
@@ -143,6 +168,8 @@ test.beforeEach(() => {
   state.actionCalls.length = 0;
   state.auditCalls.length = 0;
   state.failAudit = false;
+  state.hostControlEnabled = true;
+  state.hostStatus = null;
 });
 
 test("상태 API는 비로그인 401, 비GM 403, GM 200을 반환한다", async () => {
@@ -178,6 +205,59 @@ test("유효한 GM 요청만 서버 actor와 request ID를 붙여 controller를 
   }]);
   assert.equal(state.auditCalls.length, 1);
   assert.equal(state.auditCalls[0].options.dedupeKey, "vtt-runtime:vtt-route-start-01");
+});
+
+test("분리 모드의 VPS START는 VPS 경로와 HOME 정지를 서버에서 강제한다", async () => {
+  state.session = session("GM");
+  state.hostStatus = {
+    state: "RUNNING",
+    routeHost: "HOME",
+    transition: null,
+    controlEnabled: true,
+    hosts: {
+      HOME: { state: "RUNNING", reachable: true },
+      VPS: { state: "STOPPED", reachable: true },
+    },
+  };
+  const wrongRoute = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-wrong-route-01",
+  }));
+  assert.equal(wrongRoute.status, 409);
+  assert.equal((await wrongRoute.json()).code, "VPS_ROUTE_NOT_SELECTED");
+  assert.equal(state.actionCalls.length, 0);
+
+  state.hostStatus = {
+    ...state.hostStatus,
+    routeHost: "VPS",
+  };
+  const homeRunning = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-home-running-01",
+  }));
+  assert.equal(homeRunning.status, 409);
+  assert.equal((await homeRunning.json()).code, "HOME_NOT_STOPPED");
+  assert.equal(state.actionCalls.length, 0);
+
+  state.hostStatus = {
+    ...state.hostStatus,
+    state: "SWITCHING",
+    transition: { phase: "LOCKING_DATA" },
+  };
+  const operationLocked = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-operation-lock-01",
+  }));
+  assert.equal(operationLocked.status, 423);
+  assert.equal((await operationLocked.json()).code, "HOST_OPERATION_LOCKED");
+  assert.equal(state.actionCalls.length, 0);
+});
+
+test("분리 모드가 꺼진 기존 배포는 v1 START 계약을 그대로 유지한다", async () => {
+  state.session = session("GM");
+  state.hostControlEnabled = false;
+  const response = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-legacy-mode-01",
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(state.actionCalls.length, 1);
 });
 
 test("감사 outbox 실패는 성공한 controller 명령을 재실행하지 않는다", async () => {
