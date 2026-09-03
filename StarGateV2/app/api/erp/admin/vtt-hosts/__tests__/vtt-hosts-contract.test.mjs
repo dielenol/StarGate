@@ -101,7 +101,11 @@ test("브라우저는 분리된 경로·동기화·VPS 앱 제어 계약을 고�
   assert.match(client, /action: "SYNC_DATA"/);
   assert.match(client, /confirmationText !== "동기화"/);
   assert.doesNotMatch(client, /force: true/);
-  assert.match(client, /other\.state !== "STOPPED"/);
+  assert.match(client, /targetHost === "HOME"/);
+  assert.match(client, /status\.routeHost !== "OFFLINE"/);
+  assert.match(client, /status\.hosts\.VPS\.state !== "STOPPED"/);
+  assert.match(client, /status\.hosts\.HOME\.reachable && status\.hosts\.HOME\.state !== "STOPPED"/);
+  assert.match(client, /cloudflared tunnel run nochichim/);
   assert.match(client, /status\.state === "RECOVERY_REQUIRED"/);
   assert.match(client, /status\.auditBacklogBlocked/);
   assert.match(client, /status\.routeHost === "OFFLINE" && bothAppsStopped/);

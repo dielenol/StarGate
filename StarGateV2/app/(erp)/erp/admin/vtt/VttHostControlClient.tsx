@@ -60,7 +60,7 @@ const HOST_LABEL: Record<VttHostTarget, string> = {
 };
 
 const HOST_DESCRIPTION: Record<Exclude<VttHostTarget, "OFFLINE">, string> = {
-  HOME: "기존 HOME Cloudflare Tunnel을 공개 주소에 연결합니다.",
+  HOME: "각 PC에서 기존 방식으로 실행한 nochichim Tunnel을 공개 주소에 연결합니다.",
   VPS: "Contabo의 nochichim-vps Tunnel을 공개 주소에 연결합니다.",
 };
 
@@ -185,15 +185,17 @@ export default function VttHostControlClient({ initialStatus }: Props) {
   function routeDisabled(targetHost: VttHostTarget): boolean {
     if (globallyLocked || status.routeHost === targetHost) return true;
     if (targetHost === "OFFLINE") return false;
-    const otherHost = targetHost === "HOME" ? "VPS" : "HOME";
-    const target = status.hosts[targetHost];
-    const other = status.hosts[otherHost];
+    if (status.routeHost !== "OFFLINE" || !status.hosts.VPS.reachable) return true;
+    if (targetHost === "HOME") {
+      return (
+        status.hosts.VPS.state !== "STOPPED" ||
+        (status.hosts.HOME.reachable &&
+          !["STOPPED", "RUNNING"].includes(status.hosts.HOME.state))
+      );
+    }
     return (
-      status.routeHost === "UNKNOWN" ||
-      !target.reachable ||
-      !other.reachable ||
-      other.state !== "STOPPED" ||
-      !["STOPPED", "RUNNING"].includes(target.state)
+      !["STOPPED", "RUNNING"].includes(status.hosts.VPS.state) ||
+      (status.hosts.HOME.reachable && status.hosts.HOME.state !== "STOPPED")
     );
   }
 
@@ -233,8 +235,8 @@ export default function VttHostControlClient({ initialStatus }: Props) {
           <Eyebrow tone="gold">NOCHICHIM · PUBLIC ROUTE</Eyebrow>
           <h2>Cloudflare 경로와 데이터 동기화를 따로 제어합니다.</h2>
           <p>
-            로컬/VPS 버튼은 공개 주소의 Tunnel 매핑만 바꿉니다. 앱 시작·종료나
-            데이터 복사는 함께 실행되지 않습니다.
+            로컬 버튼은 각 PC의 기존 nochichim Tunnel을, VPS 버튼은 Contabo Tunnel을
+            공개 주소에 연결합니다. 앱 시작·종료나 데이터 복사는 함께 실행되지 않습니다.
           </p>
         </div>
         <div className={styles.hero__status} role="status" aria-live="polite">
@@ -262,12 +264,12 @@ export default function VttHostControlClient({ initialStatus }: Props) {
         </Box>
       ) : null}
       <Box className={styles.notice} data-tone="warning" role="note">
-        HOME Tunnel connector는 한 번에 한 로컬 PC에서만 실행하세요. 여러 PC가 같은
-        Tunnel 자격증명으로 동시에 연결되면 요청과 동기화 파일이 서로 다른 PC로 분산될 수 있습니다.
+        HOME은 사용할 PC에서 기존 방식으로 앱과 <code>cloudflared tunnel run nochichim</code>을
+        먼저 실행하세요. HOME connector는 한 번에 한 PC에서만 실행해야 합니다.
       </Box>
       <Box className={styles.notice} data-tone="info" role="note">
-        호스트를 바꿀 때는 공개 경로를 먼저 OFF로 바꾸고 기존 앱을 완전히 종료하세요.
-        접속자나 다른 호스트 writer가 남아 있으면 새 경로 ON은 우회 없이 차단됩니다.
+        VPS로 넘길 때는 공개 경로를 먼저 OFF로 바꾸고 기존 로컬 앱과 Tunnel을 직접
+        종료하세요. HOME 동기화 helper가 없는 PC의 종료 상태는 사이트가 대신 확인할 수 없습니다.
       </Box>
       {feedback ? (
         <Box
@@ -365,13 +367,22 @@ export default function VttHostControlClient({ initialStatus }: Props) {
                     <small>{host} TUNNEL</small>
                     <strong>{HOST_LABEL[host]}</strong>
                   </div>
-                  <Tag tone={runtimeStateTone(runtime.state)}>
-                    {RUNTIME_STATE_LABEL[runtime.state]}
+                  <Tag
+                    tone={host === "HOME" && !runtime.reachable
+                      ? "default"
+                      : runtimeStateTone(runtime.state)}
+                  >
+                    {host === "HOME" && !runtime.reachable
+                      ? "로컬 직접 실행"
+                      : RUNTIME_STATE_LABEL[runtime.state]}
                   </Tag>
                 </div>
                 <p>{HOST_DESCRIPTION[host]}</p>
                 <dl className={styles.hostCard__metrics}>
-                  <div><dt>제어 응답</dt><dd>{runtime.reachable ? "정상" : "응답 없음"}</dd></div>
+                  <div>
+                    <dt>{host === "HOME" ? "동기화 helper" : "제어 응답"}</dt>
+                    <dd>{runtime.reachable ? "연결됨" : host === "HOME" ? "선택 미연결" : "응답 없음"}</dd>
+                  </div>
                   <div><dt>접속자</dt><dd>{hostConnectedUsers(runtime)}</dd></div>
                   <div><dt>시작 시각</dt><dd>{formatDateTime(runtime.startedAt)}</dd></div>
                   <div><dt>소스 커밋</dt><dd title={runtime.sourceRevision ?? undefined}>{sourceRevision(runtime.sourceRevision)}</dd></div>
@@ -424,7 +435,11 @@ export default function VttHostControlClient({ initialStatus }: Props) {
           id="vtt-data-sync-title"
           role="heading"
           aria-level={2}
-          right={syncReady ? "동기화 가능" : "공개 OFF + 양쪽 앱 정지 필요"}
+          right={syncReady
+            ? "동기화 가능"
+            : !status.hosts.HOME.reachable
+              ? "HOME 동기화 helper 연결 필요"
+              : "공개 OFF + 양쪽 앱 정지 필요"}
         >
           수동 데이터 동기화
         </PanelTitle>

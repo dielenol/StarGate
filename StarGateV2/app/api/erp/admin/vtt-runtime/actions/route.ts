@@ -99,13 +99,11 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    if (!hostStatus.hosts.HOME.reachable || hostStatus.hosts.HOME.state !== "STOPPED") {
+    if (hostStatus.hosts.HOME.reachable && hostStatus.hosts.HOME.state !== "STOPPED") {
       return NextResponse.json(
         {
           error: "HOME 앱의 완전한 정지를 확인한 뒤 VPS 앱을 시작할 수 있습니다.",
-          code: hostStatus.hosts.HOME.reachable
-            ? "HOME_NOT_STOPPED"
-            : "HOME_UNREACHABLE",
+          code: "HOME_NOT_STOPPED",
         },
         { status: 409 },
       );

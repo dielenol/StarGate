@@ -45,6 +45,7 @@ test("분리 모드의 VPS START는 공개 VPS 경로와 HOME 정지를 서버�
   assert.ok(statusIndex > modeIndex);
   assert.ok(actionIndex > statusIndex);
   assert.match(route, /hostStatus\.routeHost !== "VPS"/);
+  assert.match(route, /hostStatus\.hosts\.HOME\.reachable &&/);
   assert.match(route, /hostStatus\.hosts\.HOME\.state !== "STOPPED"/);
   assert.match(route, /HOST_OPERATION_LOCKED/);
 });

@@ -111,8 +111,7 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
     hostStatus.state !== "RECOVERY_REQUIRED" &&
     hostStatus.transition === null &&
     hostStatus.routeHost === "VPS" &&
-    hostStatus.hosts.HOME.reachable &&
-    hostStatus.hosts.HOME.state === "STOPPED"
+    (!hostStatus.hosts.HOME.reachable || hostStatus.hosts.HOME.state === "STOPPED")
   );
   const startDisabled =
     locked || !separatedStartReady || status.state === "RUNNING" || status.state === "STARTING";
@@ -193,7 +192,8 @@ export default function VttRuntimeClient({ initialStatus, initialHostStatus = nu
       ) : null}
       {hostStatus && !separatedStartReady && status.state === "STOPPED" ? (
         <Box className={styles.notice} data-tone="info" role="note">
-          VPS 앱을 시작하려면 HOME 앱을 완전히 종료하고 VPS Tunnel 경로를 먼저 ON으로 선택하세요.
+          VPS 앱을 시작하려면 기존 HOME 앱과 Tunnel을 직접 종료하고 VPS Tunnel 경로를
+          먼저 ON으로 선택하세요.
         </Box>
       ) : null}
 

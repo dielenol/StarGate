@@ -250,6 +250,26 @@ test("분리 모드의 VPS START는 VPS 경로와 HOME 정지를 서버에서 �
   assert.equal(state.actionCalls.length, 0);
 });
 
+test("기존 로컬 Tunnel이 꺼져 HOME agent가 응답하지 않아도 VPS START를 허용한다", async () => {
+  state.session = session("GM");
+  state.hostStatus = {
+    state: "DEGRADED",
+    routeHost: "VPS",
+    transition: null,
+    controlEnabled: true,
+    hosts: {
+      HOME: { state: "UNREACHABLE", reachable: false },
+      VPS: { state: "STOPPED", reachable: true },
+    },
+  };
+  const response = await actionRoute.POST(actionRequest({
+    requestId: "vtt-start-home-legacy-off-01",
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(state.actionCalls.length, 1);
+  assert.equal(state.actionCalls[0].action, "START");
+});
+
 test("분리 모드가 꺼진 기존 배포는 v1 START 계약을 그대로 유지한다", async () => {
   state.session = session("GM");
   state.hostControlEnabled = false;
