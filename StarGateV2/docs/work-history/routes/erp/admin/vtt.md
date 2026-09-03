@@ -36,3 +36,12 @@
 - 검증: VTT 런타임 집중 테스트 64건, `pnpm typecheck`, 변경 파일 ESLint, production build, 비인증 관리자 경로의 로그인 redirect 확인
 - 관련 커밋: `14b86323`
 - 운영 경계: 공개 경로 `OFFLINE`·HOME/VPS 앱 `STOPPED`를 유지하고 데이터 동기화나 live writer 전환은 실행하지 않았다.
+
+## 2026-09-03 · 안전성 수정 · VPS 시작 전 운영 상태 재확인
+
+- VPS 앱 시작 직전에 host controller가 승인한 exact SHA와 현재 VPS runtime revision을 다시 비교하고, VPS 상태를 확인할 수 없으면 시작을 차단하도록 했다.
+- HOME helper가 없는 기존 로컬 운영에서는 세 PC의 앱과 Tunnel 종료를 확인한 운영자가 `HOME 종료`를 직접 입력해야만 VPS를 시작할 수 있게 했다.
+- 수동 확인 값은 VPS lifecycle controller로 전달하지 않고 StarGate 서버에서만 검증하며, 성공한 시작 감사에 확인 방식을 함께 기록하도록 했다.
+- 검증: VTT 런타임 집중 테스트 65건, `pnpm typecheck`, 변경 파일 ESLint, production build
+- 관련 커밋: `296f1d5d`
+- 운영 경계: 공개 경로 `OFFLINE`·HOME/VPS 앱 `STOPPED`를 유지하고 데이터 동기화나 live writer 전환은 실행하지 않았다.
