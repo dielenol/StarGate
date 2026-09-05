@@ -20,6 +20,7 @@
     "hall-of-fame:ensure-indexes": "pnpm --filter @stargate/shared-db build && node --experimental-strip-types scripts/hall-of-fame/ensure-indexes.ts",
     "vtt-runtime:test": "node --experimental-strip-types --test lib/vtt-runtime/__tests__/*.test.mjs app/api/erp/admin/vtt-runtime/__tests__/*.test.mjs app/api/erp/admin/vtt-hosts/__tests__/*.test.mjs",
     "gallery:test": "node --experimental-strip-types --test lib/gallery/__tests__/*.test.mjs",
+    "gallery:assets-audit": "node --experimental-strip-types scripts/audit-gallery-cutscene-assets.ts",
     "assets:audit": "node --experimental-strip-types scripts/audit-public-assets.mjs",
     "assets:test": "node --experimental-strip-types --test lib/assets/__tests__/*.test.mjs scripts/__tests__/audit-public-assets.test.mjs",
     "asset:path": "node --experimental-strip-types scripts/asset-path-cli.ts",
