@@ -3,19 +3,11 @@
 }
 
 .layout__content {
-  min-height: 100vh;
-  padding-left: 90px;
+  min-height: calc(100vh - 88px);
+  scroll-margin-top: 100px;
 }
 
-@media (min-width: 1280px) {
-  .layout__content {
-    padding-left: 90px;
-  }
-}
-
-@media (max-width: 1279px) {
-  .layout__content {
-    padding-left: 0;
-    padding-top: 56px;
-  }
+/* Keep existing document anchors below the public sticky header. */
+.layout__content :global([id]) {
+  scroll-margin-top: 112px;
 }

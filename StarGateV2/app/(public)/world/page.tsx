@@ -34,8 +34,8 @@ export default function WorldPage() {
             <Image
               src={emblemSrc}
               alt="Novus Ordo emblem"
-              width={360}
-              height={360}
+              width={839}
+              height={697}
               priority
               quality={72}
               sizes="(min-width: 768px) 360px, 70vw"
