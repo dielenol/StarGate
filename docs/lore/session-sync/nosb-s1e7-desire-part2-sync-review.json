@@ -1,0 +1,2509 @@
+{
+  "version": 1,
+  "sessionId": "NOSB-S1E7-DESIRE-PART2",
+  "source": {
+    "path": "/Users/flitto/Downloads/NOSB 7 part 2.pdf",
+    "sha256": "38a5a46bff8cf963faa130c9f8857726b1cc7d9da55778eecacc96f0be854265",
+    "pages": 148,
+    "method": "148쪽 원문 추출·화자 및 장면 대조·1부 보류 대상 재대조. 등록안에서 역으로 대상 목록을 만들지 않음."
+  },
+  "subjects": [
+    {
+      "id": "maria",
+      "name": "마리아",
+      "kind": "agent",
+      "evidence": "p2~8,56~69,77~82,109~120,135: 회상·의식 장소 진입·네베드 회복·동료 조종 해제·현장 군권 상실."
+    },
+    {
+      "id": "otilia",
+      "name": "오틸리아 발트만",
+      "kind": "agent",
+      "evidence": "p24~30,68~69,131~144: 손거울 획득·계약 이행 요구·백신 결합 역병·현장 소실."
+    },
+    {
+      "id": "hash",
+      "name": "해쉬 테거",
+      "kind": "agent",
+      "evidence": "p65~69,84~85,119,138~145: 조종 원리 분석·행동교정물질·백신 투여·오틸리아의 소실 목격."
+    },
+    {
+      "id": "neved",
+      "name": "키아나 오 캘러핸(네베드)",
+      "kind": "agent",
+      "evidence": "p31~36,59~63,94,129~130: 의식 결박·성직자 사살·가족 보호."
+    },
+    {
+      "id": "pipette",
+      "name": "휘트모어 핀치(피펫)",
+      "kind": "agent",
+      "evidence": "p40~49,126~128: 마테오에게 폭탄 좌표 확보·수잔에게 인계."
+    },
+    {
+      "id": "yuhoe",
+      "name": "유회",
+      "kind": "agent",
+      "evidence": "p38~39,86~88,124~136: 비상 공동지휘·퇴각 시간 논의·피닉스 승인."
+    },
+    {
+      "id": "accel",
+      "name": "엘 볼라도르",
+      "kind": "agent",
+      "evidence": "p9~16,69~82,97~98,109~115: 시장 이송·피조종·우디의 회복·회귀 전후 공격."
+    },
+    {
+      "id": "kimlee",
+      "name": "킴라박 리",
+      "kind": "agent",
+      "evidence": "p50~55,69~77,85~94: 지상 관찰·피조종·우디의 구조·지하 전투."
+    },
+    {
+      "id": "chronos",
+      "name": "크로노스",
+      "kind": "agent",
+      "evidence": "p17~23,31~34,113~120: 해골 장치에서 분리·시간 회귀·인형사 대신 피격."
+    },
+    {
+      "id": "woody",
+      "name": "우디",
+      "kind": "agent",
+      "evidence": "p18~19,73~77,89~98,109~120: 동료 회수·포자 회복·회귀로 취소된 손 회수."
+    },
+    {
+      "id": "aegis",
+      "name": "발레리아 아젠트",
+      "kind": "agent",
+      "evidence": "p17~30,64,131: 지하 조명·계약 강박 일시 해제·민간인 보호."
+    },
+    {
+      "id": "stark",
+      "name": "스타크",
+      "kind": "agent",
+      "evidence": "p38~39,86~88,123~136: 공동 지휘권 수령·포획망 제작 지시·피닉스 승인·광장 방어."
+    },
+    {
+      "id": "susan",
+      "name": "수잔 델라웨어",
+      "kind": "person",
+      "evidence": "p40~43,47~49: 침투 지휘·마테오 피살 현장·폭탄 좌표 회수."
+    },
+    {
+      "id": "lee",
+      "name": "이동식",
+      "kind": "agent",
+      "evidence": "p17~23,31~34,114~120: 해골 장치로 일행과 분리·살아 있는 인형사 운반."
+    },
+    {
+      "id": "bigboy",
+      "name": "박애솔",
+      "kind": "agent",
+      "evidence": "p50~55: 킴라박과 합류·폭죽으로 인형사 주의 유도."
+    },
+    {
+      "id": "odd",
+      "name": "Mr. 오드",
+      "kind": "person",
+      "evidence": "p38~39: 스타크와 유회에게 계엄·피닉스 실행 결정권 위임."
+    },
+    {
+      "id": "margaret",
+      "name": "마가렛",
+      "kind": "agent",
+      "evidence": "p143~147: 파리 방송 관측·피펫 인형·친구 걱정·미확인 방문자."
+    },
+    {
+      "id": "puppeteer",
+      "name": "인형사",
+      "kind": "entity",
+      "evidence": "p35~36,54~55,62~69,84~85,94~120: 마리아에게 미완성 의식을 언급하고 신경 조종으로 현장팀에 맞섰다. 회귀 후 살아 있는 채 이동식에게 운반됐다."
+    },
+    {
+      "id": "marquis",
+      "name": "후작",
+      "kind": "person",
+      "evidence": "p35~36,59~62,85,94: 검은 카드를 꺼내 의식을 진행했고 성직자 사망 뒤 인형처럼 축 늘어졌다."
+    },
+    {
+      "id": "priest",
+      "name": "성직자",
+      "kind": "person",
+      "evidence": "p35~36,59~63,94: 네베드의 총격 뒤 GM이 현재 등장체의 사망을 명시했다. 인간이었는지는 의문으로 남았다."
+    },
+    {
+      "id": "matteo",
+      "name": "마테오",
+      "kind": "person",
+      "evidence": "p44~49, 특히 p47 22:03:57: 1부 연락자가 다시 나타나 폭탄 좌표 세 곳을 피펫에게 건넨 뒤 사살됐다. 병기부 마테오 리바스와 다른 인물이다."
+    },
+    {
+      "id": "mirror-demon",
+      "name": "오틸리아의 거울 속 계약 상대",
+      "kind": "entity",
+      "evidence": "p26~29,131~138: 거울을 통해 계약 이행과 역병 확산을 요구한다. 고유 이름은 밝혀지지 않았다."
+    },
+    {
+      "id": "paris-boss",
+      "name": "페데라치오의 파리 보스",
+      "kind": "person",
+      "evidence": "p54~55; 1부 래키 증언과 구별: 보스가 측근에게 붙잡혀 허공을 바라보고, 옆의 여성이 병사들을 지시하는 모습이 관찰됐다. 1부에는 명목상 보스라는 증언이 있었다."
+    },
+    {
+      "id": "queen",
+      "name": "회상 속 마리 앙투아네트",
+      "kind": "person",
+      "evidence": "p4~6: 여왕의 처형과 마리 앙투아네트 호명"
+    },
+    {
+      "id": "robespierre",
+      "name": "회상 속 로베스 피에르",
+      "kind": "person",
+      "evidence": "p5~7: 이성의 여신을 내세운 연설과 처형"
+    },
+    {
+      "id": "goddess-woman",
+      "name": "이성의 여신으로 내세워진 여성",
+      "kind": "person",
+      "evidence": "p6: 하얀 포 위에 여성을 올리고 이성의 여신이라 칭함"
+    },
+    {
+      "id": "mayor",
+      "name": "파리 시장",
+      "kind": "person",
+      "evidence": "p15~16: 엘 볼라도르가 생존 상태로 차량에 옮김"
+    },
+    {
+      "id": "ghost",
+      "name": "카타콤에서 길을 가리킨 유령",
+      "kind": "entity",
+      "evidence": "p28 21:25~21:28: 복도 하나를 가리킨 뒤 사라짐"
+    },
+    {
+      "id": "inner-voice",
+      "name": "마리아 내면에서 들린 목소리",
+      "kind": "entity",
+      "evidence": "p57: 반쪽만 성공한 의식과 내면에서 지워질 것이라는 말"
+    },
+    {
+      "id": "bomber",
+      "name": "세 번째 폭탄을 터뜨린 미확인 주체",
+      "kind": "person",
+      "evidence": "p111~120: 회귀 뒤에도 세 번째 폭발이 발생"
+    },
+    {
+      "id": "saboteur",
+      "name": "통신을 끊은 미확인 주체",
+      "kind": "person",
+      "evidence": "p120~123: 연락 단절과 공작 가능성"
+    },
+    {
+      "id": "other-seer",
+      "name": "인형사가 암시한 다른 미래 관측자",
+      "kind": "person",
+      "evidence": "p116~120: 인형사의 발언과 회귀 후 폭발"
+    },
+    {
+      "id": "visitor",
+      "name": "마가렛의 미확인 방문자",
+      "kind": "person",
+      "evidence": "p147: 열린 문을 보고 마가렛이 피펫이라 부르는 질문"
+    },
+    {
+      "id": "lawyer",
+      "name": "파리 조직의 이름 없는 변호사",
+      "kind": "person",
+      "evidence": "1부 래키의 실권자 증언; 2부 p54~55 보스 주변 관측과 대조"
+    },
+    {
+      "id": "ygolonac",
+      "name": "이골로냑",
+      "kind": "entity",
+      "evidence": "p63 22:39:45: 마리아가 이름을 부름"
+    },
+    {
+      "id": "crown",
+      "name": "왕관",
+      "kind": "entity",
+      "evidence": "p85: 인형사의 호르몬 조종을 왕관의 정신 조종과 비교"
+    },
+    {
+      "id": "family",
+      "name": "네베드가 지킨 아기와 부모",
+      "kind": "person",
+      "evidence": "p129~130: 가족이 도주하고 네베드가 앞을 지킴"
+    },
+    {
+      "id": "civilians",
+      "name": "광장의 피난 시민들",
+      "kind": "person",
+      "evidence": "p123~136: 대피·포위·아젠트의 보호"
+    },
+    {
+      "id": "troops",
+      "name": "현장 병력과 공병",
+      "kind": "person",
+      "evidence": "p87~88,121~136: 포획망 제작·폭탄 처리·대피 방송·방어선"
+    },
+    {
+      "id": "guards",
+      "name": "시청 경비원들",
+      "kind": "person",
+      "evidence": "p9~15: 엘 볼라도르의 습격·사살"
+    },
+    {
+      "id": "federatio",
+      "name": "페데라치오",
+      "kind": "faction",
+      "evidence": "p9~16,42~55,64~68,109~123: 시청 습격·폭탄·인형사의 병사 지시"
+    },
+    {
+      "id": "novus",
+      "name": "노부스 오르도",
+      "kind": "faction",
+      "evidence": "p38~39,65~68,123~136: 비상 지휘권·감염자 매장·방어선"
+    },
+    {
+      "id": "rose",
+      "name": "로즈",
+      "kind": "faction",
+      "evidence": "p68 22:48:01: 해쉬가 노부스와 로즈를 함께 언급"
+    },
+    {
+      "id": "catacombs",
+      "name": "파리 카타콤",
+      "kind": "place",
+      "evidence": "p17~36,56~65,111~122: 진입·매장·흑미사·지상 확산"
+    },
+    {
+      "id": "ritual-site",
+      "name": "흑미사 유적",
+      "kind": "place",
+      "evidence": "p35~36,58~65,94: 의식 제단·결박·교전"
+    },
+    {
+      "id": "cityhall",
+      "name": "파리 시청",
+      "kind": "place",
+      "evidence": "p9~16: 경비 습격·시장 차량 이송"
+    },
+    {
+      "id": "eiffel",
+      "name": "에펠탑 인근",
+      "kind": "place",
+      "evidence": "p54~55: 무장한 페데라치오 병사·다이너마이트 준비"
+    },
+    {
+      "id": "square",
+      "name": "파리 광장",
+      "kind": "place",
+      "evidence": "p123~136: 대피 방송·폭격·지상 방어선"
+    },
+    {
+      "id": "versailles",
+      "name": "회상 속 베르사유",
+      "kind": "place",
+      "evidence": "p5: 마리아의 회상에서 가까운 장소로 호명"
+    },
+    {
+      "id": "vendee",
+      "name": "회상 속 방데",
+      "kind": "place",
+      "evidence": "p7~8: 학살 회상과 마리아의 반응"
+    },
+    {
+      "id": "siberia",
+      "name": "시베리아 감염자 매장지",
+      "kind": "place",
+      "evidence": "p65: 파리보다 감염자가 많이 매장된 장소로 비교"
+    },
+    {
+      "id": "phoenix",
+      "name": "오퍼레이션 피닉스",
+      "kind": "concept",
+      "evidence": "p38~39,123~128: 사전 위임·승인·폭격·감염자 생존"
+    },
+    {
+      "id": "aurora",
+      "name": "광원화 바이러스",
+      "kind": "concept",
+      "evidence": "p65,111~128,138~144: 매장 감염자·확산·백신 결합 역병"
+    },
+    {
+      "id": "revolution",
+      "name": "마리아가 회상한 혁명과 신질서 선언",
+      "kind": "event",
+      "evidence": "p2~8: 237년 전 프랑스 회상·이성의 여신·방데"
+    },
+    {
+      "id": "rewind",
+      "name": "크로노스의 시간 회귀",
+      "kind": "event",
+      "evidence": "p109~120: 최초 죽음·폭발·회귀·대신 피격·재폭발"
+    },
+    {
+      "id": "dead-hand",
+      "name": "프로젝트 데드 핸드",
+      "kind": "concept",
+      "evidence": "p143~147 마가렛의 에필로그와 기존 프로젝트 신원 연결"
+    },
+    {
+      "id": "coordinates",
+      "name": "마테오의 폭탄 좌표 쪽지",
+      "kind": "item",
+      "evidence": "p46~49: 마테오→피펫→수잔으로 인계"
+    },
+    {
+      "id": "hand-mirror",
+      "name": "오틸리아의 계약 손거울",
+      "kind": "item",
+      "evidence": "p24~29,131~138: 획득·교신·계약 강박"
+    },
+    {
+      "id": "capture-net",
+      "name": "전개식 포획망",
+      "kind": "item",
+      "evidence": "p87~88: 스타크 지시로 공병이 제작"
+    },
+    {
+      "id": "correction",
+      "name": "행동교정물질",
+      "kind": "item",
+      "evidence": "p119: 해쉬가 생포 인형사에게 투여"
+    },
+    {
+      "id": "sonic",
+      "name": "음파 방출기",
+      "kind": "item",
+      "evidence": "p135: 스타크의 음파 장비 방출 행동"
+    },
+    {
+      "id": "vaccine",
+      "name": "해쉬의 광원화 백신",
+      "kind": "item",
+      "evidence": "p138~141: 보유 전량을 오틸리아에게 투여"
+    },
+    {
+      "id": "spores",
+      "name": "백신과 결합된 역병 포자",
+      "kind": "item",
+      "evidence": "p138~141: 주변 감염자의 형체 소실"
+    },
+    {
+      "id": "head-hand",
+      "name": "회귀 전 인형사의 머리와 손",
+      "kind": "item",
+      "evidence": "p109,113~120: 회수 뒤 시간 회귀"
+    },
+    {
+      "id": "dynamite",
+      "name": "페데라치오의 폭탄과 다이너마이트",
+      "kind": "item",
+      "evidence": "p46~49,54~55,111~123: 좌표 세 곳·두 곳 처리·세 번째 폭발"
+    },
+    {
+      "id": "skull-door",
+      "name": "카타콤의 해골 문 장치",
+      "kind": "item",
+      "evidence": "p21~23,31~34: 해골 장치로 일행 분리"
+    },
+    {
+      "id": "black-card",
+      "name": "후작의 검은 카드",
+      "kind": "item",
+      "evidence": "p36,85,94: 카드·검은 명령·비물리적 속박 해제"
+    },
+    {
+      "id": "pipette-doll",
+      "name": "마가렛이 쥔 피펫 인형",
+      "kind": "item",
+      "evidence": "p145~147: 방송을 보며 인형을 쥠"
+    },
+    {
+      "id": "fireworks",
+      "name": "박애솔의 폭죽",
+      "kind": "item",
+      "evidence": "p50~55: 운반·점화·시선 유도"
+    },
+    {
+      "id": "combat-supplies",
+      "name": "맥주·소다·스팀팩·방탄복",
+      "kind": "item",
+      "evidence": "p18~19,50~55,76~94: 분배·사용·판정 회복"
+    },
+    {
+      "id": "reinforcements",
+      "name": "유회의 전투원 호출 비용",
+      "kind": "event",
+      "evidence": "전투 중 전투원 호출 및 비용 언급"
+    },
+    {
+      "id": "sale-thought",
+      "name": "조직을 팔겠다는 내면 독백",
+      "kind": "event",
+      "evidence": "원문 내 조직을 팔겠다는 개인의 독백"
+    },
+    {
+      "id": "skull-stranger",
+      "name": "해골 장치를 누르고 달아난 미상 인물",
+      "kind": "person",
+      "evidence": "p31~35: 문을 닫고 네베드를 흑미사 유적으로 유도"
+    },
+    {
+      "id": "simon",
+      "name": "네베드가 떠올린 사이먼",
+      "kind": "person",
+      "evidence": "p130 01:11:33: 사이먼·데이빗·엄마를 부름"
+    },
+    {
+      "id": "david",
+      "name": "네베드가 떠올린 데이빗",
+      "kind": "person",
+      "evidence": "p130 01:11:33: 사이먼·데이빗·엄마를 부름"
+    },
+    {
+      "id": "mother",
+      "name": "네베드가 떠올린 어머니",
+      "kind": "person",
+      "evidence": "p130 01:11:33: 사이먼·데이빗·엄마를 부름"
+    },
+    {
+      "id": "president",
+      "name": "방침이 언급된 노부스 오르도 총장",
+      "kind": "person",
+      "evidence": "p38 21:46:18,21:47:01: 오드가 총장의 낙관을 언급하고 유회가 조용히 처리하라는 뜻을 상기"
+    },
+    {
+      "id": "alley-detective",
+      "name": "골목조가 언급한 탐정사무소 탐정",
+      "kind": "person",
+      "evidence": "p37 21:44:29: 파리 정보를 제공했다는 탐정 언급"
+    },
+    {
+      "id": "conductor-memory",
+      "name": "해쉬가 떠올린 지휘자",
+      "kind": "person",
+      "evidence": "p138 01:35:14: 지휘자·여교주를 떠올림"
+    },
+    {
+      "id": "cult-leader-memory",
+      "name": "해쉬가 떠올린 여교주",
+      "kind": "person",
+      "evidence": "p138 01:35:14: 지휘자·여교주를 떠올림"
+    },
+    {
+      "id": "boss-doll",
+      "name": "킴라박이 던진 페데라치오 두목 인형",
+      "kind": "item",
+      "evidence": "p96 00:04:32: 킴라박이 떡밥으로 표시된 두목 인형을 던짐"
+    }
+  ],
+  "coverage": [
+    {
+      "subjectId": "maria",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마리아에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다. 현장 군권 이양만 반영한다. 영구 임면 근거가 없어 마리아 H·스타크 J·유회 J·오드 M을 보존한다.",
+          "target": "MARIA"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "otilia",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "오틸리아 발트만에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다. 소실은 서술하되 영구 사망을 확정하지 않고 기존 생사 값을 보존한다.",
+          "target": "OTILIA"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "hash",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해쉬 테거에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "INDEXER"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "neved",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "키아나 오 캘러핸(네베드)에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "네베드"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "p129~130: 퇴각 대신 가족 앞을 지킨 행동을 출처가 있는 성격 관찰로 추가한다."
+        }
+      }
+    },
+    {
+      "subjectId": "pipette",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "휘트모어 핀치(피펫)에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "PIPETTE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "yuhoe",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "유회에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다. 현장 군권 이양만 반영한다. 영구 임면 근거가 없어 마리아 H·스타크 J·유회 J·오드 M을 보존한다.",
+          "target": "YUHOE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "p124~126: 퇴각 시간을 확보하려 한 행동을 출처가 있는 성격 관찰로 추가한다."
+        }
+      }
+    },
+    {
+      "subjectId": "accel",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "엘 볼라도르에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "ACCEL"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "kimlee",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "킴라박 리에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "KIMLEE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "chronos",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "크로노스에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "TIME"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "p113~115: 공격을 대신 맞으며 시간을 되돌린 비용 감수 행동을 출처가 있는 성격 관찰로 추가한다."
+        }
+      }
+    },
+    {
+      "subjectId": "woody",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "우디에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "WD-(𝓃)"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "aegis",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "발레리아 아젠트에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "AEGIS"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "stark",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "스타크에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다. 현장 군권 이양만 반영한다. 영구 임면 근거가 없어 마리아 H·스타크 J·유회 J·오드 M을 보존한다.",
+          "target": "CLOWN"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "p125~126: 최후 수단을 승인한 지휘 판단을 출처가 있는 성격 관찰로 추가한다."
+        }
+      }
+    },
+    {
+      "subjectId": "susan",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "수잔 델라웨어에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "CLAIRVOYANCE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "personality": {
+          "action": "skip",
+          "reason": "침투팀을 안심시키는 현장 언행을 누적 성격으로 단정하기에는 해석 여지가 있어 이번 성격 관찰에는 추가하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "lee",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "이동식에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "LEE DONGSIK"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "bigboy",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "박애솔에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "BIG BOY"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "odd",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "Mr. 오드에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다. 현장 군권 이양만 반영한다. 영구 임면 근거가 없어 마리아 H·스타크 J·유회 J·오드 M을 보존한다.",
+          "target": "MR_ODD"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "margaret",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마가렛에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "update",
+          "reason": "프로젝트 데드 핸드 위키에 방송 관측과 미확인 방문을 보강한다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "target": "MARGARET"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "personality": {
+          "action": "skip",
+          "reason": "두려움과 친구에 대한 걱정은 등장 사건에 보존한다. 영속 성격으로 해석한 후보는 이번 성격 관찰에 추가하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "puppeteer",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "인형사에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "인형사 개체 위키에 직접 관측과 당사자의 증언, 회귀 전후의 상태를 구분해 기록한다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "사용자 확인으로 인형사는 1부 코르티잔과 동일인이다. 같은 신원에 1부와 2부 행적을 연결한다. 기술 식별자는 유지하며 전용 초상 확정 뒤 등록안을 마무리한다.",
+          "target": "PUPPETEER"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "marquis",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "후작에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "사용자 지시로 본인·인형 여부는 미확정으로 유지한다. 현재 등장체의 사건만 기록하고 전용 초상 확정 뒤 등록안을 마무리한다.",
+          "target": "PARIS_MARQUIS"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "priest",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "성직자에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "사용자 지시로 본인·인형 여부는 미확정으로 유지한다. 현재 등장체의 사건만 기록하고 전용 초상 확정 뒤 등록안을 마무리한다.",
+          "target": "PARIS_PRIEST"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "matteo",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마테오에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "확인된 현장 이름 또는 설명형 호칭으로 별도 비공개 신원 등록안에 포함한다. 실명·소속의 미상 값은 유지하고 전용 초상 원본 확정 뒤 등록안을 마무리한다.",
+          "target": "MATTEO_FEDERATIO"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "mirror-demon",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "오틸리아의 거울 속 계약 상대에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "확인된 현장 이름 또는 설명형 호칭으로 별도 비공개 신원 등록안에 포함한다. 실명·소속의 미상 값은 유지하고 전용 초상 원본 확정 뒤 등록안을 마무리한다.",
+          "target": "OTILIA_MIRROR_DEMON"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "paris-boss",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "페데라치오의 파리 보스에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "확인된 현장 이름 또는 설명형 호칭으로 별도 비공개 신원 등록안에 포함한다. 실명·소속의 미상 값은 유지하고 전용 초상 원본 확정 뒤 등록안을 마무리한다.",
+          "target": "FEDERATIO_PARIS_BOSS"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "queen",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "회상 속 마리 앙투아네트에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "237년 전 마리아의 회상에만 등장한다. 캠페인 신원조회 신규 등록을 뒷받침하는 현재 인물 설정은 없다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "robespierre",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "회상 속 로베스 피에르에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "마리아의 회상 속 인물이다. 로베르 피어스라는 발화 표기를 새 인물로 분리하거나 현실 역사에서 설정을 보충하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "goddess-woman",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "이성의 여신으로 내세워진 여성에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "회상 속 역할만 확인된다. 실제 신격·정체를 추정해 신원조회에 등록하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "mayor",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "파리 시장에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "실명이 없고 이후 안전이 확인되지 않는다. 이번 사건에 등장한 시장으로 본문에 남기고 독립 신원 등록은 하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "ghost",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "카타콤에서 길을 가리킨 유령에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "한 번의 안내만 확인된다. 계약 상대와 동일한 존재라는 근거가 없어 합치거나 독립 신원을 만들지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "inner-voice",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마리아 내면에서 들린 목소리에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "발화자의 정체를 확인할 수 없다. 마리아의 내면 사건으로 기록하고 소녀·계약 상대·인형사와 자동 병합하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "bomber",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "세 번째 폭탄을 터뜨린 미확인 주체에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "행위의 주체가 특정되지 않는다. 통신 공작자·다른 관측자와 별개 인물로 확정하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "saboteur",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "통신을 끊은 미확인 주체에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "신원이 드러나지 않은 후속 과제다. 폭파자와 별개 NPC라고 확정하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "other-seer",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "인형사가 암시한 다른 미래 관측자에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인형사의 암시 이상으로 정체가 확인되지 않았다. 증언을 독립 인물의 확정 설정으로 바꾸지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "visitor",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마가렛의 미확인 방문자에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "방문자의 모습·신원이 확정되지 않는다. 피펫의 귀환이나 전원 탈출로 처리하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "lawyer",
+      "surfaces": {
+        "report": {
+          "action": "merge",
+          "reason": "기존 1부 증언과 이번 관측을 비교하는 내부 검토에 남기며 2부 직접 등장으로 서술하지 않는다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "이전 보류 후보를 재대조했으나 2부에도 변호사의 실명·인형사와의 동일성이 확인되지 않는다. 세력 증언으로 유지한다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "ygolonac",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "이골로냑에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "호명만으로 현장 출현이나 거울 속 계약 상대와의 동일성을 확정할 수 없다. 신원·관계의 신규 기록은 만들지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "crown",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "왕관에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기존 왕관의 능력과 비교한 장면이다. 신규 출현·회수·상태 변경으로 등록하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "family",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "네베드가 지킨 아기와 부모에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "익명의 구조 대상 가족이다. 구조 행동은 기록하되 구성원별 신원이나 최종 대피 결과는 추정하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "civilians",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "광장의 피난 시민들에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "집단의 대피 사건이다. 개별 이름·피해 수를 추정하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "troops",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "현장 병력과 공병에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "익명의 작전 수행 집단이다. 명단이나 군 계급을 창작해 NPC로 등록하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "guards",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "시청 경비원들에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "익명 경비원의 사건만 확인된다. 개별 이름·계급을 만들지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "federatio",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "페데라치오에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "update",
+          "reason": "시청 습격·폭탄 정보·두 폭탄 처리와 세 번째 폭발을 기존 세력 위키에 보강한다. 전체 조직 궤멸이나 인형사의 정규 소속을 단정하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "novus",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "노부스 오르도에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판과 광원화 위키에 이 사건의 활동과 위험을 기록한다. 위기 예측을 조직의 확정 붕괴로 바꾸지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "rose",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "로즈에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 백장미와 연결할 수 있는 문맥만 유지한다. 이번 발언을 새로운 세력 활동이나 소속 변경으로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "catacombs",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "파리 카타콤에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "지하 감염자 매장지와 의식·폭발 경과를 새 장소 위키로 작성한다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "ritual-site",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "흑미사 유적에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "카타콤 내부의 의식 장소로 카타콤 위키에 합친다. 별도 지명이나 기관을 창작하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "cityhall",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "파리 시청에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "2부 보고서 위키판에 침투 장소로 기록한다. 건물의 별도 장기 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "eiffel",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "에펠탑 인근에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "페데라치오 위키와 보고서 위키판에 폭탄 준비 장소로 기록한다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "square",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "파리 광장에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "보고서 위키판에 피난·방어 장소로 기록한다. 광장의 고유 이름은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "versailles",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "회상 속 베르사유에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "회상 장면으로 보고서 위키판에 포함한다. 현실 지리로 보정하거나 새 작전 장소로 등록하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "vendee",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "회상 속 방데에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "마리아의 과거 회상으로 보고서 위키판에 포함한다. 현실 역사 자료를 섞어 정사를 보충하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "siberia",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "시베리아 감염자 매장지에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "광원화 위키와 카타콤 위키의 비교 설명에 포함한다. 이번 작전의 방문 장소로 기록하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "phoenix",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "오퍼레이션 피닉스에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "새 개념 위키에 실행 조건·실제 승인·결과와 한계를 작성한다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "aurora",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "광원화 바이러스에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "update",
+          "reason": "기존 광원화 위키에 파리 사건의 직접 관측을 보강한다. 전 세계 치료·재현 가능한 제조법을 만들지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "revolution",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마리아가 회상한 혁명과 신질서 선언에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "마리아의 회상과 인간 관찰이라는 사건으로 보고서 위키판에 포함한다. 선언의 신질서를 현 조직의 공식 창립으로 단정하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "rewind",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "크로노스의 시간 회귀에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "보고서 위키판과 인형사 위키에서 취소된 경과와 최종 시간선을 나눈다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "dead-hand",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "프로젝트 데드 핸드에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "update",
+          "reason": "기존 프로젝트 위키에 마가렛의 방송 관측과 미확인 방문만 보강한다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "coordinates",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마테오의 폭탄 좌표 쪽지에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "폭탄 세 곳의 좌표를 담은 정보 물품으로 등록한다. 실제 위치 수치를 창작하거나 피펫 개인 소유로 지급하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "hand-mirror",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "오틸리아의 계약 손거울에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "계약 교신 도구로 등록한다. 최종 소재·거래 가격·무제한 효과를 창작하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "capture-net",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "전개식 포획망에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "현장 제작 장비의 존재를 등록한다. 완성 수량·실제 사용·격리 성공은 미확인으로 둔다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "correction",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "행동교정물질에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "update",
+          "reason": "기존 행동교정물질 정보에 이번 투여 사건을 추가한다. 용량·재고를 추정하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "sonic",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "음파 방출기에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "사용 장비의 세부 모델이 확정되지 않아 기존 유사 모델 중 하나로 단정하거나 신규 상품을 만들지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "vaccine",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해쉬의 광원화 백신에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "사용·소모된 백신이며 실제 회수 표본이 없다. 새 샘플이나 상품으로 등록하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "spores",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "백신과 결합된 역병 포자에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "현장 효과만 관측했고 회수된 물리 표본이 없다. 보유 표본·제조법·상품으로 등록하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "head-hand",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "회귀 전 인형사의 머리와 손에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "해당 회수는 시간 회귀로 취소됐다. 현재 시간선의 전리품·인벤토리로 등록하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "dynamite",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "페데라치오의 폭탄과 다이너마이트에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "사건에 사용된 폭발물이며 확보·보관한 수량이나 독립 장비 사양이 없다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "skull-door",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "카타콤의 해골 문 장치에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "카타콤 내부 장치로 장소 위키와 보고서 위키판에 기록한다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "카타콤 내부의 고정 장치다. 휴대·획득한 물품으로 등록하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "black-card",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "후작의 검은 카드에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "사용 장면만 확인되며 회수나 카드 자체의 독립 효과는 확정되지 않았다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "pipette-doll",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "마가렛이 쥔 피펫 인형에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "기존 보유물의 등장이다. 신규 획득이나 판매 품목으로 등록하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "fireworks",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "박애솔의 폭죽에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "사용 사건만 기록하며 회수·판매 가능한 신규 물품으로 만들지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "combat-supplies",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "맥주·소다·스팀팩·방탄복에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "기존 소모품·장비의 사용이다. 신규 종류를 만들거나 실제 ERP에서 이미 처리했을 수 있는 지급·차감을 반복하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "원문은 이미 정산한 ERP 거래 여부를 증명하지 않는다. 이번 동기화에서는 지급·차감·재고 변경 없이 확보·사용·마지막 보관 상태만 기록한다."
+        }
+      }
+    },
+    {
+      "subjectId": "reinforcements",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "유회의 전투원 호출 비용에 관해 이번 회차에서 확인된 사건을 작전보고서에 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 사건을 싣는다. 독립 문서로 확장할 추가 설정은 확인되지 않았다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "호출 사실을 기록하되 이미 지불된 비용인지 확인되지 않으므로 크레딧을 추가 차감하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "sale-thought",
+      "surfaces": {
+        "report": {
+          "action": "skip",
+          "reason": "완료된 조직 매각이나 시장 사건이 아니므로 작전 결과로 작성하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "개인의 내면 독백을 공식 조직 매각으로 등록하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물의 고유 신원을 확정하거나 기존 신원 기록을 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "특정 상장사·매매 주문·가격·수량의 실행이 없어 주식·보유·시장공지를 변경하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "skull-stranger",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "후작·성직자·유령과 동일인이라는 근거가 없다. 도주·유도 행동만 기록하고 독립 신원은 만들지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "simon",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기존 사이먼 오 캘러핸과 가족 문맥이 맞지만 현장 등장자는 아니다. 기억 장면만 보존하고 등장 기록이나 관계를 새로 추가하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "david",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기존 데이빗 오 캘러핸과 가족 문맥이 맞지만 현장 등장자는 아니다. 기억 장면만 보존하고 등장 기록이나 관계를 새로 추가하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "mother",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기존 네린 오 캘러핸과의 가족 맥락을 참고하되 현장 등장으로 계산하거나 이 회차에서 관계를 새로 확정하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "president",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기존 총장의 방침을 인용한 장면이다. 총장이 직접 현장에 등장한 사건으로 신원조회에 추가하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "alley-detective",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "1부 래키와의 연속성이 유력하지만 이 발언만으로 동일인을 확정하지 않는다. 현장 등장이 아닌 증언으로만 기록한다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "conductor-memory",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기존 지휘자와의 동일성이 이 로그만으로 확정되지 않는다. 과거를 떠올린 언급만 보존하고 등장 기록은 추가하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "cult-leader-memory",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 행동 또는 기억·증언을 작전보고서에 구분해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "작전보고서 위키판에 같은 문맥으로 포함한다. 독립 인물 문서로 확장하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "실명이 확인되지 않은 과거 인물 언급이다. 새 신원을 만들거나 현장 등장으로 추가하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 인물의 언급이다."
+        }
+      }
+    },
+    {
+      "subjectId": "boss-doll",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "페데라치오 두목 인형을 던진 뒤 인형사의 위치가 옮겨진 전투 행동을 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "인형사 위키와 보고서 위키판에 현장 반응을 기록한다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인형이라는 소품이며 대응하는 두목의 정체가 확인되지 않았다. 파리 보스 본인과 같은 신원으로 등록하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "던진 인형의 기원·작동 원리·대응하는 두목·최종 회수가 미상이라 이번에는 사건 기록으로 보존한다. 독립 물품이나 표본 등록은 하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "실제 지급·차감 이력이 확인되지 않는다. 로그의 투척을 근거로 인벤토리를 다시 정산하지 않는다."
+        }
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "puppeteer-registration",
+      "subjectId": "puppeteer",
+      "surface": "personnel",
+      "confirmed": "마리아에게 미완성 의식을 언급하고 신경 조종으로 현장팀에 맞섰다. 회귀 후 살아 있는 채 이동식에게 운반됐다.",
+      "recommendation": "사용자 확인에 따라 1부 코르티잔과 같은 신원으로 연결하고, 현재 표시 이름은 인형사로 준비한다.",
+      "evidence": "p35~36,54~55,62~69,84~85,94~120",
+      "question": "인형사는 1부 코르티잔과 동일인인가, 미확정인가?",
+      "alternatives": [
+        "동일인 여부 미확정 유지",
+        "코르티잔과 동일인",
+        "코르티잔과 별개 인물"
+      ],
+      "impact": "동일인으로 정하면 1부의 과거 신원과 관계를 함께 연결하게 된다.",
+      "status": "resolved",
+      "resolution": "2026-09-07 사용자 답변: 코르티잔과 동일인."
+    },
+    {
+      "id": "puppeteer-portrait",
+      "subjectId": "puppeteer",
+      "surface": "personnel",
+      "confirmed": "사용자가 2026-09-07 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 정확한 초상 파일은 아직 지정되지 않았다.",
+      "recommendation": "해당 인물의 전용 원본을 확정한 뒤 배경과 피사체 보존을 확인해 신원조회 초상을 준비한다.",
+      "evidence": "p35~36,54~55,62~69,84~85,94~120 및 전체 그림 용도 확인표",
+      "question": "인형사의 신원조회에 사용할 전용 초상은 어느 원본으로 할까?",
+      "alternatives": [
+        "사용자가 지정한 전용 인물 원본 사용",
+        "원문 속 해당 인물 그림의 정확한 원본과 용도를 확인한 뒤 사용"
+      ],
+      "impact": "전용 초상이 확정되기 전에는 이 인물의 신원조회 등록안을 적용 준비 완료로 표시하지 않는다.",
+      "status": "pending"
+    },
+    {
+      "id": "marquis-registration",
+      "subjectId": "marquis",
+      "surface": "personnel",
+      "confirmed": "검은 카드를 꺼내 의식을 진행했고 성직자 사망 뒤 인형처럼 축 늘어졌다.",
+      "recommendation": "현재 등장한 후작을 호칭으로 기록하고 1부 본인·인형 여부와 생사는 미확정으로 둔다.",
+      "evidence": "p35~36,59~62,85,94",
+      "question": "현재 후작은 1부의 본인인가, 인형·대리체인가, 미확정인가?",
+      "alternatives": [
+        "본인·인형 여부 미확정 유지",
+        "1부의 본인",
+        "인형·대리체"
+      ],
+      "impact": "과거 인물과의 기록 병합 및 현재 상태의 귀속이 달라진다.",
+      "status": "resolved",
+      "resolution": "2026-09-07 사용자 답변: 본인·인형 여부 미확정으로 유지."
+    },
+    {
+      "id": "marquis-portrait",
+      "subjectId": "marquis",
+      "surface": "personnel",
+      "confirmed": "사용자가 2026-09-07 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 정확한 초상 파일은 아직 지정되지 않았다.",
+      "recommendation": "해당 인물의 전용 원본을 확정한 뒤 배경과 피사체 보존을 확인해 신원조회 초상을 준비한다.",
+      "evidence": "p35~36,59~62,85,94 및 전체 그림 용도 확인표",
+      "question": "후작의 신원조회에 사용할 전용 초상은 어느 원본으로 할까?",
+      "alternatives": [
+        "사용자가 지정한 전용 인물 원본 사용",
+        "원문 속 해당 인물 그림의 정확한 원본과 용도를 확인한 뒤 사용"
+      ],
+      "impact": "전용 초상이 확정되기 전에는 이 인물의 신원조회 등록안을 적용 준비 완료로 표시하지 않는다.",
+      "status": "pending"
+    },
+    {
+      "id": "priest-registration",
+      "subjectId": "priest",
+      "surface": "personnel",
+      "confirmed": "네베드의 총격 뒤 GM이 현재 등장체의 사망을 명시했다. 인간이었는지는 의문으로 남았다.",
+      "recommendation": "현재 등장체의 사망만 기록하고 1부 본인·인형 여부는 미확정으로 둔다.",
+      "evidence": "p35~36,59~63,94",
+      "question": "현재 성직자는 1부의 본인인가, 인형·대리체인가, 미확정인가?",
+      "alternatives": [
+        "본인·인형 여부 미확정 유지",
+        "1부의 본인",
+        "인형·대리체"
+      ],
+      "impact": "사망을 과거의 본인에게도 적용할 수 있는지와 신원 기록 단위가 달라진다.",
+      "status": "resolved",
+      "resolution": "2026-09-07 사용자 답변: 본인·인형 여부 미확정으로 유지."
+    },
+    {
+      "id": "priest-portrait",
+      "subjectId": "priest",
+      "surface": "personnel",
+      "confirmed": "사용자가 2026-09-07 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 정확한 초상 파일은 아직 지정되지 않았다.",
+      "recommendation": "해당 인물의 전용 원본을 확정한 뒤 배경과 피사체 보존을 확인해 신원조회 초상을 준비한다.",
+      "evidence": "p35~36,59~63,94 및 전체 그림 용도 확인표",
+      "question": "성직자의 신원조회에 사용할 전용 초상은 어느 원본으로 할까?",
+      "alternatives": [
+        "사용자가 지정한 전용 인물 원본 사용",
+        "원문 속 해당 인물 그림의 정확한 원본과 용도를 확인한 뒤 사용"
+      ],
+      "impact": "전용 초상이 확정되기 전에는 이 인물의 신원조회 등록안을 적용 준비 완료로 표시하지 않는다.",
+      "status": "pending"
+    },
+    {
+      "id": "matteo-registration",
+      "subjectId": "matteo",
+      "surface": "personnel",
+      "confirmed": "1부 연락자가 다시 나타나 폭탄 좌표 세 곳을 피펫에게 건넨 뒤 사살됐다. 병기부 마테오 리바스와 다른 인물이다.",
+      "recommendation": "마테오라는 확인된 이름으로 외부 조직원 신원 초안을 따로 작성한다. 성씨·원어 철자·나이·신체 수치는 미상으로 둔다.",
+      "evidence": "p44~49, 특히 p47 22:03:57",
+      "question": "재등장과 사망이 확인된 마테오를 별도 신원조회에 등록할까?",
+      "alternatives": [
+        "별도 비공개 신원 초안 등록",
+        "이번에는 보고서와 세력 위키 기록만 유지"
+      ],
+      "impact": "등록하면 좌표 쪽지와 피펫·수잔의 사건을 이 인물의 신원조회에 연결할 수 있다.",
+      "status": "resolved",
+      "resolution": "신원조회 누락 보완을 포함한 이번 동기화 요청 범위에서 별도 비공개 등록안에 포함한다. 사용자가 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 이는 실제 ERP 저장·공개 승인을 뜻하지 않는다."
+    },
+    {
+      "id": "matteo-portrait",
+      "subjectId": "matteo",
+      "surface": "personnel",
+      "confirmed": "사용자가 2026-09-07 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 정확한 초상 파일은 아직 지정되지 않았다.",
+      "recommendation": "해당 인물의 전용 원본을 확정한 뒤 배경과 피사체 보존을 확인해 신원조회 초상을 준비한다.",
+      "evidence": "p44~49, 특히 p47 22:03:57 및 전체 그림 용도 확인표",
+      "question": "마테오의 신원조회에 사용할 전용 초상은 어느 원본으로 할까?",
+      "alternatives": [
+        "사용자가 지정한 전용 인물 원본 사용",
+        "원문 속 해당 인물 그림의 정확한 원본과 용도를 확인한 뒤 사용"
+      ],
+      "impact": "전용 초상이 확정되기 전에는 이 인물의 신원조회 등록안을 적용 준비 완료로 표시하지 않는다.",
+      "status": "pending"
+    },
+    {
+      "id": "mirror-demon-registration",
+      "subjectId": "mirror-demon",
+      "surface": "personnel",
+      "confirmed": "거울을 통해 계약 이행과 역병 확산을 요구한다. 고유 이름은 밝혀지지 않았다.",
+      "recommendation": "오틸리아의 거울 속 계약 상대라는 설명형 이름으로 별도 비공개 신원 초안을 작성하고 다른 존재와는 합치지 않는다.",
+      "evidence": "p26~29,131~138",
+      "question": "거울 속 계약 상대를 독립 신원조회로 등록할까, 계약 사건 기록만 유지할까?",
+      "alternatives": [
+        "실명 미상인 별도 비공개 신원 초안 등록",
+        "계약 사건 기록만 유지",
+        "GM이 지정한 기존 신원에 연결"
+      ],
+      "impact": "등록 시 오틸리아의 계약과 교신 사건을 독립 인물 기록에서 찾을 수 있다.",
+      "status": "resolved",
+      "resolution": "신원조회 누락 보완을 포함한 이번 동기화 요청 범위에서 별도 비공개 등록안에 포함한다. 사용자가 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 이는 실제 ERP 저장·공개 승인을 뜻하지 않는다."
+    },
+    {
+      "id": "mirror-demon-portrait",
+      "subjectId": "mirror-demon",
+      "surface": "personnel",
+      "confirmed": "사용자가 2026-09-07 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 정확한 초상 파일은 아직 지정되지 않았다.",
+      "recommendation": "해당 인물의 전용 원본을 확정한 뒤 배경과 피사체 보존을 확인해 신원조회 초상을 준비한다.",
+      "evidence": "p26~29,131~138 및 전체 그림 용도 확인표",
+      "question": "오틸리아의 거울 속 계약 상대의 신원조회에 사용할 전용 초상은 어느 원본으로 할까?",
+      "alternatives": [
+        "사용자가 지정한 전용 인물 원본 사용",
+        "원문 속 해당 인물 그림의 정확한 원본과 용도를 확인한 뒤 사용"
+      ],
+      "impact": "전용 초상이 확정되기 전에는 이 인물의 신원조회 등록안을 적용 준비 완료로 표시하지 않는다.",
+      "status": "pending"
+    },
+    {
+      "id": "paris-boss-registration",
+      "subjectId": "paris-boss",
+      "surface": "personnel",
+      "confirmed": "보스가 측근에게 붙잡혀 허공을 바라보고, 옆의 여성이 병사들을 지시하는 모습이 관찰됐다. 1부에는 명목상 보스라는 증언이 있었다.",
+      "recommendation": "실명 미상인 명목상 파리 보스로 별도 비공개 초안을 작성한다. 변호사·인형사와 동일인으로 합치지 않는다.",
+      "evidence": "p54~55; 1부 래키 증언과 구별",
+      "question": "파리 보스를 독립 신원조회로 등록할까, 세력 사건 기록만 유지할까?",
+      "alternatives": [
+        "실명 미상인 별도 비공개 신원 초안 등록",
+        "세력 사건 기록만 유지",
+        "GM이 지정한 기존 신원에 연결"
+      ],
+      "impact": "실권자와 명목상 보스를 구별해 추적할 수 있으며, 정체를 합치면 관계 연결도 달라진다.",
+      "status": "resolved",
+      "resolution": "신원조회 누락 보완을 포함한 이번 동기화 요청 범위에서 별도 비공개 등록안에 포함한다. 사용자가 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 이는 실제 ERP 저장·공개 승인을 뜻하지 않는다."
+    },
+    {
+      "id": "paris-boss-portrait",
+      "subjectId": "paris-boss",
+      "surface": "personnel",
+      "confirmed": "사용자가 2026-09-07 신규 6명 모두 전용 초상을 확정한 뒤 등록안을 마무리하도록 선택했다. 정확한 초상 파일은 아직 지정되지 않았다.",
+      "recommendation": "해당 인물의 전용 원본을 확정한 뒤 배경과 피사체 보존을 확인해 신원조회 초상을 준비한다.",
+      "evidence": "p54~55; 1부 래키 증언과 구별 및 전체 그림 용도 확인표",
+      "question": "페데라치오의 파리 보스의 신원조회에 사용할 전용 초상은 어느 원본으로 할까?",
+      "alternatives": [
+        "사용자가 지정한 전용 인물 원본 사용",
+        "원문 속 해당 인물 그림의 정확한 원본과 용도를 확인한 뒤 사용"
+      ],
+      "impact": "전용 초상이 확정되기 전에는 이 인물의 신원조회 등록안을 적용 준비 완료로 표시하지 않는다.",
+      "status": "pending"
+    }
+  ]
+}
