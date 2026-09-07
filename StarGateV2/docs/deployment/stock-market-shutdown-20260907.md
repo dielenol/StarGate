@@ -1,6 +1,6 @@
 # 2026-09-07 NOVEX 시장 종료
 
-사용자 요청: 한국시간 2026-09-07 18:00에 `파리 사태로 인한 쇼크`를 한 번 반영하고 정기 시세 갱신을 종료한다. 계획 등록 시점부터 매수와 주식 이전을 막고, 보유 주식 매도만 유지한다.
+현재 사용자 요청: 한국시간 2026-09-07 장마감 **23:00**에 `파리 사태로 인한 쇼크`를 한 번 반영하고 정기 시세 갱신을 종료한다. 최종 공시에 기존 뉴스 이미지와 매수 영구 중단·가격 영구 동결·보유 주식 매도만 가능 안내를 함께 전달한다. 계획 등록 시점부터 매수와 주식 이전을 막고, 보유 주식 매도만 유지한다. 앞선 18시 실행 실패와 즉시 전환 시도는 아래 당시 기록으로 보존한다.
 
 ## 확정 계획
 
@@ -16,14 +16,14 @@
 | GN3 | 70% |
 | SPZ | 62% |
 
-시각은 `2026-09-07T09:00:00.000Z`이며 현재 운영 서버의 Europe/Berlin 시간으로는 11:00이다. 가격은 실행 당시 시세에 위 하락률을 적용하고 0.01 CR 단위로 반올림한다. 보유량과 크레딧은 폭락 작업이 직접 변경하지 않는다.
+최종 시각은 `2026-09-07T14:00:00.000Z`이며 운영 서버의 Europe/Berlin 시간으로는 16:00이다. Dokploy는 `Asia/Seoul`을 명시한다. 가격은 실행 당시 시세에 위 하락률을 적용하고 0.01 CR 단위로 반올림한다. 보유량과 크레딧은 폭락 작업이 직접 변경하지 않는다.
 
 가격 9개·이력 9개·공시 1개·시장 종료·시즌 최종 집계·완료 표식을 같은 transaction으로 저장한다. 주식 Discord outbox 1건과 기존 DISCLOSURE 구독자 ERP 알림을 같은 transaction에 생성하며, 관련 없는 시즌 순위 알림은 생성하지 않는다. 실패하면 전체 rollback하며, 같은 계획 재시도는 가격을 다시 떨어뜨리지 않는다. 최종 시세 확정 중에는 옛 가격의 매도를 막고 확정 후 허용한다. 최종 적용은 기존 거래정지·냉각·기업행동 정지 메타데이터를 제거하며, 이후 보유 주식 청산은 해당 제한을 받지 않는다.
 
-## 배포와 등록 순서
+## 배포와 등록 순서 · 23시 재예약 기준
 
 1. 운영 Git 기준 `ca9207cc9b071d385dd02d80f5c4b07fd7e2e49e`에 이번 구현 변경만 적용한 Web과 worker를 배포한다. 다른 작업의 미배포 변경을 함께 발행하지 않는다. worker readiness 및 source revision과 Web 배포의 READY를 확인한다.
-2. 아래 명령의 읽기 전용 미리보기를 확인한 뒤, 18시 전에 동일 계획을 등록한다. 신규 과거 시각 예약은 거부된다. 이미 같은 계획이 있으면 멱등 재조회로 끝난다.
+2. 아래 명령의 읽기 전용 미리보기를 확인한 뒤, 23시 전에 동일 계획을 등록한다. 기본 실행 시각은 23시이며 이 예약에서는 `--now`를 사용하지 않는다. 신규 과거 시각 예약은 거부된다. 이미 같은 시각·사유·하락률·이미지 계획이 있으면 멱등 재조회로 끝난다.
 
 ```bash
 cd /Users/flitto/Code/StarGate/StarGateV2
@@ -31,19 +31,20 @@ node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-mar
 node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-market-shutdown.ts --execute --yes --target-db stargate
 ```
 
-3. 기존 Dokploy `stocks.tick` 일정(ID `m_yv99efUFWKdEqyQnppw`, app `VHAqmZsC7kCggM_V82yHY`, `Asia/Seoul`, `0 9,13,18,23 * * *`)을 정상 schedule API/UI로 비활성화하고 오늘 18시 단일 실행을 등록한다. 단발 명령은 해당 worker의 `node dist/cli/run-market-shutdown.js`이다. 이 명령은 종료 계획만 적용하며 계획 미등록·미도래 시 exit 1로 끝나고 일반 정기 tick으로 폴백하지 않는다. 종료 후에는 새 일일 회차를 등록하지 않는다.
+3. 기존 Dokploy `stocks.tick` 일정(ID `m_yv99efUFWKdEqyQnppw`, app `VHAqmZsC7kCggM_V82yHY`, `Asia/Seoul`, `0 9,13,18,23 * * *`)은 비활성화 상태로 유지한다. 기존 단발 일정 `W8avcGuM4H5QVlc0_6coC`를 오늘 23시(`0 23 7 9 *`)로 변경한다. 날짜 검사 뒤 해당 worker의 `node dist/cli/run-market-shutdown.js`를 실행한다. 이 명령은 종료 계획만 적용하며 계획 미등록·미도래 시 exit 1로 끝나고 일반 정기 tick으로 폴백하지 않는다. 종료 후에는 새 일일 회차를 등록하지 않는다.
 4. 정상 API 인증을 사용할 수 없을 때에는 임의로 API 키를 만들거나 인증을 우회하지 않는다. DB의 `enabled=false`만 변경해도 Dokploy 메모리 cron이 취소되지는 않는다. 제어 서비스 재시작 대안에는 별도 운영 점검이 필요하다. 따라서 스케줄 중단 확인 없이 완료로 보고하지 않는다.
 
-운영 서버에서 일회 작업을 등록할 때에는 기존 서비스 매니저를 사용하고, SSH 종료 뒤 유지됨을 확인한다. 현 서버의 사용자 systemd는 `Linger=no`이므로 단독 user timer를 완료 증거로 삼지 않는다. 사용자 crontab을 쓰면 서버 시각 9월 7일 11:00, 연도/날짜 검사, 성공 후 자기 항목 제거가 필요하다. 실패 재시도는 저장된 plan의 멱등 처리에 맡긴다.
+운영 서버의 일회 작업은 기존 Dokploy 서비스 매니저를 사용하며 SSH 세션 수명에 의존하지 않는다. 별도의 사용자 cron이나 systemd timer는 만들지 않는다. 실패 재시도는 저장된 plan의 멱등 처리에 맡긴다.
 
 ## 재조회 기준
 
 - 등록 직후 `stock_market_shutdown._id=novex`: `SCHEDULED`, 정확한 executeAt/reason/declines/buysBlockedAt.
 - Web에서 `market.tradingMode=SELL_ONLY`, 매수 탭 잠금, 보유가 있는 계정의 매도 탭·전량 수량 입력 유지.
-- 18시 이후 plan `COMPLETED`; 9종목 `lastUpdate=2026-09-07 18:00`, 정확한 최종 가격과 사유.
+- 23시 이후 plan `COMPLETED`; 9종목 `lastUpdate=2026-09-07 23:00`, 정확한 최종 가격과 사유.
 - `stock_price_history.operationKey=stock-market-shutdown:novex:<ticker>` 각 1개, `stock_disclosures._id=stock-market-shutdown:novex` 1개.
 - 시장 `CLOSED`/`SELL_ONLY`, `nextSlotAt` 없음, 활성 시즌은 최종 시세 기준 `FINALIZED`.
 - 기존 주식 정기 일정 비활성화와 일회 작업 완료/제거. 다른 서비스 일정은 유지.
+- plan `announcementImageUrl`, 공시 `imageUrl`, outbox `announcementImageUrl`, Discord embed image가 동일한 최종 뉴스 URL을 참조한다. 공개 URL은 HTTP 200/image-webp여야 한다.
 
 인증 브라우저에서는 실제 매수·매도 mutation을 실행하지 않는다. 거래 정산, 중복 요청과 rollback은 테스트 DB에서 검증한다.
 
@@ -111,3 +112,20 @@ node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-mar
 - **18:26 즉시 전환 명령도 자동 승인 검토가 `approval required by policy, but AskForApproval is set to Never`로 거부했다.** 사용자에게 위 `--now --execute --yes --target-db stargate` 명령의 직접 실행을 전달했다. 다른 도구·원격 코드·직접 DB 쓰기로 제한을 우회하지 않았다.
 - 18:26:29 KST 읽기 전용 재조회: plan=null, 시장 OPEN, 마지막 완료 회차 13:00. 종료 history·공시·관련 알림·outbox는 모두 0건이다. Dokploy 정기/단발 주식 일정은 둘 다 disabled다. **따라서 배포와 cron 중단은 완료됐지만 폭락·공시·매수 차단·가격 동결은 발효되지 않았다.**
 - 배포 후 인증 브라우저 `/erp/stock`은 정상 렌더링하며 콘솔 error/warn 0이다. 화면은 아직 개장·18시 지연 회차·13시 가격을 표시했다. 이는 계획 미등록 상태와 일치하며 매도 전용 UI의 운영 활성화 증거로 사용하지 않는다. 운영 매수·매도 mutation은 QA에서 실행하지 않았다.
+
+## 장마감 23시 재예약과 뉴스 이미지 · 후속 요청
+
+- 18:30:50 KST 읽기 전용 재조회에서 오늘 `state.closesAt`과 캘린더 계산은 모두 `2026-09-07T14:00:00.000Z`(23:00 KST), 캘린더 예외 없음, 마감 사유 DAILY_CLOSE였다. 종료 plan은 여전히 없었다.
+- 구현 커밋 `78855891`, 분리 release 커밋 `d44300bc`. 운영 기준에 이번 13개 파일만 더했으며 다른 main 선행 변경·동시 작업은 포함하지 않았다.
+- 기존 단발 일정의 실행 시각을 23시(`0 23 7 9 *`, Asia/Seoul)로 바꾸고 뉴스 이미지와 최종 중지 정책을 설명에 명시했다. 일반 `stocks.tick`은 꺼진 상태를 유지한다.
+- 뉴스 최종 URL: `https://www.ordonet.co.kr/assets/world-view/us-national-defense-act-market-shutdown-news.webp`. 기존 확정 PNG를 프로젝트 `asset:publish`로 발행했다. WebP 1024×1536, 345392 bytes, quality 90, opaque, SHA-256 `4ce65183d9ae6db06cef9ce0a0ed7fa6d05610b8a29020ee0e4fd799b4212059`이며 원본 PNG는 보존했다.
+- 계획 `announcementImageUrl` → 공시 `imageUrl`·outbox `announcementImageUrl` → Discord embed image로 같은 URL을 전달한다. ERP 공개 공시에도 미리보기와 큰 이미지 링크가 나타난다. 이미지·본문·효과는 공개 완료 전 플레이어 공시 응답에서 제외한다.
+- 입력 URL은 ordonet.co.kr/www.ordonet.co.kr의 `/assets/` HTTPS URL로 제한하고 자격증명·명시 포트·query·hash를 거부한다. 선택 필드를 생략한 기존 계획과 BSON null 호환을 보존하고 이미지 변경을 예약 멱등성 충돌로 처리한다.
+- 검증: 웹 주식·관리자 API 80/80, worker 134/134, 예약 CLI 7/7, MongoDB 7 종료 통합 1/1, shared/worker build, 웹 typecheck·전체 lint, 독립 critical 리뷰 P0/P1/P2 잔여 없음. core 47건은 코드 변경이 없어 직전 증거를 재사용했다.
+- 격리된 실제 공시 컴포넌트 렌더링으로 23시·사유·정책·이미지 표시, 1024×1536 로딩, 가로 넘침 없음, 콘솔 error/warn 0을 확인했다. 이 fixture 검증은 운영에서 공시가 이미 발송됐다는 뜻이 아니다. 임시 서버는 정리했다.
+- main 전체 자산 감사/테스트는 기존 `Wexler-Junior-profile.webp` 참조 누락 1건으로 실패했다. 해당 변경이 없는 분리 release의 자산 감사와 테스트 12/12는 통과했다. 이번 자산으로 예외를 추가하거나 다른 작업 파일을 수정하지 않았다.
+- Web production build 및 배포 `dpl_EXxHzWSMe2jY8SPnm6YnQaHNTCBS`는 READY, `https://www.ordonet.co.kr` 연결을 확인했다. 위 이미지 URL은 HTTP 200, Content-Type image/webp, Content-Length 345392이다.
+- worker 이미지 `registrabots-stargate-worker-m23awi:close-image-20260907-d44300bc`, sourceRevision `ea5f5f2f27c73ef1ddc6445b6b2d76066974ceb9981f82c53b982353e2ae9929`가 운영 readiness와 일치했다. healthz/readyz는 HTTP 200, RUNNING·active·ready=true이다. stop-first 배포 후 start-first 설정으로 복구했다.
+- **23시 계획 등록 명령도 자동 승인 검토가 `approval required by policy, but AskForApproval is set to Never`로 거부했다.** 사용자에게 이 문서의 기본 `--execute --yes --target-db stargate` 명령을 23시 전 터미널에서 직접 실행하도록 전달했다. `--now`는 사용하지 않는다. 등록을 다른 도구·원격 코드·직접 DB 쓰기로 우회하지 않았다.
+- 18:43:29 KST 최종 읽기 전용 검증: `stocks.market-shutdown.20260907`은 enabled=true, `0 23 7 9 *`, Asia/Seoul이다. `stocks.tick`은 enabled=false이며 다른 네 일정은 enabled=true다. **DB shutdown plan=null이다. 현재 상태만으로 23시 폭락·공시·시장 종료가 실행된다고 보장할 수 없으며, 사용자 직접 계획 등록이 필요하다.** 단발 CLI는 계획이 없으면 NOT_SCHEDULED로 실패하고 일반 시세 갱신으로 폴백하지 않는다.
+- 기존 heartbeat `18`을 오늘 23:02 한 번 결과 확인으로 갱신해 ACTIVE로 저장했다. plan·가격·공시·정책·이미지 전달을 확인하고, 결과와 무관하게 해당 단발 Dokploy 일정만 비활성화하며 다른 일정은 유지한다. 미등록 또는 실패를 완료로 보고하지 않고, 종료한 가격을 다시 조정하거나 실행 제한을 우회하지 않는다.
