@@ -52,3 +52,11 @@
 - 검증: core 41건, shared NOVEX 26건, `pnpm typecheck`, 전체 `pnpm lint`, production build 108페이지, critical risk review 재검토 통과
 - 관련 구현 커밋: `8c22c17f`
 - 운영 경계: 라이브 보유량·크레딧·주가·시즌 순위는 변경하지 않았다.
+
+## 2026-09-07 · 기능 추가 · 종료 시세 기준 시즌 확정
+
+- 시장 종료 시 폭락을 적용한 최종 시세로 활성 시즌을 확정하고, 보유량과 크레딧을 직접 변경하지 않는다.
+- 종료 뒤 반복 가격 갱신·배당 처리로 최종 평가가 다시 바뀌지 않게 한다. 종료 작업에서 순위 알림은 생성하지 않는다.
+- 검증: 웹 주식 75건, core 47건, worker 133건, MongoDB 7 replica-set 통합 테스트, `pnpm typecheck`, `pnpm lint`, production build, critical risk review P0/P1 없음
+- 관련 구현 커밋: `015f404a`
+- 운영 경계: 코드 구현 완료. 라이브 배포·계획 등록·크론 중단은 미실행이며, 운영 계획 미리보기 명령이 실행 환경의 승인 제한으로 거부되었다.

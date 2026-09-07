@@ -97,3 +97,12 @@
 - 검증: worker 132건·core 44건, worker/core build, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0–P2 없음
 - 관련 구현 커밋: `d94e34c3`
 - 운영 경계: worker 배포·설정 변경, Cloud 호출, 라이브 DB·알림·웹훅 mutation은 실행하지 않았다.
+
+## 2026-09-07 · 기능 추가 · 주식시장 종료 후 정기 처리 중단
+
+- `stocks.tick`은 종료 계획이 도래하면 폭락 작업을 먼저 멱등 실행하고, 완료 상태에서는 일반 회차·배당·시장 wire 처리를 시작하지 않는다.
+- 이미 진행 중인 NOVEX·legacy 가격 transaction과 배당 지급도 같은 시장 상태 fence에서 종료 시점을 재검사한다.
+- 종료 계획 변경은 stocks realtime 자원으로 연결한다. 실제 Dokploy cron 비활성화는 별도 운영 적용이 필요하다.
+- 검증: 웹 주식 75건, core 47건, worker 133건, MongoDB 7 replica-set 통합 테스트, `pnpm typecheck`, `pnpm lint`, production build, critical risk review P0/P1 없음
+- 관련 구현 커밋: `015f404a`
+- 운영 경계: 코드 구현 완료. 라이브 배포·계획 등록·크론 중단은 미실행이며, 운영 계획 미리보기 명령이 실행 환경의 승인 제한으로 거부되었다.

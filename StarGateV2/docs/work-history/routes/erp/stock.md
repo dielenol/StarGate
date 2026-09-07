@@ -159,3 +159,11 @@
 - 검증: core 41건, shared NOVEX 26건, worker 156건, 20만 일 시뮬레이션, `pnpm typecheck`, 전체 `pnpm lint`, production build 108페이지, critical risk review 재검토 통과
 - 관련 구현 커밋: `8c22c17f`
 - 운영 경계: 라이브 시세·공시 큐·수급·DB·outbox·Discord·배포는 변경하지 않았다. replica-set 전용 통합 테스트 2건은 환경 부재로 skip했다.
+
+## 2026-09-07 · 기능 추가 · 시장 종료와 매도 전용
+
+- 등록된 종료 계획을 매도 전용 시장으로 표시하고, 종료 시각 이후 다음 개장·정기 회차 대신 최종 시세 상태를 안내한다.
+- 종목별 40~70% 폭락과 사유 공시, 최종 시즌 평가를 한 transaction으로 처리하며 중복 실행은 같은 가격을 다시 떨어뜨리지 않는다.
+- 검증: 웹 주식 75건, core 47건, worker 133건, MongoDB 7 replica-set 통합 테스트, `pnpm typecheck`, `pnpm lint`, production build, critical risk review P0/P1 없음
+- 관련 구현 커밋: `015f404a`
+- 운영 경계: 코드 구현 완료. 라이브 배포·계획 등록·크론 중단은 미실행이며, 운영 계획 미리보기 명령이 실행 환경의 승인 제한으로 거부되었다.
