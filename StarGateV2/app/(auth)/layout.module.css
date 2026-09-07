@@ -1,15 +1,9 @@
 .auth {
-  min-height: 100vh;
+  min-height: 100svh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 20px;
-}
-
-/* Mobile */
-
-@media (max-width: 767px) {
-  .auth {
-    padding: 12px;
-  }
+  background:
+    radial-gradient(ellipse at 12% 40%, rgba(201, 168, 90, 0.045), transparent 55%),
+    #0b0c0c;
+  color: var(--ink-0);
 }
