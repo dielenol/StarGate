@@ -43,3 +43,11 @@
 - 검증: shared 공적 계약 7건·DB 환경 의존 1건 skip, worker 152건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0/P1 없음
 - 관련 구현 커밋: `684efcd7`
 - 운영 경계: writer gate는 기본 비활성이며 라이브 알림·Discord·웹훅은 발송하지 않았다.
+
+## 2026-09-07 · 알림 연결 · 주식시장 종료 안내
+
+- 종료 공시가 실제 적용될 때 기존 DISCLOSURE 알림 구독자와 종목 필터에 맞춰 주식 알림을 생성하고 영구 매수 금지·보유분 매도 허용을 안내한다.
+- 가격·공시·outbox와 같은 transaction에 저장해 실패나 중복 실행으로 알림만 먼저 발행되지 않게 한다.
+- 검증: worker 전체 134건, Discord outbox 17건, MongoDB 7 replica-set 통합 테스트 1건, shared/worker build, 웹 typecheck/lint, critical 리뷰 P0/P1 없음
+- 관련 구현 커밋: `e87fa675`, `b7700aef`
+- 운영 경계: Web·worker 배포와 기존 정기 일정 중단 및 단발 실행 일정 등록을 완료했다. 종료 계획 등록은 도구 실행 제한으로 사용자 직접 실행을 요청한 상태이며 공시·가격 적용 완료는 아직 확인하지 않았다.

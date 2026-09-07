@@ -71,3 +71,10 @@
 - 검증: 웹 주식 75건, core 47건, worker 133건, MongoDB 7 replica-set 통합 테스트, `pnpm typecheck`, `pnpm lint`, production build, critical risk review P0/P1 없음
 - 관련 구현 커밋: `015f404a`
 - 운영 경계: 코드 구현 완료. 라이브 배포·계획 등록·크론 중단은 미실행이며, 운영 계획 미리보기 명령이 실행 환경의 승인 제한으로 거부되었다.
+
+## 2026-09-07 · 안내 개선 · 종료 공시 정책 문구
+
+- 종목 상세에서 읽는 종료 공시 본문에 영구 매수 금지와 보유 주식 매도 허용 안내를 함께 저장한다. 가격 이력 사유와 공시 제목은 파리 사태 쇼크로 유지한다.
+- 검증: worker 전체 134건, Discord outbox 17건, MongoDB 7 replica-set 통합 테스트 1건, shared/worker build, 웹 typecheck/lint, critical 리뷰 P0/P1 없음
+- 관련 구현 커밋: `e87fa675`, `b7700aef`
+- 운영 경계: Web·worker 배포와 기존 정기 일정 중단 및 단발 실행 일정 등록을 완료했다. 종료 계획 등록은 도구 실행 제한으로 사용자 직접 실행을 요청한 상태이며 공시·가격 적용 완료는 아직 확인하지 않았다.
