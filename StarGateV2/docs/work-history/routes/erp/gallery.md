@@ -121,3 +121,11 @@
 - 검증: 갤러리 테스트 45/45, `pnpm typecheck`, 전체 `pnpm lint`, `git diff --check`, 읽기 전용 리뷰. 인증 로컬 1440×1000·834×1112·390×844·320×740에서 목록·상세 가로 넘침 0건, 검색·종류·앨범·초기화·더 보기, 이전/다음·순환·썸네일·확대·드래그·Escape·Tab·포커스 복귀 확인, 정상 흐름의 console/page error 0건. 별도 브라우저 mock으로 이미지 실패→재시도, 대기 중 닫기, timeout·늦은 응답 격리와 세로 이미지 contain 표시를 확인했다.
 - 관련 구현 커밋: `af2fc7ac`
 - 운영 경계: 인증·권한·API·DB·Query·업로드 처리 정책은 변경하지 않았다. 이미지 장애 검증은 브라우저 응답 mock으로 수행했으며 팬아트 업로드·수정·삭제·관리 작업과 push·배포는 실행하지 않았다.
+
+## 2026-09-07 · 배포 · 갤러리 UI 운영 반영
+
+- 사용자 요청에 따라 최종 구현을 다시 코드 리뷰했으며 추가 수정이 필요한 문제는 없었다. 로컬 main의 다른 미발행 작업이 섞이지 않도록 당시 운영 source `d44300bc`에 갤러리 구현·이력 8개 파일만 적용한 `codex/gallery-ui-release-20260907` 브랜치를 만들고 원격에 push했다.
+- 로컬 구현 `af2fc7ac`과 분리 배포 구현 `5bbf2bd8`의 UI 파일이 동일하다. 배포 source는 `d9fe4d84`, Vercel deployment는 `dpl_8QkUYmTwDwwv7bVNC2YjqXH28A6a`이며 production build·READY·로그인 HTTP 200 확인 후 `https://www.ordonet.co.kr`로 promote했다. 운영 도메인 조회에서도 해당 deployment와 source revision을 확인했다.
+- 검증: 기존 변경 없음이 확인된 갤러리 테스트 45/45와 이미지 실패·재시도·timeout·늦은 응답·드래그 검증을 재사용했다. 분리 브랜치 `pnpm typecheck`, `pnpm lint`, Vercel production build 통과. 운영 인증 브라우저 1440×1000·834×1112·390×844·320×740에서 목록·상세 넘침 0건, 원본 로딩·확대·연속 방향키 이동·Escape·포커스 복귀·검색·초기화 확인, console/page error 0건이다. 비인증 갤러리는 로그인으로 이동하며 인증 피드는 정상 응답한다. 해당 배포의 최근 10분 error 로그 조회 결과 0건이다.
+- 관련 구현 커밋: `af2fc7ac`(로컬), `5bbf2bd8`(분리 배포)
+- 운영 경계: 갤러리 업로드·편집·삭제·관리 mutation 0건. 운영 DB·페이지 잠금·권한·주식·worker 설정을 변경하지 않았다. 기존 미커밋 파일 4개는 보존했다.
