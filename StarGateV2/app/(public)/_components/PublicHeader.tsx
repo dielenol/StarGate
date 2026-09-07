@@ -224,7 +224,7 @@ export default function PublicHeader() {
           <button
             ref={searchTriggerRef}
             type="button"
-            className={`${styles.header__icon} ${styles.header__search}`}
+            className={styles.header__icon}
             aria-label="페이지 찾기"
             aria-keyshortcuts="Control+k Meta+k /"
             title="페이지 찾기 (Ctrl/⌘ K 또는 /)"
@@ -233,7 +233,6 @@ export default function PublicHeader() {
             onClick={(event) => openPanel("search", event.currentTarget)}
           >
             <IconSearch aria-hidden />
-            <kbd aria-hidden="true">/</kbd>
           </button>
           <Link href="/erp" prefetch={false} className={styles.header__erp}>
             ERP 진입 <IconArrowRight aria-hidden />

@@ -1,12 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  IconArrowRight,
-  IconChevronDown,
-  IconPlayer,
-  IconRules,
-  IconWorld,
-} from "@/components/icons";
+import { IconArrowRight, IconChevronDown } from "@/components/icons";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 import LandingExperience from "./_components/LandingExperience";
 import ArchiveViewer from "./_components/ArchiveViewer";
@@ -84,25 +78,23 @@ export default function HomePage() {
         <div className={styles.archive__grid}>
           <Link
             href="/world"
-            className={`${styles.card} ${styles["card--world"]}`}
+            className={styles.card}
             data-reveal
           >
             <div className={styles.card__top}>
               <span>FILE 01 / WORLD</span>
-              <IconArrowRight aria-hidden />
             </div>
-            <div className={styles.card__map} aria-hidden="true">
+            <div className={styles.card__image} aria-hidden="true">
               <Image
                 src={resolvePublicAssetPath(
                   "/assets/world-view/novus-ordo-world-map.webp",
                 )}
                 alt=""
                 fill
-                sizes="(max-width: 700px) 90vw, 50vw"
+                sizes="(max-width: 700px) 90vw, (max-width: 1440px) 30vw, 427px"
               />
             </div>
             <div className={styles.card__body}>
-              <IconWorld aria-hidden />
               <h3>세계관 기록</h3>
               <p>
                 1945년의 시작부터 오늘의 기로까지.
@@ -116,15 +108,21 @@ export default function HomePage() {
           </Link>
           <Link
             href="/rules"
-            className={`${styles.card} ${styles["card--rules"]}`}
+            className={styles.card}
             data-reveal
           >
             <div className={styles.card__top}>
               <span>FILE 02 / PROTOCOL</span>
-              <IconArrowRight aria-hidden />
             </div>
-            <div className={styles.card__symbol} aria-hidden="true">
-              <IconRules />
+            <div className={styles.card__image} aria-hidden="true">
+              <Image
+                src={resolvePublicAssetPath(
+                  "/assets/world-view/novus-protocol-reading-room.webp",
+                )}
+                alt=""
+                fill
+                sizes="(max-width: 700px) 90vw, (max-width: 1440px) 30vw, 427px"
+              />
             </div>
             <div className={styles.card__body}>
               <h3>노부스 오르도 룰</h3>
@@ -140,15 +138,21 @@ export default function HomePage() {
           </Link>
           <Link
             href="/world/player"
-            className={`${styles.card} ${styles["card--players"]}`}
+            className={styles.card}
             data-reveal
           >
             <div className={styles.card__top}>
               <span>FILE 03 / PERSONNEL</span>
-              <IconArrowRight aria-hidden />
             </div>
-            <div className={styles.card__symbol} aria-hidden="true">
-              <IconPlayer />
+            <div className={styles.card__image} aria-hidden="true">
+              <Image
+                src={resolvePublicAssetPath(
+                  "/assets/world-view/novus-personnel-registry.webp",
+                )}
+                alt=""
+                fill
+                sizes="(max-width: 700px) 90vw, (max-width: 1440px) 30vw, 427px"
+              />
             </div>
             <div className={styles.card__body}>
               <h3>플레이어</h3>
