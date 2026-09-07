@@ -18,7 +18,7 @@
 
 시각은 `2026-09-07T09:00:00.000Z`이며 현재 운영 서버의 Europe/Berlin 시간으로는 11:00이다. 가격은 실행 당시 시세에 위 하락률을 적용하고 0.01 CR 단위로 반올림한다. 보유량과 크레딧은 폭락 작업이 직접 변경하지 않는다.
 
-가격 9개·이력 9개·공시 1개·시장 종료·시즌 최종 집계·완료 표식을 같은 transaction으로 저장한다. 주식 Discord outbox 1건과 기존 DISCLOSURE 구독자 ERP 알림을 같은 transaction에 생성하며, 관련 없는 시즌 순위 알림은 생성하지 않는다. 실패하면 전체 rollback하며, 같은 계획 재시도는 가격을 다시 떨어뜨리지 않는다. 정각 이후 최종 시세가 미확정이면 매도를 잠시 막고 확정 후 허용한다. 종목별 기존 거래정지는 보존한다.
+가격 9개·이력 9개·공시 1개·시장 종료·시즌 최종 집계·완료 표식을 같은 transaction으로 저장한다. 주식 Discord outbox 1건과 기존 DISCLOSURE 구독자 ERP 알림을 같은 transaction에 생성하며, 관련 없는 시즌 순위 알림은 생성하지 않는다. 실패하면 전체 rollback하며, 같은 계획 재시도는 가격을 다시 떨어뜨리지 않는다. 최종 시세 확정 중에는 옛 가격의 매도를 막고 확정 후 허용한다. 최종 적용은 기존 거래정지·냉각·기업행동 정지 메타데이터를 제거하며, 이후 보유 주식 청산은 해당 제한을 받지 않는다.
 
 ## 배포와 등록 순서
 
@@ -82,3 +82,32 @@ if [ "$(TZ=Asia/Seoul date +%F)" = "2026-09-07" ]; then node dist/cli/run-market
 - 추가 공시 구현 `e87fa675`: 저장 공시 본문, 구독자 ERP 알림, 주식 Discord 카드에 `NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.`를 포함한다. outbox dedupeKey는 `stock:market-shutdown:novex:shock-disclosure`다. 외부 webhook 전달은 기존 at-least-once 방식이므로 실행 후 전달 상태를 확인한다.
 - 단발 CLI 구현 `b7700aef`. 추가 검증: worker 134/134, Discord outbox 17/17, MongoDB 7 replica-set 종료 통합 테스트 1/1, shared/worker build, 웹 typecheck/lint, 독립 critical 리뷰 P0/P1 없음.
 - 요청된 별도 도트풍 뉴스 이미지는 built-in image_gen으로 제작했고 첨부 이미지의 표현 방식만 참고했다. 최종 파일은 `/Users/flitto/Downloads/stargate-market-news/us-national-defense-act-stock-emergency-pixel-newspaper.png`, 프롬프트는 같은 디렉터리의 `.prompt.txt`다. 해당 이미지를 외부 공시에 첨부 발송하지는 않았다.
+
+## 18시 실행 결과와 운영 중지 보완
+
+- 단발 실행 `Q8TQfXzF1ZbD8xkcy9QU0`은 18:00:00.197에 시작해 18:00:01.955에 실패했다. worker 결과 `NOT_SCHEDULED`, `planStatus=null`, `appliedTickers=0`이며 Dokploy 상태는 `error`다.
+- 18:01:37 KST 운영 DB 재조회: 종료 plan 없음, 시장 OPEN, 마지막 완료 회차 13시. 9종목 가격은 13시 값 그대로이며 종료 history 0건, 종료 공시 없음, 관련 알림·outbox 0건이다. 가격 폭락·매수 차단·동결이 실제 적용됐다고 보고하지 않는다.
+- 18시 단발 일정도 정상 UI에서 Disabled로 저장했다. 이후 PostgreSQL에서 `stocks.tick=false`, `stocks.market-shutdown.20260907=false`, 나머지 네 일정=true를 재확인했다. 해당 결과 확인을 끝내 18:02 후속 heartbeat `18`은 PAUSED로 정리했다.
+- 사용자가 운영 목적을 재확인했다: 마지막 전 종목 폭락 공시를 한 번 반영하고, 보유 주식 매도 외 주식 운영을 전부 중지한다. 매도는 가격이나 다음 회차 수급에 영향을 주지 않는다. 자동 공시·배당·기업행동·시즌·관리자 시세 조작·정지/재개·회차 복구는 중단한다. 자동 재개 시각은 두지 않으며 추후 재개는 별도 사용자 지시로만 다룬다.
+- 기존 실행 도구에 `--now`를 추가했다. 기본 미리보기와 대상 DB 확인은 유지한다. 신규 즉시 전환은 실제 현재 시각 이후 5초로 계획을 등록하고 도래 후 같은 종료 엔진을 한 번 적용한다. 과거 18시로 소급하지 않고 이미 완료된 계획을 재실행해도 가격은 다시 변경하지 않는다.
+
+```bash
+cd /Users/flitto/Code/StarGate/StarGateV2
+node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-market-shutdown.ts --now --dry-run
+node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-market-shutdown.ts --now --execute --yes --target-db stargate
+```
+
+- 수정된 뉴스 이미지는 가상 뉴스·TRPG 문구를 모두 제거했다. 노부스 메인 색상 `#0a0a0d`·`#f1ecdc`·`#c9a85a`와 큰 고딕 글씨, `주식 매수 영구 중단 / 가격 영구 동결 / 보유 주식 매도만 가능`을 적용했다. 선택 파일은 `/Users/flitto/Downloads/stargate-market-news/us-national-defense-act-stock-emergency-pixel-newspaper-novus-gold.png`이며 같은 이름의 `.prompt.txt`에 built-in image_gen 편집 프롬프트를 저장했다. 외부 발송은 하지 않았다.
+
+## 최종 배포와 실행 제한 · 2026-09-07 18:26 KST
+
+- 전체 운영 중지 구현 커밋은 `b3ca9364`, 분리 배포 브랜치의 동일 변경 커밋은 `a6c83a33`이다. 다른 작업의 로컬 main 선행 커밋은 배포에 포함하지 않았다.
+- Web 배포 `dpl_2FhtzJHWGN4PCrZujKfC4MyMsGaj`는 READY이며 `https://www.ordonet.co.kr`에 연결됐다. Vercel production build 전체를 통과했다. 배포 URL은 `https://star-gate-star-gate-v2-3kl286hzs-dielenols-projects.vercel.app`이다.
+- worker 이미지 `registrabots-stargate-worker-m23awi:shutdown-20260907-a6c83a33`의 sourceRevision은 `8994cd9a590801f73669b1cef056b626a8b51918d42eba6ab603d8fe9955981a`로 기대값과 일치했다. healthz/readyz는 200, RUNNING·active·ready=true이며 모든 component가 정상이다. stop-first 배포 후 기존 start-first 설정으로 복구했다.
+- 종료 계획의 `buysBlockedAt`부터 일반 시세 갱신·수요 누적/소비·매수·주식 이전·자동/수동 공시·배당·기업행동·시즌 변경·관리자 가격 조정·정지/재개·회차 복구를 DB transaction의 동일 fence로 차단한다. 관리자 mutation API는 423/MARKET_SELL_ONLY를 반환하고 운영 화면의 쓰기 패널은 숨긴다. 편의점 구매는 유지하되 소다 판매로 주식 수요나 시장 revision을 바꾸지 않는다.
+- 최종 가격 확정 후 매도는 오래된 종목 정지·냉각으로 막히지 않으며 가격·다음 회차 수급·시즌 순위에 영향을 주지 않는다. 조회·보유량 확인·청산 매도는 유지한다. 미래 자동 재개는 없다.
+- 검증: 웹 주식·관리자 API 78/78, core 47/47, worker 134/134, 즉시 전환 CLI 3/3, 실제 MongoDB 7 종료 통합 1/1과 기존 소다 수요 통합 1/1, shared/core/worker build, 웹 typecheck·전체 lint, git diff check를 통과했다. 독립 critical 리뷰는 수정 후 P0/P1/P2 지적 없음이다.
+- 격리 checkout의 로컬 Web build는 컴파일·TypeScript 완료 뒤 `MONGODB_URI` 누락으로 페이지 수집에 실패했다. 코드 결함으로 분류하지 않았으며 운영 환경변수가 설정된 위 Vercel production build 성공으로 최종 빌드 검증을 완료했다.
+- **18:26 즉시 전환 명령도 자동 승인 검토가 `approval required by policy, but AskForApproval is set to Never`로 거부했다.** 사용자에게 위 `--now --execute --yes --target-db stargate` 명령의 직접 실행을 전달했다. 다른 도구·원격 코드·직접 DB 쓰기로 제한을 우회하지 않았다.
+- 18:26:29 KST 읽기 전용 재조회: plan=null, 시장 OPEN, 마지막 완료 회차 13:00. 종료 history·공시·관련 알림·outbox는 모두 0건이다. Dokploy 정기/단발 주식 일정은 둘 다 disabled다. **따라서 배포와 cron 중단은 완료됐지만 폭락·공시·매수 차단·가격 동결은 발효되지 않았다.**
+- 배포 후 인증 브라우저 `/erp/stock`은 정상 렌더링하며 콘솔 error/warn 0이다. 화면은 아직 개장·18시 지연 회차·13시 가격을 표시했다. 이는 계획 미등록 상태와 일치하며 매도 전용 UI의 운영 활성화 증거로 사용하지 않는다. 운영 매수·매도 mutation은 QA에서 실행하지 않았다.

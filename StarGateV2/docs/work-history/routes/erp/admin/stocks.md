@@ -89,3 +89,11 @@
 - 검증: 시나리오 흐름 결정 테스트 9건 신규, 웹 주식·거래 계약 70건, `pnpm typecheck`, 전체 `pnpm lint`, production build
 - 관련 커밋: `f376b8f5`
 - 운영 경계: 라이브 공시·기업행동 취소는 실행하지 않았다.
+
+## 2026-09-07 · 기능 수정 · 시장 중지 후 운영 변경 차단
+
+- 매도 전용 시장에서는 시세 조정·정지/재개·강제 회차와 NOVEX 운영 패널을 숨기고 시세·보유량·이력 조회를 유지한다.
+- 관리자 주식 mutation API 11개가 종료 정책 오류를 423/MARKET_SELL_ONLY로 반환하며, 직접 DB 함수 호출도 같은 transaction fence로 공시·기업행동·배당·시즌·복구 및 시세 변경을 차단한다.
+- 검증: 관리자 API 실행형 테스트 포함 웹 78건, MongoDB 7 종료 통합 1건, core 47건, worker 134건, typecheck·전체 lint·Vercel production build, 독립 critical 리뷰 P0/P1/P2 없음
+- 관련 구현 커밋: `b3ca9364`
+- 운영 경계: Web·worker 배포와 주식 정기/단발 일정 비활성화 완료. 18:26 KST 종료 DB 실행이 승인 제한으로 거부돼 운영에서는 아직 차단 정책이 발효되지 않았다. 운영 API mutation을 QA 목적으로 실행하지 않았다.
