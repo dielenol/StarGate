@@ -245,6 +245,22 @@
   z-index: 1;
   margin-top: auto;
 }
+.card__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 18px;
+  border: 1px solid #c9a85a45;
+  border-radius: 12px;
+  color: var(--gold);
+  background: #121310dc;
+}
+.card__icon svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
 .card h3 {
   font-size: clamp(20px, 2vw, 26px);
   font-weight: 500;
