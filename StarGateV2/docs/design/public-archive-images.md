@@ -29,7 +29,7 @@ Subject: an unoccupied environmental establishing shot; an impressive thick open
 Additional composition: camera slightly above desk level, looking down at a three-quarter angle; the manual occupies roughly half the image width, all its corners inside frame. The lower quarter is plain softly shaded wood with no objects.
 ```
 
-## 플레이어 — 인사 기록실
+## 플레이어 — 인사 기록실 (이전 자산)
 
 최종 경로: `public/assets/world-view/novus-personnel-registry.webp`
 
@@ -50,4 +50,34 @@ Primary request: NOVUS Personnel Registry — an atmospheric archival illustrati
 Scene/backdrop: a quiet twentieth-century personnel archive with metal index-card drawers and leather document boxes fading into soft graphite shadows.
 Subject: an unoccupied environmental establishing shot; a tidy cluster of three cream dossier folders with distinctive blank index tabs centered in the upper-middle of a wood registrar desk, one folder partly open with archival sheets and empty photo-mount corners, a blank metal identification tag on the folder and an open shallow index-card drawer behind it. No portraits, no people, no silhouettes, no writing. Dossiers and card drawers make the personnel-record function clear at thumbnail size. This is a complete room-and-desk illustration, not a floating icon.
 Additional composition: camera slightly above desk level, looking down at a three-quarter angle; the folders occupy roughly half the image width, all corners inside frame. The lower quarter is plain softly shaded wood with no objects.
+```
+
+## 플레이어 — 로고와 명찰 (현재 사용)
+
+- 생성 모드: built-in image_gen. 기존 인사 기록실 대신 공식 문장이 있는 가죽 증명서와 금속 명찰을 강조한다.
+- 사용자 요청에 따라 환경 배경의 기본 로고·문자 금지 조건에서 공식 NOVUS ORDO 문장과 조직명만 예외로 허용했다. 인물 이름·사진·등급은 만들지 않았다.
+- 입력 역할: 고정 Maria 화풍 기준, 명찰 장면 편집 대상, 기존 `public/assets/StarGate_logo.webp`의 공식 문장 정체성.
+- 발행 검증: 1448×1086, RGB WebP, quality 90, 294,872 bytes. SHA-256 `91da5cc0bc496eea8da3831cf1863ee547fdcba384022f604b44728ba1b61522`.
+- 최종 경로: `public/assets/world-view/novus-agent-credentials.webp`.
+- 기존 인사 기록실 원본은 보존하며 현재 카드 소비 경로만 새 자산으로 변경한다.
+
+### 최종 편집 프롬프트
+
+```text
+Use case: stylized-concept
+Asset type: StarGate visual-novel environment background for an interactive web game
+Input images: Image 1 is the fixed Maria style reference only; Image 2 is the existing personnel archive scene/composition reference only; Image 3 is the official NOVUS ORDO insignia, provided exclusively as the exact logo identity reference requested by the user.
+Reference roles: take only the fine hand-drawn linework, pale grayscale wash, selective accent-color handling, paper-like texture, and soft angular shadow language from Image 1. Never copy its character, anatomy, costume, facial features, pose, tongue, teeth, or ornaments. From Image 2 preserve the old institutional desk and archive setting and the quiet warm grayscale art direction, while replacing its foreground composition. From Image 3 reproduce the eye inside interlocked triangular stars, globe and surrounding olive wreath accurately as a crisp gold emblem on the physical credential.
+Primary request: NOVUS Agent Credentials — revise the player-card environmental illustration so the official organization insignia and an agent's physical identification badge are immediately the main focal subject, strongly recognizable even in a small navigation card.
+Scene/backdrop: a close view across a dark walnut registrar desk; the same archive drawers from Image 2 remain small and softly faded far behind. Remove the three large blank paper folders from the foreground.
+Subject: an unoccupied environmental establishing shot focused on one large premium charcoal leather credential holder lying on the desk, with a prominent inset antique-gold metal NOVUS ORDO insignia from Image 3; beside it, partially overlapping the holder, lies a substantial brushed-metal rectangular name badge with a real clip and dark woven lanyard. The name badge carries the precise words "NOVUS ORDO" and a clean blank name strip, without inventing a named character, photo, personal data or agent number. The large gold insignia and name badge must occupy most of the upper-middle half of the frame, with clear silhouettes, substantial material thickness and restrained handmade detail. Paperwork should be only a barely visible supporting edge behind the credentials.
+Style/medium: hand-drawn 2D visual-novel environment illustration matching Image 1's delicate graphite-and-ink contour work, translucent grayscale brush washes, lightly broken handmade edges, restrained cel-like shadow blocks, sparse selective accent colors, and quiet paper-textured atmosphere; clearly illustrated rather than photorealistic; grounded materials and readable spatial depth
+Composition/framing: 4:3 landscape wide establishing view, intimate close-up of the physical credentials; upper left margin is calm for a web label; the emblem and badge are fully inside the central 70% of the canvas, upper two thirds; keep the lower 25% as a continuous low-detail, low-contrast dialogue-safe zone; retain the scene identity under responsive cover cropping.
+Lighting/mood: a controlled soft side light catches the brushed brass insignia and nameplate against deep charcoal leather. Quiet, authoritative, tactile; strong focal separation rather than a busy pile of documents.
+Color palette: graphite gray, charcoal leather, pale warm paper and selective antique gold; the most saturated color belongs to the official emblem. No bright colorful accents.
+Constraints: environment only; opaque background; no people, no characters, no human or creature silhouettes, no copied subject matter from Image 1, no watermark, no digital UI panels, no borders; do not place high-contrast focal details in the dialogue-safe zone.
+User-requested exception to the environment workflow's default no-logo/no-text rule: include only the exact official insignia from Image 3 and the words "NOVUS ORDO" on the physical credentials. Do not add other letters, numbers, logos or pseudo-writing.
+Avoid: photorealistic or 3D-rendered finish, generic empty sci-fi room, glossy stock-image look, excessive bloom, dense clutter across the whole canvas, illegible pseudo-text, foreground objects cut off by the frame, Maria's character content leaking into the environment.
+
+Focused composition correction: Image 2 is now the generated credentials scene being edited. Keep its successful physical leather holder, exact official gold emblem, brushed-metal name badge, words "NOVUS ORDO", hand-drawn materials, art style and palette. Change only placement and framing for the navigation-card crop. Move both credential objects higher and arrange them SIDE BY SIDE at nearly the SAME vertical center: the leather holder on the center-left and the horizontal name badge on the center-right, with a small natural overlap. Both subjects, including the entire name badge and all of its letters, must fit inside the CENTRAL 70% WIDTH and between 18% and 60% HEIGHT of the image. Reduce their projected height to fit that band, while retaining their clear readable focal scale. Do not put the badge in the lower-right corner. Reserve the BOTTOM 35% of the canvas as plain, dark, low-detail wood; absolutely no badge, letters, chains, or important emblem detail there. Reduce the upper room background to a soft supporting strip. A 4:3 landscape card background, seen from a somewhat higher camera angle; the emblem and nameplate remain the two unmistakable subjects. No new objects, no character identity, no UI.
 ```

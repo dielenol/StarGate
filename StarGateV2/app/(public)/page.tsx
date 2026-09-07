@@ -1,6 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { IconArrowRight, IconChevronDown } from "@/components/icons";
+import {
+  IconArrowRight,
+  IconChevronDown,
+  IconPlayer,
+  IconRules,
+  IconWorld,
+} from "@/components/icons";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 import LandingExperience from "./_components/LandingExperience";
 import ArchiveViewer from "./_components/ArchiveViewer";
@@ -95,6 +101,9 @@ export default function HomePage() {
               />
             </div>
             <div className={styles.card__body}>
+              <span className={styles.card__icon} aria-hidden="true">
+                <IconWorld />
+              </span>
               <h3>세계관 기록</h3>
               <p>
                 1945년의 시작부터 오늘의 기로까지.
@@ -125,6 +134,9 @@ export default function HomePage() {
               />
             </div>
             <div className={styles.card__body}>
+              <span className={styles.card__icon} aria-hidden="true">
+                <IconRules />
+              </span>
               <h3>노부스 오르도 룰</h3>
               <p>
                 선택을 행동으로 만드는 기준.
@@ -147,7 +159,7 @@ export default function HomePage() {
             <div className={styles.card__image} aria-hidden="true">
               <Image
                 src={resolvePublicAssetPath(
-                  "/assets/world-view/novus-personnel-registry.webp",
+                  "/assets/world-view/novus-agent-credentials.webp",
                 )}
                 alt=""
                 fill
@@ -155,6 +167,9 @@ export default function HomePage() {
               />
             </div>
             <div className={styles.card__body}>
+              <span className={styles.card__icon} aria-hidden="true">
+                <IconPlayer />
+              </span>
               <h3>플레이어</h3>
               <p>
                 이 세계를 함께 만드는 인물들.

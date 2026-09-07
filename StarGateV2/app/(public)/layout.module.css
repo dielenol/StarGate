@@ -1,13 +1,29 @@
 .layout {
+  --public-header-height: 88px;
   min-height: 100vh;
 }
 
 .layout__content {
-  min-height: calc(100vh - 88px);
-  scroll-margin-top: 100px;
+  min-height: calc(100vh - var(--public-header-height));
+  scroll-margin-top: calc(var(--public-header-height) + 12px);
 }
 
 /* Keep existing document anchors below the public sticky header. */
 .layout__content :global([id]) {
-  scroll-margin-top: 112px;
+  scroll-margin-top: calc(var(--public-header-height) + 24px);
+}
+
+@media (max-width: 1100px) {
+  .layout:has([data-document="true"]) {
+    --public-header-height: 144px;
+  }
+}
+
+@media (max-width: 600px) {
+  .layout {
+    --public-header-height: 72px;
+  }
+  .layout:has([data-document="true"]) {
+    --public-header-height: 128px;
+  }
 }

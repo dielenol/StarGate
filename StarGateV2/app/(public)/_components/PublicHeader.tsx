@@ -2,18 +2,54 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import {
+  IconArrowLeft,
   IconArrowRight,
   IconClose,
   IconMenu,
+  IconNotes,
+  IconPlayer,
+  IconRules,
   IconSearch,
+  IconWorld,
 } from "@/components/icons";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 import styles from "./PublicHeader.module.css";
+
+const PRIMARY_PAGES = [
+  {
+    href: "/world",
+    label: "세계관 기록",
+    description: "노부스 오르도의 역사와 세계관",
+    category: "WORLD",
+    icon: IconWorld,
+  },
+  {
+    href: "/world/player",
+    label: "플레이어",
+    description: "이 세계를 함께 만드는 인물들",
+    category: "PERSONNEL",
+    icon: IconPlayer,
+  },
+  {
+    href: "/gameplay",
+    label: "작전 내규",
+    description: "세션 참여와 플레이 안내",
+    category: "OPERATIONS",
+    icon: IconNotes,
+  },
+  {
+    href: "/rules",
+    label: "노부스 오르도 룰",
+    description: "캐릭터와 전투 규칙",
+    category: "RULES",
+    icon: IconRules,
+  },
+];
 
 const PAGES = [
   {
@@ -22,30 +58,7 @@ const PAGES = [
     description: "노부스 오르도 소개",
     category: "ARCHIVE",
   },
-  {
-    href: "/world",
-    label: "세계관 기록",
-    description: "노부스 오르도의 역사와 세계관",
-    category: "WORLD",
-  },
-  {
-    href: "/world/player",
-    label: "플레이어",
-    description: "이 세계를 함께 만드는 인물들",
-    category: "PERSONNEL",
-  },
-  {
-    href: "/gameplay",
-    label: "작전 내규",
-    description: "세션 참여와 플레이 안내",
-    category: "OPERATIONS",
-  },
-  {
-    href: "/rules",
-    label: "노부스 오르도 룰",
-    description: "캐릭터와 전투 규칙",
-    category: "RULES",
-  },
+  ...PRIMARY_PAGES,
   {
     href: "/erp",
     label: "운영 시스템",
@@ -68,6 +81,20 @@ const PAGES = [
 
 export default function PublicHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const activeSection =
+    PRIMARY_PAGES.find((page) => pathname === page.href) ??
+    PRIMARY_PAGES.find((page) => pathname.startsWith(`${page.href}/`));
+  const currentLabel =
+    PAGES.find((page) => page.href === pathname)?.label ??
+    (pathname === "/world/b"
+      ? "세계관 B"
+      : pathname === "/world/c"
+        ? "세계관 C"
+        : "기록 열람");
+  const worldChild = pathname.startsWith("/world/");
+  const previousPathRef = useRef(pathname);
+  const navigationDepthRef = useRef(0);
   const [panel, setPanel] = useState<"menu" | "search" | null>(null);
   const [query, setQuery] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -82,6 +109,28 @@ export default function PublicHeader() {
       .toLocaleLowerCase()
       .includes(term),
   );
+
+  useEffect(() => {
+    // Mark our public entries without replacing Next.js's own history fields.
+    // history.length also counts the blank/external entry before a direct visit.
+    const state = window.history.state;
+    const entry = state?.novusPublicNavigation;
+    const storedDepth =
+      entry?.pathname === pathname &&
+      Number.isSafeInteger(entry.depth) &&
+      entry.depth >= 0
+        ? (entry.depth as number)
+        : undefined;
+    const depth =
+      storedDepth ??
+      (previousPathRef.current === pathname ? 0 : navigationDepthRef.current + 1);
+    window.history.replaceState(
+      { ...state, novusPublicNavigation: { pathname, depth } },
+      "",
+    );
+    previousPathRef.current = pathname;
+    navigationDepthRef.current = depth;
+  }, [pathname]);
 
   useEffect(() => {
     function handleShortcut(event: globalThis.KeyboardEvent) {
@@ -151,6 +200,15 @@ export default function PublicHeader() {
     setPanel(null);
   }
 
+  function goBack() {
+    if (navigationDepthRef.current > 0) router.back();
+    else {
+      const fallback = worldChild ? "/world" : "/";
+      previousPathRef.current = fallback;
+      router.replace(fallback);
+    }
+  }
+
   function handleSearchKeys(event: KeyboardEvent<HTMLInputElement>) {
     if (event.nativeEvent.isComposing) return;
     const links =
@@ -189,66 +247,112 @@ export default function PublicHeader() {
 
   return (
     <>
-      <header className={styles.header}>
-        <Link href="#public-content" className={styles.header__skip}>
-          본문으로 건너뛰기
-        </Link>
-        <Link
-          href="/"
-          className={styles.header__brand}
-          aria-label="NOVUS ORDO 홈"
-        >
-          <Image
-            src={resolvePublicAssetPath("/assets/StarGate_logo.webp")}
-            alt=""
-            width={38}
-            height={38}
-          />
-          <span>
-            NOVUS ORDO
-            <span className={styles.header__subline}>OFFICIAL ARCHIVE</span>
-          </span>
-        </Link>
-        <nav className={styles.header__nav} aria-label="주요 메뉴">
-          {PAGES.slice(1, 5).map((page) => (
-            <Link
-              key={page.href}
-              href={page.href}
-              aria-current={pathname === page.href ? "page" : undefined}
-            >
-              {page.label}
-            </Link>
-          ))}
-        </nav>
-        <div className={styles.header__actions}>
-          <button
-            ref={searchTriggerRef}
-            type="button"
-            className={styles.header__icon}
-            aria-label="페이지 찾기"
-            aria-keyshortcuts="Control+k Meta+k /"
-            title="페이지 찾기 (Ctrl/⌘ K 또는 /)"
-            aria-haspopup="dialog"
-            aria-controls="public-navigation-panel"
-            onClick={(event) => openPanel("search", event.currentTarget)}
-          >
-            <IconSearch aria-hidden />
-          </button>
-          <Link href="/erp" prefetch={false} className={styles.header__erp}>
-            ERP 진입 <IconArrowRight aria-hidden />
+      <header
+        className={styles.header}
+        data-document={pathname !== "/" ? "true" : undefined}
+      >
+        <div className={styles.header__main}>
+          <Link href="#public-content" className={styles.header__skip}>
+            본문으로 건너뛰기
           </Link>
-          <button
-            type="button"
-            className={styles.header__icon}
-            aria-label="전체 메뉴 열기"
-            aria-haspopup="dialog"
-            aria-expanded={panel === "menu"}
-            aria-controls="public-navigation-panel"
-            onClick={(event) => openPanel("menu", event.currentTarget)}
+          <Link
+            href="/"
+            className={styles.header__brand}
+            aria-label="NOVUS ORDO 홈"
           >
-            <IconMenu aria-hidden />
-          </button>
+            <Image
+              src={resolvePublicAssetPath("/assets/StarGate_logo.webp")}
+              alt=""
+              width={38}
+              height={38}
+            />
+            <span>
+              NOVUS ORDO
+              <span className={styles.header__subline}>OFFICIAL ARCHIVE</span>
+            </span>
+          </Link>
+          <nav className={styles.header__nav} aria-label="주요 메뉴">
+            {PRIMARY_PAGES.map((page) => (
+              <Link
+                key={page.href}
+                href={page.href}
+                aria-current={
+                  activeSection?.href === page.href
+                    ? pathname === page.href
+                      ? "page"
+                      : "location"
+                    : undefined
+                }
+              >
+                <span className={styles.header__navIcon} aria-hidden="true">
+                  <page.icon />
+                </span>
+                <span className={styles.header__navCopy}>
+                  <span>{page.label}</span>
+                  <span className={styles.header__navCaption} aria-hidden="true">
+                    {page.category}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </nav>
+          <div className={styles.header__actions}>
+            <button
+              ref={searchTriggerRef}
+              type="button"
+              className={styles.header__icon}
+              aria-label="페이지 찾기"
+              aria-keyshortcuts="Control+k Meta+k /"
+              title="페이지 찾기 (Ctrl/⌘ K 또는 /)"
+              aria-haspopup="dialog"
+              aria-controls="public-navigation-panel"
+              onClick={(event) => openPanel("search", event.currentTarget)}
+            >
+              <IconSearch aria-hidden />
+            </button>
+            <Link href="/erp" prefetch={false} className={styles.header__erp}>
+              ERP 진입 <IconArrowRight aria-hidden />
+            </Link>
+            <button
+              type="button"
+              className={styles.header__icon}
+              aria-label="전체 메뉴 열기"
+              aria-haspopup="dialog"
+              aria-expanded={panel === "menu"}
+              aria-controls="public-navigation-panel"
+              onClick={(event) => openPanel("menu", event.currentTarget)}
+            >
+              <IconMenu aria-hidden />
+            </button>
+          </div>
         </div>
+        {pathname !== "/" && (
+          <nav className={styles.context} aria-label="현재 위치">
+            <button
+              type="button"
+              className={styles.context__back}
+              onClick={goBack}
+              aria-label="이전 페이지로"
+            >
+              <IconArrowLeft aria-hidden /> 이전
+            </button>
+            <ol className={styles.context__path}>
+              <li>
+                <Link href="/">메인</Link>
+              </li>
+              {worldChild && (
+                <li>
+                  <Link href="/world">세계관</Link>
+                </li>
+              )}
+              <li aria-current="page">
+                <span className={styles.context__current} title={currentLabel}>
+                  {currentLabel}
+                </span>
+              </li>
+            </ol>
+          </nav>
+        )}
       </header>
       <dialog
         id="public-navigation-panel"
