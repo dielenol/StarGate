@@ -129,3 +129,13 @@ node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-mar
 - **23시 계획 등록 명령도 자동 승인 검토가 `approval required by policy, but AskForApproval is set to Never`로 거부했다.** 사용자에게 이 문서의 기본 `--execute --yes --target-db stargate` 명령을 23시 전 터미널에서 직접 실행하도록 전달했다. `--now`는 사용하지 않는다. 등록을 다른 도구·원격 코드·직접 DB 쓰기로 우회하지 않았다.
 - 18:43:29 KST 최종 읽기 전용 검증: `stocks.market-shutdown.20260907`은 enabled=true, `0 23 7 9 *`, Asia/Seoul이다. `stocks.tick`은 enabled=false이며 다른 네 일정은 enabled=true다. **DB shutdown plan=null이다. 현재 상태만으로 23시 폭락·공시·시장 종료가 실행된다고 보장할 수 없으며, 사용자 직접 계획 등록이 필요하다.** 단발 CLI는 계획이 없으면 NOT_SCHEDULED로 실패하고 일반 시세 갱신으로 폴백하지 않는다.
 - 기존 heartbeat `18`을 오늘 23:02 한 번 결과 확인으로 갱신해 ACTIVE로 저장했다. plan·가격·공시·정책·이미지 전달을 확인하고, 결과와 무관하게 해당 단발 Dokploy 일정만 비활성화하며 다른 일정은 유지한다. 미등록 또는 실패를 완료로 보고하지 않고, 종료한 가격을 다시 조정하거나 실행 제한을 우회하지 않는다.
+
+## 23시 실행 결과 · 2026-09-07 23:03 KST
+
+- 실제 단발 실행 `OSLivxyMWg7cKcCoGQ6sF`는 23:00:00.120에 시작해 23:00:03.827에 `error`로 끝났다. 로그는 `NOT_SCHEDULED`, `planStatus=null`, `appliedTickers=0`, `Command failed`였다.
+- 23:03:38 KST 읽기 전용 운영 DB 재조회: shutdown plan=null, 종료 history 0건, 종료 공시 없음, 관련 알림 0건, 종료 outbox 0건이다. 최종 폭락·사유 공시·이미지 발송·영구 매수 중단/가격 동결/매도 전용 전환은 적용되지 않았다.
+- 9종목은 13시 가격을 유지했다: ART 121.57, BPE 426.99, GN3 819.27, MSF 175.73, SPZ 4167.80, SSR 34.23, STM 4.04, TWS 20.22, VFP 98.42. 저장된 시장 상태는 OPEN, closesAt=23:00, tradingMode/shutdownAt 없음이다. 일일 마감 시각 경과를 영구 폐장 적용으로 해석하지 않는다.
+- 뉴스 자산 URL은 여전히 HTTP 200, image/webp, 345392 bytes다. 자산 공개 상태는 공시 실제 전달을 의미하지 않는다.
+- 스케줄 재조회에서 정기 `stocks.tick=false`, 오늘 단발 `stocks.market-shutdown.20260907=true`였다. 단발 일정 비활성화를 위해 정상 UI를 열었으나 Mac 잠금과 물리 입력 감지로 자동 잠금 해제가 중지돼 접근하지 못했다. 사용자에게 Mac 잠금 해제를 요청했다. 정상 UI에서 Disabled 저장을 확인하기 전까지 해당 일정 비활성화는 미완료다.
+- 이 단발 명령에는 `2026-09-07` 날짜 검사가 있어 다른 날짜에는 가격 적용 CLI를 호출하지 않는다. 이 방어 조건을 Dokploy 일정 자체의 비활성화 완료로 보고하지 않는다.
+- 결과 확인 heartbeat `18`은 PAUSED로 저장했다. 가격 재적용·새 계획 등록·이미지 재발송·실행 제한 우회는 하지 않았다.
