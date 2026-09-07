@@ -199,6 +199,8 @@ export function useBuyStock() {
         err.code === "STOCK_TRADING_HALTED" ||
         err.code === "STOCK_COOLING_DOWN" ||
         err.code === "MARKET_CLOSED" ||
+        err.code === "MARKET_SELL_ONLY" ||
+        err.code === "MARKET_SHUTDOWN_PENDING" ||
         err.code === "MARKET_OPENING_PENDING"
       ) {
         queryClient.invalidateQueries({ queryKey: stocksKeys.prices });
@@ -239,6 +241,8 @@ export function useSellStock() {
         err.code === "STOCK_TRADING_HALTED" ||
         err.code === "STOCK_COOLING_DOWN" ||
         err.code === "MARKET_CLOSED" ||
+        err.code === "MARKET_SELL_ONLY" ||
+        err.code === "MARKET_SHUTDOWN_PENDING" ||
         err.code === "MARKET_OPENING_PENDING"
       ) {
         queryClient.invalidateQueries({ queryKey: stocksKeys.prices });

@@ -14,16 +14,19 @@ import { MongoServerError, type ClientSession } from "mongodb";
 import type {
   CreateStockPriceHistoryInput,
   StockHolding,
+  StockMarketShutdownPlan,
+  StockMarketState,
   StockPrice,
   StockPriceHistory,
 } from "../types/index.js";
+import { STOCK_MARKET_STATE_ID } from "../types/index.js";
 
 import {
   stockHoldingsCol,
   stockPriceHistoryCol,
   stockPricesCol,
 } from "../collections.js";
-import { getClient } from "../client.js";
+import { getClient, getDb } from "../client.js";
 
 /* ── stock_prices ── */
 
@@ -47,6 +50,38 @@ export class StockPriceTradeClaimError extends Error {
     super(code);
     this.name = "StockPriceTradeClaimError";
     this.code = code;
+  }
+}
+
+export class StockMarketAutomationStoppedError extends Error {
+  readonly code = "STOCK_MARKET_AUTOMATION_STOPPED";
+
+  constructor() {
+    super("STOCK_MARKET_AUTOMATION_STOPPED");
+    this.name = "StockMarketAutomationStoppedError";
+  }
+}
+
+/** shutdown apply와 같은 state→plan lock order로 실제 가격 쓰기 직전 경계를 재확인한다. */
+async function fenceStockMarketAutomation(
+  now: Date,
+  session: ClientSession,
+): Promise<void> {
+  const db = await getDb();
+  await db.collection<StockMarketState>("stock_market_state").updateOne(
+    { _id: STOCK_MARKET_STATE_ID },
+    { $inc: { tradeRevision: 1 } },
+    { session },
+  );
+  const plan = await db.collection<StockMarketShutdownPlan>(
+    "stock_market_shutdown",
+  ).findOne({ _id: STOCK_MARKET_STATE_ID }, { session });
+  if (
+    plan &&
+    (plan.status === "COMPLETED" ||
+      Math.max(now.getTime(), Date.now()) >= plan.executeAt.getTime())
+  ) {
+    throw new StockMarketAutomationStoppedError();
   }
 }
 
@@ -238,6 +273,7 @@ export interface ApplyScheduledStockPriceMutationInput<TContext = undefined> {
   initialPrice: number;
   initialLastUpdateKst: string;
   initialEventText?: string;
+  now?: Date;
   loadContext?: (session: ClientSession) => Promise<TContext>;
   calculate: (
     current: StockPrice,
@@ -281,6 +317,7 @@ export async function applyScheduledStockPriceMutation<TContext = undefined>(
   try {
     try {
       await session.withTransaction(async () => {
+        await fenceStockMarketAutomation(input.now ?? new Date(), session);
         const prices = await stockPricesCol();
         const history = await stockPriceHistoryCol();
         const existingHistory = await history.findOne(

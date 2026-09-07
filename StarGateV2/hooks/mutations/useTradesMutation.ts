@@ -53,6 +53,8 @@ function useRefreshTradeAvailability() {
         error.code !== "STOCK_PRICE_NOT_FOUND" &&
         error.code !== "STOCK_COOLING_DOWN" &&
         error.code !== "MARKET_CLOSED" &&
+        error.code !== "MARKET_SELL_ONLY" &&
+        error.code !== "MARKET_SHUTDOWN_PENDING" &&
         error.code !== "MARKET_OPENING_PENDING")
     ) {
       return;

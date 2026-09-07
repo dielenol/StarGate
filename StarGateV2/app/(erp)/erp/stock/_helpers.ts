@@ -48,6 +48,8 @@ export const ERROR_MESSAGE: Record<StocksErrorCode, string> = {
     "메인 캐릭터 정합성 위반 — 운영자(GM)에게 문의하세요.",
   PRICE_NOT_FOUND: "종목 시세를 찾을 수 없습니다.",
   MARKET_CLOSED: "현재 NOVEX 시장이 폐장되어 있습니다.",
+  MARKET_SELL_ONLY: "매수가 종료되었습니다. 보유 주식만 매도할 수 있습니다.",
+  MARKET_SHUTDOWN_PENDING: "최종 시세를 확정하고 있습니다. 잠시 후 매도해 주세요.",
   MARKET_OPENING_PENDING: "09시 가격 확정이 완료되기 전에는 거래할 수 없습니다.",
   STOCK_TRADING_HALTED: "현재 이 종목의 거래가 정지되어 있습니다.",
   STOCK_COOLING_DOWN: "급격한 가격 변동으로 이 종목이 자동 냉각 중입니다.",

@@ -105,6 +105,8 @@ function tradeErrorResult(error: unknown): {
         : error.code === "STOCK_TRADING_HALTED" ||
             error.code === "STOCK_COOLING_DOWN" ||
             error.code === "MARKET_CLOSED" ||
+            error.code === "MARKET_SELL_ONLY" ||
+            error.code === "MARKET_SHUTDOWN_PENDING" ||
             error.code === "MARKET_OPENING_PENDING"
           ? 423
           : error.code === "STOCK_PRICE_NOT_FOUND"
@@ -171,15 +173,18 @@ export async function GET(request: Request) {
       getCharacterBalance(me.characterId),
       listCharacterInventoryEntries(me.characterId),
       getHoldings(me.characterId),
-      isNovexV2Enabled()
-        ? getStockMarketSnapshot(now).then(async (snapshot) => ({
+      getStockMarketSnapshot(now).then(async (snapshot) => ({
             state: snapshot?.state ?? null,
             prices: snapshot?.prices ?? (await getStockPrices()),
-          }))
-        : getStockPrices().then((prices) => ({ state: null, prices })),
+            shutdownPlan: snapshot?.shutdownPlan ?? null,
+          })),
     ]);
     const prices = priceSnapshot.prices;
-    const serializedMarket = serializeStockMarketState(priceSnapshot.state, now);
+    const marketView = serializeStockMarketState(priceSnapshot.state, now, priceSnapshot.shutdownPlan);
+    // 교환·전달에는 청산 매도가 없으므로 SELL_ONLY 시장의 주식은 이전 불가다.
+    const serializedMarket = marketView.tradingMode === "SELL_ONLY"
+      ? { ...marketView, status: "CLOSED" as const }
+      : marketView;
     const items = inventoryResult.entries
       .filter(
         (entry) =>

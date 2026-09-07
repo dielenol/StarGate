@@ -11,6 +11,8 @@ import { isNovexV2Enabled } from "@/lib/stocks/market";
 
 export type StockTradeAvailabilityErrorCode =
   | "MARKET_CLOSED"
+  | "MARKET_SELL_ONLY"
+  | "MARKET_SHUTDOWN_PENDING"
   | "MARKET_OPENING_PENDING"
   | "STOCK_TRADING_HALTED"
   | "STOCK_COOLING_DOWN"
@@ -27,10 +29,12 @@ export async function claimStockPriceForTrade(
   ticker: string,
   session: ClientSession,
   now = new Date(),
+  side: "BUY" | "SELL" = "BUY",
 ): Promise<StockPrice> {
   try {
     return await claimCompatibleTradableStockPrice(ticker, now, session, {
       novexV2Enabled: isNovexV2Enabled(),
+      side,
     });
   } catch (error) {
     if (
@@ -75,6 +79,8 @@ export function stockTradeAvailabilityMessage(
     return "09시 가격 확정이 완료되기 전에는 거래할 수 없습니다.";
   }
   if (code === "MARKET_CLOSED") return "현재 NOVEX 시장이 폐장되어 있습니다.";
+  if (code === "MARKET_SELL_ONLY") return "매수가 종료되었습니다. 보유 주식만 매도할 수 있습니다.";
+  if (code === "MARKET_SHUTDOWN_PENDING") return "최종 시세를 확정하고 있습니다. 잠시 후 매도해 주세요.";
   if (code === "STOCK_TRADING_HALTED") {
     return "현재 이 종목의 거래가 정지되어 있습니다.";
   }

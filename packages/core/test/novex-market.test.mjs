@@ -18,6 +18,8 @@ import {
   shouldDeferNovexRoundForEarlyClose,
 } from "../dist/domain/novex-market.js";
 import {
+  applyNovexStockMarketTick,
+  applyScheduledStockTick,
   remainingNovexAutoQueueHours,
   resolveNovexV2Mode,
   selectNovexSeasonActivationForMergedSlots,
@@ -90,6 +92,34 @@ test("NOVEX 회차와 격주 정규 세션 폐장 규칙을 KST로 계산한다"
     ),
     false,
   );
+});
+
+test("가격 tick 종료 preflight는 주입 reader로 DB 없이 no-op한다", async () => {
+  const getShutdownPlan = async () => ({
+    status: "COMPLETED",
+    executeAt: new Date("2026-09-07T09:00:00.000Z"),
+  });
+  let mutationCalls = 0;
+  const legacy = await applyScheduledStockTick(
+    { now: new Date("2026-09-07T08:59:00.000Z") },
+    {
+      getShutdownPlan,
+      async applyMutation() {
+        mutationCalls += 1;
+        throw new Error("mutation should not run");
+      },
+    },
+  );
+  const novex = await applyNovexStockMarketTick(
+    {
+      now: new Date("2026-09-07T08:59:00.000Z"),
+      slotKey: "2026-09-07 13:00",
+    },
+    { getShutdownPlan },
+  );
+  assert.equal(legacy.marketShutdown, true);
+  assert.equal(novex.marketShutdown, true);
+  assert.equal(mutationCalls, 0);
 });
 
 test("가격 산식은 수급 ±4%, 고변동성 cap, 지배 공시와 structural reference를 지킨다", () => {
@@ -483,7 +513,11 @@ test("배당 지급 큐는 같은 실행에서 오류 건을 제외하고 다음
     }
     return { status: "EMPTY" };
   };
-  const first = await processPendingStockDividendPayouts(100, { payNext });
+  const getShutdownPlan = async () => null;
+  const first = await processPendingStockDividendPayouts(100, {
+    payNext,
+    getShutdownPlan,
+  });
   assert.deepEqual(first, {
     paid: 2,
     totalAmount: 2,
@@ -492,7 +526,10 @@ test("배당 지급 큐는 같은 실행에서 오류 건을 제외하고 다음
   });
   assert.equal(brokenAttempts, 1);
   repaired = true;
-  const second = await processPendingStockDividendPayouts(100, { payNext });
+  const second = await processPendingStockDividendPayouts(100, {
+    payNext,
+    getShutdownPlan,
+  });
   assert.deepEqual(second, {
     paid: 1,
     totalAmount: 3,
@@ -500,4 +537,51 @@ test("배당 지급 큐는 같은 실행에서 오류 건을 제외하고 다음
     drained: true,
   });
   assert.equal(brokenAttempts, 2);
+});
+
+test("영구 폐장 시각 이후에는 대기 중인 배당도 지급하지 않는다", async () => {
+  let payCalls = 0;
+  const summary = await processPendingStockDividendPayouts(100, {
+    getShutdownPlan: async () => ({
+      status: "SCHEDULED",
+      executeAt: new Date("2026-09-07T09:00:00.000Z"),
+    }),
+    now: () => new Date("2026-09-07T09:00:00.000Z"),
+    payNext: async () => {
+      payCalls += 1;
+      return { status: "PAID", entitlementId: "unexpected", amount: 10 };
+    },
+  });
+  assert.deepEqual(summary, {
+    paid: 0,
+    totalAmount: 0,
+    errors: 0,
+    drained: true,
+  });
+  assert.equal(payCalls, 0);
+});
+
+test("배당 처리 중 폐장이 확정되면 다음 entitlement부터 지급을 멈춘다", async () => {
+  let planReads = 0;
+  let payCalls = 0;
+  const summary = await processPendingStockDividendPayouts(100, {
+    getShutdownPlan: async () => {
+      planReads += 1;
+      return planReads === 1
+        ? null
+        : { status: "COMPLETED", executeAt: new Date(Date.now() + 60_000) };
+    },
+    payNext: async () => {
+      payCalls += 1;
+      return { status: "PAID", entitlementId: "first", amount: 3 };
+    },
+  });
+  assert.deepEqual(summary, {
+    paid: 1,
+    totalAmount: 3,
+    errors: 0,
+    drained: true,
+  });
+  assert.equal(planReads, 2);
+  assert.equal(payCalls, 1);
 });

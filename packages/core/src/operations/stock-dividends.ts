@@ -1,4 +1,8 @@
-import { payNextPendingStockDividendEntitlement } from "@stargate/shared-db";
+import {
+  getStockMarketShutdownPlan,
+  payNextPendingStockDividendEntitlement,
+  StockMarketAutomationStoppedError,
+} from "@stargate/shared-db";
 
 export interface StockDividendPayoutSummary {
   paid: number;
@@ -12,6 +16,8 @@ export async function processPendingStockDividendPayouts(
   limit = 100,
   dependencies: {
     payNext?: typeof payNextPendingStockDividendEntitlement;
+    getShutdownPlan?: typeof getStockMarketShutdownPlan;
+    now?: () => Date;
   } = {},
 ): Promise<StockDividendPayoutSummary> {
   let paid = 0;
@@ -19,9 +25,30 @@ export async function processPendingStockDividendPayouts(
   let errors = 0;
   const failedEntitlementIds = new Set<string>();
   for (let processed = 0; processed < limit; processed += 1) {
-    const result = await (
-      dependencies.payNext ?? payNextPendingStockDividendEntitlement
-    )({ excludeEntitlementIds: [...failedEntitlementIds] });
+    const plan = await (
+      dependencies.getShutdownPlan ?? getStockMarketShutdownPlan
+    )();
+    if (
+      plan &&
+      (plan.status === "COMPLETED" ||
+        Math.max(
+          (dependencies.now?.() ?? new Date()).getTime(),
+          Date.now(),
+        ) >= plan.executeAt.getTime())
+    ) {
+      return { paid, totalAmount, errors, drained: true };
+    }
+    let result;
+    try {
+      result = await (
+        dependencies.payNext ?? payNextPendingStockDividendEntitlement
+      )({ excludeEntitlementIds: [...failedEntitlementIds] });
+    } catch (error) {
+      if (error instanceof StockMarketAutomationStoppedError) {
+        return { paid, totalAmount, errors, drained: true };
+      }
+      throw error;
+    }
     if (result.status === "EMPTY") {
       return { paid, totalAmount, errors, drained: errors === 0 };
     }

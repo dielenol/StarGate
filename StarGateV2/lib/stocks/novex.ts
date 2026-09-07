@@ -133,7 +133,35 @@ export function buildLegacyStockMarketState(now = new Date()): StockMarketStateI
 export function serializeStockMarketState(
   state: StockMarketState | null,
   now = new Date(),
+  shutdown?: {
+    status: "SCHEDULED" | "COMPLETED";
+    executeAt: Date;
+    buysBlockedAt: Date;
+    reason: string;
+  } | null,
 ): StockMarketStateItem {
+  if (shutdown && shutdown.buysBlockedAt <= now) {
+    const due = shutdown.executeAt <= now;
+    const completed = shutdown.status === "COMPLETED";
+    return {
+      status: due || completed ? "CLOSED" : "OPEN",
+      tradingMode: "SELL_ONLY",
+      shutdownAt: shutdown.executeAt.toISOString(),
+      liquidationPending: due && !completed,
+      reason: completed
+        ? `${shutdown.reason} · 시장 운영이 종료되었습니다. 보유 주식만 매도할 수 있습니다.`
+        : due
+          ? "최종 시세를 확정하고 있습니다. 매도는 시세 확정 후 다시 가능합니다."
+          : "시장 운영 종료 예정 · 매수가 종료되어 보유 주식만 매도할 수 있습니다.",
+      asOf: now.toISOString(),
+      opensAt: null,
+      closesAt: shutdown.executeAt.toISOString(),
+      nextPriceSlotAt: completed ? null : shutdown.executeAt.toISOString(),
+      delayed: false,
+      pendingSlotKeys: [],
+      earlyCloseAt: null,
+    };
+  }
   if (!isNovexV2Enabled()) return buildLegacyStockMarketState(now);
   if (!state) {
     const window = marketWindow(now);

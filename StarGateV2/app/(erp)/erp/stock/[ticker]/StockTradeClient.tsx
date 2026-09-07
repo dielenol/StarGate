@@ -244,7 +244,8 @@ export default function StockTradeClient({
   }, [history.items]);
 
   const hasMainCharacter = mainCharacter !== null && !mainCharacterError;
-  const isMarketOpen = marketEnabled && market?.status === "OPEN";
+  const isSellOnly = market?.tradingMode === "SELL_ONLY";
+  const isMarketOpen = marketEnabled && (market?.status === "OPEN" || isSellOnly);
   const isPriceSeeded = currentPrice?.isSeeded ?? false;
   const isTradingHalted = currentPrice?.isTradingHalted ?? false;
   const cooldownUntil = currentPrice?.cooldownUntil ?? null;
@@ -255,6 +256,7 @@ export default function StockTradeClient({
   const canTrade =
     hasMainCharacter &&
     isMarketOpen &&
+    !market?.liquidationPending &&
     isPriceSeeded &&
     !isTradingHalted &&
     !isCoolingDown &&
@@ -307,10 +309,10 @@ export default function StockTradeClient({
   const isTradePending = isBuyPending || isSellPending;
 
   /**
-   * 매도 탭 선택 후 보유가 0 으로 떨어지면 매수 탭으로 자동 폴백 — derive 패턴.
+   * 매도 전용 시장은 보유가 0이 되어도 매수로 전환하지 않는다.
    */
   const effectiveTab: TradeTab =
-    tradeTab === "sell" && heldShares === 0 ? "buy" : tradeTab;
+    isSellOnly ? "sell" : tradeTab === "sell" && heldShares === 0 ? "buy" : tradeTab;
 
   const insufficientBalance =
     effectiveTab === "buy" &&
@@ -332,6 +334,7 @@ export default function StockTradeClient({
     maxOrderShares !== null && tradeShares >= maxOrderShares;
 
   const buyDisabled =
+    isSellOnly ||
     !canTrade ||
     tradeShares <= 0 ||
     insufficientBalance ||
@@ -602,7 +605,7 @@ export default function StockTradeClient({
         <StockTabs />
       </div>
 
-      {alertRules.novexEnabled ? <MarketStatusPanel market={market} /> : null}
+      {alertRules.novexEnabled || isSellOnly ? <MarketStatusPanel market={market} /> : null}
 
       <Link href="/erp/stock" className={styles.backLink}>
         <LinkPendingProbe />
@@ -1103,19 +1106,21 @@ export default function StockTradeClient({
                   type="button"
                   className={[
                     sharedStyles.tradeCard__tab,
-                    tradeTab === "buy"
+                    effectiveTab === "buy"
                       ? sharedStyles["tradeCard__tab--activeBuy"]
                       : "",
                   ]
                     .filter(Boolean)
                     .join(" ")}
                   onClick={() => {
-                    if (tradeTab === "buy") return;
+                    if (isSellOnly || tradeTab === "buy") return;
                     setTradeTab("buy");
                     setQtyInput("");
                     setErrorMessage(null);
                   }}
-                  aria-pressed={tradeTab === "buy"}
+                  disabled={isSellOnly}
+                  title={isSellOnly ? "매수가 종료되었습니다. 보유 주식만 매도할 수 있습니다." : undefined}
+                  aria-pressed={effectiveTab === "buy"}
                 >
                   매수
                 </button>
@@ -1123,7 +1128,7 @@ export default function StockTradeClient({
                   type="button"
                   className={[
                     sharedStyles.tradeCard__tab,
-                    tradeTab === "sell"
+                    effectiveTab === "sell"
                       ? sharedStyles["tradeCard__tab--activeSell"]
                       : "",
                   ]
@@ -1136,7 +1141,7 @@ export default function StockTradeClient({
                     setErrorMessage(null);
                   }}
                   disabled={heldShares === 0}
-                  aria-pressed={tradeTab === "sell"}
+                  aria-pressed={effectiveTab === "sell"}
                   title={
                     heldShares === 0
                       ? "보유 주식이 없어 매도할 수 없습니다."

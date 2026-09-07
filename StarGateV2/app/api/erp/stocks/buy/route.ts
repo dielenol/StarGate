@@ -183,6 +183,7 @@ export async function POST(request: Request) {
           ticker,
           mongoSession,
           occurredAt,
+          "BUY",
         );
         const price = priceDoc.price;
         const totalCost = roundStockValue(price * shares);

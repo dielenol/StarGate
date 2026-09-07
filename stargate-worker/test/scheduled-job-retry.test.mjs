@@ -7,6 +7,11 @@ import {
   createDefaultScheduledJobHandlers,
 } from "../dist/jobs/default-handlers.js";
 
+const noStockMarketShutdown = async () => ({
+  status: "NOT_SCHEDULED",
+  plan: null,
+});
+
 function dueRun(jobName, slotKey, startedAt) {
   return {
     _id: "507f1f77bcf86cd799439011",
@@ -210,6 +215,7 @@ test("NOVEX handler는 retry context의 실제 now와 명시 slotKey를 tick에 
   let options;
   try {
     const handlers = createDefaultScheduledJobHandlers({
+      applyStockMarketShutdown: noStockMarketShutdown,
       async applyNovexTick(input) {
         options = input;
         return {
@@ -244,6 +250,7 @@ test("NOVEX shadow는 신규 산식을 읽기 전용 계산하면서 legacy 시�
   const calls = [];
   try {
     const handlers = createDefaultScheduledJobHandlers({
+      applyStockMarketShutdown: noStockMarketShutdown,
       async previewNovexTick(input) {
         calls.push(`preview:${input.slotKey}`);
         return {
@@ -303,6 +310,7 @@ test("NOVEX shadow의 09·18·23시는 legacy 가격을 재실행하지 않는�
   let legacyCalls = 0;
   try {
     const handlers = createDefaultScheduledJobHandlers({
+      applyStockMarketShutdown: noStockMarketShutdown,
       async previewNovexTick(input) {
         return {
           date: input.slotKey.slice(0, 10),
@@ -349,6 +357,7 @@ test("legacy disabled 모드는 종전 12시 결과로 Discord 장부를 갱신�
   let wireCalls = 0;
   try {
     const handlers = createDefaultScheduledJobHandlers({
+      applyStockMarketShutdown: noStockMarketShutdown,
       async applyLegacyStockTick() {
         return {
           date: "2099-01-02",
@@ -389,6 +398,7 @@ test("active 유상증자 중 disabled/shadow legacy tick은 fail closed 한다"
     for (const mode of ["disabled", "shadow"]) {
       process.env.NOVEX_V2_MODE = mode;
       const handlers = createDefaultScheduledJobHandlers({
+        applyStockMarketShutdown: noStockMarketShutdown,
         async previewNovexTick(input) {
           return {
             date: input.slotKey.slice(0, 10),
@@ -429,6 +439,7 @@ test("정규 일요일 일정 누락·중복 warning은 scheduled job summary에
   try {
     for (const warning of ["REGULAR_SESSION_MISSING", "REGULAR_SESSION_AMBIGUOUS"]) {
       const handlers = createDefaultScheduledJobHandlers({
+        applyStockMarketShutdown: noStockMarketShutdown,
         async applyNovexTick(input) {
           return { date: "2099-01-04", slot: input.slotKey, results: [], skipDiscord: true, warning };
         },
@@ -491,6 +502,46 @@ test("한 예약 작업 재시도가 실패해도 같은 batch를 마친 뒤 hea
     AggregateError,
   );
   assert.deepEqual(executed, ["shop.refresh", "stocks.tick"]);
+});
+
+test("영구 폐장 적용 회차는 시세·배당·공시 후속 작업을 모두 생략한다", async () => {
+  let downstreamCalls = 0;
+  const handlers = createDefaultScheduledJobHandlers({
+    async applyStockMarketShutdown() {
+      return {
+        status: "APPLIED",
+        plan: { status: "COMPLETED" },
+        histories: [{ ticker: "TWS" }, { ticker: "STM" }],
+      };
+    },
+    async applyNovexTick() {
+      downstreamCalls += 1;
+      throw new Error("tick should not run");
+    },
+    async processDividendPayouts() {
+      downstreamCalls += 1;
+      throw new Error("dividends should not run");
+    },
+    async requestStockWire() {
+      downstreamCalls += 1;
+      throw new Error("wire should not run");
+    },
+  });
+
+  const summary = await handlers.require("stocks.tick").execute({
+    jobName: "stocks.tick",
+    slotKey: "2026-09-07 18:00",
+    requestedAt: new Date("2026-09-07T09:00:00.000Z"),
+    mode: "active",
+    signal: new AbortController().signal,
+  });
+  assert.equal(summary.marketShutdown, true);
+  assert.equal(summary.shutdownStatus, "APPLIED");
+  assert.equal(summary.updated, 2);
+  assert.equal(summary.announcement, false);
+  assert.equal(summary.dividendsPaid, 0);
+  assert.equal(summary.mutated, true);
+  assert.equal(downstreamCalls, 0);
 });
 
 test("수당·세션 알림의 부분 실패는 handler 성공으로 확정하지 않는다", async () => {
