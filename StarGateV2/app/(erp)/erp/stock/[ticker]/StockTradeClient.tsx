@@ -258,8 +258,8 @@ export default function StockTradeClient({
     isMarketOpen &&
     !market?.liquidationPending &&
     isPriceSeeded &&
-    !isTradingHalted &&
-    !isCoolingDown &&
+    (isSellOnly || !isTradingHalted) &&
+    (isSellOnly || !isCoolingDown) &&
     balance !== null &&
     !ledgerQuery.isError;
   const sellDisabled = !canTrade || !holding || holding.shares === 0;
@@ -650,14 +650,14 @@ export default function StockTradeClient({
         </Box>
       ) : null}
 
-      {hasMainCharacter && isPriceSeeded && isTradingHalted ? (
+      {hasMainCharacter && isPriceSeeded && isTradingHalted && !isSellOnly ? (
         <Box className={styles.notice}>
           이 종목은 운영자에 의해 거래정지되었습니다. 시세와 보유 내역은 계속
           조회할 수 있으며, 거래재개 후 매수·매도가 가능합니다.
         </Box>
       ) : null}
 
-      {hasMainCharacter && isPriceSeeded && isCoolingDown ? (
+      {hasMainCharacter && isPriceSeeded && isCoolingDown && !isSellOnly ? (
         <Box className={styles.notice}>
           이 종목은 급등락 이후 자동 냉각 중입니다.
           {currentPrice?.cooldownReason ? ` ${currentPrice.cooldownReason}` : ""}

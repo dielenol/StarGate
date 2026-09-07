@@ -98,6 +98,7 @@ test("가격 tick 종료 preflight는 주입 reader로 DB 없이 no-op한다", a
   const getShutdownPlan = async () => ({
     status: "COMPLETED",
     executeAt: new Date("2026-09-07T09:00:00.000Z"),
+    buysBlockedAt: new Date("2026-09-07T08:30:00.000Z"),
   });
   let mutationCalls = 0;
   const legacy = await applyScheduledStockTick(
@@ -539,14 +540,15 @@ test("배당 지급 큐는 같은 실행에서 오류 건을 제외하고 다음
   assert.equal(brokenAttempts, 2);
 });
 
-test("영구 폐장 시각 이후에는 대기 중인 배당도 지급하지 않는다", async () => {
+test("영구 폐장 예약 이후에는 대기 중인 배당도 지급하지 않는다", async () => {
   let payCalls = 0;
   const summary = await processPendingStockDividendPayouts(100, {
     getShutdownPlan: async () => ({
       status: "SCHEDULED",
       executeAt: new Date("2026-09-07T09:00:00.000Z"),
+      buysBlockedAt: new Date("2026-09-07T08:30:00.000Z"),
     }),
-    now: () => new Date("2026-09-07T09:00:00.000Z"),
+    now: () => new Date("2026-09-07T08:30:00.000Z"),
     payNext: async () => {
       payCalls += 1;
       return { status: "PAID", entitlementId: "unexpected", amount: 10 };

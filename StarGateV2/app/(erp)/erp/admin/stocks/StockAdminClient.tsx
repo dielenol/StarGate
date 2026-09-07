@@ -76,6 +76,7 @@ export default function StockAdminClient({
   const prices = pricesQuery.data ?? initialPrices;
   const holdings = holdingsQuery.data ?? initialHoldings;
   const marketWire = marketWireQuery.data ?? initialMarketWire;
+  const sellOnly = prices.market?.tradingMode === "SELL_ONLY";
   const marketIndex = useMemo(() => {
     return buildStockMarketIndexSnapshot(prices.items);
   }, [prices.items]);
@@ -305,6 +306,14 @@ export default function StockAdminClient({
         title="주식 운영"
       />
 
+      {sellOnly ? (
+        <p className={styles.seedWarning} role="status">
+          매수 영구 중단 · 가격 영구 동결 · 보유 주식 매도만 가능.
+          최종 시세 확정 후 가격이 고정되며 시세 조정, 거래 정지·재개,
+          공시 예약, 기업행동과 회차 복구는 사용할 수 없습니다.
+        </p>
+      ) : null}
+
       <div className={styles.layout}>
         <section className={styles.panel}>
           <div className={styles.panel__head}>
@@ -332,7 +341,7 @@ export default function StockAdminClient({
                       <strong>{item.ticker}</strong>
                       <span>
                         {item.name}
-                        {item.isTradingHalted ? (
+                        {!sellOnly && item.isTradingHalted ? (
                           <em className={styles.haltedBadge}>거래정지</em>
                         ) : null}
                       </span>
@@ -348,7 +357,7 @@ export default function StockAdminClient({
           </div>
         </section>
 
-        <section className={styles.panel}>
+        {!sellOnly ? <section className={styles.panel}>
           <div className={styles.panel__head}>
             <span>시세 조정</span>
             <span>{selectedTicker}</span>
@@ -561,16 +570,16 @@ export default function StockAdminClient({
           ) : (
             <div className={styles.empty}>조정할 종목이 없습니다.</div>
           )}
-        </section>
+        </section> : null}
 
-        {novexMode === "enabled" ? (
+        {!sellOnly && (novexMode === "enabled" ? (
           <>
             <StockScenarioTimelinePanel stocks={prices.items} />
             <StockNovexOperationsPanels stocks={prices.items} />
           </>
         ) : (
           <StockScheduledEventsPanel stocks={prices.items} />
-        )}
+        ))}
 
         <section className={[styles.panel, styles.holdingsPanel].join(" ")}>
           <div className={styles.panel__head}>

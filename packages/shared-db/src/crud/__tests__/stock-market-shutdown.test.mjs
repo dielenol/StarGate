@@ -15,14 +15,25 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     applyDueStockMarketShutdown,
     applyScheduledStockPriceMutation,
     applyStockMarketRoundTransaction,
+    buyHolding,
+    claimAdministrativeStockPrice,
     claimCompatibleTradableStockPrice,
+    createStockDisclosure,
+    createStockScheduledEvent,
     getClient,
     getDb,
     getStockMarketSnapshot,
     initServerless,
     payNextPendingStockDividendEntitlement,
+    prepareMrBeastSodaStockImpactDemand,
+    incrementMrBeastSodaStockImpactDemand,
+    consumeMrBeastSodaStockImpactDemand,
+    recordStockOrderFlow,
     scheduleStockMarketShutdown,
+    sellHolding,
     setStockTradingHalted,
+    updateStockPrice,
+    upsertStockMarketCalendarException,
     StockMarketAutomationStoppedError,
     StockMarketTradeClaimError,
   } = await import("../../../dist/index.js");
@@ -47,13 +58,19 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   const afterShutdown = new Date(executeAt.getTime() + 60 * 60 * 1_000);
   const reason = "파리 사태로 인한 쇼크";
   const policyNotice =
-    "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.";
+    "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.\n\n매수 영구 중단 · 가격 영구 동결 · 보유 주식 매도만 가능";
   const declines = TICKERS.map((ticker, index) => ({
     ticker,
     dropPercent: DECLINES[index],
   }));
   const seasonOwnerId = new ObjectId();
   const seasonCharacterId = new ObjectId();
+  const sodaImpactKey = {
+    eventId: "shutdown-test",
+    configVersion: 1,
+    startAt: new Date(scheduledAt.getTime() - 60 * 60 * 1_000),
+    endAt: new Date(afterShutdown.getTime() + 60 * 60 * 1_000),
+  };
 
   t.after(async () => {
     await db.dropDatabase();
@@ -143,6 +160,7 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     }],
     updatedAt: scheduledAt,
   });
+  await prepareMrBeastSodaStockImpactDemand(sodaImpactKey);
 
   const scheduleInput = {
     executeAt,
@@ -216,6 +234,20 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   assert.equal((await db.collection("stock_market_state").findOne({ _id: "novex" })).status, "OPEN");
   assert.equal(await db.collection("integration_outbox").countDocuments(), 0);
   await db.collection("stock_disclosures").deleteOne({ _id: "stock-market-shutdown:novex" });
+  await db.collection("stock_prices").updateOne(
+    { ticker: "TWS" },
+    {
+      $set: {
+        isTradingHalted: true,
+        cooldownUntil: new Date(afterShutdown.getTime() + 60_000),
+        cooldownReason: "이전 급등락 냉각",
+        corporateActionReservationId: "old-reservation",
+        corporateActionHaltId: "old-halt",
+        corporateActionHaltReason: "old-halt",
+        corporateActionResumeSlotKey: `${kstDate} 23:00`,
+      },
+    },
+  );
 
   const concurrent = await Promise.all([
     applyDueStockMarketShutdown({ now: executeAt }),
@@ -259,6 +291,9 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   assert.equal(snapshot.shutdownPlan.status, "COMPLETED");
   assert.equal(snapshot.state.tradingMode, "SELL_ONLY");
   assert.equal(snapshot.prices.find((price) => price.ticker === "TWS").price, 58.85);
+  assert.equal(snapshot.prices.find((price) => price.ticker === "TWS").isTradingHalted, undefined);
+  assert.equal(snapshot.prices.find((price) => price.ticker === "TWS").cooldownUntil, undefined);
+  assert.equal(snapshot.prices.find((price) => price.ticker === "TWS").corporateActionHaltId, undefined);
   const finalizedSeason = await db.collection("stock_investment_seasons").findOne({
     _id: "shutdown-season",
   });
@@ -309,16 +344,136 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     assert.equal(current.eventText, reason);
   }
 
-  assert.equal((await claim("SELL", afterShutdown)).ticker, "TWS");
-  const haltSession = client.startSession();
+  const finalPrice = (await db.collection("stock_prices").findOne({ ticker: "TWS" })).price;
+  const liquidationSession = client.startSession();
   try {
-    await haltSession.withTransaction(() => setStockTradingHalted("TWS", true, haltSession));
+    let sold;
+    let recordedFlow;
+    await liquidationSession.withTransaction(async () => {
+      const price = await claimCompatibleTradableStockPrice(
+        "TWS",
+        afterShutdown,
+        liquidationSession,
+        { novexV2Enabled: true, side: "SELL" },
+      );
+      sold = await sellHolding(
+        seasonCharacterId.toString(),
+        "TWS",
+        1,
+        { session: liquidationSession },
+      );
+      recordedFlow = await recordStockOrderFlow({
+        operationKey: "post-freeze-sell",
+        characterId: seasonCharacterId.toString(),
+        ticker: "TWS",
+        side: "SELL",
+        shares: 1,
+        price: price.price,
+        occurredAt: afterShutdown,
+      }, liquidationSession);
+    });
+    assert.equal(sold.ok, true);
+    assert.equal(recordedFlow, null);
   } finally {
-    await haltSession.endSession();
+    await liquidationSession.endSession();
+  }
+  assert.equal((await db.collection("stock_prices").findOne({ ticker: "TWS" })).price, finalPrice);
+  assert.equal(await db.collection("stock_holdings").countDocuments({
+    characterId: seasonCharacterId.toString(),
+    ticker: "TWS",
+  }), 0);
+  const mutationSession = client.startSession();
+  try {
+    for (const mutate of [
+      () => setStockTradingHalted("TWS", true, mutationSession),
+      () => claimAdministrativeStockPrice("TWS", mutationSession),
+      () => updateStockPrice("TWS", 999, "must-not-run", `${kstDate} 19:00`, { session: mutationSession }),
+      () => upsertStockMarketCalendarException({
+        kstDate,
+        isClosed: true,
+        reason: "must-not-run",
+        createdById: "gm-test",
+      }, mutationSession),
+      () => createStockDisclosure({
+        id: "must-not-run",
+        title: "must-not-run",
+        body: "must-not-run",
+        kind: "INFO",
+        status: "PUBLISHED",
+        source: "GM",
+        effects: [],
+        createdById: "gm-test",
+        now: afterShutdown,
+      }, mutationSession),
+      () => createStockScheduledEvent({
+        ticker: "TWS",
+        kstDate,
+        executeAt: afterShutdown,
+        changePercent: 1,
+        eventText: "must-not-run",
+        eventTier: "shock",
+        actor: { id: "gm-test", displayName: "GM" },
+        now: afterShutdown,
+      }, mutationSession),
+    ]) {
+      await assert.rejects(
+        mutationSession.withTransaction(mutate),
+        StockMarketAutomationStoppedError,
+      );
+    }
+  } finally {
+    await mutationSession.endSession();
   }
   await assert.rejects(
-    claim("SELL", new Date(afterShutdown.getTime() + 60_000)),
-    (error) => error instanceof StockMarketTradeClaimError && error.code === "STOCK_TRADING_HALTED",
+    updateStockPrice("TWS", 999, "standalone-must-not-run", `${kstDate} 19:00`),
+    StockMarketAutomationStoppedError,
+  );
+  await assert.rejects(
+    buyHolding(seasonCharacterId.toString(), "TWS", 1, finalPrice),
+    StockMarketAutomationStoppedError,
+  );
+  assert.equal((await db.collection("stock_prices").findOne({ ticker: "TWS" })).price, finalPrice);
+  assert.equal(await db.collection("stock_order_flow").countDocuments(), 0);
+  assert.equal(await db.collection("stock_season_flows").countDocuments(), 0);
+  assert.equal(await db.collection("stock_market_calendar_exceptions").countDocuments(), 0);
+  assert.equal(await db.collection("stock_disclosures").countDocuments({ _id: "must-not-run" }), 0);
+  assert.equal(await db.collection("stock_scheduled_events").countDocuments(), 0);
+  const revisionBeforeStoppedSodaImpact = (
+    await db.collection("stock_market_state").findOne({ _id: "novex" })
+  ).tradeRevision;
+  const sodaSession = client.startSession();
+  try {
+    let consumed;
+    await sodaSession.withTransaction(async () => {
+      await incrementMrBeastSodaStockImpactDemand({
+        key: sodaImpactKey,
+        quantity: 3,
+        purchasedAt: afterShutdown,
+        session: sodaSession,
+      });
+      consumed = await consumeMrBeastSodaStockImpactDemand({
+        operationKey: "post-freeze-soda-impact",
+        now: afterShutdown,
+        session: sodaSession,
+      });
+    });
+    assert.deepEqual(consumed, { soldQuantity: 0, eventIds: [] });
+  } finally {
+    await sodaSession.endSession();
+  }
+  await prepareMrBeastSodaStockImpactDemand({
+    ...sodaImpactKey,
+    eventId: "post-freeze-must-not-create",
+  });
+  const sodaDemand = await db.collection("mrbeast_soda_stock_impact_demand").findOne({
+    eventId: sodaImpactKey.eventId,
+  });
+  assert.equal(sodaDemand.soldQuantity, 0);
+  assert.equal(sodaDemand.appliedQuantity, 0);
+  assert.equal(await db.collection("mrbeast_soda_stock_impact_demand").countDocuments(), 1);
+  assert.equal(
+    (await db.collection("stock_market_state").findOne({ _id: "novex" })).tradeRevision,
+    revisionBeforeStoppedSodaImpact,
   );
 
   const historyCount = await db.collection("stock_price_history").countDocuments();

@@ -140,7 +140,7 @@ async function stockAutomationStopped(
   const observedAt = Math.max(now.getTime(), Date.now());
   return Boolean(
     plan &&
-    (plan.status === "COMPLETED" || observedAt >= plan.executeAt.getTime()),
+    (plan.status === "COMPLETED" || observedAt >= plan.buysBlockedAt.getTime()),
   );
 }
 

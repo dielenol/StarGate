@@ -4,7 +4,11 @@ import {
 } from "mongodb";
 
 import { mrBeastSodaStockImpactDemandCol } from "../collections.js";
+import { getClient } from "../client.js";
 import type { MrBeastSodaStockImpactDemand } from "../types/stock.js";
+import {
+  claimStockMarketMutationAllowed,
+} from "./stocks.js";
 
 const PROMOTION = "mrbeast-soda-stm-v1" as const;
 const TICKER = "STM" as const;
@@ -63,36 +67,50 @@ export async function prepareMrBeastSodaStockImpactDemand(
       "미스터비스트 소다 주가 영향 설정이 올바르지 않습니다.",
     );
   }
-  const collection = await mrBeastSodaStockImpactDemandCol();
-  const now = new Date();
+  const client = await getClient();
+  const session = client.startSession();
+  let prepared: MrBeastSodaStockImpactDemand | null = null;
+  let skipped = false;
   try {
-    await collection.updateOne(
-      {
-        _id: demandId(key),
-        promotion: PROMOTION,
-        ticker: TICKER,
-        eventId: key.eventId,
-        configVersion: key.configVersion,
-        startAt: key.startAt,
-        endAt: key.endAt,
-      },
-      {
-        $setOnInsert: {
-          soldQuantity: 0,
-          appliedQuantity: 0,
-          createdAt: now,
-          updatedAt: now,
-        },
-      },
-      { upsert: true },
-    );
-  } catch (error) {
-    if (!(error instanceof MongoServerError) || error.code !== 11_000) {
-      throw error;
-    }
+    await session.withTransaction(async () => {
+      const now = new Date();
+      if (!(await claimStockMarketMutationAllowed(now, session, { returnStopped: true }))) {
+        skipped = true;
+        return;
+      }
+      const collection = await mrBeastSodaStockImpactDemandCol();
+      try {
+        await collection.updateOne(
+          {
+            _id: demandId(key),
+            promotion: PROMOTION,
+            ticker: TICKER,
+            eventId: key.eventId,
+            configVersion: key.configVersion,
+            startAt: key.startAt,
+            endAt: key.endAt,
+          },
+          {
+            $setOnInsert: {
+              soldQuantity: 0,
+              appliedQuantity: 0,
+              createdAt: now,
+              updatedAt: now,
+            },
+          },
+          { upsert: true, session },
+        );
+      } catch (error) {
+        if (!(error instanceof MongoServerError) || error.code !== 11_000) {
+          throw error;
+        }
+      }
+      prepared = await collection.findOne({ _id: demandId(key) }, { session });
+    });
+  } finally {
+    await session.endSession();
   }
-
-  const prepared = await collection.findOne({ _id: demandId(key) });
+  if (skipped) return;
   if (!prepared || !matchesKey(prepared, key)) {
     throw new MrBeastSodaStockImpactDemandError(
       "미스터비스트 소다 주가 영향 원장의 정합성을 확인할 수 없습니다.",
@@ -121,6 +139,12 @@ export async function incrementMrBeastSodaStockImpactDemand(input: {
       "미스터비스트 소다 주가 영향 판매량이 허용 범위를 벗어났습니다.",
     );
   }
+
+  if (!(await claimStockMarketMutationAllowed(
+    input.purchasedAt,
+    input.session,
+    { returnStopped: true },
+  ))) return;
 
   const result = await (await mrBeastSodaStockImpactDemandCol()).updateOne(
     {
@@ -161,6 +185,12 @@ export async function consumeMrBeastSodaStockImpactDemand(input: {
       "미스터비스트 소다 주가 영향 적용 요청이 올바르지 않습니다.",
     );
   }
+
+  if (!(await claimStockMarketMutationAllowed(
+    input.now,
+    input.session,
+    { returnStopped: true },
+  ))) return { soldQuantity: 0, eventIds: [] };
 
   const collection = await mrBeastSodaStockImpactDemandCol();
   const demands = await collection

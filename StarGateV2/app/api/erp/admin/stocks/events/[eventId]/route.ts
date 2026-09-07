@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 import { NextResponse } from "next/server";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
@@ -97,6 +98,8 @@ export async function DELETE(request: Request, context: RouteContext) {
         : undefined,
     });
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof StockScheduledEventCutoverError) {
       return NextResponse.json(
         { error: "NOVEX 2.0 전환 처리 중에는 레거시 예약 이벤트를 취소할 수 없습니다." },

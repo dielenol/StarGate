@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 import { listScheduledStockMarketEvents } from "@stargate/core/domain/stock-events";
 import { MongoServerError } from "mongodb";
 import { NextResponse } from "next/server";
@@ -282,6 +283,8 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof StockScheduledEventCutoverError) {
       return NextResponse.json(
         { error: "NOVEX 2.0 전환이 시작되어 레거시 예약 이벤트를 생성할 수 없습니다." },
