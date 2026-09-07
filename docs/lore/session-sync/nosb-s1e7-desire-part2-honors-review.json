@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "reviewedSources": [
+    {
+      "sourceKey": "NOSB-S1E7-DESIRE-PART2",
+      "contentHash": "891e6428563abadeac0cb5db51e494587ecf3004edb67a8b6210d61c93905616",
+      "outcome": "AWARDED"
+    }
+  ],
+  "items": [
+    {
+      "sourceKey": "NOSB-S1E7-DESIRE-PART2",
+      "codename": "OTILIA",
+      "category": "RESCUE_PROTECTION",
+      "title": "마지막 역병으로 지켜낸 광장",
+      "citation": "오틸리아 발트만은 남은 백신을 모두 투여받고 감염자들 사이로 나아가, 백신과 결합한 역병으로 주변 감염자를 소거했다.",
+      "evidence": [
+        {
+          "section": "HIGHLIGHT",
+          "index": 8
+        },
+        {
+          "section": "HIGHLIGHT",
+          "index": 9
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E7-DESIRE-PART2",
+      "codename": "PIPETTE",
+      "category": "INTELLIGENCE_JUDGMENT",
+      "title": "세 좌표를 확보한 접선",
+      "citation": "휘트모어 핀치는 마테오를 설득해 폭탄 위치 세 곳이 적힌 쪽지를 확보·인계했고, 그 정보로 지상 병력이 첫째·둘째 폭탄을 처리할 수 있게 했다.",
+      "evidence": [
+        {
+          "section": "HIGHLIGHT",
+          "index": 0
+        },
+        {
+          "section": "HIGHLIGHT",
+          "index": 1
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E7-DESIRE-PART2",
+      "codename": "WD-(𝓃)",
+      "category": "SUPPORT_TEAMWORK",
+      "title": "끊어진 실과 되살아난 전열",
+      "citation": "우디는 붉은 실에 조종당한 킴라박을 회수하고 포자로 해쉬와 엘 볼라도르를 일으켜 동료들의 전투 복귀를 도왔다.",
+      "evidence": [
+        {
+          "section": "HIGHLIGHT",
+          "index": 2
+        },
+        {
+          "section": "HIGHLIGHT",
+          "index": 3
+        }
+      ]
+    }
+  ]
+}
