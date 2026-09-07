@@ -1,0 +1,94 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "filter": {
+      "codename": "WEXLER_JUNIOR",
+      "type": "NPC"
+    },
+    "update": {
+      "$setOnInsert": {
+        "codename": "WEXLER_JUNIOR",
+        "type": "NPC",
+        "role": "미합중국 대통령",
+        "department": "USA",
+        "factionCode": "MILITARY",
+        "previewImage": "/assets/npcs/Wexler-Junior-profile.webp",
+        "isPublic": false,
+        "lore.name": "웩슬러 주니어",
+        "lore.gender": "male",
+        "lore.age": "미상",
+        "lore.height": "미상",
+        "lore.weight": "미상",
+        "lore.appearance": "검은 머리를 뒤로 단정하게 넘긴 남성. 수염이 없는 얼굴에 짙은 눈썹과 뚜렷한 턱선이 보인다. 검은 정장에 흰 셔츠와 어두운 넥타이를 착용한다.",
+        "lore.personality": "미상",
+        "lore.background": "현 미합중국 대통령. 부통령 캘빈 R. 웩슬러의 아들이다.",
+        "lore.quote": "미상",
+        "lore.mainImage": "/assets/npcs/Wexler-Junior-profile.webp",
+        "lore.loreTags": [
+          "미국",
+          "대통령",
+          "웩슬러"
+        ],
+        "lore.appearsInEvents": [],
+        "lore.roleDetail": "- **직함**: 미합중국 대통령\n- **소속**: 미국 정치·군사 권력권\n- **가족**: 부통령 캘빈 R. 웩슬러의 아들\n- **노부스 오르도 내부 직책**: 없음",
+        "lore.notes": "웩슬러 주니어로 알려져 있다. 전체 개인명은 미상이다.",
+        "lore.relations": [
+          {
+            "targetCodename": "WEXLER",
+            "targetName": "캘빈 R. 웩슬러",
+            "label": "아버지",
+            "summary": "캘빈 R. 웩슬러는 현 미국 대통령 웩슬러 주니어의 아버지이자 부통령이다.",
+            "sourceLabel": "기록통제실 인물 확인 기록 (2026-09-07)",
+            "confidence": "confirmed",
+            "updatedAt": "2026-09-07T00:00:00.000Z"
+          }
+        ],
+        "loreMd": "## 대사\n미상\n\n## 외형\n검은 머리를 뒤로 단정하게 넘긴 남성. 수염이 없는 얼굴에 짙은 눈썹과 뚜렷한 턱선이 보인다. 검은 정장에 흰 셔츠와 어두운 넥타이를 착용한다.\n\n## 성격\n미상\n\n## 배경\n현 미합중국 대통령. 부통령 캘빈 R. 웩슬러의 아들이다.\n\n## 역할 상세\n- **직함**: 미합중국 대통령\n- **소속**: 미국 정치·군사 권력권\n- **가족**: 부통령 캘빈 R. 웩슬러의 아들\n- **노부스 오르도 내부 직책**: 없음\n\n## 이름 설명\n웩슬러 주니어로 알려져 있다. 전체 개인명은 미상이다.\n\n## 관계 (참고)\n- **WEXLER (캘빈 R. 웩슬러)**: 아버지이자 현 미합중국 부통령.\n",
+        "source": "manual",
+        "ownerId": null,
+        "createdAt": "2026-09-07T00:00:00.000Z",
+        "updatedAt": "2026-09-07T00:00:00.000Z"
+      }
+    },
+    "upsert": true,
+    "postcondition": {
+      "codename": "WEXLER_JUNIOR",
+      "type": "NPC",
+      "isPublic": false,
+      "lore.name": "웩슬러 주니어",
+      "lore.relations": {
+        "$elemMatch": {
+          "targetCodename": "WEXLER",
+          "label": "아버지"
+        }
+      },
+      "role": "미합중국 대통령",
+      "department": "USA",
+      "factionCode": "MILITARY",
+      "previewImage": "/assets/npcs/Wexler-Junior-profile.webp",
+      "lore.mainImage": "/assets/npcs/Wexler-Junior-profile.webp",
+      "lore.gender": "male",
+      "lore.age": "미상",
+      "lore.height": "미상",
+      "lore.weight": "미상",
+      "source": "manual",
+      "ownerId": null,
+      "agentLevel": {
+        "$exists": false
+      },
+      "institutionCode": {
+        "$exists": false
+      },
+      "lifeStatus": {
+        "$exists": false
+      },
+      "lifeStatusAt": {
+        "$exists": false
+      },
+      "lifeStatusEventId": {
+        "$exists": false
+      }
+    }
+  }
+]

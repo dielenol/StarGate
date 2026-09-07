@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-08-25
+updated: 2026-09-07
 ---
 
 # StarGate 로어북
@@ -22,6 +22,7 @@ docs/lore/
 ├── faction/                # 세력 스켈레톤 (세부는 롱폼 추가 예정)
 ├── place/                  # 장소, 지리 (현재 비어있음)
 ├── session-sync/           # 세션 동기화 내부 점검/coverage 노트
+├── visual-reference/       # 이미지 제작용 출처·정체·상태별 참조 (웹 공개 폴더 아님)
 └── static-target-baseline.json # payload가 없는 read-only 검증 live target inventory
 ```
 
@@ -61,6 +62,7 @@ docs/lore/
 
 ### session-sync/
 
+- [S1E9 이미지 제작 자료 접수·검증](session-sync/s1e9-visual-reference-intake-2026-09-07.md)
 - [2026-08-17 전체 원본 재대조 원장](session-sync/nosb-source-reconciliation-2026-08-17.md)
 - [NOSB MINI01 뉴 더블린 coverage](session-sync/nosb-mini-s1e1-new-dublin-coverage.md)
 - [NOSB MINI02 미니미니 유산 coverage](session-sync/nosb-mini-mini-legacy-coverage.md)
@@ -88,6 +90,10 @@ docs/lore/
 - [신원조회 잔여 초상 3종 연결 원장](session-sync/dossier-portrait-repair-ronnie-noster-zeno-2026-08-16.md)
 - [NOSB MINI06 신원조회 초상 교체 원장](session-sync/nosb-mini-neved-dossier-image-repair-2026-08-16.md)
 - [NOSB MINI06 GARRETT_CLIMAC 섹터 B 소속 정정 원장](session-sync/nosb-mini-neved-garrett-sector-b-affiliation-repair-2026-08-16.md)
+
+### visual-reference/
+
+- [S1E9 이미지 제작 자료](visual-reference/s1e9/README.md) — [구조화 연결 데이터](visual-reference/s1e9/reference-data.json), [접속 장치 제안](visual-reference/s1e9/device-design-proposal.md). 미진행 시나리오와 원본을 운영 기록에서 구분한다.
 
 ### static target baseline
 

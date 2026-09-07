@@ -1,0 +1,2917 @@
+{
+  "formatVersion": 1,
+  "title": "9화 이미지 제작 참조 데이터",
+  "updatedAt": "2026-09-07",
+  "scope": {
+    "mode": "worldbuilding-library",
+    "sourceStatus": "future-scenario-plus-user-confirmations",
+    "liveDbWrites": 0,
+    "mediaGenerated": 0,
+    "publicDeployment": false,
+    "newDossierVisibility": false,
+    "pathsRelativeTo": "StarGate repository root",
+    "scenarioIsInstructions": false
+  },
+  "sources": [
+    {
+      "id": "future-scenario",
+      "kind": "user-provided-future-scenario",
+      "path": "docs/lore/visual-reference/s1e9/scenario-source.txt",
+      "sha256": "71d5353403f0009ebc38f7228da522303dff88243d810f9a4dbc84866074160e"
+    },
+    {
+      "id": "user-confirmations",
+      "kind": "current-user-message",
+      "date": "2026-09-07",
+      "confirmed": [
+        "현 미국 대통령은 웩슬러 주니어이며 웩슬러의 아들",
+        "첨부 2는 세션 등장 원로 1명이며 변형 기반",
+        "마가렛 접속 장치는 적절한 레퍼런스 탐색 위임",
+        "첨부 3은 마가렛 보스 외형",
+        "첨부 4·5는 몬탁 프로젝트 개조 생물",
+        "백진연 가족은 화양연화 인물",
+        "송사리호 인물은 2화 신원조회 인물"
+      ]
+    },
+    {
+      "id": "user-attachment-1",
+      "kind": "user-provided-image",
+      "ordinal": 1,
+      "path": "docs/lore/visual-reference/s1e9/wexler-junior-portrait.png",
+      "sha256": "1197b62abd685c97ffab4d6f75a5b8c1bb488967d8a54312cc853ed6717b123b"
+    },
+    {
+      "id": "user-attachment-2",
+      "kind": "user-provided-image",
+      "ordinal": 2,
+      "path": "docs/lore/visual-reference/s1e9/black-pyramid-elder-portrait.png",
+      "sha256": "69c2870b91266d4af889aa0cc13c3a1c31647ffb58728168345ed646172ebb46"
+    },
+    {
+      "id": "user-attachment-3",
+      "kind": "user-provided-image",
+      "ordinal": 3,
+      "path": "docs/lore/visual-reference/s1e9/margaret-boss-appearance.png",
+      "sha256": "d4a8e720f3fb2da5bf06b27322c86e81fae6be132557bc3b6c965b69dd29fd7e"
+    },
+    {
+      "id": "user-attachment-4",
+      "kind": "user-provided-image",
+      "ordinal": 4,
+      "path": "docs/lore/visual-reference/s1e9/montauk-crustacean-appearance.png",
+      "sha256": "69dcb47e98aaa5ff4832e3c078036ac53fd6908b3fe7abc17d5074abacdda0c6"
+    },
+    {
+      "id": "user-attachment-5",
+      "kind": "user-provided-image",
+      "ordinal": 5,
+      "path": "docs/lore/visual-reference/s1e9/montauk-quadruped-appearance.png",
+      "sha256": "fc158431ebe3b51031ba3a2a876f42130c64c04b989ecef85081b9b66a90de52"
+    },
+    {
+      "id": "repository-existing-asset",
+      "kind": "existing-repository-visuals",
+      "note": "과거 장면은 정체·장소·구도 참조이며 현재 생존 상태를 증명하지 않음"
+    },
+    {
+      "id": "hwayangyeonhwa-report",
+      "kind": "existing-session-payload",
+      "path": "StarGateV2/scripts/seed-payloads/nosb-mini-hwayangyeonhwa-sync.json",
+      "sessionId": "NOSB-MINI-HWAYANGYEONHWA"
+    }
+  ],
+  "assets": [
+    {
+      "id": "wexler-junior-portrait",
+      "label": "웩슬러 주니어 초상",
+      "path": "docs/lore/visual-reference/s1e9/wexler-junior-portrait.png",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "user-confirmed",
+      "referenceForCuts": [
+        2
+      ],
+      "sourceFrameCrop": "no",
+      "metadata": {
+        "width": 832,
+        "height": 1216,
+        "mode": "RGBA",
+        "bytes": 1424215,
+        "sha256": "1197b62abd685c97ffab4d6f75a5b8c1bb488967d8a54312cc853ed6717b123b",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 376524,
+        "nonOpaquePixels": 405637
+      },
+      "preserve": [
+        "뒤로 넘긴 검은 머리",
+        "수염 없는 얼굴",
+        "검은 정장·흰 셔츠·어두운 넥타이"
+      ],
+      "notes": [
+        "첨부 1. 현 미국 대통령이자 WEXLER의 아들. 전체 개인명·나이·신장은 추정하지 않음."
+      ],
+      "sourceId": "user-attachment-1",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      }
+    },
+    {
+      "id": "elder-base",
+      "label": "세션 등장 원로 한 명",
+      "path": "docs/lore/visual-reference/s1e9/black-pyramid-elder-portrait.png",
+      "sourceRole": "entity-archive",
+      "evidenceStatus": "user-confirmed",
+      "referenceForCuts": [
+        22,
+        33,
+        61,
+        63
+      ],
+      "sourceFrameCrop": "no",
+      "metadata": {
+        "width": 550,
+        "height": 804,
+        "mode": "RGB",
+        "bytes": 421997,
+        "sha256": "69c2870b91266d4af889aa0cc13c3a1c31647ffb58728168345ed646172ebb46",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [
+        "흰 후드와 문양 있는 의례복",
+        "가시처럼 솟은 관",
+        "검은 눈구멍이 있는 창백한 가면",
+        "어두운 목 감싸개",
+        "사슬·펜던트·포갠 손"
+      ],
+      "notes": [
+        "첨부 2. 개인 이름 미상. 가면을 노출된 파충류 얼굴로 해석하지 않음. 하이퍼보리아인 14와 동일 개인으로 매칭하지 않음."
+      ],
+      "sourceId": "user-attachment-2",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      }
+    },
+    {
+      "id": "margaret-boss",
+      "label": "마가렛 보스 외형",
+      "path": "docs/lore/visual-reference/s1e9/margaret-boss-appearance.png",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "user-confirmed",
+      "referenceForCuts": [
+        38,
+        39,
+        45,
+        47,
+        49,
+        60
+      ],
+      "sourceFrameCrop": "no",
+      "metadata": {
+        "width": 1672,
+        "height": 941,
+        "mode": "RGB",
+        "bytes": 2026626,
+        "sha256": "d4a8e720f3fb2da5bf06b27322c86e81fae6be132557bc3b6c965b69dd29fd7e",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [
+        "은백색 단발",
+        "금빛으로 보이는 눈",
+        "흰 오프숄더 레이스 드레스",
+        "목걸이",
+        "레이스 양산",
+        "얼굴·목·어깨·팔의 어두운 균열",
+        "옅은 청색 흐름"
+      ],
+      "notes": [
+        "첨부 3. 보스 상태 전용. 배경 파편은 얼굴 신원의 일부가 아님. 보스 이전 의상·양산 출현 시점은 별도 고정."
+      ],
+      "sourceId": "user-attachment-3",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      }
+    },
+    {
+      "id": "montauk-crustacean",
+      "label": "몬탁 개조 생물 — 갑각류처럼 보이는 형태",
+      "path": "docs/lore/visual-reference/s1e9/montauk-crustacean-appearance.png",
+      "sourceRole": "entity-archive",
+      "evidenceStatus": "user-confirmed",
+      "referenceForCuts": [
+        15
+      ],
+      "sourceFrameCrop": "no",
+      "metadata": {
+        "width": 832,
+        "height": 1216,
+        "mode": "RGBA",
+        "bytes": 1621072,
+        "sha256": "69dcb47e98aaa5ff4832e3c078036ac53fd6908b3fe7abc17d5074abacdda0c6",
+        "alphaRange": [
+          254,
+          255
+        ],
+        "transparentPixels": 0,
+        "nonOpaquePixels": 7486
+      },
+      "preserve": [
+        "넓은 외피",
+        "큰 원형 센서와 작은 구멍 묶음",
+        "긴 더듬이",
+        "길고 날카로운 앞다리",
+        "관절형 지지다리",
+        "기계 장치와 생체의 혼합"
+      ],
+      "notes": [
+        "첨부 4. 형태 설명용 라벨이며 생물 종명·개체 번호가 아님. 기존 몬탁 98과 닮았지만 동일 개체 미확정. 흑백 원본에서 실제 색·크기를 단정하지 않음."
+      ],
+      "sourceId": "user-attachment-4",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      }
+    },
+    {
+      "id": "montauk-quadruped",
+      "label": "몬탁 개조 생물 — 사족수 형태",
+      "path": "docs/lore/visual-reference/s1e9/montauk-quadruped-appearance.png",
+      "sourceRole": "entity-archive",
+      "evidenceStatus": "user-confirmed",
+      "referenceForCuts": [
+        15
+      ],
+      "sourceFrameCrop": "no",
+      "metadata": {
+        "width": 832,
+        "height": 1216,
+        "mode": "RGBA",
+        "bytes": 1272789,
+        "sha256": "fc158431ebe3b51031ba3a2a876f42130c64c04b989ecef85081b9b66a90de52",
+        "alphaRange": [
+          254,
+          255
+        ],
+        "transparentPixels": 0,
+        "nonOpaquePixels": 7550
+      },
+      "preserve": [
+        "두개골처럼 보이는 턱",
+        "긴 장갑 목",
+        "원형 어깨 기구",
+        "장갑판 사이 노출된 골조와 케이블",
+        "발톱 달린 네 다리"
+      ],
+      "notes": [
+        "첨부 5. 몬탁 프로젝트 개조 생물. 기존 붉은 미사일 도살견과 동일 개체로 단정하지 않음. 순수 로봇으로 바꾸지 않음."
+      ],
+      "sourceId": "user-attachment-5",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      }
+    },
+    {
+      "id": "wexler-profile",
+      "label": "캘빈 R. 웩슬러 초상",
+      "path": "StarGateV2/public/assets/npcs/Calvin-R-Wexler-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        3
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1058,
+        "height": 1487,
+        "mode": "RGB",
+        "bytes": 215116,
+        "sha256": "c25992e42a896bf81e73f23421cad319e01de3886ccdd6518ddc65c92685d7a5",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/Calvin-R-Wexler-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "pipette-profile",
+      "label": "피펫 / 휘트모어 핀치",
+      "path": "StarGateV2/public/assets/peoples/Pinch-main-image.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 896,
+        "height": 1200,
+        "mode": "RGBA",
+        "bytes": 106292,
+        "sha256": "8318a693cab12ed7796877180bfd039716831ee5ecd8c6183d7d03a82d75a642",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 482944,
+        "nonOpaquePixels": 505140
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/peoples/Pinch-main-image.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hash-profile",
+      "label": "해쉬 / 해쉬테거",
+      "path": "StarGateV2/public/assets/peoples/InDexer-main-image.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        26,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 876,
+        "height": 1274,
+        "mode": "RGBA",
+        "bytes": 84042,
+        "sha256": "e285f78864633717a10af64959299ba4991441b89861c826637a9d1e1cc5ed3d",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 529876,
+        "nonOpaquePixels": 551916
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/peoples/InDexer-main-image.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "margaret-base",
+      "label": "마가렛 기본 외형",
+      "path": "StarGateV2/public/assets/peoples/Margaret-main-image.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        12,
+        16,
+        17,
+        18,
+        19,
+        20,
+        25,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 875,
+        "height": 1257,
+        "mode": "RGBA",
+        "bytes": 94274,
+        "sha256": "b1c73ff5bdc669db576848f873a05f1b95407d82b35bfebe3b608afdecf6b105",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 327548,
+        "nonOpaquePixels": 354160
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/peoples/Margaret-main-image.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "unyeon-profile",
+      "label": "운연 현재 외형",
+      "path": "StarGateV2/public/assets/peoples/Unyeon-main-image.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 868,
+        "height": 1266,
+        "mode": "RGBA",
+        "bytes": 79282,
+        "sha256": "044a0ed9706e2de86be22c6f6faa2d16728dd83b7c6eda25f4d18ef6023c70dc",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 486061,
+        "nonOpaquePixels": 594534
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/peoples/Unyeon-main-image.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "maria-profile",
+      "label": "마리아 기본 외형",
+      "path": "StarGateV2/public/assets/peoples/Maria-main-image.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        62,
+        63
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 955,
+        "height": 1280,
+        "mode": "RGBA",
+        "bytes": 110096,
+        "sha256": "523beb605c1e7c565e040e9173eefdc78147416bfac9094489b368d45020c63c",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 510598,
+        "nonOpaquePixels": 543523
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/peoples/Maria-main-image.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "jane-fish-profile",
+      "label": "제인 피쉬",
+      "path": "StarGateV2/public/assets/npcs/Jane-Fish-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        56
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 870,
+        "height": 1252,
+        "mode": "RGBA",
+        "bytes": 86548,
+        "sha256": "560b5709c72d228965a28f238affa2a34308c800eb19b35edf0d6b8aa28d3851",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 617836,
+        "nonOpaquePixels": 1088755
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/Jane-Fish-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "john-opus-profile",
+      "label": "존 오푸스",
+      "path": "StarGateV2/public/assets/npcs/John-Opus-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        56
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1400,
+        "height": 781,
+        "mode": "RGBA",
+        "bytes": 205104,
+        "sha256": "8da57a9108377afab7a958c8e1b335a06ab6e00c413f5269aa373b63852b64a3",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 261224,
+        "nonOpaquePixels": 1088483
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/John-Opus-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "racky-profile",
+      "label": "“물주먹” 래키",
+      "path": "StarGateV2/public/assets/npcs/Water-Fist-Racky-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        56,
+        58
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 394,
+        "height": 572,
+        "mode": "RGBA",
+        "bytes": 48600,
+        "sha256": "54a9cca5881b020f7d8c9a9dd9f76259f254f7d7e4e12b73538cefc8b84461ed",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 122829,
+        "nonOpaquePixels": 224355
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/Water-Fist-Racky-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "connor-profile",
+      "label": "코너 오 캘러핸",
+      "path": "StarGateV2/public/assets/npcs/Connor-O-Callahan-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        53
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1024,
+        "height": 1365,
+        "mode": "RGBA",
+        "bytes": 333590,
+        "sha256": "891248a26720db93379fe2ab2fc1e62ddfeaa4b4d3b19c65db27f2a53b6378ac",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 449651,
+        "nonOpaquePixels": 1397728
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/Connor-O-Callahan-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "sven-profile",
+      "label": "스벤 트로엘베인",
+      "path": "StarGateV2/public/assets/npcs/Sven-Troelbein-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        53
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1024,
+        "height": 1365,
+        "mode": "RGBA",
+        "bytes": 127052,
+        "sha256": "d36db33c58eec10e62d64eb2eeff73490644f31543c63535ac6221efd146bcc5",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 606965,
+        "nonOpaquePixels": 1292619
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/Sven-Troelbein-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "casey-profile",
+      "label": "케이시 레이서",
+      "path": "StarGateV2/public/assets/npcs/Casey-Racer-Valkyrie-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        57
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 832,
+        "height": 1216,
+        "mode": "RGBA",
+        "bytes": 249936,
+        "sha256": "60e32ba89ad4d54e52d71acd66645dd50a4b0449d389881f826ea8c06415d101",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 596397,
+        "nonOpaquePixels": 1007234
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/Casey-Racer-Valkyrie-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "donadona-profile",
+      "label": "도나도나",
+      "path": "StarGateV2/public/assets/npcs/ORSIS-201-DonaDona-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        57
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 832,
+        "height": 1216,
+        "mode": "RGBA",
+        "bytes": 232368,
+        "sha256": "3f1924c17faa37011534f94eddd4fb65e351ad7ce6982cd22d3e357d52fef5dc",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 499373,
+        "nonOpaquePixels": 992238
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/ORSIS-201-DonaDona-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "sandman-profile",
+      "label": "데이빗 / 샌드맨",
+      "path": "StarGateV2/public/assets/npcs/David-O-Callahan-Sandman-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        57
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 832,
+        "height": 1216,
+        "mode": "RGBA",
+        "bytes": 292774,
+        "sha256": "8110f4e93fabf0ccd8c19cc023206bb9bd51db3b4be350dbc062c63f0b073004",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 455097,
+        "nonOpaquePixels": 1010784
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/npcs/David-O-Callahan-Sandman-profile.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "unchanged"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "black-pyramid-corridor",
+      "label": "블랙 피라미드 기존 회랑",
+      "path": "StarGateV2/public/assets/session-reports/s1e7-desire-part1/black-pyramid-present-day.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        8
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1035,
+        "height": 503,
+        "mode": "RGBA",
+        "bytes": 70540,
+        "sha256": "ddd47255b592523304ae9422a2be57e1d5dd8e2c8cd4f106d7a7ec137f3fb627",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 1038,
+        "nonOpaquePixels": 15359
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/session-reports/s1e7-desire-part1/black-pyramid-present-day.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hyperborean-14-chamber",
+      "label": "하이퍼보리아인 14 챔버",
+      "path": "StarGateV2/public/assets/session-reports/s1e6-turning-point-part2/hyperborean-14-chamber.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        21,
+        22
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1035,
+        "height": 503,
+        "mode": "RGB",
+        "bytes": 178572,
+        "sha256": "2299ce06bc5f45994b8585b9f374354bf3b0f17d71a4440aecb18bf2d7a47aeb",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/session-reports/s1e6-turning-point-part2/hyperborean-14-chamber.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hash-margaret-memory",
+      "label": "해쉬와 마가렛의 붉은 실 기억",
+      "path": "StarGateV2/public/assets/session-reports/romantid/hash-margaret-memory.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        30,
+        31
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 974,
+        "height": 544,
+        "mode": "RGB",
+        "bytes": 107210,
+        "sha256": "0b5886e3a144f0c25ec28bc04ac9a2dc60f964772a720934f12cf91f5118908c",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/session-reports/romantid/hash-margaret-memory.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "margaret-visit",
+      "label": "기존 유리창 면회 장면",
+      "path": "StarGateV2/public/assets/session-reports/s1e6-turning-point-part2/margaret-white-isolation-visit.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        17
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1035,
+        "height": 503,
+        "mode": "RGB",
+        "bytes": 54148,
+        "sha256": "8e312023560a7c1bd6325e6e2b49c079e9b73cc2e925d7c0b4287f4711426bf8",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/session-reports/s1e6-turning-point-part2/margaret-white-isolation-visit.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "montag-98-scene",
+      "label": "기존 몬탁 98 공격 장면",
+      "path": "StarGateV2/public/assets/session-reports/s1e6-turning-point-part2/montag-98-attacks-kimlee.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        15
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1035,
+        "height": 503,
+        "mode": "RGB",
+        "bytes": 149698,
+        "sha256": "b77377be2178030b3daf8e76a8385a05d250cee39d7dd0595ebea93455ca40d9",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/session-reports/s1e6-turning-point-part2/montag-98-attacks-kimlee.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "songsari-ship-past",
+      "label": "송사리호 과거 선체",
+      "path": "StarGateV2/public/assets/wiki/places/song-sari-ho.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        56
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1266,
+        "height": 857,
+        "mode": "RGB",
+        "bytes": 109236,
+        "sha256": "1c12170763139893b227dee02390577bceeeeaf88533363897bdff51f34a3bb6",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/wiki/places/song-sari-ho.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "neon-valkyrie",
+      "label": "뉴 더블린 네온 발키리 바",
+      "path": "StarGateV2/public/assets/session-reports/new-dublin/neon-valkyrie-bar.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        57
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1216,
+        "height": 832,
+        "mode": "RGBA",
+        "bytes": 218948,
+        "sha256": "88317877e7cfdf3bae598ceb71aa5c79e7f7d6d1bc45a1cf465fc68a28d58448",
+        "alphaRange": [
+          254,
+          255
+        ],
+        "transparentPixels": 0,
+        "nonOpaquePixels": 7621
+      },
+      "preserve": [],
+      "notes": [],
+      "publicPath": "/assets/session-reports/new-dublin/neon-valkyrie-bar.webp",
+      "sourceId": "repository-existing-asset",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-020",
+      "label": "화양연화 기존 컷 20",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-020.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1400,
+        "height": 788,
+        "mode": "RGB",
+        "bytes": 178172,
+        "sha256": "5af062ed45f2f9013b00981cde96b7f5ea70043bb07ca787c8a9f935e8418590",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-032",
+      "label": "화양연화 기존 컷 32",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-032.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1400,
+        "height": 1050,
+        "mode": "RGB",
+        "bytes": 140526,
+        "sha256": "57be94ab179ba5ed02f779d05806938e14e3555edce7301b5314e5d2871be571",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-033",
+      "label": "화양연화 기존 컷 33",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-033.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1400,
+        "height": 1050,
+        "mode": "RGB",
+        "bytes": 53328,
+        "sha256": "6e0b707b4df7fca8412ee6bb84b8c7d100f7cb12d102a0eccc98fc53eff642df",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-056",
+      "label": "화양연화 기존 컷 56",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-056.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 961,
+        "height": 1400,
+        "mode": "RGB",
+        "bytes": 78104,
+        "sha256": "e0d59329f831d55ddbb99bdeb3cbab661500e87278a61f4585a9ad36c4759d48",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-069",
+      "label": "화양연화 기존 컷 69",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-069.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1400,
+        "height": 1050,
+        "mode": "RGB",
+        "bytes": 138184,
+        "sha256": "a22d123bb4701c5275c259961dc15791e8d4975fb6f889c6a6d0aaa94d7a7f6f",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-070",
+      "label": "화양연화 기존 컷 70",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-070.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1400,
+        "height": 788,
+        "mode": "RGB",
+        "bytes": 156840,
+        "sha256": "485e67dcc9f01727f20ac7bef76ddd46f758d51fd5b0793c896c2e345ce88d0f",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-071",
+      "label": "화양연화 기존 컷 71",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-071.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1346,
+        "height": 941,
+        "mode": "RGB",
+        "bytes": 137504,
+        "sha256": "1a6cd3ca3e8929a627f297c2daa332c9252b4894ff41c3a9e53464c262a59b99",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-072",
+      "label": "화양연화 기존 컷 72",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-072.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1400,
+        "height": 788,
+        "mode": "RGB",
+        "bytes": 269934,
+        "sha256": "01271d6027844c733800cc4b5d6ab2805f651aa92d0330c069516235584cc8a7",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "hwayang-073",
+      "label": "화양연화 기존 컷 73",
+      "path": "StarGateV2/public/assets/session-reports/hwayangyeonhwa/cut-073.webp",
+      "sourceRole": "report-cutscene",
+      "evidenceStatus": "repo-source",
+      "referenceForCuts": [
+        54,
+        55
+      ],
+      "sourceFrameCrop": "not-applicable: no-new-source-extraction; original-vtt-crop-unknown",
+      "metadata": {
+        "width": 1234,
+        "height": 941,
+        "mode": "RGB",
+        "bytes": 148526,
+        "sha256": "9d673cc28d307a5e8d4c1498d24dd62c0edef756461fc6ddf3a0d5dbb6217381",
+        "alphaRange": null,
+        "transparentPixels": 0,
+        "nonOpaquePixels": 0
+      },
+      "preserve": [],
+      "notes": [
+        "장면 내 이름·얼굴 대응은 familyMappings의 candidate 상태를 따름. 신원조회 초상으로 발행하지 않음."
+      ],
+      "sourceId": "hwayangyeonhwa-report",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "not-promoted"
+      },
+      "newCropApplied": false
+    },
+    {
+      "id": "wexler-junior-profile",
+      "label": "웩슬러 주니어 신원조회용 투명 초상",
+      "path": "docs/lore/visual-reference/s1e9/prepared-public/assets/npcs/Wexler-Junior-profile.webp",
+      "sourceRole": "personnel-image",
+      "evidenceStatus": "derived-from-user-confirmed",
+      "referenceForCuts": [
+        2
+      ],
+      "sourceFrameCrop": "no",
+      "metadata": {
+        "width": 832,
+        "height": 1216,
+        "mode": "RGBA",
+        "bytes": 177550,
+        "sha256": "4e92796cfcd101b74de622d9a10b2381c914c214c8dca18d89e7a092c91aea33",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparentPixels": 376524,
+        "nonOpaquePixels": 405637
+      },
+      "preserve": [],
+      "notes": [],
+      "sourceId": "user-attachment-1",
+      "derivedFrom": "wexler-junior-portrait",
+      "publicPath": "/assets/npcs/Wexler-Junior-profile.webp",
+      "deploymentStatus": "prepared-outside-web-public-root",
+      "consumerDecisions": {
+        "productionReference": "included",
+        "report": "unchanged",
+        "reportWikiMirror": "unchanged",
+        "dedicatedWiki": "unchanged",
+        "catalog": "not-applicable",
+        "dossier": "prepared-file-only; publication-and-live-apply-pending"
+      }
+    }
+  ],
+  "entities": [
+    {
+      "codename": "WEXLER_JUNIOR",
+      "name": "웩슬러 주니어",
+      "aliases": [
+        "미국 대통령",
+        "현 대통령"
+      ],
+      "identityStatus": "user-confirmed-new-record-prepared",
+      "assetIds": [
+        "wexler-junior-portrait",
+        "wexler-junior-profile"
+      ],
+      "specPath": "StarGateV2/docs/spec/npc/wexler-junior.md",
+      "sourceIds": [
+        "user-confirmations"
+      ],
+      "relations": [
+        {
+          "targetCodename": "WEXLER",
+          "label": "아버지",
+          "status": "user-confirmed"
+        }
+      ],
+      "unprovided": [
+        "전체 개인명",
+        "나이",
+        "키",
+        "체중"
+      ],
+      "dossierPlan": {
+        "isPublic": false,
+        "role": "미합중국 대통령",
+        "factionCode": "MILITARY",
+        "department": "USA",
+        "agentLevelDisposition": "omit-external-personnel"
+      }
+    },
+    {
+      "codename": "WEXLER",
+      "name": "캘빈 R. 웩슬러",
+      "aliases": [
+        "웩슬러",
+        "웨슬러",
+        "웩슬러 부통령"
+      ],
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "wexler-profile"
+      ],
+      "specPath": "StarGateV2/docs/spec/npc/wexler.md",
+      "relations": [
+        {
+          "targetCodename": "WEXLER_JUNIOR",
+          "label": "아들",
+          "status": "user-confirmed"
+        }
+      ],
+      "liveWriteDisposition": "excluded-from-seed: public father relation would expose private son identity"
+    },
+    {
+      "codename": "PIPETTE",
+      "name": "휘트모어 핀치",
+      "aliases": [
+        "피펫",
+        "핀치"
+      ],
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "pipette-profile"
+      ],
+      "writeDisposition": "read-only-reference"
+    },
+    {
+      "codename": "INDEXER",
+      "name": "해쉬테거",
+      "aliases": [
+        "해쉬",
+        "Hash"
+      ],
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "hash-profile"
+      ],
+      "writeDisposition": "read-only-reference"
+    },
+    {
+      "codename": "MARGARET",
+      "name": "마가렛",
+      "aliases": [
+        "마리골드",
+        "Marigold"
+      ],
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "margaret-base",
+        "margaret-boss"
+      ],
+      "writeDisposition": "read-only-reference"
+    },
+    {
+      "codename": "UNYEON",
+      "name": "운연",
+      "aliases": [],
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "unyeon-profile"
+      ],
+      "writeDisposition": "read-only-reference",
+      "pastIdentityReference": {
+        "name": "백진연",
+        "sourceId": "hwayangyeonhwa-report",
+        "note": "백진연의 죽음을 인정하고 운연으로 살기를 선택한 현재 인격. 과거 인간 얼굴과 현재 연기 머리 외형을 분리."
+      }
+    },
+    {
+      "codename": "MARIA",
+      "name": "마리아",
+      "aliases": [],
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "maria-profile"
+      ],
+      "writeDisposition": "read-only-reference"
+    },
+    {
+      "codename": "JANE_FISH",
+      "name": "제인 피쉬",
+      "identityStatus": "live-dossier-exact-match",
+      "assetIds": [
+        "jane-fish-profile"
+      ],
+      "specPath": "StarGateV2/docs/spec/npc/jane-fish.md",
+      "department": "SONGSARI",
+      "factionCode": "CIVIL",
+      "isPublic": true,
+      "lastLocatedEvidence": "NOSB-S1E2-MINI",
+      "writeDisposition": "reuse-existing-no-new-npc",
+      "currentSurvival": "not-inferred-from-missing-lifeStatus"
+    },
+    {
+      "codename": "JOHN_OPUS",
+      "name": "존 오푸스",
+      "identityStatus": "live-dossier-exact-match",
+      "assetIds": [
+        "john-opus-profile"
+      ],
+      "specPath": "StarGateV2/docs/spec/npc/john-opus.md",
+      "department": "SONGSARI",
+      "factionCode": "CIVIL",
+      "isPublic": true,
+      "lastLocatedEvidence": "NOSB-MINI-MINI-LEGACY",
+      "writeDisposition": "reuse-existing-no-new-npc",
+      "currentSurvival": "not-inferred-from-missing-lifeStatus"
+    },
+    {
+      "codename": "WATER_FIST_RACKY",
+      "name": "“물주먹” 래키",
+      "identityStatus": "live-dossier-exact-match",
+      "assetIds": [
+        "racky-profile"
+      ],
+      "specPath": "StarGateV2/docs/spec/npc/water-fist-racky.md",
+      "department": "SONGSARI",
+      "factionCode": "CIVIL",
+      "isPublic": true,
+      "lastLocatedEvidence": "NOSB-S1E7-DESIRE-PART1",
+      "writeDisposition": "reuse-existing-no-new-npc",
+      "currentSurvival": "not-inferred-from-missing-lifeStatus"
+    },
+    {
+      "codename": "CONNOR_OCALLAHAN",
+      "name": "코너 오 캘러핸",
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "connor-profile"
+      ],
+      "writeDisposition": "read-only-reference",
+      "episode9Casting": "candidate-pending-episode8-state"
+    },
+    {
+      "codename": "SVEN_TROELBEIN",
+      "name": "스벤 트로엘베인",
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "sven-profile"
+      ],
+      "writeDisposition": "read-only-reference",
+      "episode9Casting": "candidate-pending-episode8-state"
+    },
+    {
+      "codename": "CASEY_RACER",
+      "name": "케이시 레이서",
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "casey-profile"
+      ],
+      "writeDisposition": "read-only-reference",
+      "episode9Casting": "candidate-pending-episode8-state"
+    },
+    {
+      "codename": "ORSIS_201",
+      "name": "도나도나",
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "donadona-profile"
+      ],
+      "writeDisposition": "read-only-reference",
+      "episode9Casting": "candidate-pending-episode8-state"
+    },
+    {
+      "codename": "SANDMAN",
+      "name": "데이빗 / 샌드맨",
+      "identityStatus": "existing-exact-match",
+      "assetIds": [
+        "sandman-profile"
+      ],
+      "writeDisposition": "read-only-reference",
+      "episode9Casting": "candidate-pending-episode8-state"
+    }
+  ],
+  "familyMappings": [
+    {
+      "name": "백진연",
+      "relationship": "고인",
+      "assetIds": [
+        "hwayang-020",
+        "hwayang-056",
+        "hwayang-069"
+      ],
+      "visualLocation": "영정·단독 얼굴·故 백진연군 표기",
+      "matchStatus": "candidate",
+      "identitySource": "hwayangyeonhwa-report",
+      "familyMembership": "user-confirmed",
+      "dossierDisposition": "no-new-npc-no-image-promotion"
+    },
+    {
+      "name": "최선영",
+      "relationship": "어머니",
+      "assetIds": [
+        "hwayang-071",
+        "hwayang-073"
+      ],
+      "visualLocation": "071 오른쪽·073 긴 회색 머리 여성",
+      "matchStatus": "candidate",
+      "evidence": "운연의 팔을 붙드는 행동이 보존 본문과 대응",
+      "familyMembership": "user-confirmed",
+      "dossierDisposition": "no-new-npc-no-image-promotion"
+    },
+    {
+      "name": "백진욱",
+      "relationship": "아버지",
+      "assetIds": [
+        "hwayang-032",
+        "hwayang-033",
+        "hwayang-070",
+        "hwayang-072"
+      ],
+      "visualLocation": "회색 머리 남성",
+      "matchStatus": "candidate",
+      "evidence": "장례 장면의 가족 구성·역할 대응",
+      "familyMembership": "user-confirmed",
+      "dossierDisposition": "no-new-npc-no-image-promotion"
+    },
+    {
+      "name": "백민희",
+      "relationship": "고모",
+      "assetIds": [
+        "hwayang-032",
+        "hwayang-033",
+        "hwayang-070",
+        "hwayang-072"
+      ],
+      "visualLocation": "짧은 검은 머리 여성",
+      "matchStatus": "candidate",
+      "evidence": "장례 장면의 가족 구성·역할 대응",
+      "familyMembership": "user-confirmed",
+      "dossierDisposition": "no-new-npc-no-image-promotion"
+    },
+    {
+      "name": "운연의 인간 모습",
+      "relationship": "현재 운연이 장례식에서 취한 모습",
+      "assetIds": [
+        "hwayang-070",
+        "hwayang-071"
+      ],
+      "visualLocation": "왼쪽 검은 머리 청년",
+      "matchStatus": "candidate",
+      "evidence": "영정 속 백진연과 동일 초상으로 자동 합치지 않음",
+      "familyMembership": "user-confirmed",
+      "dossierDisposition": "no-new-npc-no-image-promotion"
+    }
+  ],
+  "elderVariationRules": {
+    "status": "user-authorized-design-scope",
+    "baseAssetId": "elder-base",
+    "fixed": [
+      "흰 후드",
+      "의례복",
+      "가면",
+      "가시관 계열",
+      "사슬 계열 장식"
+    ],
+    "variable": [
+      "관의 가시 배열",
+      "자수 밀도",
+      "펜던트 모양",
+      "소매와 장갑 디테일"
+    ],
+    "continuity": "033·061·063에는 같은 대표 원로를 유지",
+    "notConfirmed": [
+      "개인명",
+      "전체 원로 수",
+      "가면 아래 노출 얼굴",
+      "특수부대가 원로와 같은 종이라는 가정"
+    ]
+  },
+  "deviceProposal": {
+    "status": "design-proposal",
+    "path": "docs/lore/visual-reference/s1e9/device-design-proposal.md",
+    "externalAnchorCount": 3,
+    "parts": [
+      "nape-command-interface",
+      "connection-chair",
+      "common-anchor-lock",
+      "external-sync-anchor",
+      "pyramid-core"
+    ],
+    "sources": [
+      {
+        "title": "H.R. Giger — Harkonnen Chairs",
+        "url": "https://www.hrgiger.com/new_chairs.htm",
+        "use": "높은 갈비뼈형 등받이·둘러싸는 구조",
+        "visuallyInspected": true
+      },
+      {
+        "title": "ITER — Assembly tooling",
+        "url": "https://www.iter.org/project/assembly-tooling",
+        "use": "환형 모듈·외부 지지대·인물 대비 크기",
+        "visuallyInspected": true
+      }
+    ]
+  },
+  "continuityLocks": [
+    {
+      "status": "future-scenario-rule",
+      "rule": "앵커 3기. 목덜미 명령 부품·공통 잠금 구조·외부 앵커·핵심부는 서로 다른 부분이다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "018부터 명령 접속부는 분리·소등된 상태. 능력 자체는 남는다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "027의 균열을 041·048에 같은 모양으로 유지한다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "030·031은 회상으로 과거 의상·온전한 상태를 사용한다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "해쉬·피펫은 시체 재기동 대상에서 제외한다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "036 재기동 시체는 원래 군복·장비·상처를 유지하고 창백한 정신 연결선으로 통일한다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "052 광원화 감염자는 몸·의복 내부에서 청록·남색·보라·자홍·제한적 금빛이 굴절하며 단순 네온 외곽선·썩은 좀비가 아니다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "048 공격자는 화면 밖에 둘 수 있다. 049 마가렛 생사 미확정. 060 핵심부 잔광 유지."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "054 가족은 운연 소멸을 초자연적으로 감지하지 않는다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "062·063 마리아의 본체·과장된 괴물 이빨·실제 포식은 보여주지 않는다."
+    },
+    {
+      "status": "future-scenario-rule",
+      "rule": "16:9 cinematic-anime, 한 시점·한 순간. 대사·표지·지도 수치·결과 문구는 후편집한다."
+    }
+  ],
+  "readOnlyDossierAudit": {
+    "observedDate": "2026-09-07",
+    "juniorExactCount": 0,
+    "wexlerExactCount": 1,
+    "songsariExactCodenames": [
+      "JANE_FISH",
+      "JOHN_OPUS",
+      "WATER_FIST_RACKY"
+    ],
+    "separateFamilyNpcCounts": {
+      "백진욱": 0,
+      "최선영": 0,
+      "백민희": 0
+    },
+    "wexlerCorrection": "전 참모라는 문장은 repo spec에만 있음. live 본문에는 없어 관계만 추가하는 payload 준비.",
+    "unyeonImage": "DB의 /assets/*.png는 Dossier consumer가 .webp로 정규화. 기존 파일 존재, 수정 불필요."
+  },
+  "portraitQa": {
+    "assetId": "wexler-junior-profile",
+    "method": "Toolbox cutout_cli review-only; existing alpha preserved",
+    "modelInference": false,
+    "structurallyValid": true,
+    "warnings": [],
+    "fourBackgroundVisualReview": "pass: checker/white/black/original, subject and interior whites preserved",
+    "sourceHash": "1197b62abd685c97ffab4d6f75a5b8c1bb488967d8a54312cc853ed6717b123b",
+    "outputHash": "4e92796cfcd101b74de622d9a10b2381c914c214c8dca18d89e7a092c91aea33",
+    "outputAlphaRange": [
+      0,
+      255
+    ]
+  },
+  "remainingGaps": [
+    {
+      "id": "episode8-start-state",
+      "kind": "source-confirmation",
+      "requiredFor": [
+        11,
+        12,
+        16,
+        17,
+        18,
+        19,
+        20,
+        26,
+        28,
+        29,
+        32,
+        33,
+        34,
+        35,
+        38,
+        39,
+        42,
+        43,
+        45,
+        46,
+        47,
+        49,
+        60,
+        62,
+        63
+      ],
+      "need": "핵심 인물의 8화 종료 의상·부상. 기존 신원조회 기본복을 쓸지 한 번 확정.",
+      "available": "마가렛·피펫·해쉬·운연·마리아의 기존 인물 참조는 확보",
+      "notNeeded": [
+        "전체 8화 조연의 새 프로필",
+        "인물별 나이·신장"
+      ]
+    },
+    {
+      "id": "family-face-mapping",
+      "kind": "matching-confidence",
+      "requiredFor": [
+        54,
+        55
+      ],
+      "need": "가족 이름과 화면 내 인물의 대응 및 흔들리는 사진 선택",
+      "available": "가족 동일성·이름 확정, 장례 장면의 얼굴 후보 확보",
+      "fallback": "후보 대응을 채택하면 새 자료 없이 제작 가능"
+    },
+    {
+      "id": "coastal-city",
+      "kind": "story-choice",
+      "requiredFor": [
+        50
+      ],
+      "need": "파괴되는 해안 도시와 식별 랜드마크 하나",
+      "available": "시나리오에 특정 도시명 없음"
+    },
+    {
+      "id": "songsari-original-ship-state",
+      "kind": "conditional-source-confirmation",
+      "requiredFor": [
+        56
+      ],
+      "need": "원래 송사리호를 사용할 때 루프 이후 위치·현실 잔존·손상 상태",
+      "fallback": "시나리오 기본안인 다른 송사리 소속 배 또는 항만 사용"
+    },
+    {
+      "id": "epilogue-cast",
+      "kind": "source-and-casting-confirmation",
+      "requiredFor": [
+        53,
+        57,
+        58
+      ],
+      "need": "코너·스벤을 쓸지, 네온 발키리 출연자, 구조 조연의 8화 이후 상태",
+      "recommendation": "058은 7화 구조 근거가 있는 래키",
+      "fallback": "053은 익명 갈로글라·욤스비킹. 057·058 실명 인물은 확인 필요"
+    },
+    {
+      "id": "margaret-state-transition",
+      "kind": "continuity-design",
+      "requiredFor": [
+        12,
+        16,
+        17,
+        18,
+        19,
+        20,
+        25,
+        29,
+        32,
+        33,
+        34,
+        35,
+        38,
+        39,
+        45,
+        47,
+        49,
+        60
+      ],
+      "need": "보스 이전 의상, 보스 의상으로의 전환, 양산 등장 시점",
+      "available": "보스 외형은 사용자 확정"
+    },
+    {
+      "id": "military-visual-bible",
+      "kind": "design-work",
+      "requiredFor": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        19,
+        28,
+        33,
+        36,
+        37,
+        51,
+        52,
+        59
+      ],
+      "need": "미군·오르도·원로 특수부대 식별, 파워아머, 몬탁 상대 크기·색 기준",
+      "available": "몬탁 두 형태 확정. 기존 소속 표식·시나리오 기능에 맞춰 미술 설계 가능"
+    },
+    {
+      "id": "device-reference-sheet",
+      "kind": "design-work",
+      "requiredFor": [
+        16,
+        18,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        33,
+        34,
+        35,
+        38,
+        41,
+        43,
+        45,
+        47,
+        48,
+        49,
+        60
+      ],
+      "need": "제안한 의자·잠금구·앵커·핵심부와 균열을 한 장의 기준 그림으로 고정",
+      "available": "장치 제안 및 공식 외부 형태 참고 확보"
+    },
+    {
+      "id": "elder-variations",
+      "kind": "design-work",
+      "requiredFor": [
+        22,
+        33,
+        61,
+        63
+      ],
+      "need": "제공 원로를 기준으로 관·자수·펜던트의 변형 범위와 대표 원로 고정",
+      "available": "개인 이름·권한등급 없이도 제작 가능"
+    },
+    {
+      "id": "past-hand-composition",
+      "kind": "optional-exact-reference",
+      "requiredFor": [
+        17
+      ],
+      "need": "과거 유리창을 사이에 둔 두 손의 정확한 구도",
+      "available": "기존 면회 컷 및 피펫·마가렛 초상",
+      "fallback": "기존 자료에서 새 손 구도를 설계; 완전히 같은 구도 재현일 때만 추가 원본 필요"
+    }
+  ],
+  "cutBindings": [
+    {
+      "cut": 1,
+      "title": "비어 있는 지휘석",
+      "scenarioDirection": "미스터 오드의 부재를 드러내는 정돈된 공간. 켜진 단말과 빈 의자를 정면으로 잡는다. 파괴보다 부재가 먼저 보인다.",
+      "referenceAssetIds": [],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 2,
+      "title": "대통령의 성명",
+      "scenarioDirection": "연단과 국가 상징을 좌우 대칭으로 배치한 중거리 정면 구도. 대통령은 분노보다 준비된 확신을 보인다. 성명 문구는 후편집한다.",
+      "referenceAssetIds": [
+        "wexler-junior-portrait",
+        "wexler-junior-profile"
+      ],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 3,
+      "title": "카메라 밖의 웩슬러",
+      "scenarioDirection": "전경에 흐릿한 방송 장비, 중경에 웩슬러, 배경에 작전 상황 화면. 그는 연설을 듣기보다 작전 진행을 확인하고 있다.",
+      "referenceAssetIds": [
+        "wexler-profile"
+      ],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 4,
+      "title": "공개된 수용 시설",
+      "scenarioDirection": "끝없이 반복되는 저온 수용 구획을 기록사진처럼 제시한다. 가까운 한 사람의 형상과 멀리 이어지는 수용 규모가 함께 읽혀야 한다.",
+      "referenceAssetIds": [],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 5,
+      "title": "방송으로 진실을 알게 된 직원",
+      "scenarioDirection": "휴게 공간에서 화면을 보던 오르도 직원이 굳어 있다. 본인도 몰랐던 조직의 비밀이 방송되고, 주변 단말에는 통신 장애가 발생한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 6,
+      "title": "이미 출발한 병력",
+      "scenarioDirection": "수송기 내부에서 강습을 기다리는 병사들. 고정된 장비와 닫힌 헬멧 사이로 성명 방송의 빛이 비친다. 아직 최후통첩은 끝나지 않았다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 7,
+      "title": "상층부 강습",
+      "scenarioDirection": "블랙 피라미드의 규모가 읽히는 원경. 작은 병력 실루엣들이 특정 진입부로 집중된다. 무차별 공격이 아니라 내부 경로를 아는 침투다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 8,
+      "title": "침범당한 회랑",
+      "scenarioDirection": "기존 피라미드 회랑의 정면 구도를 유지한다. 검은 기둥과 깃발 사이로 미군의 조명과 연기가 들어온다.",
+      "referenceAssetIds": [
+        "black-pyramid-corridor"
+      ],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 9,
+      "title": "대피하는 사람들",
+      "scenarioDirection": "낮은 시점에서 들것 바퀴, 부상자를 받치는 팔, 급히 움직이는 발을 잡는다. 전투보다 사람을 옮기는 행동이 중심이다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 10,
+      "title": "자산이 먼저 통과하는 문",
+      "scenarioDirection": "호위받는 운반함은 열린 문을 통과하고, 일반 직원들의 줄은 옆에서 멈춰 있다. 두 집단의 이동 방향으로 우선순위를 드러낸다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 11,
+      "title": "통제실의 과학자들",
+      "scenarioDirection": "장비와 케이블 사이에서 작업하는 연구진. 문 너머의 충격으로 먼지가 떨어져도 손을 멈추지 않는다. 실제 몸이 위험에 노출된 해킹 전선이다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "episode8-start-state",
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 12,
+      "title": "반대 방향의 행렬",
+      "scenarioDirection": "대피 인원은 계단 위로, 마가렛과 원로 호위대는 아래로 향한다. 마가렛은 행렬 중심에 있지만 보호받는 사람보다 운반되는 자산처럼 배치한다.",
+      "referenceAssetIds": [
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 13,
+      "title": "닫히는 심층 방호문",
+      "scenarioDirection": "호위대가 통과한 문이 뒤따르는 직원 앞에서 닫힌다. 안쪽 병사는 바깥을 돌아보지 않는다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 14,
+      "title": "파워아머 투입",
+      "scenarioDirection": "파손된 진입부와 장비 컨테이너 옆에서 중장비 병력이 전개된다. 앞선 회랑보다 손상과 연기가 누적되어 있어야 한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 15,
+      "title": "몬탁의 등장",
+      "scenarioDirection": "일반 병사들을 크기 비교 대상으로 두고, 이번 작전에 투입되는 몬탁 전력의 실루엣을 단독으로 강조한다. 파워아머 소개 컷과 분리해 위협을 단계적으로 높인다.",
+      "referenceAssetIds": [
+        "montauk-crustacean",
+        "montauk-quadruped",
+        "montag-98-scene"
+      ],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 16,
+      "title": "전쟁 속 처치 공간",
+      "scenarioDirection": "파손된 장비 뒤의 좁은 구획. 피펫의 의료 조명만 마가렛의 목덜미와 손을 밝힌다. 마가렛은 피펫에게 몸을 맡기고 있다.",
+      "referenceAssetIds": [
+        "pipette-profile",
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 17,
+      "title": "유리 없는 손",
+      "scenarioDirection": "두 사람이 실제로 손을 잡은 가까운 구도. 과거 면회 장면의 손 위치를 되받되, 둘 사이의 유리는 없다.",
+      "referenceAssetIds": [
+        "pipette-profile",
+        "margaret-base",
+        "margaret-visit"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "past-hand-composition"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 18,
+      "title": "꺼진 통제장치",
+      "scenarioDirection": "피펫의 손 안에 분리된 작은 접속 부품. 마가렛 목덜미의 작동광은 꺼져 있다. 피펫의 행동이 성공했다는 사실을 명확히 보여준다.",
+      "referenceAssetIds": [
+        "pipette-profile",
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 19,
+      "title": "사격선에 들어가는 피펫",
+      "scenarioDirection": "공격 방향, 마가렛의 위치, 피펫이 몸을 넣는 방향이 읽히는 사선 구도. 상처보다 보호 동작이 먼저 보이게 한다.",
+      "referenceAssetIds": [
+        "pipette-profile",
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 20,
+      "title": "남겨진 성취",
+      "scenarioDirection": "마가렛이 움직이지 않는 피펫의 손을 잡고 있다. 화면 한쪽에는 파괴된 접속 부품이 남아 있다. 사람은 잃었지만 그의 행동은 취소되지 않았다.",
+      "referenceAssetIds": [
+        "pipette-profile",
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 21,
+      "title": "낯익은 표본 기록",
+      "scenarioDirection": "역탐지로 확보한 작전 자료를 보던 연구자의 손이 멈춘다. 화면에는 과거 목격했던 챔버와 표본의 기록사진이 떠 있다.",
+      "referenceAssetIds": [
+        "hyperborean-14-chamber"
+      ],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 22,
+      "title": "내부 인증 대상",
+      "scenarioDirection": "표본 분석과 원로의 생체 인증 자료를 대조하는 화면용 이미지. 정확한 결과 문구는 후편집한다. ‘외부의 적’이 ‘내부의 지배자’로 바뀌는 순간이다.",
+      "referenceAssetIds": [
+        "elder-base",
+        "hyperborean-14-chamber"
+      ],
+      "gapIds": [
+        "elder-variations"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 23,
+      "title": "반복된 문명의 끝",
+      "scenarioDirection": "심층 기록판에 시대가 다른 도시와 동일한 중심 장치가 반복되어 있다. 도시의 형태는 달라도 끝나는 구조는 같다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 24,
+      "title": "행성 규모의 회로",
+      "scenarioDirection": "세계 각지의 연결점이 블랙 피라미드로 수렴하는 도식. 지도와 연결 구조를 중심으로 만들고 설명문은 별도 처리한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 25,
+      "title": "도면 중심의 마가렛",
+      "scenarioDirection": "모든 연결이 마지막으로 마가렛의 실험체 기록에 모인다. 화면을 바라보는 연구자의 굳은 옆모습을 작게 넣는다. 진실의 발견이 곧 구출 목표로 전환된다.",
+      "referenceAssetIds": [
+        "margaret-base"
+      ],
+      "gapIds": [
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 26,
+      "title": "동기화부를 부수는 해쉬",
+      "scenarioDirection": "해쉬의 손과 정확히 겨냥한 접속부가 중심. 무작위 파괴가 아니라 구조를 아는 사람이 마지막 수단을 쓰는 모습이다.",
+      "referenceAssetIds": [
+        "hash-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 27,
+      "title": "남겨진 균열",
+      "scenarioDirection": "잠금 구조가 손상되고 앵커 보호부에 틈이 생긴 디테일 컷. 파손 모양은 이후 전투 컷에서도 유지한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 28,
+      "title": "치명상",
+      "scenarioDirection": "전경의 손상된 장치, 중경의 해쉬, 후경의 원로 특수부대 공격 방향을 연결한다. 피펫의 보호 동작과는 다른 구도로 잡는다.",
+      "referenceAssetIds": [
+        "hash-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "military-visual-bible",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 29,
+      "title": "기억으로 이어지는 접촉",
+      "scenarioDirection": "마가렛이 해쉬에게 손을 댄다. 주변 전쟁광이 흐려지고 접촉 부위만 선명해지는 가까운 구도다.",
+      "referenceAssetIds": [
+        "hash-profile",
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 30,
+      "title": "실뜨기를 하던 밤",
+      "scenarioDirection": "차량 옆의 작은 생활 조명, 붉은 실, 마가렛과 해쉬. 거대한 사건이 없는 평범한 순간으로 구성한다.",
+      "referenceAssetIds": [
+        "hash-profile",
+        "margaret-base",
+        "hash-margaret-memory"
+      ],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 31,
+      "title": "기록을 멈춘 사람",
+      "scenarioDirection": "해쉬가 태블릿을 내려놓고 마가렛에게 시선을 맞춘다. 연구 대상이 아니라 함께 있는 사람을 바라보는 눈이 중심이다.",
+      "referenceAssetIds": [
+        "hash-profile",
+        "margaret-base",
+        "hash-margaret-memory"
+      ],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 32,
+      "title": "같은 손, 다른 온도",
+      "scenarioDirection": "기억과 유사한 손의 구도로 현재에 돌아온다. 따뜻한 생활광은 사라지고 마가렛이 놓지 못하는 해쉬의 손만 남는다.",
+      "referenceAssetIds": [
+        "hash-profile",
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 33,
+      "title": "원로의 제안",
+      "scenarioDirection": "마가렛은 원로를 노려본다. 원로는 열린 손바닥으로 장치를 가리키지만, 뒤에는 병력과 막힌 탈출로가 보인다.",
+      "referenceAssetIds": [
+        "elder-base",
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "military-visual-bible",
+        "device-reference-sheet",
+        "elder-variations"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 34,
+      "title": "마지막 걸음",
+      "scenarioDirection": "장치로 향하는 마가렛의 발과 긴 그림자를 낮은 시점에서 잡는다. 복종의 자세가 아니라 분노를 품고 내딛는 걸음이다.",
+      "referenceAssetIds": [
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 35,
+      "title": "작은 사람과 거대한 의자",
+      "scenarioDirection": "정면 원경. 마가렛은 중앙에 작게 앉아 있고, 인간 한 명을 압도하는 장치가 주변을 채운다. 여왕의 즉위보다 사람이 장치에 삼켜지는 시작이다.",
+      "referenceAssetIds": [
+        "margaret-base"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 36,
+      "title": "서로 다른 군복이 일어난다",
+      "scenarioDirection": "바닥에 가까운 시점. 서로 다른 소속의 시신들이 같은 힘에 끌려 일어난다. 장비와 표식은 유지하고 정신 연결선으로 현상을 통일한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 37,
+      "title": "같은 엄폐물의 적들",
+      "scenarioDirection": "미군 병사와 오르도 인원이 서로를 경계하며 바깥의 시체들을 바라본다. 화해의 표정이나 악수는 없다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 38,
+      "title": "마가렛 보스 키비주얼",
+      "scenarioDirection": "기존 보스 외형과 전투 연출을 기준으로 한다. 마가렛, 피라미드, 전장을 연결하는 흐름이 한눈에 읽혀야 한다.",
+      "referenceAssetIds": [
+        "margaret-boss"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 39,
+      "title": "말이 닿지 않는 얼굴",
+      "scenarioDirection": "누군가 부르는 방향으로 시선이 잠깐 움직이지만, 다시 수많은 의식에 끌려가는 얼굴. 분노와 고통, 의식의 혼선이 겹친다.",
+      "referenceAssetIds": [
+        "margaret-boss"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 40,
+      "title": "첫 맥동의 징후",
+      "scenarioDirection": "전장의 물웅덩이나 매달린 장비 하나를 집중해서 보여준다. 총격이나 폭발만으로 설명되지 않는 방향의 움직임이다.",
+      "referenceAssetIds": [],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 41,
+      "title": "공격 가능한 틈",
+      "scenarioDirection": "컷 027과 같은 파손 형태를 가진 앵커 취약부. 배경 장식이 아니라 플레이어가 행동할 수 있는 정보로 제시한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 42,
+      "title": "흐름을 알아보는 운연",
+      "scenarioDirection": "모두가 마가렛을 바라볼 때, 운연은 그녀에게 몰리는 정신적 흐름을 본다. 자신의 몸 가장자리도 그 흐름에 반응한다.",
+      "referenceAssetIds": [
+        "unyeon-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 43,
+      "title": "회로에 닿는 손",
+      "scenarioDirection": "운연의 손이 접속부에 닿는다. 연기가 바깥으로 퍼지는 대신 접촉 지점 안쪽으로 당겨지며 손끝부터 윤곽이 흐려진다.",
+      "referenceAssetIds": [
+        "unyeon-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 44,
+      "title": "묶인 사람들",
+      "scenarioDirection": "정신회로 내부. 일을 하던 자세, 누군가를 안던 자세 등 불완전한 사람의 흔적이 끝없이 겹친다. 모든 얼굴을 괴물로 만들지 않는다.",
+      "referenceAssetIds": [
+        "unyeon-profile"
+      ],
+      "gapIds": [],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 45,
+      "title": "무게 아래로 들어가는 사람",
+      "scenarioDirection": "중심에 얽힌 마가렛과 그 흐름을 자신에게 당기는 운연. 싸움이 아니라 한 사람이 다른 사람의 무게를 대신 지는 구도다.",
+      "referenceAssetIds": [
+        "margaret-boss",
+        "unyeon-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 46,
+      "title": "현실에서 사라지는 윤곽",
+      "scenarioDirection": "운연의 몸이 더 이상 사람 형태를 유지하지 못한다. 손이나 옷깃의 마지막 윤곽만 남고, 주변 인물들의 시선은 그 자리에 머문다.",
+      "referenceAssetIds": [
+        "unyeon-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 47,
+      "title": "열린 시간",
+      "scenarioDirection": "마가렛의 연결이 느슨해지고 앵커 방어가 꺼진 전장. 화면 앞쪽에 플레이어가 진입할 공간이 열린다. 여기서 행동권을 넘긴다.",
+      "referenceAssetIds": [
+        "margaret-boss"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 48,
+      "title": "마지막 앵커 파괴",
+      "scenarioDirection": "실제 전투 결과에 맞춰 사용한다. 공격 주체가 미확정인 제작 단계에서는 인물을 화면 밖에 두고, 파괴되는 접속부와 공격의 결과를 중심으로 잡는다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 49,
+      "title": "떨어지는 마가렛",
+      "scenarioDirection": "장치의 지지가 끊기며 마가렛이 쓰러진다. 생사를 확정하는 호흡·상처 표현은 피한다. 승리 포즈나 환호는 넣지 않는다.",
+      "referenceAssetIds": [
+        "margaret-boss"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 50,
+      "title": "처음 도착한 외부 영상",
+      "scenarioDirection": "해안 도시 전체가 해일과 폭풍에 가려지는 원경. 알아볼 수 있는 랜드마크 하나를 남겨, 추상적인 재난이 아니라 실제 장소의 상실로 보이게 한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "coastal-city"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 51,
+      "title": "첫 물방울",
+      "scenarioDirection": "섹터 C의 저온 수용 구획. 얼어붙은 손끝이나 장치에 물방울 하나가 맺힌다. 대규모 탈출보다 먼저 오는 작은 변화다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 52,
+      "title": "끝없는 해동",
+      "scenarioDirection": "통로 전체에서 같은 현상이 일어나고 있다. 수많은 감염자의 몸과 의복 안쪽에서 서로 다른 굴절광이 번지기 시작한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 53,
+      "title": "싸울 적이 없는 전사들",
+      "scenarioDirection": "갈로글라와 욤스비킹 인력들이 무기 대신 사람과 구조물을 붙든다. 코너·스벤을 사용할 경우 함께 대피를 돕는 현재 시점으로 배치한다.",
+      "referenceAssetIds": [
+        "connor-profile",
+        "sven-profile"
+      ],
+      "gapIds": [
+        "epilogue-cast"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 54,
+      "title": "흔들리는 사진",
+      "scenarioDirection": "백진연의 가족이 있는 공간. 어머니가 흔들리는 사진을 붙잡는다. 운연의 소멸을 가족이 초자연적으로 감지하는 표현은 넣지 않는다.",
+      "referenceAssetIds": [
+        "hwayang-020",
+        "hwayang-032",
+        "hwayang-033",
+        "hwayang-056",
+        "hwayang-069",
+        "hwayang-070",
+        "hwayang-071",
+        "hwayang-072",
+        "hwayang-073"
+      ],
+      "gapIds": [
+        "family-face-mapping"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 55,
+      "title": "서로를 붙잡는 가족",
+      "scenarioDirection": "가족들이 손을 잡고 위험한 공간을 빠져나간다. 문 너머의 결과는 보여주지 않아 개별 생사는 보류한다.",
+      "referenceAssetIds": [
+        "hwayang-020",
+        "hwayang-032",
+        "hwayang-033",
+        "hwayang-056",
+        "hwayang-069",
+        "hwayang-070",
+        "hwayang-071",
+        "hwayang-072",
+        "hwayang-073"
+      ],
+      "gapIds": [
+        "family-face-mapping"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 56,
+      "title": "송사리의 바다",
+      "scenarioDirection": "기본본에서는 송사리 소속 선박이나 항만 시설을 사용한다. 갑판·크레인 등 익숙한 생활 구조물 뒤로 바다와 하늘의 경계가 무너진다. 원래 송사리 호를 사용할 경우에는 시간루프 이후 현재 상태를 먼저 확정한다.",
+      "referenceAssetIds": [
+        "jane-fish-profile",
+        "john-opus-profile",
+        "racky-profile",
+        "songsari-ship-past"
+      ],
+      "gapIds": [
+        "songsari-original-ship-state"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 57,
+      "title": "꺼진 일상 장소",
+      "scenarioDirection": "뉴 더블린의 익숙한 바 같은 장소. 꺼지는 간판과 비상등 아래에서 사람들이 손님을 내보낸다. 정확한 등장인물은 8화까지의 생존 상태에 맞춰 배정한다.",
+      "referenceAssetIds": [
+        "casey-profile",
+        "donadona-profile",
+        "sandman-profile",
+        "neon-valkyrie"
+      ],
+      "gapIds": [
+        "epilogue-cast"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 58,
+      "title": "구해진 사람이 구하는 사람으로",
+      "scenarioDirection": "과거 세션에서 구조했던 조연이 누군가에게 피난처를 열어주거나 쓰러진 사람을 일으킨다. 재난 몽타주 안에서 작은 성취를 남기는 컷이다.",
+      "referenceAssetIds": [
+        "racky-profile"
+      ],
+      "gapIds": [
+        "epilogue-cast"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 59,
+      "title": "응답하지 않는 세계",
+      "scenarioDirection": "통제실로 돌아온다. 지도에는 응답 없는 거점이 늘어나지만, 사람들은 멈추지 않고 계속 연락을 시도한다. 정확한 상태 문구와 수치는 후편집한다.",
+      "referenceAssetIds": [],
+      "gapIds": [
+        "military-visual-bible"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 60,
+      "title": "완전히 꺼지지 않은 것",
+      "scenarioDirection": "파괴된 외부 접속부 너머로 핵심 장치의 미약한 작동 흔적이 남아 있다. 제압된 마가렛 주변에도 같은 계열의 잔광이 보인다.",
+      "referenceAssetIds": [
+        "margaret-boss"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "margaret-state-transition",
+        "device-reference-sheet"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 61,
+      "title": "권위가 사라진 원로",
+      "scenarioDirection": "높은 자리에서 선택을 허락하던 원로들이 이제 바닥이나 무너진 구조물에 기대어 있다. 앞선 유혹 장면과 높낮이를 뒤집는다.",
+      "referenceAssetIds": [
+        "elder-base"
+      ],
+      "gapIds": [
+        "elder-variations"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 62,
+      "title": "달라진 시선",
+      "scenarioDirection": "마리아의 가까운 옆모습. 눈은 원로의 얼굴과 대화하지 않고 몸의 윤곽을 따라간다. 본체나 과장된 괴물 이빨은 아직 공개하지 않는다.",
+      "referenceAssetIds": [
+        "maria-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    },
+    {
+      "cut": 63,
+      "title": "먹이가 된 지배자",
+      "scenarioDirection": "전경에는 마리아의 어깨나 손 일부, 중심에는 그녀를 올려다보며 굳은 원로. 마지막 대사 뒤 이 이미지에서 암전한다.",
+      "referenceAssetIds": [
+        "elder-base",
+        "maria-profile"
+      ],
+      "gapIds": [
+        "episode8-start-state",
+        "elder-variations"
+      ],
+      "sourceClass": "future-scenario",
+      "referenceMeaning": "identity-or-setting-reference-not-finished-cut"
+    }
+  ],
+  "livePreparation": {
+    "payloadPath": "StarGateV2/scripts/seed-payloads/s1e9-wexler-family-reference-intake.json",
+    "executableTargets": [
+      "WEXLER_JUNIOR"
+    ],
+    "deferredTargets": [
+      {
+        "codename": "WEXLER",
+        "field": "lore.relations",
+        "relationship": "아들 WEXLER_JUNIOR",
+        "reason": "Existing public Dossier shows relation fallback text even when target is private. Relation is canonical in local reference data; operational inverse relation omitted."
+      }
+    ],
+    "executionPrerequisites": [
+      "Exact live NPC addition authorization",
+      "Portrait publication scope agreed and planned publicPath deployed, or explicitly approved no-image decision"
+    ],
+    "portraitPreparedPath": "docs/lore/visual-reference/s1e9/prepared-public/assets/npcs/Wexler-Junior-profile.webp",
+    "plannedPortraitPublicPath": "/assets/npcs/Wexler-Junior-profile.webp",
+    "publicPathExistsInCheckout": false
+  }
+}
