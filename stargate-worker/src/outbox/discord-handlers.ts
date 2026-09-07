@@ -278,6 +278,33 @@ function basePayload(
   };
 }
 
+function optionalHttpsUrl(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const raw = text(value, field, 2_048);
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error(`${field}는 올바른 HTTPS URL이어야 합니다.`);
+  }
+  const authority = raw.match(/^https:\/\/([^/?#]+)/i)?.[1] ?? "";
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.port ||
+    authority.includes(":") ||
+    (parsed.hostname !== "ordonet.co.kr" &&
+      parsed.hostname !== "www.ordonet.co.kr") ||
+    !parsed.pathname.startsWith("/assets/") ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    throw new Error(`${field}는 올바른 HTTPS URL이어야 합니다.`);
+  }
+  return parsed.toString();
+}
+
 function buildGmAudit(
   payload: Record<string, unknown>,
 ): DiscordWebhookPayload {
@@ -638,6 +665,9 @@ function buildStockManualIntervention(
     })));
     const releasing = eventKind === "COOLDOWN_RELEASE";
     const shock = eventKind === "SHOCK_DISCLOSURE";
+    const announcementImageUrl = shock
+      ? optionalHttpsUrl(payload.announcementImageUrl, "announcementImageUrl")
+      : undefined;
     return basePayload(
       "재무기구 시장감시실",
       shock
@@ -654,6 +684,7 @@ function buildStockManualIntervention(
             ? `${items.length}개 종목의 자동 냉각이 일괄 종료되었습니다. 수동 거래정지와 시장 운영 상태는 별도로 적용됩니다.`
             : `급격한 가격 변동으로 ${items.length}개 종목에 10분 자동 냉각이 일괄 적용되었습니다.`,
         color: shock ? 0xd95f5f : releasing ? 0x2fbf71 : 0xf0a33b,
+        imageUrl: announcementImageUrl,
         fields: [
           {
             name: `${shock ? "폭락" : releasing ? "해제" : "냉각"} 종목 · ${items.length}개`,

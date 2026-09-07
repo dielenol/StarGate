@@ -14,6 +14,7 @@ registerHooks({
   },
 });
 const { serializeStockMarketState } = await import("../novex.ts");
+const { serializeStockDisclosure } = await import("../disclosures.ts");
 const plan = {
   status: "SCHEDULED",
   executeAt: new Date("2026-09-07T09:00:00Z"),
@@ -47,4 +48,32 @@ test("종료 완료 다음 날에도 재개장·가격 갱신 없이 매도만 �
   assert.equal(view.nextPriceSlotAt, null);
   assert.equal(view.opensAt, null);
   assert.match(view.reason, /파리 사태로 인한 쇼크/);
+});
+
+const imageDisclosure = {
+  _id: "stock-market-shutdown:novex",
+  title: "파리 사태로 인한 쇼크",
+  body: "매수 영구 중단 · 가격 영구 동결 · 보유 주식 매도만 가능",
+  imageUrl: "https://www.ordonet.co.kr/assets/world-view/us-national-defense-act-market-shutdown-news.webp",
+  kind: "PRICE",
+  status: "SCHEDULED",
+  effects: [{ scope: "TICKER", ticker: "TWS", changePercent: -45, structural: true }],
+  source: "GM",
+  publishAt: new Date("2026-09-07T14:00:00Z"),
+  createdAt: new Date("2026-09-07T09:30:00Z"),
+  createdById: "authorized-operation:market-shutdown-20260907",
+};
+
+test("미공개 종료 공시는 플레이어 응답에 이미지·사유·폭락률을 노출하지 않는다", () => {
+  const publicView = serializeStockDisclosure(imageDisclosure, { admin: false });
+  for (const key of ["imageUrl", "headline", "body", "effects"]) assert.equal(key in publicView, false);
+  assert.equal(serializeStockDisclosure(imageDisclosure, { admin: true }).imageUrl, imageDisclosure.imageUrl);
+});
+
+test("공개된 종료 공시는 뉴스 이미지·사유·시장 중지 안내를 함께 전달한다", () => {
+  const view = serializeStockDisclosure({ ...imageDisclosure, status: "PUBLISHED" }, { admin: false });
+  assert.equal(view.imageUrl, imageDisclosure.imageUrl);
+  assert.equal(view.headline, imageDisclosure.title);
+  assert.equal(view.body, imageDisclosure.body);
+  assert.deepEqual(view.effects, imageDisclosure.effects);
 });

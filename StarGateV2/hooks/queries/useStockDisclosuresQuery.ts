@@ -25,6 +25,7 @@ export interface StockDisclosureItem {
   publishAt: string;
   headline?: string;
   body?: string;
+  imageUrl?: string;
   effects?: StockDisclosureEffect[];
   companyProfileUpdate?: {
     majorShareholders: Array<{

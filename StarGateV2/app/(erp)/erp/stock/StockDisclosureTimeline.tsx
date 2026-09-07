@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useStockDisclosures } from "@/hooks/queries/useStockDisclosuresQuery";
 
 import styles from "./page.module.css";
@@ -13,6 +15,7 @@ type DisclosureItem = {
   publishAt: string;
   headline?: string;
   body?: string;
+  imageUrl?: string;
   effects?: Array<{
     scope: "MARKET" | "TICKER";
     ticker?: string;
@@ -89,6 +92,24 @@ export default function StockDisclosureTimeline({ ticker, limit = 8 }: Props) {
                       {item.headline ?? "운영 공시"}
                     </strong>
                     {item.body ? <p>{item.body}</p> : null}
+                    {item.imageUrl ? (
+                      <a
+                        className={styles.disclosureTimeline__image}
+                        href={item.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${item.headline ?? "공시"} 뉴스 이미지 크게 보기`}
+                      >
+                        <Image
+                          src={item.imageUrl}
+                          alt={`${item.headline ?? "공시"} 뉴스 이미지`}
+                          width={1024}
+                          height={1536}
+                          unoptimized
+                        />
+                        <span>뉴스 이미지 크게 보기 ↗</span>
+                      </a>
+                    ) : null}
                     {item.effects?.length ? (
                       <ul className={styles.disclosureTimeline__effects}>
                         {item.effects.map((effect, index) => (

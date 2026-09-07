@@ -126,9 +126,42 @@ export class StockMarketShutdownConflictError extends Error {
 export interface ScheduleStockMarketShutdownInput {
   executeAt: Date;
   reason: string;
+  announcementImageUrl?: string;
   declines: Array<{ ticker: string; dropPercent: number }>;
   createdById: string;
   now?: Date;
+}
+
+function normalizeShutdownAnnouncementImageUrl(
+  value?: string | null,
+): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const raw = value.trim();
+  if (!raw || raw.length > 2_048) {
+    throw new Error("Stock market shutdown announcementImageUrl is invalid");
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error("Stock market shutdown announcementImageUrl is invalid");
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  const authority = raw.match(/^https:\/\/([^/?#]+)/i)?.[1] ?? "";
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.port ||
+    authority.includes(":") ||
+    (hostname !== "ordonet.co.kr" && hostname !== "www.ordonet.co.kr") ||
+    !parsed.pathname.startsWith("/assets/") ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    throw new Error("Stock market shutdown announcementImageUrl must be a public HTTPS URL");
+  }
+  return parsed.toString();
 }
 
 function normalizeShutdownDeclines(
@@ -159,11 +192,13 @@ function sameShutdownRequest(
   plan: StockMarketShutdownPlan,
   input: Pick<
     StockMarketShutdownPlan,
-    "executeAt" | "reason" | "declines" | "createdById"
+    "executeAt" | "reason" | "announcementImageUrl" | "declines" | "createdById"
   >,
 ): boolean {
   return plan.executeAt.getTime() === input.executeAt.getTime() &&
     plan.reason === input.reason &&
+    (plan.announcementImageUrl ?? undefined) ===
+      (input.announcementImageUrl ?? undefined) &&
     plan.createdById === input.createdById &&
     JSON.stringify(plan.declines) === JSON.stringify(input.declines);
 }
@@ -183,10 +218,14 @@ export async function scheduleStockMarketShutdown(
     throw new Error("Stock market shutdown executeAt is invalid");
   }
   const declines = normalizeShutdownDeclines(input.declines);
+  const announcementImageUrl = normalizeShutdownAnnouncementImageUrl(
+    input.announcementImageUrl,
+  );
   const candidate = {
     executeAt: input.executeAt,
     buysBlockedAt: now,
     reason,
+    ...(announcementImageUrl ? { announcementImageUrl } : {}),
     declines,
     createdById: input.createdById,
   };
@@ -399,6 +438,9 @@ export async function applyDueStockMarketShutdown(
         _id: MARKET_SHUTDOWN_DISCLOSURE_ID,
         title: plan.reason,
         body: `${plan.reason}\n\n${MARKET_SHUTDOWN_POLICY_NOTICE}`,
+        ...(plan.announcementImageUrl
+          ? { imageUrl: plan.announcementImageUrl }
+          : {}),
         kind: "PRICE",
         status: "PUBLISHED",
         source: "GM",
@@ -436,6 +478,9 @@ export async function applyDueStockMarketShutdown(
           price: firstHistory.price,
           eventText: plan.reason,
           marketPolicyNotice: MARKET_SHUTDOWN_POLICY_NOTICE,
+          ...(plan.announcementImageUrl
+            ? { announcementImageUrl: plan.announcementImageUrl }
+            : {}),
           items: histories.map((history) => ({
             ticker: history.ticker,
             previousPrice: history.prevPrice,

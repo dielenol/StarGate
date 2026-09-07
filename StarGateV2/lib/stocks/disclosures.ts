@@ -335,6 +335,7 @@ export function serializeStockDisclosure(
       ? {
           headline: disclosure.title,
           body: disclosure.body,
+          ...(disclosure.imageUrl ? { imageUrl: disclosure.imageUrl } : {}),
           effects: disclosure.effects,
           ...(disclosure.companyProfileUpdate
             ? { companyProfileUpdate: disclosure.companyProfileUpdate }

@@ -1,5 +1,5 @@
 /**
- * 2026-09-07 18:00 KST 시장 종료 계획. 기본은 읽기 전용 미리보기.
+ * 2026-09-07 장마감 23:00 KST 시장 종료·이미지 공시 계획. 기본은 읽기 전용 미리보기.
  * node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-market-shutdown.ts
  * 실제 예약: 같은 명령에 --execute --yes --target-db stargate 추가.
  * 운영 중지 즉시 전환: 위 실제 실행 인자에 --now 추가. 소급 적용하지 않는다.
@@ -14,7 +14,8 @@ import {
   scheduleStockMarketShutdown,
 } from "@stargate/shared-db";
 
-const scheduledExecuteAt = new Date("2026-09-07T18:00:00+09:00");
+const scheduledExecuteAt = new Date("2026-09-07T23:00:00+09:00");
+const scheduledAnnouncementImageUrl = "https://www.ordonet.co.kr/assets/world-view/us-national-defense-act-market-shutdown-news.webp";
 const reason = "파리 사태로 인한 쇼크";
 const declines = [
   { ticker: "TWS", dropPercent: 45 },
@@ -54,6 +55,11 @@ async function main() {
     const executeAt = immediate
       ? existing?.executeAt ?? new Date(Date.now() + 5_000)
       : scheduledExecuteAt;
+    // 이미 끝낸 즉시 전환 재시도는 기존 첨부를 보존한다. 장마감 예약은
+    // 새 요청의 이미지까지 동일해야 하며, 다른 기존 계획은 DB에서 거부한다.
+    const announcementImageUrl = immediate && existing
+      ? existing.announcementImageUrl ?? undefined
+      : scheduledAnnouncementImageUrl;
     if (immediate && existing?.status === "SCHEDULED" && executeAt.getTime() > Date.now() + 5_000) {
       throw new Error("미래 종료 계획을 즉시 실행 시각으로 변경하지 않습니다.");
     }
@@ -62,6 +68,7 @@ async function main() {
       targetDb: dbName,
       executeAt,
       reason,
+      announcementImageUrl,
       existingStatus: existing?.status ?? null,
       declines: declines.map((decline) => {
         const currentPrice = priceByTicker.get(decline.ticker);
@@ -77,6 +84,7 @@ async function main() {
       await scheduleStockMarketShutdown({
         executeAt,
         reason,
+        announcementImageUrl,
         declines,
         createdById: "authorized-operation:market-shutdown-20260907",
       });
@@ -89,10 +97,10 @@ async function main() {
         }
       }
       const after = await getStockMarketShutdownPlan();
-      if (!after || after.executeAt.getTime() !== executeAt.getTime() || (immediate && after.status !== "COMPLETED")) {
+      if (!after || after.executeAt.getTime() !== executeAt.getTime() || (after.announcementImageUrl ?? undefined) !== announcementImageUrl || (immediate && after.status !== "COMPLETED")) {
         throw new Error("예약 재조회가 일치하지 않습니다.");
       }
-      console.log(JSON.stringify({ verified: true, status: after.status, executeAt: after.executeAt, buysBlockedAt: after.buysBlockedAt }));
+      console.log(JSON.stringify({ verified: true, status: after.status, executeAt: after.executeAt, buysBlockedAt: after.buysBlockedAt, announcementImageUrl: after.announcementImageUrl }));
     }
   } finally {
     await close();
