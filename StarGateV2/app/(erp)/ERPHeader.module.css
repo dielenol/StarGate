@@ -852,6 +852,13 @@
   }
 }
 
+/* 작은 휴대폰에서도 검색·알림·등급이 화면 안에 남도록 보조 라벨만 접는다. */
+@media (max-width: 360px) {
+  .header__bgmCompactLabel {
+    display: none;
+  }
+}
+
 @media (max-height: 720px) and (min-width: 768px) {
   .header {
     gap: 10px;
