@@ -10,7 +10,10 @@ import {
   rebuildScheduledStockTickSummary,
 } from "@stargate/core/operations/stocks-tick";
 import { processPendingStockDividendPayouts } from "@stargate/core/operations/stock-dividends";
-import { hasActiveStockRightsOffering } from "@stargate/shared-db";
+import {
+  applyDueStockMarketShutdown,
+  hasActiveStockRightsOffering,
+} from "@stargate/shared-db";
 
 import {
   requestDailyShopRestockState,
@@ -61,6 +64,7 @@ export function createDefaultScheduledJobHandlers(
     rebuildStockTickSummary?: typeof rebuildScheduledStockTickSummary;
     processDividendPayouts?: typeof processPendingStockDividendPayouts;
     hasActiveRightsOffering?: typeof hasActiveStockRightsOffering;
+    applyStockMarketShutdown?: typeof applyDueStockMarketShutdown;
     requestStockWire?: typeof requestStockMarketWireState;
     requestResearchRanking?: typeof requestDailyResearchRankingState;
   } = {},
@@ -93,6 +97,31 @@ export function createDefaultScheduledJobHandlers(
       jobName: "stocks.tick",
       async execute(context) {
         context.signal.throwIfAborted();
+        const shutdown = await (
+          dependencies.applyStockMarketShutdown ?? applyDueStockMarketShutdown
+        )({ now: context.requestedAt });
+        context.signal.throwIfAborted();
+        if (
+          shutdown.status === "APPLIED" ||
+          shutdown.status === "ALREADY_COMPLETED"
+        ) {
+          return {
+            date: context.slotKey.slice(0, 10),
+            slot: context.slotKey,
+            updated: shutdown.status === "APPLIED"
+              ? shutdown.histories.length
+              : 0,
+            initialized: 0,
+            skipped: 0,
+            announcement: false,
+            dividendsPaid: 0,
+            dividendsAmount: 0,
+            dividendErrors: 0,
+            marketShutdown: true,
+            shutdownStatus: shutdown.status,
+            mutated: shutdown.status === "APPLIED",
+          };
+        }
         const novexMode = resolveNovexV2Mode({
           mode: process.env.NOVEX_V2_MODE,
           legacyEnabled: process.env.NOVEX_V2_ENABLED,
@@ -226,6 +255,8 @@ export function createDefaultScheduledJobHandlers(
             : {}),
           ...(shadowError ? { shadowError } : {}),
           novexMode,
+          marketShutdown: false,
+          shutdownStatus: shutdown.status,
           mutated:
             result.marketStateChanged === true || updated + initialized > 0,
         };

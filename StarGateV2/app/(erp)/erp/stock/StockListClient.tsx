@@ -412,11 +412,11 @@ export default function StockListClient({
       <div className={styles.tabsRow}>
         <StockTabs />
         <Tag tone={market?.status === "OPEN" && marketEnabled ? "gold" : "danger"}>
-          {market?.status === "OPEN" && marketEnabled ? "거래 가능" : "거래 제한"}
+          {market?.tradingMode === "SELL_ONLY" ? "매도 전용" : market?.status === "OPEN" && marketEnabled ? "거래 가능" : "거래 제한"}
         </Tag>
       </div>
 
-      {alertRules.novexEnabled ? <MarketStatusPanel market={market} /> : null}
+      {alertRules.novexEnabled || market?.tradingMode === "SELL_ONLY" ? <MarketStatusPanel market={market} /> : null}
 
       {/* 메인 캐릭터 안내 */}
       {!hasMainCharacter ? (
@@ -722,7 +722,7 @@ export default function StockListClient({
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      aria-label={`${item.name} ${item.ticker} 매수 페이지로 이동`}
+                      aria-label={`${item.name} ${item.ticker} 거래 페이지로 이동`}
                       onClick={handleSelect}
                       onMouseEnter={() => scheduleHover(item.ticker)}
                       onMouseLeave={cancelHover}

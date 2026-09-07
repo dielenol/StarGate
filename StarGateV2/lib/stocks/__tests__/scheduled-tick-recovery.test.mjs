@@ -184,6 +184,7 @@ test("100 concurrent scheduled runs apply one ticker/date operation each", async
           now: new Date("2026-08-15T03:00:00.000Z"),
         },
         {
+          getShutdownPlan: async () => null,
           applyMutation,
           claimScheduledEvent: async () => null,
           consumeStockImpact: async () => {
@@ -232,6 +233,7 @@ test("GM force tick은 소다 판매량을 조기 소비하지 않는다", async
       sodaStockImpactEnabled: true,
     },
     {
+      getShutdownPlan: async () => null,
       consumeStockImpact: async () => {
         consumeCalls += 1;
         return { soldQuantity: 10, eventIds: ["mrbeast-2026"] };
@@ -285,6 +287,7 @@ test("backfill gate가 닫혀 있으면 자동 tick도 소다 판매량을 소�
   await applyScheduledStockTick(
     { now: new Date("2026-08-15T03:00:00.000Z") },
     {
+      getShutdownPlan: async () => null,
       claimScheduledEvent: async () => null,
       consumeStockImpact: async () => {
         consumeCalls += 1;
@@ -331,6 +334,7 @@ test("2026-08-14 STM 정기 공시는 직전가를 절반으로 만들고 규제
       sodaStockImpactEnabled: true,
     },
     {
+      getShutdownPlan: async () => null,
       claimScheduledEvent: async () => null,
       random: () => 0.5,
       consumeStockImpact: async () => {
@@ -391,6 +395,7 @@ test("2026-08-14 12:00 KST 전 non-force 실행은 어떤 정기 history도 만�
     applyScheduledStockTick(
       { now: new Date("2026-08-14T02:59:59.999Z") },
       {
+        getShutdownPlan: async () => null,
         applyMutation: async () => {
           mutationCalls += 1;
           throw new Error("must not run");
@@ -411,6 +416,7 @@ test("GM 예약 이벤트는 지정 정기 틱에서 한 번 claim되고 소다 
       sodaStockImpactEnabled: true,
     },
     {
+      getShutdownPlan: async () => null,
       random: () => 0.5,
       claimScheduledEvent: async (input) => {
         eventClaimCalls += 1;

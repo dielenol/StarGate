@@ -72,6 +72,8 @@ function tradeErrorResult(error: unknown): {
         : error.code === "STOCK_TRADING_HALTED" ||
             error.code === "STOCK_COOLING_DOWN" ||
             error.code === "MARKET_CLOSED" ||
+            error.code === "MARKET_SELL_ONLY" ||
+            error.code === "MARKET_SHUTDOWN_PENDING" ||
             error.code === "MARKET_OPENING_PENDING"
           ? 423
           : error.code === "STOCK_PRICE_NOT_FOUND"

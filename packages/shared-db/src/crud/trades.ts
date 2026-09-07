@@ -73,6 +73,8 @@ export type PlayerTradeErrorCode =
   | "STOCK_TRADING_HALTED"
   | "MARKET_CLOSED"
   | "MARKET_OPENING_PENDING"
+  | "MARKET_SELL_ONLY"
+  | "MARKET_SHUTDOWN_PENDING"
   | "STOCK_COOLING_DOWN"
   | "ITEM_NOT_TRANSFERABLE";
 
@@ -476,7 +478,10 @@ async function claimTradableOfferStocks(
         ticker,
         now,
         session,
-        { novexV2Enabled: options.novexV2Enabled === true },
+        {
+          novexV2Enabled: options.novexV2Enabled === true,
+          side: "TRANSFER",
+        },
       );
       prices.set(ticker, claimed.price);
     } catch (error) {

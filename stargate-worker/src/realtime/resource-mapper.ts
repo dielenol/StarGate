@@ -21,6 +21,7 @@ export const COLLECTION_RESOURCE_MAP = {
   stock_holdings: ["stocks"],
   stock_price_history: ["stocks"],
   stock_market_state: ["stocks"],
+  stock_market_shutdown: ["stocks"],
   stock_market_calendar_exceptions: ["stocks"],
   stock_order_flow: ["stocks"],
   stock_disclosures: ["stocks"],

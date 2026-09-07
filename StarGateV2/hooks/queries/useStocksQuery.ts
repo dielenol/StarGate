@@ -60,6 +60,8 @@ export type StocksErrorCode =
   | "MAIN_CHARACTER_INTEGRITY"
   | "PRICE_NOT_FOUND"
   | "MARKET_CLOSED"
+  | "MARKET_SELL_ONLY"
+  | "MARKET_SHUTDOWN_PENDING"
   | "MARKET_OPENING_PENDING"
   | "STOCK_TRADING_HALTED"
   | "STOCK_COOLING_DOWN"
@@ -75,6 +77,8 @@ const STOCKS_ERROR_CODES: ReadonlySet<StocksErrorCode> = new Set([
   "MAIN_CHARACTER_INTEGRITY",
   "PRICE_NOT_FOUND",
   "MARKET_CLOSED",
+  "MARKET_SELL_ONLY",
+  "MARKET_SHUTDOWN_PENDING",
   "MARKET_OPENING_PENDING",
   "STOCK_TRADING_HALTED",
   "STOCK_COOLING_DOWN",
@@ -151,6 +155,9 @@ export interface StockOrderFlowSignal {
 
 export interface StockMarketStateItem {
   status: StockMarketStatus;
+  tradingMode?: "SELL_ONLY";
+  shutdownAt?: string;
+  liquidationPending?: boolean;
   reason: string;
   asOf: string;
   opensAt: string | null;

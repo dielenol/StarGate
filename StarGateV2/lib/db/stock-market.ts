@@ -21,6 +21,7 @@ export {
   getStockMarketPreference,
   getStockMarketSnapshot,
   getStockMarketState,
+  getStockMarketShutdownPlan,
   getStockSeasonPerformance,
   listPendingStockDividendEntitlements,
   listPendingStockFlowSignals,

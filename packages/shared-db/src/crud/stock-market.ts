@@ -3,7 +3,10 @@ import { MongoServerError, ObjectId, type ClientSession, type Collection } from 
 import { getClient, getDb } from "../client.js";
 import { charactersCol, notificationsCol, stockHoldingsCol, stockPriceHistoryCol, stockPricesCol, usersCol } from "../collections.js";
 import { addCredit } from "./credits.js";
-import { claimTradableStockPrice } from "./stocks.js";
+import {
+  claimTradableStockPrice,
+  StockMarketAutomationStoppedError,
+} from "./stocks.js";
 import { enqueueIntegrationOutbox, type EnqueueIntegrationOutboxInput } from "./worker.js";
 import type {
   StockCorporateAction,
@@ -20,6 +23,7 @@ import type {
   StockMarketShadowState,
   StockMarketSnapshot,
   StockMarketState,
+  StockMarketShutdownPlan,
   StockOrderFlow,
   PlayerTrade,
   StockPrice,
@@ -46,6 +50,8 @@ const SEASON_PERFORMANCE = "stock_season_performance";
 const SEASON_FLOWS = "stock_season_flows";
 const SCHEDULED_JOB_RUNS = "scheduled_job_runs";
 const NOVEX_MIGRATION_READINESS = "stock_market_migration_readiness";
+const MARKET_SHUTDOWN = "stock_market_shutdown";
+const MARKET_SHUTDOWN_DISCLOSURE_ID = "stock-market-shutdown:novex";
 const STOCK_ORDER_FLOW_MAX_PERCENT = 0.04;
 const STOCK_ORDER_FLOW_SENSITIVITY_SHARES = 150;
 
@@ -96,6 +102,351 @@ export async function getStockMarketState(
   );
 }
 
+export async function getStockMarketShutdownPlan(
+  options: { session?: ClientSession } = {},
+): Promise<StockMarketShutdownPlan | null> {
+  return (await col<StockMarketShutdownPlan>(MARKET_SHUTDOWN)).findOne(
+    { _id: STOCK_MARKET_STATE_ID },
+    { session: options.session },
+  );
+}
+
+export class StockMarketShutdownConflictError extends Error {
+  readonly code = "STOCK_MARKET_SHUTDOWN_CONFLICT";
+
+  constructor(message = "STOCK_MARKET_SHUTDOWN_CONFLICT") {
+    super(message);
+    this.name = "StockMarketShutdownConflictError";
+  }
+}
+
+export interface ScheduleStockMarketShutdownInput {
+  executeAt: Date;
+  reason: string;
+  declines: Array<{ ticker: string; dropPercent: number }>;
+  createdById: string;
+  now?: Date;
+}
+
+function normalizeShutdownDeclines(
+  declines: ScheduleStockMarketShutdownInput["declines"],
+): StockMarketShutdownPlan["declines"] {
+  const normalized = declines.map((decline) => ({
+    ticker: decline.ticker.trim().toUpperCase(),
+    dropPercent: decline.dropPercent,
+  })).sort((a, b) => a.ticker.localeCompare(b.ticker));
+  if (!normalized.length) {
+    throw new Error("Stock market shutdown requires at least one ticker");
+  }
+  if (new Set(normalized.map((decline) => decline.ticker)).size !== normalized.length) {
+    throw new Error("Stock market shutdown tickers must be unique");
+  }
+  for (const decline of normalized) {
+    if (!decline.ticker || !Number.isFinite(decline.dropPercent)) {
+      throw new Error("Stock market shutdown decline is invalid");
+    }
+    if (decline.dropPercent < 40 || decline.dropPercent > 70) {
+      throw new Error(`Stock market shutdown decline must be 40~70%: ${decline.ticker}`);
+    }
+  }
+  return normalized;
+}
+
+function sameShutdownRequest(
+  plan: StockMarketShutdownPlan,
+  input: Pick<
+    StockMarketShutdownPlan,
+    "executeAt" | "reason" | "declines" | "createdById"
+  >,
+): boolean {
+  return plan.executeAt.getTime() === input.executeAt.getTime() &&
+    plan.reason === input.reason &&
+    plan.createdById === input.createdById &&
+    JSON.stringify(plan.declines) === JSON.stringify(input.declines);
+}
+
+/**
+ * 영구 폐장 계획을 한 번만 저장한다. market_state write fence가 계획 저장과 진행 중인
+ * 매매를 직렬화하므로, commit 뒤 시작되는 매수/이체는 buysBlockedAt 정책을 반드시 본다.
+ */
+export async function scheduleStockMarketShutdown(
+  input: ScheduleStockMarketShutdownInput,
+): Promise<StockMarketShutdownPlan> {
+  const now = input.now ?? new Date();
+  const reason = input.reason.trim();
+  if (!reason) throw new Error("Stock market shutdown reason is required");
+  if (!input.createdById.trim()) throw new Error("Stock market shutdown createdById is required");
+  if (!Number.isFinite(input.executeAt.getTime())) {
+    throw new Error("Stock market shutdown executeAt is invalid");
+  }
+  const declines = normalizeShutdownDeclines(input.declines);
+  const candidate = {
+    executeAt: input.executeAt,
+    buysBlockedAt: now,
+    reason,
+    declines,
+    createdById: input.createdById,
+  };
+  const client = await getClient();
+  const session = client.startSession();
+  let saved: StockMarketShutdownPlan | null = null;
+  try {
+    await session.withTransaction(async () => {
+      await claimStockMarketMigrationReady(session);
+      const state = await (await col<StockMarketState>(MARKET_STATE)).findOneAndUpdate(
+        { _id: STOCK_MARKET_STATE_ID },
+        { $inc: { tradeRevision: 1 } },
+        { returnDocument: "after", session },
+      );
+      if (!state) throw new Error("Stock market state must exist before shutdown scheduling");
+
+      const shutdowns = await col<StockMarketShutdownPlan>(MARKET_SHUTDOWN);
+      const existing = await shutdowns.findOne(
+        { _id: STOCK_MARKET_STATE_ID },
+        { session },
+      );
+      if (existing) {
+        if (!sameShutdownRequest(existing, candidate)) {
+          throw new StockMarketShutdownConflictError();
+        }
+        saved = existing;
+        return;
+      }
+      if (input.executeAt.getTime() <= now.getTime()) {
+        throw new Error("Stock market shutdown executeAt must be in the future");
+      }
+
+      const currentTickers = (await (await stockPricesCol())
+        .find({}, { session, projection: { ticker: 1 } })
+        .sort({ ticker: 1 })
+        .toArray())
+        .map((price) => price.ticker);
+      const requestedTickers = declines.map((decline) => decline.ticker);
+      if (JSON.stringify(currentTickers) !== JSON.stringify(requestedTickers)) {
+        throw new StockMarketShutdownConflictError(
+          `STOCK_MARKET_SHUTDOWN_TICKER_MISMATCH:${currentTickers.join(",")}`,
+        );
+      }
+
+      const doc: StockMarketShutdownPlan = {
+        _id: STOCK_MARKET_STATE_ID,
+        status: "SCHEDULED",
+        ...candidate,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await shutdowns.insertOne(doc, { session });
+      saved = doc;
+    });
+    if (!saved) throw new Error("Failed to schedule stock market shutdown");
+    return saved;
+  } finally {
+    await session.endSession();
+  }
+}
+
+export type ApplyDueStockMarketShutdownResult =
+  | { status: "NOT_SCHEDULED"; plan: null }
+  | { status: "NOT_DUE" | "ALREADY_COMPLETED"; plan: StockMarketShutdownPlan }
+  | {
+      status: "APPLIED";
+      plan: StockMarketShutdownPlan;
+      histories: StockPriceHistory[];
+    };
+
+function stockShutdownSlotKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${value("year")}-${value("month")}-${value("day")} ${value("hour")}:${value("minute")}`;
+}
+
+function shutdownPrice(price: number, dropPercent: number): number {
+  return Math.max(0.01, Math.round(price * (1 - dropPercent / 100) * 100) / 100);
+}
+
+/** 가격·이력·공시·시장상태·완료 marker를 단일 transaction으로 정확히 한 번 확정한다. */
+export async function applyDueStockMarketShutdown(
+  options: { now?: Date } = {},
+): Promise<ApplyDueStockMarketShutdownResult> {
+  const now = options.now ?? new Date();
+  const currentPlan = await getStockMarketShutdownPlan();
+  if (!currentPlan) return { status: "NOT_SCHEDULED", plan: null };
+  if (currentPlan.status === "COMPLETED") {
+    return { status: "ALREADY_COMPLETED", plan: currentPlan };
+  }
+  if (now.getTime() < currentPlan.executeAt.getTime()) {
+    return { status: "NOT_DUE", plan: currentPlan };
+  }
+
+  const client = await getClient();
+  const session = client.startSession();
+  let outcome: ApplyDueStockMarketShutdownResult | null = null;
+  try {
+    await session.withTransaction(async () => {
+      await claimStockMarketMigrationReady(session);
+      const states = await col<StockMarketState>(MARKET_STATE);
+      const state = await states.findOneAndUpdate(
+        { _id: STOCK_MARKET_STATE_ID },
+        { $inc: { tradeRevision: 1 } },
+        { returnDocument: "after", session },
+      );
+      if (!state) throw new Error("Stock market state must exist before shutdown application");
+
+      const shutdowns = await col<StockMarketShutdownPlan>(MARKET_SHUTDOWN);
+      const plan = await shutdowns.findOne(
+        { _id: STOCK_MARKET_STATE_ID },
+        { session },
+      );
+      if (!plan) {
+        outcome = { status: "NOT_SCHEDULED", plan: null };
+        return;
+      }
+      if (plan.status === "COMPLETED") {
+        outcome = { status: "ALREADY_COMPLETED", plan };
+        return;
+      }
+      if (now.getTime() < plan.executeAt.getTime()) {
+        outcome = { status: "NOT_DUE", plan };
+        return;
+      }
+
+      const prices = await stockPricesCol();
+      const currentPrices = await prices.find({}, { session }).sort({ ticker: 1 }).toArray();
+      if (
+        JSON.stringify(currentPrices.map((price) => price.ticker)) !==
+        JSON.stringify(plan.declines.map((decline) => decline.ticker))
+      ) {
+        throw new StockMarketShutdownConflictError(
+          `STOCK_MARKET_SHUTDOWN_TICKER_MISMATCH:${currentPrices.map((price) => price.ticker).join(",")}`,
+        );
+      }
+
+      const declineByTicker = new Map(
+        plan.declines.map((decline) => [decline.ticker, decline.dropPercent]),
+      );
+      const slotKey = stockShutdownSlotKey(plan.executeAt);
+      const histories: StockPriceHistory[] = currentPrices.map((current) => {
+        const dropPercent = declineByTicker.get(current.ticker);
+        if (dropPercent === undefined) {
+          throw new StockMarketShutdownConflictError();
+        }
+        const nextPrice = shutdownPrice(current.price, dropPercent);
+        return {
+          operationKey: `stock-market-shutdown:novex:${current.ticker}`,
+          ticker: current.ticker,
+          price: nextPrice,
+          prevPrice: current.price,
+          eventText: plan.reason,
+          eventTier: "shock",
+          source: "gm-event",
+          slotKey,
+          effectiveAt: plan.executeAt,
+          effectiveSequence: 30,
+          referencePrice: shutdownPrice(current.referencePrice ?? current.price, dropPercent),
+          basePercent: 0,
+          flowPercent: 0,
+          disclosurePercent: -dropPercent / 100,
+          disclosureIds: [MARKET_SHUTDOWN_DISCLOSURE_ID],
+          cumulativeSplitFactor: current.cumulativeSplitFactor ?? 1,
+          cumulativeCapitalIncreaseFactor: current.cumulativeCapitalIncreaseFactor ?? 1,
+          createdAt: now,
+        };
+      });
+
+      await prices.bulkWrite(histories.map((history) => ({
+        updateOne: {
+          filter: { ticker: history.ticker },
+          update: {
+            $set: {
+              prevPrice: history.prevPrice,
+              price: history.price,
+              referencePrice: history.referencePrice,
+              eventText: plan.reason,
+              lastUpdate: slotKey,
+              pendingBasePercent: 0,
+            },
+            $inc: { tradeRevision: 1 },
+          },
+        },
+      })), { ordered: true, session });
+      await (await stockPriceHistoryCol()).insertMany(histories, {
+        ordered: true,
+        session,
+      });
+
+      const disclosure: StockDisclosure = {
+        _id: MARKET_SHUTDOWN_DISCLOSURE_ID,
+        title: plan.reason,
+        body: plan.reason,
+        kind: "PRICE",
+        status: "PUBLISHED",
+        source: "GM",
+        effects: plan.declines.map((decline) => ({
+          scope: "TICKER" as const,
+          ticker: decline.ticker,
+          changePercent: -decline.dropPercent,
+          structural: true,
+        })),
+        slotKey,
+        shock: true,
+        forceCooldown: false,
+        createdById: plan.createdById,
+        createdAt: now,
+        updatedAt: now,
+        publishedAt: now,
+      };
+      await (await col<StockDisclosure>(DISCLOSURES)).insertOne(disclosure, { session });
+
+      // 마지막 폭락 종가를 시즌 수익률에 반영하되, 영구 폐장 자체가 별도 사용자
+      // 알림을 발송하지 않도록 랭킹 알림은 억제한다.
+      await evaluateStockInvestmentSeasonForRound({
+        slotKey,
+        now: plan.executeAt,
+        endsAt: plan.executeAt,
+        finalize: true,
+        notifyWinners: false,
+      }, session);
+
+      await states.updateOne(
+        { _id: STOCK_MARKET_STATE_ID },
+        {
+          $set: {
+            status: "CLOSED",
+            closesAt: plan.executeAt,
+            closureReason: "GM_EXCEPTION",
+            tradingMode: "SELL_ONLY",
+            shutdownAt: plan.executeAt,
+            delayed: now.getTime() > plan.executeAt.getTime() + 60_000,
+            updatedAt: now,
+          },
+          $unset: { nextSlotAt: "" },
+        },
+        { session },
+      );
+      const completedPlan = await shutdowns.findOneAndUpdate(
+        { _id: STOCK_MARKET_STATE_ID, status: "SCHEDULED" },
+        { $set: { status: "COMPLETED", completedAt: now, updatedAt: now } },
+        { returnDocument: "after", session },
+      );
+      if (!completedPlan) throw new Error("Stock market shutdown completion marker lost");
+      outcome = { status: "APPLIED", plan: completedPlan, histories };
+    });
+    if (!outcome) throw new Error("Failed to apply stock market shutdown");
+    return outcome;
+  } finally {
+    await session.endSession();
+  }
+}
+
 export async function getStockMarketSnapshot(
   now = new Date(),
 ): Promise<StockMarketSnapshot | null> {
@@ -106,6 +457,7 @@ export async function getStockMarketSnapshot(
     await session.withTransaction(async () => {
       const state = await getStockMarketState({ session });
       if (!state) return;
+      const shutdownPlan = await getStockMarketShutdownPlan({ session });
       const prices = await (await stockPricesCol())
         .find({}, { session })
         .sort({ ticker: 1 })
@@ -125,7 +477,13 @@ export async function getStockMarketSnapshot(
           : state.status === "OPENING_PENDING" && stateError === "MARKET_CLOSED"
             ? { ...state, status: "CLOSED" as const }
             : state;
-      snapshot = { state: effectiveState, prices, companyProfiles, flowSignals };
+      snapshot = {
+        state: effectiveState,
+        shutdownPlan,
+        prices,
+        companyProfiles,
+        flowSignals,
+      };
     }, { readConcern: { level: "snapshot" } });
     return snapshot;
   } finally {
@@ -309,6 +667,8 @@ export async function closeStockMarketWithoutRound(input: {
 export type StockMarketTradeClaimErrorCode =
   | "MARKET_CLOSED"
   | "MARKET_OPENING_PENDING"
+  | "MARKET_SELL_ONLY"
+  | "MARKET_SHUTDOWN_PENDING"
   | "STOCK_TRADING_HALTED"
   | "STOCK_COOLING_DOWN"
   | "PRICE_NOT_FOUND";
@@ -407,11 +767,99 @@ export async function claimCompatibleTradableStockPrice(
   ticker: string,
   now: Date,
   session: ClientSession,
-  options: { novexV2Enabled: boolean },
+  options: {
+    novexV2Enabled: boolean;
+    side: "BUY" | "SELL" | "TRANSFER";
+  },
 ): Promise<StockPrice> {
-  return options.novexV2Enabled
-    ? claimMarketTradableStockPrice(ticker, now, session)
-    : claimTradableStockPrice(ticker, session);
+  // API가 과거 occurredAt을 재사용해도 영구 폐장 경계를 되돌릴 수 없다.
+  const observedAt = Math.max(now.getTime(), Date.now());
+  // enabled/legacy 모두 schedule과 같은 state fence를 사용한다. state가 없는 legacy
+  // 설치에는 update가 no-op이고, 그런 상태에서는 shutdown plan도 생성할 수 없다.
+  const stateCol = await col<StockMarketState>(MARKET_STATE);
+  const state = await stateCol.findOneAndUpdate(
+    { _id: STOCK_MARKET_STATE_ID },
+    { $inc: { tradeRevision: 1 } },
+    { returnDocument: "after", session },
+  );
+  const plan = await getStockMarketShutdownPlan({ session });
+  if (!options.novexV2Enabled) {
+    if (
+      plan &&
+      (plan.status === "COMPLETED" || observedAt >= plan.buysBlockedAt.getTime())
+    ) {
+      if (options.side !== "SELL") {
+        throw new StockMarketTradeClaimError("MARKET_SELL_ONLY");
+      }
+      if (plan.status === "SCHEDULED" && observedAt >= plan.executeAt.getTime()) {
+        throw new StockMarketTradeClaimError("MARKET_SHUTDOWN_PENDING");
+      }
+    }
+    return claimTradableStockPrice(ticker, session);
+  }
+
+  if (
+    plan &&
+    (plan.status === "COMPLETED" || observedAt >= plan.buysBlockedAt.getTime())
+  ) {
+    if (options.side !== "SELL") {
+      throw new StockMarketTradeClaimError("MARKET_SELL_ONLY");
+    }
+    if (plan.status === "SCHEDULED" && observedAt >= plan.executeAt.getTime()) {
+      throw new StockMarketTradeClaimError("MARKET_SHUTDOWN_PENDING");
+    }
+    if (plan.status === "COMPLETED") {
+      const claimed = await (await stockPricesCol()).findOneAndUpdate(
+        {
+          ticker,
+          isTradingHalted: { $ne: true },
+          $or: [
+            { cooldownUntil: { $exists: false } },
+            { cooldownUntil: { $lte: now } },
+          ],
+        },
+        { $inc: { tradeRevision: 1 } },
+        { returnDocument: "after", session },
+      );
+      if (claimed) return claimed;
+      const existing = await (await stockPricesCol()).findOne({ ticker }, { session });
+      if (!existing) throw new StockMarketTradeClaimError("PRICE_NOT_FOUND");
+      if (existing.isTradingHalted) {
+        throw new StockMarketTradeClaimError("STOCK_TRADING_HALTED");
+      }
+      throw new StockMarketTradeClaimError("STOCK_COOLING_DOWN");
+    }
+  }
+
+  if (
+    !state ||
+    state.status !== "OPEN" ||
+    state.opensAt.getTime() > now.getTime() ||
+    state.closesAt.getTime() <= now.getTime()
+  ) {
+    throw new StockMarketTradeClaimError(
+      classifyStockMarketStateTradeError(state, now),
+    );
+  }
+  const claimed = await (await stockPricesCol()).findOneAndUpdate(
+    {
+      ticker,
+      isTradingHalted: { $ne: true },
+      $or: [
+        { cooldownUntil: { $exists: false } },
+        { cooldownUntil: { $lte: now } },
+      ],
+    },
+    { $inc: { tradeRevision: 1 } },
+    { returnDocument: "after", session },
+  );
+  if (claimed) return claimed;
+  const existing = await (await stockPricesCol()).findOne({ ticker }, { session });
+  if (!existing) throw new StockMarketTradeClaimError("PRICE_NOT_FOUND");
+  if (existing.isTradingHalted) {
+    throw new StockMarketTradeClaimError("STOCK_TRADING_HALTED");
+  }
+  throw new StockMarketTradeClaimError("STOCK_COOLING_DOWN");
 }
 
 /**
@@ -1929,6 +2377,20 @@ export async function payNextPendingStockDividendEntitlement(
     | { status: "ERROR"; entitlementId: string; error: string };
   try {
     const outcome = await session.withTransaction<PayoutOutcome | null>(async () => {
+      // shutdown apply와 같은 state→plan write/read 순서로 18시 경계 지급을 직렬화한다.
+      await (await col<StockMarketState>(MARKET_STATE)).updateOne(
+        { _id: STOCK_MARKET_STATE_ID },
+        { $inc: { tradeRevision: 1 } },
+        { session },
+      );
+      const shutdownPlan = await getStockMarketShutdownPlan({ session });
+      if (
+        shutdownPlan &&
+        (shutdownPlan.status === "COMPLETED" ||
+          Date.now() >= shutdownPlan.executeAt.getTime())
+      ) {
+        throw new StockMarketAutomationStoppedError();
+      }
       const excluded = options.excludeEntitlementIds?.length
         ? { _id: { $nin: [...options.excludeEntitlementIds] } }
         : {};
@@ -2301,6 +2763,8 @@ export async function evaluateStockInvestmentSeasonForRound(input: {
   activate?: StockInvestmentSeason;
   endsAt?: Date;
   finalize?: boolean;
+  /** 기본 true. 운영 종료처럼 별도 전달 권한이 없는 마감은 false로 둔다. */
+  notifyWinners?: boolean;
 }, session: ClientSession): Promise<{ seasonId?: string; finalized: boolean; participants: number }> {
   const seasons = await col<StockInvestmentSeason>(SEASONS);
   if (input.activate) {
@@ -2516,25 +2980,27 @@ export async function evaluateStockInvestmentSeasonForRound(input: {
       { $set: { status: "FINALIZED", finalizedAt: valuationAt } },
       { session },
     );
-    const notifications = await notificationsCol();
-    for (const row of rows.filter((performance) => (performance.rank ?? 99) <= 3)) {
-      const ownerId = characterById.get(row.characterId)?.ownerId;
-      if (!ownerId) continue;
-      const dedupeKey = `stock:season:${season._id}:${row.characterId}:rank`;
-      await notifications.updateOne(
-        { dedupeKey },
-        { $setOnInsert: {
-          userId: ownerId,
-          dedupeKey,
-          type: "STOCK",
-          title: row.rank === 1 ? "NOVEX 시즌 챔피언" : `NOVEX 시즌 ${row.rank}위`,
-          message: `${row.codename}의 시즌 수익률 순위가 확정되었습니다.`,
-          link: "/erp/stock",
-          isRead: false,
-          createdAt: valuationAt,
-        } },
-        { upsert: true, session },
-      );
+    if (input.notifyWinners !== false) {
+      const notifications = await notificationsCol();
+      for (const row of rows.filter((performance) => (performance.rank ?? 99) <= 3)) {
+        const ownerId = characterById.get(row.characterId)?.ownerId;
+        if (!ownerId) continue;
+        const dedupeKey = `stock:season:${season._id}:${row.characterId}:rank`;
+        await notifications.updateOne(
+          { dedupeKey },
+          { $setOnInsert: {
+            userId: ownerId,
+            dedupeKey,
+            type: "STOCK",
+            title: row.rank === 1 ? "NOVEX 시즌 챔피언" : `NOVEX 시즌 ${row.rank}위`,
+            message: `${row.codename}의 시즌 수익률 순위가 확정되었습니다.`,
+            link: "/erp/stock",
+            isRead: false,
+            createdAt: valuationAt,
+          } },
+          { upsert: true, session },
+        );
+      }
     }
   }
   return { seasonId: season._id, finalized: shouldFinalize, participants: rows.length };
@@ -3103,6 +3569,14 @@ export async function applyStockMarketRoundTransaction(
         },
         { upsert: true, returnDocument: "before", session },
       );
+      const shutdownPlan = await getStockMarketShutdownPlan({ session });
+      if (
+        shutdownPlan &&
+        (shutdownPlan.status === "COMPLETED" ||
+          Math.max(input.now.getTime(), Date.now()) >= shutdownPlan.executeAt.getTime())
+      ) {
+        throw new StockMarketAutomationStoppedError();
+      }
       const prices = await stockPricesCol();
       const history = await stockPriceHistoryCol();
       const existing = await history.countDocuments({ slotKey: input.slotKey, source: "scheduled" }, { session });

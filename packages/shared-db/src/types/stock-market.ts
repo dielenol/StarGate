@@ -19,12 +19,40 @@ export interface StockMarketState {
   delayed: boolean;
   mergedSlotKeys?: string[];
   closureReason?: StockMarketClosureReason;
+  /** 영구 폐장 뒤 보유분 청산만 허용하는 거래 정책. */
+  tradingMode?: "SELL_ONLY";
+  /** 영구 폐장 가격이 확정된 시각. */
+  shutdownAt?: Date;
   tradeRevision: number;
   updatedAt: Date;
 }
 
+export type StockMarketShutdownStatus = "SCHEDULED" | "COMPLETED";
+
+export interface StockMarketShutdownDecline {
+  ticker: string;
+  /** 40~70 범위의 양수 하락률(%) */
+  dropPercent: number;
+}
+
+/** NOVEX 영구 폐장 singleton. 매수 차단과 일회성 폭락의 SSOT다. */
+export interface StockMarketShutdownPlan {
+  _id: typeof STOCK_MARKET_STATE_ID;
+  status: StockMarketShutdownStatus;
+  executeAt: Date;
+  buysBlockedAt: Date;
+  reason: string;
+  declines: StockMarketShutdownDecline[];
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date;
+}
+
 export interface StockMarketSnapshot {
   state: StockMarketState;
+  /** state/prices와 동일한 Mongo snapshot에서 읽은 영구 폐장 계획. */
+  shutdownPlan?: StockMarketShutdownPlan | null;
   prices: import("./stock.js").StockPrice[];
   companyProfiles: StockCompanyProfile[];
   /** state/prices와 같은 snapshot read에서 집계한 다음 회차 수급 신호. */

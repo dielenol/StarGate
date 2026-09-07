@@ -12,6 +12,7 @@ import {
   consumeMrBeastSodaStockImpactDemand,
   closeStockMarketWithoutRound,
   getStockMarketCalendarException,
+  getStockMarketShutdownPlan,
   getScheduledStockDisclosureQueueStatsForDate,
   getLatestStockMarketShadowState,
   getStockPrices,
@@ -20,6 +21,7 @@ import {
   listStockDisclosures,
   listRegularSessionStartsForStockMarket,
   listScheduledStockPriceHistoryRange,
+  StockMarketAutomationStoppedError,
   type ApplyScheduledStockPriceMutationResult,
 } from "@stargate/shared-db";
 import type {
@@ -73,12 +75,17 @@ export interface ApplyScheduledStockTickOptions {
   sodaStockImpactEnabled?: boolean;
 }
 
-interface ApplyScheduledStockTickDependencies {
+export interface ApplyScheduledStockTickDependencies {
   applyMutation?: typeof applyScheduledStockPriceMutation;
   claimScheduledEvent?: typeof claimPendingStockScheduledEvent;
   consumeStockImpact?: typeof consumeMrBeastSodaStockImpactDemand;
+  getShutdownPlan?: typeof getStockMarketShutdownPlan;
   random?: () => number;
   createRunId?: () => string;
+}
+
+export interface ApplyNovexStockMarketTickDependencies {
+  getShutdownPlan?: typeof getStockMarketShutdownPlan;
 }
 
 interface ScheduledTickContext {
@@ -113,6 +120,8 @@ export interface ScheduledStockTickSummary {
   closingRound?: boolean;
   skipDiscord?: boolean;
   warning?: "REGULAR_SESSION_MISSING" | "REGULAR_SESSION_AMBIGUOUS";
+  /** 영구 폐장 경계에서 가격/공시/다음 회차 생성을 생략했는지 여부. */
+  marketShutdown?: boolean;
   /** shadow 모드에서만 scheduled_job_runs summary에 직렬화하는 누적 상태. */
   shadowState?: StockMarketShadowState;
   shadowComparison?: Array<{
@@ -121,6 +130,29 @@ export interface ScheduledStockTickSummary {
     legacyPrice: number | null;
     deltaPercent: number | null;
   }>;
+}
+
+async function stockAutomationStopped(
+  now: Date,
+  getShutdownPlan: typeof getStockMarketShutdownPlan = getStockMarketShutdownPlan,
+): Promise<boolean> {
+  const plan = await getShutdownPlan();
+  const observedAt = Math.max(now.getTime(), Date.now());
+  return Boolean(
+    plan &&
+    (plan.status === "COMPLETED" || observedAt >= plan.executeAt.getTime()),
+  );
+}
+
+function stoppedStockTickSummary(now: Date, slot?: string): ScheduledStockTickSummary {
+  const date = kstDateTag(now);
+  return {
+    date,
+    slot: slot ?? `${date} ${kstNowTag(now).slice(11)}`,
+    results: [],
+    skipDiscord: true,
+    marketShutdown: true,
+  };
 }
 
 export class ScheduledStockTickNotDueError extends Error {
@@ -426,8 +458,12 @@ function buildShadowAutomaticDisclosures(
 /** shadow rollout용 read-only 누적 계산. 시장·경제 컬렉션은 변경하지 않는다. */
 export async function previewNovexStockMarketTick(
   options: ApplyNovexStockMarketTickOptions = {},
+  dependencies: ApplyNovexStockMarketTickDependencies = {},
 ): Promise<ScheduledStockTickSummary> {
   const now = options.now ?? new Date();
+  if (await stockAutomationStopped(now, dependencies.getShutdownPlan)) {
+    return stoppedStockTickSummary(now, options.slotKey);
+  }
   const slotKey = options.slotKey ?? latestDueNovexSlot(now);
   if (!slotKey) throw new NovexStockTickNotDueError(new Date(`${novexKstDate(now)}T09:00:00+09:00`));
   const slotAt = parseNovexSlotKey(slotKey);
@@ -760,8 +796,12 @@ export async function previewNovexStockMarketTick(
  */
 export async function applyNovexStockMarketTick(
   options: ApplyNovexStockMarketTickOptions = {},
+  dependencies: ApplyNovexStockMarketTickDependencies = {},
 ): Promise<ScheduledStockTickSummary> {
   const now = options.now ?? new Date();
+  if (await stockAutomationStopped(now, dependencies.getShutdownPlan)) {
+    return stoppedStockTickSummary(now, options.slotKey);
+  }
   const slotKey = options.slotKey ?? latestDueNovexSlot(now);
   if (!slotKey) {
     throw new NovexStockTickNotDueError(
@@ -827,7 +867,9 @@ export async function applyNovexStockMarketTick(
     };
   }
 
-  const outcome = await applyStockMarketRoundTransaction({
+  let outcome;
+  try {
+    outcome = await applyStockMarketRoundTransaction({
     slotKey,
     resolveMergedSlotKeys: (lastCompletedSlotKey) =>
       enumerateNovexSlotsAfter(lastCompletedSlotKey, slotKey),
@@ -872,7 +914,13 @@ export async function applyNovexStockMarketTick(
         consumeFlow: calculated.consumeFlow,
       };
     },
-  });
+    });
+  } catch (error) {
+    if (error instanceof StockMarketAutomationStoppedError) {
+      return stoppedStockTickSummary(now, slotKey);
+    }
+    throw error;
+  }
   if (slotKey.endsWith("23:00")) await ensureNextDayNovexAutoQueue(date, now);
 
   return {
@@ -1059,6 +1107,9 @@ export async function applyScheduledStockTick(
   dependencies: ApplyScheduledStockTickDependencies = {},
 ): Promise<ScheduledStockTickSummary> {
   const now = options.now ?? new Date();
+  if (await stockAutomationStopped(now, dependencies.getShutdownPlan)) {
+    return stoppedStockTickSummary(now);
+  }
   const today = kstDateTag(now);
   const executeAt = new Date(`${today}T12:00:00+09:00`);
   if (!options.force && now.getTime() < executeAt.getTime()) {
@@ -1126,12 +1177,15 @@ export async function applyScheduledStockTick(
           return {};
         }
       : undefined;
-    const outcome = await applyMutation({
+    let outcome;
+    try {
+      outcome = await applyMutation({
       ticker: meta.ticker,
       operationKey,
       initialPrice: meta.basePrice,
       initialLastUpdateKst: lastUpdate,
       initialEventText: "정기 시세 초기화",
+      now,
       loadContext,
       calculate: (current, context: ScheduledTickContext | undefined) =>
         calculateScheduledMutation(
@@ -1141,7 +1195,13 @@ export async function applyScheduledStockTick(
           randomSamples,
           context?.stockImpact,
         ),
-    });
+      });
+    } catch (error) {
+      if (error instanceof StockMarketAutomationStoppedError) {
+        return stoppedStockTickSummary(now, slot);
+      }
+      throw error;
+    }
 
     if (!outcome.applied) {
       results.push(skippedTickResult(meta, outcome));
