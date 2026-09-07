@@ -1,0 +1,97 @@
+.progress {
+  position: fixed;
+  top: 88px;
+  left: 0;
+  z-index: 61;
+  width: 100%;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(var(--reading-progress, 0));
+  transform-origin: left;
+  pointer-events: none;
+}
+.chapters {
+  position: fixed;
+  z-index: 45;
+  bottom: 24px;
+  left: 50%;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #6b5a3799;
+  border-radius: 6px;
+  background: #121213f0;
+  box-shadow: 0 8px 28px #0007;
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 12px);
+  transition:
+    opacity 220ms,
+    transform 220ms,
+    visibility 220ms;
+}
+.chapters[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+.chapters a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 17px;
+  color: var(--ink-2);
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  transition:
+    background 160ms,
+    color 160ms;
+}
+.chapters a span {
+  font: 8px var(--font-mono);
+}
+.chapters a:hover {
+  color: var(--ink-0);
+}
+.chapters a[aria-current] {
+  color: var(--gold);
+  background: #c9a85a14;
+}
+@media (max-width: 700px) {
+  .chapters {
+    bottom: 80px;
+    padding: 4px;
+    gap: 0;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+  }
+  .chapters a {
+    min-height: 40px;
+    padding: 9px 12px;
+    gap: 5px;
+    font-size: 10px;
+  }
+  .chapters a span {
+    font-size: 7px;
+  }
+}
+@media (max-width: 600px) {
+  .progress {
+    top: 72px;
+  }
+}
+@media (max-width: 360px) {
+  .chapters a {
+    padding-inline: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chapters,
+  .chapters a {
+    transition: none;
+  }
+}
