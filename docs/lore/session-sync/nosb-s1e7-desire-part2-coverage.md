@@ -12,9 +12,10 @@ source: session-log
 
 ## 개선한 점검 절차로 재개한 결과 — 2026-09-07
 
-- [원문 대상 81개와 목적지별 처리 목록](nosb-s1e7-desire-part2-sync-review.json), [사용자 검토본](nosb-s1e7-desire-part2-user-review.md)을 작성했다. 기존 등장 인물 17명과 신규 신원 후보 6명 외에도 회상·증언 속 인물, 미상 행위자, 장소·물품·개념을 개별 대조했다. 이 숫자는 신규 ERP 등록 건수가 아니다.
+- [원문 대상 86개와 목적지별 처리 목록](nosb-s1e7-desire-part2-sync-review.json), [사용자 검토본](nosb-s1e7-desire-part2-user-review.md)을 작성했다. 기존 등장 인물 17명과 신규 신원 후보 6명 외에도 회상·증언 속 인물, 미상 행위자, 장소·물품·개념을 개별 대조했다. 이 숫자는 신규 ERP 등록 건수가 아니다.
 - 사용자 결정: 인형사=1부 코르티잔. 후작·성직자 본인/인형 여부는 미확정 유지. 신규 6명은 모두 비공개 등록안에 포함하고 전용 초상을 확정한 뒤 마무리한다. 이름·나이·기관·등급의 미상 값은 창작하지 않는다. 실제 ERP 저장·공개 승인을 받은 것으로 해석하지 않는다.
 - 기존 보고서에서 빠진 마리아 내면의 미상 목소리, 페데라치오 두목 인형 투척과 인형사의 위치 이동을 보강했다. 네베드의 가족 기억과 해쉬의 과거 인물 회상, 탐정 증언과 총장 방침 언급을 현장 등장과 구별했다. 인형사 위키에도 동일 신원과 두목 인형 사건을 반영했다.
+- 최종 독립 원문 감사에서 피펫의 후반 하수도 접근과 마가렛 걱정을 보고서·등장 요약에 추가했다. 포스코어 사용 요청, 반복 등장 오르도 엔지니어, 써드 포인트 하수구 입구, 의식용 대못·망치, 아르고 장면 표기를 목록에 보강했다. 아르고 별칭·포스코어 효과·경제 수량은 바꾸지 않는다. 피펫→마가렛의 기존 관계 2개는 보존한다.
 - 여섯 신원조회 전용 초상 파일은 아직 없다. 인형사·보스 동반 장면, 마테오 접선 장면, 악마 장면과 흑미사 장소 그림을 다시 보았고, 장면 이미지·작은 대화 아바타를 전용 초상으로 자동 승격하지 않았다.
 - 18:24 KST 운영 읽기 전용 재조회: 2부 보고서 0건·2부 등장 기록 0건, 신규 후보 6키 없음. 기존 17명의 이전 조회 필드·위키 7개·물품 9개는 이전 검토와 동일했다. 마테오 리바스는 별개 인물이며 페데라치오의 구조화 세력 항목은 아직 없다.
 - 18:46 KST 사용자 동일인 결정에 따라 코르티잔·쿠르티잔·퍼페티어·인형사 및 대응 식별자로 이름·원어명·별칭·위키 제목을 다시 검색했다. 기존 신원·개별 위키 일치 0건으로, 숨은 코르티잔 기록과의 중복 생성은 발견되지 않았다.
@@ -261,6 +262,6 @@ source: session-log
 
 ## 검증한 파일 식별값
 
-- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-private-staging.json` SHA-256 `ce48cc9a555eafc97a69dcb24d898f6b5751b5d26f30536e1b01df7a1e700297`.
-- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-publication.json` SHA-256 `b7dd77835a76dc68d1fee734be1df28717c74b5fb1e8b84203262cfeb57b49a1`.
+- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-private-staging.json` SHA-256 `f5dfbca02b3047a4f324cb507e38f3d1602e1802a28faa992620a18b425aa36d`.
+- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-publication.json` SHA-256 `9d878a9d855f4f5ddd3b732af56a3ac4120107e6e4cdfa792398575ced9c8b08`.
 - 로컬 실행에 사용한 seed runner preview helper SHA-256 `7a26df45227c46aec537e788d999a8dc54f5ed6d34d9c9ef5bfdb6c644c9831d`. 테스트가 사용한 snapshot 시점 이후 운영 문서가 바뀌면 CAS를 재검토한다.

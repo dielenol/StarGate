@@ -432,13 +432,13 @@
       "id": "reinforcements",
       "name": "유회의 전투원 호출 비용",
       "kind": "event",
-      "evidence": "전투 중 전투원 호출 및 비용 언급"
+      "evidence": "p76 23:12:55 유회가 전투원 2명 호출과 1000 크레딧 소모 선언; p77 23:14:45 두 명 소환. 실제 ERP 거래 처리 여부는 미확인."
     },
     {
       "id": "sale-thought",
       "name": "조직을 팔겠다는 내면 독백",
       "kind": "event",
-      "evidence": "원문 내 조직을 팔겠다는 개인의 독백"
+      "evidence": "p52 22:13:51 킴라박의 내면 독백: 상한가일 때 조직을 파는 것이 맞겠다는 생각. 실제 거래 선언이나 주문이 아니다."
     },
     {
       "id": "skull-stranger",
@@ -486,13 +486,48 @@
       "id": "cult-leader-memory",
       "name": "해쉬가 떠올린 여교주",
       "kind": "person",
-      "evidence": "p138 01:35:14: 지휘자·여교주를 떠올림"
+      "evidence": "p138 01:35:14: 지휘자·여교주를 떠올림",
+      "existingCandidate": {
+        "target": "IRMA_KOCH",
+        "status": "review-needed",
+        "reason": "기존 이르마 코흐의 광명회 수장 역할 및 교주 호칭과 해쉬의 과거 접촉은 연결 후보 근거이나, 2부 호칭만으로 동일인 확정하지 않음"
+      }
     },
     {
       "id": "boss-doll",
       "name": "킴라박이 던진 페데라치오 두목 인형",
       "kind": "item",
       "evidence": "p96 00:04:32: 킴라박이 떡밥으로 표시된 두목 인형을 던짐"
+    },
+    {
+      "id": "force-core",
+      "name": "포스코어",
+      "kind": "item",
+      "evidence": "p113 00:41:49 요청·00:42:05 허용·00:42:27~32 회귀 선택과 실행; 기존 물품 FORCE_CORE/force_core"
+    },
+    {
+      "id": "ordo-engineer",
+      "name": "오르도 엔지니어",
+      "kind": "person",
+      "evidence": "p72~73 22:59:40~23:03:06 호출·등장; p82,88,93,96,99,103,106~107 제작·개조·교전"
+    },
+    {
+      "id": "third-point-sewer-entrance",
+      "name": "써드 포인트 하수구 입구",
+      "kind": "place",
+      "evidence": "p119 00:50:36 마리아의 폭탄 위치 언급; p111~120 세 번째 폭발"
+    },
+    {
+      "id": "ritual-nail-hammer",
+      "name": "의식용 대못과 망치",
+      "kind": "item",
+      "evidence": "p59 22:30:24 성직자의 의식 시도; p60 22:31:28~22:32:46 후작의 망치 사용; p66 22:44:05 네베드가 대못을 집음"
+    },
+    {
+      "id": "argo-scene-label",
+      "name": "아르고라는 장면 표기",
+      "kind": "concept",
+      "evidence": "p9 20:51:46·p10 20:52:45 아르고 등장; p14 21:00:34 아르고가 다 죽였음"
     }
   ],
   "coverage": [
@@ -601,12 +636,16 @@
         },
         "personnel": {
           "action": "update",
-          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다.",
+          "reason": "기존 신원을 유지하고 이번 회차의 등장 사건을 추가한다. 이름·초상·정규 소속·등급을 새로 추정하지 않는다. 후반 하수도 접근·전투원의 엄폐 지원·마가렛 걱정·첫 폭격의 분산까지 등장 요약에 보강한다.",
           "target": "PIPETTE"
         },
         "catalog": {
           "action": "skip",
           "reason": "이번 대상은 별도로 등록할 물품이 아니다."
+        },
+        "relations": {
+          "action": "skip",
+          "reason": "현재 저장값에서 마가렛과의 연구 저지·면회 및 구출 약속 관계 2개를 확인했다. 편지를 못 썼다는 이번 걱정은 등장 요약에 기록하고 기존 관계를 중복 생성하거나 덮어쓰지 않는다."
         }
       }
     },
@@ -2309,6 +2348,119 @@
         "economy": {
           "action": "skip",
           "reason": "실제 지급·차감 이력이 확인되지 않는다. 로그의 투척을 근거로 인벤토리를 다시 정산하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "force-core",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "포스코어 사용 요청과 허용 뒤 회귀한 경과만 기록한다. 실제 소모 완료는 확정하지 않는다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "보고서 위키판의 회귀 경과에 같은 사실을 기록한다. 기존 물품의 가려진 효과를 새로 공개하지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "물품 사용 요청이며 신규 인물이 아니다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "기존 포스코어의 공개 효과와 가격·판매·수량은 바꾸지 않는다. 이 요청으로 구체적인 고유 효과가 확정된 것은 아니다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "소모 완료 기록이나 기존 정산 여부가 확인되지 않으므로 추가 차감·지급하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "ordo-engineer",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "스타크의 원격 명령으로 제작·개조·교전한 반복 등장 병력을 구별해 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "보고서 위키판에 직무와 수행 행동을 포함한다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "반복 등장한 소환 직무이지만 실명·안정적인 개인 신원이 없다. 일반 병력과 구별해 원문 목록에 남기되 신규 NPC로 만들지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물품이 아닌 익명 병력이다. 제작 장비는 각 물품 항목에서 따로 검토한다."
+        }
+      }
+    },
+    {
+      "subjectId": "third-point-sewer-entrance",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "세 번째 폭탄이 있던 하수구 입구로 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "파리 카타콤 위키와 보고서 위키판에 합친다. 정확한 주소나 독립 장소 설정이 없어 새 장소 위키는 만들지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "장소이며 인물의 신원이 아니다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "고정된 장소이며 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "ritual-nail-hammer",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "의식에서 손바닥에 못을 박은 행위와 네베드가 대못을 다시 집은 행동을 기록한다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "카타콤 의식 장소와 보고서 위키판에 사건으로 합친다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "의식 도구이며 별도 인물이 아니다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "독립 효과·최종 보관이나 회수 상태가 미상이라 별도 물품·표본으로 등록하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "전투 중 집은 사실만으로 개인 영구 소유권이나 지급을 만들지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "argo-scene-label",
+      "surfaces": {
+        "report": {
+          "action": "skip",
+          "reason": "엘 볼라도르 장면에 붙은 제목이지만 화자의 동일 신원을 확인하는 발언은 아니다. 공식 사건 본문에 별도 인물로 넣지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "장면 표기를 독립 개체·개념 위키로 만들지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "사용자 확인 없이 엘 볼라도르의 이름·별칭에 아르고를 추가하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "장면 제목이며 물품이 아니다."
         }
       }
     }
