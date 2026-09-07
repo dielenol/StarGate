@@ -46,6 +46,8 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   const beforeShutdown = new Date(executeAt.getTime() - 20 * 60 * 1_000);
   const afterShutdown = new Date(executeAt.getTime() + 60 * 60 * 1_000);
   const reason = "파리 사태로 인한 쇼크";
+  const policyNotice =
+    "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.";
   const declines = TICKERS.map((ticker, index) => ({
     ticker,
     dropPercent: DECLINES[index],
@@ -63,6 +65,10 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
       unique: true,
       partialFilterExpression: { operationKey: { $type: "string" } },
     },
+  );
+  await db.collection("integration_outbox").createIndex(
+    { dedupeKey: 1 },
+    { unique: true },
   );
   await db.collection("stock_market_migration_readiness").insertOne({
     _id: "novex-2",
@@ -125,6 +131,16 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     currentPortfolioValue: 107,
     lastValuedAt: scheduledAt,
     lastValuedSlotKey: `${kstDate} 13:00`,
+    updatedAt: scheduledAt,
+  });
+  await db.collection("stock_market_preferences").insertOne({
+    _id: "shutdown-disclosure-subscriber",
+    userId: seasonOwnerId.toString(),
+    alerts: [{
+      id: "shutdown-disclosure-alert",
+      kind: "DISCLOSURE",
+      enabled: true,
+    }],
     updatedAt: scheduledAt,
   });
 
@@ -198,6 +214,7 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   assert.equal(await db.collection("stock_price_history").countDocuments(), 0);
   assert.equal((await db.collection("stock_market_shutdown").findOne({ _id: "novex" })).status, "SCHEDULED");
   assert.equal((await db.collection("stock_market_state").findOne({ _id: "novex" })).status, "OPEN");
+  assert.equal(await db.collection("integration_outbox").countDocuments(), 0);
   await db.collection("stock_disclosures").deleteOne({ _id: "stock-market-shutdown:novex" });
 
   const concurrent = await Promise.all([
@@ -220,8 +237,18 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   assert.equal(await db.collection("stock_disclosures").countDocuments({
     _id: "stock-market-shutdown:novex",
     status: "PUBLISHED",
-    body: reason,
+    body: `${reason}\n\n${policyNotice}`,
   }), 1);
+  const shutdownOutbox = await db.collection("integration_outbox").findOne({
+    dedupeKey: "stock:market-shutdown:novex:shock-disclosure",
+  });
+  assert.equal(await db.collection("integration_outbox").countDocuments(), 1);
+  assert.equal(shutdownOutbox.kind, "STOCK_MANUAL_INTERVENTION_WEBHOOK");
+  assert.equal(shutdownOutbox.status, "PENDING");
+  assert.equal(shutdownOutbox.payload.eventKind, "SHOCK_DISCLOSURE");
+  assert.equal(shutdownOutbox.payload.eventText, reason);
+  assert.equal(shutdownOutbox.payload.marketPolicyNotice, policyNotice);
+  assert.equal(shutdownOutbox.payload.items.length, TICKERS.length);
   const completedPlan = await db.collection("stock_market_shutdown").findOne({ _id: "novex" });
   assert.equal(completedPlan.status, "COMPLETED");
   const closedState = await db.collection("stock_market_state").findOne({ _id: "novex" });
@@ -243,7 +270,13 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   assert.equal(finalPerformance.currentPortfolioValue, 58.85);
   assert.equal(Math.round(finalPerformance.linkedReturn * 100), -45);
   assert.equal(finalPerformance.rank, 1);
-  assert.equal(await db.collection("notifications").countDocuments(), 0);
+  const shutdownNotification = await db.collection("notifications").findOne({
+    dedupeKey: `stock:disclosure:${seasonOwnerId}:shutdown-disclosure-alert:stock-market-shutdown:novex`,
+  });
+  assert.equal(await db.collection("notifications").countDocuments(), 1);
+  assert.equal(shutdownNotification.type, "STOCK");
+  assert.equal(shutdownNotification.title, reason);
+  assert.equal(shutdownNotification.message, `${reason}\n\n${policyNotice}`);
   await db.collection("stock_dividend_entitlements").insertOne({
     _id: "shutdown-pending-dividend",
     actionId: "must-not-pay",
