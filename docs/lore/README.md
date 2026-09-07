@@ -86,6 +86,7 @@ docs/lore/
 - [NOSB S1E7 욕구 1부 성격 관찰 적용 확인표](session-sync/nosb-s1e7-desire-part1-personality-apply-review.md)
 - [NOSB S1E7 욕구 1부 리처드 신원 병합 적용 확인표](session-sync/nosb-s1e7-desire-part1-richard-apply-review.md)
 - [NOSB S1E7 욕구 2부 coverage](session-sync/nosb-s1e7-desire-part2-coverage.md)
+- [NOSB S1E7 욕구 2부 신원조회 사용자 검토안](session-sync/nosb-s1e7-desire-part2-personnel-review.md)
 - [NOSB S1E7 욕구 2부 보고서 검토본](session-sync/nosb-s1e7-desire-part2-report-review.md)
 - [NOSB S1E7 욕구 2부 성격 관찰 적용 확인표](session-sync/nosb-s1e7-desire-part2-personality-apply-review.md)
 - [NOSB S1E7 욕구 2부 시각 원본 목록](session-sync/nosb-s1e7-desire-part2-visual-inventory.json)
