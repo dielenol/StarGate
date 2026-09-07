@@ -52,6 +52,8 @@ const SCHEDULED_JOB_RUNS = "scheduled_job_runs";
 const NOVEX_MIGRATION_READINESS = "stock_market_migration_readiness";
 const MARKET_SHUTDOWN = "stock_market_shutdown";
 const MARKET_SHUTDOWN_DISCLOSURE_ID = "stock-market-shutdown:novex";
+const MARKET_SHUTDOWN_POLICY_NOTICE =
+  "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.";
 const STOCK_ORDER_FLOW_MAX_PERCENT = 0.04;
 const STOCK_ORDER_FLOW_SENSITIVITY_SHARES = 150;
 
@@ -386,7 +388,7 @@ export async function applyDueStockMarketShutdown(
       const disclosure: StockDisclosure = {
         _id: MARKET_SHUTDOWN_DISCLOSURE_ID,
         title: plan.reason,
-        body: plan.reason,
+        body: `${plan.reason}\n\n${MARKET_SHUTDOWN_POLICY_NOTICE}`,
         kind: "PRICE",
         status: "PUBLISHED",
         source: "GM",
@@ -405,9 +407,38 @@ export async function applyDueStockMarketShutdown(
         publishedAt: now,
       };
       await (await col<StockDisclosure>(DISCLOSURES)).insertOne(disclosure, { session });
+      await emitPublishedInformationDisclosureAlerts([disclosure], session);
+      const [firstHistory] = histories;
+      if (!firstHistory) {
+        throw new StockMarketShutdownConflictError(
+          "STOCK_MARKET_SHUTDOWN_EMPTY_MARKET",
+        );
+      }
+      await enqueueIntegrationOutbox({
+        kind: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+        dedupeKey: "stock:market-shutdown:novex:shock-disclosure",
+        partitionKey: stockMarketRoundOutboxPartitionKey(slotKey),
+        partitionOrderAt: plan.executeAt,
+        payload: {
+          eventKind: "SHOCK_DISCLOSURE",
+          ticker: firstHistory.ticker,
+          previousPrice: firstHistory.prevPrice,
+          price: firstHistory.price,
+          eventText: plan.reason,
+          marketPolicyNotice: MARKET_SHUTDOWN_POLICY_NOTICE,
+          items: histories.map((history) => ({
+            ticker: history.ticker,
+            previousPrice: history.prevPrice,
+            price: history.price,
+            eventText: plan.reason,
+          })),
+          actor: { displayName: "NOVEX", role: disclosure.source },
+          occurredAt: plan.executeAt.toISOString(),
+        },
+      }, { session });
 
-      // 마지막 폭락 종가를 시즌 수익률에 반영하되, 영구 폐장 자체가 별도 사용자
-      // 알림을 발송하지 않도록 랭킹 알림은 억제한다.
+      // 마지막 폭락 종가를 시즌 수익률에 반영하되, 시장 종료 공시와 무관한
+      // 시즌 수상 알림은 함께 발송하지 않는다.
       await evaluateStockInvestmentSeasonForRound({
         slotKey,
         now: plan.executeAt,

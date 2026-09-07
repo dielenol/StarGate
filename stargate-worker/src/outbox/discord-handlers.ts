@@ -589,8 +589,12 @@ function buildStockManualIntervention(
   if (!["PRICE", "HALT", "RESUME", "COOLDOWN", "COOLDOWN_RELEASE", "SHOCK_DISCLOSURE", "RIGHTS_OFFERING_REJECTED"].includes(eventKind)) {
     throw new Error("지원하지 않는 주식 긴급 공시 eventKind입니다.");
   }
+  const isBundledShock =
+    eventKind === "SHOCK_DISCLOSURE" && Array.isArray(payload.items);
   if (
-    (eventKind === "COOLDOWN" || eventKind === "COOLDOWN_RELEASE") &&
+    (eventKind === "COOLDOWN" ||
+      eventKind === "COOLDOWN_RELEASE" ||
+      isBundledShock) &&
     Array.isArray(payload.items)
   ) {
     if (payload.items.length === 0 || payload.items.length > 50) {
@@ -633,27 +637,52 @@ function buildStockManualIntervention(
       return item.reason;
     })));
     const releasing = eventKind === "COOLDOWN_RELEASE";
+    const shock = eventKind === "SHOCK_DISCLOSURE";
     return basePayload(
       "재무기구 시장감시실",
-      releasing ? "변동성 냉각 해제" : "변동성 냉각 공시",
+      shock
+        ? "NOVEX 충격 공시"
+        : releasing
+          ? "변동성 냉각 해제"
+          : "변동성 냉각 공시",
       isoTimestamp(payload.occurredAt),
       {
         url: "https://www.ordonet.co.kr/erp/stock",
-        description: releasing
-          ? `${items.length}개 종목의 자동 냉각이 일괄 종료되었습니다. 수동 거래정지와 시장 운영 상태는 별도로 적용됩니다.`
-          : `급격한 가격 변동으로 ${items.length}개 종목에 10분 자동 냉각이 일괄 적용되었습니다.`,
-        color: releasing ? 0x2fbf71 : 0xf0a33b,
+        description: shock
+          ? `시장에 중대한 영향을 주는 공시가 공개되어 ${items.length}개 종목의 가격이 일괄 조정되었습니다.`
+          : releasing
+            ? `${items.length}개 종목의 자동 냉각이 일괄 종료되었습니다. 수동 거래정지와 시장 운영 상태는 별도로 적용됩니다.`
+            : `급격한 가격 변동으로 ${items.length}개 종목에 10분 자동 냉각이 일괄 적용되었습니다.`,
+        color: shock ? 0xd95f5f : releasing ? 0x2fbf71 : 0xf0a33b,
         fields: [
           {
-            name: `${releasing ? "해제" : "냉각"} 종목 · ${items.length}개`,
+            name: `${shock ? "폭락" : releasing ? "해제" : "냉각"} 종목 · ${items.length}개`,
             value: targetLines.join("\n").slice(0, FIELD_VALUE_MAX),
           },
           {
             name: "시장 상태",
-            value: releasing ? "냉각 해제" : "자동 냉각",
+            value: shock
+              ? "영구 폐장 · 보유 주식 매도만 가능"
+              : releasing
+                ? "냉각 해제"
+                : "자동 냉각",
             inline: true,
           },
-          ...(!releasing
+          ...(shock
+            ? [
+                {
+                  name: "공시 사유",
+                  value: text(payload.eventText, "eventText"),
+                },
+                {
+                  name: "거래 정책",
+                  value: text(
+                    payload.marketPolicyNotice,
+                    "marketPolicyNotice",
+                  ),
+                },
+              ]
+            : !releasing
             ? [{
                 name: "적용 사유",
                 value: reasonLabels.join(" · ").slice(0, FIELD_VALUE_MAX),

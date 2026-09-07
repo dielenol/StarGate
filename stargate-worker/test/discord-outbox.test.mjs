@@ -601,6 +601,65 @@ test("충격 공시·냉각 카드는 실제 등락 방향과 폭을 함께 노�
   );
 });
 
+test("시장 종료 충격 공시는 전 종목 폭락과 영구 매수 금지 정책을 한 카드로 전달한다", async () => {
+  const requests = [];
+  const registry = createDiscordIntegrationOutboxHandlers(
+    {
+      WORKER_OUTBOX_KINDS: "STOCK_MANUAL_INTERVENTION_WEBHOOK",
+      WORKER_OUTBOX_ALLOW_PARTIAL: "true",
+      DISCORD_WEBHOOK_STOCK_URL: "https://discord.com/api/webhooks/stock/token",
+    },
+    {
+      async fetchImpl(url, init) {
+        requests.push({ url: String(url), body: JSON.parse(String(init.body)) });
+        return Response.json({ id: "22345678901234567" });
+      },
+    },
+  );
+  const policyNotice =
+    "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.";
+  const items = ["TWS", "STM", "SSR", "MSF", "VFP", "BPE", "ART", "GN3", "SPZ"]
+    .map((ticker, index) => ({
+      ticker,
+      previousPrice: 100 + index,
+      price: 40 + index,
+      eventText: "파리 사태로 인한 쇼크",
+    }));
+
+  await registry.get("STOCK_MANUAL_INTERVENTION_WEBHOOK").deliver(
+    outboxEvent("STOCK_MANUAL_INTERVENTION_WEBHOOK", {
+      eventKind: "SHOCK_DISCLOSURE",
+      ticker: "TWS",
+      previousPrice: 100,
+      price: 40,
+      eventText: "파리 사태로 인한 쇼크",
+      marketPolicyNotice: policyNotice,
+      items,
+      actor: { displayName: "NOVEX", role: "GM" },
+      occurredAt: "2026-09-07T09:00:00.000Z",
+    }),
+  );
+
+  assert.equal(requests.length, 1);
+  const embed = requests[0].body.embeds[0];
+  assert.equal(embed.title, "NOVEX 충격 공시");
+  assert.equal(embed.fields[0].name, "폭락 종목 · 9개");
+  assert.match(embed.fields[0].value, /토와스키 · TWS — 하락 -60\.00%/);
+  assert.match(embed.fields[0].value, /스페이스 제로 · SPZ — 하락/);
+  assert.equal(
+    embed.fields.find((field) => field.name === "시장 상태").value,
+    "영구 폐장 · 보유 주식 매도만 가능",
+  );
+  assert.equal(
+    embed.fields.find((field) => field.name === "공시 사유").value,
+    "파리 사태로 인한 쇼크",
+  );
+  assert.equal(
+    embed.fields.find((field) => field.name === "거래 정책").value,
+    policyNotice,
+  );
+});
+
 test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노출하지 않는다", async () => {
   const requests = [];
   const registry = createDiscordIntegrationOutboxHandlers(
