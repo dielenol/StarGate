@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 /**
  * POST /api/erp/admin/stocks/trading-status — GM 개별 종목 거래정지/재개.
  *
@@ -161,6 +162,8 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof StockCorporateActionHaltConflictError) {
       return NextResponse.json(
         {

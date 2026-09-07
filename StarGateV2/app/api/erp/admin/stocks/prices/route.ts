@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 /**
  * POST /api/erp/admin/stocks/prices — GM stock quote override.
  */
@@ -260,6 +261,8 @@ export async function POST(request: Request) {
       },
     );
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof EconomicOperationConflictError) {
       return NextResponse.json(
         {

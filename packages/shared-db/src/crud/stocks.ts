@@ -62,13 +62,31 @@ export class StockMarketAutomationStoppedError extends Error {
   }
 }
 
+async function withStockMutationTransaction<T>(
+  run: (session: ClientSession) => Promise<T>,
+): Promise<T> {
+  const client = await getClient();
+  const session = client.startSession();
+  let result: T | undefined;
+  try {
+    await session.withTransaction(async () => {
+      result = await run(session);
+    });
+    return result as T;
+  } finally {
+    await session.endSession();
+  }
+}
+
 /** shutdown apply와 같은 state→plan lock order로 실제 가격 쓰기 직전 경계를 재확인한다. */
-async function fenceStockMarketAutomation(
+export async function claimStockMarketMutationAllowed(
   now: Date,
   session: ClientSession,
-): Promise<void> {
+  options: { returnStopped?: boolean } = {},
+): Promise<boolean> {
   const db = await getDb();
-  await db.collection<StockMarketState>("stock_market_state").updateOne(
+  const state = db.collection<StockMarketState>("stock_market_state");
+  await state.updateOne(
     { _id: STOCK_MARKET_STATE_ID },
     { $inc: { tradeRevision: 1 } },
     { session },
@@ -79,10 +97,19 @@ async function fenceStockMarketAutomation(
   if (
     plan &&
     (plan.status === "COMPLETED" ||
-      Math.max(now.getTime(), Date.now()) >= plan.executeAt.getTime())
+      Math.max(now.getTime(), Date.now()) >= plan.buysBlockedAt.getTime())
   ) {
+    if (options.returnStopped) {
+      await state.updateOne(
+        { _id: STOCK_MARKET_STATE_ID },
+        { $inc: { tradeRevision: -1 } },
+        { session },
+      );
+      return false;
+    }
     throw new StockMarketAutomationStoppedError();
   }
+  return true;
 }
 
 /**
@@ -130,6 +157,7 @@ export async function setStockTradingHalted(
   isTradingHalted: boolean,
   session: ClientSession,
 ): Promise<SetStockTradingHaltedResult | null> {
+  await claimStockMarketMutationAllowed(new Date(), session);
   const col = await stockPricesCol();
   const previous = await col.findOneAndUpdate(
     {
@@ -169,6 +197,12 @@ export async function ensureStockPrice(
   initialEventText: string = "상장",
   options: { session?: ClientSession } = {},
 ): Promise<StockPrice> {
+  if (!options.session) {
+    return withStockMutationTransaction((session) =>
+      ensureStockPrice(ticker, initialPrice, initialLastUpdateKst, initialEventText, { session }),
+    );
+  }
+  await claimStockMarketMutationAllowed(new Date(), options.session);
   const col = await stockPricesCol();
   const doc: StockPrice = {
     ticker,
@@ -202,8 +236,15 @@ export async function ensureStockPrices(
   seeds: { ticker: string; price: number }[],
   initialLastUpdateKst: string,
   initialEventText: string = "상장",
+  options: { session?: ClientSession } = {},
 ): Promise<void> {
   if (seeds.length === 0) return;
+  if (!options.session) {
+    return withStockMutationTransaction((session) =>
+      ensureStockPrices(seeds, initialLastUpdateKst, initialEventText, { session }),
+    );
+  }
+  await claimStockMarketMutationAllowed(new Date(), options.session);
   const col = await stockPricesCol();
 
   const ops = seeds.map((seed) => ({
@@ -221,7 +262,7 @@ export async function ensureStockPrices(
       upsert: true,
     },
   }));
-  await col.bulkWrite(ops, { ordered: false });
+  await col.bulkWrite(ops, { ordered: false, session: options.session });
 }
 
 /**
@@ -240,6 +281,12 @@ export async function updateStockPrice(
   lastUpdateKst: string,
   options: { session?: ClientSession } = {},
 ): Promise<StockPrice> {
+  if (!options.session) {
+    return withStockMutationTransaction((session) =>
+      updateStockPrice(ticker, newPrice, eventText, lastUpdateKst, { session }),
+    );
+  }
+  await claimStockMarketMutationAllowed(new Date(), options.session);
   const col = await stockPricesCol();
   const result = await col.findOneAndUpdate(
     { ticker },
@@ -317,7 +364,7 @@ export async function applyScheduledStockPriceMutation<TContext = undefined>(
   try {
     try {
       await session.withTransaction(async () => {
-        await fenceStockMarketAutomation(input.now ?? new Date(), session);
+        await claimStockMarketMutationAllowed(input.now ?? new Date(), session);
         const prices = await stockPricesCol();
         const history = await stockPriceHistoryCol();
         const existingHistory = await history.findOne(
@@ -506,6 +553,12 @@ export async function buyHolding(
   if (shares <= 0) {
     throw new Error(`buyHolding: shares must be positive, got ${shares}`);
   }
+  if (!options.session) {
+    return withStockMutationTransaction((session) =>
+      buyHolding(characterId, ticker, shares, buyPrice, { session }),
+    );
+  }
+  await claimStockMarketMutationAllowed(new Date(), options.session);
   const col = await stockHoldingsCol();
 
   // aggregation pipeline upsert 로 read+write 단일화 — race window 제거.

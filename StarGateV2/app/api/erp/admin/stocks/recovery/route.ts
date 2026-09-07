@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 import { NextResponse } from "next/server";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
@@ -16,6 +17,7 @@ import {
   enqueueStockMarketRecoveryRequest,
 } from "@/lib/outbox/integration";
 import { isNovexV2Enabled } from "@/lib/stocks/market";
+import { claimStockMarketMutationAllowed } from "@/lib/db/stocks";
 
 const SLOT_KEY_PATTERN = /^\d{4}-\d{2}-\d{2} (?:09|13|18|23):00$/;
 
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       payload: { slotKey },
       run: async (dbSession) => {
+        await claimStockMarketMutationAllowed(new Date(), dbSession);
         await claimStockMarketMigrationReady(dbSession);
         const requestedAt = new Date();
         await enqueueStockMarketRecoveryRequest(
@@ -112,6 +115,8 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof StockMarketMigrationNotReadyError) {
       return NextResponse.json(
         { error: "NOVEX 2.0 migration READY 확인 전에는 회차 복구를 요청할 수 없습니다." },

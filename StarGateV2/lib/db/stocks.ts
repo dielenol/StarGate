@@ -16,6 +16,8 @@ export {
   getStockPrices,
   getStockPrice,
   claimTradableStockPrice,
+  claimStockMarketMutationAllowed,
+  StockMarketAutomationStoppedError,
   setStockTradingHalted,
   StockCorporateActionHaltConflictError,
   StockPriceTradeClaimError,

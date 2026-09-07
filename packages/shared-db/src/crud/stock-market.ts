@@ -4,6 +4,7 @@ import { getClient, getDb } from "../client.js";
 import { charactersCol, notificationsCol, stockHoldingsCol, stockPriceHistoryCol, stockPricesCol, usersCol } from "../collections.js";
 import { addCredit } from "./credits.js";
 import {
+  claimStockMarketMutationAllowed,
   claimTradableStockPrice,
   StockMarketAutomationStoppedError,
 } from "./stocks.js";
@@ -53,7 +54,7 @@ const NOVEX_MIGRATION_READINESS = "stock_market_migration_readiness";
 const MARKET_SHUTDOWN = "stock_market_shutdown";
 const MARKET_SHUTDOWN_DISCLOSURE_ID = "stock-market-shutdown:novex";
 const MARKET_SHUTDOWN_POLICY_NOTICE =
-  "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.";
+  "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.\n\n매수 영구 중단 · 가격 영구 동결 · 보유 주식 매도만 가능";
 const STOCK_ORDER_FLOW_MAX_PERCENT = 0.04;
 const STOCK_ORDER_FLOW_SENSITIVITY_SHARES = 150;
 
@@ -376,6 +377,15 @@ export async function applyDueStockMarketShutdown(
               lastUpdate: slotKey,
               pendingBasePercent: 0,
             },
+            $unset: {
+              isTradingHalted: "",
+              cooldownUntil: "",
+              cooldownReason: "",
+              corporateActionReservationId: "",
+              corporateActionHaltId: "",
+              corporateActionHaltReason: "",
+              corporateActionResumeSlotKey: "",
+            },
             $inc: { tradeRevision: 1 },
           },
         },
@@ -618,6 +628,7 @@ export async function saveStockMarketState(
   state: Omit<StockMarketState, "_id" | "tradeRevision">,
   session: ClientSession,
 ): Promise<StockMarketState> {
+  await claimStockMarketMutationAllowed(state.updatedAt, session);
   const saved = await (await col<StockMarketState>(MARKET_STATE)).findOneAndUpdate(
     { _id: STOCK_MARKET_STATE_ID },
     {
@@ -770,6 +781,14 @@ export async function claimMarketTradableStockPrice(
       classifyStockMarketStateTradeError(existing, now),
     );
   }
+  const shutdownPlan = await getStockMarketShutdownPlan({ session });
+  if (
+    shutdownPlan &&
+    (shutdownPlan.status === "COMPLETED" ||
+      Math.max(now.getTime(), Date.now()) >= shutdownPlan.buysBlockedAt.getTime())
+  ) {
+    throw new StockMarketTradeClaimError("MARKET_SELL_ONLY");
+  }
 
   const prices = await stockPricesCol();
   const claimed = await prices.findOneAndUpdate(
@@ -814,21 +833,6 @@ export async function claimCompatibleTradableStockPrice(
     { returnDocument: "after", session },
   );
   const plan = await getStockMarketShutdownPlan({ session });
-  if (!options.novexV2Enabled) {
-    if (
-      plan &&
-      (plan.status === "COMPLETED" || observedAt >= plan.buysBlockedAt.getTime())
-    ) {
-      if (options.side !== "SELL") {
-        throw new StockMarketTradeClaimError("MARKET_SELL_ONLY");
-      }
-      if (plan.status === "SCHEDULED" && observedAt >= plan.executeAt.getTime()) {
-        throw new StockMarketTradeClaimError("MARKET_SHUTDOWN_PENDING");
-      }
-    }
-    return claimTradableStockPrice(ticker, session);
-  }
-
   if (
     plan &&
     (plan.status === "COMPLETED" || observedAt >= plan.buysBlockedAt.getTime())
@@ -841,25 +845,17 @@ export async function claimCompatibleTradableStockPrice(
     }
     if (plan.status === "COMPLETED") {
       const claimed = await (await stockPricesCol()).findOneAndUpdate(
-        {
-          ticker,
-          isTradingHalted: { $ne: true },
-          $or: [
-            { cooldownUntil: { $exists: false } },
-            { cooldownUntil: { $lte: now } },
-          ],
-        },
+        { ticker },
         { $inc: { tradeRevision: 1 } },
         { returnDocument: "after", session },
       );
       if (claimed) return claimed;
-      const existing = await (await stockPricesCol()).findOne({ ticker }, { session });
-      if (!existing) throw new StockMarketTradeClaimError("PRICE_NOT_FOUND");
-      if (existing.isTradingHalted) {
-        throw new StockMarketTradeClaimError("STOCK_TRADING_HALTED");
-      }
-      throw new StockMarketTradeClaimError("STOCK_COOLING_DOWN");
+      throw new StockMarketTradeClaimError("PRICE_NOT_FOUND");
     }
+  }
+
+  if (!options.novexV2Enabled) {
+    return claimTradableStockPrice(ticker, session);
   }
 
   if (
@@ -901,6 +897,7 @@ export async function claimAdministrativeStockPrice(
   ticker: string,
   session: ClientSession,
 ): Promise<StockPrice> {
+  await claimStockMarketMutationAllowed(new Date(), session);
   const claimed = await (await stockPricesCol()).findOneAndUpdate(
     { ticker },
     { $inc: { tradeRevision: 1 } },
@@ -915,6 +912,7 @@ export async function upsertStockMarketCalendarException(
   session: ClientSession,
 ): Promise<StockMarketCalendarException> {
   const now = new Date();
+  await claimStockMarketMutationAllowed(now, session);
   const collection = await col<StockMarketCalendarException>(CALENDAR_EXCEPTIONS);
   const saved = await collection.findOneAndUpdate(
     { _id: `stock-calendar:${input.kstDate}` },
@@ -953,6 +951,7 @@ export async function deleteStockMarketCalendarException(
   kstDate: string,
   session: ClientSession,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(new Date(), session);
   const result = await (await col<StockMarketCalendarException>(CALENDAR_EXCEPTIONS)).deleteOne(
     { _id: `stock-calendar:${kstDate}` },
     { session },
@@ -963,9 +962,20 @@ export async function deleteStockMarketCalendarException(
 export async function recordStockOrderFlow(
   input: Omit<StockOrderFlow, "_id" | "consumedSlotKey" | "consumedAt">,
   session: ClientSession,
-): Promise<StockOrderFlow> {
+): Promise<StockOrderFlow | null> {
   if (!Number.isInteger(input.shares) || input.shares <= 0) {
     throw new Error("Stock order flow shares must be a positive integer");
+  }
+  const shutdownPlan = await getStockMarketShutdownPlan({ session });
+  if (
+    shutdownPlan &&
+    (shutdownPlan.status === "COMPLETED" ||
+      Math.max(input.occurredAt.getTime(), Date.now()) >= shutdownPlan.buysBlockedAt.getTime())
+  ) {
+    if (input.side !== "SELL") {
+      throw new StockMarketAutomationStoppedError();
+    }
+    return null;
   }
   const collection = await col<StockOrderFlow>(ORDER_FLOW);
   try {
@@ -1322,6 +1332,7 @@ export async function createStockDisclosure(
     validateStockCompanyProfileUpdate(input.companyProfileUpdate, input);
   }
   const now = input.now ?? new Date();
+  await claimStockMarketMutationAllowed(now, session);
   if (input.ownerCorporateActionId) {
     const owner = await (await col<StockCorporateAction>(CORPORATE_ACTIONS))
       .findOne(
@@ -1418,6 +1429,7 @@ export async function updateStockDisclosure(
   now: Date,
   session: ClientSession,
 ): Promise<StockDisclosure | null> {
+  await claimStockMarketMutationAllowed(now, session);
   if (patch.effects) validateStockDisclosureEffects(patch.effects);
   const collection = await col<StockDisclosure>(DISCLOSURES);
   const existing = await collection.findOne(
@@ -1507,6 +1519,7 @@ export async function cancelStockDisclosure(
   session: ClientSession,
   options: { allowCorporateAction?: boolean } = {},
 ): Promise<StockDisclosure | null> {
+  await claimStockMarketMutationAllowed(now, session);
   const collection = await col<StockDisclosure>(DISCLOSURES);
   const existing = await collection.findOne(
     {
@@ -1797,6 +1810,7 @@ export async function createStockCorporateAction(
   action: StockCorporateAction,
   session: ClientSession,
 ): Promise<StockCorporateAction> {
+  await claimStockMarketMutationAllowed(action.createdAt, session);
   if (action.type === "DIVIDEND" && action.amountPerShare <= 0) {
     throw new Error("Dividend amount must be positive");
   }
@@ -2138,6 +2152,7 @@ export async function cancelStockCorporateAction(
   now: Date,
   session: ClientSession,
 ): Promise<StockCorporateAction | null> {
+  await claimStockMarketMutationAllowed(now, session);
   // enabled에서 시작된 action을 모드 rollback 뒤에도 철회할 수는 있어야 한다.
   // 대신 migration READY 문서를 첫 write fence로 사용해 APPLYING/BLOCKED 중
   // 취소·reservation 해제·거래재개가 cutover를 우회하지 못하게 한다.
@@ -2294,6 +2309,7 @@ export async function snapshotStockDividendEntitlements(
   now: Date,
   session: ClientSession,
 ): Promise<{ status: "SNAPSHOTTED" | "REJECTED"; count: number }> {
+  await claimStockMarketMutationAllowed(now, session);
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne({ _id: actionId, type: "DIVIDEND" }, { session });
   if (!action || action.type !== "DIVIDEND") throw new Error("Dividend action not found");
@@ -2382,6 +2398,7 @@ export async function markStockDividendEntitlementPaid(
   paidAt: Date,
   session: ClientSession,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(paidAt, session);
   const result = await (await col<StockDividendEntitlement>(DIVIDEND_ENTITLEMENTS)).updateOne(
     { _id: id, status: { $in: ["PENDING", "ERROR"] } },
     {
@@ -2418,7 +2435,7 @@ export async function payNextPendingStockDividendEntitlement(
       if (
         shutdownPlan &&
         (shutdownPlan.status === "COMPLETED" ||
-          Date.now() >= shutdownPlan.executeAt.getTime())
+          Date.now() >= shutdownPlan.buysBlockedAt.getTime())
       ) {
         throw new StockMarketAutomationStoppedError();
       }
@@ -2579,6 +2596,7 @@ export async function applyStockDividendExDate(
   now: Date,
   session: ClientSession,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(now, session);
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne(
     { _id: actionId, type: "DIVIDEND", status: { $in: ["SNAPSHOTTED", "PROCESSING"] } },
@@ -2651,6 +2669,7 @@ export async function createStockInvestmentSeason(
   season: StockInvestmentSeason,
   session: ClientSession,
 ): Promise<StockInvestmentSeason> {
+  await claimStockMarketMutationAllowed(new Date(), session);
   if (season.endsAt.getTime() <= season.startsAt.getTime()) {
     throw new Error("Stock investment season must end after it starts");
   }
@@ -2672,6 +2691,7 @@ export async function finalizeStockInvestmentSeason(
   finalizedAt: Date,
   session: ClientSession,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(finalizedAt, session);
   const seasons = await col<StockInvestmentSeason>(SEASONS);
   const season = await seasons.findOne(
     { _id: seasonId, status: "ACTIVE" },
@@ -3604,7 +3624,7 @@ export async function applyStockMarketRoundTransaction(
       if (
         shutdownPlan &&
         (shutdownPlan.status === "COMPLETED" ||
-          Math.max(input.now.getTime(), Date.now()) >= shutdownPlan.executeAt.getTime())
+          Math.max(input.now.getTime(), Date.now()) >= shutdownPlan.buysBlockedAt.getTime())
       ) {
         throw new StockMarketAutomationStoppedError();
       }
@@ -4241,6 +4261,7 @@ export async function announceStockRightsOffering(
   session: ClientSession,
   outboxPartitionKey?: string,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(now, session);
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne(
     { _id: actionId, type: "RIGHTS_OFFERING", status: "SCHEDULED" },
@@ -4411,6 +4432,7 @@ export async function applyStockRightsOffering(
   session: ClientSession,
   outboxPartitionKey?: string,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(now, session);
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne(
     { _id: actionId, type: "RIGHTS_OFFERING", status: "HALTED" },
@@ -4532,6 +4554,7 @@ export async function resumeStockRightsOffering(
   session: ClientSession,
   outboxPartitionKey?: string,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(now, session);
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne(
     { _id: actionId, type: "RIGHTS_OFFERING", status: "HALTED" },
@@ -4584,6 +4607,7 @@ export async function applyForwardStockSplit(
   now: Date,
   session: ClientSession,
 ): Promise<boolean> {
+  await claimStockMarketMutationAllowed(now, session);
   const actions = await col<StockCorporateAction>(CORPORATE_ACTIONS);
   const action = await actions.findOne({ _id: actionId, type: "SPLIT", status: "SCHEDULED" }, { session });
   if (!action || action.type !== "SPLIT") return false;

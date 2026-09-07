@@ -2,6 +2,7 @@ import { MongoServerError } from "mongodb";
 import type { ClientSession, Collection } from "mongodb";
 
 import { getDb } from "../client.js";
+import { claimStockMarketMutationAllowed } from "./stocks.js";
 import type {
   StockScheduledEvent,
   StockScheduledEventActor,
@@ -295,6 +296,7 @@ export async function createStockScheduledEvent(
   input: CreateStockScheduledEventInput,
   session: ClientSession,
 ): Promise<StockScheduledEvent> {
+  await claimStockMarketMutationAllowed(input.now, session);
   await fenceStockScheduledEventCutover({
     operation: "CREATE",
     now: input.now,
@@ -387,6 +389,7 @@ export async function claimPendingStockScheduledEvent(input: {
   now: Date;
   session: ClientSession;
 }): Promise<StockScheduledEvent | null> {
+  await claimStockMarketMutationAllowed(input.now, input.session);
   const col = await scheduledEventsCol();
   const claimed = await col.findOneAndUpdate(
     {
@@ -435,6 +438,7 @@ export async function cancelStockScheduledEvent(input: {
   now: Date;
   session: ClientSession;
 }): Promise<StockScheduledEvent> {
+  await claimStockMarketMutationAllowed(input.now, input.session);
   await fenceStockScheduledEventCutover({
     operation: "CANCEL",
     now: input.now,

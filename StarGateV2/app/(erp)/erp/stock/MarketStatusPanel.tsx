@@ -83,6 +83,11 @@ export default function MarketStatusPanel({ market, compact = false }: Props) {
         <strong>{market.tradingMode === "SELL_ONLY" ? "매도 전용" : statusLabel(market.status)}</strong>
       </div>
       <p className={styles.marketStatus__reason}>{market.reason}</p>
+      {market.tradingMode === "SELL_ONLY" ? (
+        <p className={styles.marketStatus__reason}>
+          매수 영구 중단 · 가격 영구 동결 · 보유 주식 매도만 가능
+        </p>
+      ) : null}
       {!compact ? (
         <div className={styles.marketStatus__grid}>
           {market.tradingMode === "SELL_ONLY" ? (

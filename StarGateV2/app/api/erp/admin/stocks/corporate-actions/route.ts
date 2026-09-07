@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 import { NextResponse } from "next/server";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
@@ -306,6 +307,8 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof StockMarketMigrationNotReadyError) {
       return NextResponse.json(
         { error: "NOVEX 2.0 migration READY 확인 전에는 기업행동을 예약할 수 없습니다." },

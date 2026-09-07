@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 import { NextResponse } from "next/server";
 import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbeast-soda-stock-impact";
 
@@ -10,6 +11,7 @@ import {
 } from "@/lib/stocks/scheduled-tick";
 import { isNovexV2Enabled } from "@/lib/stocks/market";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { StockMarketAutomationStoppedError } from "@/lib/db/stocks";
 
 interface PostBody {
   force?: boolean;
@@ -62,7 +64,12 @@ export async function POST(request: Request) {
       ),
       ...(force ? { operationId } : {}),
     });
+    if (summary.marketShutdown) {
+      throw new StockMarketAutomationStoppedError();
+    }
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof ScheduledStockTickNotDueError) {
       return NextResponse.json(
         { error: "레거시 정기 틱은 당일 12:00 KST 이후에만 실행할 수 있습니다." },

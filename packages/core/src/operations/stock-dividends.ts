@@ -34,7 +34,7 @@ export async function processPendingStockDividendPayouts(
         Math.max(
           (dependencies.now?.() ?? new Date()).getTime(),
           Date.now(),
-        ) >= plan.executeAt.getTime())
+        ) >= plan.buysBlockedAt.getTime())
     ) {
       return { paid, totalAmount, errors, drained: true };
     }

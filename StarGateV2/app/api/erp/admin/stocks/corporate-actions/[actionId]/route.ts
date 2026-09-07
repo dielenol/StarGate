@@ -1,3 +1,4 @@
+import { stockMarketShutdownResponse } from "@/app/api/erp/admin/stocks/_shutdown";
 import { NextResponse } from "next/server";
 
 import { readIdempotencyKey } from "@/lib/api/idempotency";
@@ -90,6 +91,8 @@ export async function DELETE(request: Request, context: RouteContext) {
         : undefined,
     });
   } catch (error) {
+    const shutdownResponse = stockMarketShutdownResponse(error);
+    if (shutdownResponse) return shutdownResponse;
     if (error instanceof StockMarketMigrationNotReadyError) {
       return NextResponse.json(
         { error: "NOVEX 2.0 migration READY 상태에서만 기업행동을 취소할 수 있습니다." },

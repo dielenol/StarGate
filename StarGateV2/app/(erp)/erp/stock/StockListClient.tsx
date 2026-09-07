@@ -741,11 +741,11 @@ export default function StockListClient({
                           <span className={styles.stockRow__name}>
                             {item.name}
                           </span>
-                          {item.isTradingHalted ? (
+                          {market?.tradingMode !== "SELL_ONLY" && item.isTradingHalted ? (
                             <span className={styles.stockRow__halted}>
                               거래정지
                             </span>
-                          ) : item.cooldownUntil ? (
+                          ) : market?.tradingMode !== "SELL_ONLY" && item.cooldownUntil ? (
                             <span className={styles.stockRow__cooldown}>
                               냉각 중
                             </span>
