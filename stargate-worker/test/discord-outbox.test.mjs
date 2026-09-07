@@ -618,6 +618,8 @@ test("시장 종료 충격 공시는 전 종목 폭락과 영구 매수 금지 �
   );
   const policyNotice =
     "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.";
+  const announcementImageUrl =
+    "https://www.ordonet.co.kr/assets/world-view/us-national-defense-act-market-shutdown-news.webp";
   const items = ["TWS", "STM", "SSR", "MSF", "VFP", "BPE", "ART", "GN3", "SPZ"]
     .map((ticker, index) => ({
       ticker,
@@ -634,9 +636,10 @@ test("시장 종료 충격 공시는 전 종목 폭락과 영구 매수 금지 �
       price: 40,
       eventText: "파리 사태로 인한 쇼크",
       marketPolicyNotice: policyNotice,
+      announcementImageUrl,
       items,
       actor: { displayName: "NOVEX", role: "GM" },
-      occurredAt: "2026-09-07T09:00:00.000Z",
+      occurredAt: "2026-09-07T14:00:00.000Z",
     }),
   );
 
@@ -658,6 +661,47 @@ test("시장 종료 충격 공시는 전 종목 폭락과 영구 매수 금지 �
     embed.fields.find((field) => field.name === "거래 정책").value,
     policyNotice,
   );
+  assert.equal(embed.image.url, announcementImageUrl);
+
+  await registry.get("STOCK_MANUAL_INTERVENTION_WEBHOOK").deliver(
+    outboxEvent("STOCK_MANUAL_INTERVENTION_WEBHOOK", {
+      eventKind: "SHOCK_DISCLOSURE",
+      ticker: "TWS",
+      previousPrice: 100,
+      price: 40,
+      eventText: "파리 사태로 인한 쇼크",
+      marketPolicyNotice: policyNotice,
+      announcementImageUrl: null,
+      items,
+      actor: { displayName: "NOVEX", role: "GM" },
+      occurredAt: "2026-09-07T14:00:00.000Z",
+    }),
+  );
+  assert.equal(requests[1].body.embeds[0].image, undefined);
+
+  for (const unsafeImageUrl of [
+    "https://www.ordonet.co.kr:443/assets/news.webp",
+    "https://www.ordonet.co.kr:/assets/news.webp",
+  ]) {
+    await assert.rejects(
+      registry.get("STOCK_MANUAL_INTERVENTION_WEBHOOK").deliver(
+        outboxEvent("STOCK_MANUAL_INTERVENTION_WEBHOOK", {
+          eventKind: "SHOCK_DISCLOSURE",
+          ticker: "TWS",
+          previousPrice: 100,
+          price: 40,
+          eventText: "파리 사태로 인한 쇼크",
+          marketPolicyNotice: policyNotice,
+          announcementImageUrl: unsafeImageUrl,
+          items,
+          actor: { displayName: "NOVEX", role: "GM" },
+          occurredAt: "2026-09-07T14:00:00.000Z",
+        }),
+      ),
+      /announcementImageUrl/,
+    );
+  }
+  assert.equal(requests.length, 2);
 });
 
 test("공개가 취소된 미스터비스트 복권 당첨자는 채널에 노출하지 않는다", async () => {

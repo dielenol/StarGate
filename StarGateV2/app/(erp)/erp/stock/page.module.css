@@ -570,6 +570,10 @@
 .disclosureTimeline__headline { display: block; margin-top: 6px; color: var(--ink-0); font-size: var(--font-size-sm); }
 .disclosureTimeline__item p { margin: 6px 0 0; color: var(--ink-1); font-size: var(--font-size-sm); line-height: 1.55; white-space: pre-wrap; }
 .disclosureTimeline__teaser { color: var(--ink-3) !important; }
+.disclosureTimeline__image { display: block; margin-top: 10px; color: var(--gold); font-size: var(--font-size-xs); }
+.disclosureTimeline__image img { display: block; width: 100%; height: auto; border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); }
+.disclosureTimeline__image span { display: block; margin-top: 6px; }
+.disclosureTimeline__image:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .disclosureTimeline__effects { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
 .disclosureTimeline__effects li { padding: 3px 6px; color: var(--gold); background: color-mix(in oklab, var(--gold) 9%, transparent); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--font-size-xs); }
 .disclosureTimeline__error,

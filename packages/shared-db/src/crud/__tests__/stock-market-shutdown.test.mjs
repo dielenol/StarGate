@@ -52,11 +52,13 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     month: "2-digit",
     day: "2-digit",
   }).format(futureDay);
-  const executeAt = new Date(`${kstDate}T18:00:00+09:00`);
+  const executeAt = new Date(`${kstDate}T23:00:00+09:00`);
   const scheduledAt = new Date(executeAt.getTime() - 30 * 60 * 1_000);
   const beforeShutdown = new Date(executeAt.getTime() - 20 * 60 * 1_000);
   const afterShutdown = new Date(executeAt.getTime() + 60 * 60 * 1_000);
   const reason = "파리 사태로 인한 쇼크";
+  const announcementImageUrl =
+    "https://www.ordonet.co.kr/assets/world-view/us-national-defense-act-market-shutdown-news.webp";
   const policyNotice =
     "NOVEX 주식 매수는 영구적으로 금지됩니다. 기존 보유 주식은 매도만 가능합니다.\n\n매수 영구 중단 · 가격 영구 동결 · 보유 주식 매도만 가능";
   const declines = TICKERS.map((ticker, index) => ({
@@ -165,6 +167,7 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   const scheduleInput = {
     executeAt,
     reason,
+    announcementImageUrl,
     declines,
     createdById: "gm-test",
     now: scheduledAt,
@@ -176,13 +179,71 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     }),
     /executeAt must be in the future/,
   );
+  for (const unsafeImageUrl of [
+    "http://www.ordonet.co.kr/assets/news.webp",
+    "https://user:pass@www.ordonet.co.kr/assets/news.webp",
+    "https://www.ordonet.co.kr:443/assets/news.webp",
+    "https://www.ordonet.co.kr:/assets/news.webp",
+    "https://localhost/assets/news.webp",
+    "https://example.com/assets/news.webp",
+    "https://www.ordonet.co.kr/not-assets/news.webp",
+    "https://www.ordonet.co.kr/assets/news.webp?token=unsafe",
+  ]) {
+    await assert.rejects(
+      scheduleStockMarketShutdown({
+        ...scheduleInput,
+        announcementImageUrl: unsafeImageUrl,
+      }),
+      /announcementImageUrl/,
+    );
+  }
+  const imageLessScheduleInput = {
+    executeAt: scheduleInput.executeAt,
+    reason: scheduleInput.reason,
+    declines: scheduleInput.declines,
+    createdById: scheduleInput.createdById,
+    now: scheduleInput.now,
+  };
+  const imageLessScheduled = await scheduleStockMarketShutdown(
+    imageLessScheduleInput,
+  );
+  assert.equal(imageLessScheduled.announcementImageUrl, undefined);
+  assert.equal(
+    (await db.collection("stock_market_shutdown").findOne({ _id: "novex" }))
+      .announcementImageUrl,
+    undefined,
+  );
+  await db.collection("stock_market_shutdown").updateOne(
+    { _id: "novex" },
+    { $set: { announcementImageUrl: null } },
+  );
+  assert.equal(
+    (await scheduleStockMarketShutdown(imageLessScheduleInput)).status,
+    "SCHEDULED",
+  );
+  assert.equal(
+    (await scheduleStockMarketShutdown({
+      ...imageLessScheduleInput,
+      announcementImageUrl: null,
+    })).status,
+    "SCHEDULED",
+  );
+  await db.collection("stock_market_shutdown").deleteOne({ _id: "novex" });
   const scheduled = await scheduleStockMarketShutdown(scheduleInput);
   assert.equal(scheduled.status, "SCHEDULED");
+  assert.equal(scheduled.announcementImageUrl, announcementImageUrl);
   assert.equal(scheduled.buysBlockedAt.getTime(), scheduledAt.getTime());
   assert.deepEqual(await scheduleStockMarketShutdown({
     ...scheduleInput,
     now: new Date(scheduledAt.getTime() + 60_000),
   }), scheduled);
+  await assert.rejects(
+    scheduleStockMarketShutdown({
+      ...scheduleInput,
+      announcementImageUrl: "https://www.ordonet.co.kr/assets/another-news.webp",
+    }),
+    (error) => error?.code === "STOCK_MARKET_SHUTDOWN_CONFLICT",
+  );
 
   async function claim(side, now, ticker = "TWS", novexV2Enabled = true) {
     const session = client.startSession();
@@ -270,6 +331,7 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     _id: "stock-market-shutdown:novex",
     status: "PUBLISHED",
     body: `${reason}\n\n${policyNotice}`,
+    imageUrl: announcementImageUrl,
   }), 1);
   const shutdownOutbox = await db.collection("integration_outbox").findOne({
     dedupeKey: "stock:market-shutdown:novex:shock-disclosure",
@@ -280,6 +342,7 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   assert.equal(shutdownOutbox.payload.eventKind, "SHOCK_DISCLOSURE");
   assert.equal(shutdownOutbox.payload.eventText, reason);
   assert.equal(shutdownOutbox.payload.marketPolicyNotice, policyNotice);
+  assert.equal(shutdownOutbox.payload.announcementImageUrl, announcementImageUrl);
   assert.equal(shutdownOutbox.payload.items.length, TICKERS.length);
   const completedPlan = await db.collection("stock_market_shutdown").findOne({ _id: "novex" });
   assert.equal(completedPlan.status, "COMPLETED");

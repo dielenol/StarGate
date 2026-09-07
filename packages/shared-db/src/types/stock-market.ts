@@ -42,6 +42,8 @@ export interface StockMarketShutdownPlan {
   executeAt: Date;
   buysBlockedAt: Date;
   reason: string;
+  /** 최종 충격 공시 Discord 카드에 첨부할 공개 HTTPS 뉴스 이미지. */
+  announcementImageUrl?: string;
   declines: StockMarketShutdownDecline[];
   createdById: string;
   createdAt: Date;
@@ -157,6 +159,8 @@ export interface StockDisclosure {
   _id: string;
   title: string;
   body: string;
+  /** 공시 카드에 표시할 공개 뉴스 이미지. */
+  imageUrl?: string;
   kind: StockDisclosureKind;
   status: StockDisclosureStatus;
   source: "GM" | "AUTO" | "CORPORATE_ACTION";
