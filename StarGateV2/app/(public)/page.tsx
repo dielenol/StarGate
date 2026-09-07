@@ -126,7 +126,7 @@ export default function HomePage() {
             <div className={styles.card__image} aria-hidden="true">
               <Image
                 src={resolvePublicAssetPath(
-                  "/assets/world-view/novus-protocol-reading-room.webp",
+                  "/assets/world-view/novus-protocol-codex.webp",
                 )}
                 alt=""
                 fill

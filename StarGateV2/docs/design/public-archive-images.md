@@ -6,7 +6,7 @@
 - 출력: 불투명 4:3 WebP. 기존 세계 지도는 유지하고 CSS에서 세 이미지의 색감·크롭·본문 대비를 맞춘다.
 - 소비처: `app/(public)/page.tsx`의 룰·플레이어 카드.
 
-## 룰 — 작전 매뉴얼 열람실
+## 룰 — 작전 매뉴얼 열람실 (이전 자산)
 
 최종 경로: `public/assets/world-view/novus-protocol-reading-room.webp`
 
@@ -27,6 +27,33 @@ Primary request: NOVUS Protocol Reading Room — an atmospheric archival illustr
 Scene/backdrop: a wood reading desk in a quiet twentieth-century institutional reference library, shallow shelves fading into graphite shadow behind it.
 Subject: an unoccupied environmental establishing shot; an impressive thick open leather-bound operations manual centered in the upper-middle, its cream pages bearing only sparse abstract geometric tactical diagrams, absolutely no writing; a closed reference volume behind it, a slim brass divider beside the manual, a soft desk-lamp pool of light from outside the frame. The open book is broad and immediately readable even as a thumbnail; show the desk surface and a little room depth, not a floating isolated object.
 Additional composition: camera slightly above desk level, looking down at a three-quarter angle; the manual occupies roughly half the image width, all its corners inside frame. The lower quarter is plain softly shaded wood with no objects.
+```
+
+## 룰 — 공식 규정집 (현재 사용)
+
+- 생성 모드: built-in image_gen, `stargate-images`의 environment-background 워크플로.
+- 플레이어 이미지에 대한 사용자 승인과 유사한 룰 이미지 제작 요청을 근거로 공식 문장·조직명·규정집 제목만 로고·문자 금지의 예외로 사용했다.
+- 입력 역할: 고정 Maria 화풍 기준 → 사용자가 승인한 `novus-agent-credentials.webp`의 책상·카메라·강조 구도 → 기존 `StarGate_logo.webp`의 공식 문장. 지갑·명찰·끈은 규정집에 복제하지 않는다.
+- 최종 경로: `public/assets/world-view/novus-protocol-codex.webp`. 기존 열람실 이미지는 보존하고 메인 룰 카드의 소비 경로만 교체했다.
+- 발행 검증: 1448×1086, 불투명 RGB WebP, quality 90, 295,714 bytes. SHA-256 `7f3dd2d57886ffbdafea2d7cfce25c6b8d73c346addfce0396b9ace50c9ee9b5`.
+
+### 최종 생성 프롬프트
+
+```text
+Use case: stylized-concept
+Asset type: StarGate visual-novel environment background for an interactive web game
+Input images: Image 1 is the fixed Maria style reference only; Image 2 is the user-approved agent-credentials scene/composition reference only; Image 3 is the official NOVUS ORDO insignia, used only as the exact identity reference for the physical book emblem.
+Reference roles: take only the fine hand-drawn linework, pale grayscale wash, selective accent-color handling, paper-like texture, and soft angular shadow language from Image 1. Never copy its character, anatomy, costume, facial features, pose, tongue, teeth, or ornaments. From Image 2 preserve only the archive drawer strip, wooden desktop, camera angle, close framing, focal scale, and quiet institutional setting. Do not reproduce its wallet, ID card, badge, lanyard, clip, or strap. From Image 3 accurately reproduce the eye within interlocked triangular stars, globe and olive wreath as a crisp antique-gold emblem embossed into the book cover.
+Primary request: NOVUS Protocol Codex — create the rules-card counterpart to the approved player-card image, with the organization's authoritative rulebook as the immediately legible, strongly emphasized main subject. The viewer should recognize a substantial bound regulations manual at thumbnail size.
+Scene/backdrop: the same dark walnut registrar desk with a narrow, softly faded strip of archival metal drawers across the upper background, in an intimate view from above.
+Subject: an unoccupied environmental establishing shot; one large, closed, landscape-foreshortened charcoal leather hardbound codex resting diagonally across the upper-middle of the desk. Give it a clearly thick pale ivory page block, visible stitched spine, restrained antique-brass corner protectors, and one slim dark-gold ribbon bookmark tucked between the pages. The cover faces the viewer clearly, showing a large, sharply readable inset gold official emblem from Image 3. Small elegant debossed serif words "NOVUS ORDO" and below them "PROTOCOL" sit above the emblem and fit comfortably inside the cover. The emblem is the principal visual focus. The thick page block and spine must make this unmistakably a book, not another credentials wallet. No other foreground objects.
+Style/medium: hand-drawn 2D visual-novel environment illustration matching Image 1's delicate graphite-and-ink contour work, translucent grayscale brush washes, lightly broken handmade edges, restrained cel-like shadow blocks, sparse selective accent colors, and quiet paper-textured atmosphere; clearly illustrated rather than photorealistic; grounded materials and readable spatial depth
+Composition/framing: 4:3 landscape wide establishing view with intimate close-up framing. Keep the entire book inside the central 76% width and between 15% and 65% height; all important emblem and title details must lie between 22% and 53% height, so they remain readable in a tall web navigation card using cover cropping. The upper-left margin is quiet for an overlaid card label. Keep the lower 35% as a continuous low-detail, low-contrast dialogue-safe zone of plain dark wood; retain the scene identity under responsive cover cropping. The book should dominate the upper-middle half, not appear as a distant small prop.
+Lighting/mood: soft directional light gently catches the gold insignia and the pale page edges against dark leather. Quiet, authoritative and tactile, with clear focal separation and natural soft shadows.
+Color palette: graphite gray, charcoal leather, dark warm walnut, restrained warm ivory page edges, selective antique gold on the emblem and book fittings. Predominantly grayscale with a faint warm wash.
+Constraints: environment only; opaque background; no people, no characters, no human or creature silhouettes, no copied subject matter from Image 1, no watermark, no UI panels, no borders; do not place high-contrast focal details in the dialogue-safe zone.
+User-requested exception to the environment workflow's default no-logo/no-text rule: include only the exact official NOVUS ORDO insignia from Image 3 and the precise words "NOVUS ORDO" and "PROTOCOL" on the physical rulebook. No other letters, numbers, false writing, symbols, brands or seals. This exception follows the user's request for the rules image to match the approved official-logo credentials image.
+Avoid: photorealistic or 3D-rendered finish, generic empty sci-fi room, glossy stock-image look, excessive bloom, dense clutter across the whole canvas, illegible pseudo-text, foreground objects cut off by the frame, Maria's character content leaking into the environment, an ID wallet or lanyard, a tiny emblem, a plain open book without an identifiable cover.
 ```
 
 ## 플레이어 — 인사 기록실 (이전 자산)
