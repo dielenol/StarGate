@@ -41,62 +41,40 @@
 }
 .header__nav {
   display: flex;
-  gap: 2px;
-  padding: 4px;
-  border: 1px solid #c9a85a21;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #c9a85a08, #ffffff02);
+  align-items: center;
+  gap: clamp(16px, 2vw, 28px);
 }
 .header__nav a {
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-height: 52px;
-  padding: 6px 10px;
-  border: 1px solid transparent;
-  border-radius: 11px;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 2px;
+  border-radius: 4px;
   color: var(--ink-1);
   white-space: nowrap;
-  font-size: 13px;
-  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 180ms ease;
 }
 .header__nav a:hover,
-.header__nav a:focus-visible,
+.header__nav a:focus-visible {
+  color: var(--ink-0);
+}
 .header__nav a[aria-current] {
   color: var(--gold);
-  background: #c9a85a0d;
-  border-color: #c9a85a2b;
-}
-.header__nav a[aria-current]::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 30%;
-  right: 30%;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--gold);
 }
 .header__navIcon {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 30px;
-  height: 32px;
-  border-radius: 8px;
-  background: #c9a85a08;
-  color: var(--gold-dim);
-  transition: color 180ms ease, background 180ms ease;
+  width: 20px;
+  height: 20px;
 }
 .header__navIcon svg {
   display: block;
-  width: 19px;
-  height: 19px;
-}
-.header__nav a:is(:hover, :focus-visible, [aria-current]) .header__navIcon {
-  color: var(--gold);
-  background: #c9a85a14;
+  width: 20px;
+  height: 20px;
 }
 .header__navCopy {
   display: grid;
@@ -105,7 +83,7 @@
 }
 .header__navCaption {
   color: var(--ink-2);
-  font: 7px var(--font-mono);
+  font: 8px var(--font-mono);
   letter-spacing: 1.1px;
 }
 .context {
@@ -506,8 +484,7 @@
   .panel__link svg,
   .header__icon,
   .header__erp,
-  .header__nav a,
-  .header__navIcon {
+  .header__nav a {
     transition: none;
   }
 }
