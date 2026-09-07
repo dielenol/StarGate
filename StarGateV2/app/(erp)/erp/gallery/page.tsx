@@ -38,13 +38,14 @@ export default async function GalleryPage() {
   }
 
   return (
-    <div data-pixel-font="ui">
+    <div>
       <PageHead
         breadcrumb={[
           { label: "ERP", href: "/erp" },
           { label: "GALLERY" },
         ]}
         title="갤러리"
+        hasVisibleHeading={!session.user.isGuest}
       />
       <GalleryClient
         initialData={initialData}
