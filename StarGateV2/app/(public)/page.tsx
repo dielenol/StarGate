@@ -9,12 +9,17 @@ import {
 } from "@/components/icons";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 import LandingExperience from "./_components/LandingExperience";
+import ArchiveViewer from "./_components/ArchiveViewer";
 import styles from "./landing.module.css";
 
 export default function HomePage() {
   return (
     <LandingExperience className={styles.landing}>
-      <section className={styles.hero} aria-labelledby="home-title">
+      <section
+        id="overview"
+        className={styles.hero}
+        aria-labelledby="home-title"
+      >
         <div className={styles.hero__meta}>
           <span>OFFICIAL ARCHIVE / 001</span>
           <span>EST. 1945</span>
@@ -43,27 +48,10 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <div className={styles.hero__visual}>
-            <div className={styles.hero__orbit} aria-hidden="true" />
-            <span className={styles.hero__coordinate} aria-hidden="true">
-              N.O. / WORLD ORDER
-            </span>
-            <Image
-              className={styles.hero__emblem}
-              src={resolvePublicAssetPath("/assets/StarGate_logo.webp")}
-              alt="노부스 오르도 문장"
-              width={480}
-              height={400}
-              sizes="(max-width: 700px) 72vw, 40vw"
-              priority
-            />
-            <span className={styles.hero__seal} aria-hidden="true">
-              ORDO AB CHAO
-            </span>
-          </div>
+          <ArchiveViewer />
         </div>
         <div className={styles.hero__wordmark} aria-hidden="true">
-          NOVUS ORDO
+          NOVUS <span>ORDO</span>
         </div>
         <div className={styles.hero__bottom}>
           <span>CLASSIFICATION: TOP SECRET</span>
@@ -183,7 +171,11 @@ export default function HomePage() {
           <IconArrowRight aria-hidden />
         </Link>
       </section>
-      <section className={styles.about} aria-labelledby="about-title">
+      <section
+        id="convention"
+        className={styles.about}
+        aria-labelledby="about-title"
+      >
         <div className={styles.about__intro} data-reveal>
           <p className={styles.eyebrow}>02 / ABOUT THE CONVENTION</p>
           <h2 id="about-title">
@@ -233,7 +225,11 @@ export default function HomePage() {
           </details>
         </div>
       </section>
-      <section className={styles.leadership} aria-labelledby="leadership-title">
+      <section
+        id="leadership"
+        className={styles.leadership}
+        aria-labelledby="leadership-title"
+      >
         <div className={styles.leadership__portrait} data-reveal>
           <span className={styles.leadership__file}>
             PERSONNEL FILE / SECRETARY-GENERAL
@@ -294,6 +290,7 @@ export default function HomePage() {
         </div>
       </section>
       <section
+        id="operations"
         className={styles.entry}
         aria-labelledby="entry-title"
         data-reveal

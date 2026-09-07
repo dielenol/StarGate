@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   IconArrowRight,
@@ -71,7 +71,9 @@ export default function PublicHeader() {
   const [panel, setPanel] = useState<"menu" | "search" | null>(null);
   const [query, setQuery] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const searchTriggerRef = useRef<HTMLButtonElement>(null);
+  const resultsRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const term = query.trim().toLocaleLowerCase();
@@ -80,6 +82,44 @@ export default function PublicHeader() {
       .toLocaleLowerCase()
       .includes(term),
   );
+
+  useEffect(() => {
+    function handleShortcut(event: globalThis.KeyboardEvent) {
+      if (event.defaultPrevented || event.repeat || event.isComposing) return;
+      const command =
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === "k";
+      const slash =
+        event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey;
+      if (!command && !slash) return;
+      const active = document.activeElement;
+      const editing =
+        active instanceof Element &&
+        !!active.closest(
+          "input, textarea, select, [contenteditable]:not([contenteditable='false'])",
+        );
+      if (slash && editing) return;
+      if (panel) {
+        if (command && panel === "search") {
+          event.preventDefault();
+          setPanel(null);
+        }
+        return;
+      }
+      if (document.querySelector("dialog[open]")) return;
+      event.preventDefault();
+      triggerRef.current =
+        active instanceof HTMLElement && active !== document.body
+          ? active
+          : searchTriggerRef.current;
+      setQuery("");
+      setPanel("search");
+    }
+    document.addEventListener("keydown", handleShortcut);
+    return () => document.removeEventListener("keydown", handleShortcut);
+  }, [panel]);
 
   useEffect(() => {
     if (!panel) return;
@@ -109,6 +149,42 @@ export default function PublicHeader() {
 
   function closePanel() {
     setPanel(null);
+  }
+
+  function handleSearchKeys(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return;
+    const links =
+      resultsRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]");
+    if (!links?.length) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      links[event.key === "ArrowDown" ? 0 : links.length - 1].focus();
+    } else if (event.key === "Enter" && links.length === 1) {
+      event.preventDefault();
+      links[0].click();
+    }
+  }
+
+  function handleResultKeys(event: KeyboardEvent<HTMLElement>) {
+    if (
+      panel !== "search" ||
+      !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+    )
+      return;
+    const links = Array.from(
+      resultsRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]") ?? [],
+    );
+    const index = links.indexOf(document.activeElement as HTMLAnchorElement);
+    if (index < 0) return;
+    event.preventDefault();
+    if (event.key === "Home") links[0]?.focus();
+    else if (event.key === "End") links.at(-1)?.focus();
+    else if (event.key === "ArrowUp" && index === 0) searchRef.current?.focus();
+    else
+      links[
+        (index + (event.key === "ArrowDown" ? 1 : -1) + links.length) %
+          links.length
+      ]?.focus();
   }
 
   return (
@@ -146,14 +222,18 @@ export default function PublicHeader() {
         </nav>
         <div className={styles.header__actions}>
           <button
+            ref={searchTriggerRef}
             type="button"
-            className={styles.header__icon}
+            className={`${styles.header__icon} ${styles.header__search}`}
             aria-label="페이지 찾기"
+            aria-keyshortcuts="Control+k Meta+k /"
+            title="페이지 찾기 (Ctrl/⌘ K 또는 /)"
             aria-haspopup="dialog"
             aria-controls="public-navigation-panel"
             onClick={(event) => openPanel("search", event.currentTarget)}
           >
             <IconSearch aria-hidden />
+            <kbd aria-hidden="true">/</kbd>
           </button>
           <Link href="/erp" prefetch={false} className={styles.header__erp}>
             ERP 진입 <IconArrowRight aria-hidden />
@@ -213,12 +293,18 @@ export default function PublicHeader() {
                 value={query}
                 placeholder="세계관, 플레이어, 규칙, ERP…"
                 onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={handleSearchKeys}
                 autoComplete="off"
               />
-              <p role="status">{results.length}개의 페이지</p>
+              <div className={styles.panel__searchMeta}>
+                <p role="status">{results.length}개의 페이지</p>
+                <span>↑ ↓ 이동 · Enter 열람 · Esc 닫기</span>
+              </div>
             </div>
           )}
           <nav
+            ref={resultsRef}
+            onKeyDown={handleResultKeys}
             className={styles.panel__links}
             aria-label={panel === "search" ? "페이지 검색 결과" : "전체 메뉴"}
           >
