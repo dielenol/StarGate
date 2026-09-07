@@ -92,6 +92,13 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 
 ## 현재 페이지 이력
 
+- [`/`](routes/index.md)
+- [`/world`](routes/world.md)
+- [`/world/b`](routes/world/b.md)
+- [`/world/c`](routes/world/c.md)
+- [`/gameplay`](routes/gameplay.md)
+- [`/apply`](routes/apply.md)
+- [`/contact`](routes/contact.md)
 - [`/erp/account`](routes/erp/account.md)
 - [`/erp`](routes/erp.md)
 - [`/erp/admin`](routes/erp/admin.md)
