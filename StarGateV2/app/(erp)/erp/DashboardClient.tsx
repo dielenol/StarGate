@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { useDashboard } from "@/hooks/queries/useDashboardQuery";
-import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
+import { preferOptimizedPublicImagePath, resolvePublicAssetPath } from "@/lib/asset-path";
 import { getPixelCharacterPath } from "@/lib/assets/characters";
 import { formatDate, formatTime } from "@/lib/format/date";
 
@@ -91,7 +91,7 @@ function CharAvatar({
           alt=""
           fill
           loading={variant === "hero" ? "eager" : undefined}
-          sizes={variant === "hero" ? "176px" : "112px"}
+          sizes={variant === "hero" ? "(max-width: 620px) 120px, 200px" : "112px"}
           className={styles.charMini__avatarImg}
         />
       </div>
@@ -303,417 +303,437 @@ export default function DashboardClient({
         title="대시보드"
       />
 
-      <div data-pixel-font="ui">
-      <section className={styles.commandCenter} aria-label="운영 홈">
-        <article className={`${styles.commandSurface} ${styles.agentStage}`}>
-          <div className={styles.agentStage__portrait} aria-hidden="true">
-            {displayCharacter ? (
-              <CharAvatar
-                codename={displayCharacter.codename}
-                pixelCharacterImage={displayCharacter.pixelCharacterImage}
-                previewImage={displayCharacter.previewImage}
-                initial={(displayCharacter.lore.name || displayCharacter.codename)
-                  .charAt(0)
-                  .toUpperCase()}
-                variant="hero"
-              />
-            ) : (
-              <div
-                className={[
-                  styles.charMini__avatar,
-                  styles["charMini__avatar--hero"],
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <Seal size="sm">ERP</Seal>
-              </div>
-            )}
+      <div className={styles.dashboard}>
+        <div className={styles.deskHeading}>
+          <div>
+            <p className={styles.deskHeading__eyebrow}>NOVUS ORDO / OPERATIONS</p>
+            <h2>요원 작전실</h2>
           </div>
-
-          <div className={styles.agentStage__content}>
-            <span className={styles.sectionLabel}><IconAgentProfile className={styles.sectionLabel__icon} aria-hidden />요원 프로필</span>
-            <h2 className={styles.agentStage__name}>
-              {displayCharacter
-                ? displayCharacter.lore.name || displayCharacter.codename
-                : "운용 대기"}
-            </h2>
-            <div className={styles.agentStage__meta}>
+          <p className={styles.deskHeading__caption}>당신의 기록과 다음 작전을 한곳에서.</p>
+        </div>
+        <section className={styles.commandCenter} aria-label="운영 홈">
+          <article className={`${styles.commandSurface} ${styles.agentStage}`}>
+            <div className={styles.agentStage__documentHead}>
+              <div className={styles.agentStage__brand}>
+                <Image src={resolvePublicAssetPath("/assets/StarGate_logo.webp")} width={38} height={38} alt="" />
+                <span>NOVUS ORDO<small>PERSONNEL REGISTRY</small></span>
+              </div>
+              <span className={styles.agentStage__documentLabel}>인사 기록</span>
+            </div>
+            <div className={styles.agentStage__portrait} aria-hidden="true">
               {displayCharacter ? (
-                <>
-                  <span>{displayCharacter.codename}</span>
-                  <Tag tone="gold">{displayCharacter.type}</Tag>
-                  {displayCharacter.agentLevel ? (
-                    <Tag tone={rankTone(displayCharacter.agentLevel) ?? "default"}>
-                      권한 {displayCharacter.agentLevel}
-                    </Tag>
-                  ) : null}
-                </>
+                <CharAvatar
+                  codename={displayCharacter.codename}
+                  pixelCharacterImage={displayCharacter.pixelCharacterImage}
+                  previewImage={displayCharacter.previewImage}
+                  initial={(displayCharacter.lore.name || displayCharacter.codename)
+                    .charAt(0)
+                    .toUpperCase()}
+                  variant="hero"
+                />
               ) : (
-                <span>등록된 캐릭터 없음</span>
+                <div
+                  className={[
+                    styles.charMini__avatar,
+                    styles["charMini__avatar--hero"],
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  <Seal size="sm">ERP</Seal>
+                </div>
               )}
             </div>
 
-            {displayCharacter?.type === "AGENT" && displayCharacter.play ? (
-              <div className={styles.charMini__vitals}>
-                <CharVital
-                  label="HP"
-                  value={displayCharacter.play.hp}
-                  max={300}
-                  tone="gold"
-                />
-                <CharVital
-                  label="SAN"
-                  value={displayCharacter.play.san}
-                  max={100}
-                  tone={displayCharacter.play.san < 30 ? "danger" : "info"}
-                />
+            <div className={styles.agentStage__content}>
+              <span className={styles.sectionLabel}><IconAgentProfile className={styles.sectionLabel__icon} aria-hidden />요원 프로필</span>
+              <h2 className={styles.agentStage__name}>
+                {displayCharacter
+                  ? displayCharacter.lore.name || displayCharacter.codename
+                  : "운용 대기"}
+              </h2>
+              <div className={styles.agentStage__meta}>
+                {displayCharacter ? (
+                  <>
+                    <span>{displayCharacter.codename}</span>
+                    <Tag tone="gold">{displayCharacter.type}</Tag>
+                    {displayCharacter.agentLevel ? (
+                      <Tag tone={rankTone(displayCharacter.agentLevel) ?? "default"}>
+                        권한 {displayCharacter.agentLevel}
+                      </Tag>
+                    ) : null}
+                  </>
+                ) : (
+                  <span>등록된 캐릭터 없음</span>
+                )}
               </div>
-            ) : null}
 
-            <div className={styles.commandActions}>
-              <Button
-                as="a"
-                href={
-                  displayCharacter
-                    ? `/erp/characters/${String(displayCharacter._id)}`
-                    : "/erp/characters"
-                }
-                variant="primary"
-                className={styles.primaryPill}
-              >
-                {displayCharacter ? "캐릭터 시트" : "캐릭터 확인"}
-              </Button>
-              <Link href="/erp/credits" className={styles.secondaryPill}>
-                크레딧 확인
-              </Link>
-            </div>
-          </div>
-        </article>
+              {displayCharacter?.type === "AGENT" && displayCharacter.play ? (
+                <div className={styles.charMini__vitals}>
+                  <CharVital
+                    label="HP"
+                    value={displayCharacter.play.hp}
+                    max={300}
+                    tone="gold"
+                  />
+                  <CharVital
+                    label="SAN"
+                    value={displayCharacter.play.san}
+                    max={100}
+                    tone={displayCharacter.play.san < 30 ? "danger" : "info"}
+                  />
+                </div>
+              ) : null}
 
-        <article className={`${styles.commandSurface} ${styles.missionStage}`}>
-          <div className={styles.sectionHead}>
-            <div>
-              <span className={styles.sectionLabel}><IconApply className={styles.sectionLabel__icon} aria-hidden />MISSION BRIEF</span>
-              <h3>다음 작전</h3>
-            </div>
-            {nextMissionMeta ? (
-              <Tag tone={nextMissionMeta.tone}>{nextMissionMeta.label}</Tag>
-            ) : null}
-          </div>
-
-          {nextMission ? (
-            <>
-              <div className={styles.missionStage__date}>
-                <strong>{ddayLabel(nextMission.targetDateTime)}</strong>
-                <span>{dateTimeLabel(nextMission.targetDateTime)} KST</span>
-              </div>
-              <h2 className={styles.missionStage__title}>{nextMission.title}</h2>
               <div className={styles.commandActions}>
                 <Button
                   as="a"
-                  href="/erp/sessions"
+                  href={
+                    displayCharacter
+                      ? `/erp/characters/${String(displayCharacter._id)}`
+                      : "/erp/characters"
+                  }
                   variant="primary"
                   className={styles.primaryPill}
                 >
-                  작전 보기
+                  {displayCharacter ? "캐릭터 시트" : "캐릭터 확인"}
                 </Button>
-                <Link
-                  href={buildDiscordLink(nextMission)}
-                  className={styles.secondaryPill}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Discord
+                <Link href="/erp/credits" className={styles.secondaryPill}>
+                  크레딧 확인
                 </Link>
               </div>
-            </>
-          ) : (
-            <div className={styles.softEmpty}>
-              <strong>작전 대기</strong>
-              <span>참여 예정 작전이 없습니다.</span>
-              <Link href="/erp/sessions" className={styles.secondaryPill}>
-                세션 달력
-              </Link>
             </div>
-          )}
-        </article>
+          </article>
 
-      </section>
-
-      <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
-        <div className={styles.sectionHead}>
-          <div>
-            <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />ACTION QUEUE</span>
-            <h3>처리할 일</h3>
-          </div>
-          <span className={styles.queueCount}>{actionItems.length}</span>
-        </div>
-
-        {actionItems.length === 0 ? (
-          <div className={styles.softEmpty}>
-            <strong>정상 운용</strong>
-            <span>즉시 확인할 항목이 없습니다.</span>
-          </div>
-        ) : (
-          <div className={styles.actionList}>
-            {actionItems.map((item) => (
-              <Link
-                key={`${item.label}-${item.title}`}
-                href={item.href}
-                className={[
-                  styles.actionItem,
-                  styles[`actionItem--${item.tone}`] ?? "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <Tag tone={item.tone}>{item.label}</Tag>
-                <span className={styles.actionItem__body}>
-                  <span className={styles.actionItem__title}>{item.title}</span>
-                  <span className={styles.actionItem__detail}>{item.detail}</span>
-                </span>
-                <span className={styles.actionItem__cta}>{item.cta}</span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </aside>
-
-      <section className={styles.signalStrip} aria-label="운용 지표">
-        <Link href="/erp/credits" className={styles.signalItem}>
-          <span><IconCredit className={styles.signalItem__icon} aria-hidden />운용 크레딧</span>
-          <strong className={styles.signalItem__gold}>¤ {balance.toLocaleString()}</strong>
-        </Link>
-        <Link href={characterPointHref} className={styles.signalItem}>
-          <span><IconCredit className={styles.signalItem__icon} aria-hidden />잔여 포인트</span>
-          <strong>
-            {characterPointBalance !== null
-              ? `PT ${characterPointBalance.toLocaleString()}`
-              : "—"}
-          </strong>
-        </Link>
-        <Link href="/erp/sessions" className={styles.signalItem}>
-          <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />응답 대기</span>
-          <strong>{pendingResponse.length}</strong>
-        </Link>
-        <Link href="/erp/sessions" className={styles.signalItem}>
-          <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />금일 진행 세션</span>
-          <strong>{todaySessionCount}</strong>
-        </Link>
-        <Link href="/erp/notifications" className={styles.signalItem}>
-          <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
-          <strong>{unreadCount}</strong>
-        </Link>
-        <Link href="/erp/characters" className={styles.signalItem}>
-          <span><IconPersonCard className={styles.signalItem__icon} aria-hidden />보유 캐릭터</span>
-          <strong>{myCharacterCount}</strong>
-        </Link>
-        <div className={styles.signalItem}>
-          <span><IconServiceRecord className={styles.signalItem__icon} aria-hidden />누적 작전</span>
-          <strong>{mySessionCount !== null ? mySessionCount : "—"}</strong>
-        </div>
-        <div className={styles.signalItem}>
-          <span><IconTenure className={styles.signalItem__icon} aria-hidden />가입 후</span>
-          <strong>{joinedDays}D</strong>
-        </div>
-      </section>
-
-      {mainIntegrityError ? (
-        <section className={styles.alertBand} aria-label="캐릭터 정합성 경고">
-          <strong>메인 캐릭터 정합성 확인 필요</strong>
-          <span>{mainIntegrityError}</span>
-          <Link href="/erp/characters" className={styles.secondaryPill}>
-            캐릭터 확인
-          </Link>
-        </section>
-      ) : null}
-
-      <div className={styles.operationsGrid}>
-        <section className={styles.surfacePanel}>
-          <div className={styles.sectionHead}>
-            <div>
-              <span className={styles.sectionLabel}><IconSession className={styles.sectionLabel__icon} aria-hidden />MISSION QUEUE</span>
-              <h3>내 작전</h3>
+          <article className={`${styles.commandSurface} ${styles.missionStage}`}>
+            <Image
+              src={resolvePublicAssetPath("/assets/world-view/novus-ordo-world-map.webp")}
+              alt=""
+              fill
+              sizes="(max-width: 900px) 100vw, 40vw"
+              className={styles.missionStage__map}
+            />
+            <div className={styles.sectionHead}>
+              <div>
+                <span className={styles.sectionLabel}><IconApply className={styles.sectionLabel__icon} aria-hidden />MISSION BRIEF</span>
+                <h3>다음 작전</h3>
+              </div>
+              {nextMissionMeta ? (
+                <Tag tone={nextMissionMeta.tone}>{nextMissionMeta.label}</Tag>
+              ) : null}
             </div>
-            <Link href="/erp/sessions" className={styles.panelLink}>
-              달력
-            </Link>
-          </div>
 
-          {!viewerDiscordId ? (
-            <div className={styles.softEmpty}>
-              <strong>Discord 연동 필요</strong>
-              <span>연동 후 내 작전이 표시됩니다.</span>
-              <Link href="/erp/account" className={styles.secondaryPill}>
-                계정 설정
-              </Link>
-            </div>
-          ) : myRsvpUpcoming.length === 0 ? (
-            <div className={styles.softEmpty}>예정된 작전 없음</div>
-          ) : (
-            <div className={styles.sessionList}>
-              {myRsvpUpcoming.map(({ raw: s }) => {
-                const meta = SESSION_STATUS_TAG[s.status] ?? {
-                  label: s.status,
-                  tone: "default" as const,
-                };
-                const link = buildDiscordLink(s);
-                return (
-                  <div key={String(s._id)} className={styles.sessionCard}>
-                    <div className={styles.sessionCard__code}>
-                      <strong>{formatDate(s.targetDateTime, "compact")}</strong>
-                      <span>{formatTime(s.targetDateTime)}</span>
-                    </div>
-                    <div className={styles.sessionCard__body}>
-                      <div className={styles.sessionCard__title}>{s.title}</div>
-                      <Tag tone={meta.tone}>{meta.label}</Tag>
-                    </div>
-                    <Link
-                      href={link}
-                      className={styles.iconLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${s.title} · 디스코드에서 열기`}
-                    >
-                      ↗
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <section className={styles.surfacePanel}>
-          <div className={styles.sectionHead}>
-            <div>
-              <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />RESPONSE REQUIRED</span>
-              <h3>응답 필요</h3>
-            </div>
-            <span className={styles.queueCount}>{pendingResponse.length}</span>
-          </div>
-
-          {!viewerDiscordId ? (
-            <div className={styles.softEmpty}>Discord 연동 필요</div>
-          ) : pendingResponse.length === 0 ? (
-            <div className={styles.softEmpty}>응답 필요 작전 없음</div>
-          ) : (
-            <div className={styles.taskList}>
-              {pendingResponse.map(({ raw: s }) => {
-                const link = buildDiscordLink(s);
-                const tone = s.status === "CLOSING" ? "danger" : "gold";
-                return (
-                  <div
-                    key={String(s._id)}
-                    className={[
-                      styles.taskRow,
-                      s.status === "CLOSING" ? styles["taskRow--urgent"] : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <Tag tone={tone}>
-                      {s.status === "CLOSING" ? "마감 임박" : "모집중"}
-                    </Tag>
-                    <Link
-                      href="/erp/sessions"
-                      className={styles.taskTitle}
-                      title={s.title}
-                    >
-                      {s.title}
-                    </Link>
-                    <Link
-                      href={link}
-                      className={styles.textAction}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      응답
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      </div>
-
-      <div className={styles.intelGrid}>
-        <section className={styles.surfacePanel}>
-          <div className={styles.sectionHead}>
-            <div>
-              <span className={styles.sectionLabel}><IconNotification className={styles.sectionLabel__icon} aria-hidden />NOTIFICATIONS</span>
-              <h3>알림</h3>
-            </div>
-            <Link href="/erp/notifications" className={styles.panelLink}>
-              전체
-            </Link>
-          </div>
-
-          {notificationPreview.length === 0 ? (
-            <div className={styles.softEmpty}>새 알림 없음</div>
-          ) : (
-            <div className={styles.notifList}>
-              {notificationPreview.map((n) => {
-                const meta = NOTIFICATION_TAG[n.type];
-                return (
-                  <div
-                    key={String(n._id)}
-                    className={[
-                      styles.notifRow,
-                      n.isRead ? styles["notifRow--read"] : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <Link
-                      href={n.link ?? "/erp/notifications"}
-                      className={styles.notifLine}
-                    >
-                      <Tag tone={meta.tone}>{meta.label}</Tag>
-                      <span className={styles.notifText}>{n.title}</span>
-                    </Link>
-                    <span className={styles.timeText}>{formatTime(n.createdAt)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <section className={styles.surfacePanel}>
-          <div className={styles.sectionHead}>
-            <div>
-              <span className={styles.sectionLabel}><IconRecentChanges className={styles.sectionLabel__icon} aria-hidden />RECENT CHANGES</span>
-              <h3>최근 변경</h3>
-            </div>
-            <Link href="/erp/wiki" className={styles.panelLink}>
-              전체
-            </Link>
-          </div>
-
-          {recentWikis.length === 0 ? (
-            <div className={styles.softEmpty}>최근 변경 내역 없음</div>
-          ) : (
-            <div className={styles.wikiList}>
-              {recentWikis.map((w) => (
-                <div key={String(w._id)} className={styles.wikiRow}>
-                  <Link
-                    href={`/erp/wiki/${String(w._id)}`}
-                    className={styles.wikiLink}
-                  >
-                    {w.title}
-                  </Link>
-                  <span className={styles.timeText}>
-                    {formatDate(w.updatedAt, "compact")}
-                  </span>
+            {nextMission ? (
+              <>
+                <div className={styles.missionStage__date}>
+                  <strong>{ddayLabel(nextMission.targetDateTime)}</strong>
+                  <span>{dateTimeLabel(nextMission.targetDateTime)} KST</span>
                 </div>
-              ))}
-            </div>
-          )}
+                <h2 className={styles.missionStage__title}>{nextMission.title}</h2>
+                <div className={styles.commandActions}>
+                  <Button
+                    as="a"
+                    href="/erp/sessions"
+                    variant="primary"
+                    className={styles.primaryPill}
+                  >
+                    작전 보기
+                  </Button>
+                  <Link
+                    href={buildDiscordLink(nextMission)}
+                    className={styles.secondaryPill}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Discord
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <div className={styles.missionStage__standby}>
+                <span className={styles.missionStage__standbyLabel} aria-hidden="true">STANDBY</span>
+                <strong>작전 대기</strong>
+                <span>참여 예정 작전이 없습니다.</span>
+                <Link href="/erp/sessions" className={styles.secondaryPill}>
+                  세션 달력
+                </Link>
+              </div>
+            )}
+          </article>
+
         </section>
-      </div>
+
+        <div className={styles.workbench}>
+          <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
+            <div className={styles.sectionHead}>
+              <div>
+                <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />ACTION QUEUE</span>
+                <h3>처리할 일</h3>
+              </div>
+              <span className={styles.queueCount}>{actionItems.length}</span>
+            </div>
+
+            {actionItems.length === 0 ? (
+              <div className={styles.softEmpty}>
+                <strong>정상 운용</strong>
+                <span>즉시 확인할 항목이 없습니다.</span>
+              </div>
+            ) : (
+              <div className={styles.actionList}>
+                {actionItems.map((item) => (
+                  <Link
+                    key={`${item.label}-${item.title}`}
+                    href={item.href}
+                    className={styles.actionItem}
+                  >
+                    <span className={styles.actionItem__marker} data-tone={item.tone} aria-hidden="true" />
+                    <span className={styles.actionItem__body}>
+                      <span className={styles.actionItem__category}>{item.label}</span>
+                      <span className={styles.actionItem__title}>{item.title}</span>
+                      <span className={styles.actionItem__detail}>{item.detail}</span>
+                    </span>
+                    <span className={styles.actionItem__cta}>{item.cta}<span aria-hidden="true"> ↗</span></span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </aside>
+
+          <section className={styles.signalStrip} aria-label="운용 지표">
+            <Link href="/erp/credits" className={styles.signalItem}>
+              <span><IconCredit className={styles.signalItem__icon} aria-hidden />운용 크레딧</span>
+              <strong className={styles.signalItem__gold}>¤ {balance.toLocaleString()}</strong>
+            </Link>
+            <Link href={characterPointHref} className={styles.signalItem}>
+              <span><IconCredit className={styles.signalItem__icon} aria-hidden />잔여 포인트</span>
+              <strong>
+                {characterPointBalance !== null
+                  ? `PT ${characterPointBalance.toLocaleString()}`
+                  : "—"}
+              </strong>
+            </Link>
+            <Link href="/erp/sessions" className={styles.signalItem}>
+              <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />응답 대기</span>
+              <strong>{pendingResponse.length}</strong>
+            </Link>
+            <Link href="/erp/sessions" className={styles.signalItem}>
+              <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />금일 진행 세션</span>
+              <strong>{todaySessionCount}</strong>
+            </Link>
+            <Link href="/erp/notifications" className={styles.signalItem}>
+              <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
+              <strong>{unreadCount}</strong>
+            </Link>
+            <Link href="/erp/characters" className={styles.signalItem}>
+              <span><IconPersonCard className={styles.signalItem__icon} aria-hidden />보유 캐릭터</span>
+              <strong>{myCharacterCount}</strong>
+            </Link>
+            <div className={styles.signalItem}>
+              <span><IconServiceRecord className={styles.signalItem__icon} aria-hidden />누적 작전</span>
+              <strong>{mySessionCount !== null ? mySessionCount : "—"}</strong>
+            </div>
+            <div className={styles.signalItem}>
+              <span><IconTenure className={styles.signalItem__icon} aria-hidden />가입 후</span>
+              <strong>{joinedDays}D</strong>
+            </div>
+          </section>
+        </div>
+
+        {mainIntegrityError ? (
+          <section className={styles.alertBand} aria-label="캐릭터 정합성 경고">
+            <strong>메인 캐릭터 정합성 확인 필요</strong>
+            <span>{mainIntegrityError}</span>
+            <Link href="/erp/characters" className={styles.secondaryPill}>
+              캐릭터 확인
+            </Link>
+          </section>
+        ) : null}
+
+        <div className={styles.operationsGrid}>
+          <section className={styles.surfacePanel}>
+            <div className={styles.sectionHead}>
+              <div>
+                <span className={styles.sectionLabel}><IconSession className={styles.sectionLabel__icon} aria-hidden />MISSION QUEUE</span>
+                <h3>내 작전</h3>
+              </div>
+              <Link href="/erp/sessions" className={styles.panelLink}>
+                달력
+              </Link>
+            </div>
+
+            {!viewerDiscordId ? (
+              <div className={styles.softEmpty}>
+                <strong>Discord 연동 필요</strong>
+                <span>연동 후 내 작전이 표시됩니다.</span>
+                <Link href="/erp/account" className={styles.secondaryPill}>
+                  계정 설정
+                </Link>
+              </div>
+            ) : myRsvpUpcoming.length === 0 ? (
+              <div className={styles.softEmpty}>예정된 작전 없음</div>
+            ) : (
+              <div className={styles.sessionList}>
+                {myRsvpUpcoming.map(({ raw: s }) => {
+                  const meta = SESSION_STATUS_TAG[s.status] ?? {
+                    label: s.status,
+                    tone: "default" as const,
+                  };
+                  const link = buildDiscordLink(s);
+                  return (
+                    <div key={String(s._id)} className={styles.sessionCard}>
+                      <div className={styles.sessionCard__code}>
+                        <strong>{formatDate(s.targetDateTime, "compact")}</strong>
+                        <span>{formatTime(s.targetDateTime)}</span>
+                      </div>
+                      <div className={styles.sessionCard__body}>
+                        <div className={styles.sessionCard__title}>{s.title}</div>
+                        <Tag tone={meta.tone}>{meta.label}</Tag>
+                      </div>
+                      <Link
+                        href={link}
+                        className={styles.iconLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${s.title} · 디스코드에서 열기`}
+                      >
+                        ↗
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className={styles.surfacePanel}>
+            <div className={styles.sectionHead}>
+              <div>
+                <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />RESPONSE REQUIRED</span>
+                <h3>응답 필요</h3>
+              </div>
+              <span className={styles.queueCount}>{pendingResponse.length}</span>
+            </div>
+
+            {!viewerDiscordId ? (
+              <div className={styles.softEmpty}>Discord 연동 필요</div>
+            ) : pendingResponse.length === 0 ? (
+              <div className={styles.softEmpty}>응답 필요 작전 없음</div>
+            ) : (
+              <div className={styles.taskList}>
+                {pendingResponse.map(({ raw: s }) => {
+                  const link = buildDiscordLink(s);
+                  const tone = s.status === "CLOSING" ? "danger" : "gold";
+                  return (
+                    <div
+                      key={String(s._id)}
+                      className={[
+                        styles.taskRow,
+                        s.status === "CLOSING" ? styles["taskRow--urgent"] : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <Tag tone={tone}>
+                        {s.status === "CLOSING" ? "마감 임박" : "모집중"}
+                      </Tag>
+                      <Link
+                        href="/erp/sessions"
+                        className={styles.taskTitle}
+                        title={s.title}
+                      >
+                        {s.title}
+                      </Link>
+                      <Link
+                        href={link}
+                        className={styles.textAction}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        응답
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className={styles.intelGrid}>
+          <section className={styles.surfacePanel}>
+            <div className={styles.sectionHead}>
+              <div>
+                <span className={styles.sectionLabel}><IconNotification className={styles.sectionLabel__icon} aria-hidden />NOTIFICATIONS</span>
+                <h3>알림</h3>
+              </div>
+              <Link href="/erp/notifications" className={styles.panelLink}>
+                전체
+              </Link>
+            </div>
+
+            {notificationPreview.length === 0 ? (
+              <div className={styles.softEmpty}>새 알림 없음</div>
+            ) : (
+              <div className={styles.notifList}>
+                {notificationPreview.map((n) => {
+                  const meta = NOTIFICATION_TAG[n.type];
+                  return (
+                    <div
+                      key={String(n._id)}
+                      className={[
+                        styles.notifRow,
+                        n.isRead ? styles["notifRow--read"] : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <Link
+                        href={n.link ?? "/erp/notifications"}
+                        className={styles.notifLine}
+                      >
+                        <Tag tone={meta.tone}>{meta.label}</Tag>
+                        <span className={styles.notifText}>{n.title}</span>
+                      </Link>
+                      <span className={styles.timeText}>{formatTime(n.createdAt)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className={styles.surfacePanel}>
+            <div className={styles.sectionHead}>
+              <div>
+                <span className={styles.sectionLabel}><IconRecentChanges className={styles.sectionLabel__icon} aria-hidden />RECENT CHANGES</span>
+                <h3>최근 변경</h3>
+              </div>
+              <Link href="/erp/wiki" className={styles.panelLink}>
+                전체
+              </Link>
+            </div>
+
+            {recentWikis.length === 0 ? (
+              <div className={styles.softEmpty}>최근 변경 내역 없음</div>
+            ) : (
+              <div className={styles.wikiList}>
+                {recentWikis.map((w) => (
+                  <div key={String(w._id)} className={styles.wikiRow}>
+                    <Link
+                      href={`/erp/wiki/${String(w._id)}`}
+                      className={styles.wikiLink}
+                    >
+                      {w.title}
+                    </Link>
+                    <span className={styles.timeText}>
+                      {formatDate(w.updatedAt, "compact")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
     </>
   );
