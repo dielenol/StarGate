@@ -1632,11 +1632,20 @@ export async function listStockDisclosures(input: {
       ? ["DRAFT", "SCHEDULED", "PUBLISHED", "CANCELLED"]
       : ["SCHEDULED", "PUBLISHED"];
   return (await col<StockDisclosure>(DISCLOSURES))
-    .find({
-      status: { $in: statuses },
-    })
-    .sort({ publishAt: -1, createdAt: -1 })
-    .limit(Math.min(500, Math.max(1, input.limit ?? 100)))
+    .aggregate<StockDisclosure>([
+      { $match: { status: { $in: statuses } } },
+      {
+        $set: {
+          // 즉시 공개 공시도 화면과 같은 공개 시각으로 limit 전에 정렬한다.
+          effectivePublishAt: {
+            $ifNull: ["$publishAt", "$publishedAt", "$createdAt"],
+          },
+        },
+      },
+      { $sort: { effectivePublishAt: -1, createdAt: -1 } },
+      { $limit: Math.min(500, Math.max(1, input.limit ?? 100)) },
+      { $unset: "effectivePublishAt" },
+    ])
     .toArray();
 }
 
