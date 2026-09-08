@@ -1,9 +1,11 @@
-import frameStyles from "../page.module.css";
+import Link from "next/link";
+import ArchivePageHero from "../_components/ArchivePageHero";
+import ArchiveReader from "../_components/ArchiveReader";
+import documentStyles from "../_components/ArchiveDocument.module.css";
+import { IconReportDocument, IconArrowRight } from "@/components/icons";
 import styles from "../rules/rules.module.css";
-import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
-import { IconDivider } from "@/components/icons";
 
-const GAMEPLAY_TOC_ITEMS: TocItem[] = [
+const GAMEPLAY_TOC_ITEMS: { id: string; label: string }[] = [
   { id: "zulu", label: "Zulu란?" },
   { id: "zulu-tactics", label: "Zulu의 공략" },
   { id: "credit", label: "크레딧" },
@@ -15,30 +17,21 @@ const GAMEPLAY_TOC_ITEMS: TocItem[] = [
 
 export default function GameplayPage() {
   return (
-    <main className={frameStyles["stargate-page"]}>
-      <div className={frameStyles.stargate}>
-        <div className={frameStyles.stargate__frame}>
-          <div className={frameStyles.stargate__classification}>
-            CLASSIFICATION: OPERATION BRIEF // FIELD PROTOCOL
-          </div>
-
-          <div className={styles.hero}>
-            <span className={frameStyles.stargate__est}>OPERATION DOSSIER</span>
-            <h1 className={styles.hero__title}>작전 내규 브리핑</h1>
-            <div className={frameStyles.stargate__ornament}>
-              <IconDivider aria-hidden />
-            </div>
-            <p className={styles.hero__description}>
-              Zulu 대응, 크레딧, 후원자, 지역 패닉 등 작전 수행 시 필요한 현장 내규를 정리한 문서입니다.
-            </p>
-          </div>
-
-          <div className={frameStyles.stargate__divider}></div>
-
-          <TableOfContents items={GAMEPLAY_TOC_ITEMS} />
-
+    <main className={documentStyles.page}>
+      <ArchivePageHero
+        eyebrow="02 / FIELD OPERATIONS"
+        title="작전 내규"
+        description="현장에 들어서기 전, 알아두어야 할 것들. Zulu 대응부터 크레딧과 요원 계급까지 작전의 기본을 살펴보세요."
+        imageSrc="/assets/world-view/novus-protocol-reading-room.webp"
+        imageAlt="작전 자료와 문서가 놓인 노부스 오르도 기록실"
+        icon={<IconReportDocument aria-hidden />}
+        meta={["FIELD PROTOCOL", "7개의 항목"]}
+      >
+        <a href="#zulu">브리핑 시작하기 <IconArrowRight aria-hidden /></a>
+      </ArchivePageHero>
+      <ArchiveReader items={GAMEPLAY_TOC_ITEMS}>
           <div className={styles.sections}>
-            <section className={styles.section} id="zulu">
+            <section className={styles.section} id="zulu" tabIndex={-1}>
               <h2 className={styles.section__title}>Zulu란?</h2>
               <p className={styles.section__text}>
                 세계 곳곳에서 일어나는 미스테리 이상 현상 혹은 괴현상으로 인한 인간의
@@ -52,7 +45,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="zulu-tactics">
+            <section className={styles.section} id="zulu-tactics" tabIndex={-1}>
               <h2 className={styles.section__title}>Zulu의 공략</h2>
               <p className={styles.section__text}>
                 모든 Zulu들은 세부 항목으로 나뉠 수 있지만 가장 중요한 것은 해당
@@ -81,7 +74,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="credit">
+            <section className={styles.section} id="credit" tabIndex={-1}>
               <h2 className={styles.section__title}>크레딧</h2>
               <p className={styles.section__text}>
                 크레딧은 두 관점에서 사용이 가능합니다.
@@ -113,7 +106,7 @@ export default function GameplayPage() {
               </div>
             </section>
 
-            <section className={styles.section} id="sponsor">
+            <section className={styles.section} id="sponsor" tabIndex={-1}>
               <h2 className={styles.section__title}>후원자</h2>
               <p className={styles.section__text}>
                 노부스 오르도를 지지하는 수많은 기관들이 존재합니다. 이들은 자신들의
@@ -128,7 +121,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="panic">
+            <section className={styles.section} id="panic" tabIndex={-1}>
               <h2 className={styles.section__title}>지역 패닉</h2>
               <p className={styles.section__text}>
                 지역 패닉은 1에서 6단계까지 존재하며 해당 구역의 민간인 혼란을
@@ -154,7 +147,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="agent-level">
+            <section className={styles.section} id="agent-level" tabIndex={-1}>
               <h2 className={styles.section__title}>요원 레벨</h2>
               <p className={styles.section__text}>
                 노부스 오르도 내부의 계급입니다. 사내 계급에 맞춰서 정보 공개량이
@@ -178,7 +171,7 @@ export default function GameplayPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="sample">
+            <section className={styles.section} id="sample" tabIndex={-1}>
               <h2 className={styles.section__title}>Zulu와 샘플의 활용</h2>
               <p className={styles.section__text}>
                 모든 Zulu 개체들은 적절한 격리 절차나 상호작용, 파괴 방식에 따라 고유의
@@ -192,8 +185,11 @@ export default function GameplayPage() {
               </p>
             </section>
           </div>
-        </div>
-      </div>
+      </ArchiveReader>
+      <nav className={documentStyles.footer} aria-label="다음 기록">
+        <div><span>CONTINUE EXPLORING</span><p>작전의 기본을 익혔다면, 행동과 전투의 규칙을 확인하세요.</p></div>
+        <Link href="/rules">노부스 오르도 룰 <IconArrowRight aria-hidden /></Link>
+      </nav>
     </main>
   );
 }

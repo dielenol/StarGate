@@ -10,11 +10,10 @@ import type {
   PublicAgentSheet,
   PublicAgentSummary,
 } from "@/types/public-player";
-
-import { IconDivider, IconReturn } from "@/components/icons";
+import { IconPlayer } from "@/components/icons";
 
 import CharacterSheet from "./components/CharacterSheet";
-import frameStyles from "../../page.module.css";
+import ArchivePageHero from "../../_components/ArchivePageHero";
 import styles from "./player.module.css";
 
 type SheetCache = Record<string, CharacterSheetData>;
@@ -47,6 +46,7 @@ export default function PlayerClient({
   const [loadingSheetId, setLoadingSheetId] = useState<string | null>(null);
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   const [warningPhase, setWarningPhase] = useState<"idle" | "warning" | "video" | "recovery">("idle");
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? agents[0];
   const selectedSheet = selectedAgent ? sheetCache[selectedAgent.id] : undefined;
@@ -56,6 +56,14 @@ export default function PlayerClient({
   const warningAudioRef = useRef<HTMLAudioElement | null>(null);
   const recoveryAudioRef = useRef<HTMLAudioElement | null>(null);
   const paperAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const directoryHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const normalizedSearchTerm = searchTerm.trim().toLocaleLowerCase();
+  const filteredAgents = normalizedSearchTerm
+    ? agents.filter((agent) =>
+        `${agent.codename} ${agent.role}`.toLocaleLowerCase().includes(normalizedSearchTerm),
+      )
+    : agents;
 
   useEffect(() => {
     const requestedId = new URL(window.location.href).searchParams.get("agent");
@@ -270,53 +278,104 @@ export default function PlayerClient({
     }, WARNING_DURATION_MS);
   }
 
+  function focusAndScroll(target: HTMLElement | null) {
+    if (!target) return;
+
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "start",
+    });
+  }
+
+  function scrollToSelectedSheet() {
+    focusAndScroll(sheetRef.current);
+  }
+
   if (agents.length === 0) {
     return (
-      <main className={`${frameStyles["stargate-page"]} ${styles.playerPage}`}>
-        <div className={`${frameStyles.stargate} ${styles.playerShell}`}>
-          <div
-            className={`${frameStyles.stargate__frame} ${styles.playerFrame}`}
-          >
-            <div className={frameStyles.stargate__classification}>
-              CLASSIFICATION: PERSONNEL ARCHIVE // AGENT DOSSIER
-            </div>
-            <section className={styles.empty}>
-              <span className={frameStyles.stargate__est}>STANDBY</span>
-              <h1 className={styles.empty__title}>공개 에이전트 준비 중</h1>
-              <p className={styles.empty__desc}>
-                현재 열람 가능한 요원 기록이 없습니다. 운영진이 자료를 정리하는
-                대로 공개됩니다.
-              </p>
-            </section>
-          </div>
+      <main className={styles.playerPage}>
+        <div className={styles.playerShell}>
+          <ArchivePageHero
+            eyebrow="03 / PERSONNEL ARCHIVE"
+            title="플레이어"
+            description="이 세계를 함께 만드는 요원들. 인물을 선택하고, 그들의 기록을 열람하세요."
+            imageSrc="/assets/world-view/novus-agent-credentials.webp"
+            imageAlt="노부스 오르도 요원 신분증과 금속 명찰"
+            meta={["0명의 요원", "PERSONNEL RECORDS"]}
+            icon={<IconPlayer aria-hidden />}
+          />
+          <section className={styles.empty} aria-labelledby="empty-title">
+            <p className={styles.empty__eyebrow}>ARCHIVE STATUS / STANDBY</p>
+            <h2 className={styles.empty__title} id="empty-title">공개 에이전트 준비 중</h2>
+            <p className={styles.empty__desc}>
+              현재 열람 가능한 요원 기록이 없습니다. 운영진이 자료를 정리하는 대로 공개됩니다.
+            </p>
+          </section>
         </div>
       </main>
     );
   }
 
   return (
-    <main className={`${frameStyles["stargate-page"]} ${styles.playerPage}`}>
-      <div className={`${frameStyles.stargate} ${styles.playerShell}`}>
-        <div className={`${frameStyles.stargate__frame} ${styles.playerFrame}`}>
-          <div className={frameStyles.stargate__classification}>
-            CLASSIFICATION: PERSONNEL ARCHIVE // AGENT DOSSIER
+    <main className={styles.playerPage}>
+      <div className={styles.playerShell}>
+        <ArchivePageHero
+          eyebrow="03 / PERSONNEL ARCHIVE"
+          title="플레이어"
+          description="이 세계를 함께 만드는 요원들. 인물을 선택하고, 그들의 기록을 열람하세요."
+          imageSrc="/assets/world-view/novus-agent-credentials.webp"
+          imageAlt="노부스 오르도 요원 신분증과 금속 명찰"
+          meta={[`${agents.length}명의 요원`, "PERSONNEL RECORDS"]}
+          icon={<IconPlayer aria-hidden />}
+        />
+
+        <section className={styles.agentDirectory} aria-labelledby="agent-directory-title">
+          <div className={styles.agentDirectory__header}>
+            <div>
+              <p className={styles.agentDirectory__eyebrow}>AGENT DIRECTORY</p>
+              <h2
+                className={styles.agentDirectory__title}
+                id="agent-directory-title"
+                ref={directoryHeadingRef}
+                tabIndex={-1}
+              >
+                요원 목록
+              </h2>
+            </div>
+            <p className={styles.agentDirectory__count} aria-live="polite">{filteredAgents.length} / {agents.length}</p>
           </div>
 
-          <section className={styles.hero}>
-            <span className={frameStyles.stargate__est}>AGENT SELECT</span>
-            <h1 className={styles.hero__title}>현장 요원 아카이브</h1>
-            <div className={frameStyles.stargate__ornament}>
-              <IconDivider aria-hidden />
-            </div>
-            <p className={styles.hero__description}>
-              상단 포트레이트를 선택하면 해당 요원의 상세 기록이 아래 패널에 표시됩니다.
+          <label className={styles.searchField}>
+            <span className={styles.searchField__label}>요원명 또는 역할 검색</span>
+            <input
+              className={styles.searchField__input}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="예: 요원명, 역할"
+              type="search"
+              value={searchTerm}
+            />
+          </label>
+
+          <div className={styles.agentDirectory__actions}>
+            <p className={styles.selectedAgent} aria-live="polite">
+              {selectedAgent ? <><span>선택한 요원</span> {selectedAgent.codename}</> : "요원을 선택하세요."}
             </p>
-          </section>
+            <button
+              className={styles.primaryAction}
+              disabled={!selectedAgent}
+              onClick={scrollToSelectedSheet}
+              type="button"
+            >
+              선택한 요원 기록 보기
+            </button>
+          </div>
 
-          <div className={frameStyles.stargate__divider}></div>
-
-          <section className={styles.selectGrid} aria-label="요원 선택">
-            {agents.map((agent) => {
+          {filteredAgents.length > 0 ? (
+            <div className={styles.selectGrid} aria-label="요원 선택">
+              {filteredAgents.map((agent) => {
               const active = selectedAgent?.id === agent.id;
 
               return (
@@ -346,12 +405,35 @@ export default function PlayerClient({
                   </div>
                 </button>
               );
-            })}
-          </section>
+              })}
+            </div>
+          ) : (
+            <div className={styles.searchEmpty} role="status">
+              <p>일치하는 요원 기록이 없습니다.</p>
+              <button className={styles.textButton} onClick={() => setSearchTerm("")} type="button">검색어 지우기</button>
+            </div>
+          )}
 
-          <section className={styles.sheets}>
+        </section>
+
+        <section className={styles.sheets} ref={sheetRef} tabIndex={-1}>
             {selectedAgent && selectedSheet ? (
-              <CharacterSheet key={selectedAgent.id} record={selectedSheet} />
+              <>
+                <div className={styles.sheetHeading}>
+                  <div>
+                    <p className={styles.sheetHeading__eyebrow}>PERSONNEL RECORD</p>
+                    <h2 className={styles.sheetHeading__title}>{selectedAgent.codename} 기록</h2>
+                  </div>
+                  <button
+                    className={styles.secondaryAction}
+                    onClick={() => focusAndScroll(directoryHeadingRef.current)}
+                    type="button"
+                  >
+                    목록으로
+                  </button>
+                </div>
+                <CharacterSheet key={selectedAgent.id} record={selectedSheet} />
+              </>
             ) : (
               <div className={styles.sheetStatus} role="status">
                 {sheetError ? (
@@ -375,22 +457,9 @@ export default function PlayerClient({
                 )}
               </div>
             )}
-          </section>
+        </section>
 
-          <div className={frameStyles["stargate__cta-row"]}>
-            <Link className={frameStyles["stargate__cta-link"]} href="/world">
-              <div className={frameStyles["stargate__cta-outer"]}>
-                <div className={frameStyles["stargate__cta-inner"]}>
-                  <div className={frameStyles["stargate__cta-icon"]}>
-                    <IconReturn aria-hidden />
-                  </div>
-                  <div className={frameStyles["stargate__cta-title"]}>세계관 메인으로</div>
-                  <div className={frameStyles["stargate__cta-subtitle"]}>RETURN TO INDEX</div>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
+        <Link className={styles.worldLink} href="/world">세계관 메인으로</Link>
       </div>
 
       <audio
