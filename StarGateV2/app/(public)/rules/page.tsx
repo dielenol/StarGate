@@ -1,14 +1,16 @@
-import frameStyles from "../page.module.css";
+import Link from "next/link";
+import ArchivePageHero from "../_components/ArchivePageHero";
+import ArchiveReader from "../_components/ArchiveReader";
+import documentStyles from "../_components/ArchiveDocument.module.css";
+import { IconRules, IconArrowRight } from "@/components/icons";
 import styles from "./rules.module.css";
 import {
   COMBAT_MAP_RULES,
   COMBAT_MOVEMENT_RULES,
   COMBAT_PERCENTAGE_ROUNDING_RULE,
 } from "@stargate/core/domain/combat-rules";
-import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
-import { IconDivider } from "@/components/icons";
 
-const RULES_TOC_ITEMS: TocItem[] = [
+const RULES_TOC_ITEMS: { id: string; label: string }[] = [
   { id: "welcome", label: "환영" },
   { id: "combat-foundations", label: "전투 근간 규칙" },
   { id: "class", label: "클래스" },
@@ -24,30 +26,21 @@ const RULES_TOC_ITEMS: TocItem[] = [
 
 export default function RulesPage() {
   return (
-    <main className={frameStyles["stargate-page"]}>
-      <div className={frameStyles.stargate}>
-        <div className={frameStyles.stargate__frame}>
-          <div className={frameStyles.stargate__classification}>
-            CLASSIFICATION: COMBAT SYSTEM // RULES
-          </div>
-
-          <div className={styles.hero}>
-            <span className={frameStyles.stargate__est}>RULE DOSSIER</span>
-            <h1 className={styles.hero__title}>노부스 오르도 룰</h1>
-            <div className={frameStyles.stargate__ornament}>
-              <IconDivider aria-hidden />
-            </div>
-            <p className={styles.hero__description}>
-              실시간 턴제 전투, 능력치, 클래스 등 핵심 노부스 오르도 규칙을 정리한 문서입니다.
-            </p>
-          </div>
-
-          <div className={frameStyles.stargate__divider}></div>
-
-          <TableOfContents items={RULES_TOC_ITEMS} />
-
+    <main className={documentStyles.page}>
+      <ArchivePageHero
+        eyebrow="04 / RULES & PROTOCOL"
+        title="노부스 오르도 룰"
+        description="선택을 행동으로 만드는 기준. 전투의 흐름, 캐릭터의 능력치와 훈련을 한 곳에서 확인하세요."
+        imageSrc="/assets/world-view/novus-protocol-codex.webp"
+        imageAlt="노부스 오르도 문장이 새겨진 공식 규정집"
+        icon={<IconRules aria-hidden />}
+        meta={["COMBAT SYSTEM", "11개의 항목"]}
+      >
+        <a href="#welcome">규칙 읽기 <IconArrowRight aria-hidden /></a>
+      </ArchivePageHero>
+      <ArchiveReader items={RULES_TOC_ITEMS}>
           <div className={styles.sections}>
-            <section className={styles.section} id="welcome">
+            <section className={styles.section} id="welcome" tabIndex={-1}>
               <h2 className={styles.section__title}>
                 노부스 오르도 룰에 오신 것을 환영합니다.
               </h2>
@@ -75,7 +68,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="combat-foundations">
+            <section className={styles.section} id="combat-foundations" tabIndex={-1}>
               <h2 className={styles.section__title}>전투 근간 규칙</h2>
               <p className={styles.section__text}>
                 이동 선언, 백분율 피해의 소수점 처리, 전투 맵 규격은 모든
@@ -138,7 +131,7 @@ export default function RulesPage() {
               </div>
             </section>
 
-            <section className={styles.section} id="class">
+            <section className={styles.section} id="class" tabIndex={-1}>
               <h2 className={styles.section__title}>클래스</h2>
               <p className={styles.section__text}>
                 노부스 오르도에는 다양한 직무를 수행하는 직업군, 즉 &apos;클래스&apos;가
@@ -204,7 +197,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="stats">
+            <section className={styles.section} id="stats" tabIndex={-1}>
               <h2 className={styles.section__title}>캐릭터 능력치와 포인트</h2>
               <p className={styles.section__text}>요원의 기본 능력치는 다음과 같습니다.</p>
               <div className={styles.statBox}>
@@ -242,7 +235,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="hp">
+            <section className={styles.section} id="hp" tabIndex={-1}>
               <h2 className={styles.section__title}>체력 (HP)</h2>
               <p className={styles.section__text}>
                 체력은 스태미너, 건강, 근력 등 신체적 역량 전반을 아우르는 수치입니다.
@@ -270,7 +263,7 @@ export default function RulesPage() {
               </div>
             </section>
 
-            <section className={styles.section} id="san">
+            <section className={styles.section} id="san" tabIndex={-1}>
               <h2 className={styles.section__title}>정신력 (SAN)</h2>
               <p className={styles.section__text}>
                 정신력은 의지, 끈기, 이성 등 정신적 안정성과 사고 능력을 포괄하는
@@ -305,7 +298,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="def">
+            <section className={styles.section} id="def" tabIndex={-1}>
               <h2 className={styles.section__title}>방어력 (DEF)</h2>
               <p className={styles.section__text}>
                 방어력은 살성(타격 저항력), 순간 회피 능력, 선천적 피부 내성, 방어구
@@ -316,7 +309,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="atk">
+            <section className={styles.section} id="atk" tabIndex={-1}>
               <h2 className={styles.section__title}>공격력 (ATK)</h2>
               <p className={styles.section__text}>
                 공격력은 맨손 공격의 위력과 근접 무기 사용 시 적용되는 보정치를
@@ -343,7 +336,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="ability">
+            <section className={styles.section} id="ability" tabIndex={-1}>
               <h2 className={styles.section__title}>능력 메이킹</h2>
               <p className={styles.section__text}>
                 노부스 오르도의 요원은 자신이 원하는{" "}
@@ -370,7 +363,7 @@ export default function RulesPage() {
               </div>
             </section>
 
-            <section className={styles.section} id="weapon">
+            <section className={styles.section} id="weapon" tabIndex={-1}>
               <h2 className={styles.section__title}>무기 훈련</h2>
               <p className={styles.section__text}>
                 버려진 군 격납고를 발견했다고 해서, 그 내부의 군사 장비를 즉시 운용할
@@ -398,7 +391,7 @@ export default function RulesPage() {
               </p>
             </section>
 
-            <section className={styles.section} id="skill">
+            <section className={styles.section} id="skill" tabIndex={-1}>
               <h2 className={styles.section__title}>스킬 훈련</h2>
               <p className={styles.section__text}>
                 현장에는 다양한 스킬 체크 상황이 존재합니다.
@@ -425,8 +418,11 @@ export default function RulesPage() {
               </p>
             </section>
           </div>
-        </div>
-      </div>
+      </ArchiveReader>
+      <nav className={documentStyles.footer} aria-label="다음 기록">
+        <div><span>CONTINUE EXPLORING</span><p>Zulu 대응과 현장 운영에 필요한 내규도 함께 살펴보세요.</p></div>
+        <Link href="/gameplay">작전 내규 <IconArrowRight aria-hidden /></Link>
+      </nav>
     </main>
   );
 }

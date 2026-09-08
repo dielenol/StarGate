@@ -1,10 +1,13 @@
+import Link from "next/link";
+import ArchivePageHero from "../_components/ArchivePageHero";
+import ArchiveReader from "../_components/ArchiveReader";
+import documentStyles from "../_components/ArchiveDocument.module.css";
+import { IconWorld, IconArrowRight } from "@/components/icons";
 import Image from "next/image";
-import frameStyles from "../page.module.css";
 import styles from "./world.module.css";
-import TableOfContents, { type TocItem } from "@/components/TableOfContents/TableOfContents";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
-const WORLD_TOC_ITEMS: TocItem[] = [
+const WORLD_TOC_ITEMS: { id: string; label: string }[] = [
   { id: "ww2", label: "제2차 세계대전과 오컬트" },
   { id: "founding", label: "노부스 오르도 창설" },
   { id: "ideology", label: "변칙적 현실주의" },
@@ -14,7 +17,6 @@ const WORLD_TOC_ITEMS: TocItem[] = [
 ];
 
 export default function WorldPage() {
-  const emblemSrc = resolvePublicAssetPath("/assets/StarGate_logo.png");
   const worldview1Src = resolvePublicAssetPath("/assets/world-view/wolrdview_1.webp");
   const worldview2Src = resolvePublicAssetPath("/assets/world-view/wolrdview_2.jpg");
   const worldview3Src = resolvePublicAssetPath("/assets/world-view/wolrdview_3.png");
@@ -23,36 +25,22 @@ export default function WorldPage() {
   const worldview6Src = resolvePublicAssetPath("/assets/world-view/wolrdview_6.png");
 
   return (
-    <main className={frameStyles["stargate-page"]}>
-      <div className={frameStyles.stargate}>
-        <div className={frameStyles.stargate__frame}>
-          <div className={frameStyles.stargate__classification}>
-            CLASSIFICATION: LORE ARCHIVE // WORLD DOSSIER
-          </div>
-
-          <div className={styles.hero}>
-            <Image
-              src={emblemSrc}
-              alt="Novus Ordo emblem"
-              width={839}
-              height={697}
-              priority
-              quality={72}
-              sizes="(min-width: 768px) 360px, 70vw"
-              className={styles.hero__emblem}
-            />
-            <h1 className={styles.hero__title}>노부스 오르도</h1>
-            <p className={styles.hero__quote}>
-              &quot;우리는 인류와 인류 문명의 질서를 수호합니다.&quot;
-            </p>
-          </div>
-
-          <div className={frameStyles.stargate__divider}></div>
-
-          <TableOfContents items={WORLD_TOC_ITEMS} />
-
+    <main className={documentStyles.page}>
+      <ArchivePageHero
+        eyebrow="01 / WORLD DOSSIER"
+        title="세계관 기록"
+        description="우리는 인류와 인류 문명의 질서를 수호합니다. 노부스 오르도의 시작부터 오늘의 기로까지, 그 기록을 따라갑니다."
+        imageSrc="/assets/world-view/novus-ordo-world-map.webp"
+        imageAlt="노부스 오르도 세계 지도"
+        icon={<IconWorld aria-hidden />}
+        meta={["1945 — TODAY", "6개의 기록"]}
+      >
+        <a href="#ww2">첫 기록부터 읽기 <IconArrowRight aria-hidden /></a>
+      </ArchivePageHero>
+      <ArchiveReader items={WORLD_TOC_ITEMS}>
           <div className={styles.timeline}>
-            <section className={styles.entry} id="ww2">
+            <section className={styles.entry} id="ww2" tabIndex={-1}>
+              <div className={styles.entry__heading}><span>01 / WORLD RECORD</span><h2>제2차 세계대전과 오컬트</h2></div>
               <Image
                 src={worldview1Src}
                 alt="나치 오컬트 연구의 흔적을 상징하는 장면"
@@ -60,7 +48,7 @@ export default function WorldPage() {
                 height={574}
                 loading="lazy"
                 quality={72}
-                sizes="(min-width: 1024px) 1024px, 100vw"
+                sizes="(min-width: 1101px) 400px, (min-width: 701px) 40vw, 90vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -77,7 +65,8 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry} id="founding">
+            <section className={styles.entry} id="founding" tabIndex={-1}>
+              <div className={styles.entry__heading}><span>02 / WORLD RECORD</span><h2>노부스 오르도 창설</h2></div>
               <Image
                 src={worldview2Src}
                 alt="전후 국제 질서의 불안정을 나타내는 세계 지도"
@@ -85,7 +74,7 @@ export default function WorldPage() {
                 height={768}
                 loading="lazy"
                 quality={72}
-                sizes="(min-width: 1024px) 1024px, 100vw"
+                sizes="(min-width: 1101px) 400px, (min-width: 701px) 40vw, 90vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -106,7 +95,8 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry} id="ideology">
+            <section className={styles.entry} id="ideology" tabIndex={-1}>
+              <div className={styles.entry__heading}><span>03 / WORLD RECORD</span><h2>변칙적 현실주의</h2></div>
               <Image
                 src={worldview3Src}
                 alt="비공개 국제 회의장"
@@ -114,7 +104,7 @@ export default function WorldPage() {
                 height={576}
                 loading="lazy"
                 quality={72}
-                sizes="(min-width: 1024px) 1024px, 100vw"
+                sizes="(min-width: 1101px) 400px, (min-width: 701px) 40vw, 90vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -142,7 +132,8 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry} id="crack">
+            <section className={styles.entry} id="crack" tabIndex={-1}>
+              <div className={styles.entry__heading}><span>04 / WORLD RECORD</span><h2>질서의 균열</h2></div>
               <Image
                 src={worldview4Src}
                 alt="질서 균열의 상징 장면"
@@ -150,7 +141,7 @@ export default function WorldPage() {
                 height={576}
                 loading="lazy"
                 quality={72}
-                sizes="(min-width: 1024px) 1024px, 100vw"
+                sizes="(min-width: 1101px) 400px, (min-width: 701px) 40vw, 90vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -173,7 +164,8 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry} id="aurora">
+            <section className={styles.entry} id="aurora" tabIndex={-1}>
+              <div className={styles.entry__heading}><span>05 / WORLD RECORD</span><h2>오로라 바이러스</h2></div>
               <Image
                 src={worldview5Src}
                 alt="오로라 바이러스 사태 이후의 황폐한 풍경"
@@ -181,7 +173,7 @@ export default function WorldPage() {
                 height={768}
                 loading="lazy"
                 quality={72}
-                sizes="(min-width: 1024px) 1024px, 100vw"
+                sizes="(min-width: 1101px) 400px, (min-width: 701px) 40vw, 90vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -195,7 +187,8 @@ export default function WorldPage() {
               </p>
             </section>
 
-            <section className={styles.entry} id="crossroads">
+            <section className={styles.entry} id="crossroads" tabIndex={-1}>
+              <div className={styles.entry__heading}><span>06 / WORLD RECORD</span><h2>오늘의 기로</h2></div>
               <Image
                 src={worldview6Src}
                 alt="질서 붕괴와 초상적 위협 확산"
@@ -203,7 +196,7 @@ export default function WorldPage() {
                 height={1024}
                 loading="lazy"
                 quality={72}
-                sizes="(min-width: 768px) 718px, 100vw"
+                sizes="(min-width: 1101px) 400px, (min-width: 701px) 40vw, 90vw"
                 className={styles.entry__image}
               />
               <p className={styles.entry__text}>
@@ -232,8 +225,11 @@ export default function WorldPage() {
               </p>
             </section>
           </div>
-        </div>
-      </div>
+      </ArchiveReader>
+      <nav className={documentStyles.footer} aria-label="다음 기록">
+        <div><span>CONTINUE EXPLORING</span><p>이 세계를 함께 만드는 요원들을 만나보세요.</p></div>
+        <Link href="/world/player">플레이어 열람 <IconArrowRight aria-hidden /></Link>
+      </nav>
     </main>
   );
 }
