@@ -181,3 +181,5 @@ python3 "$CODEX_HOME/skills/stargate-lore/scripts/check_lore_output.py" \
 ```
 
 첫 검사는 baseline 만료·중복·durable payload 승격 여부를 차단하고, `--verify-live`는 레코드 존재·updatedAt·content hash·alias를 재확인한다. 이어지는 검사는 session report ID의 coverage 누락·중복, 원장 구조/예외, wiki category taxonomy, payload renderer link target을 함께 확인한다. baseline은 seed/live parity를 대신하지 않는다.
+
+- [욕구 2부 전용 초상 확인 기록](session-sync/nosb-s1e7-desire-part2-portrait-review.md) — 사용자 지정 다섯 초상·투명 마스크 보정·자산 검증.

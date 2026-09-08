@@ -1,13 +1,3 @@
----
-title: NOSB S1E7 욕구 2부 보고서 검토본
-tags: [NOSB-S1E7-DESIRE-PART2, review]
-status: review
-updated: 2026-09-07
-source: session-log
----
-
-> 운영 저장·공개 전 검토본. 최종 보고서와 작전보고서 위키판은 아래 본문을 함께 사용한다.
-
 # 작전 보고서 S1E7: 욕구 2부
 
 파리의 페데라치오 조사와 카타콤 침투는 인형사의 신경 조종, 세 번째 폭탄의 폭발, 광원화 감염자의 도심 확산으로 이어졌다. 시간 회귀 뒤 살아 있는 인형사를 운반하며 출구로 이동했으나 폭발은 막지 못했다. 피닉스 폭격과 광장 방어선이 사태를 끝내지 못한 뒤, 오틸리아 발트만이 해쉬 테거의 백신을 받아 역병을 발현했고 주변 감염자들은 형체를 잃었다. 오틸리아는 그 직후 현장에서 사라졌다.
@@ -226,3 +216,10 @@ source: session-log
 
 ## 출처
 NOVUS ORDO 사무국 기록통제실 보존본 「7부 욕구 2부」.
+
+## 관련 인물
+- [[personnel:PUPPETEER|코르티잔]]
+- [[personnel:PARIS_MARQUIS|후작]]
+- [[personnel:PARIS_PRIEST|성직자]]
+- [[personnel:MATTEO_FEDERATIO|마테오]]
+- [[personnel:FEDERATIO_PARIS_BOSS|페데라치오 대부]]

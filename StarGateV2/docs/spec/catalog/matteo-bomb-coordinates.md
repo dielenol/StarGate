@@ -6,7 +6,7 @@ category: "SPECIAL"
 price: 0
 description: "마테오가 피펫에게 건넨, 실제 연락처와 파리 폭탄 위치 세 곳이 적힌 쪽지."
 isAvailable: false
-isPublic: false
+isPublic: true
 tags: ["NOSB-S1E7-DESIRE-PART2", "S1E7", "파리"]
 source: "session-log"
 createdAt: "2026-09-06T11:37:41.000Z"

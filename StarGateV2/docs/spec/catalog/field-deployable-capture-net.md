@@ -6,7 +6,7 @@ category: "SPECIAL"
 price: 0
 description: "스타크가 공병에게 제작을 지시한, 발사하면 공중에서 넓게 펼쳐지는 포획망."
 isAvailable: false
-isPublic: false
+isPublic: true
 tags: ["NOSB-S1E7-DESIRE-PART2", "S1E7", "파리"]
 source: "session-log"
 createdAt: "2026-09-06T11:37:41.000Z"

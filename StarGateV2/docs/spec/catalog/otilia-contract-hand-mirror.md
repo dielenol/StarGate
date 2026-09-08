@@ -6,7 +6,7 @@ category: "SPECIAL"
 price: 0
 description: "오틸리아가 파리 카타콤에서 주워 악마와의 교신에 사용한 손거울."
 isAvailable: false
-isPublic: false
+isPublic: true
 tags: ["NOSB-S1E7-DESIRE-PART2", "S1E7", "파리"]
 source: "session-log"
 createdAt: "2026-09-06T11:37:41.000Z"
