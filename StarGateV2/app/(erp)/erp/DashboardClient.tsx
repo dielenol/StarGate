@@ -7,6 +7,7 @@ import { useDashboard } from "@/hooks/queries/useDashboardQuery";
 import { preferOptimizedPublicImagePath, resolvePublicAssetPath } from "@/lib/asset-path";
 import { getPixelCharacterPath } from "@/lib/assets/characters";
 import { formatDate, formatTime } from "@/lib/format/date";
+import { getCharacterRoleLine, isDisplayableCharacterText } from "@/lib/format/character-display";
 
 import type { ErpDashboardResponse } from "@/types/erp-realtime";
 import type { NotificationType } from "@/types/notification";
@@ -14,20 +15,16 @@ import type { SessionStatus } from "@/types/session";
 
 import type { IconComponent } from "@/components/icons";
 import {
-  IconActiveOps,
   IconAgentProfile,
   IconApply,
   IconAwaiting,
   IconCredit,
   IconHp,
   IconNotification,
-  IconPersonCard,
   IconRecentChanges,
   IconSan,
-  IconServiceRecord,
   IconSession,
   IconTasks,
-  IconTenure,
 } from "@/components/icons";
 import Bar from "@/components/ui/Bar/Bar";
 import Button from "@/components/ui/Button/Button";
@@ -221,15 +218,19 @@ export default function DashboardClient({
     characterPointBalance,
     characterPointHref,
     displayCharacter,
-    joinedDays,
     mainIntegrityError,
-    myCharacterCount,
-    mySessionCount,
     notificationPreview,
     recentWikis,
-    todaySessionCount,
     unreadCount,
   } = initialDashboard;
+  const characterRoleLine = displayCharacter ? getCharacterRoleLine(displayCharacter) : null;
+  const characterClass = displayCharacter?.type === "AGENT" &&
+    isDisplayableCharacterText(displayCharacter.play?.className)
+    ? displayCharacter.play.className.trim()
+    : null;
+  const characterQuote = isDisplayableCharacterText(displayCharacter?.lore.quote)
+    ? displayCharacter.lore.quote.trim()
+    : null;
   const viewerDiscordId = initialDashboard.discordLinked ? "linked" : null;
   const myRsvpUpcoming = initialDashboard.myRsvpUpcoming.map((raw) => ({
     raw,
@@ -329,6 +330,9 @@ export default function DashboardClient({
                   <Seal size="lg" className={styles.charMini__seal}>ERP</Seal>
                 </div>
               )}
+              <span className={styles.agentStage__portraitCaption}>
+                {displayCharacter?.codename || "PERSONNEL"}
+              </span>
             </div>
 
             <div className={styles.agentStage__content}>
@@ -353,6 +357,23 @@ export default function DashboardClient({
                   <span>등록된 캐릭터 없음</span>
                 )}
               </div>
+
+              {characterRoleLine || characterClass ? (
+                <dl className={styles.agentStage__details}>
+                  {characterRoleLine ? (
+                    <div><dt>직책 · 부서</dt><dd>{characterRoleLine}</dd></div>
+                  ) : null}
+                  {characterClass ? (
+                    <div><dt>직군</dt><dd>{characterClass}</dd></div>
+                  ) : null}
+                </dl>
+              ) : null}
+              {characterQuote ? (
+                <blockquote className={styles.agentStage__quote} title={characterQuote}>
+                  <span aria-hidden="true">“</span>
+                  <p>{characterQuote}</p>
+                </blockquote>
+              ) : null}
 
               {displayCharacter?.type === "AGENT" && displayCharacter.play ? (
                 <div className={styles.charMini__vitals}>
@@ -395,6 +416,7 @@ export default function DashboardClient({
             <Link href="/erp/credits" className={styles.signalItem}>
               <span><IconCredit className={styles.signalItem__icon} aria-hidden />운용 크레딧</span>
               <strong className={styles.signalItem__gold}>¤ {balance.toLocaleString()}</strong>
+              <small>메인 캐릭터의 잔액</small>
             </Link>
             <Link href={characterPointHref} className={styles.signalItem}>
               <span><IconCredit className={styles.signalItem__icon} aria-hidden />잔여 포인트</span>
@@ -403,31 +425,18 @@ export default function DashboardClient({
                   ? `PT ${characterPointBalance.toLocaleString()}`
                   : "—"}
               </strong>
+              <small>캐릭터 시트 기준</small>
             </Link>
             <Link href="/erp/sessions" className={styles.signalItem}>
-              <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />응답 대기</span>
+              <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />확인할 응답</span>
               <strong>{pendingResponse.length}</strong>
-            </Link>
-            <Link href="/erp/sessions" className={styles.signalItem}>
-              <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />금일 진행 세션</span>
-              <strong>{todaySessionCount}</strong>
+              <small>아래 표시된 작전 기준</small>
             </Link>
             <Link href="/erp/notifications" className={styles.signalItem}>
               <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
               <strong>{unreadCount}</strong>
+              <small>읽지 않은 개인 알림</small>
             </Link>
-            <Link href="/erp/characters" className={styles.signalItem}>
-              <span><IconPersonCard className={styles.signalItem__icon} aria-hidden />보유 캐릭터</span>
-              <strong>{myCharacterCount}</strong>
-            </Link>
-            <div className={styles.signalItem}>
-              <span><IconServiceRecord className={styles.signalItem__icon} aria-hidden />누적 작전</span>
-              <strong>{mySessionCount !== null ? mySessionCount : "—"}</strong>
-            </div>
-            <div className={styles.signalItem}>
-              <span><IconTenure className={styles.signalItem__icon} aria-hidden />가입 후</span>
-              <strong>{joinedDays}D</strong>
-            </div>
           </section>
         </section>
 

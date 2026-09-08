@@ -568,19 +568,24 @@ export async function findDisplayCharacterByOwner(
 export type DashboardCharacter = Pick<
   Character,
   "_id" | "codename" | "type" | "agentLevel" | "previewImage" | "pixelCharacterImage"
-> & {
-  lore: Pick<Character["lore"], "name">;
-  play?: Pick<AgentCharacter["play"], "hp" | "san" | "points">;
+> & Partial<Pick<Character, "role" | "department">> & {
+  lore: Pick<Character["lore"], "name"> & Partial<Pick<Character["lore"], "quote">>;
+  play?: Pick<AgentCharacter["play"], "hp" | "san" | "points"> &
+    Partial<Pick<AgentCharacter["play"], "className">>;
 };
 
 const DASHBOARD_CHARACTER_PROJECTION = {
   _id: 1,
   codename: 1,
   type: 1,
+  role: 1,
+  department: 1,
   agentLevel: 1,
   previewImage: 1,
   pixelCharacterImage: 1,
   "lore.name": 1,
+  "lore.quote": 1,
+  "play.className": 1,
   "play.hp": 1,
   "play.san": 1,
   "play.points": 1,
@@ -631,13 +636,14 @@ export async function findDisplayDashboardCharacterByOwner(
   return findMainDashboardCharacterByOwner(ownerId);
 }
 
-/** 소유자 목록에서 이미 검증한 대시보드 fallback 캐릭터의 표시 필드를 읽는다. */
+/** 목록 조회 이후 소유권 이전도 차단하도록 fallback 신원을 소유자와 함께 다시 검증한다. */
 export async function findDashboardCharacterById(
   id: string,
+  ownerId: string,
 ): Promise<DashboardCharacter | null> {
   if (!ObjectId.isValid(id)) return null;
   return (await charactersCol()).findOne<DashboardCharacter>(
-    { _id: new ObjectId(id) },
+    { _id: new ObjectId(id), ownerId },
     { projection: DASHBOARD_CHARACTER_PROJECTION },
   );
 }

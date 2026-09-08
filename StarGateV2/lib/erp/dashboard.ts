@@ -204,7 +204,7 @@ export async function getErpDashboardResponse(input: {
           [] as Awaited<ReturnType<typeof enrichSessions>>,
         ),
     !resolvedDisplayCharacter && firstCharId
-      ? findDashboardCharacterById(firstCharId).catch(() => null)
+      ? findDashboardCharacterById(firstCharId, userId).catch(() => null)
       : Promise.resolve(null),
   ]);
 

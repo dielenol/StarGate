@@ -279,26 +279,42 @@ if (!HAS_MODULE_MOCK) {
     await assert.rejects(() => findDisplayDashboardCharacterByOwner(OWNER_ID), /owned NPC fallback candidates/);
   });
 
-  test("대시보드 projection은 초상·HP/SAN/포인트를 보존하고 원본 시트는 반환하지 않음", async () => {
+  test("대시보드 projection은 프로필 요약·초상·상태만 보존하고 원본 시트는 반환하지 않음", async () => {
     resetFixtures();
     const id = new ObjectId();
     characterDocs = [{
       _id: id, codename: "MAIN", type: "AGENT", tier: "MAIN", ownerId: OWNER_ID,
       agentLevel: "U", pixelCharacterImage: "/pixel.webp", previewImage: "/preview.webp",
-      lore: { name: "요원", background: "private biography" },
-      play: { hp: 12, san: 0, points: 0, abilities: [{ name: "private ability" }] },
+      role: "기록 담당관", department: "ADMIN_BUREAU",
+      lore: { name: "요원", quote: "확인된 기록만 남긴다.", background: "private biography", notes: "private notes" },
+      play: { className: "관료", hp: 12, san: 0, points: 0, abilities: [{ name: "private ability" }] },
       rawText: "full source", loreMd: "full lore", clearanceOverrides: { identity: "GM" },
     }];
     const expected = {
       _id: id, codename: "MAIN", type: "AGENT", agentLevel: "U",
       pixelCharacterImage: "/pixel.webp", previewImage: "/preview.webp",
-      lore: { name: "요원" }, play: { hp: 12, san: 0, points: 0 },
+      role: "기록 담당관", department: "ADMIN_BUREAU",
+      lore: { name: "요원", quote: "확인된 기록만 남긴다." },
+      play: { className: "관료", hp: 12, san: 0, points: 0 },
     };
     assert.deepEqual(await findMainDashboardCharacterByOwner(OWNER_ID), expected);
     assert.deepEqual(await findDisplayDashboardCharacterByOwner(OWNER_ID), expected);
-    assert.deepEqual(await findDashboardCharacterById(id.toString()), expected);
-    assert.equal(await findDashboardCharacterById("invalid-id"), null);
-    assert.equal(await findDashboardCharacterById(new ObjectId().toString()), null);
+    assert.deepEqual(await findDashboardCharacterById(id.toString(), OWNER_ID), expected);
+    assert.equal(await findDashboardCharacterById("invalid-id", OWNER_ID), null);
+    assert.equal(await findDashboardCharacterById(new ObjectId().toString(), OWNER_ID), null);
+  });
+
+  test("대시보드 fallback 재조회 시 소유권이 이전된 캐릭터는 이전 소유자에게 반환하지 않음", async () => {
+    resetFixtures();
+    const id = new ObjectId();
+    characterDocs = [{
+      _id: id, codename: "TRANSFERRED", type: "NPC", ownerId: OWNER_ID,
+      role: "담당관", lore: { name: "이전된 캐릭터", quote: "소유자 전용 기록" },
+    }];
+    assert.ok(await findDashboardCharacterById(id.toString(), OWNER_ID));
+    characterDocs[0].ownerId = OTHER_OWNER_ID;
+    assert.equal(await findDashboardCharacterById(id.toString(), OWNER_ID), null);
+    assert.equal((await findDashboardCharacterById(id.toString(), OTHER_OWNER_ID)).lore.quote, "소유자 전용 기록");
   });
 
   test("대시보드도 legacy MAIN을 허용하고 여러 MAIN은 fail-closed", async () => {

@@ -24,6 +24,7 @@ import {
   personnelKeys,
   usePersonnelByIdQuery,
 } from "@/hooks/queries/useCharactersQuery";
+import { dashboardKeys } from "@/hooks/queries/useDashboardQuery";
 import { useHallOfFameCitations } from "@/hooks/queries/useHallOfFameQuery";
 
 import {
@@ -807,6 +808,7 @@ export default function DossierClient({
       // characters / personnel 양쪽 캐시 무효화 — router.refresh() 대신 정공법.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: characterKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
         queryClient.invalidateQueries({ queryKey: personnelKeys.all }),
       ]);
     } catch (e) {
