@@ -54,3 +54,11 @@
 - 검증: core 40건·worker 156건, Query key 3건, `pnpm typecheck`, `pnpm lint`, `pnpm build`, critical risk review P0/P1 없음
 - 관련 구현 커밋: `4f4a5091`
 - 운영 경계: production realtime 모드와 라이브 Change Stream 상태는 변경하지 않았다.
+
+## 2026-09-08 · 기능 보강 · 대시보드 업무 요약 갱신
+
+- 거래·공방·인벤토리·운영 잠금 resource 변경이 홈 요약도 무효화하도록 연결했다. 기존 도메인 Query root는 유지한다.
+- 공방·거래·연구 mutation 성공 시 대시보드 캐시를 무효화한다. 기한·제작 완료 시각은 별도 이벤트 없이 변하므로 홈이 열려 있을 때 60초 주기로 재확인하고 백그라운드 polling은 하지 않는다.
+- 검증: 실제 QueryClient·MutationObserver로 성공/실패 후 캐시 동작을 검증하고, fresh 대시보드도 realtime resource로 갱신됨을 확인했다. 전체 집중 테스트 43/43, 타입 검사·린트·프로덕션 빌드와 인증 브라우저 mock 거래 처리 후 동일 문서의 홈 재진입 갱신을 통과했다.
+- 관련 구현 커밋: `d7c28636`
+- 운영 경계: production realtime·worker 설정과 라이브 Change Stream 상태는 변경하지 않았다.
