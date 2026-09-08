@@ -131,6 +131,7 @@ export default function FactionsClient({
 
   const selectedNode =
     nodesByCode.get(selectedCode) ?? boardNodes[0] ?? null;
+  const isPersonnelOnly = selectedNode?.code === "FEDERATIO";
   const selectedActionMeta =
     ACTIONS.find((action) => action.id === selectedAction) ?? ACTIONS[0];
   const density = selectedNode ? getDensity(selectedNode) : 0;
@@ -175,7 +176,12 @@ export default function FactionsClient({
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
-    if (!selectedNode || !data.canEditFavorability || isSavingFavorability) {
+    if (
+      !selectedNode ||
+      isPersonnelOnly ||
+      !data.canEditFavorability ||
+      isSavingFavorability
+    ) {
       return;
     }
 
@@ -577,9 +583,13 @@ export default function FactionsClient({
                   </div>
                   <Link
                     className={styles.briefing__detailLink}
-                    href={`/erp/factions/${selectedNode.code.toLowerCase()}`}
+                    href={
+                      isPersonnelOnly
+                        ? "/erp/personnel?group=FEDERATIO"
+                        : `/erp/factions/${selectedNode.code.toLowerCase()}`
+                    }
                   >
-                    <span>접선 페이지</span>
+                    <span>{isPersonnelOnly ? "신원조회" : "접선 페이지"}</span>
                     <IconArrowRight aria-hidden />
                   </Link>
                 </div>
@@ -620,7 +630,7 @@ export default function FactionsClient({
                 </div>
               </div>
 
-              {data.canEditFavorability ? (
+              {data.canEditFavorability && !isPersonnelOnly ? (
                 <form
                   className={styles.favorabilityEditor}
                   onSubmit={handleFavorabilitySubmit}
