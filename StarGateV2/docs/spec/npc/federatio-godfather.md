@@ -16,11 +16,11 @@ source: "session-log"
 previewImage: "/assets/npcs/Federatio-Godfather-profile.webp"
 mainImage: "/assets/npcs/Federatio-Godfather-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T03:22:01.804Z"
+updatedAt: "2026-09-08T04:07:21.733Z"
 ---
 
 ## 대사
-> 미상
+미상
 
 ## 외형
 중절모와 검은 정장·망토 차림이며 금색 손잡이의 지팡이를 짚고 있다. 파리 현장에서는 측근에게 붙잡힌 채 허공을 바라보았다.
@@ -34,6 +34,7 @@ updatedAt: "2026-09-08T03:22:01.804Z"
 ## 역할 상세
 페데라치오 파리 조직. 내부 기관·인가·추가 파견 근거 없음.
 
+## 관련 문서
 - [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]
 - [[wiki:puppeteer|코르티잔 · 인형사]]
 - [[wiki:paris-catacombs|파리 카타콤]]

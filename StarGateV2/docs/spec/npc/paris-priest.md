@@ -16,14 +16,14 @@ source: "session-log"
 previewImage: "/assets/npcs/Paris-Priest-profile.webp"
 mainImage: "/assets/npcs/Paris-Priest-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T03:22:01.804Z"
+updatedAt: "2026-09-08T04:07:21.733Z"
 lifeStatus: "DECEASED"
 lifeStatusAt: "2026-09-06T14:56:43.000Z"
 lifeStatusEventId: "NOSB-S1E7-DESIRE-PART2"
 ---
 
 ## 대사
-> 오늘 참 좋은 만찬이 될거란다...느흐흣.
+오늘 참 좋은 만찬이 될거란다...느흐흣.
 
 ## 외형
 짧은 곱슬머리와 웃는 얼굴, 흰 주름 장식과 레이스가 달린 검은 예복 차림이다. 현장 전투 마지막에는 웃는 하관만 남았다.
@@ -37,6 +37,7 @@ lifeStatusEventId: "NOSB-S1E7-DESIRE-PART2"
 ## 역할 상세
 정규 소속·종교 기관 미상. 후작과 의식에 참여한 사실만 확인. 내부 기관·인가·추가 파견 근거 없음.
 
+## 관련 문서
 - [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]
 - [[wiki:puppeteer|코르티잔 · 인형사]]
 - [[wiki:paris-catacombs|파리 카타콤]]

@@ -16,11 +16,11 @@ source: "session-log"
 previewImage: "/assets/npcs/Paris-Marquis-profile.webp"
 mainImage: "/assets/npcs/Paris-Marquis-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T03:22:01.804Z"
+updatedAt: "2026-09-08T04:07:21.733Z"
 ---
 
 ## 대사
-> 페데라치오, 우리 여사님의 작은 취미지.
+페데라치오, 우리 여사님의 작은 취미지.
 
 ## 외형
 왜소한 사내다. 길게 늘어진 곱슬 가발과 검은 예복 차림이며 손에는 여러 반지를 끼고 있다. 카타콤에서는 계단 난간을 붙잡고 나타났다.
@@ -34,6 +34,7 @@ updatedAt: "2026-09-08T03:22:01.804Z"
 ## 역할 상세
 정규 소속 미상. 코르티잔 측에서 의식에 참여했으나 페데라치오의 정규 구성원 여부는 미상. 내부 기관·인가·추가 파견 근거 없음.
 
+## 관련 문서
 - [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]
 - [[wiki:puppeteer|코르티잔 · 인형사]]
 - [[wiki:paris-catacombs|파리 카타콤]]

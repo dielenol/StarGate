@@ -276,8 +276,8 @@ source: session-log
 
 ## 검증한 파일 식별값
 
-- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-private-staging.json` SHA-256 `8b367ffb9ad1f46d4b222b1c8be2e8f9bad313b198a787df2b563d4983bc448d`.
-- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-publication.json` SHA-256 `ca11562104741f185fe5918914a94e2768e9deb187c7a906b5a43eab8fc1a5d6`.
+- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-private-staging.json` SHA-256 `fc34e9b548a85d01770550f18051a2f4f3a67b1ffa725bea764310d6234511e0`.
+- `StarGateV2/scripts/seed-payloads/nosb-s1e7-desire-part2-publication.json` SHA-256 `8d0b38e010814788488ce8192d4b2c384ea9e96a4fd212fda63494c857c9360e`.
 - 로컬 실행에 사용한 seed runner preview helper SHA-256 `7a26df45227c46aec537e788d999a8dc54f5ed6d34d9c9ef5bfdb6c644c9831d`. 테스트가 사용한 snapshot 시점 이후 운영 문서가 바뀌면 CAS를 재검토한다.
 
 ## 2026-09-08 실행 전 검증 결과
@@ -298,3 +298,8 @@ source: session-log
 - 사용자: 전체 공개와 필요한 배포까지 진행. 새 신원 5명, 07.5 보고서, 관련 위키·물품, 기존 17명의 등장·관계 보강 및 필요한 자산·회차 표시 배포를 승인했다. public 51개 변경을 최종 실행 대상으로 사용한다. private 13개 파일은 검토 단계의 재현 자료로 보존한다.
 - 독립 risk review 지적 2건(검증 파일 해시, 코르티잔·마테오 1부 연결)을 수정했다. 최종 finding 없음, 최종 입력으로 runner dry-run/replay 및 원장·이미지·성격 검사 재통과.
 - 카탈로그 3개는 기존 자료 부재에서 가격 0·판매 불가인 정보 항목으로 등록한다. 소유자 지급·소모·판매재고·알림·공훈 지급은 이 실행에 포함하지 않는다.
+
+## 2026-09-08 신원 설명 표시 보정
+
+- 실제 신원조회는 역할 상세·대사를 일반 텍스트로 표시한다. 신규 5명의 역할 상세에 잘못 포함된 문서 연결 기호 4줄과 대사 앞 인용 기호를 제거하는 5개 비교 후 수정안을 준비했다. 관계·출현 탭의 정식 연결과 인물 사실은 유지한다.
+- 신규 신원 원본 명세와 private/public 등록안도 같은 최종 문장으로 맞췄다. 표시 보정 파일 `nosb-s1e7-desire-part2-dossier-display-fix.json`은 현재 두 필드가 정확히 같을 때만 변경한다.

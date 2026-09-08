@@ -26,6 +26,7 @@ updatedAt: "2026-09-07T07:37:43.829Z"
 세 지점의 실제 주소와 연락처 번호는 기록에 제시되지 않는다. 세 번째 폭탄은 회귀 뒤에도 폭발했다.
 
 ## 관련 문서
+- [[personnel:MATTEO_FEDERATIO|마테오]]
 - [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]
 - [[wiki:federatio|페데라치오]]
 - [[personnel:PIPETTE|피펫]]

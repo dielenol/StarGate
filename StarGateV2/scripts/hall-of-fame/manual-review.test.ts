@@ -296,7 +296,7 @@ test("원장 인덱스 계약은 key 순서와 unique 옵션 불일치를 충돌
   );
 });
 
-test("운영 심사 계획은 U 보고서 18건과 13개 공적을 명시하고 linkage는 source revision을 고정한다", async () => {
+test("운영 심사 계획은 U 보고서 19건과 16개 공적을 명시하고 linkage는 source revision을 고정한다", async () => {
   const [reviewSource, linkageSource] = await Promise.all([
     readFile(
       new URL("./operation-honors-manual-review.v1.json", import.meta.url),
@@ -311,12 +311,12 @@ test("운영 심사 계획은 U 보고서 18건과 13개 공적을 명시하고 
     ),
   ]);
   const plan = parseManualOperationHonorReviewPlan(JSON.parse(reviewSource));
-  assert.equal(plan.reviewedSources.length, 18);
-  assert.equal(plan.items.length, 13);
+  assert.equal(plan.reviewedSources.length, 19);
+  assert.equal(plan.items.length, 16);
   assert.equal(
     plan.reviewedSources.filter((source) => source.outcome === "AWARDED")
       .length,
-    10,
+    11,
   );
   assert.deepEqual(
     plan.reviewedSources.filter((source) =>

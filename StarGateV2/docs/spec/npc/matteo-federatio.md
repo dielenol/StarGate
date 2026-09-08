@@ -16,14 +16,14 @@ source: "session-log"
 previewImage: "/assets/npcs/Matteo-Federatio-profile.webp"
 mainImage: "/assets/npcs/Matteo-Federatio-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T03:22:01.804Z"
+updatedAt: "2026-09-08T04:07:21.733Z"
 lifeStatus: "DECEASED"
 lifeStatusAt: "2026-09-06T13:03:57.000Z"
 lifeStatusEventId: "NOSB-S1E7-DESIRE-PART2"
 ---
 
 ## 대사
-> 만나서 이야기 하죠. 유선은 위험하니까
+만나서 이야기 하죠. 유선은 위험하니까
 
 ## 외형
 중절모와 멜빵을 걸친 셔츠 차림이며 두 손에는 붕대가 감겨 있다. 권총을 아래로 든 모습으로 식별된다.
@@ -37,6 +37,7 @@ lifeStatusEventId: "NOSB-S1E7-DESIRE-PART2"
 ## 역할 상세
 페데라치오 파리 조직원. 노부스 오르도 소속이나 내부 인가, 별도 파견·겸임 이력은 확인되지 않았다.
 
+## 관련 문서
 - [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]
 - [[wiki:puppeteer|코르티잔 · 인형사]]
 - [[wiki:paris-catacombs|파리 카타콤]]

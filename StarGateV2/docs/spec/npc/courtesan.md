@@ -16,12 +16,12 @@ source: "session-log"
 previewImage: "/assets/npcs/Courtesan-profile.webp"
 mainImage: "/assets/npcs/Courtesan-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T03:22:01.804Z"
+updatedAt: "2026-09-08T04:07:21.733Z"
 nickname: "인형사 · 변호사"
 ---
 
 ## 대사
-> 돌아왔구나... 실패작...
+돌아왔구나... 실패작...
 
 ## 외형
 길게 땋아 한쪽 어깨로 내린 머리와 검은 드레스 차림이다. 파리에서는 보스 곁에 서서 병사들에게 손짓으로 명령했다.
@@ -35,6 +35,7 @@ nickname: "인형사 · 변호사"
 ## 역할 상세
 정규 소속 미상. 페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.
 
+## 관련 문서
 - [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]
 - [[wiki:puppeteer|코르티잔 · 인형사]]
 - [[wiki:paris-catacombs|파리 카타콤]]
