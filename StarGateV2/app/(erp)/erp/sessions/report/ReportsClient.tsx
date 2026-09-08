@@ -43,6 +43,8 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   "05.5": { x: 86, y: -96, labelX: 132 },
   "06": { x: -86, y: -112, labelX: -132 },
   "06.5": { x: 86, y: -96, labelX: 132 },
+  "07": { x: -86, y: -112, labelX: -132 },
+  "07.5": { x: 86, y: -96, labelX: 132 },
   MINI01: { x: -92, y: -112 },
   MINI02: { x: 0, y: -94 },
   MINI03: { x: 0, y: -112 },
