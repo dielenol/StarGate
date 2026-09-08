@@ -31,6 +31,7 @@ function formatWireDate(value: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "--";
   return date.toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
