@@ -88,7 +88,7 @@ function CharAvatar({
           alt=""
           fill
           loading={variant === "hero" ? "eager" : undefined}
-          sizes={variant === "hero" ? "(max-width: 620px) 130px, 240px" : "112px"}
+          sizes={variant === "hero" ? "(max-width: 620px) 110px, (max-width: 900px) 200px, (max-width: 1100px) 240px, 280px" : "112px"}
           className={styles.charMini__avatarImg}
         />
       </div>
@@ -231,6 +231,10 @@ export default function DashboardClient({
   const characterQuote = isDisplayableCharacterText(displayCharacter?.lore.quote)
     ? displayCharacter.lore.quote.trim()
     : null;
+  const hasProfileSummary = Boolean(
+    characterRoleLine || characterClass || characterQuote ||
+    (displayCharacter?.type === "AGENT" && displayCharacter.play),
+  );
   const viewerDiscordId = initialDashboard.discordLinked ? "linked" : null;
   const myRsvpUpcoming = initialDashboard.myRsvpUpcoming.map((raw) => ({
     raw,
@@ -306,7 +310,7 @@ export default function DashboardClient({
 
       <div className={styles.dashboard}>
         <section className={styles.commandCenter} aria-label="운영 홈">
-          <article className={`${styles.commandSurface} ${styles.agentStage}`}>
+          <article className={`${styles.commandSurface} ${styles.agentStage} ${!hasProfileSummary ? styles["agentStage--compact"] : ""}`}>
             <div className={styles.agentStage__portrait} aria-hidden="true">
               {displayCharacter ? (
                 <CharAvatar
@@ -358,37 +362,41 @@ export default function DashboardClient({
                 )}
               </div>
 
-              {characterRoleLine || characterClass ? (
-                <dl className={styles.agentStage__details}>
-                  {characterRoleLine ? (
-                    <div><dt>직책 · 부서</dt><dd>{characterRoleLine}</dd></div>
+              {hasProfileSummary ? (
+                <div className={styles.agentStage__brief}>
+                  {characterRoleLine || characterClass ? (
+                    <dl className={styles.agentStage__details}>
+                      {characterRoleLine ? (
+                        <div><dt>직책 · 부서</dt><dd>{characterRoleLine}</dd></div>
+                      ) : null}
+                      {characterClass ? (
+                        <div><dt>직군</dt><dd>{characterClass}</dd></div>
+                      ) : null}
+                    </dl>
                   ) : null}
-                  {characterClass ? (
-                    <div><dt>직군</dt><dd>{characterClass}</dd></div>
+                  {characterQuote ? (
+                    <blockquote className={styles.agentStage__quote} title={characterQuote}>
+                      <span aria-hidden="true">“</span>
+                      <p>{characterQuote}</p>
+                    </blockquote>
                   ) : null}
-                </dl>
-              ) : null}
-              {characterQuote ? (
-                <blockquote className={styles.agentStage__quote} title={characterQuote}>
-                  <span aria-hidden="true">“</span>
-                  <p>{characterQuote}</p>
-                </blockquote>
-              ) : null}
 
-              {displayCharacter?.type === "AGENT" && displayCharacter.play ? (
-                <div className={styles.charMini__vitals}>
-                  <CharVital
-                    label="HP"
-                    value={displayCharacter.play.hp}
-                    max={300}
-                    tone="gold"
-                  />
-                  <CharVital
-                    label="SAN"
-                    value={displayCharacter.play.san}
-                    max={100}
-                    tone={displayCharacter.play.san < 30 ? "danger" : "info"}
-                  />
+                  {displayCharacter?.type === "AGENT" && displayCharacter.play ? (
+                    <div className={styles.charMini__vitals}>
+                      <CharVital
+                        label="HP"
+                        value={displayCharacter.play.hp}
+                        max={300}
+                        tone="gold"
+                      />
+                      <CharVital
+                        label="SAN"
+                        value={displayCharacter.play.san}
+                        max={100}
+                        tone={displayCharacter.play.san < 30 ? "danger" : "info"}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
