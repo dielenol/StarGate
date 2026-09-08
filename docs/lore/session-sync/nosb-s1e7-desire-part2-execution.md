@@ -1,5 +1,7 @@
 # 욕구 2부 운영 반영·검증 기록 — 2026-09-08
 
+최신 결과: 다섯 신원의 조직 분류 후속 보정과 페데라치오 전용 문장 배포까지 완료했다. 코르티잔·마테오·대부는 적대세력/페데라치오, 후작·성직자는 적대세력 직속 목록에서 찾을 수 있다. 아래 마지막 절에 후속 확인 결과를 기록했다.
+
 ## ERP에 추가·수정한 내용
 
 - [욕구 2부 보고서](https://www.ordonet.co.kr/erp/sessions/report/6a9f87cdab1ebb46f24fe697)를 일반 회원 공개(U)로 저장했다. 07.5 번호를 부여하고 지도에서 07과 각각 클릭되도록 배포했다.
@@ -18,7 +20,7 @@
 
 - 인적 수치·별칭·소속·등급·식별자 근거·본문·관계를 포함한 [신원별 확정 자료](nosb-s1e7-desire-part2-personnel-review.md)와 [86개 대상별 검토본](nosb-s1e7-desire-part2-user-review.md)을 함께 보존했다. 다섯 외부 인물에게 노부스 내부 등급을 추정해 부여하지 않았다. 알려지지 않은 나이·신장·체중 등은 미상이다.
 - [보고서 위키판](https://www.ordonet.co.kr/erp/wiki/6a9f87ceab1ebb46f24fe698)의 56개 장면 그림은 보고서와 파일·순서·대체텍스트·설명이 같다. 공통 로고는 기존 위키 렌더러에 따라 오른쪽 정보 상자로 이동해 표시된다. 장면을 전용 신원 초상으로 재사용하지 않았다.
-- 신원조회 미배정 그룹에서 코르티잔·후작·대부를 볼 수 있다. 마테오·성직자는 같은 그룹의 사망 인원 기록에 표시된다.
+- 후속 조직 분류 보정 후 코르티잔·대부는 적대세력/페데라치오, 마테오는 같은 조직의 사망 기록에 표시된다. 후작은 적대세력 직속 목록, 성직자는 적대세력 직속 사망 기록에 표시된다.
 
 ## 검토안으로만 남긴 내용 / 건드리지 않은 내용
 
@@ -30,17 +32,17 @@
 
 - 사용자 확정 5신원·투명 초상과 7화 2부 자료를 운영 저장·공개·배포했다. 같은 신원과 증언, 현재 등장체와 과거 인물을 구분해 유지했다.
 - 저장 뒤 화면에서 발견한 지도 클릭 충돌과 역할 상세/대사의 문서 기호 노출을 수정했다. 설명 보정은 신규 5명의 두 문장 필드와 수정일에 한정했다.
-- 데이터/초상 커밋 `16192fb3`, 표시 보정·공적 검토계획 `f40a1043`, 지도 수정 `bc73575c`, 지도 이력 `fe332520`. 현재 운영 코드는 `cd0d241d`이며 배포 ID는 `dpl_HoeKXheaEDaWu8mKZje6MazcgZyQ`다. 공유 main 전체를 push하지 않고 현재 운영 버전 위에 필요한 자산·코드만 배포했다.
+- 데이터/초상 커밋 `16192fb3`, 표시 보정·공적 검토계획 `f40a1043`, 지도 수정 `bc73575c`, 지도 이력 `fe332520`. 최초 반영 당시 운영 코드는 `cd0d241d`였으며 배포 ID는 `dpl_HoeKXheaEDaWu8mKZje6MazcgZyQ`다. 공유 main 전체를 push하지 않고 현재 운영 버전 위에 필요한 자산·코드만 배포했다.
 
 ## 아직 끝나지 않은 일
 
-- **일반 회원 U 계정의 직접 로그인 검증만 미실시**다. 공식 테스트 계정 목록은 V/A/M/H/G/J이고 U가 없다. GM·최저 회원 J·게스트 U·미인증을 각각 확인했으며 게스트 U 결과를 일반 회원 U로 대체하지 않았다.
+- 이번 요청의 저장·공개·조직 분류·문장 배포는 모두 완료했다. 별도 검증 한계로 일반 회원 U 계정의 직접 로그인 검증은 미실시다. 공식 테스트 계정 목록은 V/A/M/H/G/J이고 U가 없다. GM·최저 회원 J·게스트 U·미인증을 각각 확인했으며 게스트 U 결과를 일반 회원 U로 대체하지 않았다.
 - 기존 저장소 전체 로어 감사의 범위 밖 4건은 이번 자료의 집중 검사와 구분한다(이전 확인표에 원인 보존). 이번 반영안의 출처·신원·성격·그림·연결 검사는 통과했다.
 
 ## 진행에 필요한 확인·자료
 
 - 요청한 운영 반영·배포에 필요한 추가 승인은 없다. 후작·성직자의 본인/인형 여부는 사용자 결정대로 미확정 상태 자체가 최종 기록이다.
-- U 회원에 대한 추가 실동작 증거가 필요하면 공식 U 테스트 계정이 필요하다. 이 검증을 위해 계정이나 권한을 새로 만들지 않았다.
+- 등록된 일반 회원 U 테스트 계정이 없어 직접 로그인 증거는 없으며, 이번 검증을 위해 계정이나 권한을 생성하지 않았다. 추가 사용자 조치가 필요한 미완료 반영안은 없다.
 
 ## 다음에 할 일
 
@@ -65,4 +67,42 @@
 
 ## 다른 작업의 남은 파일
 
-이번 작업이 소유하지 않은 `.DS_Store`, `StarGateV2/lib/gallery/__tests__/gallery-safety-contract.test.mjs`, `StarGateV2/next-env.d.ts`, 비추적 `StarGateV2/_watch-stm.mjs`를 보존했다.
+이번 작업이 소유하지 않은 `.DS_Store`, `StarGateV2/lib/gallery/__tests__/gallery-safety-contract.test.mjs`, `StarGateV2/next-env.d.ts`, 비추적 `StarGateV2/_watch-stm.mjs`를 보존했다. 후속 마감 중 다른 작업이 변경한 `StarGateV2/app/(erp)/ERPHeader.module.css`, `StarGateV2/app/(erp)/ERPHeader.tsx`, `StarGateV2/components/erp/ERPSidebar/ERPSidebar.module.css`, `StarGateV2/components/erp/ERPSidebar/ERPSidebar.tsx`도 이 커밋에서 제외했다.
+
+## 2026-09-08 후속 보정 — 신원조회 조직 분류와 문장
+
+- 사용자 요청에 따라 페데라치오를 적대세력 하위 조직으로 추가했다. 기존 공개 위키의 시칠리아계 마피아·광명회 협력·테러 물류와 1·2부 작전 행적이 근거다. 코르티잔·마테오·대부의 페데라치오 소속은 확인된 역할로 연결했다. 후작·성직자는 현장 적대만 확인되어 정규 조직을 새로 단정하지 않았다.
+- 기존 다섯 신원 ID·공개·초상·생사·등장·관계를 보존하며 분류를 보정했다. 코르티잔의 상충하는 정규 소속 미상 문구와 본문 형식만 현재 명세와 맞췄다. 래키는 기존 시민사회/송사리 그대로다.
+- [페데라치오 신원조회](https://www.ordonet.co.kr/erp/personnel?group=HOSTILE&sub=FEDERATIO): 코르티잔·페데라치오 대부, 사망 기록 마테오. [적대세력](https://www.ordonet.co.kr/erp/personnel?group=HOSTILE): 후작, 직속 사망 기록 성직자.
+- 세력도에서도 새 조직 문장과 브리핑을 표시하고 신원조회로 연결한다. 지원하지 않는 접선/우호도 편집을 노출하지 않으며 `/erp/factions/federatio`도 같은 신원조회로 이동한다. 별도 호감도·활동·경제 원장 생성이나 변경은 없다.
+- 구현 커밋 `813061d5`, 운영 커밋 `91b9f3329a0b27b9985d856a3822cfd838acfede`, 배포 `dpl_Hezdc11z6VWvE873iqBE5CpLweWu`. 실제 운영 기반에 런타임 5개 파일만 배포했다.
+- 검증: NPC schema·신원 원장·공개문 검사·5건 CAS dry-run·운영 값 전수 일치·재실행 5건 변경 없음, 관련 테스트 48/48, 아이콘 감사 129 icons/38 routes/36 org와 SVG 3곳 일치, 최종 typecheck/lint 및 원격 production build 통과. 운영 GM 5명 상세에서 조직·투명 초상 로딩·생사·동일한 보고서 href 확인; 운영 조직 그룹 3명/직속 2명, 390×844 모바일 초상 5개·가로 넘침 없음, 세력도 버튼과 직접 주소 redirect 통과. 운영 신규 브라우저 오류 0 및 해당 배포 최근 15분 서버 error/fatal 0. localhost:43849의 공식 회원 J·guest U 각각 5건 목록/상세 API 및 SSR 200·분류 일치·권한 마스킹 확인, 미인증 API 401/SSR 307 확인. 로컬 기존 브라우저의 확장 프로그램 관련 hydration 경고는 운영 오류 0과 구분. 새 신원 추가 없이 5건 update. DB 재조회 시각 2026-09-08T05:51:12.548Z. 이번 후속 요청에서 미완료 작업이나 필요한 추가 결정은 없다.
+- 전체 자산 감사는 기존 9화 웩슬러 주니어 초상(`/assets/npcs/Wexler-Junior-profile.webp`) 누락 1건으로 실패했다. 자산 테스트는 23개 중 22개 통과/같은 원인 1개 실패이며, 수정 전 부모 커밋에서도 참조가 존재하고 파일은 없음을 확인했다. 이번 문장 관련 검증과 분리하며 다른 회차 자료를 임의 변경하지 않았다.
+- 문장: `stargate-images`의 heraldic-icon 경로, built-in 생성 및 1회 축약 편집, binary 정규화/VTracer 7 paths. `OrgIcon`·공개 SVG·NOVUS 마스터 본문 일치. 16·20·24·32px 밝고 어두운 배경 검수 후 채택했다. 원본과 비교판은 작업용 자료로 보존했고, 발행물은 `/assets/svg/org_extorg_federatio.svg`다. 공식 역사적 문장이라는 설정을 추가한 것은 아니다.
+- 링크 실제 이동: 운영 대부 상세의 최종 출현 링크를 클릭해 `/erp/sessions/report/6a9f87cdab1ebb46f24fe697` 도착을 확인했다. 클릭 직후 화면 상태가 먼저 반환되는 CUA 관찰 시차를 최종 주소 재조회로 구분했다.
+
+### 문장 최종 제작 지시
+
+```text
+Use case: logo-brand
+Asset type: source artwork for a 24×24 monochrome NOVUS ERP organization SVG icon
+Primary request: Design one premium, original heraldic emblem for Federatio (페데라치오).
+Identity/context: A fictional armed criminal syndicate encountered in Paris in the StarGate campaign. The icon identifies the syndicate in NOVUS ORDO personnel records. Communicate underworld solidarity and restrained menace. This is an original interface emblem, not an assertion of a historical official coat of arms.
+Subject: Integrate a single heavy interlocking knot and one short downward blade into one coherent emblem. The motifs must share geometry and negative space; do not look like separate clip-art symbols pasted together.
+Style/medium: pure flat vector logo / SVG glyph aesthetic, single solid black ink on a transparent or perfectly pure white background, bold clean geometry, elegant heraldic balance, sophisticated and severe rather than cute
+Composition/framing: exactly one centered isolated emblem, square composition, generous even padding, strong silhouette, readable when reduced to 24 pixels
+Constraints: maximum 5–8 major shapes; no text, letters, numbers, runes, watermark, mockup, UI frame, gradients, shadows, gray, color, texture, 3D, or thin hairline detail; easy to threshold and trace into a compact SVG
+Avoid: generic esports shields, crossed-symbol clip art, literal national flags, excessive ornament, tiny enclosed holes, detached decorations, and details that disappear at 24×24
+Art direction and finish: preserve NOVUS severe monochrome heraldic icon language. Quality means coherent geometry, clean edges, generous negative space and a distinctive readable small silhouette; do not introduce painterly shading or character imagery.
+
+
+Simplification prompt (built-in edit; exact source identity preserved):
+Edit the supplied Federatio emblem into a radically simplified small-icon master while preserving its distinctive identity.
+Keep: the interlocking knot silhouette pierced by one short downward blade; coherent severe NOVUS monochrome heraldry.
+Remove: the long sword handle, blade center hairline, thin weave gaps, oversized blade length, all hairlines, tiny gaps, decorative flourishes, texture, and details that disappear at 24×24.
+Result: exactly one compact coherent glyph, solid black shapes with broad white negative-space cuts on a transparent or pure white background, maximum 5–8 major shapes, centered with generous padding, crisp flat SVG/logo appearance, immediately legible at 24×24. Bring overall emblem aspect close to square by making the knot broad and shortening the handle and blade. Keep intersections separated by thick negative-space cuts.
+Do not add new symbols, text, letters, numbers, runes, watermark, mockup, gradient, shadow, gray, color, or 3D.
+
+QA-selected output: federatio-heraldic-icon.svg; 7 fill-only paths; 16/20/24/32 light/dark QA.
+
+```
