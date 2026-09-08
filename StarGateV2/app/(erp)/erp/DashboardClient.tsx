@@ -91,7 +91,7 @@ function CharAvatar({
           alt=""
           fill
           loading={variant === "hero" ? "eager" : undefined}
-          sizes={variant === "hero" ? "(max-width: 620px) 120px, 200px" : "112px"}
+          sizes={variant === "hero" ? "(max-width: 620px) 130px, 240px" : "112px"}
           className={styles.charMini__avatarImg}
         />
       </div>
@@ -99,7 +99,7 @@ function CharAvatar({
   }
   return (
     <div className={avatarClassName}>
-      <Seal size="sm">{initial}</Seal>
+      <Seal size={variant === "hero" ? "lg" : "sm"} className={variant === "hero" ? styles.charMini__seal : undefined}>{initial}</Seal>
     </div>
   );
 }
@@ -304,22 +304,8 @@ export default function DashboardClient({
       />
 
       <div className={styles.dashboard}>
-        <div className={styles.deskHeading}>
-          <div>
-            <p className={styles.deskHeading__eyebrow}>NOVUS ORDO / OPERATIONS</p>
-            <h2>요원 작전실</h2>
-          </div>
-          <p className={styles.deskHeading__caption}>당신의 기록과 다음 작전을 한곳에서.</p>
-        </div>
         <section className={styles.commandCenter} aria-label="운영 홈">
           <article className={`${styles.commandSurface} ${styles.agentStage}`}>
-            <div className={styles.agentStage__documentHead}>
-              <div className={styles.agentStage__brand}>
-                <Image src={resolvePublicAssetPath("/assets/StarGate_logo.webp")} width={38} height={38} alt="" />
-                <span>NOVUS ORDO<small>PERSONNEL REGISTRY</small></span>
-              </div>
-              <span className={styles.agentStage__documentLabel}>인사 기록</span>
-            </div>
             <div className={styles.agentStage__portrait} aria-hidden="true">
               {displayCharacter ? (
                 <CharAvatar
@@ -340,13 +326,13 @@ export default function DashboardClient({
                     .filter(Boolean)
                     .join(" ")}
                 >
-                  <Seal size="sm">ERP</Seal>
+                  <Seal size="lg" className={styles.charMini__seal}>ERP</Seal>
                 </div>
               )}
             </div>
 
             <div className={styles.agentStage__content}>
-              <span className={styles.sectionLabel}><IconAgentProfile className={styles.sectionLabel__icon} aria-hidden />요원 프로필</span>
+              <span className={styles.sectionLabel}><IconAgentProfile className={styles.sectionLabel__icon} aria-hidden />PERSONNEL <span className={styles.sectionLabel__divider}>/</span> 요원 작전실</span>
               <h2 className={styles.agentStage__name}>
                 {displayCharacter
                   ? displayCharacter.lore.name || displayCharacter.codename
@@ -393,10 +379,10 @@ export default function DashboardClient({
                       ? `/erp/characters/${String(displayCharacter._id)}`
                       : "/erp/characters"
                   }
-                  variant="primary"
-                  className={styles.primaryPill}
+                  variant="default"
+                  className={styles.secondaryPill}
                 >
-                  {displayCharacter ? "캐릭터 시트" : "캐릭터 확인"}
+                  {displayCharacter ? "캐릭터 시트" : "캐릭터 확인"}<span aria-hidden="true"> ↗</span>
                 </Button>
                 <Link href="/erp/credits" className={styles.secondaryPill}>
                   크레딧 확인
@@ -405,12 +391,53 @@ export default function DashboardClient({
             </div>
           </article>
 
+          <section className={styles.signalStrip} aria-label="운용 지표">
+            <Link href="/erp/credits" className={styles.signalItem}>
+              <span><IconCredit className={styles.signalItem__icon} aria-hidden />운용 크레딧</span>
+              <strong className={styles.signalItem__gold}>¤ {balance.toLocaleString()}</strong>
+            </Link>
+            <Link href={characterPointHref} className={styles.signalItem}>
+              <span><IconCredit className={styles.signalItem__icon} aria-hidden />잔여 포인트</span>
+              <strong>
+                {characterPointBalance !== null
+                  ? `PT ${characterPointBalance.toLocaleString()}`
+                  : "—"}
+              </strong>
+            </Link>
+            <Link href="/erp/sessions" className={styles.signalItem}>
+              <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />응답 대기</span>
+              <strong>{pendingResponse.length}</strong>
+            </Link>
+            <Link href="/erp/sessions" className={styles.signalItem}>
+              <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />금일 진행 세션</span>
+              <strong>{todaySessionCount}</strong>
+            </Link>
+            <Link href="/erp/notifications" className={styles.signalItem}>
+              <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
+              <strong>{unreadCount}</strong>
+            </Link>
+            <Link href="/erp/characters" className={styles.signalItem}>
+              <span><IconPersonCard className={styles.signalItem__icon} aria-hidden />보유 캐릭터</span>
+              <strong>{myCharacterCount}</strong>
+            </Link>
+            <div className={styles.signalItem}>
+              <span><IconServiceRecord className={styles.signalItem__icon} aria-hidden />누적 작전</span>
+              <strong>{mySessionCount !== null ? mySessionCount : "—"}</strong>
+            </div>
+            <div className={styles.signalItem}>
+              <span><IconTenure className={styles.signalItem__icon} aria-hidden />가입 후</span>
+              <strong>{joinedDays}D</strong>
+            </div>
+          </section>
+        </section>
+
+        <div className={styles.workbench}>
           <article className={`${styles.commandSurface} ${styles.missionStage}`}>
             <Image
               src={resolvePublicAssetPath("/assets/world-view/novus-ordo-world-map.webp")}
               alt=""
               fill
-              sizes="(max-width: 900px) 100vw, 40vw"
+              sizes="(max-width: 900px) 100vw, 50vw"
               className={styles.missionStage__map}
             />
             <div className={styles.sectionHead}>
@@ -451,19 +478,16 @@ export default function DashboardClient({
               </>
             ) : (
               <div className={styles.missionStage__standby}>
-                <span className={styles.missionStage__standbyLabel} aria-hidden="true">STANDBY</span>
-                <strong>작전 대기</strong>
-                <span>참여 예정 작전이 없습니다.</span>
-                <Link href="/erp/sessions" className={styles.secondaryPill}>
+                <span className={styles.missionStage__standbyLabel} aria-hidden="true">AWAITING NEXT OPERATION</span>
+                <strong>지금은 작전 대기 중</strong>
+                <span>세션 달력에서 다음 작전을 확인하세요.</span>
+                <Link href="/erp/sessions" className={styles.primaryPill}>
                   세션 달력
                 </Link>
               </div>
             )}
           </article>
 
-        </section>
-
-        <div className={styles.workbench}>
           <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
             <div className={styles.sectionHead}>
               <div>
@@ -498,45 +522,6 @@ export default function DashboardClient({
               </div>
             )}
           </aside>
-
-          <section className={styles.signalStrip} aria-label="운용 지표">
-            <Link href="/erp/credits" className={styles.signalItem}>
-              <span><IconCredit className={styles.signalItem__icon} aria-hidden />운용 크레딧</span>
-              <strong className={styles.signalItem__gold}>¤ {balance.toLocaleString()}</strong>
-            </Link>
-            <Link href={characterPointHref} className={styles.signalItem}>
-              <span><IconCredit className={styles.signalItem__icon} aria-hidden />잔여 포인트</span>
-              <strong>
-                {characterPointBalance !== null
-                  ? `PT ${characterPointBalance.toLocaleString()}`
-                  : "—"}
-              </strong>
-            </Link>
-            <Link href="/erp/sessions" className={styles.signalItem}>
-              <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />응답 대기</span>
-              <strong>{pendingResponse.length}</strong>
-            </Link>
-            <Link href="/erp/sessions" className={styles.signalItem}>
-              <span><IconActiveOps className={styles.signalItem__icon} aria-hidden />금일 진행 세션</span>
-              <strong>{todaySessionCount}</strong>
-            </Link>
-            <Link href="/erp/notifications" className={styles.signalItem}>
-              <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
-              <strong>{unreadCount}</strong>
-            </Link>
-            <Link href="/erp/characters" className={styles.signalItem}>
-              <span><IconPersonCard className={styles.signalItem__icon} aria-hidden />보유 캐릭터</span>
-              <strong>{myCharacterCount}</strong>
-            </Link>
-            <div className={styles.signalItem}>
-              <span><IconServiceRecord className={styles.signalItem__icon} aria-hidden />누적 작전</span>
-              <strong>{mySessionCount !== null ? mySessionCount : "—"}</strong>
-            </div>
-            <div className={styles.signalItem}>
-              <span><IconTenure className={styles.signalItem__icon} aria-hidden />가입 후</span>
-              <strong>{joinedDays}D</strong>
-            </div>
-          </section>
         </div>
 
         {mainIntegrityError ? (
