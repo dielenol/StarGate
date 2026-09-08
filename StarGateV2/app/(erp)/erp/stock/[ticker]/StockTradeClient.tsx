@@ -843,6 +843,7 @@ export default function StockTradeClient({
                   const eventDate = new Date(item.ts);
                   const eventDateLabel = Number.isFinite(eventDate.getTime())
                     ? eventDate.toLocaleString("ko-KR", {
+                        timeZone: "Asia/Seoul",
                         month: "2-digit",
                         day: "2-digit",
                         hour: "2-digit",
@@ -921,6 +922,7 @@ export default function StockTradeClient({
                   const date = new Date(row.ts);
                   const dateLabel = Number.isFinite(date.getTime())
                     ? date.toLocaleString("ko-KR", {
+                        timeZone: "Asia/Seoul",
                         year: "2-digit",
                         month: "2-digit",
                         day: "2-digit",
@@ -1542,6 +1544,7 @@ export default function StockTradeClient({
                   const created = new Date(tx.createdAt);
                   const dateLabel = Number.isFinite(created.getTime())
                     ? created.toLocaleString("ko-KR", {
+                        timeZone: "Asia/Seoul",
                         month: "2-digit",
                         day: "2-digit",
                         hour: "2-digit",
