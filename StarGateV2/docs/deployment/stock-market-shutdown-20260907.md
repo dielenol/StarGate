@@ -159,3 +159,35 @@ node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-mar
 - 배포 후 실제 종목 화면에서 반복된 React 418의 원인을 좁혔다. 이벤트·시세·체결 이력의 `toLocaleString` 세 곳에 timeZone이 없어 SSR의 UTC와 브라우저 KST가 같은 ISO를 9시간 다르게 출력했다. 같은 값으로 UTC/KST 출력을 직접 비교해 재현했고 세 곳에 `Asia/Seoul`을 명시해 출력 일치를 확인했다. 구현 `08b68dc8`, release `59955414`다. 관련 없는 기존 로컬 dev server의 `IconFile` export build error 때문에 해당 서버의 개발 UI 재현은 불가했으며, 다른 작업 서버를 수정하거나 재시작하지 않았다.
 - 최종 Web 배포 `dpl_HHT2h5S9N9z4V2NJHmmBBj1MM4ek`는 production build를 통과해 READY로 승격됐다. `www.ordonet.co.kr` 조회에서 소스 `59955414`를 확인했다. 실제 종목 상세 hard refresh 후 매도 전용·매수 disabled·오늘 18시 종료 예정·한국시간 시세 이력이 정상이며, 수정 뒤 새 콘솔 error/warn은 0건이다. 이 화면의 확인 계정은 보유 0주여서 매도 버튼은 보유량 때문에 disabled이며, 실제 매도 mutation은 격리 MongoDB 통합 테스트에서만 검증했다. 앞선 전체 typecheck·lint와 날짜 포맷 세 곳의 출력 일치 검사도 통과했다.
 - 현재 완료 범위는 계획 등록, 매수·이전 차단과 매도 허용 코드의 운영 반영, 오늘 18시 단발 일정·18:02 후속 확인 설정이다. 마지막 폭락·공시·이미지 실제 전달·최종 가격 동결 완료 여부는 18시 실행 후 별도로 확인한다. 임시 release checkout은 검증 후 정리하며, 사용자/다른 작업의 변경은 보존한다.
+
+## 9월 8일 18시 종료 실행 완료
+
+- 단발 실행 `EnChAI15-j-E1n_KGDvYO`는 18:00:00.146~18:00:05.190 KST에 `done`으로 완료됐다. worker 결과는 `APPLIED`, plan은 `COMPLETED`, 적용 종목은 9개다. DB 완료 시각은 18:00:03.446, 가격 효력 시각은 18:00:00이다.
+- 18:04 운영 DB 재조회에서 승인된 하락률과 최종 가격이 모두 일치했다. `stock-market-shutdown:novex:<ticker>` 이력은 종목별 정확히 1건이다.
+
+| 종목 | 하락률 | 이전 가격 | 최종 동결 가격 |
+| --- | ---: | ---: | ---: |
+| ART | 55% | 121.57 | 54.71 |
+| BPE | 58% | 426.99 | 179.34 |
+| GN3 | 70% | 819.27 | 245.78 |
+| MSF | 40% | 175.73 | 105.44 |
+| SPZ | 62% | 4167.80 | 1583.76 |
+| SSR | 65% | 34.23 | 11.98 |
+| STM | 50% | 4.04 | 2.02 |
+| TWS | 45% | 20.22 | 11.12 |
+| VFP | 47% | 98.42 | 52.16 |
+
+- 시장은 `CLOSED` + `SELL_ONLY`, `shutdownAt=18:00`, `nextSlotAt` 없음이다. 시즌 `novex-season:2026-09-07`도 `FINALIZED`, `endsAt/finalizedAt=18:00`이다. 완료 이후 보유 주식 청산 매도만 유지한다.
+- 최종 공시 `stock-market-shutdown:novex`는 `PUBLISHED`다. 사유 `파리 사태로 인한 쇼크`, 영구 매수 금지·가격 영구 동결·보유 주식 매도만 가능 본문과 지정 뉴스 이미지 URL이 모두 일치한다.
+- Discord outbox는 `DELIVERED/SENT`, attempts=1이며 18:00:11.310에 전달됐다. 메시지 `1546807337694527598`를 실제 Discord GET HTTP 200으로 다시 읽어 사유·정책·뉴스 이미지·9종목 포함을 확인했다.
+- ERP 개별 공시 알림은 0건이다. 활성 공시 알림 구독자도 0명으로, 알림 대상이 없었다. Discord 공시 전달과 ERP 개별 알림 생성은 구분한다.
+- 정상 Dokploy UI에서 단발 `stocks.market-shutdown.20260908`을 Disabled로 저장했다. 18:05:03 KST 읽기 전용 재조회에서도 정기 `stocks.tick`과 단발 일정이 모두 disabled이며 나머지 네 일정은 enabled다.
+- 운영 브라우저에서 TWS 최종 가격 11.12, -45%, 18시 시세 이력과 사유, 시장 운영 종료·가격 갱신 종료·매도 전용·매수 disabled를 확인했다. 확인 계정은 보유 0주라 매도 버튼이 비활성화된다. 운영 주문은 테스트하지 않았고 매도 정산은 앞선 MongoDB 통합 검증 증거를 유지한다.
+- 후속 사이트 확인에서 최종 공시가 과거 공시 뒤로 밀려 타임라인 8건 제한에 잘리는 회귀를 재현했다. 종료 공시는 `publishAt` 없이 `publishedAt`을 저장하는데, DB 목록은 `publishAt`만 우선 정렬했다. 저장 데이터나 가격을 재적용하지 않고 목록을 `publishAt ?? publishedAt ?? createdAt`으로 limit 전에 정렬하도록 수정했다. 구현 `8acf4ade`, 현재 운영 `91b9f332` 위 분리 release `8da82076`이다.
+- 정렬 수정 검증: 실제 MongoDB 7에서 과거 공시 110건보다 최신 즉시 공시 우선, null/누락 시각 fallback, 공개 상태 필터, limit·임시 필드 제거를 확인했다. 통합 1/1, 웹 주식·관리자 API 80/80, shared-db build, typecheck·전체 lint, diff-check 통과, 독립 critical 리뷰 P0/P1/P2 없음. 테스트 컨테이너는 정리했다.
+- 정렬 수정 배포 `dpl_8rv25W5bYEudaur86akrYYa4xYRw`는 production build·READY를 확인했다. deploy CLI가 완료 후 `Not authorized`로 종료했으나 산출물은 정상 READY였으며, 정상 `vercel promote`는 성공했다. `www.ordonet.co.kr`의 실제 연결이 해당 배포로 바뀐 것을 다시 조회했다.
+- 운영 목록과 TWS 상세에서 종료 공시가 첫 카드에 나타나고 사유·정책·9종목 효과와 뉴스 이미지 1024×1536 로딩 완료를 확인했다. 가격 재적용이나 공시 재발송 없이 조회 수정만으로 복구했다.
+- 목록 hard refresh에서 기존 `MarketWirePanel.formatWireDate`의 timeZone 누락을 추가 재현했다. 같은 18시 ISO가 서버 UTC에서는 09시, 브라우저 KST에서는 18시로 나와 React 418을 발생시켰다. `Asia/Seoul` 한 줄을 명시해 실제 formatter의 UTC/KST 출력이 모두 18시임을 확인했다. 구현 `40df3e93`, release `b540db16`; typecheck·전체 lint도 다시 통과했다.
+- 최종 Web 배포 `dpl_4nBucNUPpk2xcwZiUBBkzKKBe1A4`는 production build와 READY를 확인하고 정상 promote로 승격했다. 실제 `www.ordonet.co.kr` 연결이 해당 배포이며 source는 `b540db16e5975f0e2ac56b4a032dc71df2c15093`이다. 공개 메인·로그인·신원조회 등 기존 운영 변경을 보존한 `91b9f332` 위에 조회 정렬과 시간대 두 수정만 포함했다. worker는 재배포하지 않았다.
+- 18:23 KST 최종 운영 브라우저 검증: 목록과 TWS 상세 hard refresh 후 최종 공시가 첫 카드에 표시되고 사유·정책·9종목 효과와 지정 뉴스 이미지 로딩(1024×1536)이 정상이다. 목록 공시 시각은 18시로 일치하며 가로 넘침이 없고, 최종 배포 후 새 콘솔 error/warn은 0건이다. TWS 가격 11.12·-45%와 매수 disabled가 유지된다.
+- 완료 확인 heartbeat `18`은 도구에서 삭제 성공을 확인했다. 정기·단발 주식 일정 모두 중지됐고 추가 후속 예약은 없다. 완료된 가격을 재적용하거나 공시·이미지를 다시 발송하지 않았다. 임시 배포 checkout을 정리하고 기존 사용자/다른 작업 변경은 보존했다.

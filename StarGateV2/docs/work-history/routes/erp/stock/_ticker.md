@@ -104,3 +104,11 @@
 - 관련 커밋: `428ca05e`, `08b68dc8` (운영 release `31088dd9`, `59955414`)
 - 운영 예약: 9월 8일 12:30:34 종료 계획 등록이 성공해 매수 차단이 활성화됐다. 최종 폭락·사유 공시·이미지 전달은 같은 날 18시 예약이며, 실제 적용 결과는 [운영 기록](../../../../deployment/stock-market-shutdown-20260907.md)을 따른다.
 - 운영 검증: Vercel production build를 통과한 `dpl_HHT2h5S9N9z4V2NJHmmBBj1MM4ek`를 승격하고 실제 도메인의 source `59955414`를 확인했다. 종목 상세 hard refresh 후 매도 전용·매수 disabled·오늘 18시 종료 예정·한국시간 시세 표시가 정상이며 새 콘솔 error/warn은 0건이다. 확인 계정은 보유 0주여서 운영 매매는 하지 않았고, 매도 mutation은 테스트 DB에서 검증했다.
+
+## 2026-09-08 · 버그 수정 · 종료 뉴스 누락 복구
+
+- 종목 상세의 최종 공시가 과거 공시 뒤로 밀려 최근 8건에서 제외되는 문제를 고쳤다. 즉시 공시의 실제 공개 시각도 정렬에 반영해 사유·시장 중지 안내·뉴스 이미지를 최신 카드에서 읽을 수 있게 한다.
+- 검증: 실제 MongoDB 7에서 과거 공시 110건보다 최신 즉시 공시 우선, null/누락 시각 fallback과 미공개 상태 필터 통합 1/1, 웹 주식·관리자 API 80/80, shared-db build, typecheck·전체 lint, critical 리뷰 P0/P1/P2 없음
+- 관련 커밋: `8acf4ade` (운영 release `8da82076`)
+- 실제 종료·가격·Discord 전달과 후속 사이트 검증은 [운영 기록](../../../../deployment/stock-market-shutdown-20260907.md)의 9월 8일 18시 실행 완료 항목을 따른다.
+- 운영 검증: 최종 배포 `dpl_4nBucNUPpk2xcwZiUBBkzKKBe1A4` 승격 뒤 18:23 KST hard refresh에서 최종 공시 첫 카드·정책·뉴스 이미지 1024×1536 로딩, TWS 11.12·-45%와 매수 disabled, 새 콘솔 error/warn 0을 확인했다. 운영 주문 mutation은 실행하지 않았다.
