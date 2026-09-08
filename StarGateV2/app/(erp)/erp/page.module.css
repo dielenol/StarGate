@@ -1,7 +1,7 @@
 /* 개인 작전실: 신원·운용 지표를 통합하고 다음 행동을 한 흐름으로 연결한다. */
 .dashboard {
-  --desk-gold: #d3b66e;
-  --desk-line: rgba(212, 192, 142, 0.13);
+  --desk-gold: var(--gold);
+  --desk-line: var(--line);
   max-width: 1440px;
   margin: 4px auto 0;
   color: var(--ink-1);
@@ -10,9 +10,9 @@
 .commandCenter {
   margin-bottom: 24px;
   overflow: hidden;
-  border: 1px solid #c8bd9e24;
+  border: 1px solid var(--line);
   border-radius: 20px;
-  background: linear-gradient(110deg, #171918, #191d1e 75%, #222723);
+  background: linear-gradient(110deg, var(--bg-2), #1b191d 75%, #231f20);
 }
 .commandSurface {
   position: relative;
@@ -39,12 +39,12 @@
   z-index: -1;
   inset: 8% -12%;
   content: "";
-  background: radial-gradient(ellipse, #d2c39436, #d2c3940a 55%, transparent 72%);
+  background: radial-gradient(ellipse, #d2c7b229, #d2c7b207 55%, transparent 72%);
   pointer-events: none;
 }
 .sectionLabel__divider {
   margin: 0 4px;
-  color: #656c64;
+  color: var(--ink-3);
 }
 .signalItem:first-child {
   border-left: 0;
@@ -97,7 +97,7 @@
 }
 .agentStage__name {
   margin: 16px 0 0;
-  color: #f1eddf;
+  color: var(--ink-0);
   font-size: clamp(32px, 3.8vw, 54px);
   font-weight: 600;
   line-height: 1.2;
@@ -206,14 +206,14 @@
   padding: 28px 32px;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(110deg, #172021, #1c2a2a);
+  background: linear-gradient(110deg, var(--bg-2), #211e22);
 }
 .missionStage .missionStage__map {
   z-index: -1;
   object-fit: cover;
   object-position: 65% center;
   opacity: 0.17;
-  filter: invert(1) sepia(0.25);
+  filter: grayscale(1) invert(1);
   mask-image: linear-gradient(100deg, transparent 5%, #0006 45%, #000 100%);
   pointer-events: none;
 }
@@ -233,7 +233,7 @@
   letter-spacing: -0.035em;
 }
 .missionStage .sectionLabel {
-  color: #a6bdb4;
+  color: var(--ink-2);
 }
 .missionStage__date {
   display: grid;
@@ -246,7 +246,7 @@
   letter-spacing: -0.06em;
 }
 .missionStage__date span {
-  color: #b5c4ba;
+  color: var(--ink-1);
   font: 12px/1.5 var(--font-mono);
 }
 .missionStage__title {
@@ -269,7 +269,7 @@
   padding: 12px 0 6px;
 }
 .missionStage__standbyLabel {
-  color: #8fa29a;
+  color: var(--ink-2);
   font: 400 10px/1.5 var(--font-mono);
   letter-spacing: 0.1em;
 }
@@ -281,7 +281,7 @@
   line-height: 1.35;
 }
 .missionStage__standby > span:not(.missionStage__standbyLabel) {
-  color: #a5b5aa;
+  color: var(--ink-1);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -293,14 +293,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid #abb9b328;
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: #141819;
+  background: var(--bg-1);
   margin-bottom: 32px;
 }
 .actionQueue {
   padding: 28px;
-  border-left: 1px solid #abb9b322;
+  border-left: 1px solid var(--line);
 }
 .actionQueue .sectionHead {
   align-items: center;
@@ -402,9 +402,9 @@
 
 .signalStrip {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid var(--desk-line);
-  background: #0d11114d;
+  background: var(--bg-1);
 }
 .signalItem {
   display: flex;
@@ -412,22 +412,21 @@
   justify-content: flex-end;
   gap: 10px;
   min-width: 0;
-  padding: 18px 16px 22px;
+  padding: 20px 24px;
   border-left: 1px solid var(--desk-line);
   color: inherit;
   text-decoration: none;
   transition: background-color 160ms ease;
 }
 .signalItem:nth-child(-n + 2) {
-  grid-column: span 3;
+  grid-column: auto;
 }
 .signalItem span {
   display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  min-height: 30px;
-  color: #a5aa9f;
-  font-size: 11px;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-1);
+  font-size: 13px;
   line-height: 1.4;
 }
 .signalItem__icon {
@@ -437,8 +436,8 @@
 }
 .signalItem strong {
   min-width: 0;
-  color: #dce0d4;
-  font: 400 24px/1.15 var(--font-mono);
+  color: var(--ink-0);
+  font: 400 30px/1.2 var(--font-mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.045em;
   white-space: nowrap;
@@ -539,7 +538,7 @@ a.signalItem:hover strong {
   font: 15px var(--font-mono);
 }
 .sessionCard__code span, .timeText {
-  color: #8f928a;
+  color: var(--ink-2);
   font: 11px/1.5 var(--font-mono);
 }
 .sessionCard__body {
@@ -587,7 +586,7 @@ a.signalItem:hover strong {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 .notifRow--read .notifText {
-  color: #999a92;
+  color: var(--ink-2);
 }
 .notifLine {
   display: flex;
@@ -611,40 +610,74 @@ a.signalItem:hover strong {
   outline-offset: -4px;
 }
 
-@media (max-width: 1500px) and (min-width: 1101px) {
-  .signalItem {
-    padding-inline: 12px;
-  }
-  .signalItem strong {
-    font-size: 20px;
-  }
-  .signalItem:nth-child(-n + 2) strong {
-    font-size: 23px;
-  }
-  .signalItem__icon {
-    display: none;
-  }
+
+.agentStage__portraitCaption {
+  display: block;
+  width: 75%;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font: 11px/1.4 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.agentStage__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 28px;
+  margin: 22px 0 0;
+}
+.agentStage__details > div {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.agentStage__details dt {
+  color: var(--ink-2);
+  font-size: 11px;
+}
+.agentStage__details dd {
+  margin: 0;
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.agentStage__quote {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 680px;
+  margin: 20px 0 0;
+}
+.agentStage__quote > span {
+  flex-shrink: 0;
+  color: var(--gold-dim);
+  font: 36px/1.2 Georgia, serif;
+}
+.agentStage__quote p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.signalItem small {
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1100px) {
   .agentStage {
     padding: 24px 28px;
-  }
-  .signalItem:nth-child(-n + 2) {
-    grid-column: span 6;
-    padding-block: 20px;
-  }
-  .signalItem:nth-child(n + 3) {
-    grid-column: span 2;
-    border-top: 1px solid var(--desk-line);
-  }
-  .signalItem:nth-child(3) {
-    border-left: 0;
-  }
-  .signalItem span {
-    min-height: 16px;
-  }
-  .signalItem {
-    padding: 16px;
   }
   .missionStage {
     padding: 26px;
@@ -676,7 +709,7 @@ a.signalItem:hover strong {
   }
   .actionQueue {
     border-left: 0;
-    border-top: 1px solid #abb9b322;
+    border-top: 1px solid var(--line);
     padding: 24px 26px;
   }
   .actionList {
@@ -762,35 +795,6 @@ a.signalItem:hover strong {
     font-size: 13px;
     padding: 10px 16px;
   }
-  .signalItem {
-    padding: 16px 14px;
-  }
-  .signalItem:nth-child(-n + 2) {
-    grid-column: 1 / -1;
-    padding: 16px 20px;
-  }
-  .signalItem:nth-child(2) {
-    border-left: 0;
-    border-top: 1px solid var(--desk-line);
-  }
-  .signalItem:nth-child(-n + 2) strong {
-    font-size: 28px;
-  }
-  .signalItem:nth-child(n + 3) {
-    grid-column: span 4;
-  }
-  .signalItem:nth-child(6) {
-    border-left: 0;
-  }
-  .signalItem:nth-child(n + 3) span {
-    min-height: 30px;
-  }
-  .signalItem__icon {
-    display: none;
-  }
-  .signalItem strong {
-    font-size: 24px;
-  }
   .missionStage {
     padding: 24px;
     min-height: 290px;
@@ -847,15 +851,6 @@ a.signalItem:hover strong {
     width: 88px;
     height: 155px;
   }
-  .signalItem:nth-child(-n + 2) strong {
-    font-size: 24px;
-  }
-  .signalItem {
-    padding-inline: 12px;
-  }
-  .signalItem strong {
-    font-size: 22px;
-  }
   .missionStage {
     padding: 22px;
   }
@@ -866,5 +861,75 @@ a.signalItem:hover strong {
 @media (prefers-reduced-motion: reduce) {
   .dashboard *, .dashboard *::before, .dashboard *::after {
     transition: none !important;
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1500px) {
+  .signalItem {
+    padding-inline: 18px;
+  }
+  .signalItem:nth-child(-n + 2) strong {
+    font-size: 23px;
+  }
+}
+@media (max-width: 1100px) {
+  .signalStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .signalItem:nth-child(n + 3) {
+    border-top: 1px solid var(--desk-line);
+  }
+  .signalItem:nth-child(3) {
+    border-left: 0;
+  }
+}
+@media (max-width: 620px) {
+  .agentStage__details {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin-top: 12px;
+  }
+  .agentStage__quote {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    margin-top: 10px;
+  }
+  .charMini__vitals {
+    grid-row: 6;
+  }
+  .agentStage__content > .commandActions {
+    grid-row: 7;
+  }
+  .agentStage__portraitCaption {
+    width: 90%;
+    font-size: 9px;
+    padding-top: 8px;
+  }
+  .signalItem {
+    padding: 18px 20px;
+  }
+  .signalItem:nth-child(-n + 2) {
+    grid-column: 1 / -1;
+    border-left: 0;
+  }
+  .signalItem:nth-child(2) {
+    border-top: 1px solid var(--desk-line);
+  }
+  .signalItem:nth-child(-n + 2) strong {
+    font-size: 28px;
+  }
+  .signalItem span {
+    font-size: 12px;
+  }
+  .signalItem small {
+    font-size: 10px;
+  }
+}
+@media (max-width: 360px) {
+  .signalItem {
+    padding-inline: 16px;
+  }
+  .signalItem:nth-child(-n + 2) strong {
+    font-size: 24px;
   }
 }

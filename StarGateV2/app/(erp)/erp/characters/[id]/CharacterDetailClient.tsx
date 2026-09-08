@@ -13,6 +13,7 @@ import {
   personnelKeys,
   useAgentCharacterQuery,
 } from "@/hooks/queries/useCharactersQuery";
+import { dashboardKeys } from "@/hooks/queries/useDashboardQuery";
 import { useCharacterInventory } from "@/hooks/queries/useInventoryQuery";
 
 import type { CharacterEditMode } from "@/lib/auth/rbac";
@@ -148,7 +149,10 @@ export default function CharacterDetailClient({
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: characterKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: characterKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+      ]);
       router.push("/erp/characters");
     } catch {
       setDeleteError("네트워크 오류가 발생했습니다.");
@@ -189,6 +193,7 @@ export default function CharacterDetailClient({
             // ChangeLogsPanel 이 stale 60s 동안 새 row 를 못 보면 UX 회귀.
             await Promise.all([
               queryClient.invalidateQueries({ queryKey: characterKeys.all }),
+              queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
               queryClient.invalidateQueries({ queryKey: personnelKeys.all }),
               queryClient.invalidateQueries({ queryKey: characterChangeLogsKeys.all }),
             ]);

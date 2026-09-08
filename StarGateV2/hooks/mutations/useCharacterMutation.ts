@@ -6,6 +6,7 @@ import {
   characterKeys,
   personnelKeys,
 } from "@/hooks/queries/useCharactersQuery";
+import { dashboardKeys } from "@/hooks/queries/useDashboardQuery";
 import { equipmentShopKeys } from "@/hooks/queries/useEquipmentShopQuery";
 import { loreSearchKeys } from "@/hooks/queries/useLoreSearchQuery";
 import { throwMutationError } from "./StaleVersionApiError";
@@ -31,6 +32,7 @@ export function useCreateCharacter() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: characterKeys.all });
       queryClient.invalidateQueries({ queryKey: personnelKeys.all });
       queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog });
@@ -76,6 +78,7 @@ export function useUpdatePlayMutation() {
       return res.json();
     },
     onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: characterKeys.agent.all });
       queryClient.invalidateQueries({
         queryKey: characterKeys.agent.byId(vars.id),
@@ -112,6 +115,7 @@ export function useUpdateLoreMutation() {
       return res.json();
     },
     onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       // lore 는 양쪽 화면에 영향. AGENT 카탈로그 + personnel + 개별 detail/dossier 모두 invalidate.
       queryClient.invalidateQueries({ queryKey: characterKeys.agent.all });
       queryClient.invalidateQueries({

@@ -33,7 +33,7 @@ test("dashboard hero image is loaded eagerly as the LCP candidate", () => {
 test("dashboard reads and serializes only its projected character view", () => {
   assert.match(dashboardData, /findMainDashboardCharacterByOwnerCached as findMainCharacterByOwner/);
   assert.match(dashboardData, /findDisplayDashboardCharacterByOwnerCached as findDisplayCharacterByOwner/);
-  assert.match(dashboardData, /findDashboardCharacterById\(firstCharId\)/);
+  assert.match(dashboardData, /findDashboardCharacterById\(firstCharId, userId\)/);
   assert.doesNotMatch(dashboardData, /JSON\.parse\(JSON\.stringify\(displayCharacter\)\)/);
   assert.match(dashboardData, /_id: String\(displayCharacter\._id\)/);
   assert.match(responseTypes, /displayCharacter: ErpDashboardCharacter \| null/);
