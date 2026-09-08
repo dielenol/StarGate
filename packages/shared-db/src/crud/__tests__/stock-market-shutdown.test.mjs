@@ -53,6 +53,12 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     day: "2-digit",
   }).format(futureDay);
   const executeAt = new Date(`${kstDate}T23:00:00+09:00`);
+  const staleTradingDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(executeAt.getTime() - 24 * 60 * 60 * 1_000));
   const scheduledAt = new Date(executeAt.getTime() - 30 * 60 * 1_000);
   const beforeShutdown = new Date(executeAt.getTime() - 20 * 60 * 1_000);
   const afterShutdown = new Date(executeAt.getTime() + 60 * 60 * 1_000);
@@ -97,9 +103,9 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   await db.collection("stock_market_state").insertOne({
     _id: "novex",
     status: "OPEN",
-    tradingDate: kstDate,
-    opensAt: new Date(`${kstDate}T09:00:00+09:00`),
-    closesAt: new Date(`${kstDate}T23:00:00+09:00`),
+    tradingDate: staleTradingDate,
+    opensAt: new Date(`${staleTradingDate}T09:00:00+09:00`),
+    closesAt: new Date(`${staleTradingDate}T23:00:00+09:00`),
     nextSlotAt: executeAt,
     delayed: false,
     tradeRevision: 0,
@@ -111,8 +117,15 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     prevPrice: 100 + index,
     referencePrice: 100 + index,
     eventText: "seed",
-    lastUpdate: `${kstDate} 13:00`,
+    lastUpdate: `${staleTradingDate} 13:00`,
     tradeRevision: 0,
+    ...(ticker === "TWS"
+      ? {
+          isTradingHalted: true,
+          cooldownUntil: afterShutdown,
+          cooldownReason: "전날 냉각",
+        }
+      : {}),
   })));
   await db.collection("users").insertOne({
     _id: seasonOwnerId,
@@ -261,6 +274,43 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
     }
   }
 
+  // 17:59:59 요청이 state write lock을 기다리는 동안 정각을 넘겨도
+  // 이전 가격으로 매도되지 않아야 한다.
+  const raceExecuteAt = new Date(Date.now() + 800);
+  const raceRequestedAt = new Date(raceExecuteAt.getTime() - 1_000);
+  await db.collection("stock_market_shutdown").updateOne(
+    { _id: "novex" },
+    {
+      $set: {
+        executeAt: raceExecuteAt,
+        buysBlockedAt: new Date(Date.now() - 1_000),
+      },
+    },
+  );
+  const fenceSession = client.startSession();
+  fenceSession.startTransaction();
+  await db.collection("stock_market_state").updateOne(
+    { _id: "novex" },
+    { $inc: { tradeRevision: 1 } },
+    { session: fenceSession },
+  );
+  const delayedSell = claim("SELL", raceRequestedAt).then(
+    () => ({ error: null }),
+    (error) => ({ error }),
+  );
+  await new Promise((resolve) => setTimeout(resolve, 900));
+  await fenceSession.commitTransaction();
+  await fenceSession.endSession();
+  const delayedSellOutcome = await delayedSell;
+  assert.ok(
+    delayedSellOutcome.error instanceof StockMarketTradeClaimError &&
+      delayedSellOutcome.error.code === "MARKET_SHUTDOWN_PENDING",
+  );
+  await db.collection("stock_market_shutdown").updateOne(
+    { _id: "novex" },
+    { $set: { executeAt, buysBlockedAt: scheduledAt } },
+  );
+
   for (const side of ["BUY", "TRANSFER"]) {
     await assert.rejects(
       claim(side, beforeShutdown),
@@ -273,6 +323,10 @@ test("영구 폐장은 매수/이체를 막고 폭락을 정확히 한 번 적�
   );
   assert.equal(
     (await claim("SELL", beforeShutdown)).ticker,
+    "TWS",
+  );
+  assert.equal(
+    (await claim("SELL", beforeShutdown, "TWS", false)).ticker,
     "TWS",
   );
   await assert.rejects(

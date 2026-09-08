@@ -867,8 +867,6 @@ export async function claimCompatibleTradableStockPrice(
     side: "BUY" | "SELL" | "TRANSFER";
   },
 ): Promise<StockPrice> {
-  // API가 과거 occurredAt을 재사용해도 영구 폐장 경계를 되돌릴 수 없다.
-  const observedAt = Math.max(now.getTime(), Date.now());
   // enabled/legacy 모두 schedule과 같은 state fence를 사용한다. state가 없는 legacy
   // 설치에는 update가 no-op이고, 그런 상태에서는 shutdown plan도 생성할 수 없다.
   const stateCol = await col<StockMarketState>(MARKET_STATE);
@@ -878,6 +876,9 @@ export async function claimCompatibleTradableStockPrice(
     { returnDocument: "after", session },
   );
   const plan = await getStockMarketShutdownPlan({ session });
+  // state fence 대기 중 종료 시각을 넘긴 요청도 이전 가격으로 매도되지 않게
+  // 실제 wall clock은 plan을 읽은 뒤 다시 관찰한다.
+  const observedAt = Math.max(now.getTime(), Date.now());
   if (
     plan &&
     (plan.status === "COMPLETED" || observedAt >= plan.buysBlockedAt.getTime())
@@ -888,15 +889,13 @@ export async function claimCompatibleTradableStockPrice(
     if (plan.status === "SCHEDULED" && observedAt >= plan.executeAt.getTime()) {
       throw new StockMarketTradeClaimError("MARKET_SHUTDOWN_PENDING");
     }
-    if (plan.status === "COMPLETED") {
-      const claimed = await (await stockPricesCol()).findOneAndUpdate(
-        { ticker },
-        { $inc: { tradeRevision: 1 } },
-        { returnDocument: "after", session },
-      );
-      if (claimed) return claimed;
-      throw new StockMarketTradeClaimError("PRICE_NOT_FOUND");
-    }
+    const claimed = await (await stockPricesCol()).findOneAndUpdate(
+      { ticker },
+      { $inc: { tradeRevision: 1 } },
+      { returnDocument: "after", session },
+    );
+    if (claimed) return claimed;
+    throw new StockMarketTradeClaimError("PRICE_NOT_FOUND");
   }
 
   if (!options.novexV2Enabled) {
