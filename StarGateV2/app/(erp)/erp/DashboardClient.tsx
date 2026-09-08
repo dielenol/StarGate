@@ -394,8 +394,8 @@ export default function DashboardClient({
         <article className={`${styles.commandSurface} ${styles.missionStage}`}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}><IconApply className={styles.sectionLabel__icon} aria-hidden />다음 작전</span>
-              <h3>Mission Brief</h3>
+              <span className={styles.sectionLabel}><IconApply className={styles.sectionLabel__icon} aria-hidden />MISSION BRIEF</span>
+              <h3>다음 작전</h3>
             </div>
             {nextMissionMeta ? (
               <Tag tone={nextMissionMeta.tone}>{nextMissionMeta.label}</Tag>
@@ -439,45 +439,46 @@ export default function DashboardClient({
           )}
         </article>
 
-        <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
-          <div className={styles.sectionHead}>
-            <div>
-              <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />처리할 일</span>
-              <h3>Action Queue</h3>
-            </div>
-            <span className={styles.queueCount}>{actionItems.length}</span>
-          </div>
-
-          {actionItems.length === 0 ? (
-            <div className={styles.softEmpty}>
-              <strong>정상 운용</strong>
-              <span>즉시 확인할 항목이 없습니다.</span>
-            </div>
-          ) : (
-            <div className={styles.actionList}>
-              {actionItems.slice(0, 4).map((item) => (
-                <Link
-                  key={`${item.label}-${item.title}`}
-                  href={item.href}
-                  className={[
-                    styles.actionItem,
-                    styles[`actionItem--${item.tone}`] ?? "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <Tag tone={item.tone}>{item.label}</Tag>
-                  <span className={styles.actionItem__body}>
-                    <span className={styles.actionItem__title}>{item.title}</span>
-                    <span className={styles.actionItem__detail}>{item.detail}</span>
-                  </span>
-                  <span className={styles.actionItem__cta}>{item.cta}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </aside>
       </section>
+
+      <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
+        <div className={styles.sectionHead}>
+          <div>
+            <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />ACTION QUEUE</span>
+            <h3>처리할 일</h3>
+          </div>
+          <span className={styles.queueCount}>{actionItems.length}</span>
+        </div>
+
+        {actionItems.length === 0 ? (
+          <div className={styles.softEmpty}>
+            <strong>정상 운용</strong>
+            <span>즉시 확인할 항목이 없습니다.</span>
+          </div>
+        ) : (
+          <div className={styles.actionList}>
+            {actionItems.map((item) => (
+              <Link
+                key={`${item.label}-${item.title}`}
+                href={item.href}
+                className={[
+                  styles.actionItem,
+                  styles[`actionItem--${item.tone}`] ?? "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <Tag tone={item.tone}>{item.label}</Tag>
+                <span className={styles.actionItem__body}>
+                  <span className={styles.actionItem__title}>{item.title}</span>
+                  <span className={styles.actionItem__detail}>{item.detail}</span>
+                </span>
+                <span className={styles.actionItem__cta}>{item.cta}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </aside>
 
       <section className={styles.signalStrip} aria-label="운용 지표">
         <Link href="/erp/credits" className={styles.signalItem}>
@@ -532,8 +533,8 @@ export default function DashboardClient({
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}><IconSession className={styles.sectionLabel__icon} aria-hidden />내 작전</span>
-              <h3>Mission Queue</h3>
+              <span className={styles.sectionLabel}><IconSession className={styles.sectionLabel__icon} aria-hidden />MISSION QUEUE</span>
+              <h3>내 작전</h3>
             </div>
             <Link href="/erp/sessions" className={styles.panelLink}>
               달력
@@ -587,8 +588,8 @@ export default function DashboardClient({
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />응답 필요</span>
-              <h3>Tasks</h3>
+              <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />RESPONSE REQUIRED</span>
+              <h3>응답 필요</h3>
             </div>
             <span className={styles.queueCount}>{pendingResponse.length}</span>
           </div>
@@ -642,8 +643,8 @@ export default function DashboardClient({
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}><IconNotification className={styles.sectionLabel__icon} aria-hidden />알림</span>
-              <h3>Notifications</h3>
+              <span className={styles.sectionLabel}><IconNotification className={styles.sectionLabel__icon} aria-hidden />NOTIFICATIONS</span>
+              <h3>알림</h3>
             </div>
             <Link href="/erp/notifications" className={styles.panelLink}>
               전체
@@ -684,8 +685,8 @@ export default function DashboardClient({
         <section className={styles.surfacePanel}>
           <div className={styles.sectionHead}>
             <div>
-              <span className={styles.sectionLabel}><IconRecentChanges className={styles.sectionLabel__icon} aria-hidden />최근 변경</span>
-              <h3>Wiki Changes</h3>
+              <span className={styles.sectionLabel}><IconRecentChanges className={styles.sectionLabel__icon} aria-hidden />RECENT CHANGES</span>
+              <h3>최근 변경</h3>
             </div>
             <Link href="/erp/wiki" className={styles.panelLink}>
               전체
