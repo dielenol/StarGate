@@ -113,6 +113,9 @@ export default async function FactionDetailPage({
   const data = await getFactionBoardData(session.user.role);
   const node = findFactionBoardNode(data, code);
   if (!node) notFound();
+  if (node.code === "FEDERATIO") {
+    redirect("/erp/personnel?group=FEDERATIO");
+  }
 
   const hostile = isHostileFaction(node);
   const profile = getFactionGameProfile(node.code, node.kind);
