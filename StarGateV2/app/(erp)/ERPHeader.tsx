@@ -25,6 +25,7 @@ import {
   IconNotification,
   IconPause,
   IconPlay,
+  IconSearch,
   IconShuffle,
   IconTimeline,
   IconVolume,
@@ -232,6 +233,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
   const bgmVolumeInputRef = useRef<HTMLInputElement | null>(null);
   const bgmTimeLabelRef = useRef<HTMLSpanElement | null>(null);
   const notificationWrapRef = useRef<HTMLDivElement | null>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement | null>(null);
   const bgmTrackIndexRef = useRef<number | null>(null);
   const playBgmTrackRef = useRef<(trackIndex: number) => Promise<boolean>>(
     async () => false,
@@ -380,6 +382,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setNotificationOpen(false);
+        notificationButtonRef.current?.focus();
       }
     }
 
@@ -633,7 +636,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
             aria-label="명령 팔레트 열기"
           >
             <span className={styles.header__cmdkIcon} aria-hidden>
-              ⌕
+              <IconSearch />
             </span>
             <span className={styles.header__cmdkPlaceholder}>검색</span>
             <span className={styles.header__cmdkPlaceholderShort}>검색…</span>
@@ -646,6 +649,7 @@ export default function ERPHeader({ user, identity }: ERPHeaderProps) {
           >
             <button
               type="button"
+              ref={notificationButtonRef}
               className={notificationButtonClassName}
               onClick={handleToggleNotifications}
               aria-expanded={notificationOpen}

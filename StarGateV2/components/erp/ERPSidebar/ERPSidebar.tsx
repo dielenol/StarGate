@@ -20,7 +20,7 @@ import {
   NAV_GROUPS,
 } from "@/components/erp/nav-config";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
-import { IconCheckDot, IconChevronLeft } from "@/components/icons";
+import { IconChevronLeft } from "@/components/icons";
 
 import { hasRole } from "@/lib/auth/rbac";
 import {
@@ -188,164 +188,206 @@ export default function ERPSidebar({
         inert={isMobileViewport && !isOpen}
         role={isMobileViewport ? "dialog" : undefined}
       >
-        <button
-          aria-label="메뉴 닫기"
-          className={styles.sidebar__close}
-          onClick={close}
-          type="button"
-        >
-          <IconChevronLeft aria-hidden />
-        </button>
-        {NAV_GROUPS.map((group) => {
-          if (group.minRole && (!role || !hasRole(role, group.minRole))) {
-            return null;
-          }
+        <div className={styles.sidebar__drawerHead}>
+          <span className={styles.sidebar__drawerTitle}>메뉴</span>
+          <button
+            aria-label="메뉴 닫기"
+            className={styles.sidebar__close}
+            onClick={close}
+            type="button"
+          >
+            <IconChevronLeft aria-hidden />
+          </button>
+        </div>
+        <nav className={styles.sidebar__nav} aria-label="ERP 메뉴">
+          {NAV_GROUPS.map((group) => {
+            if (group.minRole && (!role || !hasRole(role, group.minRole))) {
+              return null;
+            }
 
-          const visibleItems = group.items.filter(
-            (item) =>
-              !item.minRole || (role ? hasRole(role, item.minRole) : false),
-          );
+            const visibleItems = group.items.filter(
+              (item) =>
+                !item.minRole || (role ? hasRole(role, item.minRole) : false),
+            );
 
-          if (visibleItems.length === 0) return null;
+            if (visibleItems.length === 0) return null;
 
-          return (
-            <div key={group.key} className={styles.sidebar__group}>
-              <div className={styles.sidebar__groupLabel}>{group.label}</div>
-              {visibleItems.map((item) => {
-                const bypassItemLock =
-                  bypassPageLocks ||
-                  (playerServiceTestAccess &&
-                    isPlayerServiceTestPath(getNavItemLockKey(item) ?? ""));
-                const href = getNavItemHref(
-                  item,
-                  role,
-                  pageLockOverrides,
-                  bypassItemLock,
-                );
-                const active = isItemActive(item);
-                const preparing = isNavItemLocked(
-                  item,
-                  pageLockOverrides,
-                  bypassItemLock,
-                );
-                const disabled = href === null;
-                const Icon = item.icon;
-                const childItems = (item.children ?? []).filter(
-                  (child) =>
-                    !child.minRole ||
-                    (role ? hasRole(role, child.minRole) : false),
-                );
-                const showChildren =
-                  childItems.length > 0 && (active || disabled);
-                const notificationBadge =
-                  href === "/erp/notifications" &&
-                  unreadNotificationCount > 0
-                    ? unreadNotificationLabel
-                    : null;
+            return (
+              <div key={group.key} className={styles.sidebar__group}>
+                <div className={styles.sidebar__groupLabel}>{group.label}</div>
+                {visibleItems.map((item) => {
+                  const bypassItemLock =
+                    bypassPageLocks ||
+                    (playerServiceTestAccess &&
+                      isPlayerServiceTestPath(getNavItemLockKey(item) ?? ""));
+                  const href = getNavItemHref(
+                    item,
+                    role,
+                    pageLockOverrides,
+                    bypassItemLock,
+                  );
+                  const active = isItemActive(item);
+                  const preparing = isNavItemLocked(
+                    item,
+                    pageLockOverrides,
+                    bypassItemLock,
+                  );
+                  const disabled = href === null;
+                  const Icon = item.icon;
+                  const childItems = (item.children ?? []).filter(
+                    (child) =>
+                      !child.minRole ||
+                      (role ? hasRole(role, child.minRole) : false),
+                  );
+                  const showChildren =
+                    childItems.length > 0 && (active || disabled);
+                  const notificationBadge =
+                    href === "/erp/notifications" &&
+                    unreadNotificationCount > 0
+                      ? unreadNotificationLabel
+                      : null;
 
-                return (
-                  <div
-                    key={`${group.key}-${item.label}`}
-                    className={styles.sidebar__itemBlock}
-                  >
-                    {disabled ? (
-                      <span
-                        className={[
-                          styles.sidebar__item,
-                          styles["sidebar__item--disabled"],
-                        ].join(" ")}
-                        aria-disabled
-                      >
-                        <span className={styles.sidebar__itemLeft}>
-                          <span className={styles.sidebar__icon} aria-hidden>
-                            <Icon />
+                  return (
+                    <div
+                      key={`${group.key}-${item.label}`}
+                      className={styles.sidebar__itemBlock}
+                    >
+                      {disabled ? (
+                        <span
+                          className={[
+                            styles.sidebar__item,
+                            styles["sidebar__item--disabled"],
+                          ].join(" ")}
+                          aria-disabled
+                        >
+                          <span className={styles.sidebar__itemLeft}>
+                            <span className={styles.sidebar__icon} aria-hidden>
+                              <Icon />
+                            </span>
+                            <span className={styles.sidebar__itemLabel}>
+                              {item.label}
+                            </span>
                           </span>
-                          <span className={styles.sidebar__itemLabel}>
-                            {item.label}
-                          </span>
-                        </span>
-                        <span className={styles.sidebar__badge}>준비중</span>
-                      </span>
-                    ) : (
-                      <Link
-                        href={href}
-                        className={[
-                          styles.sidebar__item,
-                          active ? styles["sidebar__item--active"] : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        onClick={close}
-                        onFocus={() => prefetchHref(href)}
-                        onMouseEnter={() => prefetchHref(href)}
-                        onTouchStart={() => prefetchHref(href)}
-                        prefetch={false}
-                      >
-                        <LinkPendingProbe />
-                        <span className={styles.sidebar__itemLeft}>
-                          <span className={styles.sidebar__icon} aria-hidden>
-                            <Icon />
-                          </span>
-                          <span className={styles.sidebar__itemLabel}>
-                            {item.label}
-                          </span>
-                        </span>
-                        {notificationBadge ? (
-                          <span
-                            className={styles.sidebar__countBadge}
-                            aria-label={`안 읽은 알림 ${unreadNotificationCount}건`}
-                          >
-                            {notificationBadge}
-                          </span>
-                        ) : preparing ? (
                           <span className={styles.sidebar__badge}>준비중</span>
-                        ) : active ? (
-                          <IconCheckDot
-                            className={styles.sidebar__activeMark}
-                            aria-hidden
-                          />
-                        ) : null}
-                      </Link>
-                    )}
+                        </span>
+                      ) : (
+                        <Link
+                          href={href}
+                          aria-current={
+                            active && !childItems.some(isItemActive)
+                              ? "page"
+                              : undefined
+                          }
+                          className={[
+                            styles.sidebar__item,
+                            active ? styles["sidebar__item--active"] : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          onClick={close}
+                          onFocus={() => prefetchHref(href)}
+                          onMouseEnter={() => prefetchHref(href)}
+                          onTouchStart={() => prefetchHref(href)}
+                          prefetch={false}
+                        >
+                          <LinkPendingProbe />
+                          <span className={styles.sidebar__itemLeft}>
+                            <span className={styles.sidebar__icon} aria-hidden>
+                              <Icon />
+                            </span>
+                            <span className={styles.sidebar__itemLabel}>
+                              {item.label}
+                            </span>
+                          </span>
+                          {notificationBadge ? (
+                            <span
+                              className={styles.sidebar__countBadge}
+                              aria-label={`안 읽은 알림 ${unreadNotificationCount}건`}
+                            >
+                              {notificationBadge}
+                            </span>
+                          ) : preparing ? (
+                            <span className={styles.sidebar__badge}>준비중</span>
+                          ) : null}
+                        </Link>
+                      )}
 
-                    {showChildren ? (
-                      <div
-                        className={styles.sidebar__subList}
-                        aria-label={`${item.label} 하위 메뉴`}
-                      >
-                        {childItems.map((child) => {
-                          const bypassChildLock =
-                            bypassPageLocks ||
-                            (playerServiceTestAccess &&
-                              isPlayerServiceTestPath(
-                                getNavItemLockKey(child) ?? "",
-                              ));
-                          const childHref = getNavItemHref(
-                            child,
-                            role,
-                            pageLockOverrides,
-                            bypassChildLock,
-                          );
-                          const childLocked = isNavItemLocked(
-                            child,
-                            pageLockOverrides,
-                            bypassChildLock,
-                          );
-                          const ChildIcon = child.icon;
-                          const childActive =
-                            activeHref !== null &&
-                            getNavItemActiveHrefs(child).includes(activeHref);
+                      {showChildren ? (
+                        <div
+                          className={styles.sidebar__subList}
+                          aria-label={`${item.label} 하위 메뉴`}
+                        >
+                          {childItems.map((child) => {
+                            const bypassChildLock =
+                              bypassPageLocks ||
+                              (playerServiceTestAccess &&
+                                isPlayerServiceTestPath(
+                                  getNavItemLockKey(child) ?? "",
+                                ));
+                            const childHref = getNavItemHref(
+                              child,
+                              role,
+                              pageLockOverrides,
+                              bypassChildLock,
+                            );
+                            const childLocked = isNavItemLocked(
+                              child,
+                              pageLockOverrides,
+                              bypassChildLock,
+                            );
+                            const ChildIcon = child.icon;
+                            const childActive =
+                              activeHref !== null &&
+                              getNavItemActiveHrefs(child).includes(activeHref);
 
-                          if (childHref === null) {
+                            if (childHref === null) {
+                              return (
+                                <span
+                                  key={`${group.key}-${item.label}-${child.label}`}
+                                  className={[
+                                    styles.sidebar__subItem,
+                                    styles["sidebar__subItem--disabled"],
+                                  ].join(" ")}
+                                  aria-disabled
+                                >
+                                  <span className={styles.sidebar__subItemLeft}>
+                                    <span
+                                      className={styles.sidebar__subItemIcon}
+                                      aria-hidden
+                                    >
+                                      <ChildIcon />
+                                    </span>
+                                    <span className={styles.sidebar__subItemLabel}>
+                                      {child.label}
+                                    </span>
+                                  </span>
+                                  <span className={styles.sidebar__subBadge}>
+                                    준비중
+                                  </span>
+                                </span>
+                              );
+                            }
+
                             return (
-                              <span
+                              <Link
                                 key={`${group.key}-${item.label}-${child.label}`}
+                                href={childHref}
+                                aria-current={childActive ? "page" : undefined}
                                 className={[
                                   styles.sidebar__subItem,
-                                  styles["sidebar__subItem--disabled"],
-                                ].join(" ")}
-                                aria-disabled
+                                  childActive
+                                    ? styles["sidebar__subItem--active"]
+                                    : "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                onClick={close}
+                                onFocus={() => prefetchHref(childHref)}
+                                onMouseEnter={() => prefetchHref(childHref)}
+                                onTouchStart={() => prefetchHref(childHref)}
+                                prefetch={false}
                               >
+                                <LinkPendingProbe />
                                 <span className={styles.sidebar__subItemLeft}>
                                   <span
                                     className={styles.sidebar__subItemIcon}
@@ -357,64 +399,29 @@ export default function ERPSidebar({
                                     {child.label}
                                   </span>
                                 </span>
-                                <span className={styles.sidebar__subBadge}>
-                                  준비중
-                                </span>
-                              </span>
+                                {childLocked ? (
+                                  <span className={styles.sidebar__subBadge}>
+                                    준비중
+                                  </span>
+                                ) : null}
+                              </Link>
                             );
-                          }
-
-                          return (
-                            <Link
-                              key={`${group.key}-${item.label}-${child.label}`}
-                              href={childHref}
-                              className={[
-                                styles.sidebar__subItem,
-                                childActive
-                                  ? styles["sidebar__subItem--active"]
-                                  : "",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                              onClick={close}
-                              onFocus={() => prefetchHref(childHref)}
-                              onMouseEnter={() => prefetchHref(childHref)}
-                              onTouchStart={() => prefetchHref(childHref)}
-                              prefetch={false}
-                            >
-                              <LinkPendingProbe />
-                              <span className={styles.sidebar__subItemLeft}>
-                                <span
-                                  className={styles.sidebar__subItemIcon}
-                                  aria-hidden
-                                >
-                                  <ChildIcon />
-                                </span>
-                                <span className={styles.sidebar__subItemLabel}>
-                                  {child.label}
-                                </span>
-                              </span>
-                              {childLocked ? (
-                                <span className={styles.sidebar__subBadge}>
-                                  준비중
-                                </span>
-                              ) : null}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
 
         <div className={styles.sidebar__footer}>
           <Link
             href="/"
             className={styles.sidebar__return}
+            onClick={close}
             onFocus={() => prefetchHref("/")}
             onMouseEnter={() => prefetchHref("/")}
             onTouchStart={() => prefetchHref("/")}
@@ -422,7 +429,7 @@ export default function ERPSidebar({
           >
             <LinkPendingProbe />
             <IconChevronLeft aria-hidden />
-            홍보 사이트로 돌아가기
+            메인 사이트로 돌아가기
           </Link>
         </div>
       </aside>
