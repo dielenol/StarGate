@@ -4,11 +4,11 @@
 
 | 인물 | 파일 | 원본 SHA-256 | 채택 과정 | 픽셀·검토 |
 |---|---|---|---|---|
-| PARIS_MARQUIS | `/assets/npcs/Paris-Marquis-profile.webp` | `60e108030f05efdc6df5b3002697167d0846a9fd3158c451e04f6fed54c4e021` | isnet-anime | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 가발/손/권총/지팡이 보존 |
-| MATTEO_FEDERATIO | `/assets/npcs/Matteo-Federatio-profile.webp` | `0b292b7b730aa83f9a51d0e62ef741573effc8a3c408932a4e385bbf8c8dd67c` | isnet-anime + 사용자 승인 수동 마스크 | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 가발/손/권총/지팡이 보존 |
-| PARIS_PRIEST | `/assets/npcs/Paris-Priest-profile.webp` | `994f2034bc25e7cf92a0602cd55bef9818af6d2f756963c65d1b724c3c6d59d5` | isnet-anime + 사용자 승인 수동 마스크 | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 가발/손/권총/지팡이 보존 |
-| PUPPETEER | `/assets/npcs/Courtesan-profile.webp` | `1e23c6d34905739615381e1993332f040d0060b3ba231d33727c17ed7d8194bc` | isnet-anime + 사용자 승인 수동 마스크 | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 가발/손/권총/지팡이 보존 |
-| FEDERATIO_PARIS_BOSS | `/assets/npcs/Federatio-Godfather-profile.webp` | `3e691ed701eac8f6157c4fd8a54ae07fc6729883363cfee4ff466324b37db71a` | lucida | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 가발/손/권총/지팡이 보존 |
+| PARIS_MARQUIS | `/assets/npcs/Paris-Marquis-profile.webp` | `60e108030f05efdc6df5b3002697167d0846a9fd3158c451e04f6fed54c4e021` | isnet-anime | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 가발·손·의복 보존 |
+| MATTEO_FEDERATIO | `/assets/npcs/Matteo-Federatio-profile.webp` | `0b292b7b730aa83f9a51d0e62ef741573effc8a3c408932a4e385bbf8c8dd67c` | isnet-anime + 사용자 승인 수동 마스크 | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 모자·붕대·손·권총 보존 |
+| PARIS_PRIEST | `/assets/npcs/Paris-Priest-profile.webp` | `994f2034bc25e7cf92a0602cd55bef9818af6d2f756963c65d1b724c3c6d59d5` | isnet-anime + 사용자 승인 수동 마스크 | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 모발·의복·손 보존 |
+| PUPPETEER | `/assets/npcs/Courtesan-profile.webp` | `1e23c6d34905739615381e1993332f040d0060b3ba231d33727c17ed7d8194bc` | isnet-anime + 사용자 승인 수동 마스크 | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 땋은 머리·손·드레스 보존 |
+| FEDERATIO_PARIS_BOSS | `/assets/npcs/Federatio-Godfather-profile.webp` | `3e691ed701eac8f6157c4fd8a54ae07fc6729883363cfee4ff466324b37db71a` | lucida | 832×1216, alpha min 0; 체커·흰색·검은색·원본 및 실제 검은 배경 확대 검사. 모자·손·지팡이 보존 |
 
 ## 보존 자료
 
@@ -20,3 +20,5 @@
 - `node --test lib/assets/__tests__/asset-system.test.mjs`: 18/18 통과.
 - 사진 재생성·새 얼굴·연령/성별 추정은 하지 않았다. 머리카락의 극세선까지 완전한 픽셀 보존을 보장하는 판정은 아니다.
 - 보고서 장면/보고서 위키판/전용 위키/물품 도판으로 재사용하지 않는다. 신원조회 카드·상세의 전용 초상이다.
+
+2026-09-08 전용 초상5개를 운영에 배포하고 다섯 신원 상세 화면에서 실제 투명 배경과 피사체 표시를 확인했다. 운영 배포의61개 이미지 주소·파일 내용 비교는전부일치했다. 상세결과는 [실행 기록](nosb-s1e7-desire-part2-execution.md)을 따른다.
