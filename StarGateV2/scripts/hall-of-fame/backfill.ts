@@ -32,10 +32,10 @@ import {
   type HonorRecord,
   type UpsertHonorRecordInput,
 } from "@stargate/shared-db";
-import type {
-  ClientSession,
-  IndexDescriptionInfo,
+import {
   ObjectId,
+  type ClientSession,
+  type IndexDescriptionInfo,
 } from "mongodb";
 
 import {
@@ -54,8 +54,10 @@ const projectRoot = resolve(__dirname, "../..");
 
 interface CliOptions {
   execute: boolean;
+  dryRun: boolean;
   yes: boolean;
   manifestPath?: string;
+  sourceKey?: string;
   notifyNew: boolean;
   help: boolean;
 }
@@ -83,19 +85,25 @@ function usage(): string {
   return [
     "사용법:",
     "  pnpm hall-of-fame:apply-review -- --execute --manifest <path> --yes [--notify-new]",
+    "  pnpm hall-of-fame:apply-review -- --dry-run --manifest <path> --source-key <sessionId>",
+    "  pnpm hall-of-fame:apply-review -- --execute --manifest <path> --source-key <sessionId> --yes",
     "",
     "stargate-lore 검토가 생성한 hash-locked manifest만 적용합니다.",
-    "적용 모드는 ERP/worker 원본 쓰기를 중단한 maintenance 구간에서만 실행합니다.",
-    "--yes는 해당 쓰기 중단과 별도 운영 승인을 확인했다는 의미입니다.",
+    "전체 적용은 ERP/worker 원본 쓰기를 중단한 maintenance 구간에서만 실행합니다.",
+    "--source-key는 hash 검증을 통과한 manifest에서 지정 보고서만 적용합니다.",
+    "단일 보고서는 unique 코드네임과 누락 없는 신원·소유자 잠금을 확인해야 온라인 적용할 수 있습니다.",
+    "--yes는 대상 운영 승인을 확인하며, 전체 적용에서는 쓰기 중단도 확인합니다.",
+    "--dry-run은 동일 transaction을 실행한 후 전부 abort하며 저장·알림을 남기지 않습니다.",
     "--notify-new는 이력이 한 번도 없는 신규 헌액만 당사자에게 알립니다.",
     "manifest의 coverage와 모든 원본 hash는 원장 mutation 전에 transaction 안에서 재검증합니다.",
   ].join("\n");
 }
 
-function parseArgs(args: readonly string[]): CliOptions {
+export function parseArgs(args: readonly string[]): CliOptions {
   const values = args.filter((value) => value !== "--");
   const options: CliOptions = {
     execute: false,
+    dryRun: false,
     yes: false,
     notifyNew: false,
     help: false,
@@ -103,30 +111,78 @@ function parseArgs(args: readonly string[]): CliOptions {
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index]!;
     if (value === "--execute") options.execute = true;
+    else if (value === "--dry-run") options.dryRun = true;
     else if (value === "--yes") options.yes = true;
     else if (value === "--notify-new") options.notifyNew = true;
     else if (value === "--help" || value === "-h") options.help = true;
-    else if (value === "--manifest") {
+    else if (value === "--manifest" || value === "--source-key") {
       const next = values[index + 1];
       if (!next || next.startsWith("--")) {
         throw new Error(`${value} 뒤에 경로가 필요합니다.`);
       }
-      options.manifestPath = resolve(next);
+      if (value === "--manifest") options.manifestPath = resolve(next);
+      else {
+        if (options.sourceKey !== undefined || !next.trim()) {
+          throw new Error("--source-key는 비어 있지 않은 보고서 하나만 지정합니다.");
+        }
+        options.sourceKey = next.trim();
+      }
       index += 1;
     } else {
       throw new Error(`알 수 없는 인자입니다: ${value}`);
     }
   }
-  if (options.execute) {
-    if (!options.yes || !options.manifestPath) {
-      throw new Error(
-        "적용에는 --execute --manifest <path> --yes만 함께 사용해야 합니다.",
-      );
-    }
-  } else if (!options.help) {
-    throw new Error("적용은 --execute --manifest <path> --yes가 필수입니다.");
+  if (!options.help && (
+    options.execute === options.dryRun || !options.manifestPath ||
+    (options.execute && !options.yes)
+  )) {
+    throw new Error("--execute --yes 또는 --dry-run 중 하나와 --manifest <path>가 필수입니다.");
+  }
+  if (!options.help && options.dryRun && !options.sourceKey) {
+    throw new Error("BACKFILL_DRY_RUN_SOURCE_KEY_REQUIRED");
   }
   return options;
+}
+
+type ApplyScope = Pick<HallOfFameBackfillManifest, "operations" | "skipped">;
+
+export function selectManifestScope(
+  manifest: HallOfFameBackfillManifest,
+  sourceKey?: string,
+): ApplyScope {
+  if (sourceKey === undefined) return manifest;
+  if (!sourceKey.trim()) throw new Error("BACKFILL_SOURCE_SCOPE_INVALID");
+  const operations = manifest.operations.filter((entry) => entry.sourceKey === sourceKey);
+  const skipped = manifest.skipped.filter((entry) => entry.sourceKey === sourceKey);
+  if (operations.length + skipped.length !== 1) {
+    throw new Error("BACKFILL_SOURCE_SCOPE_NOT_FOUND_OR_AMBIGUOUS");
+  }
+  return { operations, skipped };
+}
+
+async function assertOnlineCandidateIndex(): Promise<void> {
+  const indexes = await (await charactersCol()).listIndexes().toArray();
+  if (!indexes.some((index) =>
+    index.unique === true && !index.sparse && !index.partialFilterExpression &&
+    (!index.collation || index.collation.locale === "simple") &&
+    Object.keys(index.key).length === 1 && index.key.codename === 1
+  )) throw new Error("BACKFILL_ONLINE_CODENAME_INDEX_REQUIRED");
+}
+
+/** Locking existing documents cannot fence absent identities or owners. */
+export function assertCompleteOnlineDependencies(
+  codenames: readonly string[],
+  resolution: HonorCandidateResolution,
+): void {
+  const expected = [...new Set(codenames.map((value) => value.trim()).filter(Boolean))];
+  if (!sameStringSet(expected, resolution.matchingCharacters.map((row) => row.codename))) {
+    throw new Error("BACKFILL_ONLINE_IDENTITY_DEPENDENCY_MISSING");
+  }
+  const owners = new Set(resolution.ownerStates.map((row) => String(row._id)));
+  if (resolution.matchingCharacters.some((row) =>
+    row.ownerId && ObjectId.isValid(row.ownerId) &&
+    !owners.has(String(new ObjectId(row.ownerId)))
+  )) throw new Error("BACKFILL_ONLINE_OWNER_DEPENDENCY_MISSING");
 }
 
 function normalizeEnvValue(value: string): string {
@@ -218,21 +274,24 @@ function sameStringSet(
 }
 
 async function assertManifestCoverageCurrent(
-  manifest: HallOfFameBackfillManifest,
+  manifest: ApplyScope,
   session: ClientSession,
+  scoped: boolean,
 ): Promise<void> {
-  const reports = await (await sessionReportsCol())
-    .find(
-      sessionReportVisibilityFilter("U"),
-      { projection: { sessionId: 1 }, session },
-    )
-    .toArray();
   const manifestReportKeys = [
     ...manifest.operations.map((entry) => entry.sourceKey),
     ...manifest.skipped.map((entry) => entry.sourceKey),
   ];
+  const reports = await (await sessionReportsCol())
+    .find(
+      {
+        ...sessionReportVisibilityFilter("U"),
+        ...(scoped ? { sessionId: { $in: manifestReportKeys } } : {}),
+      },
+      { projection: { sessionId: 1 }, session },
+    )
+    .toArray();
   if (
-    manifest.novex.length > 0 ||
     !sameStringSet(
       reports.map((report) => report.sessionId),
       manifestReportKeys,
@@ -280,6 +339,7 @@ async function activeSourceRecords(
 async function loadCurrentOperation(input: {
   entry: HallOfFameOperationManifestEntry;
   session: ClientSession;
+  online: boolean;
 }): Promise<BackfillOperationFence> {
   const report = await (await sessionReportsCol()).findOne(
     {
@@ -296,6 +356,7 @@ async function loadCurrentOperation(input: {
     report.relatedPersonnelCodenames ?? [],
     { session: input.session },
   );
+  if (input.online) assertCompleteOnlineDependencies(report.relatedPersonnelCodenames ?? [], resolution);
   const source = reduceOperationHonorSource({
     report,
     characters: resolution.eligibleCharacters,
@@ -334,6 +395,7 @@ async function loadCurrentOperation(input: {
 async function loadCurrentSkipped(input: {
   entry: HallOfFameBackfillSkippedSource;
   session: ClientSession;
+  online: boolean;
 }): Promise<BackfillOperationFence> {
   const report = await (await sessionReportsCol()).findOne(
     {
@@ -350,6 +412,7 @@ async function loadCurrentSkipped(input: {
     report.relatedPersonnelCodenames ?? [],
     { session: input.session },
   );
+  if (input.online) assertCompleteOnlineDependencies(report.relatedPersonnelCodenames ?? [], resolution);
   if (
     buildSkippedOperationSourceFingerprint({
       report,
@@ -535,11 +598,16 @@ async function markLoreReviewSkipped(input: {
   return true;
 }
 
-async function applyManifest(
+export async function applyManifest(
   manifest: HallOfFameBackfillManifest,
   database: string,
-  options: { notifyNew: boolean },
+  options: { notifyNew: boolean; sourceKey?: string; dryRun?: boolean },
 ): Promise<ApplySummary> {
+  if (options.dryRun && !options.sourceKey) {
+    throw new Error("BACKFILL_DRY_RUN_SOURCE_KEY_REQUIRED");
+  }
+  // Exported callers receive the same integrity checks as the CLI.
+  manifest = parseHallOfFameBackfillManifest(manifest);
   if (manifest.database !== database) {
     throw new Error("BACKFILL_MANIFEST_DATABASE_MISMATCH");
   }
@@ -549,7 +617,10 @@ async function applyManifest(
   if (manifest.novex.length > 0) {
     throw new Error("BACKFILL_NOVEX_SEASON_HONORS_UNSUPPORTED");
   }
+  const scope = selectManifestScope(manifest, options.sourceKey);
+  const online = options.sourceKey !== undefined;
   await assertHonorIndexesReady();
+  if (online) await assertOnlineCandidateIndex();
   const generatedAt = new Date(manifest.generatedAt);
   const client = await getClient();
   const session = client.startSession();
@@ -564,17 +635,29 @@ async function applyManifest(
         skippedNoop: 0,
         notificationsCreated: 0,
       };
-      await assertManifestCoverageCurrent(manifest, session);
-      const operationFences: BackfillOperationFence[] = [];
-      for (const entry of manifest.operations) {
-        operationFences.push(await loadCurrentOperation({ entry, session }));
+      await assertManifestCoverageCurrent(scope, session, online);
+      if (online) {
+        const state = await (await honorAnalysisStatesCol()).findOne(
+          { _id: `session-report:${options.sourceKey}` },
+          { session },
+        );
+        // Online apply must not take over another review worker's lease,
+        // including malformed/expired metadata requiring explicit recovery.
+        if (state && (
+          state.status === "LEASED" || state.leaseToken !== undefined ||
+          state.leaseUntil !== undefined
+        )) throw new Error("BACKFILL_ONLINE_REVIEW_LEASE_PRESENT");
       }
-      for (const entry of manifest.skipped) {
-        operationFences.push(await loadCurrentSkipped({ entry, session }));
+      const operationFences: BackfillOperationFence[] = [];
+      for (const entry of scope.operations) {
+        operationFences.push(await loadCurrentOperation({ entry, session, online }));
+      }
+      for (const entry of scope.skipped) {
+        operationFences.push(await loadCurrentSkipped({ entry, session, online }));
       }
       await fenceOperationDependencies(operationFences, session);
 
-      for (const entry of manifest.operations) {
+      for (const entry of scope.operations) {
         const desired = deserializeManifestRecords(entry.records);
         const previousLogicalKeys = new Set(
           (
@@ -647,7 +730,7 @@ async function applyManifest(
         else attemptSummary.operationsApplied += 1;
       }
 
-      for (const entry of manifest.skipped) {
+      for (const entry of scope.skipped) {
         const existing = await activeSourceRecords(
           "SESSION_REPORT",
           entry.sourceKey,
@@ -674,6 +757,7 @@ async function applyManifest(
           attemptSummary.skippedApplied += 1;
         }
       }
+      if (options.dryRun) await session.abortTransaction();
       return attemptSummary;
     });
     if (!summary) throw new Error("BACKFILL_TRANSACTION_ABORTED");
@@ -701,14 +785,20 @@ export async function main(
     const manifest = await readManifest(options.manifestPath!);
     const summary = await applyManifest(manifest, database, {
       notifyNew: options.notifyNew,
+      sourceKey: options.sourceKey,
+      dryRun: options.dryRun,
     });
     console.log(
       JSON.stringify(
         {
-          mode: "execute-lore-review",
+          mode: options.dryRun ? "dry-run-lore-review" : "execute-lore-review",
           database,
           manifestHash: manifest.manifestHash,
-          ...summary,
+          scope: options.sourceKey ?? "ALL_REPORTS",
+          committed: !options.dryRun,
+          ...(options.dryRun
+            ? { planned: summary, databaseWrites: 0, notificationsCreated: 0 }
+            : summary),
           webhooksSent: 0,
         },
         null,
