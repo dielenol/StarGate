@@ -4,19 +4,32 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   width: var(--sidebar-w);
   max-height: calc(100vh - var(--topbar-h));
-  padding: 16px 10px 20px;
-  background: var(--bg-1);
+  padding: 0;
+  background: color-mix(in srgb, var(--bg-1) 96%, #000);
   border-right: 1px solid var(--line);
-  overflow-y: auto;
+  overflow: hidden;
   z-index: 100;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding: 18px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .sidebar__group {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .sidebar__itemBlock {
@@ -25,12 +38,12 @@
 }
 
 .sidebar__groupLabel {
-  padding: 0 8px;
-  margin-bottom: 5px;
+  padding: 0 10px;
+  margin-bottom: 6px;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
 }
 
 .sidebar__item {
@@ -38,41 +51,38 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 9px 12px;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px;
   color: var(--ink-1);
   font-size: 14px;
   text-decoration: none;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   transition:
     background 0.15s ease,
     color 0.15s ease;
 }
 
-/* active 아이템에는 hover 시각 효과 미적용 — active 그라데이션/골드 톤 그대로 유지 */
 .sidebar__item:not(.sidebar__item--active):hover {
   background: var(--bg-2);
   color: var(--ink-0);
 }
 
-/* 활성 아이템 — 골드 그라데이션 배경(좌→우 fade) + 텍스트 골드 + 살짝 굵게.
-   우측에 도트풍 체크 SVG(sidebar__activeMark) 가 active 표시. */
 .sidebar__item--active {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--gold) 16%, transparent) 0%,
-    color-mix(in srgb, var(--gold) 4%, transparent) 100%
-  );
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
   color: var(--gold);
   font-weight: 500;
 }
 
-/* active 시 우측 끝 도트 체크 마크 */
-.sidebar__activeMark {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  color: var(--gold);
+.sidebar__item--active::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 2px;
+  background: var(--gold);
+  border-radius: 999px;
+  content: "";
 }
 
 .sidebar__countBadge {
@@ -102,7 +112,7 @@
 .sidebar__itemLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
 }
 
@@ -116,7 +126,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
+  width: 22px;
   color: var(--ink-2);
 }
 
@@ -147,9 +157,9 @@
 .sidebar__subList {
   display: grid;
   gap: 2px;
-  margin: 2px 0 6px 30px;
-  padding-left: 10px;
-  border-left: 1px dashed color-mix(in srgb, var(--gold-dim) 42%, var(--line));
+  margin: 2px 0 8px 20px;
+  padding-left: 12px;
+  border-left: 1px solid color-mix(in srgb, var(--gold-dim) 34%, var(--line));
 }
 
 .sidebar__subItem {
@@ -160,7 +170,7 @@
   min-height: 30px;
   padding: 6px 8px;
   color: var(--ink-2);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   font-size: 14px;
   line-height: 1.25;
   text-decoration: none;
@@ -221,19 +231,22 @@
 }
 
 .sidebar__footer {
-  margin-top: auto;
-  padding: 10px 8px;
-  border-top: 1px dashed var(--line);
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
 }
 
 .sidebar__return {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border-radius: 10px;
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 14px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0;
   text-decoration: none;
   transition: color 0.15s ease;
 }
@@ -245,9 +258,19 @@
 
 .sidebar__return:hover {
   color: var(--gold);
+  background: var(--bg-2);
+}
+
+.sidebar :is(a, button):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
 }
 
 .sidebar__backdrop {
+  display: none;
+}
+
+.sidebar__drawerHead {
   display: none;
 }
 
@@ -257,18 +280,41 @@
 
 /* 모바일: fixed drawer */
 @media (max-width: 1279px) {
+  .sidebar__drawerHead {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px;
+    padding: env(safe-area-inset-top, 0px) 12px 0 18px;
+    background: color-mix(in srgb, var(--bg-1) 96%, #000);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sidebar__drawerTitle {
+    color: var(--ink-0);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
   .sidebar__close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    align-self: flex-end;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
     color: var(--ink-1);
-    background: var(--bg-2);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
     cursor: pointer;
+  }
+
+  .sidebar__close svg {
+    width: 18px;
+    height: 18px;
   }
 
   .sidebar {
@@ -276,16 +322,27 @@
     top: 0;
     left: 0;
     bottom: 0;
-    height: 100vh;
+    width: min(304px, calc(100vw - 32px));
+    height: 100dvh;
     max-height: none;
-    padding-top: 16px;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
-    z-index: 120;
+    z-index: 220;
+  }
+
+  .sidebar__footer {
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar--open {
     transform: translateX(0);
+  }
+
+  .sidebar__close:hover,
+  .sidebar__close:focus-visible {
+    background: var(--bg-2);
+    border-color: color-mix(in srgb, var(--gold-dim) 60%, var(--line));
+    color: var(--gold);
   }
 
   .sidebar__backdrop {
@@ -296,11 +353,20 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
-    z-index: 110;
+    z-index: 210;
   }
 
   .sidebar__backdrop--open {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar__backdrop,
+  .sidebar__item,
+  .sidebar__return {
+    transition: none;
   }
 }
