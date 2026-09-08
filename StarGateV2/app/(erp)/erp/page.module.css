@@ -10,64 +10,25 @@
 
 .commandCenter {
   display: grid;
-  grid-template-columns: minmax(360px, 1.25fr) minmax(300px, 0.9fr) minmax(300px, 0.85fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.9fr);
+  gap: 16px;
   align-items: stretch;
   margin-bottom: 18px;
 }
 
 .commandSurface,
 .surfacePanel {
-  --panel-pattern:
-    linear-gradient(rgba(201, 169, 97, 0.018), transparent 56%),
-    repeating-linear-gradient(
-      135deg,
-      rgba(201, 169, 97, 0.026) 0 1px,
-      transparent 1px 12px
-    );
   position: relative;
   min-width: 0;
   overflow: hidden;
-  background-color: color-mix(in srgb, var(--bg-1) 92%, var(--bg-2));
-  background-image: var(--panel-pattern);
+  background: color-mix(in srgb, var(--bg-1) 94%, var(--bg-2));
   border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
-  border-radius: var(--radius-md);
-}
-
-.commandSurface::before,
-.surfacePanel::before {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: 1px solid rgba(201, 169, 97, 0.035);
-  border-radius: calc(var(--radius-md) - 4px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.commandSurface::after,
-.surfacePanel::after {
-  content: "";
-  position: absolute;
-  right: 18px;
-  bottom: 16px;
-  width: 52px;
-  height: 22px;
-  background:
-    linear-gradient(90deg, rgba(201, 169, 97, 0.22) 0 2px, transparent 2px 7px),
-    linear-gradient(rgba(201, 169, 97, 0.14), rgba(201, 169, 97, 0.14));
-  background-size:
-    7px 100%,
-    100% 1px;
-  background-repeat: repeat-x, no-repeat;
-  opacity: 0.34;
-  pointer-events: none;
-  z-index: 0;
+  border-radius: 14px;
 }
 
 .commandSurface {
-  min-height: 310px;
-  padding: 24px;
+  min-height: 280px;
+  padding: 22px;
 }
 
 .commandSurface > *,
@@ -77,67 +38,13 @@
 }
 
 .agentStage {
-  --panel-pattern:
-    linear-gradient(rgba(201, 169, 97, 0.022), transparent 58%),
-    linear-gradient(rgba(201, 169, 97, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 169, 97, 0.03) 1px, transparent 1px);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 28px;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 24px;
   align-items: center;
-  background-size:
-    auto,
-    24px 24px,
-    24px 24px;
-}
-
-.missionStage {
-  --panel-pattern:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.018) 0 1px,
-      transparent 1px 5px
-    ),
-    linear-gradient(90deg, rgba(201, 169, 97, 0.04), transparent 52%);
-}
-
-.actionQueue {
-  --panel-pattern:
-    linear-gradient(
-      90deg,
-      transparent 0 82%,
-      rgba(106, 135, 168, 0.08) 82% 83%,
-      transparent 83%
-    ),
-    linear-gradient(
-      180deg,
-      transparent 0 68%,
-      rgba(201, 169, 97, 0.06) 68% 69%,
-      transparent 69%
-    );
-  background-size:
-    34px 34px,
-    34px 34px;
-}
-
-.surfacePanel:nth-child(1) {
-  --panel-pattern:
-    radial-gradient(circle at 88% 18%, rgba(201, 169, 97, 0.09), transparent 28%),
-    repeating-linear-gradient(
-      90deg,
-      rgba(201, 169, 97, 0.03) 0 1px,
-      transparent 1px 14px
-    );
-}
-
-.surfacePanel:nth-child(2) {
-  --panel-pattern:
-    repeating-linear-gradient(
-      135deg,
-      rgba(106, 135, 168, 0.048) 0 1px,
-      transparent 1px 12px
-    ),
-    linear-gradient(90deg, rgba(106, 135, 168, 0.03), transparent 48%);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--gold) 6%, transparent), transparent 42%),
+    color-mix(in srgb, var(--bg-1) 94%, var(--bg-2));
 }
 
 .agentStage__portrait {
@@ -175,6 +82,8 @@
   font-weight: 600;
   line-height: 1.16;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .agentStage__meta {
@@ -185,6 +94,7 @@
   margin-top: 12px;
   color: var(--ink-2);
   font-size: 15px;
+  overflow-wrap: anywhere;
 }
 
 .charMini__avatar {
@@ -222,11 +132,11 @@
 }
 
 .charMini__avatar--hero {
-  width: 220px;
-  height: 250px;
+  width: 160px;
+  height: 200px;
   background: color-mix(in srgb, var(--bg-2) 86%, var(--gold));
   border-color: color-mix(in srgb, var(--gold-dim) 42%, var(--line));
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
 }
 
 .charMini__vitals {
@@ -291,14 +201,12 @@
 .secondaryPill.secondaryPill {
   min-height: 40px;
   padding: 9px 16px;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   font-family: var(--font-body);
   font-size: 15px;
   letter-spacing: 0;
   text-decoration: none;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
-    0 10px 24px rgba(0, 0, 0, 0.16);
+  box-shadow: none;
   transition:
     border-color 0.16s ease,
     color 0.16s ease,
@@ -308,13 +216,7 @@
 
 .primaryPill.primaryPill {
   border-color: var(--gold);
-  background:
-    repeating-linear-gradient(
-      135deg,
-      rgba(10, 10, 13, 0.08) 0 1px,
-      transparent 1px 7px
-    ),
-    var(--gold);
+  background: var(--gold);
   color: #0a0a0d;
 }
 
@@ -323,13 +225,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--gold-dim) 76%, var(--line));
-  background:
-    repeating-linear-gradient(
-      135deg,
-      rgba(201, 169, 97, 0.045) 0 1px,
-      transparent 1px 9px
-    ),
-    rgba(15, 15, 19, 0.62);
+  background: color-mix(in srgb, var(--bg-2) 82%, transparent);
   color: var(--ink-1);
 }
 
@@ -405,6 +301,31 @@
 .actionQueue {
   display: flex;
   flex-direction: column;
+  min-height: auto;
+  margin-bottom: 16px;
+}
+
+.actionQueue .sectionHead {
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.actionQueue .sectionHead > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.actionQueue .sectionLabel {
+  margin-bottom: 0;
+}
+
+.actionQueue .softEmpty {
+  min-height: 64px;
+  place-content: center start;
+  justify-items: start;
+  text-align: left;
 }
 
 .queueCount {
@@ -414,14 +335,8 @@
   min-width: 34px;
   height: 34px;
   border: 1px solid rgba(201, 169, 97, 0.42);
-  border-radius: var(--radius-sm);
-  background:
-    repeating-linear-gradient(
-      135deg,
-      rgba(201, 169, 97, 0.08) 0 1px,
-      transparent 1px 7px
-    ),
-    color-mix(in srgb, var(--gold) 12%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
   color: var(--gold);
   font-family: var(--font-pixel);
   font-size: 15px;
@@ -431,8 +346,9 @@
 
 .actionList {
   display: grid;
-  gap: 0;
-  margin-top: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin-top: 2px;
 }
 
 .actionItem {
@@ -450,6 +366,16 @@
   border-top: 0;
 }
 
+.actionItem:only-child {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 901px) {
+  .actionItem:nth-child(-n + 2) {
+    border-top: 0;
+  }
+}
+
 .actionItem:focus-visible {
   outline: 1px solid var(--gold);
   outline-offset: 3px;
@@ -463,15 +389,14 @@
 
 .actionItem__title,
 .actionItem__detail {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .actionItem__title {
   color: var(--ink-0);
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.35;
 }
 
 .actionItem__detail {
@@ -509,7 +434,7 @@
   place-content: center;
   justify-items: center;
   gap: 9px;
-  min-height: 118px;
+  min-height: 96px;
   color: var(--ink-3);
   font-size: 15px;
   text-align: center;
@@ -522,17 +447,10 @@
 }
 
 .signalStrip {
-  --signal-pattern:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.016) 0 1px,
-      transparent 1px 5px
-    );
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  margin-bottom: 18px;
-  background-color: color-mix(in srgb, var(--bg-1) 88%, transparent);
-  background-image: var(--signal-pattern);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--bg-1) 92%, var(--bg-2));
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -542,7 +460,7 @@
   display: grid;
   gap: 8px;
   min-width: 0;
-  padding: 18px;
+  padding: 15px 18px;
   color: inherit;
   text-decoration: none;
   border-left: 1px solid var(--line);
@@ -555,13 +473,21 @@
   border-left: 0;
 }
 
+.signalItem:nth-child(4n + 1) {
+  border-left: 0;
+}
+
+.signalItem:nth-child(n + 5) {
+  border-top: 1px solid var(--line);
+}
+
 .signalItem span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--ink-3);
   font-family: var(--font-pixel);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
 }
 
@@ -573,10 +499,9 @@
 
 .signalItem strong {
   min-width: 0;
-  overflow: hidden;
   color: var(--ink-0);
   font-family: var(--font-pixel);
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 400;
   line-height: 1.05;
   text-overflow: ellipsis;
@@ -635,7 +560,7 @@ a.signalItem:focus-visible {
 }
 
 .surfacePanel {
-  padding: 22px;
+  padding: 20px;
 }
 
 .sessionList,
@@ -714,10 +639,8 @@ a.signalItem:focus-visible {
   width: 34px;
   height: 34px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background:
-    linear-gradient(rgba(201, 169, 97, 0.035), transparent),
-    var(--bg-2);
+  border-radius: 9px;
+  background: var(--bg-2);
   color: var(--ink-1);
   text-decoration: none;
 }
@@ -773,28 +696,6 @@ a.signalItem:focus-visible {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-@media (max-width: 1240px) {
-  .commandCenter {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.82fr);
-  }
-
-  .agentStage {
-    grid-column: 1 / -1;
-  }
-
-  .signalStrip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .signalItem:nth-child(4n + 1) {
-    border-left: 0;
-  }
-
-  .signalItem:nth-child(n + 5) {
-    border-top: 1px solid var(--line);
-  }
-}
-
 @media (max-width: 900px) {
   .commandCenter,
   .operationsGrid,
@@ -817,6 +718,10 @@ a.signalItem:focus-visible {
   .signalItem:nth-child(n + 3) {
     border-top: 1px solid var(--line);
   }
+
+  .actionList {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 620px) {
@@ -826,24 +731,38 @@ a.signalItem:focus-visible {
   }
 
   .agentStage {
-    grid-template-columns: 1fr;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 12px;
   }
 
   .agentStage__portrait {
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   .charMini__avatar--hero {
-    width: 172px;
-    height: 196px;
+    width: 96px;
+    height: 120px;
   }
 
   .agentStage__name {
-    font-size: 28px;
+    font-size: 23px;
   }
 
   .missionStage__date strong {
     font-size: 38px;
+  }
+
+  .signalItem:nth-child(-n + 2) {
+    grid-column: span 2;
+    border-left: 0;
+  }
+
+  .signalItem:nth-child(-n + 2) strong {
+    font-size: 20px;
+  }
+
+  .signalItem:nth-child(n + 2) {
+    border-top: 1px solid var(--line);
   }
 
   .sessionCard,
@@ -861,5 +780,12 @@ a.signalItem:focus-visible {
 
   .iconLink {
     justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryPill.primaryPill,
+  .secondaryPill.secondaryPill {
+    transition: none;
   }
 }
