@@ -3,6 +3,7 @@
 codename: "PARIS_MARQUIS"
 slug: "paris-marquis"
 type: "NPC"
+factionCode: "HOSTILE"
 role: "흑미사 의식 협력자"
 nameKo: "후작"
 gender: "남성"
@@ -16,7 +17,7 @@ source: "session-log"
 previewImage: "/assets/npcs/Paris-Marquis-profile.webp"
 mainImage: "/assets/npcs/Paris-Marquis-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T04:07:21.733Z"
+updatedAt: "2026-09-08T05:27:00.000Z"
 ---
 
 ## 대사

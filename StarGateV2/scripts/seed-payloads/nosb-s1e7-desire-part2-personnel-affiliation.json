@@ -1,0 +1,292 @@
+[
+  {
+    "type": "npc-dossier",
+    "collection": "characters",
+    "filter": {
+      "codename": "FEDERATIO_PARIS_BOSS",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": {
+        "$exists": false
+      },
+      "department": {
+        "$exists": false
+      },
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      },
+      "lore.loreTags": [
+        "NOSB-S1E7-DESIRE-PART2",
+        "S1E7",
+        "파리",
+        "페데라치오 대부"
+      ]
+    },
+    "update": {
+      "$set": {
+        "factionCode": "HOSTILE",
+        "updatedAt": "2026-09-08T05:27:00.000Z",
+        "department": "FEDERATIO",
+        "lore.loreTags": [
+          "NOSB-S1E7-DESIRE-PART2",
+          "S1E7",
+          "파리",
+          "페데라치오 대부",
+          "FEDERATIO",
+          "페데라치오"
+        ]
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "codename": "FEDERATIO_PARIS_BOSS",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": "HOSTILE",
+      "department": "FEDERATIO",
+      "lore.loreTags": [
+        "NOSB-S1E7-DESIRE-PART2",
+        "S1E7",
+        "파리",
+        "페데라치오 대부",
+        "FEDERATIO",
+        "페데라치오"
+      ],
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      }
+    }
+  },
+  {
+    "type": "npc-dossier",
+    "collection": "characters",
+    "filter": {
+      "codename": "MATTEO_FEDERATIO",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": {
+        "$exists": false
+      },
+      "department": {
+        "$exists": false
+      },
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      },
+      "lore.loreTags": [
+        "NOSB-S1E7-DESIRE-PART1",
+        "NOSB-S1E7-DESIRE-PART2",
+        "S1E7",
+        "파리",
+        "마테오"
+      ]
+    },
+    "update": {
+      "$set": {
+        "factionCode": "HOSTILE",
+        "updatedAt": "2026-09-08T05:27:00.000Z",
+        "department": "FEDERATIO",
+        "lore.loreTags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "NOSB-S1E7-DESIRE-PART2",
+          "S1E7",
+          "파리",
+          "마테오",
+          "FEDERATIO",
+          "페데라치오"
+        ]
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "codename": "MATTEO_FEDERATIO",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": "HOSTILE",
+      "department": "FEDERATIO",
+      "lore.loreTags": [
+        "NOSB-S1E7-DESIRE-PART1",
+        "NOSB-S1E7-DESIRE-PART2",
+        "S1E7",
+        "파리",
+        "마테오",
+        "FEDERATIO",
+        "페데라치오"
+      ],
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      }
+    }
+  },
+  {
+    "type": "npc-dossier",
+    "collection": "characters",
+    "filter": {
+      "codename": "PARIS_MARQUIS",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": {
+        "$exists": false
+      },
+      "department": {
+        "$exists": false
+      },
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      }
+    },
+    "update": {
+      "$set": {
+        "factionCode": "HOSTILE",
+        "updatedAt": "2026-09-08T05:27:00.000Z"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "codename": "PARIS_MARQUIS",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": "HOSTILE",
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      },
+      "department": {
+        "$exists": false
+      }
+    }
+  },
+  {
+    "type": "npc-dossier",
+    "collection": "characters",
+    "filter": {
+      "codename": "PARIS_PRIEST",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": {
+        "$exists": false
+      },
+      "department": {
+        "$exists": false
+      },
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      }
+    },
+    "update": {
+      "$set": {
+        "factionCode": "HOSTILE",
+        "updatedAt": "2026-09-08T05:27:00.000Z"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "codename": "PARIS_PRIEST",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": "HOSTILE",
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      },
+      "department": {
+        "$exists": false
+      }
+    }
+  },
+  {
+    "type": "npc-dossier",
+    "collection": "characters",
+    "filter": {
+      "codename": "PUPPETEER",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": {
+        "$exists": false
+      },
+      "department": {
+        "$exists": false
+      },
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      },
+      "lore.loreTags": [
+        "NOSB-S1E7-DESIRE-PART1",
+        "NOSB-S1E7-DESIRE-PART2",
+        "S1E7",
+        "파리",
+        "코르티잔"
+      ],
+      "lore.roleDetail": "정규 소속 미상. 페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.",
+      "loreMd": "## 대사\n> 돌아왔구나... 실패작...\n\n## 외형\n길게 땋아 한쪽 어깨로 내린 머리와 검은 드레스 차림이다. 파리에서는 보스 곁에 서서 병사들에게 손짓으로 명령했다.\n\n## 성격\n지속적인 성향은 미상이다. 이번 작전에서 관측된 발화와 행동은 사건 기록으로 구분한다.\n\n## 배경\n코르티잔은 인형사이자 페데라치오 파리 조직의 변호사다. 과거 후작·성직자와 함께 마리아를 흑미사 의식으로 데려간 인물이며, 카타콤에서 마리아를 미완성 의식의 실패작이라고 불렀다. 실패작이라는 평가는 본인의 진술이다. 호르몬을 통한 신경 조종과 강제 배역으로 현장팀에 맞섰다. 첫 흐름에서는 살해됐으나 크로노스의 시간 회귀로 살아났고, 이동식에게 운반되어 출구로 향했다. 폭격 이후 소재와 정식 격리시설 도착 여부는 미상이다.\n\n## 역할 상세\n정규 소속 미상. 페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.\n\n- [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]\n- [[wiki:puppeteer|코르티잔 · 인형사]]\n- [[wiki:paris-catacombs|파리 카타콤]]\n- [[wiki:federatio|페데라치오]]\n\n## 이름 설명\n코르티잔·인형사·변호사는 같은 신원이다. 실명·기원은 미상이다. 마담 퍼페티어는 강제 배역 중 오틸리아가 사용한 현장 호칭이며 정식 이름으로 확정하지 않는다.\n\n## 관계 (참고)\n- [[personnel:MARIA|마리아]] — 과거 의식 가담·적대: 과거 마리아를 흑미사 의식으로 데려간 코르티잔과 같은 인물이다. 현재 마리아를 실패작이라 부른 평가는 당사자의 진술이다.\n- [[personnel:TIME|크로노스]] — 생존 개입: 크로노스가 시간을 되돌리고 공격을 대신 맞아 인형사를 살렸다.\n- [[personnel:LEE DONGSIK|이동식]] — 생포 대상 운반: 이동식에게 운반되어 카타콤 출구로 향했다. 이후 격리·보관 위치는 미상이다.\n- [[personnel:INDEXER|해쉬 테거]] — 능력 분석·대응: 해쉬가 호르몬을 통한 신경 조종을 분석하고 행동교정물질을 투여했다.\n- [[personnel:FEDERATIO_PARIS_BOSS|페데라치오 대부]] — 명목상 보스와 변호사: 코르티잔은 대부 곁에서 병사들을 지시했다. 래키가 실권자로 지목한 변호사와 같은 인물이며, 대부를 직접 조종한 방식은 미상이다.\n"
+    },
+    "update": {
+      "$set": {
+        "factionCode": "HOSTILE",
+        "updatedAt": "2026-09-08T05:27:00.000Z",
+        "department": "FEDERATIO",
+        "lore.loreTags": [
+          "NOSB-S1E7-DESIRE-PART1",
+          "NOSB-S1E7-DESIRE-PART2",
+          "S1E7",
+          "파리",
+          "코르티잔",
+          "FEDERATIO",
+          "페데라치오"
+        ],
+        "lore.roleDetail": "페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.",
+        "loreMd": "## 대사\n돌아왔구나... 실패작...\n\n## 외형\n길게 땋아 한쪽 어깨로 내린 머리와 검은 드레스 차림이다. 파리에서는 보스 곁에 서서 병사들에게 손짓으로 명령했다.\n\n## 성격\n지속적인 성향은 미상이다. 이번 작전에서 관측된 발화와 행동은 사건 기록으로 구분한다.\n\n## 배경\n코르티잔은 인형사이자 페데라치오 파리 조직의 변호사다. 과거 후작·성직자와 함께 마리아를 흑미사 의식으로 데려간 인물이며, 카타콤에서 마리아를 미완성 의식의 실패작이라고 불렀다. 실패작이라는 평가는 본인의 진술이다. 호르몬을 통한 신경 조종과 강제 배역으로 현장팀에 맞섰다. 첫 흐름에서는 살해됐으나 크로노스의 시간 회귀로 살아났고, 이동식에게 운반되어 출구로 향했다. 폭격 이후 소재와 정식 격리시설 도착 여부는 미상이다.\n\n## 역할 상세\n페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.\n\n## 관련 문서\n- [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]\n- [[wiki:puppeteer|코르티잔 · 인형사]]\n- [[wiki:paris-catacombs|파리 카타콤]]\n- [[wiki:federatio|페데라치오]]\n\n## 이름 설명\n코르티잔·인형사·변호사는 같은 신원이다. 실명·기원은 미상이다. 마담 퍼페티어는 강제 배역 중 오틸리아가 사용한 현장 호칭이며 정식 이름으로 확정하지 않는다.\n\n## 관계 (참고)\n- [[personnel:MARIA|마리아]] — 과거 의식 가담·적대: 과거 마리아를 흑미사 의식으로 데려간 코르티잔과 같은 인물이다. 현재 마리아를 실패작이라 부른 평가는 당사자의 진술이다.\n- [[personnel:TIME|크로노스]] — 생존 개입: 크로노스가 시간을 되돌리고 공격을 대신 맞아 인형사를 살렸다.\n- [[personnel:LEE DONGSIK|이동식]] — 생포 대상 운반: 이동식에게 운반되어 카타콤 출구로 향했다. 이후 격리·보관 위치는 미상이다.\n- [[personnel:INDEXER|해쉬 테거]] — 능력 분석·대응: 해쉬가 호르몬을 통한 신경 조종을 분석하고 행동교정물질을 투여했다.\n- [[personnel:FEDERATIO_PARIS_BOSS|페데라치오 대부]] — 명목상 보스와 변호사: 코르티잔은 대부 곁에서 병사들을 지시했다. 래키가 실권자로 지목한 변호사와 같은 인물이며, 대부를 직접 조종한 방식은 미상이다.\n"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "codename": "PUPPETEER",
+      "type": "NPC",
+      "isPublic": true,
+      "factionCode": "HOSTILE",
+      "department": "FEDERATIO",
+      "lore.loreTags": [
+        "NOSB-S1E7-DESIRE-PART1",
+        "NOSB-S1E7-DESIRE-PART2",
+        "S1E7",
+        "파리",
+        "코르티잔",
+        "FEDERATIO",
+        "페데라치오"
+      ],
+      "lore.roleDetail": "페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.",
+      "loreMd": "## 대사\n돌아왔구나... 실패작...\n\n## 외형\n길게 땋아 한쪽 어깨로 내린 머리와 검은 드레스 차림이다. 파리에서는 보스 곁에 서서 병사들에게 손짓으로 명령했다.\n\n## 성격\n지속적인 성향은 미상이다. 이번 작전에서 관측된 발화와 행동은 사건 기록으로 구분한다.\n\n## 배경\n코르티잔은 인형사이자 페데라치오 파리 조직의 변호사다. 과거 후작·성직자와 함께 마리아를 흑미사 의식으로 데려간 인물이며, 카타콤에서 마리아를 미완성 의식의 실패작이라고 불렀다. 실패작이라는 평가는 본인의 진술이다. 호르몬을 통한 신경 조종과 강제 배역으로 현장팀에 맞섰다. 첫 흐름에서는 살해됐으나 크로노스의 시간 회귀로 살아났고, 이동식에게 운반되어 출구로 향했다. 폭격 이후 소재와 정식 격리시설 도착 여부는 미상이다.\n\n## 역할 상세\n페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.\n\n## 관련 문서\n- [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]\n- [[wiki:puppeteer|코르티잔 · 인형사]]\n- [[wiki:paris-catacombs|파리 카타콤]]\n- [[wiki:federatio|페데라치오]]\n\n## 이름 설명\n코르티잔·인형사·변호사는 같은 신원이다. 실명·기원은 미상이다. 마담 퍼페티어는 강제 배역 중 오틸리아가 사용한 현장 호칭이며 정식 이름으로 확정하지 않는다.\n\n## 관계 (참고)\n- [[personnel:MARIA|마리아]] — 과거 의식 가담·적대: 과거 마리아를 흑미사 의식으로 데려간 코르티잔과 같은 인물이다. 현재 마리아를 실패작이라 부른 평가는 당사자의 진술이다.\n- [[personnel:TIME|크로노스]] — 생존 개입: 크로노스가 시간을 되돌리고 공격을 대신 맞아 인형사를 살렸다.\n- [[personnel:LEE DONGSIK|이동식]] — 생포 대상 운반: 이동식에게 운반되어 카타콤 출구로 향했다. 이후 격리·보관 위치는 미상이다.\n- [[personnel:INDEXER|해쉬 테거]] — 능력 분석·대응: 해쉬가 호르몬을 통한 신경 조종을 분석하고 행동교정물질을 투여했다.\n- [[personnel:FEDERATIO_PARIS_BOSS|페데라치오 대부]] — 명목상 보스와 변호사: 코르티잔은 대부 곁에서 병사들을 지시했다. 래키가 실권자로 지목한 변호사와 같은 인물이며, 대부를 직접 조종한 방식은 미상이다.\n",
+      "institutionCode": {
+        "$exists": false
+      },
+      "agentLevel": {
+        "$exists": false
+      }
+    }
+  }
+]

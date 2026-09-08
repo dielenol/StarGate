@@ -41,6 +41,7 @@ const ICONS = [
   ["hostile", "org_faction_hostile.svg", "HOSTILE"],
   ["extGoldenDawn", "org_extorg_golden_dawn.svg", "GOLDEN_DAWN"],
   ["extAhnenerbe", "org_extorg_ahnenerbe.svg", "AHNENERBE"],
+  ["extFederatio", "org_extorg_federatio.svg", "FEDERATIO"],
 ];
 
 for (const [key, asset, code] of ICONS) {
@@ -71,7 +72,7 @@ for (const [key, asset, code] of ICONS) {
   });
 }
 
-test("31개 문장은 서로 다른 실루엣 소스를 유지한다", () => {
+test("문장은 서로 다른 실루엣 소스를 유지한다", () => {
   const bodies = ICONS.map(([, asset]) => svgBody(read(`public/assets/svg/${asset}`)));
   assert.equal(new Set(bodies).size, ICONS.length);
 });

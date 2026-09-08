@@ -3,6 +3,8 @@
 codename: "FEDERATIO_PARIS_BOSS"
 slug: "federatio-godfather"
 type: "NPC"
+factionCode: "HOSTILE"
+department: "FEDERATIO"
 role: "페데라치오 파리 조직의 명목상 대부"
 nameKo: "페데라치오 대부"
 gender: "미상"
@@ -10,13 +12,13 @@ age: "미상"
 height: "미상"
 weight: "미상"
 isPublic: true
-loreTags: ["NOSB-S1E7-DESIRE-PART2", "S1E7", "파리", "페데라치오 대부"]
+loreTags: ["NOSB-S1E7-DESIRE-PART2", "S1E7", "파리", "페데라치오 대부", "FEDERATIO", "페데라치오"]
 appearsInEvents: ["NOSB-S1E7-DESIRE-PART2"]
 source: "session-log"
 previewImage: "/assets/npcs/Federatio-Godfather-profile.webp"
 mainImage: "/assets/npcs/Federatio-Godfather-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T04:07:21.733Z"
+updatedAt: "2026-09-08T05:27:00.000Z"
 ---
 
 ## 대사

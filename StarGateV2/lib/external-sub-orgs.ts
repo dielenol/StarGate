@@ -122,6 +122,17 @@ export const EXTERNAL_SUB_ORGS: readonly ExternalSubOrg[] = [
     logoVariant: "badge",
     doctrine: "비밀 연구 · 침투 의혹",
   },
+  {
+    code: "FEDERATIO",
+    label: "페데라치오",
+    labelEn: "Federatio",
+    summary: "광명회와 결탁해 무기·물자와 광원화 테러 물류망을 운용한 시칠리아계 마피아 조직",
+    parentCode: "HOSTILE",
+    parentLabel: "적대세력",
+    logoUrl: "",
+    logoVariant: "badge",
+    doctrine: "조직범죄 · 무기·폭탄 조달 · 광원화 테러 물류",
+  },
 ] as const;
 
 export const CIVIL_PERSONNEL_CATEGORIES: readonly CivilPersonnelCategory[] = [

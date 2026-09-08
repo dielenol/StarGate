@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   EXTERNAL_SUB_ORGS,
   getExternalSubOrg,
+  isExternalSubOrg,
 } from "../external-sub-orgs.ts";
 
 test("러시아 정부를 군부 하위 조직으로 노출한다", () => {
@@ -78,4 +79,29 @@ test("갈로글라와 욤스비킹에 군부 공용 표식 대신 전용 아이�
       body,
     );
   }
+});
+
+test("페데라치오는 적대세력 하위 탭과 전용 아이콘으로 연결한다", () => {
+  const hostileOrganizations = EXTERNAL_SUB_ORGS.filter(
+    (org) => org.parentCode === "HOSTILE",
+  );
+  const federatio = getExternalSubOrg("FEDERATIO");
+
+  assert.equal(isExternalSubOrg("FEDERATIO"), true);
+  assert.equal(
+    hostileOrganizations.filter((org) => org.code === "FEDERATIO").length,
+    1,
+  );
+  assert.equal(federatio?.parentLabel, "적대세력");
+  assert.equal(federatio?.logoUrl, "");
+  assert.equal(federatio?.logoVariant, "badge");
+
+  const source = readFileSync(
+    new URL(
+      "../../app/(erp)/erp/personnel/_components/OrgIcon.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(source, /FEDERATIO: "FEDERATIO"/);
 });

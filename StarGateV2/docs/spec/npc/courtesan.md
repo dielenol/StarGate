@@ -3,6 +3,8 @@
 codename: "PUPPETEER"
 slug: "courtesan"
 type: "NPC"
+factionCode: "HOSTILE"
+department: "FEDERATIO"
 role: "인형사·페데라치오 파리 조직의 변호사"
 nameKo: "코르티잔"
 gender: "여성"
@@ -10,13 +12,13 @@ age: "미상"
 height: "미상"
 weight: "미상"
 isPublic: true
-loreTags: ["NOSB-S1E7-DESIRE-PART1", "NOSB-S1E7-DESIRE-PART2", "S1E7", "파리", "코르티잔"]
+loreTags: ["NOSB-S1E7-DESIRE-PART1", "NOSB-S1E7-DESIRE-PART2", "S1E7", "파리", "코르티잔", "FEDERATIO", "페데라치오"]
 appearsInEvents: ["NOSB-S1E7-DESIRE-PART1", "NOSB-S1E7-DESIRE-PART2"]
 source: "session-log"
 previewImage: "/assets/npcs/Courtesan-profile.webp"
 mainImage: "/assets/npcs/Courtesan-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T04:07:21.733Z"
+updatedAt: "2026-09-08T05:27:00.000Z"
 nickname: "인형사 · 변호사"
 ---
 
@@ -33,7 +35,7 @@ nickname: "인형사 · 변호사"
 코르티잔은 인형사이자 페데라치오 파리 조직의 변호사다. 과거 후작·성직자와 함께 마리아를 흑미사 의식으로 데려간 인물이며, 카타콤에서 마리아를 미완성 의식의 실패작이라고 불렀다. 실패작이라는 평가는 본인의 진술이다. 호르몬을 통한 신경 조종과 강제 배역으로 현장팀에 맞섰다. 첫 흐름에서는 살해됐으나 크로노스의 시간 회귀로 살아났고, 이동식에게 운반되어 출구로 향했다. 폭격 이후 소재와 정식 격리시설 도착 여부는 미상이다.
 
 ## 역할 상세
-정규 소속 미상. 페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.
+페데라치오 파리 조직의 변호사이며, 래키는 변호사를 조직의 실권자라고 증언했다. 내부 기관·인가·추가 파견 근거 없음.
 
 ## 관련 문서
 - [[report:NOSB-S1E7-DESIRE-PART2|작전 보고서 S1E7: 욕구 2부]]

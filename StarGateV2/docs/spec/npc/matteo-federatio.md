@@ -3,6 +3,8 @@
 codename: "MATTEO_FEDERATIO"
 slug: "matteo-federatio"
 type: "NPC"
+factionCode: "HOSTILE"
+department: "FEDERATIO"
 role: "페데라치오 파리 조직원·폭탄 좌표 제공자"
 nameKo: "마테오"
 gender: "미상"
@@ -10,13 +12,13 @@ age: "미상"
 height: "미상"
 weight: "미상"
 isPublic: true
-loreTags: ["NOSB-S1E7-DESIRE-PART1", "NOSB-S1E7-DESIRE-PART2", "S1E7", "파리", "마테오"]
+loreTags: ["NOSB-S1E7-DESIRE-PART1", "NOSB-S1E7-DESIRE-PART2", "S1E7", "파리", "마테오", "FEDERATIO", "페데라치오"]
 appearsInEvents: ["NOSB-S1E7-DESIRE-PART1", "NOSB-S1E7-DESIRE-PART2"]
 source: "session-log"
 previewImage: "/assets/npcs/Matteo-Federatio-profile.webp"
 mainImage: "/assets/npcs/Matteo-Federatio-profile.webp"
 createdAt: "2026-09-08T03:22:01.804Z"
-updatedAt: "2026-09-08T04:07:21.733Z"
+updatedAt: "2026-09-08T05:27:00.000Z"
 lifeStatus: "DECEASED"
 lifeStatusAt: "2026-09-06T13:03:57.000Z"
 lifeStatusEventId: "NOSB-S1E7-DESIRE-PART2"
