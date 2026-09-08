@@ -8,11 +8,25 @@
 }
 
 .commandCenter {
+  position: relative;
+  isolation: isolate;
   margin-bottom: 24px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: linear-gradient(110deg, var(--bg-2), #1b191d 75%, #231f20);
+}
+.commandCenter::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background-image:
+    linear-gradient(#c9b47720 1px, transparent 1px),
+    linear-gradient(90deg, #c9b47720 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(ellipse at 78% 32%, #000 5%, #0009 48%, transparent 83%);
+  pointer-events: none;
 }
 .commandSurface {
   position: relative;
@@ -775,6 +789,10 @@ a.signalItem:hover strong {
   .commandCenter {
     border-radius: 16px;
     margin-bottom: 18px;
+  }
+  .commandCenter::before {
+    background-size: 18px 18px;
+    mask-image: radial-gradient(ellipse at 82% 14%, #0009, #0004 36%, transparent 66%);
   }
   .agentStage {
     grid-template-columns: minmax(0, 1fr) 110px;
