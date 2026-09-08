@@ -57,6 +57,8 @@ export interface ResearchLabSimulationControls {
 
 export interface ResearchLabViewProps extends ResearchLabViewActions {
   data?: ResearchLabViewData | null;
+  /** An explicit dashboard deep-link target. It only opens once per URL value. */
+  targetJobId?: string | null;
   isLoading?: boolean;
   error?: string | null;
   pendingAction?:
@@ -83,6 +85,7 @@ function lineStatusLabel(line: ResearchConsoleLine): string {
 
 export default function ResearchLabView({
   data,
+  targetJobId,
   isLoading = false,
   error,
   pendingAction,
@@ -102,6 +105,30 @@ export default function ResearchLabView({
   const [chatValue, setChatValue] = useState("");
   const [consoleOpen, setConsoleOpen] = useState(false);
   const consoleTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const handledTargetJobRef = useRef<{ key: string | null; applied: boolean }>({ key: null, applied: false });
+
+  const targetLineId = targetJobId
+    ? data?.lines.find(
+        (line) =>
+          line.currentJob?.id === targetJobId ||
+          line.queue.some((job) => job.id === targetJobId),
+      )?.id
+    : undefined;
+
+  useEffect(() => {
+    const key = targetJobId ?? null;
+    if (handledTargetJobRef.current.key !== key) {
+      handledTargetJobRef.current = { key, applied: false };
+    }
+    if (!key || !data || handledTargetJobRef.current.applied || !targetLineId) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      handledTargetJobRef.current = { key, applied: true };
+      setSelectedLineId(targetLineId);
+      setConsoleOpen(true);
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [data, targetJobId, targetLineId]);
 
   useEffect(() => {
     if (!consoleOpen) return;
@@ -150,6 +177,7 @@ export default function ResearchLabView({
     pendingAction === "cancel" ||
     pendingAction === "claim";
   const openConsole = (lineId?: string, trigger?: HTMLButtonElement) => {
+    if (targetJobId) handledTargetJobRef.current = { key: targetJobId, applied: true };
     if (trigger) consoleTriggerRef.current = trigger;
     if (lineId) setSelectedLineId(lineId);
     setConsoleOpen(true);

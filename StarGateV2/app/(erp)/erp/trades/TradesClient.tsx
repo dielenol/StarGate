@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import type { ItemCategory } from "@stargate/shared-db/types";
@@ -28,6 +29,7 @@ import {
 
 import { preferOptimizedPublicImagePath } from "@/lib/asset-path";
 import { getConsumableItemImageSrc } from "@/lib/assets/catalog";
+import { parseDashboardBusinessRecordId } from "@/lib/erp/dashboard-business-link";
 
 import styles from "./page.module.css";
 
@@ -895,7 +897,11 @@ const TradeCard = memo(function TradeCard({
   }
 
   return (
-    <article className={styles.tradeCard}>
+    <article
+      id={`trade-${trade.id}`}
+      className={styles.tradeCard}
+      tabIndex={-1}
+    >
       <div className={styles.tradeCard__head}>
         <div>
           <span className={styles.eyebrow}>OPEN EXCHANGE · REV {trade.revision}</span>
@@ -1025,7 +1031,10 @@ const TradeCard = memo(function TradeCard({
 });
 
 export default function TradesClient() {
-  const query = useTradesQuery();
+  const searchParams = useSearchParams();
+  const requestedTradeParam = searchParams.get("tradeId");
+  const requestedTradeId = parseDashboardBusinessRecordId(requestedTradeParam);
+  const query = useTradesQuery(requestedTradeId ?? undefined);
   const createMutation = useCreateTradeMutation();
   const updateMutation = useUpdateTradeMutation();
   const createLockedRef = useRef(false);
@@ -1041,6 +1050,7 @@ export default function TradesClient() {
   const [targetUserId, setTargetUserId] = useState("");
   const [editorVersion, setEditorVersion] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const handledTargetRef = useRef<string | null>(null);
 
   const openTrades = useMemo(
     () =>
@@ -1058,6 +1068,38 @@ export default function TradesClient() {
     const timeoutId = window.setTimeout(() => setFeedback(null), 3_000);
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
+
+  useEffect(() => {
+    const targetKey = requestedTradeParam ?? null;
+    if (!targetKey) {
+      handledTargetRef.current = null;
+      return;
+    }
+    if (!query.data || handledTargetRef.current === targetKey) return;
+    handledTargetRef.current = targetKey;
+
+    if (!requestedTradeId) {
+      window.requestAnimationFrame(() =>
+        setFeedback("요청한 거래 식별자가 올바르지 않습니다."),
+      );
+      return;
+    }
+    const target = query.data.trades.find(
+      (trade) => trade.id === requestedTradeId,
+    );
+    if (!target) {
+      window.requestAnimationFrame(() =>
+        setFeedback("요청한 거래를 찾을 수 없거나 조회 권한이 없습니다."),
+      );
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const card = document.getElementById(`trade-${target.id}`);
+      card?.scrollIntoView({ behavior: "smooth", block: "center" });
+      card?.focus({ preventScroll: true });
+    });
+  }, [query.data, requestedTradeId, requestedTradeParam]);
 
   // TradeCard(memo) 에 내려가는 콜백 — 폴링 리렌더에서 참조가 흔들리지 않도록 고정.
   // v5 의 mutation.mutate 는 참조 안정이므로 deps 로 안전하다.
@@ -1298,7 +1340,12 @@ export default function TradesClient() {
                 ? trade.counterparty
                 : trade.initiator;
               return (
-                <article key={trade.id} className={styles.historyRow}>
+                <article
+                  key={trade.id}
+                  id={`trade-${trade.id}`}
+                  className={styles.historyRow}
+                  tabIndex={-1}
+                >
                   <div>
                     <span className={styles.eyebrow}>
                       {trade.kind === "GIFT" ? "INSTANT TRANSFER" : "EXCHANGE"}

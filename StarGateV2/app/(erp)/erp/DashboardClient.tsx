@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useDashboard } from "@/hooks/queries/useDashboardQuery";
 import { preferOptimizedPublicImagePath, resolvePublicAssetPath } from "@/lib/asset-path";
 import { getPixelCharacterPath } from "@/lib/assets/characters";
+import { finalCharacterStat } from "@/lib/character/stats";
 import { formatDate, formatTime } from "@/lib/format/date";
 import { getCharacterRoleLine, isDisplayableCharacterText } from "@/lib/format/character-display";
 
@@ -33,22 +34,6 @@ import Seal from "@/components/ui/Seal/Seal";
 import Tag, { rankTone } from "@/components/ui/Tag/Tag";
 
 import styles from "./page.module.css";
-
-/**
- * 디스코드 메시지 딥링크. SessionsClient 의 동명 헬퍼와 정책 동일 — "use client"
- * 모듈에서 import 하면 server 컴포넌트 빌드에 client reference 가 박히므로 inline 유지.
- */
-function buildDiscordLink(opts: {
-  guildId: string;
-  channelId: string;
-  messageId?: string;
-}): string {
-  const { guildId, channelId, messageId } = opts;
-  if (messageId && messageId.trim().length > 0) {
-    return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
-  }
-  return `https://discord.com/channels/${guildId}/${channelId}`;
-}
 
 /**
  * MY CHARACTER 아바타 — pixel-character (도트 풀샷) 우선, 폴백 chain:
@@ -181,18 +166,10 @@ interface ActionItem {
 
 function daysUntil(targetAt: Date | string): number {
   const target = typeof targetAt === "string" ? new Date(targetAt) : targetAt;
-  const targetMidnight = new Date(
-    target.getFullYear(),
-    target.getMonth(),
-    target.getDate(),
-  ).getTime();
-  const now = new Date();
-  const todayMidnight = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  return Math.round((targetMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+  const dayMs = 24 * 60 * 60 * 1000;
+  const kstOffsetMs = 9 * 60 * 60 * 1000;
+  return Math.floor((target.getTime() + kstOffsetMs) / dayMs)
+    - Math.floor((Date.now() + kstOffsetMs) / dayMs);
 }
 
 function ddayLabel(targetAt: Date | string): string {
@@ -211,18 +188,28 @@ export default function DashboardClient({
 }: {
   initialData: ErpDashboardResponse;
 }) {
-  const { data } = useDashboard({ initialData });
+  const { data, isError, isFetching, refetch } = useDashboard({ initialData });
   const initialDashboard = data ?? initialData;
   const {
     balance,
+    isGuest,
+    actionSummary,
     characterPointBalance,
     characterPointHref,
     displayCharacter,
     mainIntegrityError,
     notificationPreview,
+    pendingResponseCount,
+    sessionUnavailableSources,
     recentWikis,
     unreadCount,
   } = initialDashboard;
+  const pendingUnavailable = sessionUnavailableSources.includes("registra");
+  const sessionUnavailable = sessionUnavailableSources.length > 0;
+  const unavailableSessionLabel = sessionUnavailableSources
+    .map((source) => source === "registra" ? "ORDO" : "TRPG")
+    .join(" · ");
+  const actionUnavailable = actionSummary.unavailableDomains.length > 0;
   const characterRoleLine = displayCharacter ? getCharacterRoleLine(displayCharacter) : null;
   const characterClass = displayCharacter?.type === "AGENT" &&
     isDisplayableCharacterText(displayCharacter.play?.className)
@@ -260,7 +247,7 @@ export default function DashboardClient({
           tone: "danger",
         }
       : null,
-    !viewerDiscordId
+    !isGuest && !viewerDiscordId
       ? {
           label: "계정",
           title: "Discord 연동 필요",
@@ -270,12 +257,12 @@ export default function DashboardClient({
           tone: "danger",
         }
       : null,
-    pendingResponse.length > 0
+    pendingResponseCount > 0
       ? {
           label: "응답",
-          title: `${pendingResponse.length}건의 세션 응답 대기`,
+          title: `${pendingResponseCount}건의 세션 응답 대기`,
           detail: "모집중 또는 마감 임박 세션에 아직 RSVP가 없습니다.",
-          href: "/erp/sessions",
+          href: pendingResponse[0]?.raw.href ?? "/erp/sessions",
           cta: "세션 확인",
           tone: "gold",
         }
@@ -290,16 +277,6 @@ export default function DashboardClient({
           tone: "info",
         }
       : null,
-    nextMission
-      ? {
-          label: "작전",
-          title: `${ddayLabel(nextMission.targetDateTime)} · ${nextMission.title}`,
-          detail: `${dateTimeLabel(nextMission.targetDateTime)} KST 예정`,
-          href: "/erp/sessions",
-          cta: "작전 보기",
-          tone: nextMissionMeta?.tone ?? "default",
-        }
-      : null,
   ].filter((item): item is ActionItem => item !== null);
   return (
     <>
@@ -309,6 +286,12 @@ export default function DashboardClient({
       />
 
       <div className={styles.dashboard}>
+        {isError ? (
+          <div className={styles.alertBand} role="status">
+            <span>최신 정보를 가져오지 못해 마지막으로 확인한 내용을 표시하고 있습니다.</span>
+            <Button onClick={() => void refetch()} disabled={isFetching} variant="default">다시 확인</Button>
+          </div>
+        ) : null}
         <section className={styles.commandCenter} aria-label="운영 홈">
           <article className={`${styles.commandSurface} ${styles.agentStage} ${!hasProfileSummary ? styles["agentStage--compact"] : ""}`}>
             <div className={styles.agentStage__portrait} aria-hidden="true">
@@ -385,15 +368,15 @@ export default function DashboardClient({
                     <div className={styles.charMini__vitals}>
                       <CharVital
                         label="HP"
-                        value={displayCharacter.play.hp}
+                        value={finalCharacterStat(displayCharacter.play.hp, displayCharacter.play.hpDelta)}
                         max={300}
                         tone="gold"
                       />
                       <CharVital
                         label="SAN"
-                        value={displayCharacter.play.san}
+                        value={finalCharacterStat(displayCharacter.play.san, displayCharacter.play.sanDelta)}
                         max={100}
-                        tone={displayCharacter.play.san < 30 ? "danger" : "info"}
+                        tone={finalCharacterStat(displayCharacter.play.san, displayCharacter.play.sanDelta) < 30 ? "danger" : "info"}
                       />
                     </div>
                   ) : null}
@@ -437,8 +420,8 @@ export default function DashboardClient({
             </Link>
             <Link href="/erp/sessions" className={styles.signalItem}>
               <span><IconAwaiting className={styles.signalItem__icon} aria-hidden />확인할 응답</span>
-              <strong>{pendingResponse.length}</strong>
-              <small>아래 표시된 작전 기준</small>
+              <strong>{pendingUnavailable || isGuest || !viewerDiscordId ? "—" : pendingResponseCount}</strong>
+              <small>{pendingUnavailable ? "ORDO 일정을 확인하지 못했습니다" : "ORDO의 전체 미응답 작전"}</small>
             </Link>
             <Link href="/erp/notifications" className={styles.signalItem}>
               <span><IconNotification className={styles.signalItem__icon} aria-hidden />미확인 알림</span>
@@ -477,32 +460,35 @@ export default function DashboardClient({
                 <div className={styles.commandActions}>
                   <Button
                     as="a"
-                    href="/erp/sessions"
+                    href={nextMission.href}
                     variant="primary"
                     className={styles.primaryPill}
                   >
                     작전 보기
                   </Button>
-                  <Link
-                    href={buildDiscordLink(nextMission)}
+                  {nextMission.externalHref ? <Link
+                    href={nextMission.externalHref}
                     className={styles.secondaryPill}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Discord
-                  </Link>
+                    {nextMission.externalLabel}
+                  </Link> : null}
                 </div>
               </>
             ) : (
               <div className={styles.missionStage__standby}>
                 <span className={styles.missionStage__standbyLabel} aria-hidden="true">AWAITING NEXT OPERATION</span>
-                <strong>지금은 작전 대기 중</strong>
-                <span>세션 달력에서 다음 작전을 확인하세요.</span>
+                <strong>{sessionUnavailable ? "예정 작전을 확인하지 못했습니다" : "지금은 작전 대기 중"}</strong>
+                <span>{sessionUnavailable ? "일부 일정 조회가 지연되고 있습니다." : "세션 달력에서 다음 작전을 확인하세요."}</span>
                 <Link href="/erp/sessions" className={styles.primaryPill}>
                   세션 달력
                 </Link>
               </div>
             )}
+            {sessionUnavailable ? (
+              <p className={styles.queueHint} role="status">{unavailableSessionLabel} 조회 지연 · 표시된 일정 외에 참여 작전이 있을 수 있습니다.</p>
+            ) : null}
           </article>
 
           <aside className={`${styles.commandSurface} ${styles.actionQueue}`}>
@@ -511,19 +497,33 @@ export default function DashboardClient({
                 <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />ACTION QUEUE</span>
                 <h3>처리할 일</h3>
               </div>
-              <span className={styles.queueCount}>{actionItems.length}</span>
+              <span className={styles.queueCount} aria-label={`처리할 업무 ${actionSummary.totalCount}건${actionUnavailable ? " 이상" : ""}`}>
+                {actionSummary.totalCount}{actionUnavailable ? "+" : ""}
+              </span>
             </div>
 
-            {actionItems.length === 0 ? (
+            {actionSummary.domains.length > 0 ? (
+              <div className={styles.queueDomains} aria-label="업무별 전체 목록">
+                {actionSummary.domains.map((domain) => (
+                  <Link key={domain.key} href={domain.href} className={styles.panelLink}>
+                    {domain.label} {domain.count === null ? "확인 필요" : `${domain.count}건`}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+            {actionUnavailable ? (
+              <p className={styles.queueHint} role="status">일부 업무를 조회하지 못했습니다. 위 업무별 목록에서 다시 확인하세요.</p>
+            ) : null}
+            {actionSummary.items.length === 0 ? (
               <div className={styles.softEmpty}>
-                <strong>정상 운용</strong>
-                <span>즉시 확인할 항목이 없습니다.</span>
+                <strong>{isGuest ? "둘러보기 모드" : actionUnavailable ? "업무 확인 필요" : "지금 처리할 업무가 없습니다"}</strong>
+                <span>{isGuest ? "로그인하면 내 업무가 표시됩니다." : actionUnavailable ? "조회가 완료된 업무만 반영했습니다." : "내 견적 검토 · 교환 확정 · 연구 수령 등을 모아 보여줍니다."}</span>
               </div>
             ) : (
-              <div className={styles.actionList}>
-                {actionItems.map((item) => (
+              <div className={styles.actionList} aria-label="처리할 업무">
+                {actionSummary.items.map((item) => (
                   <Link
-                    key={`${item.label}-${item.title}`}
+                    key={item.id}
                     href={item.href}
                     className={styles.actionItem}
                   >
@@ -532,12 +532,27 @@ export default function DashboardClient({
                       <span className={styles.actionItem__category}>{item.label}</span>
                       <span className={styles.actionItem__title}>{item.title}</span>
                       <span className={styles.actionItem__detail}>{item.detail}</span>
+                      {item.deadlineAt ? <span className={styles.actionItem__deadline}>수령 기한 · {dateTimeLabel(item.deadlineAt)} KST</span> : null}
                     </span>
                     <span className={styles.actionItem__cta}>{item.cta}<span aria-hidden="true"> ↗</span></span>
                   </Link>
                 ))}
               </div>
             )}
+            {actionSummary.totalCount > actionSummary.items.length ? (
+              <p className={styles.queueHint}>우선 확인할 {actionSummary.items.length}건을 표시합니다. 나머지는 업무별 목록에서 확인하세요.</p>
+            ) : null}
+            {actionItems.length > 0 ? (
+              <div className={styles.queueNotices} aria-label="함께 확인할 사항">
+                {actionItems.map((item) => (
+                  <Link key={item.label} href={item.href} className={styles.queueNotice} title={item.detail}>
+                    <span className={styles.actionItem__marker} data-tone={item.tone} aria-hidden="true" />
+                    <span>{item.title}</span>
+                    <span className={styles.actionItem__cta}>{item.cta} ↗</span>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
           </aside>
         </div>
 
@@ -563,7 +578,9 @@ export default function DashboardClient({
               </Link>
             </div>
 
-            {!viewerDiscordId ? (
+            {isGuest ? (
+              <div className={styles.softEmpty}>로그인하면 참여 예정 작전이 표시됩니다.</div>
+            ) : !viewerDiscordId ? (
               <div className={styles.softEmpty}>
                 <strong>Discord 연동 필요</strong>
                 <span>연동 후 내 작전이 표시됩니다.</span>
@@ -572,7 +589,7 @@ export default function DashboardClient({
                 </Link>
               </div>
             ) : myRsvpUpcoming.length === 0 ? (
-              <div className={styles.softEmpty}>예정된 작전 없음</div>
+              <div className={styles.softEmpty}>{sessionUnavailable ? "일부 일정을 확인하지 못했습니다" : "예정된 작전 없음"}</div>
             ) : (
               <div className={styles.sessionList}>
                 {myRsvpUpcoming.map(({ raw: s }) => {
@@ -580,23 +597,21 @@ export default function DashboardClient({
                     label: s.status,
                     tone: "default" as const,
                   };
-                  const link = buildDiscordLink(s);
                   return (
-                    <div key={String(s._id)} className={styles.sessionCard}>
+                    <div key={`${s.source}:${s._id}`} className={styles.sessionCard}>
                       <div className={styles.sessionCard__code}>
                         <strong>{formatDate(s.targetDateTime, "compact")}</strong>
                         <span>{formatTime(s.targetDateTime)}</span>
                       </div>
                       <div className={styles.sessionCard__body}>
-                        <div className={styles.sessionCard__title}>{s.title}</div>
+                        <Link href={s.href} className={styles.sessionCard__title}>{s.title}</Link>
                         <Tag tone={meta.tone}>{meta.label}</Tag>
+                        <span className={styles.timeText}>{s.source === "trpg" ? "TRPG" : "ORDO"}</span>
                       </div>
                       <Link
-                        href={link}
+                        href={s.href}
                         className={styles.iconLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`${s.title} · 디스코드에서 열기`}
+                        aria-label={`${s.title} · 세션 상세 열기`}
                       >
                         ↗
                       </Link>
@@ -613,21 +628,22 @@ export default function DashboardClient({
                 <span className={styles.sectionLabel}><IconTasks className={styles.sectionLabel__icon} aria-hidden />RESPONSE REQUIRED</span>
                 <h3>응답 필요</h3>
               </div>
-              <span className={styles.queueCount}>{pendingResponse.length}</span>
+              <span className={styles.queueCount}>{pendingUnavailable || isGuest || !viewerDiscordId ? "—" : pendingResponseCount}</span>
             </div>
 
-            {!viewerDiscordId ? (
+            {isGuest ? (
+              <div className={styles.softEmpty}>로그인 후 확인할 수 있습니다.</div>
+            ) : !viewerDiscordId ? (
               <div className={styles.softEmpty}>Discord 연동 필요</div>
             ) : pendingResponse.length === 0 ? (
-              <div className={styles.softEmpty}>응답 필요 작전 없음</div>
+              <div className={styles.softEmpty}>{pendingUnavailable ? "응답할 작전을 확인하지 못했습니다" : "응답 필요 작전 없음"}</div>
             ) : (
               <div className={styles.taskList}>
                 {pendingResponse.map(({ raw: s }) => {
-                  const link = buildDiscordLink(s);
                   const tone = s.status === "CLOSING" ? "danger" : "gold";
                   return (
                     <div
-                      key={String(s._id)}
+                      key={`${s.source}:${s._id}`}
                       className={[
                         styles.taskRow,
                         s.status === "CLOSING" ? styles["taskRow--urgent"] : "",
@@ -639,17 +655,15 @@ export default function DashboardClient({
                         {s.status === "CLOSING" ? "마감 임박" : "모집중"}
                       </Tag>
                       <Link
-                        href="/erp/sessions"
+                        href={s.href}
                         className={styles.taskTitle}
                         title={s.title}
                       >
                         {s.title}
                       </Link>
                       <Link
-                        href={link}
+                        href={s.href}
                         className={styles.textAction}
-                        target="_blank"
-                        rel="noopener noreferrer"
                       >
                         응답
                       </Link>
@@ -658,6 +672,9 @@ export default function DashboardClient({
                 })}
               </div>
             )}
+            {pendingResponseCount > pendingResponse.length ? (
+              <Link href="/erp/sessions" className={styles.panelLink}>전체 {pendingResponseCount}건 · 세션 달력에서 확인 ↗</Link>
+            ) : null}
           </section>
         </div>
 

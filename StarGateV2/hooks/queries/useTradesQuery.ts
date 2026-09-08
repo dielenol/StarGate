@@ -5,6 +5,7 @@ import type { TradesResponse } from "@/types/trade";
 
 export const tradeKeys = {
   all: ["trades"] as const,
+  target: (tradeId: string) => ["trades", "target", tradeId] as const,
 };
 
 export class TradesApiError extends Error {
@@ -18,9 +19,9 @@ export class TradesApiError extends Error {
   }
 }
 
-async function fetchTrades(): Promise<TradesResponse> {
+async function fetchTrades(tradeId?: string): Promise<TradesResponse> {
   // no-cache = ETag 재검증 허용 (304 시 브라우저 캐시 재사용)
-  const response = await fetch("/api/erp/trades", { cache: "no-cache" });
+  const response = await fetch(tradeId ? `/api/erp/trades?tradeId=${encodeURIComponent(tradeId)}` : "/api/erp/trades", { cache: "no-cache" });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       error?: string;
@@ -35,13 +36,13 @@ async function fetchTrades(): Promise<TradesResponse> {
   return response.json();
 }
 
-export function useTradesQuery() {
+export function useTradesQuery(tradeId?: string) {
   // 10s 폴링 — 요청당 6 DB RTT 라 2.5s 는 과도. 자기 탭 뮤테이션은 invalidation 이
   // 즉시 갱신하고, realtime primary 전환 시 폴링은 자동 해제된다.
   const refetchInterval = useRealtimeRefetchInterval(10_000);
   return useQuery({
-    queryKey: tradeKeys.all,
-    queryFn: fetchTrades,
+    queryKey: tradeId ? tradeKeys.target(tradeId) : tradeKeys.all,
+    queryFn: () => fetchTrades(tradeId),
     staleTime: 5_000,
     refetchInterval,
     refetchIntervalInBackground: false,

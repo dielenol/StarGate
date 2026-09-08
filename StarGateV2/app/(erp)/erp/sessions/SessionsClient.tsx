@@ -44,6 +44,10 @@ import {
 } from "./_utils";
 
 import type { UpcomingSessionLink } from "@/types/erp-realtime";
+import {
+  buildDashboardSessionIdentity,
+  type DashboardSessionTarget,
+} from "@/types/dashboard-sessions";
 
 import styles from "./page.module.css";
 
@@ -56,6 +60,8 @@ interface SessionsClientProps {
   initialSessions: SerializedSession[];
   initialYear: number;
   initialMonth: number;
+  initialSessionTarget: DashboardSessionTarget | null;
+  initialSessionTargetInvalid: boolean;
   guildId: string;
   initialUpcoming: UpcomingSessionLink[];
   /** 작전 보고서 작성 권한 — V 이상. */
@@ -94,20 +100,31 @@ export default function SessionsClient({
   initialSessions,
   initialYear,
   initialMonth,
+  initialSessionTarget,
+  initialSessionTargetInvalid,
   guildId,
   initialUpcoming,
   canCreateReport,
   guestReadOnly,
   trpgWebBaseUrl,
 }: SessionsClientProps) {
-  const [view, setView] = useState<ViewKey>("calendar");
+  const [view, setView] = useState<ViewKey>(
+    initialSessionTarget ? "list" : "calendar",
+  );
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [query, setQuery] = useState("");
   const [statusGroup, setStatusGroup] = useState<StatusGroup>("ALL");
-  // 리스트 뷰의 펼친 row id — 캘린더에서 jump 진입 시 자동 expand 용도로도 사용.
-  const [listExpandedId, setListExpandedId] = useState<string | null>(null);
-
+  const [sessionTargetDismissed, setSessionTargetDismissed] = useState(false);
+  // source + id 복합키 — Registra/TRPG 의 ObjectId 가 같아도 정확한 행만 펼친다.
+  const [listExpandedKey, setListExpandedKey] = useState<string | null>(
+    initialSessionTarget
+      ? buildDashboardSessionIdentity(
+          initialSessionTarget.source,
+          initialSessionTarget.sessionId,
+        )
+      : null,
+  );
   const isInitialMonth = year === initialYear && month === initialMonth;
 
   const {
@@ -124,25 +141,76 @@ export default function SessionsClient({
     initialData: { sessions: initialUpcoming },
   });
 
+  const clearSessionTargetFromAddressBar = useCallback(() => {
+    setSessionTargetDismissed(true);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("sessionId");
+    url.searchParams.delete("source");
+    url.searchParams.delete("date");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, []);
+
+  const initialSessionTargetKey = initialSessionTarget
+    ? buildDashboardSessionIdentity(
+        initialSessionTarget.source,
+        initialSessionTarget.sessionId,
+      )
+    : null;
+  const initialSessionTargetFound = initialSessionTargetKey
+    ? sessions.some(
+        (session) =>
+          buildDashboardSessionIdentity(session.source, session._id) ===
+          initialSessionTargetKey,
+      )
+    : false;
+  const showMissingSessionTarget = Boolean(
+    !sessionTargetDismissed &&
+      initialSessionTargetKey &&
+      !sessionsIsFetching &&
+      !initialSessionTargetFound,
+  );
+
   const handlePrevMonth = useCallback(() => {
+    setListExpandedKey(null);
+    clearSessionTargetFromAddressBar();
     setYear((y) => (month === 1 ? y - 1 : y));
     setMonth((m) => (m === 1 ? 12 : m - 1));
-  }, [month]);
+  }, [clearSessionTargetFromAddressBar, month]);
 
   const handleNextMonth = useCallback(() => {
+    setListExpandedKey(null);
+    clearSessionTargetFromAddressBar();
     setYear((y) => (month === 12 ? y + 1 : y));
     setMonth((m) => (m === 12 ? 1 : m + 1));
-  }, [month]);
+  }, [clearSessionTargetFromAddressBar, month]);
 
   const changeView = useCallback((next: ViewKey) => {
+    if (next === "calendar") {
+      setListExpandedKey(null);
+      clearSessionTargetFromAddressBar();
+    }
     setView(next);
-  }, []);
+  }, [clearSessionTargetFromAddressBar]);
 
   // 캘린더 셀 클릭 → 리스트 뷰로 점프 + 해당 세션 자동 펼침. 펼친 row 가 viewport 로 스크롤된다.
-  const jumpToListSession = useCallback((sessionId: string) => {
-    setListExpandedId(sessionId);
-    setView("list");
-  }, []);
+  const jumpToListSession = useCallback(
+    (sessionIdentity: string) => {
+      const target = sessions.find(
+        (session) =>
+          buildDashboardSessionIdentity(session.source, session._id) ===
+          sessionIdentity,
+      );
+      if (!target) return;
+      setListExpandedKey(sessionIdentity);
+      setView("list");
+      clearSessionTargetFromAddressBar();
+    },
+    [clearSessionTargetFromAddressBar, sessions],
+  );
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -163,9 +231,34 @@ export default function SessionsClient({
     return new Set(
       querySessions
         .filter((s) => !inGroup(s, statusGroup))
-        .map((s) => s._id),
+        .map((s) => buildDashboardSessionIdentity(s.source, s._id)),
     );
   }, [querySessions, statusGroup]);
+
+  // SessionCalendar 의 기존 id-only 콜백을 복합키로 확장해 소스간 ID 충돌을 피한다.
+  const calendarSessions = useMemo(
+    () =>
+      querySessions.map((session) => ({
+        ...session,
+        _id: buildDashboardSessionIdentity(session.source, session._id),
+      })),
+    [querySessions],
+  );
+
+  const handleExpandedChange = useCallback(
+    (session: SerializedSession | null) => {
+      if (!session) {
+        setListExpandedKey(null);
+        clearSessionTargetFromAddressBar();
+        return;
+      }
+      setListExpandedKey(
+        buildDashboardSessionIdentity(session.source, session._id),
+      );
+      clearSessionTargetFromAddressBar();
+    },
+    [clearSessionTargetFromAddressBar],
+  );
 
   const statusCounts = useMemo<StatusCounts>(() => {
     let all = 0;
@@ -247,6 +340,21 @@ export default function SessionsClient({
   return (
     <div data-pixel-font="ui">
       <PageHead breadcrumb="ERP / SESSIONS" title={titleNode} />
+
+      {!sessionTargetDismissed && initialSessionTargetInvalid ? (
+        <div className={styles.notice} role="alert">
+          <span className={styles.lbl}>LINK</span>
+          <span>세션 링크가 올바르지 않아 특정 일정을 열지 않았습니다.</span>
+        </div>
+      ) : showMissingSessionTarget ? (
+        <div className={styles.notice} role="status">
+          <span className={styles.lbl}>LINK</span>
+          <span>
+            요청한 세션을 이 달력에서 찾을 수 없습니다. 일정이 삭제되었거나
+            접근할 수 없습니다.
+          </span>
+        </div>
+      ) : null}
 
       <div className={styles.ctrl}>
         <div className={styles.ctrlRow}>
@@ -385,7 +493,7 @@ export default function SessionsClient({
         <section aria-label="세션 조회 결과">
           {view === "calendar" ? (
             <SessionCalendar
-              sessions={querySessions}
+              sessions={calendarSessions}
               mutedSessionIds={mutedCalendarSessionIds}
               year={year}
               month={month}
@@ -400,8 +508,8 @@ export default function SessionsClient({
               sessions={filteredSessions}
               year={year}
               month={month}
-              expandedId={listExpandedId}
-              onExpandedChange={setListExpandedId}
+              expandedKey={listExpandedKey}
+              onExpandedChange={handleExpandedChange}
               canCreateReport={canCreateReport}
               guestReadOnly={guestReadOnly}
               trpgWebBaseUrl={trpgWebBaseUrl}
@@ -506,8 +614,8 @@ interface SessionsListProps {
   sessions: SerializedSession[];
   year: number;
   month: number;
-  expandedId: string | null;
-  onExpandedChange: (next: string | null) => void;
+  expandedKey: string | null;
+  onExpandedChange: (next: SerializedSession | null) => void;
   canCreateReport: boolean;
   guestReadOnly: boolean;
   trpgWebBaseUrl: string | null;
@@ -517,7 +625,7 @@ function SessionsList({
   sessions,
   year,
   month,
-  expandedId,
+  expandedKey,
   onExpandedChange,
   canCreateReport,
   guestReadOnly,
@@ -589,11 +697,19 @@ function SessionsList({
           </div>
           {visibleSessions.map((s) => (
             <SessionsListItem
-              key={s._id}
+              key={buildDashboardSessionIdentity(s.source, s._id)}
               session={s}
-              expanded={expandedId === s._id}
+              expanded={
+                expandedKey ===
+                buildDashboardSessionIdentity(s.source, s._id)
+              }
               onToggle={() =>
-                onExpandedChange(expandedId === s._id ? null : s._id)
+                onExpandedChange(
+                  expandedKey ===
+                    buildDashboardSessionIdentity(s.source, s._id)
+                    ? null
+                    : s,
+                )
               }
               canCreateReport={canCreateReport}
               guestReadOnly={guestReadOnly}

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Fragment,
   type FormEvent,
@@ -53,6 +53,7 @@ import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag from "@/components/ui/Tag/Tag";
 
 import { describeApiError } from "@/lib/api/describe-error";
+import { parseDashboardBusinessRecordId } from "@/lib/erp/dashboard-business-link";
 import {
   AMERI_MOOD_ASSETS,
   AMERI_PROFILE_SRC,
@@ -1456,6 +1457,12 @@ export default function EquipmentShopClient({
   initialStrategicScene,
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedWorkshopParam = searchParams.get("requestId");
+  const requestedWorkshopId = parseDashboardBusinessRecordId(
+    requestedWorkshopParam,
+    "workshop",
+  );
   const catalogQuery = useEquipmentShopCatalog({
     initialData: initialCatalog,
     scope:
@@ -1541,6 +1548,7 @@ export default function EquipmentShopClient({
   const feedbackTimerRef = useRef<number | null>(null);
   const feedbackAudioContextRef = useRef<AudioContext | null>(null);
   const workshopStatusRef = useRef<Map<string, EquipmentWorkshopComputedStatus> | null>(null);
+  const handledWorkshopTargetRef = useRef<string | null>(null);
   const [hasBasicFirearmLicense, setHasBasicFirearmLicense] = useState(
     () => mainCharacter?.hasBasicFirearmLicense ?? false,
   );
@@ -1692,6 +1700,54 @@ export default function EquipmentShopClient({
     },
     [showFeedback],
   );
+
+  useEffect(() => {
+    const targetKey = requestedWorkshopParam ?? null;
+    if (!targetKey) {
+      handledWorkshopTargetRef.current = null;
+      return;
+    }
+    if (activeZone !== "custom" || !workshopRequestsQuery.data) return;
+    if (handledWorkshopTargetRef.current === targetKey) return;
+    handledWorkshopTargetRef.current = targetKey;
+
+    if (!requestedWorkshopId) {
+      showFeedback("error", "공방 요청을 열 수 없습니다", "요청 식별자가 올바르지 않습니다.");
+      return;
+    }
+    const target = workshopRequestsQuery.data.requests.find(
+      (request) => request._id === requestedWorkshopId,
+    );
+    if (!target) {
+      showFeedback(
+        "error",
+        "공방 요청을 찾을 수 없습니다",
+        "요청이 없거나 조회 권한이 없습니다.",
+      );
+      return;
+    }
+    if (!isActiveEquipmentWorkshopRequestStatus(target.status)) {
+      showFeedback(
+        "info",
+        "공방 요청은 종료되었습니다",
+        "진행 중 요청 목록에는 표시되지 않습니다.",
+      );
+      return;
+    }
+
+    showFeedback("info", "공방 요청 열림", "요청 처리 현황으로 이동했습니다.");
+    window.requestAnimationFrame(() => {
+      const record = document.getElementById(`workshop-request-${target._id}`);
+      record?.scrollIntoView({ behavior: "smooth", block: "center" });
+      record?.focus({ preventScroll: true });
+    });
+  }, [
+    activeZone,
+    requestedWorkshopId,
+    requestedWorkshopParam,
+    showFeedback,
+    workshopRequestsQuery.data,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -5277,7 +5333,11 @@ export default function EquipmentShopClient({
               <p>현재 진행 중인 공방 요청이 없습니다.</p>
             ) : (
               workshopRequests.map((request) => (
-                <article key={request._id}>
+                <article
+                  key={request._id}
+                  id={`workshop-request-${request._id}`}
+                  tabIndex={-1}
+                >
                   <span>
                     {request.characterCodename} · {request.kind === "upgrade" ? "강화" : request.kind === "reload" ? "재장전" : "제작"}
                   </span>

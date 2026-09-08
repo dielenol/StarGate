@@ -79,7 +79,7 @@ async function requireActiveMainCharacter(
       },
       { session },
     )
-    .project({ _id: 1, codename: 1, "play.className": 1 })
+    .project({ _id: 1, type: 1, codename: 1, "play.className": 1 })
     .toArray();
   if (characters.length > 1) {
     throw new ResearchLabError(

@@ -1,7 +1,32 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 
 import { queryKeysForRealtimeResources } from "../query-keys.ts";
+
+test("업무 상태 이벤트는 아직 fresh인 대시보드도 갱신한다", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  let reads = 0;
+  const observer = new QueryObserver(client, {
+    queryKey: ["dashboard"],
+    queryFn: async () => ({ revision: ++reads }),
+    initialData: { revision: 0 },
+    staleTime: 60_000,
+  });
+  const unsubscribe = observer.subscribe(() => {});
+  try {
+    for (const resource of ["trades", "equipment-shop", "inventory", "page-locks"]) {
+      const before = reads;
+      await Promise.all(queryKeysForRealtimeResources([resource]).map(queryKey =>
+        client.invalidateQueries({ queryKey }),
+      ));
+      assert.equal(reads, before + 1, `${resource} 변경 후 home의 업무 상태를 다시 읽어야 함`);
+    }
+  } finally {
+    unsubscribe();
+    client.clear();
+  }
+});
 
 test("realtime resource는 기존 TanStack Query root key로만 확장된다", () => {
   assert.deepEqual(queryKeysForRealtimeResources(["characters"]), [

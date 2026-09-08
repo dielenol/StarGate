@@ -87,15 +87,7 @@ export interface AdminInventoryOverviewResponse {
   sharedInventoryCount: number;
 }
 
-export interface ErpDashboardSession {
-  _id: string;
-  title: string;
-  targetDateTime: string;
-  status: import("./session").SessionStatus;
-  guildId: string;
-  channelId: string;
-  messageId: string;
-}
+export type ErpDashboardSession = import("./dashboard-sessions").DashboardSessionLink;
 
 export interface ErpDashboardWikiChange {
   _id: string;
@@ -109,6 +101,8 @@ export type ErpDashboardCharacter = Omit<
 > & { _id: string };
 
 export interface ErpDashboardResponse {
+  isGuest: boolean;
+  actionSummary: import("./dashboard-actions").DashboardActionSummary;
   displayCharacter: ErpDashboardCharacter | null;
   balance: number;
   characterPointBalance: number | null;
@@ -121,6 +115,8 @@ export interface ErpDashboardResponse {
   mySessionCount: number | null;
   notificationPreview: import("./notification").ClientNotification[];
   pendingResponse: ErpDashboardSession[];
+  pendingResponseCount: number;
+  sessionUnavailableSources: import("./dashboard-sessions").DashboardSessionSource[];
   recentWikis: ErpDashboardWikiChange[];
   todaySessionCount: number;
   unreadCount: number;

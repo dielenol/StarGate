@@ -8,6 +8,7 @@ import type {
 
 import { creditsAdminKeys } from "@/hooks/queries/useCreditsAdminQuery";
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import { dashboardKeys } from "@/hooks/queries/useDashboardQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import { stocksKeys } from "@/hooks/queries/useStocksQuery";
@@ -81,6 +82,7 @@ function useInvalidateTradeAssets() {
         refetchType: "active",
       }),
       queryClient.invalidateQueries({ queryKey: creditsAdminKeys.all }),
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
       queryClient.invalidateQueries({ queryKey: creditKeys.all }),
       queryClient.invalidateQueries({ queryKey: stocksKeys.holdings }),

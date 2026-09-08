@@ -32,6 +32,7 @@ import {
   createOpenPlayerTrade,
   listPlayerTradeCounterparties,
   listPlayerTradesForUser,
+  findPlayerTradeById,
   normalizePlayerTradeOffer,
   PlayerTradeError,
   serializePlayerTrade,
@@ -137,6 +138,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const targetId = new URL(request.url).searchParams.get("tradeId")?.toLowerCase() ?? null;
+  if (targetId !== null && !/^[a-f\d]{24}$/i.test(targetId)) {
+    return NextResponse.json({ error: "거래 식별자가 올바르지 않습니다." }, { status: 400 });
+  }
+
   const now = new Date();
   const market = serializeStockMarketState(null, now);
   if (session.user.isGuest) {
@@ -155,7 +161,13 @@ export async function GET(request: Request) {
     const [me, counterparties, trades] = await Promise.all([
       resolveSelf(session.user),
       listPlayerTradeCounterparties(session.user.id),
-      listPlayerTradesForUser(session.user.id),
+      listPlayerTradesForUser(session.user.id).then(async (rows) => {
+        // 최근 100건 밖의 오래된 OPEN 거래도 정확한 링크로 조회할 수 있다.
+        if (!targetId || rows.some((row) => String(row._id) === targetId)) return rows;
+        const target = await findPlayerTradeById(targetId);
+        if (!target || (target.initiator.userId !== session.user.id && target.counterparty.userId !== session.user.id)) return rows;
+        return [...rows, target];
+      }),
     ]);
     if (!me) {
       const response: TradesResponse = {

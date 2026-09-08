@@ -287,7 +287,7 @@ if (!HAS_MODULE_MOCK) {
       agentLevel: "U", pixelCharacterImage: "/pixel.webp", previewImage: "/preview.webp",
       role: "기록 담당관", department: "ADMIN_BUREAU",
       lore: { name: "요원", quote: "확인된 기록만 남긴다.", background: "private biography", notes: "private notes" },
-      play: { className: "관료", hp: 12, san: 0, points: 0, abilities: [{ name: "private ability" }] },
+      play: { className: "관료", hp: 12, hpDelta: 5, san: 40, sanDelta: -15, points: 0, abilities: [{ name: "private ability" }] },
       rawText: "full source", loreMd: "full lore", clearanceOverrides: { identity: "GM" },
     }];
     const expected = {
@@ -295,7 +295,7 @@ if (!HAS_MODULE_MOCK) {
       pixelCharacterImage: "/pixel.webp", previewImage: "/preview.webp",
       role: "기록 담당관", department: "ADMIN_BUREAU",
       lore: { name: "요원", quote: "확인된 기록만 남긴다." },
-      play: { className: "관료", hp: 12, san: 0, points: 0 },
+      play: { className: "관료", hp: 12, hpDelta: 5, san: 40, sanDelta: -15, points: 0 },
     };
     assert.deepEqual(await findMainDashboardCharacterByOwner(OWNER_ID), expected);
     assert.deepEqual(await findDisplayDashboardCharacterByOwner(OWNER_ID), expected);
