@@ -1,6 +1,6 @@
-# 2026-09-07 NOVEX 시장 종료
+# NOVEX 시장 종료 · 2026-09-08 18시 재예약
 
-현재 사용자 요청: 한국시간 2026-09-07 장마감 **23:00**에 `파리 사태로 인한 쇼크`를 한 번 반영하고 정기 시세 갱신을 종료한다. 최종 공시에 기존 뉴스 이미지와 매수 영구 중단·가격 영구 동결·보유 주식 매도만 가능 안내를 함께 전달한다. 계획 등록 시점부터 매수와 주식 이전을 막고, 보유 주식 매도만 유지한다. 앞선 18시 실행 실패와 즉시 전환 시도는 아래 당시 기록으로 보존한다.
+현재 사용자 요청: 한국시간 **2026-09-08 18:00**에 `파리 사태로 인한 쇼크`를 한 번 반영하고 정기 시세 갱신을 종료한다. 최종 공시에 기존 뉴스 이미지와 매수 영구 중단·가격 영구 동결·보유 주식 매도만 가능 안내를 함께 전달한다. 계획 등록 시점부터 매수와 주식 이전을 막고, 보유 주식 매도만 유지한다. 9월 7일 18시·23시 실행 실패와 즉시 전환 시도는 아래 당시 기록으로 보존한다.
 
 ## 확정 계획
 
@@ -16,22 +16,26 @@
 | GN3 | 70% |
 | SPZ | 62% |
 
-최종 시각은 `2026-09-07T14:00:00.000Z`이며 운영 서버의 Europe/Berlin 시간으로는 16:00이다. Dokploy는 `Asia/Seoul`을 명시한다. 가격은 실행 당시 시세에 위 하락률을 적용하고 0.01 CR 단위로 반올림한다. 보유량과 크레딧은 폭락 작업이 직접 변경하지 않는다.
+최종 시각은 `2026-09-08T09:00:00.000Z`이며 운영 서버의 Europe/Berlin 시간으로는 11:00이다. Dokploy는 `Asia/Seoul`을 명시한다. 가격은 실행 당시 시세에 위 하락률을 적용하고 0.01 CR 단위로 반올림한다. 보유량과 크레딧은 폭락 작업이 직접 변경하지 않는다.
 
 가격 9개·이력 9개·공시 1개·시장 종료·시즌 최종 집계·완료 표식을 같은 transaction으로 저장한다. 주식 Discord outbox 1건과 기존 DISCLOSURE 구독자 ERP 알림을 같은 transaction에 생성하며, 관련 없는 시즌 순위 알림은 생성하지 않는다. 실패하면 전체 rollback하며, 같은 계획 재시도는 가격을 다시 떨어뜨리지 않는다. 최종 시세 확정 중에는 옛 가격의 매도를 막고 확정 후 허용한다. 최종 적용은 기존 거래정지·냉각·기업행동 정지 메타데이터를 제거하며, 이후 보유 주식 청산은 해당 제한을 받지 않는다.
 
-## 배포와 등록 순서 · 23시 재예약 기준
+## 배포와 등록 순서 · 9월 8일 18시 재예약 기준
 
-1. 운영 Git 기준 `ca9207cc9b071d385dd02d80f5c4b07fd7e2e49e`에 이번 구현 변경만 적용한 Web과 worker를 배포한다. 다른 작업의 미배포 변경을 함께 발행하지 않는다. worker readiness 및 source revision과 Web 배포의 READY를 확인한다.
-2. 아래 명령의 읽기 전용 미리보기를 확인한 뒤, 23시 전에 동일 계획을 등록한다. 기본 실행 시각은 23시이며 이 예약에서는 `--now`를 사용하지 않는다. 신규 과거 시각 예약은 거부된다. 이미 같은 시각·사유·하락률·이미지 계획이 있으면 멱등 재조회로 끝난다.
+1. 9월 7일 배포된 worker의 종료 엔진을 재사용한다. Web에는 종료 예약 중 전날 시장 상태가 매도를 막는 경로와 잠금 대기 중 종료 시각을 넘기는 경계를 수정해 추가 배포한다. worker readiness 및 source revision과 뉴스 이미지 공개 상태를 확인한다.
+2. 아래 명령의 읽기 전용 미리보기를 확인한 뒤, 18시 전에 동일 계획을 등록한다. 기본 실행 시각은 9월 8일 18시이며 이 예약에서는 `--now`를 사용하지 않는다. 신규 과거 시각 예약은 거부된다. 이미 같은 시각·사유·하락률·이미지 계획이 있으면 멱등 재조회로 끝난다.
 
 ```bash
-cd /Users/flitto/Code/StarGate/StarGateV2
-node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-market-shutdown.ts --dry-run
-node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-market-shutdown.ts --execute --yes --target-db stargate
+node --env-file=/Users/flitto/Code/StarGate/StarGateV2/.env.local --experimental-strip-types /Users/flitto/Code/StarGate/StarGateV2/scripts/schedule-stock-market-shutdown.ts --dry-run
 ```
 
-3. 기존 Dokploy `stocks.tick` 일정(ID `m_yv99efUFWKdEqyQnppw`, app `VHAqmZsC7kCggM_V82yHY`, `Asia/Seoul`, `0 9,13,18,23 * * *`)은 비활성화 상태로 유지한다. 기존 단발 일정 `W8avcGuM4H5QVlc0_6coC`를 오늘 23시(`0 23 7 9 *`)로 변경한다. 날짜 검사 뒤 해당 worker의 `node dist/cli/run-market-shutdown.js`를 실행한다. 이 명령은 종료 계획만 적용하며 계획 미등록·미도래 시 exit 1로 끝나고 일반 정기 tick으로 폴백하지 않는다. 종료 후에는 새 일일 회차를 등록하지 않는다.
+실제 등록은 아래 한 줄을 별도로 실행한다. 작업 폴더와 무관하게 사용할 수 있다.
+
+```bash
+node --env-file=/Users/flitto/Code/StarGate/StarGateV2/.env.local --experimental-strip-types /Users/flitto/Code/StarGate/StarGateV2/scripts/schedule-stock-market-shutdown.ts --execute --yes --target-db stargate
+```
+
+3. 기존 Dokploy `stocks.tick` 일정(ID `m_yv99efUFWKdEqyQnppw`, app `VHAqmZsC7kCggM_V82yHY`, `Asia/Seoul`, `0 9,13,18,23 * * *`)은 비활성화 상태로 유지한다. 기존 단발 일정 `W8avcGuM4H5QVlc0_6coC`를 `stocks.market-shutdown.20260908`, 오늘 18시(`0 18 8 9 *`)로 변경한다. `2026-09-08` 날짜 검사 뒤 해당 worker의 `node dist/cli/run-market-shutdown.js`를 실행한다. 이 명령은 종료 계획만 적용하며 계획 미등록·미도래 시 exit 1로 끝나고 일반 정기 tick으로 폴백하지 않는다. 종료 후에는 새 일일 회차를 등록하지 않는다.
 4. 정상 API 인증을 사용할 수 없을 때에는 임의로 API 키를 만들거나 인증을 우회하지 않는다. DB의 `enabled=false`만 변경해도 Dokploy 메모리 cron이 취소되지는 않는다. 제어 서비스 재시작 대안에는 별도 운영 점검이 필요하다. 따라서 스케줄 중단 확인 없이 완료로 보고하지 않는다.
 
 운영 서버의 일회 작업은 기존 Dokploy 서비스 매니저를 사용하며 SSH 세션 수명에 의존하지 않는다. 별도의 사용자 cron이나 systemd timer는 만들지 않는다. 실패 재시도는 저장된 plan의 멱등 처리에 맡긴다.
@@ -40,7 +44,7 @@ node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-mar
 
 - 등록 직후 `stock_market_shutdown._id=novex`: `SCHEDULED`, 정확한 executeAt/reason/declines/buysBlockedAt.
 - Web에서 `market.tradingMode=SELL_ONLY`, 매수 탭 잠금, 보유가 있는 계정의 매도 탭·전량 수량 입력 유지.
-- 23시 이후 plan `COMPLETED`; 9종목 `lastUpdate=2026-09-07 23:00`, 정확한 최종 가격과 사유.
+- 9월 8일 18시 이후 plan `COMPLETED`; 9종목 `lastUpdate=2026-09-08 18:00`, 정확한 최종 가격과 사유.
 - `stock_price_history.operationKey=stock-market-shutdown:novex:<ticker>` 각 1개, `stock_disclosures._id=stock-market-shutdown:novex` 1개.
 - 시장 `CLOSED`/`SELL_ONLY`, `nextSlotAt` 없음, 활성 시즌은 최종 시세 기준 `FINALIZED`.
 - 기존 주식 정기 일정 비활성화와 일회 작업 완료/제거. 다른 서비스 일정은 유지.
@@ -139,3 +143,19 @@ node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-mar
 - 스케줄 재조회에서 정기 `stocks.tick=false`, 오늘 단발 `stocks.market-shutdown.20260907=true`였다. 단발 일정 비활성화를 위해 정상 UI를 열었으나 Mac 잠금과 물리 입력 감지로 자동 잠금 해제가 중지돼 접근하지 못했다. 사용자에게 Mac 잠금 해제를 요청했다. 정상 UI에서 Disabled 저장을 확인하기 전까지 해당 일정 비활성화는 미완료다.
 - 이 단발 명령에는 `2026-09-07` 날짜 검사가 있어 다른 날짜에는 가격 적용 CLI를 호출하지 않는다. 이 방어 조건을 Dokploy 일정 자체의 비활성화 완료로 보고하지 않는다.
 - 결과 확인 heartbeat `18`은 PAUSED로 저장했다. 가격 재적용·새 계획 등록·이미지 재발송·실행 제한 우회는 하지 않았다.
+
+## 9월 8일 18시 재예약 · 계획 등록 확인
+
+- 사용자 요청에 따라 실행 시각을 `2026-09-08T18:00:00+09:00`로 변경했다. 사유, 종목별 하락률, 확정 뉴스 이미지는 유지한다. 예약 스크립트·테스트 커밋은 `17d8294f`다.
+- 12:25:23 KST 첫 운영 조회에서는 plan=null, 9종목은 전날 13시 가격, 시장 원본 상태도 전날 OPEN이었다. 정기 `stocks.tick=false`, 기존 단발 일정은 전날 23시 설정이었다. worker healthz/readyz는 200, active, 모든 component 정상, sourceRevision은 `ea5f5f2f27c73ef1ddc6445b6b2d76066974ceb9981f82c53b982353e2ae9929`였다.
+- 등록 스크립트의 미리보기 실행은 이번에도 자동 승인 검토가 `approval required by policy, but AskForApproval is set to Never`로 거부했다. 사용자에게 터미널 직접 실행을 요청했다. 첫 시도는 `cd`와 `node`를 한 줄로 붙여 `cd: too many arguments`가 발생했고, 작업 폴더와 무관한 절대 경로 단일 명령으로 안내를 수정했다. 차단된 실행을 다른 도구나 원격 쓰기로 우회하지 않았다.
+- 정상 Dokploy UI에서 기존 단발 ID `W8avcGuM4H5QVlc0_6coC`를 `stocks.market-shutdown.20260908`, `0 18 8 9 *`, Asia/Seoul, enabled=true로 저장했다. 명령의 날짜 검사도 `2026-09-08`로 바꿨다. UI 성공 알림과 12:28:11 KST PostgreSQL 읽기 전용 조회에서 모든 값이 일치했다. 정기 `stocks.tick=false`와 다른 네 일정은 유지한다.
+- **12:34:43 KST 운영 DB 재조회로 실제 계획 등록 성공을 확인했다.** plan=SCHEDULED, executeAt=`2026-09-08T09:00:00.000Z`, buysBlockedAt=`2026-09-08T03:30:34.455Z`다. 사용자 직접 명령은 12:30:34.455 KST에 반영됐다. 사유 `파리 사태로 인한 쇼크`, 지정 이미지 URL, ART55/BPE58/GN3 70/MSF40/SPZ62/SSR65/STM50/TWS45/VFP47 하락률 모두 일치했다. 종료 history·공시·outbox는 각각 0건으로 가격 폭락과 발송은 아직 실행되지 않았다.
+- 등록 후 실제 운영 `/erp/stock/TWS`에서 매도 전용, 매수 영구 중단·가격 영구 동결·보유 주식 매도만 가능, `09. 08. 오후 06:00` 종료 예정과 매수 탭 disabled를 확인했다. 확인 계정은 보유 0주이므로 판매 버튼도 보유량 조건으로 disabled다. 운영 주문 mutation은 실행하지 않았다.
+- 추가 P1 발견 및 수정: 미래 SCHEDULED 계획의 SELL이 전날 시장 상태 검사로 넘어가 `MARKET_OPENING_PENDING`으로 거부됐다. 활성 계획의 실행 전 SELL은 현재 시세를 transaction으로 claim하도록 바꿨다. state 잠금 대기 중 종료 시각을 넘기는 요청은 잠금·plan 읽기 뒤 실제 시각을 재확인해 `MARKET_SHUTDOWN_PENDING`으로 거부한다. 구현 커밋 `428ca05e`, 운영 기준 `5a4aac9b` 위 분리 release 커밋 `31088dd9`다.
+- 검증: 예약 CLI 7/7, 웹 주식·관리자 API 80/80, 실제 MongoDB 7 종료 통합 1/1, shared-db build, 웹 typecheck·전체 lint, 변경 파일 diff-check 통과. Mongo 테스트는 전날 상태·정지·냉각, enabled/legacy 실행 전 매도, 실제 state lock이 종료 시각을 넘는 경쟁, 완료 후 매도를 확인했다. 독립 critical 재검토는 P0/P1/P2 잔여 없음이다. 테스트 컨테이너는 정리했다.
+- 뉴스 URL은 HTTP 200, image/webp, 345392 bytes를 재확인했다. 기존 heartbeat `18`은 오늘 18:02 한 번 결과 확인으로 ACTIVE 저장했으며 실제 등록 성공값을 prompt에 반영했다. 완료 여부·가격·공시·이미지 전달을 확인하고 단발 일정과 후속 작업을 비활성화한다.
+- 매도 경계 수정 Web 배포 `dpl_799rSmijGiUYaT9YabAsF6eux68w`는 production build를 통과해 READY가 됐고, `www.ordonet.co.kr`를 재조회해 소스 `31088dd9` 연결을 확인했다. 기존 운영 `5a4aac9b`에서 shared-db 구현·통합 테스트 두 파일만 바꿨으므로 공개 메인·로그인·갤러리 코드와 자산은 보존했다. 종료 적용 함수와 worker는 변경하지 않아 worker 재배포는 하지 않았다.
+- 배포 후 실제 종목 화면에서 반복된 React 418의 원인을 좁혔다. 이벤트·시세·체결 이력의 `toLocaleString` 세 곳에 timeZone이 없어 SSR의 UTC와 브라우저 KST가 같은 ISO를 9시간 다르게 출력했다. 같은 값으로 UTC/KST 출력을 직접 비교해 재현했고 세 곳에 `Asia/Seoul`을 명시해 출력 일치를 확인했다. 구현 `08b68dc8`, release `59955414`다. 관련 없는 기존 로컬 dev server의 `IconFile` export build error 때문에 해당 서버의 개발 UI 재현은 불가했으며, 다른 작업 서버를 수정하거나 재시작하지 않았다.
+- 최종 Web 배포 `dpl_HHT2h5S9N9z4V2NJHmmBBj1MM4ek`는 production build를 통과해 READY로 승격됐다. `www.ordonet.co.kr` 조회에서 소스 `59955414`를 확인했다. 실제 종목 상세 hard refresh 후 매도 전용·매수 disabled·오늘 18시 종료 예정·한국시간 시세 이력이 정상이며, 수정 뒤 새 콘솔 error/warn은 0건이다. 이 화면의 확인 계정은 보유 0주여서 매도 버튼은 보유량 때문에 disabled이며, 실제 매도 mutation은 격리 MongoDB 통합 테스트에서만 검증했다. 앞선 전체 typecheck·lint와 날짜 포맷 세 곳의 출력 일치 검사도 통과했다.
+- 현재 완료 범위는 계획 등록, 매수·이전 차단과 매도 허용 코드의 운영 반영, 오늘 18시 단발 일정·18:02 후속 확인 설정이다. 마지막 폭락·공시·이미지 실제 전달·최종 가격 동결 완료 여부는 18시 실행 후 별도로 확인한다. 임시 release checkout은 검증 후 정리하며, 사용자/다른 작업의 변경은 보존한다.
