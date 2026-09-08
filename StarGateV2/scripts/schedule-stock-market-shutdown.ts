@@ -1,5 +1,5 @@
 /**
- * 2026-09-07 장마감 23:00 KST 시장 종료·이미지 공시 계획. 기본은 읽기 전용 미리보기.
+ * 2026-09-08 18:00 KST 시장 종료·이미지 공시 계획. 기본은 읽기 전용 미리보기.
  * node --env-file=.env.local --experimental-strip-types scripts/schedule-stock-market-shutdown.ts
  * 실제 예약: 같은 명령에 --execute --yes --target-db stargate 추가.
  * 운영 중지 즉시 전환: 위 실제 실행 인자에 --now 추가. 소급 적용하지 않는다.
@@ -14,7 +14,7 @@ import {
   scheduleStockMarketShutdown,
 } from "@stargate/shared-db";
 
-const scheduledExecuteAt = new Date("2026-09-07T23:00:00+09:00");
+const scheduledExecuteAt = new Date("2026-09-08T18:00:00+09:00");
 const scheduledAnnouncementImageUrl = "https://www.ordonet.co.kr/assets/world-view/us-national-defense-act-market-shutdown-news.webp";
 const reason = "파리 사태로 인한 쇼크";
 const declines = [
@@ -86,7 +86,7 @@ async function main() {
         reason,
         announcementImageUrl,
         declines,
-        createdById: "authorized-operation:market-shutdown-20260907",
+        createdById: "authorized-operation:market-shutdown-20260908",
       });
       if (immediate) {
         const waitMs = Math.max(0, executeAt.getTime() - Date.now());

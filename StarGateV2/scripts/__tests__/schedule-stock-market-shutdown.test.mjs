@@ -43,7 +43,7 @@ function run(mode, args, expectedStatus = 0) {
   writeFileSync(hook, `import { registerHooks } from 'node:module';
     const RealDate = Date;
     const startMs = RealDate.now();
-    const fixedMs = RealDate.parse('2026-09-07T18:30:00+09:00');
+    const fixedMs = RealDate.parse('2026-09-08T12:30:00+09:00');
     globalThis.Date = class extends RealDate {
       constructor(...args) { super(...(args.length ? args : [fixedMs + RealDate.now() - startMs])); }
       static now() { return fixedMs + RealDate.now() - startMs; }
@@ -86,10 +86,10 @@ test("--now 미리보기는 계획이나 가격을 변경하지 않는다", () =
   });
 });
 
-test("장마감 예약은 23시와 뉴스 이미지를 저장하고 즉시 폭락·공시를 실행하지 않는다", () => {
+test("재예약은 9월 8일 18시와 뉴스 이미지를 저장하고 즉시 폭락·공시를 실행하지 않는다", () => {
   const result = run("new", ["--execute", "--yes", "--target-db", "shutdown_cli_test"]);
   assert.deepEqual(result.trace, { scheduled: 1, applied: 0, priceChanges: 0, status: "SCHEDULED" });
-  assert.equal(result.plan.executeAt, "2026-09-07T14:00:00.000Z");
+  assert.equal(result.plan.executeAt, "2026-09-08T09:00:00.000Z");
   assert.equal(result.plan.reason, "파리 사태로 인한 쇼크");
   assert.match(result.plan.announcementImageUrl, /^https:\/\/www\.ordonet\.co\.kr\/assets\/world-view\/.+\.webp$/);
   assert.equal(result.plan.declines.length, 9);
