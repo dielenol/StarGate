@@ -11,6 +11,10 @@ import { projectSessionsForGuest } from "@/lib/session-guest-view";
 
 import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
 import type { UpcomingSessionLink } from "@/types/erp-realtime";
+import {
+  parseDashboardSessionTarget,
+  type DashboardSessionSearchParams,
+} from "@/types/dashboard-sessions";
 
 import Box from "@/components/ui/Box/Box";
 import PageHead from "@/components/ui/PageHead/PageHead";
@@ -19,16 +23,27 @@ import SessionsClient from "./SessionsClient";
 
 import styles from "./page.module.css";
 
-export default async function SessionsPage() {
+interface SessionsPageProps {
+  searchParams: Promise<DashboardSessionSearchParams>;
+}
+
+export default async function SessionsPage({ searchParams }: SessionsPageProps) {
   const session = await getActiveSession();
 
   if (!session?.user) {
     redirect("/login");
   }
 
+  const rawSearchParams = await searchParams;
+  const sessionTarget = parseDashboardSessionTarget(rawSearchParams);
+  const hasSessionTargetParams = ["sessionId", "source", "date"].some(
+    (key) => rawSearchParams[key as keyof DashboardSessionSearchParams] !== undefined,
+  );
+  const sessionTargetInvalid = hasSessionTargetParams && sessionTarget === null;
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const year = sessionTarget?.year ?? kstNow.getUTCFullYear();
+  const month = sessionTarget?.month ?? kstNow.getUTCMonth() + 1;
   const guildId = process.env.GUILD_ID ?? "";
 
   let serializedSessions: SerializedSession[] = [];
@@ -72,9 +87,16 @@ export default async function SessionsPage() {
 
   return (
     <SessionsClient
+      key={
+        sessionTarget
+          ? `${sessionTarget.source}:${sessionTarget.sessionId}:${sessionTarget.date}`
+          : "sessions-default"
+      }
       initialSessions={serializedSessions}
       initialYear={year}
       initialMonth={month}
+      initialSessionTarget={sessionTarget}
+      initialSessionTargetInvalid={sessionTargetInvalid}
       guildId={session.user.isGuest ? "guest" : guildId}
       initialUpcoming={initialUpcoming}
       canCreateReport={hasRole(session.user.role, "V")}

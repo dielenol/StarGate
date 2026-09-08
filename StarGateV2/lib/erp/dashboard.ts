@@ -1,8 +1,5 @@
 import type { UserRole } from "@/types/user";
-import type {
-  ErpDashboardResponse,
-  ErpDashboardSession,
-} from "@/types/erp-realtime";
+import type { ErpDashboardResponse } from "@/types/erp-realtime";
 
 import {
   findDisplayDashboardCharacterByOwnerCached as findDisplayCharacterByOwner,
@@ -11,6 +8,8 @@ import {
   listCharactersByOwner,
 } from "@/lib/db/characters";
 import { getCharacterBalance } from "@/lib/db/credits";
+import { getDashboardSessionOverview } from "@/lib/db/dashboard-sessions";
+import { getDashboardActionSummary } from "./dashboard-actions";
 import {
   countUnread,
   listUserNotifications,
@@ -18,8 +17,6 @@ import {
 import {
   countMergedSessionsOnKstDate,
   countParticipationForUser,
-  enrichSessions,
-  findUpcomingSessionsByGuild,
 } from "@/lib/db/sessions";
 import { findUserById } from "@/lib/db/users";
 import { listRecentWikiPagesLite } from "@/lib/db/wiki";
@@ -52,20 +49,6 @@ function currentKstYearMonth(now = new Date()): {
   };
 }
 
-function serializeDashboardSession(
-  session: Awaited<ReturnType<typeof findUpcomingSessionsByGuild>>[number],
-): ErpDashboardSession {
-  return {
-    _id: session._id?.toString() ?? "",
-    title: session.title,
-    targetDateTime: new Date(session.targetDateTime).toISOString(),
-    status: session.status,
-    guildId: session.guildId,
-    channelId: session.channelId,
-    messageId: session.messageId,
-  };
-}
-
 export async function getErpDashboardResponse(input: {
   userId: string | null;
   viewerRole: UserRole;
@@ -92,6 +75,8 @@ export async function getErpDashboardResponse(input: {
     ]);
 
     return {
+      isGuest: true,
+      actionSummary: { items: [], totalCount: 0, domains: [], unavailableDomains: [] },
       displayCharacter: null,
       balance: 0,
       characterPointBalance: null,
@@ -104,6 +89,8 @@ export async function getErpDashboardResponse(input: {
       mySessionCount: null,
       notificationPreview: [],
       pendingResponse: [],
+      pendingResponseCount: 0,
+      sessionUnavailableSources: [],
       recentWikis: wikiPages.map((page) => ({
         _id: page._id?.toString() ?? "",
         title: page.title,
@@ -145,7 +132,7 @@ export async function getErpDashboardResponse(input: {
     displayCharacterResult,
     notifications,
     unreadCount,
-    upcomingRaw,
+    sessionOverview,
     todaySessionCount,
     mySessionCount,
     wikiPages,
@@ -156,9 +143,7 @@ export async function getErpDashboardResponse(input: {
     displayCharacterPromise,
     listUserNotifications(userId, NOTIFICATION_PREVIEW_LIMIT).catch(() => []),
     countUnread(userId).catch(() => 0),
-    guildId
-      ? findUpcomingSessionsByGuild(guildId, 20).catch(() => [])
-      : Promise.resolve([]),
+    getDashboardSessionOverview({ guildId, viewerDiscordId }),
     // 오늘 세션 수만 필요 — 한 달치 merged 목록 + enrich(3쿼리) 대신 경량 카운트.
     // viewerDiscordId 는 카운트에 불필요해 전달하지 않는다.
     guildId
@@ -194,36 +179,23 @@ export async function getErpDashboardResponse(input: {
     ? String(mainCharacter._id)
     : null;
 
-  const [balance, enrichedUpcoming, firstCharacterFallback] = await Promise.all([
+  const [balance, actionSummary, firstCharacterFallback] = await Promise.all([
     mainCharacterId
       ? getCharacterBalance(mainCharacterId).catch(() => 0)
       : Promise.resolve(0),
-    upcomingRaw.length > 0
-      ? enrichSessions(upcomingRaw, viewerDiscordId).catch(() => [])
-      : Promise.resolve(
-          [] as Awaited<ReturnType<typeof enrichSessions>>,
-        ),
+    getDashboardActionSummary({
+      // 현재 사용자 레코드로 업무 접근을 결정한다. 오래된 JWT 역할이나 비활성 계정은 사용하지 않는다.
+      userId: user?.status === "ACTIVE" ? userId : null,
+      viewerRole: user?.role ?? "U",
+      username: user?.username,
+      mainCharacterId: mainCharacter?.type === "AGENT" ? mainCharacterId : null,
+    }),
     !resolvedDisplayCharacter && firstCharId
       ? findDashboardCharacterById(firstCharId, userId).catch(() => null)
       : Promise.resolve(null),
   ]);
 
   const displayCharacter = resolvedDisplayCharacter ?? firstCharacterFallback;
-  const myRsvpUpcoming = enrichedUpcoming
-    .filter(
-      ({ raw, myRsvp }) =>
-        myRsvp === "YES" && raw.status !== "CANCELED",
-    )
-    .slice(0, 3)
-    .map(({ raw }) => serializeDashboardSession(raw));
-  const pendingResponse = enrichedUpcoming
-    .filter(
-      ({ raw, myRsvp }) =>
-        myRsvp === null &&
-        (raw.status === "OPEN" || raw.status === "CLOSING"),
-    )
-    .slice(0, 5)
-    .map(({ raw }) => serializeDashboardSession(raw));
   // listRecentWikiPagesLite 가 updatedAt 내림차순 + limit 을 DB 에서 적용 — 재정렬 불필요.
   const recentWikis = wikiPages.map((page) => ({
     _id: page._id?.toString() ?? "",
@@ -243,6 +215,8 @@ export async function getErpDashboardResponse(input: {
       : null;
 
   return {
+    isGuest: false,
+    actionSummary,
     displayCharacter: displayCharacter
       ? { ...displayCharacter, _id: String(displayCharacter._id) }
       : null,
@@ -255,10 +229,12 @@ export async function getErpDashboardResponse(input: {
     joinedDays: user ? daysSinceCreated(user.createdAt) : 0,
     mainIntegrityError,
     myCharacterCount: myCharRefs.length,
-    myRsvpUpcoming,
+    myRsvpUpcoming: sessionOverview.myRsvpUpcoming,
     mySessionCount,
     notificationPreview,
-    pendingResponse,
+    pendingResponse: sessionOverview.pendingResponse,
+    pendingResponseCount: sessionOverview.pendingResponseCount,
+    sessionUnavailableSources: sessionOverview.unavailableSources,
     recentWikis,
     todaySessionCount,
     unreadCount,

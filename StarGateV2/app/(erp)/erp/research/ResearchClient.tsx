@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import type { ResearchDestination, ResearchRecipeId } from "@stargate/shared-db";
 
@@ -21,6 +22,7 @@ import {
   retainIdempotencyOperation,
   type RetainedIdempotencyOperation,
 } from "@/lib/query/idempotency";
+import { parseDashboardBusinessRecordId } from "@/lib/erp/dashboard-business-link";
 import type {
   ResearchActionResponse,
   ResearchLabOverview,
@@ -274,6 +276,9 @@ export default function ResearchClient({
   initialData,
   canSimulate,
 }: ResearchClientProps) {
+  const searchParams = useSearchParams();
+  const requestedJobParam = searchParams.get("jobId");
+  const requestedJobId = parseDashboardBusinessRecordId(requestedJobParam);
   const operations = useRef<OperationRefs>({
     initial: null,
     queue: null,
@@ -281,7 +286,9 @@ export default function ResearchClient({
     claim: null,
   });
   const [interaction, setInteraction] = useState<InteractionLog | null>(null);
-  const [simulationActive, setSimulationActive] = useState(canSimulate);
+  const [simulationActive, setSimulationActive] = useState(
+    canSimulate && !requestedJobId,
+  );
   const [simulationScenario, setSimulationScenario] =
     useState<GmSimulationScenario>("OPEN");
   const [simulationRelationship, setSimulationRelationship] =
@@ -292,7 +299,8 @@ export default function ResearchClient({
   const [simulationMessages, setSimulationMessages] = useState<
     XenoDialogueMessage[]
   >(() => makeGmSimulationOpening());
-  const simulationEnabled = canSimulate && simulationActive;
+  const simulationEnabled =
+    canSimulate && simulationActive && !requestedJobId;
   const overview = useResearchLab({ initialData });
   const initial = useStartInitialResearch();
   const queue = useQueueResearchJob();
@@ -300,6 +308,22 @@ export default function ResearchClient({
   const claim = useClaimResearchJob();
   const choice = useXenoChoice();
   const chat = useXenoChat();
+
+  const targetLineIndex = useMemo(() => {
+    if (!requestedJobId || !overview.data) return -1;
+    return overview.data.lines.findIndex((line) =>
+      line.activeJob?.id === requestedJobId ||
+      line.queue.some((job) => job.id === requestedJobId),
+    );
+  }, [overview.data, requestedJobId]);
+  const navigationNotice =
+    requestedJobParam && overview.data
+      ? !requestedJobId
+        ? "요청한 연구 작업 식별자가 올바르지 않습니다."
+        : targetLineIndex < 0
+          ? "요청한 연구 작업을 찾을 수 없거나 조회 권한이 없습니다."
+          : null
+      : null;
 
   const appendSimulationMessages = (
     messages: Omit<XenoDialogueMessage, "id">[],
@@ -499,102 +523,108 @@ export default function ResearchClient({
   ]);
 
   return (
-    <ResearchLabView
-      data={viewData}
-      isLoading={simulationEnabled ? false : overview.isPending}
-      error={simulationEnabled ? null : errorMessage(overview.error) ?? actionError}
-      pendingAction={simulationEnabled ? null : pendingAction}
-      chatError={simulationEnabled ? null : chatError}
-      simulation={
-        canSimulate
-          ? {
-              active: simulationEnabled,
-              disabled: pendingAction !== null,
-              scenario: simulationScenario,
-              relationshipState: simulationRelationship,
-              onToggle: () => {
-                if (pendingAction !== null) return;
-                setSimulationActive((active) => !active);
-                setSimulationStartedAt(Date.now());
-                setSimulationMessages(makeGmSimulationOpening());
+    <>
+      {navigationNotice ? (
+        <p role="alert">{navigationNotice}</p>
+      ) : null}
+      <ResearchLabView
+        targetJobId={requestedJobId}
+        data={viewData}
+        isLoading={simulationEnabled ? false : overview.isPending}
+        error={simulationEnabled ? null : errorMessage(overview.error) ?? actionError}
+        pendingAction={simulationEnabled ? null : pendingAction}
+        chatError={simulationEnabled ? null : chatError}
+        simulation={
+          canSimulate
+            ? {
+                active: simulationEnabled,
+                disabled: pendingAction !== null || Boolean(requestedJobId),
+                scenario: simulationScenario,
+                relationshipState: simulationRelationship,
+                onToggle: () => {
+                  if (pendingAction !== null) return;
+                  setSimulationActive((active) => !active);
+                  setSimulationStartedAt(Date.now());
+                  setSimulationMessages(makeGmSimulationOpening());
+                },
+                onScenarioChange: (scenario) => {
+                  setSimulationScenario(scenario);
+                  setSimulationStartedAt(Date.now());
+                },
+                onRelationshipChange: setSimulationRelationship,
+              }
+            : undefined
+        }
+        onRefresh={() => {
+          if (simulationEnabled) {
+            setSimulationStartedAt(Date.now());
+            return;
+          }
+          setInteraction(null);
+          void overview.refetch();
+        }}
+        onChatSubmit={(message) => {
+          if (simulationEnabled) {
+            appendSimulationMessages([
+              { speaker: "USER", text: message },
+              {
+                speaker: "XENO",
+                text: "질문은 들었어. 하지만 네가 원하는 답과 관찰 결과가 같을 거라고 기대하진 마.",
+                expression: "smirk",
               },
-              onScenarioChange: (scenario) => {
-                setSimulationScenario(scenario);
-                setSimulationStartedAt(Date.now());
+            ]);
+            return;
+          }
+          chat.reset();
+          choice.reset();
+          setInteraction(null);
+          chat.mutate({ message });
+        }}
+        onChoiceSelect={(choiceId) => {
+          if (simulationEnabled) {
+            const result = simulateGmChoice(choiceId);
+            setSimulationRelationship(result.relationshipState);
+            appendSimulationMessages([
+              { speaker: "USER", text: result.playerLine },
+              {
+                speaker: "XENO",
+                text: result.xenoLine,
+                expression: result.expression,
               },
-              onRelationshipChange: setSimulationRelationship,
-            }
-          : undefined
-      }
-      onRefresh={() => {
-        if (simulationEnabled) {
-          setSimulationStartedAt(Date.now());
-          return;
-        }
-        setInteraction(null);
-        void overview.refetch();
-      }}
-      onChatSubmit={(message) => {
-        if (simulationEnabled) {
-          appendSimulationMessages([
-            { speaker: "USER", text: message },
+            ]);
+            return;
+          }
+          chat.reset();
+          choice.reset();
+          choice.mutate(
+            { choiceId },
             {
-              speaker: "XENO",
-              text: "질문은 들었어. 하지만 네가 원하는 답과 관찰 결과가 같을 거라고 기대하진 마.",
-              expression: "smirk",
+              onSuccess: (response) => {
+                setInteraction({
+                  id: crypto.randomUUID(),
+                  messages: [
+                    {
+                      id: `choice-user-${crypto.randomUUID()}`,
+                      speaker: "USER",
+                      text: response.dialogue.playerLine,
+                    },
+                    {
+                      id: `choice-xeno-${crypto.randomUUID()}`,
+                      speaker: "XENO",
+                      text: response.dialogue.text,
+                      expression: response.dialogue.expression,
+                    },
+                  ],
+                });
+              },
             },
-          ]);
-          return;
-        }
-        chat.reset();
-        choice.reset();
-        setInteraction(null);
-        chat.mutate({ message });
-      }}
-      onChoiceSelect={(choiceId) => {
-        if (simulationEnabled) {
-          const result = simulateGmChoice(choiceId);
-          setSimulationRelationship(result.relationshipState);
-          appendSimulationMessages([
-            { speaker: "USER", text: result.playerLine },
-            {
-              speaker: "XENO",
-              text: result.xenoLine,
-              expression: result.expression,
-            },
-          ]);
-          return;
-        }
-        chat.reset();
-        choice.reset();
-        choice.mutate(
-          { choiceId },
-          {
-            onSuccess: (response) => {
-              setInteraction({
-                id: crypto.randomUUID(),
-                messages: [
-                  {
-                    id: `choice-user-${crypto.randomUUID()}`,
-                    speaker: "USER",
-                    text: response.dialogue.playerLine,
-                  },
-                  {
-                    id: `choice-xeno-${crypto.randomUUID()}`,
-                    speaker: "XENO",
-                    text: response.dialogue.text,
-                    expression: response.dialogue.expression,
-                  },
-                ],
-              });
-            },
-          },
-        );
-      }}
-      onStartInitial={handleInitial}
-      onCreateJob={handleQueue}
-      onCancelJob={handleCancel}
-      onClaimJob={handleClaim}
-    />
+          );
+        }}
+        onStartInitial={handleInitial}
+        onCreateJob={handleQueue}
+        onCancelJob={handleCancel}
+        onClaimJob={handleClaim}
+      />
+    </>
   );
 }

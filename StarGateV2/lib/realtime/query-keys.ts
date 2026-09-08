@@ -34,6 +34,7 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
   ],
   inventory: [
     ["inventory"],
+    ["dashboard"],
     ["trades"],
     ["shop"],
     ["equipment-shop"],
@@ -44,7 +45,7 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
   notifications: [["notifications"], ["dashboard"]],
   shop: [["shop"]],
   stocks: [["stocks"], ["trades"]],
-  trades: [["trades"]],
+  trades: [["trades"], ["dashboard"]],
   sessions: [["sessions"], ["dashboard"]],
   reports: [
     ["session-reports"],
@@ -59,10 +60,10 @@ export const REALTIME_RESOURCE_QUERY_KEYS: Record<
     ["hall-of-fame", "overview"],
     ["hall-of-fame", "novex"],
   ],
-  "equipment-shop": [["equipment-shop"]],
+  "equipment-shop": [["equipment-shop"], ["dashboard"]],
   wiki: [["wiki"], ["dashboard"], ["factions"], ["wiki", "lore-search"]],
   factions: [["factions"], ["wiki", "lore-search"]],
-  "page-locks": [["erp-page-locks"]],
+  "page-locks": [["erp-page-locks"], ["dashboard"]],
 };
 
 export function queryKeysForRealtimeResources(

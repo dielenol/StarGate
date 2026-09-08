@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { adminInventoryOverviewKeys } from "@/hooks/queries/useAdminInventoryOverviewQuery";
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import { dashboardKeys } from "@/hooks/queries/useDashboardQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
@@ -45,6 +46,7 @@ function useInvalidateResearchEconomy() {
   return async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: researchKeys.all }),
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
       queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
       queryClient.invalidateQueries({ queryKey: adminInventoryOverviewKeys.all }),
       queryClient.invalidateQueries({ queryKey: creditKeys.all }),

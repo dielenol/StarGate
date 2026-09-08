@@ -571,7 +571,7 @@ export type DashboardCharacter = Pick<
 > & Partial<Pick<Character, "role" | "department">> & {
   lore: Pick<Character["lore"], "name"> & Partial<Pick<Character["lore"], "quote">>;
   play?: Pick<AgentCharacter["play"], "hp" | "san" | "points"> &
-    Partial<Pick<AgentCharacter["play"], "className">>;
+    Partial<Pick<AgentCharacter["play"], "className" | "hpDelta" | "sanDelta">>;
 };
 
 const DASHBOARD_CHARACTER_PROJECTION = {
@@ -587,7 +587,9 @@ const DASHBOARD_CHARACTER_PROJECTION = {
   "lore.quote": 1,
   "play.className": 1,
   "play.hp": 1,
+  "play.hpDelta": 1,
   "play.san": 1,
+  "play.sanDelta": 1,
   "play.points": 1,
 } as const;
 

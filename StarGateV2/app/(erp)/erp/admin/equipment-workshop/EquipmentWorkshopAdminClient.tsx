@@ -1,11 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   type FocusEvent,
   type FormEvent,
+  useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -29,6 +33,7 @@ import {
   useEquipmentWorkshopRequests,
 } from "@/hooks/queries/useEquipmentShopQuery";
 import type { EquipmentWorkshopBlueprintInput } from "@/lib/equipment-shop/workshop-blueprint";
+import { parseDashboardBusinessRecordId } from "@/lib/erp/dashboard-business-link";
 import {
   EQUIPMENT_WORKSHOP_PRESETS,
   findEquipmentWorkshopPreset,
@@ -711,6 +716,12 @@ export default function EquipmentWorkshopAdminClient({
   items,
   blobUploadEnabled,
 }: Props) {
+  const searchParams = useSearchParams();
+  const requestedRequestParam = searchParams.get("requestId");
+  const requestedRequestId = parseDashboardBusinessRecordId(
+    requestedRequestParam,
+    "workshop",
+  );
   const requestsQuery = useEquipmentWorkshopRequests({
     viewerKey: "gm",
     initialData: initialRequests,
@@ -723,9 +734,19 @@ export default function EquipmentWorkshopAdminClient({
       (requestsQuery.data?.requests ?? []) as AdminSerializedEquipmentWorkshopRequest[],
     [requestsQuery.data?.requests],
   );
-  const blueprints = blueprintsQuery.data?.blueprints ?? [];
+  const blueprints = useMemo(
+    () => blueprintsQuery.data?.blueprints ?? [],
+    [blueprintsQuery.data?.blueprints],
+  );
   const firstRequest = requests[0];
-  const initialDraft = firstRequest ? createDraft(firstRequest, items) : null;
+  const initialSelectedRequest = requestedRequestParam
+    ? requestedRequestId
+      ? requests.find((request) => request._id === requestedRequestId)
+      : undefined
+    : firstRequest;
+  const initialDraft = initialSelectedRequest
+    ? createDraft(initialSelectedRequest, items)
+    : null;
 
   const quoteMutation = useQuoteEquipmentWorkshopRequest();
   const createBlueprintMutation = useCreateEquipmentWorkshopBlueprint();
@@ -735,7 +756,9 @@ export default function EquipmentWorkshopAdminClient({
   const approveReloadMutation = useApproveEquipmentWorkshopReload();
   const statusMutation = useUpdateEquipmentWorkshopRequest();
 
-  const [selectedId, setSelectedId] = useState(firstRequest?._id ?? "");
+  const [selectedId, setSelectedId] = useState(
+    initialSelectedRequest?._id ?? "",
+  );
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
   const [blueprintSlug, setBlueprintSlug] = useState("");
   const [blueprintDisplayName, setBlueprintDisplayName] = useState("");
@@ -755,9 +778,11 @@ export default function EquipmentWorkshopAdminClient({
     text: string;
   } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const handledRequestTargetRef = useRef<string | null>(null);
 
   const selected =
-    requests.find((request) => request._id === selectedId) ?? requests[0];
+    requests.find((request) => request._id === selectedId) ??
+    (requestedRequestParam ? undefined : requests[0]);
   const selectedBlueprint = blueprints.find(
     (blueprint) => blueprint._id === selectedBlueprintId,
   );
@@ -840,7 +865,102 @@ export default function EquipmentWorkshopAdminClient({
     });
   }, [requests, search, statusFilter]);
 
-  if (!selected || !draft) return <Box>공방 요청이 없습니다.</Box>;
+  useEffect(() => {
+    const targetKey = requestedRequestParam ?? null;
+    if (!targetKey) {
+      handledRequestTargetRef.current = null;
+      // 오류 링크에서 목록으로 돌아온 경우 같은 컴포넌트가 재사용된다.
+      // 초기 비선택 상태만 복구하고 기존 편집 초안은 유지한다.
+      if (!draft && firstRequest) {
+        const nextDraft = createDraft(firstRequest, items);
+        setSelectedId(firstRequest._id);
+        setDraft(nextDraft);
+        setBaseline(JSON.stringify(nextDraft));
+        setFeedback(null);
+      }
+      return;
+    }
+    if (handledRequestTargetRef.current === targetKey) return;
+    handledRequestTargetRef.current = targetKey;
+
+    if (!requestedRequestId) {
+      setFeedback({
+        tone: "error",
+        text: "요청 식별자가 올바르지 않아 공방 요청을 열 수 없습니다.",
+      });
+      return;
+    }
+    const target = requests.find((request) => request._id === requestedRequestId);
+    if (!target) {
+      setFeedback({
+        tone: "error",
+        text: "요청한 공방 요청을 찾을 수 없거나 조회 권한이 없습니다.",
+      });
+      return;
+    }
+    const hasUnsavedDraft =
+      draft !== null && JSON.stringify(draft) !== baseline;
+    if (hasUnsavedDraft) {
+      setFeedback({
+        tone: "error",
+        text: "미저장 편집이 있어 요청을 자동으로 전환하지 않았습니다.",
+      });
+      return;
+    }
+
+    const nextDraft = createDraft(target, items);
+    const quoteBlueprint = target.quote?.blueprintRef;
+    const matchedBlueprint = quoteBlueprint
+      ? blueprints.find(
+          (blueprint) =>
+            blueprint._id === quoteBlueprint.id &&
+            blueprint.version === quoteBlueprint.version,
+        )
+      : undefined;
+    setSearch("");
+    setStatusFilter("ALL");
+    setSelectedId(target._id);
+    setDraft(nextDraft);
+    setBaseline(JSON.stringify(nextDraft));
+    setSelectedBlueprintId(matchedBlueprint?._id ?? "");
+    setBlueprintSlug(matchedBlueprint?.slug ?? "");
+    setBlueprintDisplayName(matchedBlueprint?.displayName ?? "");
+    setEditingActionIndex(null);
+    setOperatorNote("");
+    setFeedback(null);
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(`workshop-admin-request-${target._id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }, [
+    baseline,
+    blueprints,
+    draft,
+    firstRequest,
+    items,
+    requestedRequestId,
+    requestedRequestParam,
+    requests,
+    selectedId,
+  ]);
+
+  if (!selected || !draft) {
+    return (
+      <Box role={requestedRequestParam ? "alert" : undefined}>
+        {requestedRequestParam
+          ? "요청한 공방 요청을 열 수 없습니다."
+          : "공방 요청이 없습니다."}
+        {requestedRequestParam ? (
+          <p>
+            <Link href="/erp/admin/equipment-workshop">
+              공방 요청 목록으로 돌아가기
+            </Link>
+          </p>
+        ) : null}
+      </Box>
+    );
+  }
 
   const readOnlyQuote =
     isBuildRequest &&
@@ -1545,6 +1665,7 @@ export default function EquipmentWorkshopAdminClient({
           {filtered.map((request) => (
             <button
               key={request._id}
+              id={`workshop-admin-request-${request._id}`}
               type="button"
               data-active={request._id === selected._id}
               onClick={() => selectRequest(request)}

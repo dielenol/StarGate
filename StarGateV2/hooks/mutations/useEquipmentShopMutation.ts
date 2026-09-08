@@ -13,6 +13,7 @@ import {
 } from "@/hooks/queries/useCharactersQuery";
 import { characterChangeLogsKeys } from "@/hooks/queries/useCharacterChangeLogs";
 import { creditKeys } from "@/hooks/queries/useCreditsQuery";
+import { dashboardKeys } from "@/hooks/queries/useDashboardQuery";
 import { inventoryKeys } from "@/hooks/queries/useInventoryQuery";
 import { notificationKeys } from "@/hooks/queries/useNotificationsQuery";
 import {
@@ -307,6 +308,7 @@ export function useEquipmentWorkshopRequest() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       queryClient.invalidateQueries({
         queryKey: equipmentShopKeys.workshopRequestsRoot,
       });
@@ -337,6 +339,7 @@ export function useUpdateEquipmentWorkshopRequest() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       queryClient.invalidateQueries({
         queryKey: equipmentShopKeys.workshopRequestsRoot,
       });
@@ -347,6 +350,7 @@ export function useUpdateEquipmentWorkshopRequest() {
 
 async function invalidateWorkshopEconomy(queryClient: ReturnType<typeof useQueryClient>) {
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
     queryClient.invalidateQueries({ queryKey: equipmentShopKeys.workshopRequestsRoot }),
     queryClient.invalidateQueries({ queryKey: equipmentShopKeys.catalog }),
     queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
@@ -359,6 +363,7 @@ async function invalidateWorkshopRequests(
   queryClient: ReturnType<typeof useQueryClient>,
 ) {
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
     queryClient.invalidateQueries({ queryKey: equipmentShopKeys.workshopRequestsRoot }),
     queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
   ]);
