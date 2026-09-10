@@ -285,7 +285,7 @@ export default function DashboardClient({
         title="대시보드"
       />
 
-      <div className={styles.dashboard}>
+      <div className={styles.dashboard} data-pixel-font="ui">
         {isError ? (
           <div className={styles.alertBand} role="status">
             <span>최신 정보를 가져오지 못해 마지막으로 확인한 내용을 표시하고 있습니다.</span>
