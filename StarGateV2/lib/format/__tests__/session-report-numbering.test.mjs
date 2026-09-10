@@ -255,3 +255,30 @@ test("미니 표기가 없는 네베드 정규 보고서는 MINI06 fallback을 �
 
   assert.equal(numbering[0]?.number, "01");
 });
+
+test("빈 창고의 자장가 분할 기록은 정규 07과 별도 미니 순서를 유지한다", () => {
+  const reports = [
+    { sessionId: "NOSB-MINI-LULLABY-PART2", sessionTitle: "자장가 후반", createdAt },
+    { sessionId: "NOSB-S1E7-DESIRE-PART1", sessionTitle: "욕구 1부", createdAt },
+    { sessionId: "NOSB-MINI-NEVED", sessionTitle: "전사의 탄생", createdAt },
+    { sessionId: "NOSB-MINI-LULLABY-PART1", sessionTitle: "자장가 전반", createdAt },
+  ];
+
+  assert.deepEqual(
+    buildOperationReportNumbering(reports).map(({ number, series }) => [number, series]),
+    [["07", "regular"], ["MINI06", "mini"], ["MINI07", "mini"], ["MINI07.5", "mini"]],
+  );
+});
+
+test("빈창고·빈 창고의 자장가와 part 표기의 제목을 같은 미니 분할 번호로 읽는다", () => {
+  for (const [sessionTitle, expected] of [
+    ["빈창고 자장가 1부", "MINI07"],
+    ["빈 창고의 자장가 PART 2", "MINI07.5"],
+  ]) {
+    const [result] = buildOperationReportNumbering([
+      { sessionId: "LEGACY-LULLABY", sessionTitle, createdAt },
+    ]);
+    assert.equal(result.number, expected);
+    assert.equal(result.series, "mini");
+  }
+});

@@ -150,6 +150,18 @@ const OPERATION_REPORT_NUMBER_PRESETS: Record<
     number: "MINI06",
     sortOrder: 160,
   },
+  "NOSB-MINI-LULLABY-PART1": {
+    series: "mini",
+    sequence: 7,
+    number: "MINI07",
+    sortOrder: 170,
+  },
+  "NOSB-MINI-LULLABY-PART2": {
+    series: "mini",
+    sequence: 7.5,
+    number: "MINI07.5",
+    sortOrder: 175,
+  },
 };
 
 function reportIdentity(report: OperationReportNumberSource): string {
@@ -176,6 +188,15 @@ function getPresetByTitle(
   report: Pick<OperationReportNumberSource, "sessionTitle">,
 ): OperationReportNumberPreset | null {
   const title = normalizeReportTitle(report.sessionTitle);
+
+  if (/빈\s*창고(?:의)?\s*자장가/u.test(title)) {
+    if (/2\s*부|part\s*2/u.test(title)) {
+      return OPERATION_REPORT_NUMBER_PRESETS["NOSB-MINI-LULLABY-PART2"];
+    }
+    if (/1\s*부|part\s*1/u.test(title)) {
+      return OPERATION_REPORT_NUMBER_PRESETS["NOSB-MINI-LULLABY-PART1"];
+    }
+  }
 
   if (
     (title.includes("s1e7") || title.includes("욕구")) &&
