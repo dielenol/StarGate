@@ -9,7 +9,7 @@ age: "미상"
 height: "미상"
 weight: "미상"
 department: "UNASSIGNED"
-isPublic: false
+isPublic: true
 loreTags: ["NOSB-MINI-LULLABY-PART1", "빈 창고의 자장가", "판테라", "시유의 가족", "NOSB-MINI-LULLABY-PART2"]
 appearsInEvents: ["NOSB-MINI-LULLABY-PART1", "NOSB-MINI-LULLABY-PART2"]
 source: "session-log"

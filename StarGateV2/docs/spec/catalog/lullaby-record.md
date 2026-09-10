@@ -8,7 +8,7 @@ effect: "기억 진입의 계기가 된 자장가 녹음"
 description: "판테라 구 창고의 개인 회수품 방에서 발견된 자장가 레코드. 재생 뒤 시유와 현장팀이 가족의 기억을 관찰했다."
 previewImage: ""
 isAvailable: false
-isPublic: false
+isPublic: true
 tags: ["NOSB-MINI-LULLABY-PART1", "NOSB-MINI-LULLABY-PART2", "빈 창고의 자장가", "시유", "자장가 레코드"]
 source: "session-log"
 createdAt: "2026-09-10T00:00:00.000Z"

@@ -8,7 +8,7 @@ effect: "어머니의 감정이 잔향으로 나타났던 가족 사진 물품"
 description: "시유 부모의 사진을 담은 펜던트. 잔향의 본체로 확인된 뒤 현실에서 시유에게 전달됐다."
 previewImage: ""
 isAvailable: false
-isPublic: false
+isPublic: true
 tags: ["NOSB-MINI-LULLABY-PART1", "NOSB-MINI-LULLABY-PART2", "빈 창고의 자장가", "시유", "가족 사진 펜던트"]
 source: "session-log"
 createdAt: "2026-09-10T00:00:00.000Z"
