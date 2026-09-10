@@ -57,8 +57,8 @@ export default function WikiDetailContent({ initialPage, links }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const handleInternalLinkClick = useInternalLinkPendingNavigation();
   const articleContent = useMemo(
-    () => wikiArticleContent(page.content, page.title),
-    [page.content, page.title],
+    () => wikiArticleContent(page.content, page.title, page.category),
+    [page.content, page.title, page.category],
   );
   const toc = useMemo(() => extractToc(articleContent), [articleContent]);
   const html = useMemo(

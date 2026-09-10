@@ -117,11 +117,11 @@ export default async function WikiDetailPage({
       (categoryCounts.get(wikiPage.category) ?? 0) + 1,
     );
   }
-  const articleContent = wikiArticleContent(page.content, page.title);
+  const articleContent = wikiArticleContent(page.content, page.title, page.category);
   const toc = extractToc(articleContent);
   const keywordTags = wikiKeywordTags(page, 4);
   const lead = wikiLead(page.content);
-  const infoboxImage = wikiFirstImage(page.content);
+  const infoboxImage = page.category === "작전 보고서" ? null : wikiFirstImage(page.content);
   const infoRows = wikiInfoRows(page);
   const relatedLinks = wikiRelatedLinks(page, allPages);
   const sourceLines = wikiSourceLines(page.content);
