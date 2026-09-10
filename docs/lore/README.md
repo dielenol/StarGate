@@ -1,6 +1,6 @@
 ---
 title: 로어북
-updated: 2026-09-07
+updated: 2026-09-10
 ---
 
 # StarGate 로어북
@@ -42,6 +42,8 @@ docs/lore/
 
 ### concept/
 
+- [빈 창고의 잔향](concept/empty-warehouse-resonance.md) — 자장가 미니세션 검토안
+
 - [이상 현상 (Anomaly)](concept/anomaly.md)
 - [깨진 음절](concept/broken-syllable.md)
 - [광원화 (Light-sourcing)](concept/light-sourcing.md)
@@ -52,6 +54,8 @@ docs/lore/
 
 ### faction/
 
+- [판테라 코퍼레이션](faction/panthera-corporation.md) — 시유 보호 계약과 구 창고
+
 - [군부 (Military)](faction/military.md) — 스켈레톤
 - [세계 이사회 (World Council)](faction/world-council.md) — 스켈레톤
 - [시민사회 (Civil Society)](faction/civil.md) — 스켈레톤
@@ -61,6 +65,19 @@ docs/lore/
 (비어있음)
 
 ### session-sync/
+
+- [빈 창고의 자장가 1부 보고서 초안](session-sync/nosb-mini-lullaby-part1-report.md)
+- [빈 창고의 자장가 1부 전체 대상·결정 목록](session-sync/nosb-mini-lullaby-part1-sync-review.json)
+- [빈 창고의 자장가 1부 근거·검증 원장](session-sync/nosb-mini-lullaby-part1-coverage.md)
+- [빈 창고의 자장가 1부 사용자 검토안](session-sync/nosb-mini-lullaby-part1-user-review.md)
+- [빈 창고의 자장가 2부 보고서 초안](session-sync/nosb-mini-lullaby-part2-report.md)
+- [빈 창고의 자장가 2부 전체 대상·결정 목록](session-sync/nosb-mini-lullaby-part2-sync-review.json)
+- [빈 창고의 자장가 2부 근거·검증 원장](session-sync/nosb-mini-lullaby-part2-coverage.md)
+- [빈 창고의 자장가 2부 사용자 검토안](session-sync/nosb-mini-lullaby-part2-user-review.md)
+- [빈 창고의 자장가 공적 검토안](session-sync/nosb-mini-lullaby-honors-review.md)
+- [빈 창고의 자장가 공적 등록 계획](session-sync/nosb-mini-lullaby-honors-review.json)
+- [빈 창고의 자장가 비공개 검토용 데이터](session-sync/nosb-mini-lullaby-review-payload.json) — 운영 실행 파일 아님
+- [빈 창고의 자장가 준비·검증 기록](session-sync/nosb-mini-lullaby-execution.md)
 
 - [S1E9 이미지 제작 자료 접수·검증](session-sync/s1e9-visual-reference-intake-2026-09-07.md)
 - [2026-08-17 전체 원본 재대조 원장](session-sync/nosb-source-reconciliation-2026-08-17.md)

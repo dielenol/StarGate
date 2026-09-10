@@ -1,0 +1,1039 @@
+{
+  "version": 1,
+  "sessionId": "NOSB-MINI-LULLABY-PART2",
+  "source": {
+    "path": "/Users/flitto/Downloads/빈창고 자장가 2부.pdf",
+    "sha256": "f33fc068d2f9eda1eddffa06dd67549c592a52a947cb8925e1fd850697f7eb8d",
+    "pages": 38,
+    "method": "전체 텍스트·전체 화자·장면 이미지 대조와 독립 원문 감사. 실제 DB·운영 미니 목록 및 기존 canon 대조."
+  },
+  "subjects": [
+    {
+      "id": "maria",
+      "name": "마리아",
+      "kind": "agent",
+      "evidence": "2부 p2~38: 현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가"
+    },
+    {
+      "id": "aegis",
+      "name": "발레리아 아젠트",
+      "kind": "agent",
+      "evidence": "2부 p2~38: 현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가"
+    },
+    {
+      "id": "neved",
+      "name": "키아나 오 캘러핸",
+      "kind": "agent",
+      "evidence": "2부 p2~38: 현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가"
+    },
+    {
+      "id": "lee",
+      "name": "이동식",
+      "kind": "agent",
+      "evidence": "2부 p2~38: 현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가"
+    },
+    {
+      "id": "siyu",
+      "name": "시유 / 타이거",
+      "kind": "agent",
+      "evidence": "2부 p2~38: 현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가"
+    },
+    {
+      "id": "wolf",
+      "name": "늑구 / 늑대씨",
+      "kind": "person",
+      "evidence": "2부 p4~35: 2026-09-10 사용자: 기존 미니 캐릭터로 생각했으나 일치 기록이 없어 이번 신원 등록·연결 제외. 원문 행적은 보존"
+    },
+    {
+      "id": "mother",
+      "name": "시유의 어머니 / 여자 / 엄마",
+      "kind": "person",
+      "evidence": "2부 p2~38: 시유의 친어머니인 연구원. 물건에 남은 잔향과 실제 인물을 구별"
+    },
+    {
+      "id": "father",
+      "name": "시유의 아버지 / 남자",
+      "kind": "person",
+      "evidence": "2부 p2~20,36~37: 시유의 친아버지인 기술직. 아내와 함께 도주하고 추적을 지연하려 남음"
+    },
+    {
+      "id": "handover-soldier",
+      "name": "시유 인계를 맡은 판테라 병사",
+      "kind": "person",
+      "evidence": "2부 p19~20: 익명의 인계 담당자. 이름을 알려준 다른 병사와 동일인 근거 없음"
+    },
+    {
+      "id": "name-soldier",
+      "name": "첫 전장에서 시유에게 본명을 알려준 병사",
+      "kind": "person",
+      "evidence": "2부 p20: 회고에서만 등장하는 익명 병사. 인계 담당자와 구분해 사건만 기록"
+    },
+    {
+      "id": "pursuers",
+      "name": "녹색 차량의 추적자들",
+      "kind": "person",
+      "evidence": "2부 p7,16~19: 부모를 추적한 집단. 개별 이름·상위 조직을 확정하지 않음"
+    },
+    {
+      "id": "panthera",
+      "name": "판테라 코퍼레이션 / 표범부대",
+      "kind": "faction",
+      "evidence": "2부 p8~9,16~20: 기존 시유 소개의 Panthera·표범부대와 대조. 보호 계약 위반과 창고 이력은 전용 위키에 기록"
+    },
+    {
+      "id": "novus",
+      "name": "노부스 오르도",
+      "kind": "faction",
+      "evidence": "2부 p20,35~38: 창고와 시유의 인계처. 기존 조직 위키 연결"
+    },
+    {
+      "id": "research-facility",
+      "name": "이름 미상의 연구시설",
+      "kind": "institution",
+      "evidence": "2부 p7~8,16~19: 실명·귀속 미상인 연구시설. 독립 기관 코드나 다른 기존 연구소와의 동일성은 부여하지 않음"
+    },
+    {
+      "id": "warehouse",
+      "name": "판테라 구 창고",
+      "kind": "place",
+      "evidence": "2부 p35~38: 현실 작전지. 국가·도시는 미상. 폐쇄·인계와 최종 귀환을 판테라 위키에 병합"
+    },
+    {
+      "id": "personal-room",
+      "name": "개인 회수품 / 미분류 방",
+      "kind": "place",
+      "evidence": "2부 p35: 창고 내부의 레코드 발견·귀환 지점. 독립 장소 페이지보다 현장 설명으로 보존"
+    },
+    {
+      "id": "refuge",
+      "name": "부부의 임시 거처와 판테라 인계 장소",
+      "kind": "place",
+      "evidence": "2부 p2~9,16~20: 도주·출산·인계의 기억 장면. 국가·도시 및 같은 실재 장소 여부는 미상"
+    },
+    {
+      "id": "memory-space",
+      "name": "레코드 공간과 TV 안 공간",
+      "kind": "concept",
+      "evidence": "2부 p21~34: 기억 재생과 잔향 전투의 현상 공간. 지리적 장소가 아님"
+    },
+    {
+      "id": "zulu",
+      "name": "줄루 사고와 기억 재생 현상",
+      "kind": "concept",
+      "evidence": "2부 p10~16,24~36: 기존 줄루 개념 연결. 사고 원인 줄루와 잔향의 동일성·공식 개체 번호는 미확정"
+    },
+    {
+      "id": "echo",
+      "name": "잔향",
+      "kind": "entity",
+      "evidence": "2부 p26~34: 어머니의 마음·소망·사랑이 펜던트에 깃든 잔상. 실제 어머니나 영혼이 아님"
+    },
+    {
+      "id": "censor",
+      "name": "기억검열자 / 기억검열체",
+      "kind": "entity",
+      "evidence": "2부 p10~16: 기억 노이즈에서 출현해 공격한 일시 현상. 독립 개인 신원 없이 잔향 문서에 유형을 기록"
+    },
+    {
+      "id": "repeater",
+      "name": "리피터 연구원",
+      "kind": "entity",
+      "evidence": "2부 p11~15: 필기·시선 접촉으로 정신 피해와 마비를 일으킨 기억 개체. 실제 연구원과 동일시하지 않음"
+    },
+    {
+      "id": "distortion",
+      "name": "기억왜곡체 두 마리",
+      "kind": "entity",
+      "evidence": "2부 p28~31: 잔향의 포효로 출현한 짐승형 현상. 개별 신원·최종 파괴는 확정되지 않음"
+    },
+    {
+      "id": "designation",
+      "name": "시유에서 대상·개체·298로 변한 표기",
+      "kind": "concept",
+      "evidence": "2부 p9~10: 기억검열 중 관측한 변화를 기록. 과거 공식 명칭 또는 새 별칭으로 단정하지 않음"
+    },
+    {
+      "id": "record",
+      "name": "자장가 레코드",
+      "kind": "item",
+      "evidence": "2부 p21,30,35: 녹음된 자장가와 기억 진입의 계기. 펜던트와의 작동 관계·현실 반출은 미상"
+    },
+    {
+      "id": "player",
+      "name": "레코드 재생기",
+      "kind": "item",
+      "evidence": "2부 p35: 레코드를 튼 일반 재생 장치. 독립 이상 능력·최종 회수 근거가 없어 카탈로그 별도 등록 안 함"
+    },
+    {
+      "id": "pendant",
+      "name": "가족 사진 펜던트",
+      "kind": "item",
+      "evidence": "2부 p3~4,30~32,36~38: 잔향의 본체로 파악됐으며 현실에서 시유에게 전달된 사진 펜던트 1개"
+    },
+    {
+      "id": "lullaby",
+      "name": "어머니의 자장가",
+      "kind": "concept",
+      "evidence": "2부 p5~6,34: 레코드 목소리와 어머니의 목소리가 일치. 별도 물리적 품목으로 만들지 않음"
+    },
+    {
+      "id": "protection-contract",
+      "name": "시유 보호 계약 문서와 배치 기록",
+      "kind": "item",
+      "evidence": "2부 p9~10,19~20: 보호 약속과 대상·개체·298 표기 변화를 보여 준 기억 자료. 실물 확보가 없어 카탈로그·인벤토리 생성 안 함"
+    },
+    {
+      "id": "equipment",
+      "name": "참가자의 기존 총기·방패·도구·AED",
+      "kind": "item",
+      "evidence": "2부 p10~16,27~32: 기존 도구 및 무장 사용. 기억 속 파손·장갑 충전 사용을 현실 영구 상태로 반영하지 않음"
+    },
+    {
+      "id": "cloak",
+      "name": "시유의 기존 은신망토",
+      "kind": "item",
+      "evidence": "2부 p24: 마리아가 이전에 사준 망토를 다시 묶어준 장면. 신규 구매·지급이 아님"
+    },
+    {
+      "id": "soda",
+      "name": "마리아가 마신 미스터비스트 소다",
+      "kind": "item",
+      "evidence": "2부 p27: 3회 선언과 시스템 2회 사용 기록이 불일치. 기존 품목 링크만 두고 추가 차감하지 않음"
+    },
+    {
+      "id": "cover",
+      "name": "늑구의 간이 엄폐물 설치 선언",
+      "kind": "event",
+      "evidence": "2부 p15~16: 마비 상태여서 GM이 상상으로 무효화. 설치·비용 차감 사건으로 기록하지 않음"
+    }
+  ],
+  "coverage": [
+    {
+      "subjectId": "maria",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가",
+          "target": "MARIA"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        },
+        "relations": {
+          "action": "update",
+          "reason": "확정된 가족·동료 관계와 등장 회차를 누적. 기존 관계 배열 보존"
+        },
+        "honors": {
+          "action": "create",
+          "reason": "독립 근거 두 건 이상으로 공적 1건 추천"
+        }
+      }
+    },
+    {
+      "subjectId": "aegis",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가",
+          "target": "AEGIS"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        },
+        "relations": {
+          "action": "update",
+          "reason": "확정된 가족·동료 관계와 등장 회차를 누적. 기존 관계 배열 보존"
+        },
+        "honors": {
+          "action": "create",
+          "reason": "독립 근거 두 건 이상으로 공적 1건 추천"
+        }
+      }
+    },
+    {
+      "subjectId": "neved",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가",
+          "target": "네베드"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        },
+        "relations": {
+          "action": "update",
+          "reason": "확정된 가족·동료 관계와 등장 회차를 누적. 기존 관계 배열 보존"
+        },
+        "honors": {
+          "action": "skip",
+          "reason": "참여·합동 공격만으로 추가 개인 공적을 만들지 않음"
+        }
+      }
+    },
+    {
+      "subjectId": "lee",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가",
+          "target": "LEE DONGSIK"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        },
+        "relations": {
+          "action": "update",
+          "reason": "확정된 가족·동료 관계와 등장 회차를 누적. 기존 관계 배열 보존"
+        },
+        "honors": {
+          "action": "skip",
+          "reason": "참여·합동 공격만으로 추가 개인 공적을 만들지 않음"
+        }
+      }
+    },
+    {
+      "subjectId": "siyu",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "현장 참가와 기억 관찰·구조·귀환을 기존 신원에 추가",
+          "target": "TIGER298"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        },
+        "relations": {
+          "action": "update",
+          "reason": "확정된 가족·동료 관계와 등장 회차를 누적. 기존 관계 배열 보존"
+        },
+        "honors": {
+          "action": "skip",
+          "reason": "참여·합동 공격만으로 추가 개인 공적을 만들지 않음"
+        }
+      }
+    },
+    {
+      "subjectId": "wolf",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "2026-09-10 사용자: 기존 미니 캐릭터로 생각했으나 일치 기록이 없어 이번 신원 등록·연결 제외. 원문 행적은 보존"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "mother",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "시유의 친어머니인 연구원. 물건에 남은 잔향과 실제 인물을 구별",
+          "target": "SIYU_MOTHER",
+          "placement": {
+            "basis": "unknown",
+            "source": "이름 미상 연구시설에서 일했다는 사실만 확인. 노부스 및 현존 조직의 정규 소속 근거 없음.",
+            "expectedPath": "/erp/personnel?group=UNASSIGNED — 미배정 → 시유의 부모 신원",
+            "deathRecord": "부모 모두 생사 미확정. 잔향은 영혼이 아니며 사망 목록에 넣지 않음.",
+            "hierarchy": "기존 미배정 분류를 사용. 미상 연구시설의 조직 탭·코드를 신설하지 않음.",
+            "icon": "기존 미배정 아이콘 사용. 별도 조직 문장 근거 없음."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        },
+        "relations": {
+          "action": "create",
+          "reason": "확정된 가족·동료 관계와 등장 회차를 누적. 기존 관계 배열 보존"
+        }
+      }
+    },
+    {
+      "subjectId": "father",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "시유의 친아버지인 기술직. 아내와 함께 도주하고 추적을 지연하려 남음",
+          "target": "SIYU_FATHER",
+          "placement": {
+            "basis": "unknown",
+            "source": "이름 미상 연구시설에서 일했다는 사실만 확인. 노부스 및 현존 조직의 정규 소속 근거 없음.",
+            "expectedPath": "/erp/personnel?group=UNASSIGNED — 미배정 → 시유의 부모 신원",
+            "deathRecord": "부모 모두 생사 미확정. 잔향은 영혼이 아니며 사망 목록에 넣지 않음.",
+            "hierarchy": "기존 미배정 분류를 사용. 미상 연구시설의 조직 탭·코드를 신설하지 않음.",
+            "icon": "기존 미배정 아이콘 사용. 별도 조직 문장 근거 없음."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        },
+        "relations": {
+          "action": "create",
+          "reason": "확정된 가족·동료 관계와 등장 회차를 누적. 기존 관계 배열 보존"
+        }
+      }
+    },
+    {
+      "subjectId": "handover-soldier",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "익명의 인계 담당자. 이름을 알려준 다른 병사와 동일인 근거 없음"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "name-soldier",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "회고에서만 등장하는 익명 병사. 인계 담당자와 구분해 사건만 기록"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "pursuers",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "부모를 추적한 집단. 개별 이름·상위 조직을 확정하지 않음"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "panthera",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "기존 시유 소개의 Panthera·표범부대와 대조. 보호 계약 위반과 창고 이력은 전용 위키에 기록",
+          "target": "panthera-corporation"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "novus",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "창고와 시유의 인계처. 기존 조직 위키 연결",
+          "target": "novus-ordo"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "research-facility",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "warehouse",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "현실 작전지. 국가·도시는 미상. 폐쇄·인계와 최종 귀환을 판테라 위키에 병합",
+          "target": "panthera-corporation"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "personal-room",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "refuge",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "memory-space",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "기억 재생과 잔향 전투의 현상 공간. 지리적 장소가 아님",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "zulu",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 줄루 개념 연결. 사고 원인 줄루와 잔향의 동일성·공식 개체 번호는 미확정",
+          "target": "zulu"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "echo",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "어머니의 마음·소망·사랑이 펜던트에 깃든 잔상. 실제 어머니나 영혼이 아님",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "어머니의 마음·소망·사랑이 펜던트에 깃든 잔상. 실제 어머니나 영혼이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "censor",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "기억 노이즈에서 출현해 공격한 일시 현상. 독립 개인 신원 없이 잔향 문서에 유형을 기록",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기억 노이즈에서 출현해 공격한 일시 현상. 독립 개인 신원 없이 잔향 문서에 유형을 기록"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "repeater",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "필기·시선 접촉으로 정신 피해와 마비를 일으킨 기억 개체. 실제 연구원과 동일시하지 않음",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "필기·시선 접촉으로 정신 피해와 마비를 일으킨 기억 개체. 실제 연구원과 동일시하지 않음"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "distortion",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "잔향의 포효로 출현한 짐승형 현상. 개별 신원·최종 파괴는 확정되지 않음",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "잔향의 포효로 출현한 짐승형 현상. 개별 신원·최종 파괴는 확정되지 않음"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "designation",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "기억검열 중 관측한 변화를 기록. 과거 공식 명칭 또는 새 별칭으로 단정하지 않음",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "record",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "create",
+          "target": "lullaby-record",
+          "reason": "녹음된 자장가와 기억 진입의 계기. 펜던트와의 작동 관계·현실 반출은 미상 존재 기록만 등록하며 판매하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "player",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "레코드를 튼 일반 재생 장치. 독립 이상 능력·최종 회수 근거가 없어 카탈로그 별도 등록 안 함"
+        }
+      }
+    },
+    {
+      "subjectId": "pendant",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "잔향의 본체로 파악됐으며 현실에서 시유에게 전달된 사진 펜던트 1개",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "create",
+          "target": "siyu-family-pendant",
+          "reason": "잔향의 본체로 파악됐으며 현실에서 시유에게 전달된 사진 펜던트 1개 존재 기록만 등록하며 판매하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "lullaby",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "레코드 목소리와 어머니의 목소리가 일치. 별도 물리적 품목으로 만들지 않음",
+          "target": "empty-warehouse-resonance"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "protection-contract",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "보호 약속과 대상·개체·298 표기 변화를 보여 준 기억 자료. 실물 확보가 없어 카탈로그·인벤토리 생성 안 함"
+        }
+      }
+    },
+    {
+      "subjectId": "equipment",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "기존 도구 및 무장 사용. 기억 속 파손·장갑 충전 사용을 현실 영구 상태로 반영하지 않음"
+        }
+      }
+    },
+    {
+      "subjectId": "cloak",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "마리아가 이전에 사준 망토를 다시 묶어준 장면. 신규 구매·지급이 아님"
+        }
+      }
+    },
+    {
+      "subjectId": "soda",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "merge",
+          "target": "mrbeast_soda",
+          "reason": "기존 품목을 보고서에서 연결. 가격·효과·판매·수량은 보존"
+        }
+      }
+    },
+    {
+      "subjectId": "cover",
+      "surfaces": {
+        "report": {
+          "action": "create",
+          "reason": "해당 회차 본문에 관찰·행동과 확인 한계를 기록"
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "보고서와 동일한 위키판에 사건·근거를 보존"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 개인 신원 대상이 아님"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "물리적 품목이 아님"
+        }
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "wolf-exclude",
+      "subjectId": "wolf",
+      "surface": "personnel",
+      "confirmed": "사용자가 기존 미니 캐릭터의 별칭이라고 답했으나 운영 전체 신원과 MINI 목록에서 일치 기록 없음.",
+      "recommendation": "중복이나 잘못된 병합을 만들지 않고 신원 등록·연결에서 제외",
+      "evidence": "2026-09-10 사용자 최종 답변: 없네 그냥 무시해라.",
+      "question": "늑구의 신원 등록·연결을 제외할까?",
+      "alternatives": [
+        "이번 신원 등록·연결 제외",
+        "정확한 기존 신원 지정 후 연결"
+      ],
+      "impact": "보고서 행적은 보존하고 관련 인물 링크와 공적 후보에서는 제외.",
+      "status": "resolved",
+      "resolution": "사용자가 일치 기록 부재 확인 뒤 무시하라고 지시. 이번 등록·연결 제외로 확정."
+    },
+    {
+      "id": "mother-portrait",
+      "subjectId": "mother",
+      "surface": "personnel",
+      "confirmed": "시유의 친어머니인 연구원. 물건에 남은 잔향과 실제 인물을 구별 실명과 생사는 미상으로 둘 수 있음.",
+      "recommendation": "서술·가족 관계를 준비하고 전용 초상을 확정한 뒤 신원 등록안을 마무리",
+      "evidence": "2026-09-10 사용자: 전용 초상을 정한 뒤 등록안 마무리.",
+      "question": "시유의 어머니의 신원조회 전용 초상으로 사용할 자산은 무엇인가?",
+      "alternatives": [
+        "사용자가 지정한 전용 초상",
+        "사용자가 별도로 생성 요청한 전용 초상"
+      ],
+      "impact": "초상 선택이 끝나야 부모 신원과 연결된 전체 공개 등록안을 마무리할 수 있음.",
+      "status": "pending"
+    },
+    {
+      "id": "father-portrait",
+      "subjectId": "father",
+      "surface": "personnel",
+      "confirmed": "시유의 친아버지인 기술직. 아내와 함께 도주하고 추적을 지연하려 남음 실명과 생사는 미상으로 둘 수 있음.",
+      "recommendation": "서술·가족 관계를 준비하고 전용 초상을 확정한 뒤 신원 등록안을 마무리",
+      "evidence": "2026-09-10 사용자: 전용 초상을 정한 뒤 등록안 마무리.",
+      "question": "시유의 아버지의 신원조회 전용 초상으로 사용할 자산은 무엇인가?",
+      "alternatives": [
+        "사용자가 지정한 전용 초상",
+        "사용자가 별도로 생성 요청한 전용 초상"
+      ],
+      "impact": "초상 선택이 끝나야 부모 신원과 연결된 전체 공개 등록안을 마무리할 수 있음.",
+      "status": "pending"
+    }
+  ]
+}

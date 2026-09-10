@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "reviewedSources": [
+    {
+      "sourceKey": "NOSB-MINI-LULLABY-PART1",
+      "contentHash": "63c75b3c55bf596e543a976750f3e178ebe3849534a5d33b82ea6addc35a83ae",
+      "outcome": "NO_AWARD"
+    },
+    {
+      "sourceKey": "NOSB-MINI-LULLABY-PART2",
+      "contentHash": "8ff106303ecd1454b10ee752c5cdea97c7c1ed826afa4062632e41da939f3a76",
+      "outcome": "AWARDED"
+    }
+  ],
+  "items": [
+    {
+      "sourceKey": "NOSB-MINI-LULLABY-PART2",
+      "codename": "MARIA",
+      "category": "INTELLIGENCE_JUDGMENT",
+      "title": "잔향의 심장을 찾아낸 자",
+      "citation": "마리아는 잔향이 물건에 깃든 감정의 잔상임을 밝혀내고 펜던트가 약점이라는 사실을 동료들에게 전해 시유를 구출할 실마리를 제공했다.",
+      "evidence": [
+        {
+          "section": "SUMMARY",
+          "contains": "마리아는 잔향이 시유 어머니의 영혼이 아니라"
+        },
+        {
+          "section": "SUMMARY",
+          "contains": "마리아는 외우주의 지식에서 펜던트라는 단서를 얻은 뒤"
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-MINI-LULLABY-PART2",
+      "codename": "AEGIS",
+      "category": "RESCUE_PROTECTION",
+      "title": "끊어진 실 너머의 손",
+      "citation": "발레리아 아젠트는 시유를 따라 TV 안으로 뛰어들고, 끊어진 펜던트를 회수해 마리아에게 전달하여 잔향에 붙잡힌 시유의 해방에 기여했다.",
+      "evidence": [
+        {
+          "section": "SUMMARY",
+          "contains": "아젠트는 시유가 끌려간 TV 안으로 망설이지 않고 몸을 던졌다"
+        },
+        {
+          "section": "SUMMARY",
+          "contains": "아젠트는 끊어진 펜던트를 직접 주워 마리아에게 던졌고"
+        }
+      ]
+    }
+  ]
+}

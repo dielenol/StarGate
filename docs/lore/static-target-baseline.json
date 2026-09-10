@@ -2,8 +2,8 @@
   "version": 1,
   "environment": "live",
   "database": "stargate",
-  "observedAt": "2026-08-05T12:17:52.000Z",
-  "expiresAt": "2026-09-04T12:17:52.000Z",
+  "observedAt": "2026-09-10T03:17:02.226Z",
+  "expiresAt": "2026-10-10T03:17:02.226Z",
   "targets": [
     {
       "kind": "wiki",
@@ -11,9 +11,19 @@
       "aliases": [
         "블랙 피라미드"
       ],
-      "evidence": "read-only DB inventory, 2026-08-05",
+      "evidence": "read-only DB inventory for lullaby links, 2026-09-10T03:17:02.226Z",
       "observedUpdatedAt": "2026-06-09T16:11:58.056Z",
       "contentHash": "2a8594b0c199547b366ad10e5f89f79339ab9ccb36c49a774b991936fde68027"
+    },
+    {
+      "kind": "catalog",
+      "key": "mrbeast_soda",
+      "aliases": [
+        "미스터비스트 소다"
+      ],
+      "evidence": "read-only DB inventory for lullaby links, 2026-09-10T03:17:02.226Z",
+      "observedUpdatedAt": "2026-07-31T07:31:38.283Z",
+      "contentHash": "4bb5c8ce729973bbc2cbf723f5bd42b23bf4be2a3f62b046f9eb645dda69ab26"
     }
   ]
 }

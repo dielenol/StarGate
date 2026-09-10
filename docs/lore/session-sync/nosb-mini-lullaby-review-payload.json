@@ -1,0 +1,1269 @@
+[
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "SIYU_MOTHER",
+      "type": "NPC",
+      "role": "이름 미상 연구원 / 시유의 친어머니",
+      "department": "UNASSIGNED",
+      "isPublic": false,
+      "previewImage": "",
+      "lore": {
+        "name": "시유의 어머니",
+        "gender": "여성",
+        "quote": "사랑해주세요....",
+        "appearance": "흰 가운을 입은 연구원으로 기억에 나타난다. 출산 후 갓난 시유를 안은 모습과 잔향 해소 때의 얼굴이 확인됐으나, 장면마다 기억의 잡음이 섞여 있었다.",
+        "personality": "아이의 비범한 능력보다 안전과 평범한 삶을 먼저 생각했다. 아이를 다른 곳에 맡기는 일을 두려워하면서도 지키기 위한 결정을 내렸다.",
+        "background": "이름 미상의 연구시설에서 일하던 연구원으로, 같은 시설의 기술직 남성과 부부가 되어 시유를 임신했다. 의무실 검사 뒤 태아의 특이 인자와 출산 후 분리 계획을 알게 됐다. 남편과 함께 도망친 뒤 판테라에 아이의 보호를 맡기면서 이름으로 부르고, 특별하지 않아도 버리지 않고, 아이로 대하며 사랑해 달라고 부탁했다. 이후 직접적인 행방과 생사는 확인되지 않았다.\n\n빈 창고에서 관측된 잔향은 그의 실제 영혼이 아니라 마음·소망·사랑이 펜던트에 깃든 잔상이었다. 잔향이 어머니의 모습으로 돌아와 사라진 장면은 본인의 사망을 증명하지 않는다.",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "mainImage": "",
+        "roleDetail": "이름 미상 연구원 / 시유의 친어머니\n연구시설명·상위 조직·현재 소속·생사는 미상. 노부스 내부 인가 등급 없음.",
+        "notes": "시유의 어머니는 실명이 확인되지 않아 사용하는 기록상의 호칭이다. 현장에서 사용한 이름이나 코드네임은 알려지지 않았다."
+      },
+      "createdAt": "2026-09-10T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z",
+      "ownerId": null,
+      "source": "session-log"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "npc-dossier",
+    "payload": {
+      "codename": "SIYU_FATHER",
+      "type": "NPC",
+      "role": "이름 미상 기술직 / 시유의 친아버지",
+      "department": "UNASSIGNED",
+      "isPublic": false,
+      "previewImage": "",
+      "lore": {
+        "name": "시유의 아버지",
+        "gender": "남성",
+        "quote": "그니까 같이 도망치자...",
+        "appearance": "연구시설의 기술직 남성으로 기억에 나타난다. 갓난 시유의 보라색 눈은 아버지를 닮았다고 기록됐다. 사진 펜던트 속 얼굴은 처음에는 잡음에 가려져 있었다.",
+        "personality": "가족이 위험해지자 관계를 끊으려는 제안을 거부하고 함께 위험을 감수했다. 추적자가 가까워졌을 때는 가족이 피신할 시간을 벌기 위해 남았다.",
+        "background": "이름 미상의 연구시설에서 기술직으로 일했고 연구원인 아내와 시유의 출생을 기다렸다. 시설이 아내와 아이를 노린다는 사실을 알자 함께 도망치자고 제안했으며, 태어날 아이에게 시유라는 이름을 제안했다.\n\n도주 중 판테라가 연구시설과 직접 연결된 흔적이 없다는 이유로 피신처를 제안했지만 안전을 확신한 것은 아니었다. 추적자가 가까워지자 아내를 판테라 트럭에 태우고 시간을 끌기 위해 남았다. 돌아오지 못하리라는 아내의 생각이 기록됐으나, 이후 행방과 실제 사망은 확인되지 않았다.",
+        "age": "미상",
+        "height": "미상",
+        "weight": "미상",
+        "mainImage": "",
+        "roleDetail": "이름 미상 기술직 / 시유의 친아버지\n연구시설명·상위 조직·현재 소속·생사는 미상. 노부스 내부 인가 등급 없음.",
+        "notes": "시유의 아버지는 실명이 확인되지 않아 사용하는 기록상의 호칭이다. 현장에서 사용한 이름이나 코드네임은 알려지지 않았다."
+      },
+      "createdAt": "2026-09-10T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z",
+      "ownerId": null,
+      "source": "session-log"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-page",
+    "payload": {
+      "slug": "panthera-corporation",
+      "title": "판테라 코퍼레이션",
+      "category": "세력",
+      "content": "# 판테라 코퍼레이션\n\n판테라 코퍼레이션은 표범부대라는 이름으로도 기록된 사설 군부대이자 용병 회사다. 시유가 어린 시절을 보내고 소년병으로 활동했던 조직이며, 이후 시유를 노부스 오르도에 인계했다.\n\n## 시유의 보호 계약\n시유의 부모는 연구시설의 출산 후 분리 계획을 피해 도주했다. 아버지는 판테라가 해당 연구시설과 직접 연결된 흔적이 없다는 이유로 피신처를 제안했지만, 부모는 안전을 확신하지는 못했다. 어머니는 인계 병사에게 시유를 이름으로 부르고, 특별하지 않아도 버리지 않으며, 아이로 대하고 사랑해 달라고 부탁했다. 병사는 받은 값만큼 보호하겠다고 답했다. 계약 대가의 액수와 지급 과정은 확인되지 않았다.\n\n판테라는 그 약속들을 지키지 않았다. 시유는 첫 전장에 나가서야 한 병사에게 본명을 들었고, 평범한 아이로 대우받지 못했다. 이후 조직은 시유를 노부스 오르도에 인계했다. 따라서 시유의 출신을 부모에게 버림받았다는 말만으로 설명할 수는 없다.\n\n## 구 창고\n판테라가 사용하던 구 창고는 줄루 사고로 오래전에 폐쇄된 뒤 노부스 오르도에 인계됐다. 문서상 폐쇄 사유는 전기 설비 폭발과 선반 붕괴였다. 국가·도시와 사고를 일으킨 개체는 확인되지 않았다.\n\n창고 정리 중 개인 회수품 방에서 발견된 자장가 레코드는 시유의 가족 기억으로 일행을 이끌었다. 사건 뒤 현장팀은 같은 방으로 돌아왔고, 가족 사진 펜던트가 시유에게 남았다. 창고의 최초 사고와 잔향 현상이 같은 원인에서 비롯됐는지는 알 수 없다.\n\n## 관련 기록\n- [[personnel:TIGER298|시유]]\n- [[personnel:SIYU_MOTHER|시유의 어머니]]\n- [[personnel:SIYU_FATHER|시유의 아버지]]\n- [[wiki:novus-ordo|노부스 오르도]]\n- [[wiki:empty-warehouse-resonance|빈 창고의 잔향]]\n- [[catalog:lullaby-record|자장가 레코드]]\n- [[report:NOSB-MINI-LULLABY-PART1|빈 창고의 자장가 1부]]\n- [[report:NOSB-MINI-LULLABY-PART2|빈 창고의 자장가 2부]]\n",
+      "tags": [
+        "NOSB-MINI-LULLABY-PART1",
+        "NOSB-MINI-LULLABY-PART2",
+        "빈 창고의 자장가",
+        "시유",
+        "판테라",
+        "잔향"
+      ],
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Keane",
+      "imageUrl": "",
+      "isPublic": false,
+      "createdAt": "2026-09-10T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "wiki-page",
+    "payload": {
+      "slug": "empty-warehouse-resonance",
+      "title": "빈 창고의 잔향",
+      "category": "개체",
+      "content": "# 빈 창고의 잔향\n\n빈 창고의 잔향은 시유의 어머니가 남긴 마음·소망·사랑이 가족 사진 펜던트에 깃들어 나타난 현상이다. 어머니 본인이나 실제 영혼과는 구별된다. 창고에서 발견한 자장가 레코드의 재생을 계기로 가족의 기억이 펼쳐졌으나, 레코드·재생기와 펜던트의 정확한 작동 관계는 확인되지 않았다.\n\n## 기억을 관찰하는 규칙\n현장팀은 연구시설, 의무실과 도주 중인 부부의 거처를 따라갔다. 투영된 사람은 만질 수 없었고 물건은 잔상만 붙잡을 수 있었다. 관찰자는 어머니의 기억에서 일정 거리 이상 떨어질 수 없었다. 의무실 달력은 2010년 3월 25일을 가리켰다. 이는 관찰한 기억의 날짜이며 현재 세계의 지리 좌표나 시유의 정확한 생년월일을 뜻하지 않는다.\n\n## 기억검열과 왜곡\n시유라는 이름이 대상·개체·298로 바뀌는 잡음 뒤 기억검열자가 나타났다. 기억검열체라고도 기록된 이 유형은 노이즈와 함께 출현해 포효하고 할퀴었다. 리피터 연구원은 노트에 쓰거나 눈을 맞추는 행동으로 정신 피해, 마비와 호흡곤란을 일으켰다. 첫 교전 뒤 이 개체들은 소탕됐다.\n\n후반에 시유가 TV 안쪽으로 끌려갔을 때는 실이 얽힌 공간과 잔향이 나타났다. 잔향의 포효 뒤 기억왜곡체 두 마리가 출현했으며, 한 마리는 늑구를 물고 전장을 이탈했다. 개별 개체의 최종 파괴 여부는 확인되지 않았다. 이 기억 개체들이 실제 연구시설 구성원의 신원과 일치하는지도 알 수 없다.\n\n## 펜던트 분리와 현상 해소\n마리아는 잔향이 물건에 깃든 감정의 잔상임을 파악하고 펜던트라는 약점을 알렸다. 아젠트, 키아나와 이동식이 펜던트를 겨냥한 뒤 줄이 끊어졌다. 아젠트가 물건을 회수해 마리아에게 넘기고 마리아가 몸속에 보관하자 잔향이 잠잠해지고 시유가 풀려났다.\n\n잔향은 어머니의 모습으로 돌아와 시유에게 사랑한다고 말하고 사라졌다. 이때의 얼굴을 시유는 과거 환상에서 본 얼굴과 같다고 알아보았다. 어머니의 실제 생사와 이 현상의 해소는 별개의 사실이다.\n\n현장팀이 현실로 돌아온 뒤 펜던트는 시유에게 나타났다. 시유가 직접 주워 소유했으나 기억 공간에서 현실로 옮겨진 방식은 설명되지 않았다. 펜던트가 남아 있으므로 잔향의 영구 소멸이나 재발 불가를 확정하지 않는다.\n\n## 관련 기록\n- [[catalog:siyu-family-pendant|가족 사진 펜던트]]\n- [[catalog:lullaby-record|자장가 레코드]]\n- [[personnel:TIGER298|시유]]\n- [[personnel:SIYU_MOTHER|시유의 어머니]]\n- [[personnel:SIYU_FATHER|시유의 아버지]]\n- [[wiki:panthera-corporation|판테라 코퍼레이션]]\n- [[report:NOSB-MINI-LULLABY-PART1|빈 창고의 자장가 1부]]\n- [[report:NOSB-MINI-LULLABY-PART2|빈 창고의 자장가 2부]]\n",
+      "tags": [
+        "NOSB-MINI-LULLABY-PART1",
+        "NOSB-MINI-LULLABY-PART2",
+        "빈 창고의 자장가",
+        "시유",
+        "판테라",
+        "잔향"
+      ],
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Keane",
+      "imageUrl": "",
+      "isPublic": false,
+      "createdAt": "2026-09-10T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "code": "LULLABY_RECORD",
+      "slug": "lullaby-record",
+      "name": "자장가 레코드",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "기억 진입의 계기가 된 자장가 녹음",
+      "description": "판테라 구 창고의 개인 회수품 방에서 발견된 자장가 레코드. 재생 뒤 시유와 현장팀이 가족의 기억을 관찰했다.",
+      "previewImage": "",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-MINI-LULLABY-PART1",
+        "NOSB-MINI-LULLABY-PART2",
+        "빈 창고의 자장가",
+        "시유",
+        "자장가 레코드"
+      ],
+      "source": "session-log",
+      "createdAt": "2026-09-10T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z",
+      "lore": {
+        "background": "녹음된 자장가의 목소리는 기억 속 시유 어머니의 목소리와 같았다. 재생 직후 시유가 의식을 잃고 일행이 기억 공간으로 넘어갔다. 레코드 자체가 줄루인지, 잔향의 본체인 펜던트와 어떤 관계로 작동했는지는 확인되지 않았다.",
+        "acquisition": "개인 회수품 중 미분류 물건을 둔 방에서 마리아가 재생기에 올려 사용했다. 현장팀은 같은 방으로 귀환했으나 레코드와 재생기의 최종 반출·보관은 확인되지 않았다.",
+        "notes": "일반 판매 대상이 아닌 사건 물증 기록. 현실 회수와 보관 여부는 미상이다. 관련 작전: NOSB-MINI-LULLABY-PART1, NOSB-MINI-LULLABY-PART2"
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "code": "SIYU_FAMILY_PENDANT",
+      "slug": "siyu-family-pendant",
+      "name": "가족 사진 펜던트",
+      "category": "SPECIAL",
+      "price": 0,
+      "effect": "어머니의 감정이 잔향으로 나타났던 가족 사진 물품",
+      "description": "시유 부모의 사진을 담은 펜던트. 잔향의 본체로 확인된 뒤 현실에서 시유에게 전달됐다.",
+      "previewImage": "",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-MINI-LULLABY-PART1",
+        "NOSB-MINI-LULLABY-PART2",
+        "빈 창고의 자장가",
+        "시유",
+        "가족 사진 펜던트"
+      ],
+      "source": "session-log",
+      "createdAt": "2026-09-10T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z",
+      "lore": {
+        "background": "처음 관측한 부부 사진에는 잡음이 남아 있었다. 마리아는 잔향이 어머니의 영혼이 아니라 감정이 물건에 깃든 잔상임을 알아내고 펜던트를 약점으로 지목했다. 줄이 끊어진 뒤 아젠트가 회수해 마리아에게 전달하자 잔향이 해소됐다.",
+        "acquisition": "기억 공간에서 마리아가 몸속에 보관했으나 현실 귀환 뒤 시유의 몸에서 떨어졌다. 시유가 직접 주워 들었고 아젠트와 키아나는 시유의 소유라고 확인했다. 최종 확인 수량은 1개다.",
+        "notes": "시유의 개인 소지품으로 확인됐으나 부모의 사망은 확정되지 않았다. 기억에서 현실로 이동한 원리와 잔향 재발 가능성은 미상이다. 관련 작전: NOSB-MINI-LULLABY-PART2"
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "MARIA",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART1",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "role": "기억 진입과 연구시설 조사",
+          "summary": "자장가 레코드를 재생한 뒤 연구시설의 기억을 관찰하고 태아 분리 계획의 위험을 파악했다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "AEGIS",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART1",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "role": "시유 상태 확인과 기억 조사",
+          "summary": "레코드 재생 뒤 쓰러진 시유의 상태를 확인했고, 연구시설과 부부의 기억을 일행과 관찰했다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "네베드",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART1",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "role": "창고 개방과 기억 조사",
+          "summary": "이동식과 함께 창고 셔터를 열고 보존 육포를 발견했으며, 부부의 연구시설 기억을 관찰했다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "LEE DONGSIK",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART1",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "role": "창고 정리와 기억 속 기술 조사",
+          "summary": "창고를 열고 탄약·총기 부품을 중앙에 분류했으며, 시유 응급처치를 준비하다 기억 공간에 진입해 장비와 자료를 조사했다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "TIGER298",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART1",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "role": "자장가 노출과 가족 기억의 대상",
+          "summary": "자장가 재생 뒤 의식을 잃었다. 일행이 관찰한 연구원과 기술직 남성은 아이를 지키기 위해 도주하고 시유라는 이름을 붙였다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "SIYU_MOTHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART1",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "role": "임신 검사·분리 계획 확인과 도주",
+          "summary": "태아 검사와 출산 후 분리 계획을 확인하고 남편과 함께 연구시설에서 도주했다. 아이의 이름을 시유로 정했다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "SIYU_FATHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART1",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART1",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "role": "가족 동반 도주와 작명",
+          "summary": "아내와 아이가 위험하다는 사실을 알자 관계를 끊는 대신 함께 도망치자고 했고, 시유라는 이름을 제안했다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "MARIA",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART2",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "role": "잔향 본체·약점 식별과 펜던트 보관",
+          "summary": "잔향이 어머니의 영혼이 아닌 물건에 깃든 감정임을 파악하고 펜던트를 약점으로 알렸다. 아젠트가 전달한 펜던트를 보관해 시유 해방에 기여했다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "AEGIS",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART2",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "role": "시유 추적·펜던트 회수·정서적 지지",
+          "summary": "시유가 TV 안으로 끌려가자 따라 들어갔다. 끊어진 펜던트를 회수해 마리아에게 전달하고 현실 귀환 뒤 시유가 직접 가족 사진을 받아들이도록 기다렸다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "네베드",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART2",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "role": "기억검열 대응과 시유 구조",
+          "summary": "기억검열자와 잔향에 맞섰고 펜던트를 겨냥한 합동 공격에 참여했다. 귀환 후 가족 사진 펜던트가 시유의 것임을 확인해 주었다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "LEE DONGSIK",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART2",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "role": "잔향 교전과 동료 회수",
+          "summary": "시유를 회수하겠다고 잔향에 접근하고 펜던트 공격에 참여했다. 현실 귀환 후 쓰러진 늑구를 업었다. 기억 속 방패 파손의 현실 지속 여부는 확인되지 않았다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "TIGER298",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART2",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "role": "부모의 사랑 확인과 가족 사진 수령",
+          "summary": "부모가 보호 계약으로 자신을 판테라에 맡겼고 약속이 지켜지지 않았던 과거를 알게 됐다. 잔향에서 풀려나 현실로 돌아온 뒤 가족 사진 펜던트를 직접 받아 들었다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "SIYU_MOTHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART2",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "role": "시유 보호 인계와 감정 잔상의 기원",
+          "summary": "판테라에 시유를 맡기며 생존·이름·아이로서의 대우와 사랑을 부탁했다. 펜던트에 남은 감정이 잔향으로 나타났으며, 실제 본인의 생사는 미확정이다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-session-link",
+    "filter": {
+      "codename": "SIYU_FATHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.appearsInEvents": "NOSB-MINI-LULLABY-PART2",
+        "lore.loreTags": {
+          "$each": [
+            "NOSB-MINI-LULLABY-PART2",
+            "빈 창고의 자장가",
+            "판테라",
+            "시유의 가족"
+          ]
+        },
+        "lore.sessionAppearances": {
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "role": "판테라 피신 제안과 추적 지연",
+          "summary": "연구시설과 직접 연결된 흔적이 없는 판테라를 피신처로 제안했다. 아내를 트럭에 태우고 추적자를 지연하기 위해 남았으며, 이후 생사는 미확정이다.",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "SIYU_MOTHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "TIGER298",
+          "targetName": "시유",
+          "label": "친어머니",
+          "summary": "판테라에 시유를 맡기며 이름으로 부르고 아이로 대하며 보호해 달라고 부탁했다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "SIYU_FATHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "TIGER298",
+          "targetName": "시유",
+          "label": "친아버지",
+          "summary": "추적자가 가까워지자 가족이 피신할 시간을 벌기 위해 남았다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "TIGER298",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "SIYU_MOTHER",
+          "targetName": "시유의 어머니",
+          "label": "친딸",
+          "summary": "어머니가 자신을 버린 것이 아니라 지키려 했다는 사실과 펜던트에 남은 사랑을 알게 됐다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "TIGER298",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "SIYU_FATHER",
+          "targetName": "시유의 아버지",
+          "label": "친딸",
+          "summary": "아버지가 가족과 함께 도주하고 추적을 지연하기 위해 남았던 기억을 확인했다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "SIYU_MOTHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "SIYU_FATHER",
+          "targetName": "시유의 아버지",
+          "label": "배우자",
+          "summary": "같은 연구시설에서 일하던 부부로, 시유를 지키기 위해 함께 도주했다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART1",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "SIYU_FATHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "SIYU_MOTHER",
+          "targetName": "시유의 어머니",
+          "label": "배우자",
+          "summary": "아내가 위험해질 수 있다고 헤어짐을 제안했으나 함께 도주하기로 선택했다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART1",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "MARIA",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "TIGER298",
+          "targetName": "시유",
+          "label": "보호와 사랑의 설명",
+          "summary": "부모의 행동이 사랑임을 설명하고 이전에 사준 은신망토를 다시 묶어 주었다. 잔향의 약점을 찾아 시유 해방에 기여했다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "AEGIS",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "TIGER298",
+          "targetName": "시유",
+          "label": "구조와 정서적 지지",
+          "summary": "시유가 끌려간 TV 안으로 따라 들어가 펜던트를 회수·전달했다. 귀환 뒤 시유가 스스로 가족 사진을 받을 수 있도록 기다렸다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "네베드",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "TIGER298",
+          "targetName": "시유",
+          "label": "구조와 소유 확인",
+          "summary": "시유를 따라 잔향 공간으로 들어갔고 펜던트 공격에 참여했다. 현실에서는 가족 사진을 시유의 것이라고 확인해 주었다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "LEE DONGSIK",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "TIGER298",
+          "targetName": "시유",
+          "label": "구조 임무 수행",
+          "summary": "시유를 회수하겠다고 잔향에 접근했고 펜던트를 겨냥한 공격에 참여했다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "TIGER298",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "MARIA",
+          "targetName": "마리아",
+          "label": "사랑을 설명해 준 동료",
+          "summary": "부모의 선택과 동료의 애정을 설명받았고 마리아의 약점 분석으로 잔향에서 풀려났다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-relation",
+    "filter": {
+      "codename": "TIGER298",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.relations": {
+          "targetCodename": "AEGIS",
+          "targetName": "발레리아 아젠트",
+          "label": "구조와 위로를 받은 동료",
+          "summary": "아젠트의 추적·펜던트 회수·인계로 구조됐으며 귀환 뒤 손을 잡고 위로받았다.",
+          "sourceEvent": "NOSB-MINI-LULLABY-PART2",
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-background-reconciliation",
+    "filter": {
+      "codename": "TIGER298",
+      "lore.background": "갓난쟁이 시절 사설 군부대 Panthera, 통칭 표범부대에 맡겨졌다고 해야하나 정확히는 버려져서 군부대에서 자라왔다. 부모도 가족도 그 아이에게는 존재하지 않는다. 그러다 적당히 나이가 차서 10댓살도 안되서는 파견 전쟁이나 임무에 소년병으로서 직접 참여하여 여러 전투나 임무를 수행해왔다. 주로 파견 된 임무는 작은 체구와 염동력을 이용한 암살 임무이다. 본격적으로 투입 된 기간은 짧지만 용병으로서 뛰어난 성과를 보여서인지 아직 어린 나이임에도 현장 요원에 채용 되게 된다.\n\n그 아이는 검은 머리 짐승, 당연히 받아야할 사랑조차 받지 못한채 자란 짐승은 당연히 굶주려 언제나 주린 배를 채우고자하겠지. 아직 한 없이 어리다 하여도 본질은 호랑이 새끼, 엄연한 포식자일테니 불행 중 다행은 다 자라지 않은 점일 것이다.",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$set": {
+        "lore.background": "갓난아이 시절 사설 군부대 Panthera, 통칭 표범부대에 맡겨져 군부대에서 자라왔다. 시유는 부모와 가족의 사랑을 알지 못한 채 자신이 버려졌다고 이해하며 살아왔다. 그러다 적당히 나이가 차서 10댓살도 안되서는 파견 전쟁이나 임무에 소년병으로서 직접 참여하여 여러 전투나 임무를 수행해왔다. 주로 파견 된 임무는 작은 체구와 염동력을 이용한 암살 임무이다. 본격적으로 투입 된 기간은 짧지만 용병으로서 뛰어난 성과를 보여서인지 아직 어린 나이임에도 현장 요원에 채용 되게 된다.\n\n당시 기록은 시유를 다음과 같이 묘사했다.\n그 아이는 검은 머리 짐승, 당연히 받아야할 사랑조차 받지 못한채 자란 짐승은 당연히 굶주려 언제나 주린 배를 채우고자하겠지. 아직 한 없이 어리다 하여도 본질은 호랑이 새끼, 엄연한 포식자일테니 불행 중 다행은 다 자라지 않은 점일 것이다.\n\n빈 창고의 자장가 사건에서 부모의 과거가 드러났다. 연구원인 어머니와 기술직 아버지는 태아의 특이 인자와 출산 후 분리 계획을 알게 된 뒤 아이를 지키기 위해 함께 도주했고 시유라는 이름을 붙였다. 부모는 판테라에 보호를 부탁했으나 조직은 이름으로 부르고 아이로 대하며 사랑해 달라는 약속을 지키지 않았다. 시유가 부모에게 버려졌다는 이해는 이 기억으로 달라졌다.\n\n현장팀의 도움으로 잔향에서 풀려나 현실에 돌아온 시유는 부모의 사진 펜던트를 직접 받았다. 사랑받은 적 없다고 여겼던 소녀는 자신을 지키려던 부모의 마음을 알게 됐지만, 두 사람의 현재 생사는 확인되지 않았다."
+      }
+    },
+    "postcondition": {
+      "codename": "TIGER298",
+      "lore.background": "갓난아이 시절 사설 군부대 Panthera, 통칭 표범부대에 맡겨져 군부대에서 자라왔다. 시유는 부모와 가족의 사랑을 알지 못한 채 자신이 버려졌다고 이해하며 살아왔다. 그러다 적당히 나이가 차서 10댓살도 안되서는 파견 전쟁이나 임무에 소년병으로서 직접 참여하여 여러 전투나 임무를 수행해왔다. 주로 파견 된 임무는 작은 체구와 염동력을 이용한 암살 임무이다. 본격적으로 투입 된 기간은 짧지만 용병으로서 뛰어난 성과를 보여서인지 아직 어린 나이임에도 현장 요원에 채용 되게 된다.\n\n당시 기록은 시유를 다음과 같이 묘사했다.\n그 아이는 검은 머리 짐승, 당연히 받아야할 사랑조차 받지 못한채 자란 짐승은 당연히 굶주려 언제나 주린 배를 채우고자하겠지. 아직 한 없이 어리다 하여도 본질은 호랑이 새끼, 엄연한 포식자일테니 불행 중 다행은 다 자라지 않은 점일 것이다.\n\n빈 창고의 자장가 사건에서 부모의 과거가 드러났다. 연구원인 어머니와 기술직 아버지는 태아의 특이 인자와 출산 후 분리 계획을 알게 된 뒤 아이를 지키기 위해 함께 도주했고 시유라는 이름을 붙였다. 부모는 판테라에 보호를 부탁했으나 조직은 이름으로 부르고 아이로 대하며 사랑해 달라는 약속을 지키지 않았다. 시유가 부모에게 버려졌다는 이해는 이 기억으로 달라졌다.\n\n현장팀의 도움으로 잔향에서 풀려나 현실에 돌아온 시유는 부모의 사진 펜던트를 직접 받았다. 사랑받은 적 없다고 여겼던 소녀는 자신을 지키려던 부모의 마음을 알게 됐지만, 두 사람의 현재 생사는 확인되지 않았다.",
+      "type": "AGENT"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "MARIA",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART2:MARIA:protective-understanding",
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "trait": "서툰 애정 표현과 현상 분석",
+          "summary": "시유에게 부모와 동료의 사랑을 설명하면서 잔향의 본질·약점을 분석해 구출을 이끌었다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "우리가 당신을 사랑하고 있잖아요?"
+            },
+            {
+              "kind": "action",
+              "text": "잔향이 물건에 남은 감정임을 파악하고 펜던트가 약점이라고 알렸다."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "AEGIS",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART2:AEGIS:patient-protection",
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "trait": "보호하되 당사자의 선택을 기다림",
+          "summary": "위험한 공간까지 시유를 따라가 구조했고, 귀환 후에는 시유가 스스로 펜던트를 줍도록 기다렸다.",
+          "evidence": [
+            {
+              "kind": "action",
+              "text": "시유가 끌려간 TV 안으로 망설임 없이 뛰어들었다."
+            },
+            {
+              "kind": "action",
+              "text": "펜던트를 대신 줍지 않고 시유가 직접 주울 수 있도록 기다렸다."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "네베드",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART2:NEVED:direct-reassurance",
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "trait": "짧고 직접적인 위로",
+          "summary": "시유 구조에 참여하고 현실에서 가족 사진을 시유의 것이라 확인하며 소중히 하라고 말했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "네 것이야."
+            },
+            {
+              "kind": "dialogue",
+              "text": "소중히 해."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "LEE DONGSIK",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART2:LEE_DONGSIK:recovery-duty",
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "trait": "임무 중심의 동료 회수",
+          "summary": "시유를 회수 목표로 삼아 잔향에 접근했고 현실 귀환 후 쓰러진 늑구를 운반했다.",
+          "evidence": [
+            {
+              "kind": "action",
+              "text": "시유를 회수하겠다고 밝히고 잔향에 접근했다."
+            },
+            {
+              "kind": "action",
+              "text": "현실로 돌아온 뒤 쓰러진 늑구를 업었다."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "TIGER298",
+      "type": "AGENT"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART2:TIGER298:receiving-family-love",
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "trait": "부모의 사랑을 처음 받아들임",
+          "summary": "부모가 자신을 위해 위험을 감수한 이유를 어려워했으나, 가족 사진을 받아 들고 사랑받았다는 사실 앞에서 눈물을 흘렸다.",
+          "evidence": [
+            {
+              "kind": "description",
+              "text": "부모가 자신을 위해 희생한 이유를 이해하기 어려워했다."
+            },
+            {
+              "kind": "action",
+              "text": "현실에서 펜던트를 직접 집어 들고 부모 사진을 바라보며 눈물을 흘렸다."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "SIYU_MOTHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART2:SIYU_MOTHER:protect-child",
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "trait": "능력보다 아이의 생존과 사랑을 바람",
+          "summary": "시유를 맡기면서 특별하지 않아도 버리지 말고 아이로 대하며 사랑해 달라고 부탁했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "특별하지 않아도 버리지 말아주세요...."
+            },
+            {
+              "kind": "dialogue",
+              "text": "사랑해주세요...."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "SIYU_FATHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART2:SIYU_FATHER:stay-for-family",
+          "sessionId": "NOSB-MINI-LULLABY-PART2",
+          "trait": "가족을 위해 위험을 함께 감수함",
+          "summary": "판테라를 피신처로 제안했고 추적자가 가까워지자 시간을 벌기 위해 남았다.",
+          "evidence": [
+            {
+              "kind": "action",
+              "text": "연구시설과 직접 연결된 흔적이 없는 판테라를 피신처로 제안했다."
+            },
+            {
+              "kind": "action",
+              "text": "아내를 판테라 트럭에 태우고 추적을 지연하기 위해 남았다."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 2부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "SIYU_MOTHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART1:SIYU_MOTHER:fear-for-family",
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "trait": "아이와 가족에게 닥칠 위험을 두려워함",
+          "summary": "출산 후 분리 계획을 발견하고 아이뿐 아니라 남편에게도 위험이 미칠 것을 걱정했다.",
+          "evidence": [
+            {
+              "kind": "action",
+              "text": "출산 후 분리 검토 문서를 본 뒤 남편에게 헤어지자고 제안했다."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "dossier-personality-observation",
+    "filter": {
+      "codename": "SIYU_FATHER",
+      "type": "NPC"
+    },
+    "upsert": false,
+    "update": {
+      "$addToSet": {
+        "lore.personalityObservations": {
+          "id": "NOSB-MINI-LULLABY-PART1:SIYU_FATHER:choose-together",
+          "sessionId": "NOSB-MINI-LULLABY-PART1",
+          "trait": "위험 앞에서 가족과 함께하기를 선택함",
+          "summary": "관계를 끊자는 제안을 거부하고 아이를 지키기 위해 함께 도망치는 길을 선택했다.",
+          "evidence": [
+            {
+              "kind": "dialogue",
+              "text": "그니까 같이 도망치자..."
+            }
+          ],
+          "sourceLabel": "기록통제실 보존본 「빈 창고의 자장가 1부」",
+          "confidence": "confirmed"
+        }
+      }
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki",
+    "payload": {
+      "slug": "mini07-lullaby-part1",
+      "title": "작전 보고서 MINI07: 빈 창고의 자장가 1부",
+      "category": "작전 보고서",
+      "content": "# 작전 보고서 MINI07: 빈 창고의 자장가 1부\n\n판테라 코퍼레이션이 사용하던 구 창고를 정리하던 현장팀은 개인 회수품 방에서 자장가가 녹음된 레코드를 발견했다. 재생 직후 시유가 의식을 잃었고 일행은 한 연구원과 기술직 남자의 기억을 따라가게 됐다. 태아에게 특이 인자가 있다는 검사와 출산 후 분리 계획을 확인한 두 사람은 아이를 지키기 위해 도망치기로 했으며, 태어날 아이에게 시유라는 이름을 붙였다. 이 기록은 기억 탐색의 전반부로, 현실 귀환은 다음 기록에서 이어진다.\n\n## 시각 자료\n\n![노부스 오르도에 인계된 판테라 구 창고](/assets/session-reports/lullaby-part1/warehouse-exterior.webp \"노부스 오르도에 인계된 판테라 구 창고\")\n\n![보존식과 장비가 남은 창고 내부](/assets/session-reports/lullaby-part1/warehouse-interior.webp \"보존식과 장비가 남은 창고 내부\")\n\n![개인 회수품 구역으로 이어지는 복도](/assets/session-reports/lullaby-part1/personal-effects-corridor.webp \"개인 회수품 구역으로 이어지는 복도\")\n\n![개인 회수품 방에 남은 자장가 레코드](/assets/session-reports/lullaby-part1/lullaby-record.webp \"개인 회수품 방에 남은 자장가 레코드\")\n\n![마리아가 레코드를 재생하는 장면](/assets/session-reports/lullaby-part1/record-playback.webp \"마리아가 레코드를 재생하는 장면\")\n\n![레코드 위로 이어진 기억 공간](/assets/session-reports/lullaby-part1/record-memory-space.webp \"레코드 위로 이어진 기억 공간\")\n\n![여성과 기술직 남자가 일하던 연구시설의 기억](/assets/session-reports/lullaby-part1/research-facility-memory.webp \"여성과 기술직 남자가 일하던 연구시설의 기억\")\n\n![임신 사실과 태아 검사 결과를 확인한 의무실](/assets/session-reports/lullaby-part1/pregnancy-infirmary.webp \"임신 사실과 태아 검사 결과를 확인한 의무실\")\n\n![아이를 지키기 위해 함께 도망가기로 한 부부](/assets/session-reports/lullaby-part1/parents-escape-choice.webp \"아이를 지키기 위해 함께 도망가기로 한 부부\")\n\n![태어날 아이에게 시유라는 이름을 붙인 기억](/assets/session-reports/lullaby-part1/siyu-naming-room.webp \"태어날 아이에게 시유라는 이름을 붙인 기억\")\n\n## 진행 정보\n\n보고 순번: MINI07\n진행일: 2026년 8월 22일\n작전지: 국가·도시 미상 / 판테라 구 창고 및 내부 기억 공간\n기억에서 확인한 날짜: 2010년 3월 25일\n세션 ID: NOSB-MINI-LULLABY-PART1\n\n## 창고 정리와 자장가\n구 창고는 줄루 사고로 오래전에 폐쇄된 뒤 노부스 오르도에 인계됐다. 보존 문서에 적힌 폐쇄 원인은 전기 설비 폭발과 선반 붕괴였다. 현장팀의 임무는 남은 장비를 파악하고 쓸 수 있는 물품과 문서를 정리하며 위험 요소를 보고하는 것이었다. 국가와 도시는 확인되지 않았다.\n\n마리아, 발레리아 아젠트, 키아나 오 캘러핸, 이동식, 늑구, 시유가 화물 차량으로 도착했다. 이동식과 키아나가 셔터를 열고, 마리아는 위험한 무장과 회수품을 구분하도록 지시했다. 늑구는 건빵 한 봉을 찾았고 키아나는 보존 육포 다섯 봉을 건빵주머니에 넣었다. 이동식은 탄약과 총기 부품을 창고 중앙에 모았다. 이 물품들의 최종 차량 적재와 귀환 후 보관은 확인되지 않았다.\n\n창고 깊은 곳에서 들리는 자장가는 사람이 현장에서 부르는 소리와 달랐다. 일행은 복도를 지나 개인 회수품 중 미분류 물건을 둔 방에서 레코드와 재생기를 찾았다. 마리아가 재생을 시작하자 시유가 이상 반응을 보였고, 진동과 함께 의식을 잃었다. 아젠트가 시유의 상태를 확인하고 이동식이 응급처치를 준비하던 사이, 다른 다섯 명도 자장가가 이어지는 공간으로 넘어갔다.\n\n## 물건의 잔상이 남은 연구시설\n일행은 흰 가운을 입은 여자와 기술직 남자가 있는 연구시설의 기억을 보았다. 사람을 붙잡으려 하면 몸이 통과됐고, 사물은 본체 대신 잔상만 손에 남았다. 관찰자는 여자에게서 일정 거리 이상 멀어질 수 없었다. 이는 현재 연구시설에 직접 잠입한 사건과 구별되는 기억 관찰이었다.\n\n여자는 연구원으로 일하며 신경계 특이반응 자료를 다뤘다. 자료의 이관처는 특수현상 연구부서였고, 부서 문서에는 생물학과 보안에 관한 내용이 담겨 있었다. 일행은 컴퓨터, 카드키와 리더기, 커피캔 등의 잔상을 조사했다. 연구시설의 정식 명칭과 상위 조직은 드러나지 않았다.\n\n## 임신과 출산 후 분리 계획\n의무담당자는 여자가 임신했다고 알렸다. 태아 검사에는 줄루 인자 보유 가능성과 적합 가능성이 모두 높다는 기록이 있었다. 마리아는 이를 태아가 우생학 실험의 대상이 될 수 있다는 뜻으로 해석했다. 의무실의 달력은 2010년 3월 25일을 가리켰다. 이것은 기억 안에서 관측한 날짜이며 시유의 생년월일을 확정하는 기록은 아니다.\n\n여자의 목소리는 창고 레코드에 남아 있던 자장가의 목소리와 같았다. 여자는 태아의 특이 반응을 확인하고 출산 후 분리를 검토하며 모체를 유지해야 한다는 문서를 발견했다. 자료가 우연히 섞였을 가능성도 생각했지만, 아이를 빼앗길 위험을 외면할 수는 없었다.\n\n## 함께 도망칠 가족\n여자는 남자에게 헤어지자고 제안했으나, 남자는 관계를 끊는 대신 함께 도망치자고 했다. 두 사람은 아이를 지키기 위해 연구시설을 떠나는 길을 택했다. 이어지는 흐릿한 기억에서 두 사람은 태어날 아이의 이름을 시유로 정했다.\n\n시유가 판테라에서 자랐다는 기존 기록 앞에 부모의 선택이 있었다는 단서가 드러났다. 다만 이 시점에 일행은 아직 기억 안에 남아 있었고, 부모의 이후 행방과 판테라에 아이를 맡긴 경위는 다음 기록에서 확인된다.\n\n## 관련 기록\n- [[report:NOSB-MINI-LULLABY-PART1|작전 보고서 MINI07: 빈 창고의 자장가 1부]]\n- [[report:NOSB-MINI-LULLABY-PART2|작전 보고서 MINI07.5: 빈 창고의 자장가 2부]]\n- [[wiki:panthera-corporation|판테라 코퍼레이션]]\n- [[wiki:empty-warehouse-resonance|빈 창고의 잔향]]\n- [[wiki:zulu|줄루]]\n- [[wiki:novus-ordo|노부스 오르도]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:AEGIS|발레리아 아젠트]]\n- [[personnel:네베드|키아나 오 캘러핸]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:TIGER298|시유 / 타이거]]\n- [[personnel:SIYU_MOTHER|시유의 어머니]]\n- [[personnel:SIYU_FATHER|시유의 아버지]]\n- [[catalog:lullaby-record|자장가 레코드]]\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「빈 창고의 자장가 1부」.\n",
+      "tags": [
+        "NOSB-MINI-LULLABY-PART1",
+        "MINI07",
+        "빈 창고의 자장가",
+        "시유",
+        "판테라",
+        "잔향"
+      ],
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Keane",
+      "imageUrl": "/assets/session-reports/lullaby-part1/warehouse-exterior.webp",
+      "isPublic": false,
+      "createdAt": "2026-08-22T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report",
+    "payload": {
+      "sessionId": "NOSB-MINI-LULLABY-PART1",
+      "sessionTitle": "작전 보고서 MINI07: 빈 창고의 자장가 1부",
+      "reportNumber": "MINI07",
+      "summary": "# 작전 보고서 MINI07: 빈 창고의 자장가 1부\n\n판테라 코퍼레이션이 사용하던 구 창고를 정리하던 현장팀은 개인 회수품 방에서 자장가가 녹음된 레코드를 발견했다. 재생 직후 시유가 의식을 잃었고 일행은 한 연구원과 기술직 남자의 기억을 따라가게 됐다. 태아에게 특이 인자가 있다는 검사와 출산 후 분리 계획을 확인한 두 사람은 아이를 지키기 위해 도망치기로 했으며, 태어날 아이에게 시유라는 이름을 붙였다. 이 기록은 기억 탐색의 전반부로, 현실 귀환은 다음 기록에서 이어진다.\n\n## 시각 자료\n\n![노부스 오르도에 인계된 판테라 구 창고](/assets/session-reports/lullaby-part1/warehouse-exterior.webp \"노부스 오르도에 인계된 판테라 구 창고\")\n\n![보존식과 장비가 남은 창고 내부](/assets/session-reports/lullaby-part1/warehouse-interior.webp \"보존식과 장비가 남은 창고 내부\")\n\n![개인 회수품 구역으로 이어지는 복도](/assets/session-reports/lullaby-part1/personal-effects-corridor.webp \"개인 회수품 구역으로 이어지는 복도\")\n\n![개인 회수품 방에 남은 자장가 레코드](/assets/session-reports/lullaby-part1/lullaby-record.webp \"개인 회수품 방에 남은 자장가 레코드\")\n\n![마리아가 레코드를 재생하는 장면](/assets/session-reports/lullaby-part1/record-playback.webp \"마리아가 레코드를 재생하는 장면\")\n\n![레코드 위로 이어진 기억 공간](/assets/session-reports/lullaby-part1/record-memory-space.webp \"레코드 위로 이어진 기억 공간\")\n\n![여성과 기술직 남자가 일하던 연구시설의 기억](/assets/session-reports/lullaby-part1/research-facility-memory.webp \"여성과 기술직 남자가 일하던 연구시설의 기억\")\n\n![임신 사실과 태아 검사 결과를 확인한 의무실](/assets/session-reports/lullaby-part1/pregnancy-infirmary.webp \"임신 사실과 태아 검사 결과를 확인한 의무실\")\n\n![아이를 지키기 위해 함께 도망가기로 한 부부](/assets/session-reports/lullaby-part1/parents-escape-choice.webp \"아이를 지키기 위해 함께 도망가기로 한 부부\")\n\n![태어날 아이에게 시유라는 이름을 붙인 기억](/assets/session-reports/lullaby-part1/siyu-naming-room.webp \"태어날 아이에게 시유라는 이름을 붙인 기억\")\n\n## 진행 정보\n\n보고 순번: MINI07\n진행일: 2026년 8월 22일\n작전지: 국가·도시 미상 / 판테라 구 창고 및 내부 기억 공간\n기억에서 확인한 날짜: 2010년 3월 25일\n세션 ID: NOSB-MINI-LULLABY-PART1\n\n## 창고 정리와 자장가\n구 창고는 줄루 사고로 오래전에 폐쇄된 뒤 노부스 오르도에 인계됐다. 보존 문서에 적힌 폐쇄 원인은 전기 설비 폭발과 선반 붕괴였다. 현장팀의 임무는 남은 장비를 파악하고 쓸 수 있는 물품과 문서를 정리하며 위험 요소를 보고하는 것이었다. 국가와 도시는 확인되지 않았다.\n\n마리아, 발레리아 아젠트, 키아나 오 캘러핸, 이동식, 늑구, 시유가 화물 차량으로 도착했다. 이동식과 키아나가 셔터를 열고, 마리아는 위험한 무장과 회수품을 구분하도록 지시했다. 늑구는 건빵 한 봉을 찾았고 키아나는 보존 육포 다섯 봉을 건빵주머니에 넣었다. 이동식은 탄약과 총기 부품을 창고 중앙에 모았다. 이 물품들의 최종 차량 적재와 귀환 후 보관은 확인되지 않았다.\n\n창고 깊은 곳에서 들리는 자장가는 사람이 현장에서 부르는 소리와 달랐다. 일행은 복도를 지나 개인 회수품 중 미분류 물건을 둔 방에서 레코드와 재생기를 찾았다. 마리아가 재생을 시작하자 시유가 이상 반응을 보였고, 진동과 함께 의식을 잃었다. 아젠트가 시유의 상태를 확인하고 이동식이 응급처치를 준비하던 사이, 다른 다섯 명도 자장가가 이어지는 공간으로 넘어갔다.\n\n## 물건의 잔상이 남은 연구시설\n일행은 흰 가운을 입은 여자와 기술직 남자가 있는 연구시설의 기억을 보았다. 사람을 붙잡으려 하면 몸이 통과됐고, 사물은 본체 대신 잔상만 손에 남았다. 관찰자는 여자에게서 일정 거리 이상 멀어질 수 없었다. 이는 현재 연구시설에 직접 잠입한 사건과 구별되는 기억 관찰이었다.\n\n여자는 연구원으로 일하며 신경계 특이반응 자료를 다뤘다. 자료의 이관처는 특수현상 연구부서였고, 부서 문서에는 생물학과 보안에 관한 내용이 담겨 있었다. 일행은 컴퓨터, 카드키와 리더기, 커피캔 등의 잔상을 조사했다. 연구시설의 정식 명칭과 상위 조직은 드러나지 않았다.\n\n## 임신과 출산 후 분리 계획\n의무담당자는 여자가 임신했다고 알렸다. 태아 검사에는 줄루 인자 보유 가능성과 적합 가능성이 모두 높다는 기록이 있었다. 마리아는 이를 태아가 우생학 실험의 대상이 될 수 있다는 뜻으로 해석했다. 의무실의 달력은 2010년 3월 25일을 가리켰다. 이것은 기억 안에서 관측한 날짜이며 시유의 생년월일을 확정하는 기록은 아니다.\n\n여자의 목소리는 창고 레코드에 남아 있던 자장가의 목소리와 같았다. 여자는 태아의 특이 반응을 확인하고 출산 후 분리를 검토하며 모체를 유지해야 한다는 문서를 발견했다. 자료가 우연히 섞였을 가능성도 생각했지만, 아이를 빼앗길 위험을 외면할 수는 없었다.\n\n## 함께 도망칠 가족\n여자는 남자에게 헤어지자고 제안했으나, 남자는 관계를 끊는 대신 함께 도망치자고 했다. 두 사람은 아이를 지키기 위해 연구시설을 떠나는 길을 택했다. 이어지는 흐릿한 기억에서 두 사람은 태어날 아이의 이름을 시유로 정했다.\n\n시유가 판테라에서 자랐다는 기존 기록 앞에 부모의 선택이 있었다는 단서가 드러났다. 다만 이 시점에 일행은 아직 기억 안에 남아 있었고, 부모의 이후 행방과 판테라에 아이를 맡긴 경위는 다음 기록에서 확인된다.\n\n## 관련 기록\n- [[report:NOSB-MINI-LULLABY-PART2|작전 보고서 MINI07.5: 빈 창고의 자장가 2부]]\n- [[wiki:panthera-corporation|판테라 코퍼레이션]]\n- [[wiki:empty-warehouse-resonance|빈 창고의 잔향]]\n- [[wiki:zulu|줄루]]\n- [[wiki:novus-ordo|노부스 오르도]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:AEGIS|발레리아 아젠트]]\n- [[personnel:네베드|키아나 오 캘러핸]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:TIGER298|시유 / 타이거]]\n- [[personnel:SIYU_MOTHER|시유의 어머니]]\n- [[personnel:SIYU_FATHER|시유의 아버지]]\n- [[catalog:lullaby-record|자장가 레코드]]\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「빈 창고의 자장가 1부」.\n",
+      "highlights": [
+        "판테라 구 창고의 정리 임무 중 개인 회수품 방에서 자장가 레코드를 발견했다.",
+        "마리아의 레코드 재생 뒤 시유가 의식을 잃고 현장팀이 연구시설의 기억에 진입했다.",
+        "임신 검사와 출산 후 분리 검토 자료가 태아를 연구 대상으로 삼으려는 위험을 드러냈다.",
+        "의무실 달력은 2010년 3월 25일을 가리켰고, 여자의 목소리는 레코드의 자장가와 같았다.",
+        "부부는 아이를 지키기 위해 도주를 선택하고 태어날 아이의 이름을 시유로 정했다."
+      ],
+      "participants": [
+        "마리아",
+        "발레리아 아젠트",
+        "키아나 오 캘러핸",
+        "이동식",
+        "시유 / 타이거",
+        "늑구"
+      ],
+      "relatedWikiSlugs": [
+        "panthera-corporation",
+        "empty-warehouse-resonance",
+        "zulu",
+        "novus-ordo"
+      ],
+      "relatedPersonnelCodenames": [
+        "MARIA",
+        "AEGIS",
+        "네베드",
+        "LEE DONGSIK",
+        "TIGER298",
+        "SIYU_MOTHER",
+        "SIYU_FATHER"
+      ],
+      "relatedCatalogSlugs": [
+        "lullaby-record"
+      ],
+      "locationLabel": "국가·도시 미상 / 판테라 구 창고",
+      "gmId": "novus-ordo-record-control",
+      "gmName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Keane",
+      "createdAt": "2026-08-22T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z",
+      "minRole": "V"
+    }
+  },
+  {
+    "collection": "wiki_pages",
+    "type": "operation-report-wiki",
+    "payload": {
+      "slug": "mini07-lullaby-part2",
+      "title": "작전 보고서 MINI07.5: 빈 창고의 자장가 2부",
+      "category": "작전 보고서",
+      "content": "# 작전 보고서 MINI07.5: 빈 창고의 자장가 2부\n\n기억 탐색은 시유의 부모가 연구시설을 피해 도망치고 판테라에 아이의 보호를 맡긴 경위로 이어졌다. 부모는 이름과 생존, 평범한 아이로서의 대우를 부탁했지만 판테라는 약속을 지키지 않았다. 현장팀은 시유를 붙잡은 잔향이 어머니의 영혼이 아니라 펜던트에 남은 감정의 잔상임을 밝혀냈다. 펜던트를 분리한 뒤 시유와 일행은 현실로 돌아왔고, 시유는 부모의 사진이 담긴 펜던트를 받아 자신이 사랑받았다는 사실을 알게 됐다.\n\n## 시각 자료\n\n![얼굴이 흐려진 부부 사진 펜던트](/assets/session-reports/lullaby-part2/blurred-family-pendant.webp \"얼굴이 흐려진 부부 사진 펜던트\")\n\n![태아에게 자장가를 부르는 어머니](/assets/session-reports/lullaby-part2/mother-lullaby.webp \"태아에게 자장가를 부르는 어머니\")\n\n![생존과 이름을 약속한 보호 계약의 일부](/assets/session-reports/lullaby-part2/protection-contract-fragment.webp \"생존과 이름을 약속한 보호 계약의 일부\")\n\n![이름 대신 배치·전투 적성이 나타난 기억 자료의 일부](/assets/session-reports/lullaby-part2/designation-record-fragment.webp \"이름 대신 배치·전투 적성이 나타난 기억 자료의 일부\")\n\n![도주 끝에 갓 태어난 시유를 안은 어머니](/assets/session-reports/lullaby-part2/mother-and-newborn-obscured.webp \"도주 끝에 갓 태어난 시유를 안은 어머니\")\n\n![기억의 잡음이 걷힌 어머니와 갓난 시유](/assets/session-reports/lullaby-part2/mother-and-newborn-revealed.webp \"기억의 잡음이 걷힌 어머니와 갓난 시유\")\n\n![시유에게 남겨진 부모의 사진 펜던트](/assets/session-reports/lullaby-part2/family-pendant-revealed.webp \"시유에게 남겨진 부모의 사진 펜던트\")\n\n## 진행 정보\n\n보고 순번: MINI07.5\n진행일: 2026년 8월 25일 ~ 26일\n작전지: 국가·도시 미상 / 판테라 구 창고 및 내부 기억 공간\n기억에서 확인한 날짜: 2010년 3월 25일\n세션 ID: NOSB-MINI-LULLABY-PART2\n\n## 도주 중의 가족과 보호 계약\n부부의 기억이 다시 움직이기 시작했다. 사진 펜던트 속 얼굴에는 잡음이 남아 있었고, 임신한 여자가 자장가를 부르자 작은 물체가 공중에 떠올랐다. 여자는 그 반응을 태아에게서 비롯된 것으로 받아들였다. 두 사람은 위험을 함께 감수하면서도 아이와 셋이 살 미래를 생각했다.\n\n늦가을에서 초겨울로 넘어갈 무렵, 같은 녹색 차량이 반복해 나타나며 추적이 드러났다. 남자는 연구시설과 직접 연결된 흔적이 없는 용병 회사 판테라 코퍼레이션을 피신처로 제안했다. 둘 다 안전을 확신하지 못했지만 아이를 숨길 방법을 찾아야 했다. 보호 문서에는 생존 보장, 능력이 없어도 버리지 않을 것, 번호가 아닌 이름으로 부를 것이 적혀 있었다.\n\n## 이름을 지우는 기억검열\n시유라고 적힌 문구가 흔들리더니 대상, 개체, 298이라는 표기로 바뀌었다. 이는 기억 속에서 관측된 변화이며, 시유의 과거 공식 지정명이었다고 별도로 확정하지 않는다. 곧 노이즈에서 기억검열자가 튀어나와 키아나를 할퀴었고, 리피터 연구원은 필기와 시선 접촉으로 정신 피해를 일으켰다.\n\n늑구는 마비와 호흡곤란을 겪었다. 엄폐물을 설치하겠다는 선언은 마비로 인해 실행되지 않은 것으로 정리됐다. 마리아, 아젠트, 키아나와 이동식이 교전한 뒤 이상 개체들이 소탕됐고, 멈췄던 가족의 기억이 이어졌다.\n\n## 버림이 아니라 지키려던 선택\n추적자가 가까워지자 아버지는 시간을 끌기 위해 남았고 어머니를 판테라 트럭에 태웠다. 갓 태어난 시유는 검은 머리와 아버지를 닮은 보라색 눈을 지녔다. 어머니는 아버지가 돌아오지 못하리라는 두려움을 안고 자신도 아이를 지킬 시간을 벌어야 한다고 생각했다. 이후 두 사람의 실제 사망은 확인되지 않았다.\n\n어머니는 인계를 맡은 판테라 병사에게 아이의 이름이 시유라고 알렸다. 이름으로 부르고, 특별하지 않아도 버리지 말고, 평범한 아이로 대하고 사랑해 달라고 부탁했다. 병사는 받은 값만큼 보호하겠다고 답하며 아이를 데려갔다.\n\n이어진 기록은 그 약속들이 지켜지지 않았음을 보여 주었다. 시유는 첫 전장에 나간 뒤 한 병사가 알려줘서야 본명을 알았고, 판테라는 시유를 노부스 오르도에 인계했다. 아이로 대하거나 사랑해 달라는 부탁도 이루어지지 않았다. 시유는 사랑받지 못해 버려진 아이가 아니라, 부모의 보호 시도와 판테라의 계약 위반 사이에서 자라난 아이였다.\n\n## 시유에게 건넨 설명\n일행은 레코드판 위의 공간에서 시유와 재회했다. 시유는 자신을 위해 부모가 위험을 감수한 이유를 이해하기 어려워했다. 마리아와 동료들은 그 선택이 사랑에서 비롯됐다고 설명했다. 마리아는 이전에 사준 은신망토를 시유에게 다시 묶어 주며 자신들도 시유를 사랑한다고 말했다. 아젠트는 시유의 손에 손을 포개며 과거에만 사랑받은 것이 아니라고 전했다.\n\n## 잔향과 펜던트\nTV에서 나온 손이 시유를 끌고 가자 마리아, 아젠트, 키아나, 이동식과 늑구가 뒤따랐다. 아젠트는 시유가 끌려간 TV 안으로 망설이지 않고 몸을 던졌다. 안쪽에서 시유는 실에 묶여 있었고, 잔향은 시유를 놓아주지 않으려 했다. 포효와 함께 기억왜곡체 두 마리가 나타났다. 그중 한 마리가 늑구를 물고 전장을 이탈했으며, 두 개체 각각의 최종 파괴는 확인되지 않았다.\n\n일행이 잔향과 교전하는 동안 이동식의 방패는 찢어졌지만 그는 나뉜 부분을 계속 사용했다. 마리아의 미스터비스트 소다 음용 선언은 세 번이었으나 사용 기록은 두 번으로 남았다. 이 기억 속 장비 파손과 사용 수치를 귀환 후 실제 장비 상태로 단정하지 않는다.\n\n마리아는 잔향이 시유 어머니의 영혼이 아니라, 어머니의 마음과 소망과 사랑이 물건에 깃들어 만들어진 잔상임을 알아냈다. 마리아는 외우주의 지식에서 펜던트라는 단서를 얻은 뒤, 일행에게 펜던트가 잔향의 약점이라고 알렸다. 아젠트, 키아나와 이동식이 펜던트를 겨냥해 공격했고 줄이 끊어졌다.\n\n아젠트는 끊어진 펜던트를 직접 주워 마리아에게 던졌고, 마리아가 몸속에 보관하자 잔향이 잠잠해졌다. 실에 묶였던 시유가 풀려났다. 잔향은 여자의 모습으로 돌아왔고 잡음이 걷히며 어머니의 얼굴이 잠시 드러났다. 시유는 이전 환상에서 보았던 얼굴과 같다고 알아보았다. 여자는 시유에게 사랑한다고 말하고 사라졌으며, 시유는 짧게 대답했다. 이것은 잔향 현상의 해소이며 실제 어머니의 사망이나 영혼의 소멸을 확인한 장면이 아니다.\n\n## 현실 귀환과 가족 사진\n기억 공간이 무너진 뒤 여섯 명은 창고의 레코드가 있던 방으로 돌아왔다. 이동식은 쓰러진 늑구를 업었다. 늑구의 마비와 호흡곤란이 완전히 해소됐다는 별도 확인은 없었다. 아젠트는 시유의 손을 잡고 모두 돌아왔다고 알려 주었다.\n\n시유가 일어나자 몸에서 펜던트가 떨어졌다. 기억 속에서는 마리아가 삼켰던 물건이 현실에서 시유에게 나타난 경위는 알 수 없었다. 아젠트는 대신 줍지 않고 시유를 기다렸다. 시유가 직접 펜던트를 집어 들었고, 아젠트와 키아나는 이제 시유의 것이라고 확인했다. 시유는 사진을 오래 바라보다 눈물을 흘렸다.\n\n가족 사진 펜던트 한 개의 최종 소유자는 시유로 확인됐다. 레코드와 재생기의 현실 반출, 부모의 현재 생사, 연구시설의 정체와 잔향의 재발 가능성은 확인되지 않았다.\n\n## 관련 기록\n- [[report:NOSB-MINI-LULLABY-PART2|작전 보고서 MINI07.5: 빈 창고의 자장가 2부]]\n- [[report:NOSB-MINI-LULLABY-PART1|작전 보고서 MINI07: 빈 창고의 자장가 1부]]\n- [[wiki:panthera-corporation|판테라 코퍼레이션]]\n- [[wiki:empty-warehouse-resonance|빈 창고의 잔향]]\n- [[wiki:zulu|줄루]]\n- [[wiki:novus-ordo|노부스 오르도]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:AEGIS|발레리아 아젠트]]\n- [[personnel:네베드|키아나 오 캘러핸]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:TIGER298|시유 / 타이거]]\n- [[personnel:SIYU_MOTHER|시유의 어머니]]\n- [[personnel:SIYU_FATHER|시유의 아버지]]\n- [[catalog:lullaby-record|자장가 레코드]]\n- [[catalog:siyu-family-pendant|가족 사진 펜던트]]\n- [[catalog:mrbeast_soda|미스터비스트 소다]]\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「빈 창고의 자장가 2부」.\n",
+      "tags": [
+        "NOSB-MINI-LULLABY-PART2",
+        "MINI07.5",
+        "빈 창고의 자장가",
+        "시유",
+        "판테라",
+        "잔향"
+      ],
+      "authorId": "novus-ordo-record-control",
+      "authorName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Keane",
+      "imageUrl": "/assets/session-reports/lullaby-part2/blurred-family-pendant.webp",
+      "isPublic": false,
+      "createdAt": "2026-08-25T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z"
+    }
+  },
+  {
+    "collection": "session_reports",
+    "type": "operation-report",
+    "payload": {
+      "sessionId": "NOSB-MINI-LULLABY-PART2",
+      "sessionTitle": "작전 보고서 MINI07.5: 빈 창고의 자장가 2부",
+      "reportNumber": "MINI07.5",
+      "summary": "# 작전 보고서 MINI07.5: 빈 창고의 자장가 2부\n\n기억 탐색은 시유의 부모가 연구시설을 피해 도망치고 판테라에 아이의 보호를 맡긴 경위로 이어졌다. 부모는 이름과 생존, 평범한 아이로서의 대우를 부탁했지만 판테라는 약속을 지키지 않았다. 현장팀은 시유를 붙잡은 잔향이 어머니의 영혼이 아니라 펜던트에 남은 감정의 잔상임을 밝혀냈다. 펜던트를 분리한 뒤 시유와 일행은 현실로 돌아왔고, 시유는 부모의 사진이 담긴 펜던트를 받아 자신이 사랑받았다는 사실을 알게 됐다.\n\n## 시각 자료\n\n![얼굴이 흐려진 부부 사진 펜던트](/assets/session-reports/lullaby-part2/blurred-family-pendant.webp \"얼굴이 흐려진 부부 사진 펜던트\")\n\n![태아에게 자장가를 부르는 어머니](/assets/session-reports/lullaby-part2/mother-lullaby.webp \"태아에게 자장가를 부르는 어머니\")\n\n![생존과 이름을 약속한 보호 계약의 일부](/assets/session-reports/lullaby-part2/protection-contract-fragment.webp \"생존과 이름을 약속한 보호 계약의 일부\")\n\n![이름 대신 배치·전투 적성이 나타난 기억 자료의 일부](/assets/session-reports/lullaby-part2/designation-record-fragment.webp \"이름 대신 배치·전투 적성이 나타난 기억 자료의 일부\")\n\n![도주 끝에 갓 태어난 시유를 안은 어머니](/assets/session-reports/lullaby-part2/mother-and-newborn-obscured.webp \"도주 끝에 갓 태어난 시유를 안은 어머니\")\n\n![기억의 잡음이 걷힌 어머니와 갓난 시유](/assets/session-reports/lullaby-part2/mother-and-newborn-revealed.webp \"기억의 잡음이 걷힌 어머니와 갓난 시유\")\n\n![시유에게 남겨진 부모의 사진 펜던트](/assets/session-reports/lullaby-part2/family-pendant-revealed.webp \"시유에게 남겨진 부모의 사진 펜던트\")\n\n## 진행 정보\n\n보고 순번: MINI07.5\n진행일: 2026년 8월 25일 ~ 26일\n작전지: 국가·도시 미상 / 판테라 구 창고 및 내부 기억 공간\n기억에서 확인한 날짜: 2010년 3월 25일\n세션 ID: NOSB-MINI-LULLABY-PART2\n\n## 도주 중의 가족과 보호 계약\n부부의 기억이 다시 움직이기 시작했다. 사진 펜던트 속 얼굴에는 잡음이 남아 있었고, 임신한 여자가 자장가를 부르자 작은 물체가 공중에 떠올랐다. 여자는 그 반응을 태아에게서 비롯된 것으로 받아들였다. 두 사람은 위험을 함께 감수하면서도 아이와 셋이 살 미래를 생각했다.\n\n늦가을에서 초겨울로 넘어갈 무렵, 같은 녹색 차량이 반복해 나타나며 추적이 드러났다. 남자는 연구시설과 직접 연결된 흔적이 없는 용병 회사 판테라 코퍼레이션을 피신처로 제안했다. 둘 다 안전을 확신하지 못했지만 아이를 숨길 방법을 찾아야 했다. 보호 문서에는 생존 보장, 능력이 없어도 버리지 않을 것, 번호가 아닌 이름으로 부를 것이 적혀 있었다.\n\n## 이름을 지우는 기억검열\n시유라고 적힌 문구가 흔들리더니 대상, 개체, 298이라는 표기로 바뀌었다. 이는 기억 속에서 관측된 변화이며, 시유의 과거 공식 지정명이었다고 별도로 확정하지 않는다. 곧 노이즈에서 기억검열자가 튀어나와 키아나를 할퀴었고, 리피터 연구원은 필기와 시선 접촉으로 정신 피해를 일으켰다.\n\n늑구는 마비와 호흡곤란을 겪었다. 엄폐물을 설치하겠다는 선언은 마비로 인해 실행되지 않은 것으로 정리됐다. 마리아, 아젠트, 키아나와 이동식이 교전한 뒤 이상 개체들이 소탕됐고, 멈췄던 가족의 기억이 이어졌다.\n\n## 버림이 아니라 지키려던 선택\n추적자가 가까워지자 아버지는 시간을 끌기 위해 남았고 어머니를 판테라 트럭에 태웠다. 갓 태어난 시유는 검은 머리와 아버지를 닮은 보라색 눈을 지녔다. 어머니는 아버지가 돌아오지 못하리라는 두려움을 안고 자신도 아이를 지킬 시간을 벌어야 한다고 생각했다. 이후 두 사람의 실제 사망은 확인되지 않았다.\n\n어머니는 인계를 맡은 판테라 병사에게 아이의 이름이 시유라고 알렸다. 이름으로 부르고, 특별하지 않아도 버리지 말고, 평범한 아이로 대하고 사랑해 달라고 부탁했다. 병사는 받은 값만큼 보호하겠다고 답하며 아이를 데려갔다.\n\n이어진 기록은 그 약속들이 지켜지지 않았음을 보여 주었다. 시유는 첫 전장에 나간 뒤 한 병사가 알려줘서야 본명을 알았고, 판테라는 시유를 노부스 오르도에 인계했다. 아이로 대하거나 사랑해 달라는 부탁도 이루어지지 않았다. 시유는 사랑받지 못해 버려진 아이가 아니라, 부모의 보호 시도와 판테라의 계약 위반 사이에서 자라난 아이였다.\n\n## 시유에게 건넨 설명\n일행은 레코드판 위의 공간에서 시유와 재회했다. 시유는 자신을 위해 부모가 위험을 감수한 이유를 이해하기 어려워했다. 마리아와 동료들은 그 선택이 사랑에서 비롯됐다고 설명했다. 마리아는 이전에 사준 은신망토를 시유에게 다시 묶어 주며 자신들도 시유를 사랑한다고 말했다. 아젠트는 시유의 손에 손을 포개며 과거에만 사랑받은 것이 아니라고 전했다.\n\n## 잔향과 펜던트\nTV에서 나온 손이 시유를 끌고 가자 마리아, 아젠트, 키아나, 이동식과 늑구가 뒤따랐다. 아젠트는 시유가 끌려간 TV 안으로 망설이지 않고 몸을 던졌다. 안쪽에서 시유는 실에 묶여 있었고, 잔향은 시유를 놓아주지 않으려 했다. 포효와 함께 기억왜곡체 두 마리가 나타났다. 그중 한 마리가 늑구를 물고 전장을 이탈했으며, 두 개체 각각의 최종 파괴는 확인되지 않았다.\n\n일행이 잔향과 교전하는 동안 이동식의 방패는 찢어졌지만 그는 나뉜 부분을 계속 사용했다. 마리아의 미스터비스트 소다 음용 선언은 세 번이었으나 사용 기록은 두 번으로 남았다. 이 기억 속 장비 파손과 사용 수치를 귀환 후 실제 장비 상태로 단정하지 않는다.\n\n마리아는 잔향이 시유 어머니의 영혼이 아니라, 어머니의 마음과 소망과 사랑이 물건에 깃들어 만들어진 잔상임을 알아냈다. 마리아는 외우주의 지식에서 펜던트라는 단서를 얻은 뒤, 일행에게 펜던트가 잔향의 약점이라고 알렸다. 아젠트, 키아나와 이동식이 펜던트를 겨냥해 공격했고 줄이 끊어졌다.\n\n아젠트는 끊어진 펜던트를 직접 주워 마리아에게 던졌고, 마리아가 몸속에 보관하자 잔향이 잠잠해졌다. 실에 묶였던 시유가 풀려났다. 잔향은 여자의 모습으로 돌아왔고 잡음이 걷히며 어머니의 얼굴이 잠시 드러났다. 시유는 이전 환상에서 보았던 얼굴과 같다고 알아보았다. 여자는 시유에게 사랑한다고 말하고 사라졌으며, 시유는 짧게 대답했다. 이것은 잔향 현상의 해소이며 실제 어머니의 사망이나 영혼의 소멸을 확인한 장면이 아니다.\n\n## 현실 귀환과 가족 사진\n기억 공간이 무너진 뒤 여섯 명은 창고의 레코드가 있던 방으로 돌아왔다. 이동식은 쓰러진 늑구를 업었다. 늑구의 마비와 호흡곤란이 완전히 해소됐다는 별도 확인은 없었다. 아젠트는 시유의 손을 잡고 모두 돌아왔다고 알려 주었다.\n\n시유가 일어나자 몸에서 펜던트가 떨어졌다. 기억 속에서는 마리아가 삼켰던 물건이 현실에서 시유에게 나타난 경위는 알 수 없었다. 아젠트는 대신 줍지 않고 시유를 기다렸다. 시유가 직접 펜던트를 집어 들었고, 아젠트와 키아나는 이제 시유의 것이라고 확인했다. 시유는 사진을 오래 바라보다 눈물을 흘렸다.\n\n가족 사진 펜던트 한 개의 최종 소유자는 시유로 확인됐다. 레코드와 재생기의 현실 반출, 부모의 현재 생사, 연구시설의 정체와 잔향의 재발 가능성은 확인되지 않았다.\n\n## 관련 기록\n- [[report:NOSB-MINI-LULLABY-PART1|작전 보고서 MINI07: 빈 창고의 자장가 1부]]\n- [[wiki:panthera-corporation|판테라 코퍼레이션]]\n- [[wiki:empty-warehouse-resonance|빈 창고의 잔향]]\n- [[wiki:zulu|줄루]]\n- [[wiki:novus-ordo|노부스 오르도]]\n- [[personnel:MARIA|마리아]]\n- [[personnel:AEGIS|발레리아 아젠트]]\n- [[personnel:네베드|키아나 오 캘러핸]]\n- [[personnel:LEE DONGSIK|이동식]]\n- [[personnel:TIGER298|시유 / 타이거]]\n- [[personnel:SIYU_MOTHER|시유의 어머니]]\n- [[personnel:SIYU_FATHER|시유의 아버지]]\n- [[catalog:lullaby-record|자장가 레코드]]\n- [[catalog:siyu-family-pendant|가족 사진 펜던트]]\n- [[catalog:mrbeast_soda|미스터비스트 소다]]\n\n## 기록 출처\nNOVUS ORDO 사무국 기록통제실 보존본 「빈 창고의 자장가 2부」.\n",
+      "highlights": [
+        "부모는 추적을 피해 판테라에 시유의 생존과 이름, 아이로서의 보호를 부탁했다.",
+        "기억 속 시유라는 이름이 대상·개체·298로 바뀌자 기억검열자와 리피터 연구원이 출현했다.",
+        "판테라가 보호 약속을 어기고 시유를 노부스 오르도에 인계한 과거가 확인됐다.",
+        "시유가 잔향에 끌려가자 아젠트와 동료들은 TV 안으로 들어가 구조를 시도했다.",
+        "마리아가 잔향의 본질과 펜던트의 약점을 밝혔고, 아젠트는 분리된 펜던트를 회수·전달했다.",
+        "잔향이 해소되어 시유가 풀려났고 일행은 창고 현실로 돌아왔다.",
+        "가족 사진 펜던트 1개는 현실에서 시유에게 전달됐으며 시유가 직접 소유했다."
+      ],
+      "participants": [
+        "마리아",
+        "발레리아 아젠트",
+        "키아나 오 캘러핸",
+        "이동식",
+        "시유 / 타이거",
+        "늑구"
+      ],
+      "relatedWikiSlugs": [
+        "panthera-corporation",
+        "empty-warehouse-resonance",
+        "zulu",
+        "novus-ordo"
+      ],
+      "relatedPersonnelCodenames": [
+        "MARIA",
+        "AEGIS",
+        "네베드",
+        "LEE DONGSIK",
+        "TIGER298",
+        "SIYU_MOTHER",
+        "SIYU_FATHER"
+      ],
+      "relatedCatalogSlugs": [
+        "lullaby-record",
+        "siyu-family-pendant",
+        "mrbeast_soda"
+      ],
+      "locationLabel": "국가·도시 미상 / 판테라 구 창고",
+      "gmId": "novus-ordo-record-control",
+      "gmName": "NOVUS ORDO 사무국 기록통제실 연구원 M. Keane",
+      "createdAt": "2026-08-25T00:00:00.000Z",
+      "updatedAt": "2026-09-10T00:00:00.000Z",
+      "minRole": "V"
+    }
+  }
+]
