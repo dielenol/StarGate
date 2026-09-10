@@ -6,10 +6,10 @@ import type { SerializedSession } from "@/hooks/queries/useSessionsQuery";
 import type { SessionStatus } from "@/types/session";
 
 import {
+  buildCalendarGrid,
   formatTime,
   isAttending,
-  isSameDay,
-  pad,
+  sessionDateKey,
   STATUS_LABEL,
 } from "./_utils";
 
@@ -17,6 +17,7 @@ import styles from "./SessionCalendar.module.css";
 
 interface SessionCalendarProps {
   sessions: SerializedSession[];
+  now: Date;
   mutedSessionIds?: ReadonlySet<string>;
   year: number;
   month: number;
@@ -38,30 +39,6 @@ const CHIP_MOD: Record<SessionStatus, "" | "closing" | "closed" | "cancel"> = {
   CANCELED: "cancel",
 };
 
-interface CalendarCell {
-  date: Date;
-  inMonth: boolean;
-}
-
-function buildGrid(year: number, month: number): CalendarCell[] {
-  const first = new Date(year, month - 1, 1);
-  const startDow = first.getDay();
-  const start = new Date(year, month - 1, 1 - startDow);
-  const cells: CalendarCell[] = [];
-  for (let i = 0; i < 42; i += 1) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    cells.push({ date: d, inMonth: d.getMonth() === month - 1 });
-  }
-  // 마지막 줄이 전부 다음 달이면 잘라낸다 (5주 그리드).
-  const lastRowAllOther = cells.slice(35, 42).every((c) => !c.inMonth);
-  return lastRowAllOther ? cells.slice(0, 35) : cells;
-}
-
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
 function formatDayPanelLabel(key: string): string {
   const [, month, day] = key.split("-");
   return `${Number(month)}월 ${Number(day)}일`;
@@ -69,6 +46,7 @@ function formatDayPanelLabel(key: string): string {
 
 export default function SessionCalendar({
   sessions,
+  now,
   mutedSessionIds,
   year,
   month,
@@ -77,14 +55,13 @@ export default function SessionCalendar({
   onNextMonth,
 }: SessionCalendarProps) {
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
-  const cells = useMemo(() => buildGrid(year, month), [year, month]);
-  const today = new Date();
+  const cells = useMemo(() => buildCalendarGrid(year, month), [year, month]);
+  const todayKey = sessionDateKey(now);
 
   const sessionsByDate = useMemo(() => {
     const map = new Map<string, SerializedSession[]>();
     for (const s of sessions) {
-      const d = new Date(s.targetDateTime);
-      const key = dateKey(d);
+      const key = sessionDateKey(s.targetDateTime);
       const bucket = map.get(key);
       if (bucket) bucket.push(s);
       else map.set(key, [s]);
@@ -144,8 +121,8 @@ export default function SessionCalendar({
       >
         {cells.map((c, i) => {
           const dow = i % 7;
-          const key = dateKey(c.date);
-          const isToday = isSameDay(c.date, today);
+          const key = c.key;
+          const isToday = key === todayKey;
           const events = sessionsByDate.get(key) ?? [];
           const hasAttending = events.some(isAttending);
           const visible = events.slice(0, 3);
@@ -174,7 +151,7 @@ export default function SessionCalendar({
           const content = (
             <>
               <div className={dCls}>
-                <span>{c.date.getDate()}</span>
+                <span>{c.day}</span>
                 {isToday ? (
                   <span className={styles.todayTag}>TODAY</span>
                 ) : hasAttending ? (
@@ -229,7 +206,7 @@ export default function SessionCalendar({
                 type="button"
                 className={cls}
                 onClick={() => setSelectedDateKey(key)}
-                aria-label={`${c.date.getMonth() + 1}월 ${c.date.getDate()}일 · 세션 ${events.length}건 — 날짜 상세 열기`}
+                aria-label={`${c.month}월 ${c.day}일 · 세션 ${events.length}건 — 날짜 상세 열기`}
                 aria-pressed={selectedDateKey === key}
               >
                 {content}

@@ -39,6 +39,8 @@ import {
   isAttending,
   matchesQuery,
   pad,
+  sessionDateParts,
+  sessionDayStart,
   statusModifier,
   type StatusGroup,
 } from "./_utils";
@@ -58,6 +60,7 @@ export type ViewKey = "calendar" | "list";
 
 interface SessionsClientProps {
   initialSessions: SerializedSession[];
+  initialNow: string;
   initialYear: number;
   initialMonth: number;
   initialSessionTarget: DashboardSessionTarget | null;
@@ -98,6 +101,7 @@ interface StatusCounts {
 
 export default function SessionsClient({
   initialSessions,
+  initialNow,
   initialYear,
   initialMonth,
   initialSessionTarget,
@@ -108,6 +112,21 @@ export default function SessionsClient({
   guestReadOnly,
   trpgWebBaseUrl,
 }: SessionsClientProps) {
+  const [now, setNow] = useState(() => new Date(initialNow));
+
+  // 자정을 사이에 둔 SSR/hydration도 같은 날짜로 시작하고, 이후에만 갱신한다.
+  useEffect(() => {
+    const updateDay = () => {
+      const current = new Date();
+      setNow((previous) =>
+        sessionDayStart(previous) === sessionDayStart(current) ? previous : current,
+      );
+    };
+    updateDay();
+    const intervalId = window.setInterval(updateDay, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   const [view, setView] = useState<ViewKey>(
     initialSessionTarget ? "list" : "calendar",
   );
@@ -294,9 +313,7 @@ export default function SessionsClient({
 
   const myRsvpUpcoming = useMemo(() => {
     // 오늘 자정 기준 — 어제 이전 세션은 "지난 세션"으로 간주해 레일에서 제외.
-    const cutoffDate = new Date();
-    cutoffDate.setHours(0, 0, 0, 0);
-    const cutoff = cutoffDate.getTime();
+    const cutoff = sessionDayStart(now);
     return sessions
       .filter(
         (s) =>
@@ -309,7 +326,7 @@ export default function SessionsClient({
           new Date(a.targetDateTime).getTime() -
           new Date(b.targetDateTime).getTime(),
       );
-  }, [sessions]);
+  }, [sessions, now]);
 
   const prevLabel = `${month === 1 ? 12 : month - 1}월`;
   const nextLabel = `${month === 12 ? 1 : month + 1}월`;
@@ -494,6 +511,7 @@ export default function SessionsClient({
           {view === "calendar" ? (
             <SessionCalendar
               sessions={calendarSessions}
+              now={now}
               mutedSessionIds={mutedCalendarSessionIds}
               year={year}
               month={month}
@@ -506,6 +524,7 @@ export default function SessionsClient({
           {view === "list" ? (
             <SessionsList
               sessions={filteredSessions}
+              now={now}
               year={year}
               month={month}
               expandedKey={listExpandedKey}
@@ -520,6 +539,7 @@ export default function SessionsClient({
         {view !== "calendar" ? (
           <SessionsRail
             counts={counts}
+            now={now}
             myRsvp={myRsvpUpcoming}
             openImminent={upcomingData?.sessions ?? initialUpcoming}
             trpgWebBaseUrl={trpgWebBaseUrl}
@@ -612,6 +632,7 @@ function statusLabelForSession(session: SerializedSession): string {
 
 interface SessionsListProps {
   sessions: SerializedSession[];
+  now: Date;
   year: number;
   month: number;
   expandedKey: string | null;
@@ -623,6 +644,7 @@ interface SessionsListProps {
 
 function SessionsList({
   sessions,
+  now,
   year,
   month,
   expandedKey,
@@ -636,16 +658,11 @@ function SessionsList({
   // "예정 세션만" 토글 적용 후 화면에 보일 세션. cutoff 는 오늘 자정 — 어제 이전은 제외.
   const visibleSessions = useMemo(() => {
     if (!upcomingOnly) return sessions;
-    const now = new Date();
-    const cutoff = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    ).getTime();
+    const cutoff = sessionDayStart(now);
     return sessions.filter(
       (s) => new Date(s.targetDateTime).getTime() >= cutoff,
     );
-  }, [sessions, upcomingOnly]);
+  }, [sessions, upcomingOnly, now]);
 
   const visibleCounts = useMemo(() => {
     let open = 0;
@@ -762,8 +779,7 @@ function SessionsListItem({
   ]
     .filter(Boolean)
     .join(" ");
-  const target = new Date(s.targetDateTime);
-  const dow = DOW_KO[target.getDay()];
+  const dow = DOW_KO[sessionDateParts(s.targetDateTime).weekday];
   const dur = formatDuration(s.targetDateTime, s.closeDateTime);
 
   const yesParticipants = s.participants.filter((p) => p.status === "YES");
@@ -965,6 +981,7 @@ function ParticipantGroup({
 
 interface SessionsRailProps {
   counts: StatusCounts;
+  now: Date;
   myRsvp: SerializedSession[];
   openImminent: UpcomingSessionLink[];
   trpgWebBaseUrl: string | null;
@@ -972,6 +989,7 @@ interface SessionsRailProps {
 
 function SessionsRail({
   counts,
+  now,
   myRsvp,
   openImminent,
   trpgWebBaseUrl,
@@ -1012,8 +1030,8 @@ function SessionsRail({
         ) : (
           <div className={styles.myrsvp}>
             {myRsvp.map((s) => {
-              const d = new Date(s.targetDateTime);
-              const tone = ddayTone(s.targetDateTime);
+              const { day } = sessionDateParts(s.targetDateTime);
+              const tone = ddayTone(s.targetDateTime, now);
               const cdCls = [
                 styles.rsvpCd,
                 tone ? styles[`rsvpCd--${tone}`] : "",
@@ -1028,7 +1046,7 @@ function SessionsRail({
               const body = (
                 <>
                   <div className={styles.rsvpWhen}>
-                    <div className={styles.d}>{d.getDate()}일</div>
+                    <div className={styles.d}>{day}일</div>
                   </div>
                   <div className={styles.rsvpBody}>
                     <div className={styles.rsvpName}>
@@ -1048,7 +1066,7 @@ function SessionsRail({
                       · {isTrpg ? "참가자" : "응답"} {s.counts.yes}
                     </div>
                   </div>
-                  <div className={cdCls}>{ddayLabel(s.targetDateTime)}</div>
+                  <div className={cdCls}>{ddayLabel(s.targetDateTime, now)}</div>
                 </>
               );
 
@@ -1100,7 +1118,7 @@ function SessionsRail({
           <div className={styles.empty}>곧 시작할 세션 없음</div>
         ) : (
           openImminent.map((s) => {
-            const tone = ddayTone(s.targetDateTime);
+            const tone = ddayTone(s.targetDateTime, now);
             const cdCls = [
               styles.openCd,
               tone === "urgent" ? styles["openCd--urgent"] : "",
@@ -1122,7 +1140,7 @@ function SessionsRail({
                     {formatTime(s.targetDateTime)}
                   </div>
                 </div>
-                <div className={cdCls}>{ddayLabel(s.targetDateTime)}</div>
+                <div className={cdCls}>{ddayLabel(s.targetDateTime, now)}</div>
               </Link>
             );
           })
