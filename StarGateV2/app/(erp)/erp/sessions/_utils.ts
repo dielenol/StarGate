@@ -20,14 +20,56 @@ export function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// 세션의 표시 날짜와 자정 경계는 서버·브라우저의 시간대와 무관하게 KST다.
+function toKstDate(value: string | Date): Date {
+  return new Date(new Date(value).getTime() + KST_OFFSET_MS);
+}
+
+export function sessionDateParts(value: string | Date) {
+  const d = toKstDate(value);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    weekday: d.getUTCDay(),
+  };
+}
+
+export function sessionDateKey(value: string | Date): string {
+  const { year, month, day } = sessionDateParts(value);
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+export function sessionDayStart(value: string | Date = new Date()): number {
+  return Math.floor((new Date(value).getTime() + KST_OFFSET_MS) / DAY_MS) * DAY_MS - KST_OFFSET_MS;
+}
+
+export function buildCalendarGrid(year: number, month: number) {
+  // 달력 셀은 시각이 없는 날짜다. UTC 연산으로 호스트 시간대/DST 영향을 제거한다.
+  const startDow = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const cells = Array.from({ length: 42 }, (_, index) => {
+    const d = new Date(Date.UTC(year, month - 1, 1 - startDow + index));
+    return {
+      key: `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`,
+      month: d.getUTCMonth() + 1,
+      day: d.getUTCDate(),
+      inMonth: d.getUTCMonth() === month - 1,
+    };
+  });
+  return cells.slice(35).every((cell) => !cell.inMonth) ? cells.slice(0, 35) : cells;
+}
+
 export function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const d = toKstDate(iso);
+  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 export function formatDateMD(iso: string): string {
-  const d = new Date(iso);
-  return `${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+  const { month, day } = sessionDateParts(iso);
+  return `${pad(month)}.${pad(day)}`;
 }
 
 export function formatDuration(targetIso: string, closeIso: string): string {
@@ -41,21 +83,18 @@ export function formatDuration(targetIso: string, closeIso: string): string {
 }
 
 export function diffDays(targetIso: string, now = new Date()): number {
-  const t = new Date(targetIso);
-  const a = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
-  const b = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  return Math.round((a - b) / (24 * 60 * 60 * 1000));
+  return (sessionDayStart(targetIso) - sessionDayStart(now)) / DAY_MS;
 }
 
-export function ddayLabel(targetIso: string): string {
-  const d = diffDays(targetIso);
+export function ddayLabel(targetIso: string, now: Date): string {
+  const d = diffDays(targetIso, now);
   if (d === 0) return "TODAY";
   if (d > 0) return `D-${d}`;
   return `D+${-d}`;
 }
 
-export function ddayTone(targetIso: string): "" | "urgent" | "past" {
-  const d = diffDays(targetIso);
+export function ddayTone(targetIso: string, now: Date): "" | "urgent" | "past" {
+  const d = diffDays(targetIso, now);
   if (d < 0) return "past";
   if (d <= 2) return "urgent";
   return "";
@@ -63,14 +102,6 @@ export function ddayTone(targetIso: string): "" | "urgent" | "past" {
 
 export function isAttending(s: SerializedSession): boolean {
   return s.myRsvp === "YES" && s.status !== "CANCELED";
-}
-
-export function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
 }
 
 export function statusModifier(status: SessionStatus): StatusMod {
