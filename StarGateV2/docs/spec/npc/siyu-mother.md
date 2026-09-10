@@ -13,7 +13,8 @@ isPublic: false
 loreTags: ["NOSB-MINI-LULLABY-PART1", "빈 창고의 자장가", "판테라", "시유의 가족", "NOSB-MINI-LULLABY-PART2"]
 appearsInEvents: ["NOSB-MINI-LULLABY-PART1", "NOSB-MINI-LULLABY-PART2"]
 source: "session-log"
-previewImage: ""
+previewImage: "/assets/npcs/Siyu-Mother-profile.webp"
+mainImage: "/assets/npcs/Siyu-Mother-profile.webp"
 createdAt: "2026-09-10T00:00:00.000Z"
 updatedAt: "2026-09-10T00:00:00.000Z"
 ---

@@ -8,7 +8,7 @@
       "role": "이름 미상 연구원 / 시유의 친어머니",
       "department": "UNASSIGNED",
       "isPublic": false,
-      "previewImage": "",
+      "previewImage": "/assets/npcs/Siyu-Mother-profile.webp",
       "lore": {
         "name": "시유의 어머니",
         "gender": "여성",
@@ -19,7 +19,7 @@
         "age": "미상",
         "height": "미상",
         "weight": "미상",
-        "mainImage": "",
+        "mainImage": "/assets/npcs/Siyu-Mother-profile.webp",
         "roleDetail": "이름 미상 연구원 / 시유의 친어머니\n연구시설명·상위 조직·현재 소속·생사는 미상. 노부스 내부 인가 등급 없음.",
         "notes": "시유의 어머니는 실명이 확인되지 않아 사용하는 기록상의 호칭이다. 현장에서 사용한 이름이나 코드네임은 알려지지 않았다."
       },
@@ -38,7 +38,7 @@
       "role": "이름 미상 기술직 / 시유의 친아버지",
       "department": "UNASSIGNED",
       "isPublic": false,
-      "previewImage": "",
+      "previewImage": "/assets/npcs/Siyu-Father-profile.webp",
       "lore": {
         "name": "시유의 아버지",
         "gender": "남성",
@@ -49,7 +49,7 @@
         "age": "미상",
         "height": "미상",
         "weight": "미상",
-        "mainImage": "",
+        "mainImage": "/assets/npcs/Siyu-Father-profile.webp",
         "roleDetail": "이름 미상 기술직 / 시유의 친아버지\n연구시설명·상위 조직·현재 소속·생사는 미상. 노부스 내부 인가 등급 없음.",
         "notes": "시유의 아버지는 실명이 확인되지 않아 사용하는 기록상의 호칭이다. 현장에서 사용한 이름이나 코드네임은 알려지지 않았다."
       },
