@@ -93,6 +93,7 @@ export default async function SessionsPage({ searchParams }: SessionsPageProps) 
           : "sessions-default"
       }
       initialSessions={serializedSessions}
+      initialNow={now.toISOString()}
       initialYear={year}
       initialMonth={month}
       initialSessionTarget={sessionTarget}
