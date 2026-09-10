@@ -244,7 +244,11 @@ export function wikiFirstImage(content: string): WikiInfoboxImage | null {
   return null;
 }
 
-export function wikiArticleContent(content: string, title: string): string {
+export function wikiArticleContent(
+  content: string,
+  title: string,
+  category?: string,
+): string {
   let titleRemoved = false;
   let imageRemoved = false;
   let skippingSummary = false;
@@ -273,7 +277,7 @@ export function wikiArticleContent(content: string, title: string): string {
       return false;
     }
 
-    if (!imageRemoved && markdownImageFromLine(line)) {
+    if (category !== "작전 보고서" && !imageRemoved && markdownImageFromLine(line)) {
       imageRemoved = true;
       return false;
     }
