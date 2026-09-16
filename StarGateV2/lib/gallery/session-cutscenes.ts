@@ -46,6 +46,7 @@ export const SESSION_CUTSCENES: Record<string, SessionCutsceneAlbum> = {
       { file: "cut-025.webp", width: 1050, height: 1400 },
       { file: "cut-026.webp", width: 832, height: 1216 },
       { file: "cut-027.webp", width: 1050, height: 1400 },
+      { file: "cut-028.webp", width: 1400, height: 788 },
     ],
   },
   "NOSB-MINI-HWAYANGYEONHWA": {
@@ -440,6 +441,10 @@ export const SESSION_CUTSCENES: Record<string, SessionCutsceneAlbum> = {
       { file: "cut-034.webp", width: 1400, height: 1050 },
       { file: "cut-035.webp", width: 1400, height: 1050 },
       { file: "cut-036.webp", width: 1400, height: 788 },
+      { file: "cut-037.webp", width: 1400, height: 788 },
+      { file: "cut-038.webp", width: 1400, height: 1050 },
+      { file: "cut-039.webp", width: 1400, height: 1050 },
+      { file: "cut-040.webp", width: 1400, height: 788 },
     ],
   },
   "NOSB-S1E5-EVIL-PART2": {
@@ -513,6 +518,50 @@ export const SESSION_CUTSCENES: Record<string, SessionCutsceneAlbum> = {
       { file: "cut-046.webp", width: 832, height: 1216 },
       { file: "cut-047.webp", width: 1254, height: 375 },
       { file: "cut-048.webp", width: 674, height: 933 },
+      { file: "cut-049.webp", width: 1400, height: 788 },
+    ],
+  },
+  "NOSB-S1E6-TURNING-POINT-PART2": {
+    folder: "s1e6-turning-point-part2",
+    shots: [
+      { file: "cut-001.webp", width: 1400, height: 788 },
+      { file: "cut-002.webp", width: 832, height: 1216 },
+      { file: "cut-003.webp", width: 832, height: 1216 },
+      { file: "cut-004.webp", width: 837, height: 1400 },
+      { file: "cut-005.webp", width: 832, height: 1216 },
+      { file: "cut-006.webp", width: 1400, height: 788 },
+      { file: "cut-007.webp", width: 1400, height: 788 },
+      { file: "cut-008.webp", width: 959, height: 1400 },
+      { file: "cut-009.webp", width: 1050, height: 1400 },
+      { file: "cut-010.webp", width: 1050, height: 1400 },
+    ],
+  },
+  "NOSB-MINI-LULLABY-PART2": {
+    folder: "lullaby-part2",
+    shots: [
+      { file: "cut-001.webp", width: 1050, height: 1400 },
+      { file: "cut-002.webp", width: 1400, height: 788 },
+      { file: "cut-003.webp", width: 1400, height: 788 },
+    ],
+  },
+  "NOSB-S1E7-DESIRE-PART1": {
+    folder: "s1e7-desire-part1",
+    shots: [
+      { file: "cut-001.webp", width: 1400, height: 788 },
+      { file: "cut-002.webp", width: 1400, height: 788 },
+    ],
+  },
+  "NOSB-S1E7-DESIRE-PART2": {
+    folder: "s1e7-desire-part2",
+    shots: [
+      { file: "cut-001.webp", width: 832, height: 1216 },
+      { file: "cut-002.webp", width: 832, height: 1216 },
+      { file: "cut-003.webp", width: 832, height: 1216 },
+      { file: "cut-004.webp", width: 832, height: 1216 },
+      { file: "cut-005.webp", width: 832, height: 1216 },
+      { file: "cut-006.webp", width: 832, height: 1216 },
+      { file: "cut-007.webp", width: 832, height: 1216 },
+      { file: "cut-008.webp", width: 903, height: 1400 },
     ],
   },
 };

@@ -84,9 +84,9 @@ test("실제 컷신 corpus는 legacy alpha 경고만 허용하고 모든 구조 
     legacyAlphaAllowlist: LEGACY_CUTSCENE_ALPHA_ALLOWLIST,
   });
 
-  assert.equal(result.summary.manifestEntries, 424);
-  assert.equal(result.summary.uniqueManifestPaths, 424);
-  assert.equal(result.summary.actualCutFiles, 424);
+  assert.equal(result.summary.manifestEntries, 453);
+  assert.equal(result.summary.uniqueManifestPaths, 453);
+  assert.equal(result.summary.actualCutFiles, 453);
   assert.equal(result.summary.errors, 0);
   assert.equal(result.ok, true);
   assert.equal(result.summary.legacyAlphaTransparent, 18);
