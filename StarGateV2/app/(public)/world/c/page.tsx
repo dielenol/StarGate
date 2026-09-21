@@ -1,10 +1,15 @@
 import Link from "next/link";
 
+import { requireGmPageSession } from "@/lib/auth/require-gm-page";
 import { IconDivider, IconReturn } from "@/components/icons";
 
 import frameStyles from "../../page.module.css";
 
-export default function WorldCPage() {
+export const dynamic = "force-dynamic";
+
+export default async function WorldCPage() {
+  await requireGmPageSession();
+
   return (
     <main className={frameStyles["stargate-page"]}>
       <div className={frameStyles.stargate}>
@@ -19,17 +24,17 @@ export default function WorldCPage() {
               <IconDivider aria-hidden />
             </div>
             <p className={frameStyles["stargate__intro-text"]}>
-              세계관 C 세부 기록을 확장할 placeholder 페이지입니다.
+              개발을 중단한 세계관 C 페이지입니다. GM 보관용으로 유지합니다.
             </p>
           </div>
           <div className={frameStyles["stargate__cta-row"]}>
-            <Link className={frameStyles["stargate__cta-link"]} href="/world">
+            <Link className={frameStyles["stargate__cta-link"]} href="/erp/admin/unfinished">
               <div className={frameStyles["stargate__cta-outer"]}>
                 <div className={frameStyles["stargate__cta-inner"]}>
                   <div className={frameStyles["stargate__cta-icon"]}>
                     <IconReturn aria-hidden />
                   </div>
-                  <div className={frameStyles["stargate__cta-title"]}>세계관 메인으로</div>
+                  <div className={frameStyles["stargate__cta-title"]}>미완성 목록으로</div>
                   <div className={frameStyles["stargate__cta-subtitle"]}>RETURN TO INDEX</div>
                 </div>
               </div>

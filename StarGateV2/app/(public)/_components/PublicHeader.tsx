@@ -87,11 +87,7 @@ export default function PublicHeader() {
     PRIMARY_PAGES.find((page) => pathname.startsWith(`${page.href}/`));
   const currentLabel =
     PAGES.find((page) => page.href === pathname)?.label ??
-    (pathname === "/world/b"
-      ? "세계관 B"
-      : pathname === "/world/c"
-        ? "세계관 C"
-        : "기록 열람");
+    "기록 열람";
   const worldChild = pathname.startsWith("/world/");
   const previousPathRef = useRef(pathname);
   const navigationDepthRef = useRef(0);
