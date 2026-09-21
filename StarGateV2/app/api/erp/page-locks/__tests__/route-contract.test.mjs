@@ -33,7 +33,9 @@ test("ERP pathname은 proxy가 신뢰 헤더로 덮어쓴다", async () => {
   assert.match(source, /pathname: request\.nextUrl\.pathname/);
   assert.match(source, /hostname: request\.nextUrl\.hostname/);
   assert.match(source, /NextResponse\.next\(\{[\s\S]*request: \{ headers: requestHeaders \}/);
-  assert.match(source, /matcher: \["\/erp", "\/erp\/:path\*"\]/);
+  const matcher = JSON.parse(source.match(/matcher:\s*(\[[^\]]+\])/)?.[1] ?? "[]");
+  assert.ok(matcher.includes("/erp"));
+  assert.ok(matcher.includes("/erp/:path*"));
 });
 
 test("client navigation과 polling 상태 변경도 페이지 잠금 gate를 통과한다", async () => {

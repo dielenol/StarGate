@@ -18,7 +18,6 @@ import {
   IconAdminUsers,
   IconAdminVotes,
   IconAdminVtt,
-  IconApply,
   IconArmory,
   IconArmoryAcheron,
   IconArmoryLab,
@@ -43,7 +42,6 @@ import {
   IconStock,
   IconTransactions,
   IconWiki,
-  IconWorld,
 } from "@/components/icons";
 
 import type { UserRole } from "@/types/user";
@@ -174,8 +172,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "활동",
     items: [
       { label: "세션", keywords: "sessions", icon: IconSession, href: "/erp/sessions" },
-      /* 미션 보드 — 콘텐츠 준비중 (page.tsx 는 placeholder). */
-      { label: "미션 보드", keywords: "missions", icon: IconApply, href: null, gmHref: "/erp/missions" },
     ],
   },
   {
@@ -261,9 +257,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "위키", keywords: "wiki", icon: IconWiki, href: "/erp/wiki" },
       { label: "작전 보고서", keywords: "report session archive operation 작전 보고서 세션 리포트 작전 기록", icon: IconReportDocument, href: "/erp/sessions/report" },
       { label: "기록보관소", keywords: "catalog archive records equipment weapon armor consumable material sample evidence special 기록보관소 장비 소모품 샘플 물증 특수", icon: IconCoreArchive, href: "/erp/wiki/catalog/all", lockKey: "/erp/wiki/catalog" },
-      /* 갤러리 · 연대기 — 콘텐츠 준비중. */
       { label: "갤러리", keywords: "gallery", icon: IconGallery, href: null, gmHref: "/erp/gallery" },
-      { label: "연대기", keywords: "chronicle", icon: IconWorld, href: null, gmHref: "/erp/chronicle" },
     ],
   },
   {
@@ -282,6 +276,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "공방 운영", keywords: "equipment workshop upgrade quote 강화 견적", icon: IconArmoryWorkshop, href: "/erp/admin/equipment-workshop" },
       { label: "투표 운영", keywords: "bureaucrat vote registrar 관료 투표 안건", icon: IconAdminVotes, href: "/erp/admin/bureaucrat-votes" },
       { label: "캐릭터 등록", keywords: "character person register import", icon: IconAdminCharacters, href: "/erp/admin/characters/import" },
+      { label: "미완성", keywords: "unfinished archive 미션 보드 missions 연대기 chronicle 세계관 world 개발 중단", icon: IconCoreArchive, href: "/erp/admin/unfinished", minRole: "GM" },
     ],
   },
 ];

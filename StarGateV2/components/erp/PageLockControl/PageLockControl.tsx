@@ -45,7 +45,7 @@ export default function PageLockControl({
     ? isNavItemLocked(item, pageLocks?.overrides)
     : false;
 
-  if (!item || !lockKey) return null;
+  if (!item || !lockKey || item.minRole === "GM") return null;
 
   return (
     <aside
