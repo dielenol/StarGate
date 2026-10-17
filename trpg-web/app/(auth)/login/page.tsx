@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { signIn } from "@/lib/auth/config";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+import { LoginMotion } from "./LoginMotion";
 import styles from "./page.module.css";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -28,19 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <ThemeToggle />
       </div>
       <div className={styles.login__panel}>
-        <div className={styles.login__brand} aria-hidden="true">
-          <span className={styles.login__brandRing}>
-            <Image
-              className={styles.login__mark}
-              src="/assets/favicon.ico"
-              alt=""
-              width={48}
-              height={48}
-              priority
-              unoptimized
-            />
-          </span>
-        </div>
+        <LoginMotion />
         <p className={styles.login__eyebrow}>다채로운 TRPG Calendar</p>
         <h1 className={styles.login__title}>TRPG 세션 캘린더</h1>
         <p className={styles.login__subtitle}>

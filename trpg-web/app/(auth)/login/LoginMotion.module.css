@@ -1,0 +1,215 @@
+.motion {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  margin: -12px 0 14px;
+}
+
+.motion__scene {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 320px);
+  aspect-ratio: 360 / 220;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.motion__halo {
+  position: absolute;
+  inset: 8% 2% 0;
+  background:
+    radial-gradient(ellipse at 28% 55%, rgba(106, 182, 255, 0.1), transparent 58%),
+    radial-gradient(ellipse at 74% 60%, rgba(188, 139, 250, 0.1), transparent 56%),
+    radial-gradient(ellipse at 64% 27%, rgba(237, 219, 112, 0.08), transparent 52%);
+}
+
+.motion__orbit {
+  position: absolute;
+  inset: 0 6%;
+  color: var(--neutral-border);
+  opacity: 0.55;
+  animation: orbit-drift 14s ease-in-out infinite;
+}
+
+.motion__orbit svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 0.7;
+}
+
+.motion__optics {
+  position: absolute;
+  inset: 0;
+  animation: prism-float 7s ease-in-out infinite;
+}
+
+.motion__beams {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: light-dark(#65748a, #f4f7ff);
+  animation: beam-breathe 7s ease-in-out infinite;
+}
+
+.motion__logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44.444%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 10px 12px rgba(26, 28, 45, 0.16));
+}
+
+.motion__logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.motion__lightPulse {
+  position: absolute;
+  top: 51.4%;
+  left: 0;
+  width: 25%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, light-dark(#b8c7dc, #fff));
+  transform: rotate(-3deg);
+  transform-origin: right center;
+  animation: light-arrive 5s ease-in-out infinite;
+}
+
+.motion__spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: light-dark(#71829e, #fff);
+  opacity: 0.4;
+  animation: spark-breathe 5s ease-in-out infinite;
+}
+
+.motion__spark_one {
+  top: 25%;
+  left: 21%;
+}
+
+.motion__spark_two {
+  top: 34%;
+  right: 18%;
+  background: #bc8bfa;
+  animation-delay: -2s;
+}
+
+.motion__spark_three {
+  bottom: 24%;
+  left: 29%;
+  background: #6ab6ff;
+  animation-delay: -3.5s;
+}
+
+.motion__ground {
+  position: absolute;
+  width: 100px;
+  height: 8px;
+  bottom: 12px;
+  left: calc(50% - 50px);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, var(--neutral-border), transparent 70%);
+  opacity: 0.5;
+  animation: ground-breathe 7s ease-in-out infinite;
+}
+
+.motion__toggle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--neutral-soft);
+  border-radius: 50%;
+  color: var(--text-muted);
+  background: var(--surface-brand-ring);
+}
+
+.motion__toggle svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.motion__toggle:hover {
+  color: var(--text);
+  background: var(--control-bg-hover);
+}
+
+.motion__toggle:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+.motion[data-paused="true"] * {
+  animation-play-state: paused;
+}
+
+@keyframes prism-float {
+  0%, 100% { transform: translateY(3px); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes orbit-drift {
+  0%, 100% { transform: rotate(-7deg) scale(0.98); }
+  50% { transform: rotate(5deg) scale(1.02); }
+}
+
+@keyframes beam-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes light-arrive {
+  0%, 15% { opacity: 0; transform: translateX(-70%) rotate(-3deg); }
+  40% { opacity: 0.8; }
+  70%, 100% { opacity: 0; transform: translateX(40%) rotate(-3deg); }
+}
+
+@keyframes spark-breathe {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+@keyframes ground-breathe {
+  0%, 100% { opacity: 0.5; transform: scaleX(1); }
+  50% { opacity: 0.25; transform: scaleX(0.8); }
+}
+
+@media (max-width: 640px) {
+  .motion {
+    height: 196px;
+    margin-top: -8px;
+    margin-bottom: 12px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion *,
+  .motion *::before,
+  .motion *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .motion__lightPulse,
+  .motion__toggle {
+    display: none;
+  }
+}
