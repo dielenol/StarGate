@@ -78,33 +78,10 @@ function drawBackground(
   context.fillStyle = glow;
   context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, Math.min(course.height, 760));
 
-  context.save();
-  context.shadowColor = "rgba(0, 0, 0, 0.34)";
-  context.shadowBlur = 18;
-  context.fillStyle = "rgba(25, 30, 54, 0.92)";
-  roundedRect(context, 22, 20, ROULETTE_BOARD_WIDTH - 44, 62, 16);
-  context.fill();
-  context.restore();
-
-  context.fillStyle = "#aeb9ff";
-  context.font = "700 13px system-ui, -apple-system, sans-serif";
-  context.textAlign = "left";
-  context.textBaseline = "middle";
-  context.fillText(`COURSE ${course.number} · ${course.distance}`, 42, 51);
-  context.fillStyle = "#f4f6ff";
-  context.font = "800 15px system-ui, -apple-system, sans-serif";
-  context.textAlign = "right";
-  context.fillText(course.name, ROULETTE_BOARD_WIDTH - 42, 51);
-
   context.strokeStyle = "rgba(150, 163, 255, 0.28)";
   context.lineWidth = 1.5;
   roundedRect(context, 12, 12, ROULETTE_BOARD_WIDTH - 24, course.height - 24, 20);
   context.stroke();
-
-  context.fillStyle = "rgba(216, 222, 255, 0.76)";
-  context.font = "700 11px system-ui, -apple-system, sans-serif";
-  context.textAlign = "center";
-  context.fillText("DROP ZONE", ROULETTE_BOARD_WIDTH / 2, 102);
 }
 
 function drawTrack(

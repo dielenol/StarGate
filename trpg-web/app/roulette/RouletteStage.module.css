@@ -1,0 +1,35 @@
+.stage {
+  /*
+   * --stage-bottom-reserve 는 페이지 모듈(.arena)이 정의하고 여기로 상속된다.
+   * 이 요소에 직접 선언하면 상속값을 덮어쓰므로 선언하지 않는다(미정의면 0 으로 계산).
+   */
+
+  /* 프레임 패딩 + 테두리 합(양쪽). fit 계산이 참조하므로 아래 .frame 과 함께 바꾼다. */
+  --stage-frame-inset: 14px;
+
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.frame {
+  --frame-bg: light-dark(#ffffff, #0a0d18);
+  --frame-border: light-dark(var(--border-strong), var(--accent-border));
+
+  flex: 0 0 auto;
+  padding: 6px;
+  background: var(--frame-bg);
+  border: 1px solid var(--frame-border);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 4px light-dark(transparent, var(--accent-soft-2)),
+    0 16px 40px light-dark(rgba(54, 65, 88, 0.16), rgba(0, 0, 0, 0.42));
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  background: #101426;
+  border-radius: 9px;
+}
