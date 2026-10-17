@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { IconArrowRight } from "@/components/icons";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
+import BrandMotion from "@/components/public/BrandMotion";
 import styles from "./ArchiveViewer.module.css";
 
 const RECORDS = [
@@ -64,7 +65,7 @@ export default function ArchiveViewer() {
   return (
     <div className={styles.viewer}>
       <div className={styles.viewer__head}>
-        <span>ARCHIVE VIEWER</span>
+        <span>THE CONVENTION / 1945</span>
         <span>기록 미리보기 / 03</span>
       </div>
       <div
@@ -103,7 +104,10 @@ export default function ArchiveViewer() {
           className={styles.viewer__panel}
           data-record={record.key}
         >
-          <div className={styles.viewer__stage}>
+          {record.key === "convention" ? (
+            <BrandMotion />
+          ) : (
+            <div className={styles.viewer__stage}>
             <span className={styles.viewer__reference} aria-hidden="true">
               {record.code}
             </span>
@@ -121,10 +125,15 @@ export default function ArchiveViewer() {
               <br />
               ORDO
             </span>
-          </div>
+            </div>
+          )}
           <div className={styles.viewer__caption}>
-            <p>{record.detail}</p>
-            <h2>{record.title}</h2>
+            {record.key !== "convention" && (
+              <div>
+                <p>{record.detail}</p>
+                <h2>{record.title}</h2>
+              </div>
+            )}
             <Link href={record.href} prefetch={false}>
               {record.action}
               <IconArrowRight aria-hidden />
@@ -132,10 +141,6 @@ export default function ArchiveViewer() {
           </div>
         </div>
       ))}
-      <div className={styles.viewer__foot}>
-        <span>PROPERTY OF N.O. CONVENTION</span>
-        <span>SELECT A RECORD ↑</span>
-      </div>
     </div>
   );
 }
