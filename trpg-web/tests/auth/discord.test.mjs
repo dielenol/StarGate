@@ -12,6 +12,7 @@ const { Auth } = await import(
 
 const ORIGIN = "https://calendar.example.test";
 const DISCORD_ID = "123456789012345678";
+const EXEMPT_DISCORD_ID = "376610453696020482";
 let productionConfig;
 let lookupMember;
 
@@ -38,7 +39,7 @@ mock.module("@/lib/env", {
 
 await import("../../lib/auth/config.ts");
 
-function fixture(t, member = { discordUserId: DISCORD_ID }) {
+function fixture(t, member = { discordUserId: DISCORD_ID }, identity = { id: DISCORD_ID }) {
   const cookies = new Map();
   const errors = [];
   const exchanges = [];
@@ -67,6 +68,7 @@ function fixture(t, member = { discordUserId: DISCORD_ID }) {
       username: "test-member",
       discriminator: "0",
       avatar: null,
+      ...identity,
     });
   });
   const config = {
@@ -161,40 +163,46 @@ for (const issuer of ["https://discord.com", null]) {
   });
 }
 
-test("a different issuer is rejected before token exchange", async (t) => {
-  const flow = fixture(t);
-  await flow.start();
-  const response = await flow.callback("https://other.example.test");
+for (const id of [DISCORD_ID, EXEMPT_DISCORD_ID]) {
+  test(`a different issuer is rejected before token exchange for ${id}`, async (t) => {
+    const flow = fixture(t, null, { id });
+    await flow.start();
+    const response = await flow.callback("https://other.example.test");
 
-  assert.equal(response.headers.get("location"), `${ORIGIN}/login?error=Configuration`);
-  assert.match(flow.errors[0]?.cause?.err?.message, /unexpected "iss"/);
-  assert.equal(flow.exchanges.length, 0);
-  assert.deepEqual(flow.memberLookups, []);
-  assert.equal(flow.hasSession(), false);
-});
+    assert.equal(response.headers.get("location"), `${ORIGIN}/login?error=Configuration`);
+    assert.match(flow.errors[0]?.cause?.err?.message, /unexpected "iss"/);
+    assert.equal(flow.exchanges.length, 0);
+    assert.deepEqual(flow.memberLookups, []);
+    assert.equal(flow.hasSession(), false);
+  });
 
-test("a missing PKCE cookie is rejected before token exchange", async (t) => {
-  const flow = fixture(t);
-  await flow.start();
-  for (const name of flow.cookies.keys()) {
-    if (name.includes("pkce")) flow.cookies.delete(name);
-  }
-  const response = await flow.callback();
+  test(`a missing PKCE cookie is rejected before token exchange for ${id}`, async (t) => {
+    const flow = fixture(t, null, { id });
+    await flow.start();
+    for (const name of flow.cookies.keys()) {
+      if (name.includes("pkce")) flow.cookies.delete(name);
+    }
+    const response = await flow.callback();
 
-  assert.equal(response.headers.get("location"), `${ORIGIN}/login?error=Configuration`);
-  assert.equal(flow.errors[0]?.type, "InvalidCheck");
-  assert.match(flow.errors[0]?.message, /pkceCodeVerifier value could not be parsed/);
-  assert.equal(flow.exchanges.length, 0);
-  assert.deepEqual(flow.memberLookups, []);
-  assert.equal(flow.hasSession(), false);
-});
+    assert.equal(response.headers.get("location"), `${ORIGIN}/login?error=Configuration`);
+    assert.equal(flow.errors[0]?.type, "InvalidCheck");
+    assert.match(flow.errors[0]?.message, /pkceCodeVerifier value could not be parsed/);
+    assert.equal(flow.exchanges.length, 0);
+    assert.deepEqual(flow.memberLookups, []);
+    assert.equal(flow.hasSession(), false);
+  });
+}
 
 for (const [label, member] of [
   ["unknown", null],
   ["departed", { discordUserId: DISCORD_ID, leftAt: new Date("2026-01-01") }],
 ]) {
-  test(`${label} guild member is denied a session`, async (t) => {
-    const flow = fixture(t, member);
+  test(`${label} guild member sharing the exempt account's name is denied a session`, async (t) => {
+    const flow = fixture(t, member, {
+      id: DISCORD_ID,
+      username: "dielenol",
+      global_name: "dielenol",
+    });
     await flow.start();
     const response = await flow.callback();
 
@@ -205,6 +213,34 @@ for (const [label, member] of [
     assert.equal(await (await flow.request("session")).json(), null);
   });
 }
+
+for (const [label, member] of [
+  ["missing", null],
+  ["departed", { discordUserId: EXEMPT_DISCORD_ID, leftAt: new Date("2026-01-01") }],
+]) {
+  test(`the sole exempt Discord ID receives a session with a ${label} membership record`, async (t) => {
+    const flow = fixture(t, member, { id: EXEMPT_DISCORD_ID, username: "renamed-account" });
+    await flow.start();
+    const response = await flow.callback();
+
+    assert.equal(response.headers.get("location"), `${ORIGIN}/calendar`);
+    assert.deepEqual(flow.memberLookups, []);
+    assert.equal(flow.exchanges.length, 1);
+    assert.equal(flow.hasSession(), true);
+    const session = await (await flow.request("session")).json();
+    assert.equal(session.user.discordUserId, EXEMPT_DISCORD_ID);
+    assert.deepEqual(flow.errors, []);
+  });
+}
+
+test("the membership exemption cannot authorize a non-Discord or absent account", async (t) => {
+  const flow = fixture(t, null);
+  assert.equal(await productionConfig.callbacks.signIn({
+    account: { provider: "github", providerAccountId: EXEMPT_DISCORD_ID },
+  }), false);
+  assert.equal(await productionConfig.callbacks.signIn({ account: null }), false);
+  assert.deepEqual(flow.memberLookups, []);
+});
 
 test("a denied login returns to the app login page and a fresh attempt can succeed", async (t) => {
   const flow = fixture(t, null);

@@ -1,7 +1,7 @@
 /**
  * Auth.js v5 설정 — Discord OAuth 단일 프로바이더.
  *
- * - TRPG_GUILD_ID 길드 멤버만 로그인 허용 (탈퇴자 차단)
+ * - TRPG_GUILD_ID 길드 멤버만 로그인 허용 (지정 계정 1개 예외, 그 외 탈퇴자 차단)
  * - JWT 전략 (서버리스 최적화)
  * - discordUserId 를 세션·JWT 에 박아 둠 (API/UI 가 직접 사용)
  */
@@ -18,6 +18,9 @@ import {
   DISCORD_CLIENT_SECRET,
   TRPG_GUILD_ID,
 } from "@/lib/env";
+
+// 일시 탈퇴 중인 본인 계정 1개만 Discord ID로 길드 가입 검증을 면제한다.
+const GUILD_MEMBERSHIP_EXEMPT_DISCORD_ID = "376610453696020482";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -36,6 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ account }) {
       if (account?.provider !== "discord") return false;
       const discordId = account.providerAccountId;
+      if (discordId === GUILD_MEMBERSHIP_EXEMPT_DISCORD_ID) return true;
 
       const member = await findTrpgGuildMember(TRPG_GUILD_ID, discordId);
 
