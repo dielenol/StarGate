@@ -98,11 +98,14 @@ function fixture(t, member = { discordUserId: DISCORD_ID }) {
     return response;
   }
 
-  async function start() {
+  async function start(referer) {
     const csrf = await (await request("csrf")).json();
     const response = await request("signin/discord", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        ...(referer ? { referer } : {}),
+      },
       body: new URLSearchParams({
         csrfToken: csrf.csrfToken,
         callbackUrl: `${ORIGIN}/calendar`,
@@ -116,8 +119,8 @@ function fixture(t, member = { discordUserId: DISCORD_ID }) {
     return authorization;
   }
 
-  async function callback(issuer = "https://discord.com") {
-    const params = new URLSearchParams({ code: "test-authorization-code" });
+  async function callback(issuer = "https://discord.com", code = "test-authorization-code") {
+    const params = new URLSearchParams({ code });
     if (issuer !== null) params.set("iss", issuer);
     return request(`callback/discord?${params}`);
   }
@@ -127,6 +130,7 @@ function fixture(t, member = { discordUserId: DISCORD_ID }) {
 
   return {
     start, callback, request, cookies, errors, exchanges, memberLookups, hasSession,
+    setMember: (nextMember) => { member = nextMember; },
   };
 }
 
@@ -162,7 +166,7 @@ test("a different issuer is rejected before token exchange", async (t) => {
   await flow.start();
   const response = await flow.callback("https://other.example.test");
 
-  assert.match(response.headers.get("location"), /error=Configuration/);
+  assert.equal(response.headers.get("location"), `${ORIGIN}/login?error=Configuration`);
   assert.match(flow.errors[0]?.cause?.err?.message, /unexpected "iss"/);
   assert.equal(flow.exchanges.length, 0);
   assert.deepEqual(flow.memberLookups, []);
@@ -177,7 +181,7 @@ test("a missing PKCE cookie is rejected before token exchange", async (t) => {
   }
   const response = await flow.callback();
 
-  assert.match(response.headers.get("location"), /error=Configuration/);
+  assert.equal(response.headers.get("location"), `${ORIGIN}/login?error=Configuration`);
   assert.equal(flow.errors[0]?.type, "InvalidCheck");
   assert.match(flow.errors[0]?.message, /pkceCodeVerifier value could not be parsed/);
   assert.equal(flow.exchanges.length, 0);
@@ -194,10 +198,42 @@ for (const [label, member] of [
     await flow.start();
     const response = await flow.callback();
 
-    assert.match(response.headers.get("location"), /error=AccessDenied/);
+    assert.equal(response.headers.get("location"), `${ORIGIN}/login?error=AccessDenied`);
     assert.deepEqual(flow.memberLookups, [["test-guild", DISCORD_ID]]);
     assert.equal(flow.exchanges.length, 1);
     assert.equal(flow.hasSession(), false);
     assert.equal(await (await flow.request("session")).json(), null);
   });
 }
+
+test("a denied login returns to the app login page and a fresh attempt can succeed", async (t) => {
+  const flow = fixture(t, null);
+  const firstAuthorization = await flow.start();
+  const denied = await flow.callback();
+  const retryPage = denied.headers.get("location");
+
+  assert.equal(retryPage, `${ORIGIN}/login?error=AccessDenied`);
+  assert.equal(flow.hasSession(), false);
+  assert.equal(await (await flow.request("session")).json(), null);
+
+  flow.setMember({ discordUserId: DISCORD_ID });
+  const retryAuthorization = await flow.start(retryPage);
+  assert.equal(retryAuthorization.pathname, "/api/oauth2/authorize");
+  assert.notEqual(
+    retryAuthorization.searchParams.get("code_challenge"),
+    firstAuthorization.searchParams.get("code_challenge"),
+  );
+  assert.equal(flow.hasSession(), false);
+
+  const accepted = await flow.callback("https://discord.com", "retry-authorization-code");
+  assert.equal(accepted.headers.get("location"), `${ORIGIN}/calendar`);
+  assert.equal(flow.hasSession(), true);
+  assert.deepEqual(flow.memberLookups, [
+    ["test-guild", DISCORD_ID],
+    ["test-guild", DISCORD_ID],
+  ]);
+  assert.equal(flow.exchanges.length, 2);
+  assert.equal(flow.exchanges[1].get("code"), "retry-authorization-code");
+  const session = await (await flow.request("session")).json();
+  assert.equal(session.user.discordUserId, DISCORD_ID);
+});
