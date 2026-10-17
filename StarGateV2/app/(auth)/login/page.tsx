@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { IconArrowLeft, IconSecurity } from "@/components/icons";
+import BrandMotion from "@/components/public/BrandMotion";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 import LoginForm from "./LoginForm";
@@ -19,7 +20,7 @@ export default function LoginPage() {
       <header className={styles.login__header}>
         <Link className={styles.login__brand} href="/" aria-label="NOVUS ORDO 홈">
           <Image
-            src={resolvePublicAssetPath("/assets/StarGate_logo.png")}
+            src={resolvePublicAssetPath("/assets/StarGate_logo.webp")}
             alt=""
             width={44}
             height={44}
@@ -36,21 +37,16 @@ export default function LoginPage() {
 
       <main className={styles.login__main}>
         <section className={styles.login__story} aria-label="노부스 오르도 운영 시스템">
-          <Image
-            className={styles["login__story-image"]}
-            src={resolvePublicAssetPath("/assets/world-view/novus-agent-credentials.webp")}
-            alt="노부스 오르도 문장이 새겨진 요원 신분증과 금속 명찰"
-            fill
-            sizes="(max-width: 760px) 100vw, 54vw"
-            priority
-          />
           <div className={styles["login__story-top"]} aria-hidden="true">
             <span>PERSONNEL / AUTHORIZATION</span>
-            <IconSecurity />
+            <span>01 — ACCESS</span>
+          </div>
+          <div className={styles["login__brand-motion"]}>
+            <BrandMotion variant="login" />
           </div>
           <div className={styles["login__story-copy"]}>
             <p className={styles.login__eyebrow}>THE NEXT CHAPTER IS YOURS</p>
-            <h2>당신의 임무는<br />여기서 이어집니다.</h2>
+            <h2>당신의 임무는<br /> 여기서 이어집니다.</h2>
             <p>기록을 이어가고, 동료와 연결되고,<br />다음 작전을 준비하세요.</p>
           </div>
           <div className={styles["login__story-footer"]} aria-hidden="true">

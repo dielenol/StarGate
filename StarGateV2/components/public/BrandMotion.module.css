@@ -1,0 +1,161 @@
+.brand {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  color: var(--gold);
+}
+
+.brand__visual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.brand__halo {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #c9a85a16 0%, #aa8e3d08 43%, transparent 70%);
+  animation: halo-breathe 8s ease-in-out infinite alternate;
+}
+
+.brand__grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(#c9a85a09 1px, transparent 1px), linear-gradient(90deg, #c9a85a09 1px, transparent 1px);
+  background-size: 10% 10%;
+  mask-image: radial-gradient(circle, #000 25%, transparent 68%);
+}
+
+.brand__geometry,
+.brand__orbit,
+.brand__orbit--inner {
+  position: absolute;
+  inset: 0;
+}
+
+.brand__visual svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 0.8;
+}
+
+.brand__geometry {
+  opacity: 0.19;
+}
+
+.brand__orbit {
+  animation: orbit-turn 90s linear infinite;
+}
+
+.brand__orbit svg > circle:first-child { opacity: 0.19; }
+.brand__orbit svg > circle:nth-child(2) { opacity: 0.48; stroke-width: 2; }
+.brand__orbit svg > path { opacity: 0.75; stroke-width: 1.5; }
+.brand__orbit svg > circle:last-child { fill: #e1c77e; stroke: none; }
+
+.brand__orbit--inner {
+  opacity: 0.34;
+  animation: orbit-turn 70s linear infinite reverse;
+}
+
+.brand__orbit--inner svg > circle:last-child { fill: currentColor; }
+
+.brand__emblem {
+  position: absolute;
+  inset: 22% 21%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand__emblem img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 18px #c9a85a18);
+}
+
+.brand__emblem > span {
+  margin-top: 7%;
+  color: #e0cca0;
+  font: 400 clamp(13px, 1.6vw, 24px)/1.2 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  white-space: nowrap;
+}
+
+.brand__emblem > small {
+  margin-top: 10px;
+  color: #a99669;
+  font: 7px/1.4 var(--font-mono);
+  letter-spacing: 0.19em;
+}
+
+.brand__coordinate {
+  position: absolute;
+  color: #a89567;
+  background: #0b0c0c;
+  padding: 5px 8px;
+  font: 8px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.brand__coordinate--top { top: 3.3%; left: 50%; transform: translateX(-50%); }
+.brand__coordinate--left { left: 1.5%; top: 50%; transform: translateY(-50%); }
+.brand__coordinate--right { right: 1.5%; top: 50%; transform: translateY(-50%); }
+
+.brand__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin: -1% 5% 0;
+  border-bottom: 1px solid #c9a85a2c;
+}
+
+.brand__caption { color: #b7ad96; font-size: 11px; }
+.brand__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 0 8px 8px;
+  border: 0;
+  background: transparent;
+  color: #b7ad96;
+  font: 10px var(--font-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.brand__toggle svg { width: 12px; height: 12px; }
+.brand__toggle:hover { color: #f1dfaf; }
+.brand__toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.brand__reduced { display: none; color: #b7ad96; font-size: 10px; }
+.brand[data-paused="true"] :is(.brand__halo, .brand__orbit, .brand__orbit--inner) { animation-play-state: paused; }
+
+.brand[data-variant="login"] .brand__emblem > span { font-size: clamp(13px, 1.5vw, 20px); }
+.brand[data-variant="login"] .brand__caption { display: none; }
+.brand[data-variant="login"] .brand__controls { justify-content: center; border: 0; }
+
+@keyframes orbit-turn { to { transform: rotate(360deg); } }
+@keyframes halo-breathe { from { opacity: 0.45; transform: scale(0.93); } to { opacity: 1; transform: scale(1.06); } }
+
+@media (max-width: 760px) {
+  .brand[data-variant="login"] .brand__emblem > span { font-size: 10px; letter-spacing: 0.16em; }
+  .brand[data-variant="login"] .brand__emblem > small { display: none; }
+  .brand[data-variant="login"] .brand__coordinate { font-size: 6px; padding: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand__halo, .brand__orbit, .brand__orbit--inner { animation: none; }
+  .brand__toggle { display: none; }
+  .brand__reduced { display: inline; }
+}
