@@ -1,0 +1,166 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop__wash {
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(ellipse at 12% 22%, light-dark(#b8d5fa, #143451), transparent 48%),
+    radial-gradient(ellipse at 87% 77%, light-dark(#d8bdf6, #342050), transparent 45%),
+    radial-gradient(ellipse at 82% 12%, light-dark(#f4e0ce, #332334), transparent 40%);
+  animation: atmosphere-drift 24s ease-in-out infinite alternate;
+}
+
+.backdrop__ribbon {
+  position: absolute;
+  inset: -28%;
+  background: conic-gradient(
+    from 240deg at 50% 50%,
+    transparent 0deg,
+    light-dark(rgba(85, 160, 220, 0.14), rgba(87, 183, 228, 0.09)) 13deg,
+    transparent 26deg 178deg,
+    light-dark(rgba(167, 107, 224, 0.16), rgba(166, 96, 231, 0.13)) 192deg,
+    light-dark(rgba(229, 151, 131, 0.12), rgba(230, 133, 151, 0.07)) 201deg,
+    transparent 218deg
+  );
+  animation: spectrum-drift 30s ease-in-out infinite alternate;
+}
+
+.backdrop__stars {
+  position: absolute;
+  inset: 0;
+  color: light-dark(rgba(64, 89, 137, 0.36), rgba(207, 224, 255, 0.5));
+  background:
+    radial-gradient(circle at 22px 38px, currentColor 0 0.75px, transparent 1.5px) 0 0 / 181px 157px,
+    radial-gradient(circle at 84px 60px, currentColor 0 0.6px, transparent 1.4px) 0 0 / 277px 241px;
+  mask-image: radial-gradient(ellipse, transparent 15%, #000 75%);
+  animation: starlight 9s ease-in-out infinite alternate;
+}
+
+.backdrop__constellation {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: light-dark(#536fa8, #b3c9fa);
+  stroke: currentColor;
+  stroke-width: 0.7;
+  opacity: 0.23;
+}
+
+.backdrop__constellation circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.backdrop__arc {
+  opacity: 0.5;
+}
+
+.backdrop__prism {
+  position: absolute;
+  width: clamp(340px, 39vw, 640px);
+  aspect-ratio: 480 / 520;
+  color: light-dark(#698fc4, #6eacd0);
+  animation: prism-drift 22s ease-in-out infinite alternate;
+}
+
+.backdrop__prism_left {
+  top: -8%;
+  left: -10%;
+  --prism-angle: -18deg;
+}
+
+.backdrop__prism_right {
+  bottom: -20%;
+  right: -7%;
+  color: light-dark(#9d79bf, #ba8cde);
+  --prism-angle: 20deg;
+  animation-delay: -11s;
+}
+
+.backdrop__prism svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 0.85;
+  stroke-linejoin: round;
+  stroke-opacity: 0.38;
+}
+
+.backdrop__prism circle {
+  fill: currentColor;
+  stroke: none;
+  opacity: 0.55;
+}
+
+.backdrop__face {
+  fill: currentColor;
+  fill-opacity: 0.025;
+}
+
+.backdrop__facet {
+  fill: currentColor;
+  fill-opacity: 0.06;
+}
+
+.backdrop__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 25%, light-dark(rgba(239, 242, 251, 0.3), rgba(5, 8, 18, 0.5)) 100%);
+}
+
+.backdrop * {
+  animation-play-state: var(--login-motion-state, running);
+}
+
+@keyframes atmosphere-drift {
+  from { transform: translate(-2%, -1%) scale(1); }
+  to { transform: translate(3%, 2%) scale(1.06); }
+}
+
+@keyframes spectrum-drift {
+  from { transform: rotate(-7deg); opacity: 0.6; }
+  to { transform: rotate(7deg); opacity: 1; }
+}
+
+@keyframes starlight {
+  from { opacity: 0.45; }
+  to { opacity: 0.9; }
+}
+
+@keyframes prism-drift {
+  from { transform: translateY(0) rotate(var(--prism-angle)); }
+  to { transform: translateY(22px) rotate(calc(var(--prism-angle) + 7deg)); }
+}
+
+@media (max-width: 640px) {
+  .backdrop__prism_left {
+    top: -55px;
+    left: -185px;
+  }
+
+  .backdrop__prism_right {
+    right: -190px;
+    bottom: -105px;
+  }
+
+  .backdrop__constellation {
+    opacity: 0.14;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop * {
+    animation: none !important;
+  }
+
+  .backdrop__prism {
+    transform: rotate(var(--prism-angle));
+  }
+}

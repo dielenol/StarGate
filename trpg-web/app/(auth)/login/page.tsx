@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signIn } from "@/lib/auth/config";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+import { LoginBackdrop } from "./LoginBackdrop";
 import { LoginMotion } from "./LoginMotion";
 import styles from "./page.module.css";
 
@@ -24,6 +25,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className={styles.login}>
+      <LoginBackdrop />
       <div className={styles.login__themeToggle}>
         <ThemeToggle />
       </div>

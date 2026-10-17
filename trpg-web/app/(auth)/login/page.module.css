@@ -1,22 +1,18 @@
 .login {
+  --login-motion-state: running;
   position: relative;
+  isolation: isolate;
   overflow: clip;
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 80px 24px 40px;
-  background:
-    linear-gradient(var(--grid-line-soft) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line-soft) 1px, transparent 1px),
-    radial-gradient(ellipse at 25% 30%, rgba(106, 182, 255, 0.08), transparent 45%),
-    radial-gradient(ellipse at 80% 75%, rgba(188, 139, 250, 0.08), transparent 45%),
-    var(--bg);
-  background-size:
-    44px 44px,
-    44px 44px,
-    auto,
-    auto;
+  background: light-dark(#f3f5fc, #090d18);
+}
+
+.login:has([data-paused="true"]) {
+  --login-motion-state: paused;
 }
 
 .login__themeToggle {
@@ -24,29 +20,6 @@
   top: 20px;
   right: 20px;
   z-index: 2;
-}
-
-.login::before {
-  position: absolute;
-  inset: 10% auto auto 8%;
-  width: 260px;
-  height: 260px;
-  border: 1px solid rgba(88, 101, 242, 0.16);
-  border-radius: 24px;
-  content: "";
-  transform: rotate(-10deg);
-}
-
-.login::after {
-  position: absolute;
-  right: 7%;
-  bottom: 11%;
-  width: 220px;
-  height: 220px;
-  border: 1px solid color-mix(in srgb, var(--brand-gold) 28%, transparent);
-  border-radius: 24px;
-  content: "";
-  transform: rotate(12deg);
 }
 
 .login__panel {
@@ -57,7 +30,7 @@
   padding: 30px 34px 34px;
   background:
     linear-gradient(180deg, var(--highlight-subtle), transparent 42%),
-    var(--surface-panel);
+    light-dark(rgba(255, 255, 255, 0.86), rgba(16, 21, 35, 0.84));
   border: 1px solid var(--neutral-soft);
   border-radius: 12px;
   box-shadow: var(--shadow-panel);
@@ -173,11 +146,6 @@
   .login__themeToggle {
     top: 14px;
     right: 14px;
-  }
-
-  .login::before,
-  .login::after {
-    display: none;
   }
 
   .login__panel {
