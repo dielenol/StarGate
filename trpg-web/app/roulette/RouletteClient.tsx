@@ -1,52 +1,44 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import NextImage from "next/image";
 import Link from "next/link";
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/components/ToastProvider";
 import { useTrpgMembers } from "@/hooks/queries/useTrpgMembers";
-import { getDiscordDefaultAvatarUrl } from "@/lib/discord/avatar";
 import {
-  createRouletteRace,
   getRouletteCourse,
-  ROULETTE_BOARD_WIDTH,
-  ROULETTE_COURSES,
   ROULETTE_DEFAULT_COURSE_ID,
-  ROULETTE_FIXED_STEP_SECONDS,
   ROULETTE_MAX_BALLS_PER_PARTICIPANT,
   ROULETTE_MAX_PARTICIPANTS,
   ROULETTE_MAX_TOTAL_BALLS,
   ROULETTE_MAX_WINNERS,
   ROULETTE_MIN_BALLS_PER_PARTICIPANT,
   ROULETTE_MIN_PARTICIPANTS,
-  stepRouletteRace,
   type RouletteCourseId,
   type RouletteParticipant,
-  type RouletteRace,
   type RouletteWinnerMode,
 } from "@/lib/roulette/engine";
-import { drawRouletteScene } from "@/lib/roulette/renderer";
 import {
   canvasToPngBlob,
   createRouletteResultCanvas,
 } from "@/lib/roulette/result-image";
 
+import { MemberAvatar } from "./MemberAvatar";
+import { MemberPickerDrawer } from "./MemberPickerDrawer";
+import {
+  formatRouletteSeed,
+  RouletteResultPanel,
+} from "./RouletteResultPanel";
+import { RouletteSetupBar } from "./RouletteSetupBar";
+import { RouletteStage, type RouletteStageHandle } from "./RouletteStage";
+import { useRouletteRace } from "./useRouletteRace";
+
 import styles from "./styles.module.css";
 
-const MAX_FRAME_DELTA_SECONDS = 0.05;
-const OVERTIME_SIMULATION_SECONDS = 20;
-
-type RacePhase = "ready" | "running" | "finished";
-type CopyState = "idle" | "copying" | "success" | "error";
+const ERROR_MESSAGE_TIMEOUT_MS = 4_000;
 
 interface RouletteClientProps {
   currentUserDiscordId: string;
@@ -54,100 +46,34 @@ interface RouletteClientProps {
   initialMembers: TrpgMemberView[];
 }
 
-interface MemberAvatarProps {
-  avatarUrl: string | null;
-  discordUserId: string;
-  name: string;
-  variant?: "member" | "winner";
-  meaningful?: boolean;
-}
-
-function getInitial(name: string): string {
-  return Array.from(name.trim())[0]?.toUpperCase() ?? "?";
-}
-
-function MemberAvatar({
-  avatarUrl,
-  discordUserId,
-  name,
-  variant = "member",
-  meaningful = false,
-}: MemberAvatarProps) {
-  const size = variant === "winner" ? 54 : 38;
-  const className = `${styles.roulette__avatar} ${styles[`roulette__avatar_${variant}`]}`;
-
-  if (!avatarUrl) {
-    return (
-      <span className={className} aria-hidden={!meaningful}>
-        {getInitial(name)}
-      </span>
-    );
-  }
-
-  return (
-    <span className={className}>
-      <NextImage
-        className={styles.roulette__avatar_image}
-        src={avatarUrl}
-        alt={meaningful ? `${name}의 Discord 프로필` : ""}
-        width={size}
-        height={size}
-        sizes={`${size}px`}
-        unoptimized
-        onError={(event) => {
-          const fallbackAvatarUrl = getDiscordDefaultAvatarUrl(discordUserId);
-          if (event.currentTarget.src !== fallbackAvatarUrl) {
-            event.currentTarget.src = fallbackAvatarUrl;
-          }
-        }}
-      />
-    </span>
-  );
-}
-
-function createBrowserSeed(): number {
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    return crypto.getRandomValues(new Uint32Array(1))[0];
-  }
-  return Date.now() >>> 0;
-}
-
-function getSimulationRate(totalBalls: number, elapsedSeconds: number): number {
-  const loadRate = totalBalls > 64 ? 2.5 : totalBalls > 32 ? 1.75 : 1;
-  const overtimeRate = elapsedSeconds > OVERTIME_SIMULATION_SECONDS ? 2 : 1;
-  return loadRate * overtimeRate;
-}
-
 export function RouletteClient({
   currentUserDiscordId,
   currentUserName,
   initialMembers,
 }: RouletteClientProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const raceRef = useRef<RouletteRace | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const previewAnimationFrameRef = useRef<number | null>(null);
-  const previewParticipantsRef = useRef<RouletteParticipant[]>([]);
-  const courseRef = useRef(getRouletteCourse(ROULETTE_DEFAULT_COURSE_ID));
-  const avatarImagesRef = useRef(new Map<string, CanvasImageSource>());
-  const loadedAvatarUrlsRef = useRef(new Map<string, string>());
+  const stageRef = useRef<RouletteStageHandle>(null);
+  const arenaRef = useRef<HTMLDivElement>(null);
+  const sideRef = useRef<HTMLDivElement>(null);
 
+  const { showToast } = useToast();
   const membersQuery = useTrpgMembers({ initialData: initialMembers });
   const members = membersQuery.data ?? initialMembers;
 
+  const renderStage = useCallback(() => stageRef.current?.render(), []);
+  const race = useRouletteRace({ onFrame: renderStage });
+  const { phase, reset: resetRace, start: startRace } = race;
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [courseId, setCourseId] = useState<RouletteCourseId>(
     ROULETTE_DEFAULT_COURSE_ID,
   );
   const [winnerMode, setWinnerMode] = useState<RouletteWinnerMode>("first");
   const [winnerCount, setWinnerCount] = useState(1);
   const [ballsPerParticipant, setBallsPerParticipant] = useState(1);
-  const [phase, setPhase] = useState<RacePhase>("ready");
-  const [winners, setWinners] = useState<RouletteParticipant[]>([]);
+  const [memberPickerOpen, setMemberPickerOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [lastSeed, setLastSeed] = useState<number | null>(null);
-  const [copyState, setCopyState] = useState<CopyState>("idle");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
 
   const course = getRouletteCourse(courseId);
   const memberById = useMemo(
@@ -174,20 +100,6 @@ export function RouletteClient({
       }),
     [memberById, validSelectedIds],
   );
-  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase("ko-KR");
-  const visibleMembers = useMemo(() => {
-    if (!normalizedSearchQuery) return members;
-
-    return members.filter((member) =>
-      `${member.displayName} ${member.discordUsername}`
-        .toLocaleLowerCase("ko-KR")
-        .includes(normalizedSearchQuery),
-    );
-  }, [members, normalizedSearchQuery]);
-  const selectedIdSet = useMemo(
-    () => new Set(validSelectedIds),
-    [validSelectedIds],
-  );
   const maxSelectableParticipants = Math.min(
     ROULETTE_MAX_PARTICIPANTS,
     Math.floor(ROULETTE_MAX_TOTAL_BALLS / ballsPerParticipant),
@@ -197,14 +109,18 @@ export function RouletteClient({
     Math.max(1, selectedParticipants.length),
     ROULETTE_MAX_WINNERS,
   );
-  const winnerCountOptions = Array.from(
-    {
-      length: Math.min(
-        ROULETTE_MAX_WINNERS,
-        Math.max(1, selectedParticipants.length),
+  const winnerCountOptions = useMemo(
+    () =>
+      Array.from(
+        {
+          length: Math.min(
+            ROULETTE_MAX_WINNERS,
+            Math.max(1, selectedParticipants.length),
+          ),
+        },
+        (_, index) => index + 1,
       ),
-    },
-    (_, index) => index + 1,
+    [selectedParticipants.length],
   );
   const totalBalls = selectedParticipants.length * ballsPerParticipant;
   const maxBallsForSelection = Math.min(
@@ -220,168 +136,55 @@ export function RouletteClient({
       ),
     [ballsPerParticipant, selectedParticipants],
   );
+  const finishedParticipantIdSet = useMemo(
+    () => new Set(race.finishedParticipantIds),
+    [race.finishedParticipantIds],
+  );
 
-  const renderCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const bounds = canvas.getBoundingClientRect();
-    if (bounds.width <= 0 || bounds.height <= 0) return;
-
-    const activeCourse = courseRef.current;
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-    const targetWidth = Math.round(bounds.width * pixelRatio);
-    const targetHeight = Math.round(bounds.height * pixelRatio);
-    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-    }
-
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    context.setTransform(
-      targetWidth / ROULETTE_BOARD_WIDTH,
-      0,
-      0,
-      targetHeight / activeCourse.height,
-      0,
-      0,
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = setTimeout(
+      () => setErrorMessage(null),
+      ERROR_MESSAGE_TIMEOUT_MS,
     );
-    drawRouletteScene(context, {
-      race: raceRef.current,
-      previewParticipants: previewParticipantsRef.current,
-      previewElapsedSeconds: performance.now() / 1_000,
-      course: activeCourse,
-      avatarImages: avatarImagesRef.current,
-    });
-  }, []);
+    return () => clearTimeout(timer);
+  }, [errorMessage]);
 
-  const stopAnimation = useCallback(() => {
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+  useEffect(() => {
+    const behavior: ScrollBehavior = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
+      ? "auto"
+      : "smooth";
+
+    if (phase === "running") {
+      arenaRef.current?.scrollIntoView({ block: "nearest", behavior });
+    } else if (phase === "finished") {
+      sideRef.current?.scrollIntoView({ block: "nearest", behavior });
     }
-  }, []);
-
-  const clearRace = useCallback(() => {
-    stopAnimation();
-    raceRef.current = null;
-    setWinners([]);
-    setLastSeed(null);
-    setCopyState("idle");
-    setPhase("ready");
-    renderCanvas();
-  }, [renderCanvas, stopAnimation]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const observer = new ResizeObserver(renderCanvas);
-    observer.observe(canvas);
-    renderCanvas();
-
-    return () => observer.disconnect();
-  }, [renderCanvas]);
-
-  useEffect(() => {
-    previewParticipantsRef.current = previewMarbles;
-    if (!raceRef.current) renderCanvas();
-  }, [previewMarbles, renderCanvas]);
-
-  useEffect(() => {
-    courseRef.current = course;
-    if (!raceRef.current) renderCanvas();
-  }, [course, renderCanvas]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    for (const participant of selectedParticipants) {
-      if (!participant.avatarUrl) continue;
-      if (
-        loadedAvatarUrlsRef.current.get(participant.id) ===
-          participant.avatarUrl &&
-        avatarImagesRef.current.has(participant.id)
-      ) {
-        continue;
-      }
-
-      avatarImagesRef.current.delete(participant.id);
-      loadedAvatarUrlsRef.current.delete(participant.id);
-
-      const avatar = new window.Image();
-      avatar.crossOrigin = "anonymous";
-      avatar.decoding = "async";
-      avatar.onload = () => {
-        if (cancelled) return;
-        avatarImagesRef.current.set(participant.id, avatar);
-        loadedAvatarUrlsRef.current.set(participant.id, participant.avatarUrl!);
-        renderCanvas();
-      };
-      avatar.onerror = () => {
-        const fallbackAvatarUrl = getDiscordDefaultAvatarUrl(participant.id);
-        if (avatar.src !== fallbackAvatarUrl) {
-          avatar.src = fallbackAvatarUrl;
-        }
-      };
-      avatar.src = participant.avatarUrl;
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [renderCanvas, selectedParticipants]);
-
-  useEffect(() => stopAnimation, [stopAnimation]);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-
-    let lastRenderTime = 0;
-    const animatePreview = (currentTime: number) => {
-      if (!raceRef.current && currentTime - lastRenderTime >= 1_000 / 30) {
-        renderCanvas();
-        lastRenderTime = currentTime;
-      }
-      previewAnimationFrameRef.current = requestAnimationFrame(animatePreview);
-    };
-
-    previewAnimationFrameRef.current = requestAnimationFrame(animatePreview);
-    return () => {
-      if (previewAnimationFrameRef.current !== null) {
-        cancelAnimationFrame(previewAnimationFrameRef.current);
-        previewAnimationFrameRef.current = null;
-      }
-    };
-  }, [renderCanvas]);
+  }, [phase]);
 
   function prepareForConfigurationChange() {
-    if (phase !== "ready") clearRace();
+    if (phase !== "ready") resetRace();
     setErrorMessage(null);
-    setCopyState("idle");
+    setActionError(null);
   }
 
   function handleParticipantToggle(discordUserId: string) {
     if (phase === "running") return;
     prepareForConfigurationChange();
 
-    setSelectedIds((current) => {
-      const activeCurrent = current.filter((id) => memberById.has(id));
-      if (activeCurrent.includes(discordUserId)) {
-        return activeCurrent.filter((id) => id !== discordUserId);
-      }
-      if (activeCurrent.length >= maxSelectableParticipants) {
-        setErrorMessage(
-          `현재 마블 수에서는 최대 ${maxSelectableParticipants}명까지 선택할 수 있습니다.`,
-        );
-        return activeCurrent;
-      }
-      return [...activeCurrent, discordUserId];
-    });
+    if (validSelectedIds.includes(discordUserId)) {
+      setSelectedIds(validSelectedIds.filter((id) => id !== discordUserId));
+      return;
+    }
+    if (validSelectedIds.length >= maxSelectableParticipants) {
+      setErrorMessage(
+        `현재 마블 수에서는 최대 ${maxSelectableParticipants}명까지 선택할 수 있습니다.`,
+      );
+      return;
+    }
+    setSelectedIds([...validSelectedIds, discordUserId]);
   }
 
   function handleSelectAll() {
@@ -444,553 +247,248 @@ export function RouletteClient({
       return;
     }
 
-    stopAnimation();
-    const seed = createBrowserSeed();
-    const race = createRouletteRace(selectedParticipants, seed, {
-      courseId,
-      winnerMode,
-      winnerCount: effectiveWinnerCount,
-      ballsPerParticipant,
-    });
-    raceRef.current = race;
     setErrorMessage(null);
-    setWinners([]);
-    setCopyState("idle");
-    setLastSeed(seed);
-    setPhase("running");
-
-    let previousTime = performance.now();
-    let accumulator = 0;
-
-    const animate = (currentTime: number) => {
-      const frameDelta = Math.min(
-        (currentTime - previousTime) / 1_000,
-        MAX_FRAME_DELTA_SECONDS,
+    setActionError(null);
+    try {
+      startRace({
+        participants: selectedParticipants,
+        courseId,
+        winnerMode,
+        winnerCount: effectiveWinnerCount,
+        ballsPerParticipant,
+      });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "추첨을 시작하지 못했습니다.",
       );
-      previousTime = currentTime;
-      accumulator +=
-        frameDelta * getSimulationRate(totalBalls, race.elapsedSeconds);
-
-      while (accumulator >= ROULETTE_FIXED_STEP_SECONDS && !race.done) {
-        stepRouletteRace(race, ROULETTE_FIXED_STEP_SECONDS);
-        accumulator -= ROULETTE_FIXED_STEP_SECONDS;
-      }
-
-      if (race.done) {
-        const result = race.winnerParticipantIds.flatMap(
-          (participantId): RouletteParticipant[] => {
-            const ball = race.balls.find(
-              (candidate) => candidate.id === participantId,
-            );
-            return ball
-              ? [
-                  {
-                    id: ball.id,
-                    name: ball.name,
-                    avatarUrl: ball.avatarUrl,
-                  },
-                ]
-              : [];
-          },
-        );
-        setWinners(result);
-        setPhase("finished");
-        animationFrameRef.current = null;
-        renderCanvas();
-        return;
-      }
-
-      renderCanvas();
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    renderCanvas();
-    animationFrameRef.current = requestAnimationFrame(animate);
+    }
   }
 
-  async function handleCopyResult() {
-    const sourceCanvas = canvasRef.current;
-    const race = raceRef.current;
-    if (!sourceCanvas || !race || winners.length === 0) return;
+  function handleEditMembers() {
+    resetRace();
+    setActionError(null);
+    setMemberPickerOpen(true);
+  }
+
+  function buildResultCanvas(): HTMLCanvasElement | null {
+    const stage = stageRef.current;
+    const currentRace = race.raceRef.current;
+    if (!stage || !currentRace || race.winners.length === 0) return null;
+
+    const sourceCanvas = stage.getCanvas();
+    if (!sourceCanvas) return null;
+
+    return createRouletteResultCanvas({
+      sourceCanvas,
+      course,
+      race: currentRace,
+      winners: race.winners,
+      avatarImages: stage.getAvatarImages(),
+    });
+  }
+
+  async function handleCopyImage() {
+    if (imageBusy) return;
+    setActionError(null);
 
     if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
-      setCopyState("error");
+      setActionError(
+        "이 브라우저는 이미지 복사를 지원하지 않습니다. 이미지 저장을 이용해 주세요.",
+      );
       return;
     }
 
-    setCopyState("copying");
+    let resultCanvas: HTMLCanvasElement | null;
     try {
-      const resultCanvas = createRouletteResultCanvas({
-        sourceCanvas,
-        course,
-        race,
-        winners,
-        avatarImages: avatarImagesRef.current,
-      });
-      const pngBlob = canvasToPngBlob(resultCanvas);
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": pngBlob }),
-      ]);
-      setCopyState("success");
+      resultCanvas = buildResultCanvas();
     } catch {
-      setCopyState("error");
+      setActionError("결과 이미지를 만들지 못했습니다.");
+      return;
+    }
+    if (!resultCanvas) return;
+
+    setImageBusy(true);
+    try {
+      // Safari 는 사용자 제스처 안에서 ClipboardItem 을 만들어야 하므로 Blob 은 Promise 로 넘긴다.
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": canvasToPngBlob(resultCanvas) }),
+      ]);
+      showToast("결과 이미지를 클립보드에 복사했습니다.");
+    } catch {
+      setActionError("클립보드 복사에 실패했습니다. 이미지 저장을 이용해 주세요.");
+    } finally {
+      setImageBusy(false);
     }
   }
 
-  const phaseLabel =
-    phase === "running"
-      ? "낙하 진행 중"
-      : phase === "finished"
-        ? "선발 완료"
-        : "출발 대기";
+  function handleSaveImage() {
+    if (imageBusy) return;
+    setActionError(null);
+
+    try {
+      const resultCanvas = buildResultCanvas();
+      if (!resultCanvas) return;
+
+      const seedLabel =
+        race.seed !== null ? formatRouletteSeed(race.seed) : "result";
+      const anchor = document.createElement("a");
+      anchor.href = resultCanvas.toDataURL("image/png");
+      anchor.download = `dache-roulette-${seedLabel}.png`;
+      anchor.rel = "noopener";
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      showToast("결과 이미지를 저장했습니다.");
+    } catch {
+      setActionError("이미지 저장에 실패했습니다.");
+    }
+  }
+
   const resultLabel = winnerMode === "first" ? "선착 당첨" : "후착 당첨";
-  const winnerNames = winners.map((winner) => winner.name).join(", ");
+  const winnerNames = race.winners.map((winner) => winner.name).join(", ");
+  const liveStatus =
+    race.winners.length > 0
+      ? `${resultLabel}: ${winnerNames}`
+      : phase === "running"
+        ? winnerMode === "last"
+          ? `총 ${totalBalls}개 마블의 완주를 기다리는 중입니다.`
+          : `${effectiveWinnerCount}명의 선착 당첨자를 가리는 중입니다.`
+        : selectedParticipants.length >= ROULETTE_MIN_PARTICIPANTS
+          ? "명단과 추첨 설정을 확인한 뒤 출발하세요."
+          : `길드원을 ${ROULETTE_MIN_PARTICIPANTS}명 이상 선택하면 출발할 수 있습니다.`;
 
   return (
-    <main className={styles.roulette}>
-      <header className={styles.roulette__header}>
-        <div className={styles.roulette__heading}>
-          <Link className={styles.roulette__back} href="/calendar">
-            ← 세션 캘린더
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.heading}>
+          <Link className={styles.back} href="/calendar">
+            ← 캘린더
           </Link>
-          <div>
-            <p className={styles.roulette__eyebrow}>DACHE ROULETTE</p>
-            <h1>다채 룰렛</h1>
-            <p className={styles.roulette__subtitle}>
-              길드원을 선택하고 Discord 프로필 마블을 출발시키세요.
-            </p>
-          </div>
+          <h1>다채 룰렛</h1>
         </div>
-        <div className={styles.roulette__account}>
+        <div className={styles.account}>
           <span title="현재 로그인 사용자">{currentUserName}</span>
           <ThemeToggle />
         </div>
       </header>
 
-      <section className={styles.roulette__layout}>
-        <aside className={styles.roulette__controls}>
-          <section className={styles.roulette__control_section}>
-            <div className={styles.roulette__control_header}>
-              <div>
-                <p>코스</p>
-                <strong>{course.distance}</strong>
-              </div>
-              <span className={styles.roulette__badge}>4 TRACKS</span>
-            </div>
+      <RouletteSetupBar
+        phase={phase}
+        course={course}
+        participants={selectedParticipants}
+        winnerMode={winnerMode}
+        winnerCount={effectiveWinnerCount}
+        winnerCountOptions={winnerCountOptions}
+        ballsPerParticipant={ballsPerParticipant}
+        minBallsPerParticipant={ROULETTE_MIN_BALLS_PER_PARTICIPANT}
+        maxBallsPerParticipant={maxBallsForSelection}
+        totalBalls={totalBalls}
+        elapsedSeconds={race.elapsedSeconds}
+        errorMessage={memberPickerOpen ? null : errorMessage}
+        onOpenMembers={() => {
+          setActionError(null);
+          setMemberPickerOpen(true);
+        }}
+        onCourseChange={handleCourseChange}
+        onWinnerModeChange={handleWinnerModeChange}
+        onWinnerCountChange={handleWinnerCountChange}
+        onBallsPerParticipantChange={handleBallsPerParticipantChange}
+        onStart={handleStart}
+        onStop={resetRace}
+        onEditSettings={resetRace}
+      />
 
-            <div
-              className={styles.roulette__course_grid}
-              role="group"
-              aria-label="룰렛 코스"
+      <div ref={arenaRef} className={styles.arena}>
+        <RouletteStage
+          ref={stageRef}
+          course={course}
+          raceRef={race.raceRef}
+          previewParticipants={previewMarbles}
+          layoutKey={phase}
+        />
+
+        <div ref={sideRef} className={styles.side}>
+          <div className={styles.side_inner}>
+            <p
+              className={phase === "finished" ? styles.sr_only : styles.status}
+              aria-live="polite"
             >
-              {ROULETTE_COURSES.map((item) => {
-                const selected = item.id === courseId;
-                return (
-                  <button
-                    key={item.id}
-                    className={`${styles.roulette__course} ${selected ? styles.roulette__course_selected : ""}`}
-                    type="button"
-                    onClick={() => handleCourseChange(item.id)}
-                    aria-pressed={selected}
-                    disabled={phase === "running"}
-                  >
-                    <span>{item.number}</span>
-                    <strong>{item.name}</strong>
-                    <small>
-                      {item.distance} · {item.duration}
-                    </small>
-                  </button>
-                );
-              })}
-            </div>
-            <p className={styles.roulette__course_description}>
-              {course.description}
+              {liveStatus}
             </p>
-          </section>
 
-          <section className={styles.roulette__control_section}>
-            <div className={styles.roulette__control_header}>
-              <div>
-                <p>추첨 설정</p>
-                <strong>{resultLabel}</strong>
-              </div>
-              <span className={styles.roulette__badge}>{totalBalls} BALLS</span>
-            </div>
-
-            <fieldset
-              className={styles.roulette__settings}
-              disabled={phase === "running"}
-            >
-              <legend className={styles.roulette__sr_only}>추첨 설정</legend>
-              <div className={styles.roulette__setting}>
-                <span>당첨 순서</span>
-                <div
-                  className={styles.roulette__mode_toggle}
-                  role="group"
-                  aria-label="당첨 순서"
-                >
-                  <button
-                    type="button"
-                    className={
-                      winnerMode === "first"
-                        ? styles.roulette__mode_selected
-                        : undefined
-                    }
-                    onClick={() => handleWinnerModeChange("first")}
-                    aria-pressed={winnerMode === "first"}
-                  >
-                    먼저 도착
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      winnerMode === "last"
-                        ? styles.roulette__mode_selected
-                        : undefined
-                    }
-                    onClick={() => handleWinnerModeChange("last")}
-                    aria-pressed={winnerMode === "last"}
-                  >
-                    마지막 도착
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.roulette__settings_grid}>
-                <label className={styles.roulette__setting}>
-                  <span>당첨 인원</span>
-                  <select
-                    value={effectiveWinnerCount}
-                    onChange={(event) =>
-                      handleWinnerCountChange(Number(event.target.value))
-                    }
-                  >
-                    {winnerCountOptions.map((count) => (
-                      <option key={count} value={count}>
-                        {count}명
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className={styles.roulette__setting}>
-                  <span>1인당 마블 수</span>
-                  <div className={styles.roulette__stepper}>
-                    <button
-                      type="button"
-                      aria-label="1인당 마블 수 줄이기"
-                      onClick={() =>
-                        handleBallsPerParticipantChange(
-                          ballsPerParticipant - 1,
-                        )
-                      }
-                      disabled={
-                        phase === "running" ||
-                        ballsPerParticipant <=
-                          ROULETTE_MIN_BALLS_PER_PARTICIPANT
-                      }
-                    >
-                      −
-                    </button>
-                    <output aria-live="polite">
-                      <strong>{ballsPerParticipant}</strong>
-                      <small>개</small>
-                    </output>
-                    <button
-                      type="button"
-                      aria-label="1인당 마블 수 늘리기"
-                      onClick={() =>
-                        handleBallsPerParticipantChange(
-                          ballsPerParticipant + 1,
-                        )
-                      }
-                      disabled={
-                        phase === "running" ||
-                        ballsPerParticipant >= maxBallsForSelection
-                      }
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <p className={styles.roulette__setting_note}>
-                −/+ 버튼으로 1인당 최대 {ROULETTE_MAX_BALLS_PER_PARTICIPANT}
-                개까지 늘릴 수 있습니다. 전체 마블은 최대 {ROULETTE_MAX_TOTAL_BALLS}
-                개입니다.
-              </p>
-            </fieldset>
-          </section>
-
-          <section className={styles.roulette__control_section}>
-            <div className={styles.roulette__control_header}>
-              <div>
-                <p>참가자</p>
-                <strong>
-                  {selectedParticipants.length}/{maxSelectableParticipants}
-                </strong>
-              </div>
-              <span
-                className={`${styles.roulette__phase} ${styles[`roulette__phase_${phase}`]}`}
-              >
-                {phaseLabel}
-              </span>
-            </div>
-
-            <label className={styles.roulette__search}>
-              <span className={styles.roulette__sr_only}>길드원 검색</span>
-              <span aria-hidden="true">⌕</span>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="닉네임 또는 Discord 아이디 검색"
-                disabled={phase === "running"}
+            {phase === "finished" ? (
+              <RouletteResultPanel
+                winnerMode={winnerMode}
+                winners={race.winners}
+                seed={race.seed}
+                participantCount={selectedParticipants.length}
+                ballsPerParticipant={ballsPerParticipant}
+                busy={imageBusy}
+                actionError={actionError}
+                onCopyImage={handleCopyImage}
+                onSaveImage={handleSaveImage}
+                onRestart={handleStart}
+                onEditMembers={handleEditMembers}
               />
-            </label>
-
-            <div className={styles.roulette__selection_actions}>
-              <button
-                type="button"
-                onClick={handleSelectAll}
-                disabled={phase === "running" || members.length === 0}
+            ) : (
+              <section
+                className={styles.roster}
+                aria-labelledby="roulette-roster-title"
               >
-                최대 {maxSelectableParticipants}명 선택
-              </button>
-              <button
-                type="button"
-                onClick={handleClearSelection}
-                disabled={phase === "running" || validSelectedIds.length === 0}
-              >
-                선택 해제
-              </button>
-            </div>
-
-            <div
-              className={styles.roulette__member_list}
-              role="group"
-              aria-label="활성 길드원"
-            >
-              {visibleMembers.map((member) => {
-                const selected = selectedIdSet.has(member.discordUserId);
-                const order = validSelectedIds.indexOf(member.discordUserId) + 1;
-                return (
-                  <button
-                    key={member.discordUserId}
-                    className={`${styles.roulette__member} ${selected ? styles.roulette__member_selected : ""}`}
-                    type="button"
-                    onClick={() => handleParticipantToggle(member.discordUserId)}
-                    aria-pressed={selected}
-                    disabled={phase === "running"}
-                  >
-                    <MemberAvatar
-                      avatarUrl={member.avatarUrl}
-                      discordUserId={member.discordUserId}
-                      name={member.displayName}
-                    />
-                    <span className={styles.roulette__member_identity}>
-                      <strong>
-                        {member.displayName}
-                        {member.discordUserId === currentUserDiscordId ? (
-                          <em>나</em>
-                        ) : null}
-                      </strong>
-                      <small>@{member.discordUsername}</small>
+                <div className={styles.roster_header}>
+                  <h2 id="roulette-roster-title">
+                    참가자 <strong>{selectedParticipants.length}명</strong>
+                  </h2>
+                  {phase === "running" ? (
+                    <span className={styles.roster_progress}>
+                      완주 {race.finishedParticipantIds.length}/
+                      {selectedParticipants.length}
                     </span>
-                    <span
-                      className={styles.roulette__member_order}
-                      aria-hidden="true"
-                    >
-                      {selected ? order.toString().padStart(2, "0") : "+"}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {visibleMembers.length === 0 ? (
-                <p className={styles.roulette__empty}>
-                  {members.length === 0
-                    ? "동기화된 활성 길드원이 없습니다."
-                    : "검색 결과가 없습니다."}
-                </p>
-              ) : null}
-            </div>
-
-            {membersQuery.isError ? (
-              <p className={styles.roulette__error} role="alert">
-                길드원 목록을 새로 불러오지 못했습니다. 초기 목록으로 표시합니다.
-              </p>
-            ) : null}
-          </section>
-
-          <section className={styles.roulette__dispatch}>
-            {errorMessage ? (
-              <p className={styles.roulette__error} role="alert">
-                {errorMessage}
-              </p>
-            ) : null}
-
-            <div className={styles.roulette__actions}>
-              <button
-                className={styles.roulette__secondary}
-                type="button"
-                onClick={handleClearSelection}
-                disabled={phase === "running" || validSelectedIds.length === 0}
-              >
-                초기화
-              </button>
-
-              {phase === "ready" ? (
-                <button
-                  className={styles.roulette__primary}
-                  type="button"
-                  onClick={handleStart}
-                  disabled={
-                    selectedParticipants.length < ROULETTE_MIN_PARTICIPANTS
-                  }
-                >
-                  {totalBalls}개 마블 출발
-                </button>
-              ) : (
-                <button
-                  className={styles.roulette__primary}
-                  type="button"
-                  onClick={clearRace}
-                >
-                  {phase === "running" ? "추첨 중단" : "다시 추첨"}
-                </button>
-              )}
-            </div>
-
-            <dl className={styles.roulette__facts}>
-              <div>
-                <dt>선정 방식</dt>
-                <dd>
-                  {winnerMode === "first"
-                    ? `결승선을 먼저 통과한 참가자 ${effectiveWinnerCount}명`
-                    : `모든 마블 완주 후 가장 늦은 참가자 ${effectiveWinnerCount}명`}
-                </dd>
-              </div>
-              <div>
-                <dt>마블 구성</dt>
-                <dd>
-                  {selectedParticipants.length}명 × {ballsPerParticipant}개 = 총 {totalBalls}개
-                </dd>
-              </div>
-              <div>
-                <dt>데이터</dt>
-                <dd>Discord CDN 이미지를 직접 표시하며 별도 파일 저장 안 함</dd>
-              </div>
-              {lastSeed !== null ? (
-                <div>
-                  <dt>추첨 ID</dt>
-                  <dd>{lastSeed.toString(16).padStart(8, "0").toUpperCase()}</dd>
+                  ) : null}
                 </div>
-              ) : null}
-            </dl>
-          </section>
-        </aside>
 
-        <article className={styles.roulette__race_report}>
-          <div className={styles.roulette__race_heading}>
-            <div>
-              <p>선택 코스 · {course.distance}</p>
-              <h2>{course.name}</h2>
-            </div>
-            <span>{course.duration}</span>
-          </div>
-
-          <div className={styles.roulette__stage}>
-            <canvas
-              ref={canvasRef}
-              className={styles.roulette__canvas}
-              style={{
-                aspectRatio: `${ROULETTE_BOARD_WIDTH} / ${course.height}`,
-              }}
-              aria-label={`${course.name}에서 선택한 길드원의 프로필 마블이 회전 장애물과 충돌하며 결승선으로 내려가는 룰렛`}
-              role="img"
-            />
-
-            {winners.length > 0 ? (
-              <div className={styles.roulette__winner} role="status">
-                <div className={styles.roulette__winner_heading}>
-                  <span>{winnerMode === "first" ? "FIRST IN" : "LAST IN"}</span>
-                  <strong>{winners.length}명 당첨</strong>
-                </div>
-                <ol className={styles.roulette__winner_list}>
-                  {winners.map((winner, index) => (
-                    <li key={winner.id}>
-                      <span className={styles.roulette__winner_rank}>
-                        {index + 1}
-                      </span>
-                      <MemberAvatar
-                        avatarUrl={winner.avatarUrl}
-                        discordUserId={winner.id}
-                        name={winner.name}
-                        variant="winner"
-                        meaningful
-                      />
-                      <strong>{winner.name}</strong>
-                    </li>
-                  ))}
-                </ol>
-                <div className={styles.roulette__winner_actions}>
-                  <button
-                    className={styles.roulette__winner_copy}
-                    type="button"
-                    onClick={handleCopyResult}
-                    disabled={copyState === "copying"}
-                  >
-                    {copyState === "copying"
-                      ? "PNG 만드는 중…"
-                      : copyState === "success"
-                        ? "클립보드 복사 완료"
-                        : "결과 PNG 복사"}
-                  </button>
-                  <button
-                    className={styles.roulette__winner_retry}
-                    type="button"
-                    onClick={clearRace}
-                  >
-                    다시 추첨하기
-                  </button>
-                </div>
-                {copyState === "success" ? (
-                  <p
-                    className={`${styles.roulette__copy_status} ${styles.roulette__copy_status_success}`}
-                    aria-live="polite"
-                  >
-                    결과 이미지를 PNG로 클립보드에 넣었습니다.
+                {selectedParticipants.length > 0 ? (
+                  <ol className={styles.roster_list}>
+                    {selectedParticipants.map((participant, index) => {
+                      const finished = finishedParticipantIdSet.has(
+                        participant.id,
+                      );
+                      return (
+                        <li
+                          key={participant.id}
+                          className={`${styles.roster_item} ${finished ? styles.roster_item_finished : ""}`}
+                        >
+                          <span className={styles.roster_index}>
+                            {index + 1}
+                          </span>
+                          <MemberAvatar
+                            avatarUrl={participant.avatarUrl}
+                            discordUserId={participant.id}
+                            name={participant.name}
+                            size={28}
+                          />
+                          <span className={styles.roster_name}>
+                            {participant.name}
+                          </span>
+                          {finished ? (
+                            <span className={styles.roster_check}>완주</span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <p className={styles.roster_empty}>
+                    명단 편집에서 길드원을 선택하세요.
                   </p>
-                ) : copyState === "error" ? (
-                  <p
-                    className={`${styles.roulette__copy_status} ${styles.roulette__copy_status_error}`}
-                    role="alert"
-                  >
-                    이미지 복사에 실패했습니다. 브라우저의 클립보드 권한을
-                    확인해 주세요.
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
+                )}
+              </section>
+            )}
           </div>
+        </div>
+      </div>
 
-          <p className={styles.roulette__status} aria-live="polite">
-            {winners.length > 0
-              ? `${resultLabel}: ${winnerNames}`
-              : phase === "running"
-                ? winnerMode === "last"
-                  ? `총 ${totalBalls}개 마블의 완주를 기다리는 중입니다.`
-                  : `${effectiveWinnerCount}명의 선착 당첨자를 가리는 중입니다.`
-                : selectedParticipants.length >= ROULETTE_MIN_PARTICIPANTS
-                  ? "명단과 추첨 설정을 확인한 뒤 출발하세요."
-                  : `길드원을 ${ROULETTE_MIN_PARTICIPANTS}명 이상 선택하면 출발할 수 있습니다.`}
-          </p>
-        </article>
-      </section>
-
-      <footer className={styles.roulette__footer}>
+      <footer className={styles.footer}>
         <p>
           LazyGyu의{" "}
           <a
@@ -1013,6 +511,20 @@ export function RouletteClient({
           </a>
         </nav>
       </footer>
+
+      <MemberPickerDrawer
+        open={memberPickerOpen}
+        members={members}
+        selectedIds={validSelectedIds}
+        maxSelectable={maxSelectableParticipants}
+        currentUserDiscordId={currentUserDiscordId}
+        refreshFailed={membersQuery.isError}
+        errorMessage={errorMessage}
+        onToggle={handleParticipantToggle}
+        onSelectAll={handleSelectAll}
+        onClear={handleClearSelection}
+        onClose={() => setMemberPickerOpen(false)}
+      />
     </main>
   );
 }
