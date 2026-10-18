@@ -32,6 +32,7 @@ import type {
   GoogleCalendarConnectionView,
   GoogleCalendarEventView,
 } from "@/lib/google-calendar/types";
+import { resolveMemberName } from "@/lib/trpg/member-name";
 import type { TrpgSessionView } from "@/lib/trpg/serializer";
 
 import { GoogleCalendarSettingsModal } from "./GoogleCalendarSettingsModal";
@@ -60,6 +61,8 @@ const COMPACT_VISIBLE_SESSIONS_PER_CELL = 1;
 
 interface Props {
   currentUserDiscordId: string;
+  /** 로그인 세션의 Discord 이름 — 길드 멤버 캐시에 본인이 없을 때 ID 대신 보여준다. */
+  currentUserName?: string | null;
   initialYear: number;
   initialMonth: number;
   initialSessions: TrpgSessionView[];
@@ -82,6 +85,7 @@ function isUserSession(
 
 export function CalendarClient({
   currentUserDiscordId,
+  currentUserName = null,
   initialYear,
   initialMonth,
   initialSessions,
@@ -354,7 +358,7 @@ export function CalendarClient({
             ›
           </button>
           <span className={styles.calendar__profile} title="현재 로그인 사용자">
-            {currentMember?.displayName ?? currentUserDiscordId}
+            {currentMember?.displayName ?? currentUserName ?? currentUserDiscordId}
           </span>
           <ThemeToggle />
           <button
@@ -437,6 +441,7 @@ export function CalendarClient({
             focusedSessionId={focusedSessionId}
             members={members}
             currentUserDiscordId={currentUserDiscordId}
+            currentUserName={currentUserName}
             onCreate={() => handleOpenCreate(selectedDate)}
             canCreate={selectedDateCanCreate}
             onOpenSession={handleOpenSessionDetail}
@@ -664,6 +669,7 @@ export function CalendarClient({
           members={members}
           existingSessions={sessions}
           currentUserDiscordId={currentUserDiscordId}
+          currentUserName={currentUserName}
           onClose={() => setCreateModalDate(null)}
         />
       ) : null}
@@ -674,6 +680,7 @@ export function CalendarClient({
           members={members}
           existingSessions={sessions}
           currentUserDiscordId={currentUserDiscordId}
+          currentUserName={currentUserName}
           minDate={todayKey}
           onClose={() => setDetailModalSession(null)}
         />
@@ -699,6 +706,7 @@ interface DateSessionsPanelProps {
   focusedSessionId: string | null;
   members: TrpgMemberView[];
   currentUserDiscordId: string;
+  currentUserName: string | null;
   onCreate: () => void;
   canCreate: boolean;
   onOpenSession: (session: TrpgSessionView) => void;
@@ -713,6 +721,7 @@ function DateSessionsPanel({
   focusedSessionId,
   members,
   currentUserDiscordId,
+  currentUserName,
   onCreate,
   canCreate,
   onOpenSession,
@@ -723,6 +732,7 @@ function DateSessionsPanel({
     for (const m of members) map.set(m.discordUserId, m);
     return map;
   }, [members]);
+  const currentUser = { discordId: currentUserDiscordId, name: currentUserName };
 
   return (
     <aside className={styles.dayPanel} aria-label={`${dateKey} 세션 정보`}>
@@ -821,8 +831,7 @@ function DateSessionsPanel({
                                 }`}
                               >
                                 <span>
-                                  {membersById.get(pid)?.displayName ??
-                                    `(${pid})`}
+                                  {resolveMemberName(membersById, pid, currentUser)}
                                 </span>
                                 {pid === currentUserDiscordId ? (
                                   <span className={styles.dayPanel__selfBadge}>

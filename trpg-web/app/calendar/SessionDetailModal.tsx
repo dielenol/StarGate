@@ -9,6 +9,8 @@ import { useCancelTrpgSession } from "@/hooks/mutations/useCancelTrpgSession";
 import { useUpdateTrpgSession } from "@/hooks/mutations/useUpdateTrpgSession";
 import { useModalA11y } from "@/hooks/useModalA11y";
 
+import { resolveMemberName } from "@/lib/trpg/member-name";
+
 import styles from "./styles.module.css";
 
 interface Props {
@@ -16,6 +18,8 @@ interface Props {
   members: TrpgMemberView[];
   existingSessions: TrpgSessionView[];
   currentUserDiscordId: string;
+  /** 로그인 세션의 Discord 이름 — 길드 멤버 캐시에 본인이 없을 때 ID 대신 보여준다. */
+  currentUserName?: string | null;
   minDate: string;
   onClose: () => void;
 }
@@ -25,6 +29,7 @@ export function SessionDetailModal({
   members,
   existingSessions,
   currentUserDiscordId,
+  currentUserName = null,
   minDate,
   onClose,
 }: Props) {
@@ -77,6 +82,7 @@ export function SessionDetailModal({
       ),
     [members, session.createdByDiscordId],
   );
+  const currentUser = { discordId: currentUserDiscordId, name: currentUserName };
   const masterName =
     membersById.get(session.createdByDiscordId)?.displayName ??
     session.createdByUsername;
@@ -240,7 +246,7 @@ export function SessionDetailModal({
                           }`}
                         >
                           <span>
-                            {membersById.get(pid)?.displayName ?? `(${pid})`}
+                            {resolveMemberName(membersById, pid, currentUser)}
                           </span>
                           {pid === currentUserDiscordId ? (
                             <span className={styles.modal__selfBadge}>

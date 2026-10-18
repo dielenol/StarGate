@@ -16,6 +16,8 @@ interface Props {
   members: TrpgMemberView[];
   existingSessions: TrpgSessionView[];
   currentUserDiscordId: string;
+  /** 로그인 세션의 Discord 이름 — 길드 멤버 캐시에 본인이 없을 때 마스터 이름으로 쓴다. */
+  currentUserName?: string | null;
   onClose: () => void;
 }
 
@@ -25,6 +27,7 @@ export function SessionCreateModal({
   members,
   existingSessions,
   currentUserDiscordId,
+  currentUserName = null,
   onClose,
 }: Props) {
   const [title, setTitle] = useState("");
@@ -196,7 +199,7 @@ export function SessionCreateModal({
                 마스터
               </span>
               <strong className={styles["modal__masterMember-name"]}>
-                {masterMember?.displayName ?? "나"}
+                {masterMember?.displayName ?? currentUserName ?? "나"}
               </strong>
               {masterScheduledSession ? (
                 <span

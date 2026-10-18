@@ -102,6 +102,7 @@ export default async function CalendarPage({
   return (
     <CalendarClient
       currentUserDiscordId={session.user.discordUserId}
+      currentUserName={session.user.name ?? null}
       initialYear={year}
       initialMonth={month}
       initialSessions={initialSessions}
