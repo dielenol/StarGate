@@ -1,8 +1,11 @@
 import {
+  getRouletteMoverState,
   getRouletteSpinnerSegments,
   ROULETTE_BOARD_WIDTH,
   type RouletteBall,
   type RouletteCourse,
+  type RouletteMover,
+  type RouletteMoverState,
   type RouletteParticipant,
   type RoulettePeg,
   type RouletteRace,
@@ -10,12 +13,21 @@ import {
   type RouletteSpinner,
 } from "./engine";
 
+export interface RouletteView {
+  /** 카메라 창의 위쪽 y (논리 좌표). */
+  top: number;
+  /** 카메라 창의 논리 높이. 코스 높이와 같으면 코스 전체를 그린다. */
+  height: number;
+}
+
 interface DrawRouletteSceneOptions {
   race: RouletteRace | null;
   previewParticipants: readonly RouletteParticipant[];
   previewElapsedSeconds?: number;
   course: RouletteCourse;
   avatarImages: ReadonlyMap<string, CanvasImageSource>;
+  /** 생략하면 코스 전체를 한 화면에 그린다. */
+  view?: RouletteView;
 }
 
 interface SpinnerPalette {
@@ -59,6 +71,15 @@ const CHUTE_TOP_OFFSET = 8;
 const SPINNER_HALF_THICKNESS = 7;
 const SPINNER_HUB_RADIUS = 11;
 const RAIL_WIDTH = 9;
+
+/* 정적 레이어는 코스 전체를 담으므로 긴 코스에서 메모리가 커지지 않게 픽셀 수를 제한한다. */
+const STATIC_LAYER_MAX_PIXELS = 12_000_000;
+/* 카메라 창 밖 요소를 건너뛸 때 쓰는 여유. 마블은 위쪽 이름표까지 포함한다. */
+const BALL_CULL_MARGIN = 40;
+/* 미니맵은 오른쪽 캐비닛 여백(오른쪽 레일 바깥 ~ 보드 끝 720) 안에 둔다. 주행 영역과 레일을 가리지 않는다. */
+const MINIMAP_WIDTH = 21;
+const MINIMAP_LEFT = PLAYFIELD_RIGHT + RAIL_WIDTH / 2 + 1;
+const MINIMAP_MARGIN = 10;
 
 /* 조명은 왼쪽 위에서 온다. 하이라이트는 이 방향, 그림자는 반대 방향으로 통일한다. */
 const LIGHT_X = -0.5;
@@ -112,6 +133,15 @@ const SPINNER_PALETTES: readonly SpinnerPalette[] = [
   },
 ];
 
+/* 왕복 막대는 스펙트럼 팔레트와 겹치지 않는 청록으로 구분한다. */
+const MOVER_PALETTE: SpinnerPalette = {
+  light: "#c2f6ff",
+  base: "#3ecfe8",
+  dark: "#0f7d95",
+  edge: "#063340",
+  rgb: "62, 207, 232",
+};
+
 let staticLayerCache: StaticLayerCache | null = null;
 
 export function drawRouletteScene(
@@ -122,20 +152,32 @@ export function drawRouletteScene(
     previewElapsedSeconds = 0,
     course,
     avatarImages,
+    view,
   }: DrawRouletteSceneOptions,
 ): void {
+  const activeView: RouletteView = view ?? { top: 0, height: course.height };
+  const elapsedSeconds = race?.elapsedSeconds ?? previewElapsedSeconds;
+
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
-  drawStaticLayer(context, course);
-  drawSpinners(context, course, race?.elapsedSeconds ?? previewElapsedSeconds);
+  drawStaticLayer(context, course, activeView);
+
+  context.save();
+  context.translate(0, -activeView.top);
+  drawMovers(context, course, elapsedSeconds, activeView);
+  drawSpinners(context, course, elapsedSeconds, activeView);
 
   if (race) {
     const winnerIds = new Set(race.winnerParticipantIds);
-    const orderedBalls = [...race.balls].sort((first, second) =>
-      first.finished === second.finished
-        ? first.y - second.y
-        : Number(first.finished) - Number(second.finished),
-    );
+    const orderedBalls = race.balls
+      .filter((ball) =>
+        isWithinView(ball.y, ball.radius + BALL_CULL_MARGIN, activeView),
+      )
+      .sort((first, second) =>
+        first.finished === second.finished
+          ? first.y - second.y
+          : Number(first.finished) - Number(second.finished),
+      );
     for (const ball of orderedBalls) {
       drawBall(
         context,
@@ -147,38 +189,81 @@ export function drawRouletteScene(
   } else {
     drawPreviewBalls(context, previewParticipants, course, avatarImages);
   }
+  context.restore();
+
+  if (activeView.height < course.height) {
+    drawMinimap(context, course, race, activeView);
+  }
+}
+
+function isWithinView(y: number, margin: number, view: RouletteView): boolean {
+  return y + margin >= view.top && y - margin <= view.top + view.height;
 }
 
 /* ── 정적 레이어: 보드·레일·핀·결승선은 크기나 코스가 바뀔 때만 다시 그린다 ── */
 
+/**
+ * 레이어는 코스 전체를 담는다. 카메라가 움직여도 다시 그리지 않고 보이는 구간만 복사한다.
+ * 긴 코스에서 픽셀 수가 상한을 넘으면 레이어를 조금 작게 만들고 복사할 때 확대한다.
+ */
 function drawStaticLayer(
   context: CanvasRenderingContext2D,
   course: RouletteCourse,
+  view: RouletteView,
 ): void {
   const { width, height } = context.canvas;
   if (width === 0 || height === 0) return;
 
   const transform = context.getTransform();
-  const key = [course.id, width, height, transform.a, transform.d].join(":");
+  const fullWidth = ROULETTE_BOARD_WIDTH * transform.a;
+  const fullHeight = course.height * transform.d;
+  const shrink = Math.min(
+    1,
+    Math.sqrt(STATIC_LAYER_MAX_PIXELS / Math.max(1, fullWidth * fullHeight)),
+  );
+  const layerWidth = Math.max(1, Math.round(fullWidth * shrink));
+  const layerHeight = Math.max(1, Math.round(fullHeight * shrink));
+  // 반올림된 레이어 크기에서 배율을 역산해야 복사 소스 사각형이 레이어 밖으로 나가지 않는다.
+  const scaleX = layerWidth / ROULETTE_BOARD_WIDTH;
+  const scaleY = layerHeight / course.height;
+  const key = [course.id, layerWidth, layerHeight].join(":");
   let layer = staticLayerCache?.key === key ? staticLayerCache.canvas : null;
 
   if (!layer) {
     layer = document.createElement("canvas");
-    layer.width = width;
-    layer.height = height;
+    layer.width = layerWidth;
+    layer.height = layerHeight;
     const layerContext = layer.getContext("2d");
     if (!layerContext) {
+      context.save();
+      context.translate(0, -view.top);
       drawStaticBoard(context, course, transform.a);
+      context.restore();
       return;
     }
-    layerContext.setTransform(transform);
-    drawStaticBoard(layerContext, course, transform.a);
+    layerContext.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+    drawStaticBoard(layerContext, course, scaleX);
+    // Safari 는 캔버스 백킹 메모리 회수가 느리므로 이전 레이어를 바로 비운다.
+    if (staticLayerCache) {
+      staticLayerCache.canvas.width = 0;
+      staticLayerCache.canvas.height = 0;
+    }
     staticLayerCache = { key, canvas: layer };
   }
 
   context.save();
   context.setTransform(1, 0, 0, 1, 0, 0);
-  context.drawImage(layer, 0, 0);
+  context.drawImage(
+    layer,
+    0,
+    view.top * scaleY,
+    layerWidth,
+    view.height * scaleY,
+    0,
+    0,
+    width,
+    height,
+  );
   context.restore();
 }
 
@@ -408,11 +493,23 @@ function drawPegCap(context: CanvasRenderingContext2D, peg: RoulettePeg): void {
   const bumper = radius >= 10;
 
   if (bumper) {
-    // 큰 핀은 범퍼로 보이도록 브랜드 블러플 고무 링을 두른다.
     const ring = context.createLinearGradient(x, y - radius, x, y + radius);
-    ring.addColorStop(0, "#a3acff");
-    ring.addColorStop(0.5, "#5f6cf0");
-    ring.addColorStop(1, "#2c369e");
+    if (peg.kick) {
+      // 팝 범퍼는 튕겨 내는 장애물임이 읽히도록 코럴 고무 링과 옅은 테두리 빛을 두른다.
+      context.strokeStyle = "rgba(255, 106, 92, 0.32)";
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(x, y, radius + 3, 0, Math.PI * 2);
+      context.stroke();
+      ring.addColorStop(0, "#ffb3a8");
+      ring.addColorStop(0.5, "#ff6a5c");
+      ring.addColorStop(1, "#a8232f");
+    } else {
+      // 큰 핀은 범퍼로 보이도록 브랜드 블러플 고무 링을 두른다.
+      ring.addColorStop(0, "#a3acff");
+      ring.addColorStop(0.5, "#5f6cf0");
+      ring.addColorStop(1, "#2c369e");
+    }
     context.fillStyle = ring;
     fillCircle(context, x, y, radius - 0.8);
   }
@@ -475,8 +572,13 @@ function drawSpinners(
   context: CanvasRenderingContext2D,
   course: RouletteCourse,
   elapsedSeconds: number,
+  view: RouletteView,
 ): void {
   course.spinners.forEach((spinner, index) => {
+    // drawSpinner 의 그림자 헤일로(반폭 +3)와 오프셋까지 포함한 범위.
+    const reach = spinner.halfLength + SPINNER_HALF_THICKNESS + 3 + SHADOW_DY;
+    if (!isWithinView(spinner.y, reach, view)) return;
+
     drawSpinner(
       context,
       spinner,
@@ -484,6 +586,162 @@ function drawSpinners(
       elapsedSeconds,
     );
   });
+}
+
+/* ── 왕복 막대: 매 프레임 그린다 ─────────────────────────────── */
+
+function drawMovers(
+  context: CanvasRenderingContext2D,
+  course: RouletteCourse,
+  elapsedSeconds: number,
+  view: RouletteView,
+): void {
+  for (const mover of course.movers) {
+    const centerY = (mover.ay + mover.by) / 2;
+    const reach =
+      Math.abs(mover.dy) +
+      Math.abs(mover.ay - mover.by) / 2 +
+      SPINNER_HALF_THICKNESS +
+      SHADOW_DY;
+    if (!isWithinView(centerY, reach, view)) continue;
+
+    drawMover(context, mover, getRouletteMoverState(mover, elapsedSeconds));
+  }
+}
+
+function drawMover(
+  context: CanvasRenderingContext2D,
+  mover: RouletteMover,
+  state: RouletteMoverState,
+): void {
+  const { segment } = state;
+  const midX = (mover.ax + mover.bx) / 2;
+  const midY = (mover.ay + mover.by) / 2;
+
+  context.save();
+  context.lineCap = "round";
+
+  // 이동 궤적을 점선으로 깔아 어디까지 오가는지 미리 보여 준다.
+  context.setLineDash([3, 7]);
+  context.strokeStyle = "rgba(194, 246, 255, 0.28)";
+  context.lineWidth = 2;
+  strokeLine(
+    context,
+    midX - mover.dx,
+    midY - mover.dy,
+    midX + mover.dx,
+    midY + mover.dy,
+  );
+  context.setLineDash([]);
+  context.fillStyle = "rgba(194, 246, 255, 0.35)";
+  fillCircle(context, midX - mover.dx, midY - mover.dy, 3);
+  fillCircle(context, midX + mover.dx, midY + mover.dy, 3);
+
+  context.save();
+  context.translate(SHADOW_DX, SHADOW_DY);
+  context.strokeStyle = "rgba(2, 4, 12, 0.3)";
+  context.lineWidth = SPINNER_HALF_THICKNESS * 2;
+  strokeLine(context, segment.ax, segment.ay, segment.bx, segment.by);
+  context.restore();
+
+  drawSpinnerArm(context, segment, MOVER_PALETTE);
+
+  // 양 끝 캡으로 회전 막대와 구분한다.
+  for (const point of [
+    { x: segment.ax, y: segment.ay },
+    { x: segment.bx, y: segment.by },
+  ]) {
+    context.fillStyle = MOVER_PALETTE.edge;
+    fillCircle(context, point.x, point.y, SPINNER_HALF_THICKNESS + 1);
+    context.fillStyle = MOVER_PALETTE.light;
+    fillCircle(context, point.x, point.y, SPINNER_HALF_THICKNESS - 2.5);
+  }
+  context.restore();
+}
+
+/* ── 미니맵: 카메라 코스에서 전체 코스와 현재 창을 보여 준다 ───── */
+
+function drawMinimap(
+  context: CanvasRenderingContext2D,
+  course: RouletteCourse,
+  race: RouletteRace | null,
+  view: RouletteView,
+): void {
+  const width = MINIMAP_WIDTH;
+  const height = view.height - MINIMAP_MARGIN * 2;
+  const x0 = MINIMAP_LEFT;
+  const y0 = MINIMAP_MARGIN;
+  const scaleX = width / ROULETTE_BOARD_WIDTH;
+  const scaleY = height / course.height;
+  const toX = (x: number) => x0 + x * scaleX;
+  const toY = (y: number) => y0 + y * scaleY;
+
+  context.save();
+  context.fillStyle = "rgba(4, 6, 16, 0.74)";
+  roundedRect(context, x0, y0, width, height, 4);
+  context.fill();
+  context.strokeStyle = "rgba(255, 255, 255, 0.16)";
+  context.lineWidth = 1;
+  roundedRect(context, x0, y0, width, height, 4);
+  context.stroke();
+
+  context.strokeStyle = "rgba(190, 200, 255, 0.55)";
+  context.lineWidth = 1;
+  context.lineCap = "round";
+  context.beginPath();
+  for (const segment of course.segments) {
+    context.moveTo(toX(segment.ax), toY(segment.ay));
+    context.lineTo(toX(segment.bx), toY(segment.by));
+  }
+  context.stroke();
+
+  context.fillStyle = "rgba(190, 200, 255, 0.55)";
+  for (const spinner of course.spinners) {
+    fillCircle(context, toX(spinner.x), toY(spinner.y), 1.6);
+  }
+  context.fillStyle = `rgba(${MOVER_PALETTE.rgb}, 0.8)`;
+  for (const mover of course.movers) {
+    fillCircle(
+      context,
+      toX((mover.ax + mover.bx) / 2),
+      toY((mover.ay + mover.by) / 2),
+      1.6,
+    );
+  }
+
+  context.strokeStyle = "rgba(255, 211, 92, 0.9)";
+  context.lineWidth = 1.5;
+  strokeLine(
+    context,
+    toX(CHUTE_LEFT),
+    toY(course.finishY),
+    toX(CHUTE_RIGHT),
+    toY(course.finishY),
+  );
+
+  if (race) {
+    const winnerIds = new Set(race.winnerParticipantIds);
+    for (const ball of race.balls) {
+      const winner = winnerIds.has(ball.id);
+      // 완주한 마블은 결승선에 겹쳐 쌓이므로 당첨 마블만 남긴다.
+      if (ball.finished && !winner) continue;
+      context.fillStyle = winner ? "#ffd35c" : "#f4f6ff";
+      fillCircle(context, toX(ball.x), toY(ball.y), winner ? 2.2 : 1.6);
+    }
+  }
+
+  context.strokeStyle = "rgba(255, 255, 255, 0.8)";
+  context.lineWidth = 1.2;
+  roundedRect(
+    context,
+    x0 + 1,
+    toY(view.top),
+    width - 2,
+    view.height * scaleY,
+    2,
+  );
+  context.stroke();
+  context.restore();
 }
 
 function drawSpinner(
@@ -538,7 +796,7 @@ function drawSpinnerSweep(
   const sweep = Math.min(0.6, speed * 0.2);
   const span = sweep / (Math.PI * 2);
   const clockwise = spinner.angularVelocity > 0;
-  const endCount = spinner.arms === 2 ? 4 : 2;
+  const endCount = spinner.arms * 2;
   const outerRadius = spinner.halfLength + SPINNER_HALF_THICKNESS;
   const innerRadius = SPINNER_HUB_RADIUS + 4;
 

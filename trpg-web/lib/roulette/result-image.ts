@@ -1,4 +1,5 @@
 import {
+  getRouletteViewHeight,
   ROULETTE_BOARD_WIDTH,
   type RouletteCourse,
   type RouletteParticipant,
@@ -20,9 +21,11 @@ export function createRouletteResultCanvas({
   winners,
   avatarImages,
 }: CreateRouletteResultCanvasOptions): HTMLCanvasElement {
+  // 카메라 코스는 보드 캔버스가 카메라 창만 담고 있으므로 결과 이미지도 같은 종횡비로 만든다.
+  const canvasHeight = getRouletteViewHeight(course);
   const resultCanvas = document.createElement("canvas");
   resultCanvas.width = ROULETTE_BOARD_WIDTH;
-  resultCanvas.height = course.height;
+  resultCanvas.height = canvasHeight;
 
   const context = resultCanvas.getContext("2d");
   if (!context) throw new Error("결과 이미지 캔버스를 만들 수 없습니다.");
@@ -41,7 +44,7 @@ export function createRouletteResultCanvas({
     resultCanvas.height,
   );
 
-  drawResultOverlay(context, course, race, winners, avatarImages);
+  drawResultOverlay(context, course, canvasHeight, race, winners, avatarImages);
   return resultCanvas;
 }
 
@@ -60,6 +63,7 @@ export function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 function drawResultOverlay(
   context: CanvasRenderingContext2D,
   course: RouletteCourse,
+  canvasHeight: number,
   race: RouletteRace,
   winners: readonly RouletteParticipant[],
   avatarImages: ReadonlyMap<string, CanvasImageSource>,
@@ -69,10 +73,10 @@ function drawResultOverlay(
   const panelX = 60;
   const panelWidth = ROULETTE_BOARD_WIDTH - panelX * 2;
   const panelHeight = 172 + rowCount * 58;
-  const panelY = Math.max(106, (course.height - panelHeight) / 2);
+  const panelY = Math.max(106, (canvasHeight - panelHeight) / 2);
 
   context.fillStyle = "rgba(4, 7, 16, 0.46)";
-  context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, course.height);
+  context.fillRect(0, 0, ROULETTE_BOARD_WIDTH, canvasHeight);
 
   context.save();
   context.shadowColor = "rgba(0, 0, 0, 0.58)";

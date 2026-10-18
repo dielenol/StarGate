@@ -101,7 +101,9 @@
 
 .courses {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 코스 수만큼 같은 폭의 열을 만든다 (코스가 늘어도 CSS 수정 불필요). */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 3px;
   padding: 3px;
   background: var(--bg);
@@ -468,7 +470,9 @@
     font-size: 12px;
     white-space: normal;
     text-align: center;
-    word-break: keep-all;
+    /* 5열에서는 한 단어("캐스케이드")가 열 폭보다 길 수 있어 음절 단위 줄바꿈을 허용한다. */
+    word-break: normal;
+    overflow-wrap: anywhere;
   }
 
   .modes {

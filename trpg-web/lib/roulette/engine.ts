@@ -6,12 +6,32 @@ export const ROULETTE_MAX_WINNERS = 10;
 export const ROULETTE_MIN_BALLS_PER_PARTICIPANT = 1;
 export const ROULETTE_MAX_BALLS_PER_PARTICIPANT = 10;
 export const ROULETTE_MAX_TOTAL_BALLS = 96;
+/** 카메라가 목표 위치로 수렴하는 속도(초당 지수 감쇠 비율). */
+export const ROULETTE_CAMERA_SMOOTHING_PER_SECOND = 5;
+/** 카메라 창에서 추적 마블을 중앙보다 이만큼 위에 두어 진행 방향(아래)을 먼저 보여 준다. */
+export const ROULETTE_CAMERA_LEAD_RATIO = 0.15;
 
 const BALL_RADIUS = 15;
 const LEFT_WALL = 28;
 const RIGHT_WALL = ROULETTE_BOARD_WIDTH - 28;
+/** 왕복 막대의 충돌 반폭. 회전 막대와 같은 두께로 그린다. */
+const MOVER_HALF_THICKNESS = 7;
+const MOVER_RESTITUTION = 0.7;
+/** 추적 마블이 창 아래쪽 이 비율 안으로는 내려가지 않게 카메라 지연을 묶는다. */
+const CAMERA_BOTTOM_MARGIN_RATIO = 0.1;
+/**
+ * 목표 대비 허용 최대 지연(창 높이 배수). 추적 마블은 목표 창의 위에서 (0.5 − lead) 지점에
+ * 있으므로, 창 바닥 여유를 빼면 목표보다 이만큼 위까지만 뒤처질 수 있다.
+ */
+const CAMERA_MAX_LAG_RATIO =
+  0.5 - CAMERA_BOTTOM_MARGIN_RATIO + ROULETTE_CAMERA_LEAD_RATIO;
 
-export type RouletteCourseId = "sprint" | "cascade" | "odyssey" | "classic";
+export type RouletteCourseId =
+  | "sprint"
+  | "cascade"
+  | "odyssey"
+  | "classic"
+  | "marathon";
 export type RouletteWinnerMode = "first" | "last";
 
 export interface RouletteParticipant {
@@ -35,6 +55,8 @@ export interface RoulettePeg {
   x: number;
   y: number;
   radius: number;
+  /** 접촉 시 법선 방향으로 더해 주는 속도(px/s). 핀볼의 팝 범퍼. */
+  kick?: number;
 }
 
 export interface RouletteSegment {
@@ -50,7 +72,28 @@ export interface RouletteSpinner {
   halfLength: number;
   angularVelocity: number;
   initialAngle: number;
-  arms: 1 | 2;
+  /** 지름 전체를 가로지르는 막대 수. 2 이상이면 π/arms 간격으로 고르게 배치된다. */
+  arms: 1 | 2 | 3 | 4;
+}
+
+/** 휴지 위치(ax,ay)-(bx,by)를 중심으로 (dx, dy)만큼 사인 왕복하는 막대. */
+export interface RouletteMover {
+  ax: number;
+  ay: number;
+  bx: number;
+  by: number;
+  dx: number;
+  dy: number;
+  /** 왕복 한 번에 걸리는 시간(초). */
+  period: number;
+  /** 위상(라디안). 같은 주기의 막대를 엇갈리게 움직일 때 쓴다. */
+  phase: number;
+}
+
+export interface RouletteMoverState {
+  segment: RouletteSegment;
+  vx: number;
+  vy: number;
 }
 
 export interface RouletteCourse {
@@ -59,8 +102,15 @@ export interface RouletteCourse {
   name: string;
   distance: string;
   duration: string;
+  /** 보통 인원에서 기대하는 완주 시간(초). 재생 속도 보정과 테스트 시간 제한의 기준. */
+  expectedSeconds: number;
   description: string;
   height: number;
+  /**
+   * 카메라 창의 논리 높이. 코스 높이보다 작으면 선두(선착) 또는 후미(후착) 마블을
+   * 따라가는 카메라로 그린다. 생략하면 코스 전체를 한 화면에 그린다.
+   */
+  viewHeight?: number;
   finishY: number;
   startY: number;
   gravity: number;
@@ -68,6 +118,7 @@ export interface RouletteCourse {
   pegs: readonly RoulettePeg[];
   segments: readonly RouletteSegment[];
   spinners: readonly RouletteSpinner[];
+  movers: readonly RouletteMover[];
 }
 
 export interface RouletteRaceOptions {
@@ -142,6 +193,15 @@ function createPegRow(
   return xs.map((x) => ({ x, y, radius }));
 }
 
+function createBumperRow(
+  y: number,
+  xs: readonly number[],
+  kick = 240,
+  radius = 13,
+): RoulettePeg[] {
+  return xs.map((x) => ({ x, y, radius, kick }));
+}
+
 function createCourseWalls(finishY: number): RouletteSegment[] {
   const funnelTop = finishY - 86;
 
@@ -157,6 +217,7 @@ const SPRINT_FINISH_Y = 592;
 const CASCADE_FINISH_Y = 822;
 const ODYSSEY_FINISH_Y = 1_092;
 const CLASSIC_FINISH_Y = 992;
+const MARATHON_FINISH_Y = 2_700;
 
 export const ROULETTE_COURSES: readonly RouletteCourse[] = [
   {
@@ -165,6 +226,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
     name: "퀵 드롭",
     distance: "단거리",
     duration: "약 4초",
+    expectedSeconds: 4,
     description: "큰 범퍼 사이를 빠르게 꺾어 내려오는 짧고 경쾌한 코스",
     height: 630,
     finishY: SPRINT_FINISH_Y,
@@ -200,6 +262,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
         arms: 1,
       },
     ],
+    movers: [],
   },
   {
     id: "cascade",
@@ -207,6 +270,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
     name: "핀볼 캐스케이드",
     distance: "중거리",
     duration: "약 7초",
+    expectedSeconds: 7,
     description: "촘촘한 핀과 두 갈래 게이트를 연속으로 통과하는 표준 코스",
     height: 860,
     finishY: CASCADE_FINISH_Y,
@@ -249,6 +313,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
         arms: 2,
       },
     ],
+    movers: [],
   },
   {
     id: "odyssey",
@@ -256,6 +321,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
     name: "노부스 오디세이",
     distance: "장거리",
     duration: "약 11초",
+    expectedSeconds: 11,
     description: "네 번의 스위치백과 최종 핀 구간을 버텨야 하는 장거리 코스",
     height: 1_130,
     finishY: ODYSSEY_FINISH_Y,
@@ -307,6 +373,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
         arms: 1,
       },
     ],
+    movers: [],
   },
   {
     id: "classic",
@@ -314,6 +381,7 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
     name: "포춘 클래식",
     distance: "원본풍",
     duration: "약 9초",
+    expectedSeconds: 9,
     description: "분기·지그재그·핀 숲을 잇는 다채 룰렛의 대표 코스",
     height: 1_030,
     finishY: CLASSIC_FINISH_Y,
@@ -377,6 +445,147 @@ export const ROULETTE_COURSES: readonly RouletteCourse[] = [
         angularVelocity: 1.35,
         initialAngle: 1.2,
         arms: 2,
+      },
+    ],
+    movers: [],
+  },
+  {
+    id: "marathon",
+    number: "05",
+    name: "그랜드 마라톤",
+    distance: "초장거리",
+    duration: "약 20초",
+    expectedSeconds: 20,
+    description:
+      "핀 숲·삼중 휠·범퍼 필드·터빈·왕복 패들·피스톤을 차례로 지나는 카메라 추적 장거리 코스",
+    height: 2_740,
+    viewHeight: 960,
+    finishY: MARATHON_FINISH_Y,
+    startY: 112,
+    gravity: 640,
+    maxSpeed: 840,
+    pegs: [
+      // 1구간 핀 숲
+      ...createPegGrid({ top: 180, rows: 4, spacingY: 44 }),
+      // 2구간 삼중 휠 사이 중앙 범퍼
+      ...createBumperRow(470, [360]),
+      // 4구간 범퍼 필드
+      ...createBumperRow(930, [150, 360, 570]),
+      ...createBumperRow(1_010, [255, 465]),
+      // 9구간 마지막 핀 숲
+      ...createPegGrid({ top: 2_470, rows: 3, spacingY: 44 }),
+    ],
+    segments: [
+      ...createCourseWalls(MARATHON_FINISH_Y),
+      // 3구간 스위치백
+      { ax: 28, ay: 600, bx: 540, by: 690 },
+      { ax: 692, ay: 740, bx: 180, by: 830 },
+      // 5구간 터빈 진입 가이드
+      { ax: 28, ay: 1_090, bx: 230, by: 1_150 },
+      { ax: 692, ay: 1_090, bx: 490, by: 1_150 },
+      // 5구간 터빈 아래 분배기
+      { ax: 360, ay: 1_420, bx: 150, by: 1_490 },
+      { ax: 360, ay: 1_420, bx: 570, by: 1_490 },
+      // 6구간 패들 존 진입 깔때기
+      { ax: 28, ay: 1_560, bx: 250, by: 1_630 },
+      { ax: 692, ay: 1_560, bx: 470, by: 1_630 },
+    ],
+    spinners: [
+      // 2구간 삼중 휠
+      {
+        x: 190,
+        y: 460,
+        halfLength: 92,
+        angularVelocity: 1.5,
+        initialAngle: 0.2,
+        arms: 3,
+      },
+      {
+        x: 530,
+        y: 480,
+        halfLength: 92,
+        angularVelocity: -1.7,
+        initialAngle: 1,
+        arms: 3,
+      },
+      // 5구간 터빈
+      {
+        x: 360,
+        y: 1_250,
+        halfLength: 118,
+        angularVelocity: 1.1,
+        initialAngle: 0.3,
+        arms: 4,
+      },
+      // 7구간 스핀 코리더
+      {
+        x: 180,
+        y: 2_010,
+        halfLength: 84,
+        angularVelocity: 1.6,
+        initialAngle: 0.5,
+        arms: 2,
+      },
+      {
+        x: 540,
+        y: 2_010,
+        halfLength: 84,
+        angularVelocity: -1.6,
+        initialAngle: 1.3,
+        arms: 2,
+      },
+      // 위 두 휠과의 팁 간격이 마블 통과 폭(2 × (15 + 7))을 넘도록 y 를 둔다.
+      {
+        x: 360,
+        y: 2_150,
+        halfLength: 96,
+        angularVelocity: 1.3,
+        initialAngle: 0,
+        arms: 3,
+      },
+    ],
+    movers: [
+      // 6구간 좌우 왕복 패들 (기울여서 마블이 올라타도 굴러 떨어진다)
+      {
+        ax: 260,
+        ay: 1_700,
+        bx: 360,
+        by: 1_740,
+        dx: 110,
+        dy: 0,
+        period: 2.2,
+        phase: 0,
+      },
+      {
+        ax: 380,
+        ay: 1_850,
+        bx: 480,
+        by: 1_810,
+        dx: 110,
+        dy: 0,
+        period: 2.6,
+        phase: Math.PI / 2,
+      },
+      // 8구간 상하 피스톤 (올라올 때 마블을 띄운다)
+      {
+        ax: 120,
+        ay: 2_340,
+        bx: 260,
+        by: 2_380,
+        dx: 0,
+        dy: 36,
+        period: 1.3,
+        phase: 0,
+      },
+      {
+        ax: 460,
+        ay: 2_380,
+        bx: 600,
+        by: 2_340,
+        dx: 0,
+        dy: 36,
+        period: 1.3,
+        phase: Math.PI,
       },
     ],
   },
@@ -547,18 +756,107 @@ export function getRouletteSpinnerSegments(
 ): RouletteSegment[] {
   const angle =
     spinner.initialAngle + spinner.angularVelocity * elapsedSeconds;
-  const angles = spinner.arms === 2 ? [angle, angle + Math.PI / 2] : [angle];
+  const segments: RouletteSegment[] = [];
 
-  return angles.map((armAngle) => {
+  for (let arm = 0; arm < spinner.arms; arm += 1) {
+    const armAngle = angle + (Math.PI * arm) / spinner.arms;
     const dx = Math.cos(armAngle) * spinner.halfLength;
     const dy = Math.sin(armAngle) * spinner.halfLength;
-    return {
+    segments.push({
       ax: spinner.x - dx,
       ay: spinner.y - dy,
       bx: spinner.x + dx,
       by: spinner.y + dy,
-    };
-  });
+    });
+  }
+
+  return segments;
+}
+
+export function getRouletteMoverState(
+  mover: RouletteMover,
+  elapsedSeconds: number,
+): RouletteMoverState {
+  const angularFrequency = (Math.PI * 2) / mover.period;
+  const angle = angularFrequency * elapsedSeconds + mover.phase;
+  const offset = Math.sin(angle);
+  const rate = Math.cos(angle) * angularFrequency;
+
+  return {
+    segment: {
+      ax: mover.ax + mover.dx * offset,
+      ay: mover.ay + mover.dy * offset,
+      bx: mover.bx + mover.dx * offset,
+      by: mover.by + mover.dy * offset,
+    },
+    vx: mover.dx * rate,
+    vy: mover.dy * rate,
+  };
+}
+
+export function getRouletteViewHeight(course: RouletteCourse): number {
+  return Math.min(course.viewHeight ?? course.height, course.height);
+}
+
+export function hasRouletteCamera(course: RouletteCourse): boolean {
+  return getRouletteViewHeight(course) < course.height;
+}
+
+/**
+ * 카메라 창의 위쪽 y. 선착은 선두, 후착은 후미 마블(승부가 갈리는 쪽)을 따라가고,
+ * 경주가 끝나면 결승선을 비춘다. 코스 전체가 한 화면에 들어오면 항상 0.
+ */
+export function getRouletteCameraTop(
+  race: RouletteRace | null,
+  course: RouletteCourse,
+): number {
+  const viewHeight = getRouletteViewHeight(course);
+  const maxTop = Math.max(0, course.height - viewHeight);
+  if (maxTop === 0 || !race) return 0;
+
+  let focusY = course.finishY;
+  if (!race.done) {
+    const trackTrailer = race.winnerMode === "last";
+    let found = false;
+    for (const ball of race.balls) {
+      if (ball.finished) continue;
+      if (!found) {
+        focusY = ball.y;
+        found = true;
+        continue;
+      }
+      focusY = trackTrailer
+        ? Math.min(focusY, ball.y)
+        : Math.max(focusY, ball.y);
+    }
+  }
+
+  const top =
+    focusY + viewHeight * ROULETTE_CAMERA_LEAD_RATIO - viewHeight / 2;
+  return Math.min(maxTop, Math.max(0, top));
+}
+
+/**
+ * 카메라를 목표 쪽으로 지수 감쇠로 당긴다. 거의 닿으면 목표값으로 스냅한다.
+ * `viewHeight`를 주면 추적 마블이 창 바닥 밖으로 밀려나지 않도록 아래 방향 지연에 상한을 둔다
+ * (고배속 낙하 대비). 위 방향(선두 교체)은 그대로 부드럽게 따라간다.
+ */
+export function stepRouletteCameraTop(
+  current: number,
+  target: number,
+  deltaSeconds: number,
+  viewHeight = Number.POSITIVE_INFINITY,
+): number {
+  const delta = target - current;
+  if (Math.abs(delta) < 0.1) return target;
+
+  const blend =
+    1 -
+    Math.exp(
+      -Math.max(deltaSeconds, 0) * ROULETTE_CAMERA_SMOOTHING_PER_SECOND,
+    );
+  const next = current + delta * blend;
+  return Math.max(next, target - viewHeight * CAMERA_MAX_LAG_RATIO);
 }
 
 export function stepRouletteRace(
@@ -571,6 +869,14 @@ export function stepRouletteRace(
   const dt = Math.min(Math.max(deltaSeconds, 0), 1 / 30);
   race.elapsedSeconds += dt;
 
+  // 움직이는 장애물의 자세는 스텝마다 한 번만 계산한다 (모든 마블에 같은 시각을 적용).
+  const spinnerSegments = course.spinners.map((spinner) =>
+    getRouletteSpinnerSegments(spinner, race.elapsedSeconds),
+  );
+  const moverStates = course.movers.map((mover) =>
+    getRouletteMoverState(mover, race.elapsedSeconds),
+  );
+
   for (const ball of race.balls) {
     if (ball.finished) continue;
 
@@ -582,18 +888,22 @@ export function stepRouletteRace(
     ball.y += ball.vy * dt;
 
     keepInsideSideWalls(ball);
-    for (const peg of course.pegs) resolvePegCollision(ball, peg);
+    for (const peg of course.pegs) resolveRoulettePegCollision(ball, peg);
     for (const segment of course.segments) {
       resolveSegmentCollision(ball, segment);
     }
-    for (const spinner of course.spinners) {
-      for (const segment of getRouletteSpinnerSegments(
-        spinner,
-        race.elapsedSeconds,
-      )) {
+    course.spinners.forEach((spinner, index) => {
+      for (const segment of spinnerSegments[index]) {
         resolveSpinnerCollision(ball, spinner, segment);
       }
-      resolvePegCollision(ball, { x: spinner.x, y: spinner.y, radius: 11 });
+      resolveRoulettePegCollision(ball, {
+        x: spinner.x,
+        y: spinner.y,
+        radius: 11,
+      });
+    });
+    for (const state of moverStates) {
+      resolveRouletteMoverCollision(ball, state);
     }
     capVelocity(ball, course.maxSpeed);
   }
@@ -655,7 +965,14 @@ function keepInsideSideWalls(ball: RouletteBall): void {
   }
 }
 
-function resolvePegCollision(ball: RouletteBall, peg: RoulettePeg): void {
+/**
+ * 마블과 핀의 충돌을 풀고 반발 임펄스를 준다. `kick`이 있는 범퍼는 접근 속도와 무관하게
+ * 법선 방향 속도를 더 얹어 튕겨 낸다 (팝 범퍼). 테스트를 위해 공개한다.
+ */
+export function resolveRoulettePegCollision(
+  ball: RouletteBall,
+  peg: RoulettePeg,
+): void {
   const dx = ball.x - peg.x;
   const dy = ball.y - peg.y;
   const minimumDistance = ball.radius + peg.radius;
@@ -672,7 +989,7 @@ function resolvePegCollision(ball: RouletteBall, peg: RoulettePeg): void {
 
   const normalVelocity = ball.vx * nx + ball.vy * ny;
   if (normalVelocity < 0) {
-    const impulse = -(1 + 0.72) * normalVelocity;
+    const impulse = -(1 + 0.72) * normalVelocity + (peg.kick ?? 0);
     ball.vx += nx * impulse;
     ball.vy += ny * impulse;
   }
@@ -767,6 +1084,57 @@ function resolveSpinnerCollision(
 
   if (relativeNormalVelocity < 0) {
     const impulse = -(1 + 0.76) * relativeNormalVelocity;
+    ball.vx += nx * impulse;
+    ball.vy += ny * impulse;
+  }
+}
+
+/**
+ * 왕복 막대와의 충돌을 막대의 표면 속도 기준으로 푼다 (올라오는 피스톤은 마블을 띄우고,
+ * 멀어지는 막대는 마블을 건드리지 않는다). 테스트를 위해 공개한다.
+ */
+export function resolveRouletteMoverCollision(
+  ball: RouletteBall,
+  state: RouletteMoverState,
+): void {
+  const { segment } = state;
+  const abx = segment.bx - segment.ax;
+  const aby = segment.by - segment.ay;
+  const lengthSquared = abx * abx + aby * aby;
+  const projection =
+    lengthSquared === 0
+      ? 0
+      : Math.min(
+          1,
+          Math.max(
+            0,
+            ((ball.x - segment.ax) * abx +
+              (ball.y - segment.ay) * aby) /
+              lengthSquared,
+          ),
+        );
+  const closestX = segment.ax + abx * projection;
+  const closestY = segment.ay + aby * projection;
+  const dx = ball.x - closestX;
+  const dy = ball.y - closestY;
+  const collisionDistance = ball.radius + MOVER_HALF_THICKNESS;
+  const distanceSquared = dx * dx + dy * dy;
+
+  if (distanceSquared >= collisionDistance * collisionDistance) return;
+
+  const distance = Math.sqrt(distanceSquared);
+  const fallbackLength = Math.sqrt(lengthSquared) || 1;
+  const nx = distance === 0 ? -aby / fallbackLength : dx / distance;
+  const ny = distance === 0 ? abx / fallbackLength : dy / distance;
+  const overlap = collisionDistance - distance;
+  ball.x += nx * overlap;
+  ball.y += ny * overlap;
+
+  // 막대는 평행 이동만 하므로 표면 속도가 접점과 무관하게 일정하다.
+  const relativeNormalVelocity =
+    (ball.vx - state.vx) * nx + (ball.vy - state.vy) * ny;
+  if (relativeNormalVelocity < 0) {
+    const impulse = -(1 + MOVER_RESTITUTION) * relativeNormalVelocity;
     ball.vx += nx * impulse;
     ball.vy += ny * impulse;
   }

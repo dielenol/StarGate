@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   createRouletteRace,
+  getRouletteCourse,
   ROULETTE_FIXED_STEP_SECONDS,
   stepRouletteRace,
   type RouletteCourseId,
@@ -13,7 +14,9 @@ import {
 } from "@/lib/roulette/engine";
 
 const MAX_FRAME_DELTA_SECONDS = 0.05;
+/** 이 시간이 지나면 재생을 2배속한다. 긴 코스는 기대 완주 시간에 비례해 늦춘다. */
 const OVERTIME_SIMULATION_SECONDS = 20;
+const OVERTIME_COURSE_FACTOR = 1.5;
 const ELAPSED_PUBLISH_INTERVAL_SECONDS = 0.1;
 
 export type RacePhase = "ready" | "running" | "finished";
@@ -38,9 +41,13 @@ function createBrowserSeed(): number {
   return Date.now() >>> 0;
 }
 
-function getSimulationRate(totalBalls: number, elapsedSeconds: number): number {
+function getSimulationRate(
+  totalBalls: number,
+  elapsedSeconds: number,
+  overtimeAfterSeconds: number,
+): number {
   const loadRate = totalBalls > 64 ? 2.5 : totalBalls > 32 ? 1.75 : 1;
-  const overtimeRate = elapsedSeconds > OVERTIME_SIMULATION_SECONDS ? 2 : 1;
+  const overtimeRate = elapsedSeconds > overtimeAfterSeconds ? 2 : 1;
   return loadRate * overtimeRate;
 }
 
@@ -111,6 +118,11 @@ export function useRouletteRace({ onFrame }: UseRouletteRaceOptions) {
       setWinners([]);
 
       const totalBalls = race.balls.length;
+      const overtimeAfterSeconds = Math.max(
+        OVERTIME_SIMULATION_SECONDS,
+        getRouletteCourse(config.courseId).expectedSeconds *
+          OVERTIME_COURSE_FACTOR,
+      );
       let previousTime = performance.now();
       let accumulator = 0;
       let publishedElapsedSeconds = 0;
@@ -123,7 +135,12 @@ export function useRouletteRace({ onFrame }: UseRouletteRaceOptions) {
         );
         previousTime = currentTime;
         accumulator +=
-          frameDelta * getSimulationRate(totalBalls, race.elapsedSeconds);
+          frameDelta *
+          getSimulationRate(
+            totalBalls,
+            race.elapsedSeconds,
+            overtimeAfterSeconds,
+          );
 
         while (accumulator >= ROULETTE_FIXED_STEP_SECONDS && !race.done) {
           stepRouletteRace(race, ROULETTE_FIXED_STEP_SECONDS);
