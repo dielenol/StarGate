@@ -8,11 +8,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
-const SESSION_COOKIE_NAMES = [
-  "authjs.session-token",
-  "__Secure-authjs.session-token",
-  "__Host-authjs.session-token",
-] as const;
+import { SESSION_COOKIE_NAMES } from "@/lib/auth/cookies";
 
 export function proxy(request: NextRequest) {
   const hasSession = SESSION_COOKIE_NAMES.some(

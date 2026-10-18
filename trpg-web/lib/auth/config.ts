@@ -13,6 +13,7 @@ import Discord from "next-auth/providers/discord";
 
 import { findTrpgGuildMember } from "@stargate/shared-db";
 
+import { DEV_AUTH_COOKIES, USE_DEV_COOKIE_NAMES } from "@/lib/auth/cookies";
 import {
   DISCORD_CLIENT_ID,
   DISCORD_CLIENT_SECRET,
@@ -24,6 +25,8 @@ const GUILD_MEMBERSHIP_EXEMPT_DISCORD_ID = "376610453696020482";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  // 개발 환경에서 같은 호스트의 StarGateV2와 쿠키가 겹치지 않도록 앱 전용 이름 사용 (lib/auth/cookies.ts)
+  cookies: USE_DEV_COOKIE_NAMES ? DEV_AUTH_COOKIES : undefined,
   providers: [
     Discord({
       clientId: DISCORD_CLIENT_ID,
