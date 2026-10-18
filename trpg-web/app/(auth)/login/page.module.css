@@ -1,3 +1,9 @@
+@property --login-ring-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .login {
   --login-motion-state: running;
   position: relative;
@@ -23,6 +29,16 @@
 }
 
 .login__panel {
+  --login-ring-gradient: conic-gradient(
+    from var(--login-ring-angle),
+    #ff647f,
+    #ffab66,
+    #eddb70,
+    #74dba0,
+    #6ab6ff,
+    #bc8bfa,
+    #ff647f
+  );
   position: relative;
   z-index: 1;
   width: 100%;
@@ -38,13 +54,39 @@
   backdrop-filter: blur(14px);
 }
 
-.login__panel::before {
+/* 패널 테두리를 따라 천천히 도는 무지개 링. ::after 는 같은 링을 번지게 한 은은한 빛 번짐이다. */
+.login__panel::before,
+.login__panel::after {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, #ff647f, #ffab66, #eddb70, #74dba0, #6ab6ff, #bc8bfa) top / 100% 2px no-repeat;
+  inset: -1px;
+  padding: 1px;
+  background: var(--login-ring-gradient);
   border-radius: 12px;
   content: "";
   pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: ring-sweep 14s linear infinite;
+  animation-play-state: var(--login-motion-state, running);
+}
+
+.login__panel::after {
+  inset: -2px;
+  padding: 3px;
+  opacity: 0.45;
+  filter: blur(5px);
+}
+
+@keyframes ring-sweep {
+  to {
+    --login-ring-angle: 360deg;
+  }
 }
 
 .login__eyebrow {
@@ -158,6 +200,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .login__panel::before,
+  .login__panel::after {
+    animation: none;
+  }
+
   .login__button {
     transition: none;
   }

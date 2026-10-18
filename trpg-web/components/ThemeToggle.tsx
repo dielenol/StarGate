@@ -9,18 +9,9 @@ import {
   THEME_COOKIE_NAME,
   type ThemePreference,
 } from "@/lib/theme/preference";
+import { getRenderedTheme, SYSTEM_THEME_QUERY } from "@/lib/theme/rendered";
 
 import styles from "./ThemeToggle.module.css";
-
-const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
-
-function getRenderedTheme(): ThemePreference {
-  const explicit = parseThemePreference(
-    document.documentElement.dataset.theme,
-  );
-  if (explicit) return explicit;
-  return window.matchMedia(SYSTEM_THEME_QUERY).matches ? "dark" : "light";
-}
 
 export function ThemeToggle() {
   const [renderedTheme, setRenderedTheme] = useState<ThemePreference | null>(

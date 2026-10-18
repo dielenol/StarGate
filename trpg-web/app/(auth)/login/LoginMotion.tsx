@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useId, useState } from "react";
+import { useId } from "react";
 
+import { useLoginMotion } from "./LoginMotionProvider";
 import styles from "./LoginMotion.module.css";
 
 const SPECTRUM = [
@@ -16,7 +17,7 @@ const SPECTRUM = [
 ];
 
 export function LoginMotion() {
-  const [paused, setPaused] = useState(false);
+  const { paused, togglePaused } = useLoginMotion();
   const gradientId = useId();
 
   return (
@@ -95,7 +96,7 @@ export function LoginMotion() {
         aria-pressed={paused}
         aria-label={paused ? "모션 그래픽 일시정지됨 · 재생" : "모션 그래픽 재생 중 · 일시정지"}
         title={paused ? "모션 그래픽 재생" : "모션 그래픽 일시정지"}
-        onClick={() => setPaused((current) => !current)}
+        onClick={togglePaused}
       >
         <svg viewBox="0 0 20 20" aria-hidden="true">
           {paused ? <path d="m7 4 9 6-9 6Z" /> : <path d="M6 4h3v12H6zm5 0h3v12h-3z" />}
