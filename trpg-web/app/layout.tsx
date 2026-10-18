@@ -7,6 +7,7 @@ import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import { QueryProvider } from "@/components/QueryProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import { auth } from "@/lib/auth/config";
+import { STRIP_INJECTED_USER_SELECT_SCRIPT } from "@/lib/runtime/strip-injected-user-select";
 import {
   parseThemePreference,
   THEME_COOKIE_NAME,
@@ -34,6 +35,13 @@ export default async function RootLayout({
 
   return (
     <html lang="ko" data-theme={theme ?? undefined}>
+      <head>
+        {/* 확장 프로그램이 주입한 인라인 user-select로 인한 hydration mismatch 방지 */}
+        <script
+          id="strip-injected-user-select"
+          dangerouslySetInnerHTML={{ __html: STRIP_INJECTED_USER_SELECT_SCRIPT }}
+        />
+      </head>
       <body>
         <AuthSessionProvider session={session}>
           <QueryProvider>
