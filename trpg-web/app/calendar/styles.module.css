@@ -399,7 +399,9 @@
 .calendar__grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-template-rows: repeat(6, 146px);
+  /* 행 높이는 최소값만 고정 — 내용(칩 + "+N" + Google 요약)이 넘치면 행이 늘어나
+     세션 목록이 잘리거나 "+N" 이 숨겨지지 않는다. */
+  grid-template-rows: repeat(6, minmax(146px, auto));
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
@@ -560,7 +562,10 @@
   gap: 4px;
   flex: 1 1 auto;
   min-height: 0;
+  /* clip 은 hidden 과 달리 포커스 이동으로 목록이 스크롤되지 않아 첫 칩이 밀려 올라가지 않는다.
+     (hidden 은 clip 미지원 구형 Safari 폴백) */
   overflow: hidden;
+  overflow: clip;
   margin: 0;
   padding: 0;
   pointer-events: none;
@@ -770,6 +775,16 @@
   color: var(--text);
   font-size: 12px;
   font-weight: 800;
+}
+
+/* "+N" 축약 표기 — 모바일에서만 보인다. */
+.calendar__chip-more-mobile {
+  display: none;
+}
+
+/* 모바일 전용 "+N" 행 — 넓은 화면에선 칩이 다 보이므로 숨긴다. */
+.calendar__cell-more--compact-only {
+  display: none;
 }
 
 /* ── Day panel ─────────────────────────────────── */
@@ -1938,7 +1953,7 @@ a.dayPanel__google-event:hover {
   }
 
   .calendar__grid {
-    grid-template-rows: repeat(6, 126px);
+    grid-template-rows: repeat(6, minmax(126px, auto));
   }
 
   .modal {
@@ -2055,7 +2070,7 @@ a.dayPanel__google-event:hover {
   }
 
   .calendar__grid {
-    grid-template-rows: repeat(6, 84px);
+    grid-template-rows: repeat(6, minmax(84px, auto));
   }
 
   .calendar__cell {
@@ -2066,11 +2081,15 @@ a.dayPanel__google-event:hover {
   .calendar__google-summary {
     position: absolute;
     top: 5px;
-    right: 28px;
+    right: 5px;
     width: auto;
+    /* 두 자리 날짜(≈17px) 옆 남는 폭 안에만 그린다 — 아주 좁은 기기에선 핀이 잘릴지언정
+       날짜 숫자를 덮지 않는다. */
+    max-width: calc(100% - 27px);
     min-height: 20px;
-    padding: 2px 4px;
+    padding: 2px 3px;
     background: var(--bg-elev-2);
+    overflow: hidden;
   }
 
   .calendar__google-dot,
@@ -2091,15 +2110,32 @@ a.dayPanel__google-event:hover {
     font-size: 13px;
   }
 
+  /* 라벨 대신 점으로 축약. 텍스트는 투명색으로 5px 박스 밖에 잘려 보조기기만 읽는다. */
   .calendar__holiday-label {
-    font-size: 10px;
+    width: 5px;
+    height: 5px;
+    flex: 0 0 5px;
+    align-self: center;
+    color: transparent;
+    background: var(--holiday-text);
+    border-radius: 50%;
+    line-height: 5px;
   }
 
+  /* Google 핀이 있는 날은 숫자 옆 폭이 모자라 점이 핀 밑에 깔린다 — 점은 보조기기용으로만
+     남기고(숫자의 공휴일 색은 유지) 시각적으로는 숨긴다. */
+  .calendar__cell:has(.calendar__google-summary) .calendar__holiday-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  /* 터치 기기엔 hover 가 없어 쓸 수 없는데 날짜 영역만 잠식한다.
+     생성은 날짜 패널의 "+ 이 날짜에 일정 생성" 과 헤더 버튼으로. */
   .calendar__cell-add {
-    width: 20px;
-    height: 20px;
-    flex-basis: 20px;
-    font-size: 16px;
+    display: none;
   }
 
   .calendar__chip {
@@ -2111,6 +2147,32 @@ a.dayPanel__google-event:hover {
   .calendar__chip-time,
   .calendar__chip-count {
     font-size: 10px;
+  }
+
+  /* 모바일 셀은 칩 1개 + "+N" 만 노출해 84px 행에 항상 들어간다.
+     CalendarClient 가 COMPACT_VISIBLE_SESSIONS_PER_CELL 초과 칩 li 에 이 클래스를 붙인다. */
+  .calendar__cell-session--wide-only {
+    display: none;
+  }
+
+  .calendar__cell-more--compact-only {
+    display: block;
+  }
+
+  .calendar__chip-more {
+    padding: 3px 4px;
+  }
+
+  .calendar__chip-more strong {
+    font-size: 11px;
+  }
+
+  .calendar__chip-more-desktop {
+    display: none;
+  }
+
+  .calendar__chip-more-mobile {
+    display: inline;
   }
 
   .modal__backdrop {
@@ -2163,5 +2225,12 @@ a.dayPanel__google-event:hover {
   .googleSettings__disconnect {
     width: 100%;
     margin-right: 0;
+  }
+}
+
+@media (max-width: 767px) and (forced-colors: active) {
+  /* 고대비 모드는 background 를 지우므로 공휴일 점이 사라진다 — 점 색을 유지한다. */
+  .calendar__holiday-label {
+    forced-color-adjust: none;
   }
 }

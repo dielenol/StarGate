@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   useDisconnectGoogleCalendar,
   useUpdateSelectedGoogleCalendars,
 } from "@/hooks/mutations/useGoogleCalendarMutations";
 import { useGoogleCalendarOptions } from "@/hooks/queries/useGoogleCalendar";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { GoogleCalendarClientError } from "@/lib/google-calendar/client";
 import {
   MAX_SELECTED_GOOGLE_CALENDARS,
@@ -38,42 +39,7 @@ export function GoogleCalendarSettingsModal({
   const [draftSelection, setDraftSelection] = useState<string[] | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const previouslyFocused = document.activeElement;
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeButtonRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const focusable = Array.from(
-        dialogRef.current?.querySelectorAll<HTMLElement>(
-          'a[href], button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])',
-        ) ?? [],
-      );
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousBodyOverflow;
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
-    };
-  }, [onClose]);
+  useModalA11y({ dialogRef, initialFocusRef: closeButtonRef, onClose });
 
   const selectedIds = useMemo(
     () =>

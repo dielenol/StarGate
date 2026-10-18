@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import type { TrpgSessionView } from "@/lib/trpg/serializer";
 
 import { useCreateTrpgSession } from "@/hooks/mutations/useCreateTrpgSession";
+import { useModalA11y } from "@/hooks/useModalA11y";
 
 import styles from "./styles.module.css";
 
@@ -34,8 +35,11 @@ export function SessionCreateModal({
     () => new Set(),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const createMutation = useCreateTrpgSession();
+  useModalA11y({ dialogRef, initialFocusRef: titleInputRef, onClose });
 
   const masterMember = useMemo(
     () =>
@@ -125,6 +129,7 @@ export function SessionCreateModal({
       role="presentation"
     >
       <div
+        ref={dialogRef}
         className={styles.modal}
         role="dialog"
         aria-modal="true"
@@ -149,6 +154,7 @@ export function SessionCreateModal({
           <label className={styles.modal__label}>
             제목
             <input
+              ref={titleInputRef}
               className={styles.modal__input}
               type="text"
               value={title}

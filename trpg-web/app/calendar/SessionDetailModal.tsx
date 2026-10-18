@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import type { TrpgSessionView } from "@/lib/trpg/serializer";
 
 import { useCancelTrpgSession } from "@/hooks/mutations/useCancelTrpgSession";
 import { useUpdateTrpgSession } from "@/hooks/mutations/useUpdateTrpgSession";
+import { useModalA11y } from "@/hooks/useModalA11y";
 
 import styles from "./styles.module.css";
 
@@ -42,9 +43,12 @@ export function SessionDetailModal({
       ),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const updateMutation = useUpdateTrpgSession();
   const cancelMutation = useCancelTrpgSession();
+  useModalA11y({ dialogRef, initialFocusRef: closeButtonRef, onClose });
 
   const scheduledSessionMap = useMemo(() => {
     const map = new Map<string, TrpgSessionView>();
@@ -177,6 +181,7 @@ export function SessionDetailModal({
       role="presentation"
     >
       <div
+        ref={dialogRef}
         className={styles.modal}
         role="dialog"
         aria-modal="true"
@@ -188,6 +193,7 @@ export function SessionDetailModal({
             {editing ? "세션 수정" : session.title}
           </h2>
           <button
+            ref={closeButtonRef}
             className={styles.modal__close}
             type="button"
             onClick={onClose}

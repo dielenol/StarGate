@@ -50,7 +50,13 @@ const WEEKDAY_ICON_ITEMS = [
   { label: "Fri", ariaLabel: "금요일", toneClass: "calendar__weekday--fri" },
   { label: "Sat", ariaLabel: "토요일", toneClass: "calendar__weekday--sat" },
 ] as const;
+/** 셀에 노출하는 세션 칩 수. 초과분은 "+N" 으로 접는다. */
 const MAX_VISIBLE_SESSIONS_PER_CELL = 2;
+/**
+ * 모바일(≤767px) 셀에 노출하는 칩 수. 초과 칩의 li 에
+ * `calendar__cell-session--wide-only` 를 붙여 모바일에서 숨긴다.
+ */
+const COMPACT_VISIBLE_SESSIONS_PER_CELL = 1;
 
 interface Props {
   currentUserDiscordId: string;
@@ -479,6 +485,10 @@ export function CalendarClient({
                 MAX_VISIBLE_SESSIONS_PER_CELL,
               );
               const overflow = daySessions.length - visible.length;
+              const compactOverflow = Math.max(
+                0,
+                daySessions.length - COMPACT_VISIBLE_SESSIONS_PER_CELL,
+              );
               const isToday = cell.dateKey === todayKey;
               const isSelected = cell.dateKey === selectedDate;
               const canCreateOnDate = cell.dateKey >= todayKey;
@@ -533,10 +543,17 @@ export function CalendarClient({
                   </div>
 
                   <ul className={styles["calendar__cell-sessions"]}>
-                    {visible.map((s) => {
+                    {visible.map((s, index) => {
                       const isMine = isUserSession(s, currentUserDiscordId);
                       return (
-                        <li key={s.id}>
+                        <li
+                          key={s.id}
+                          className={
+                            index >= COMPACT_VISIBLE_SESSIONS_PER_CELL
+                              ? styles["calendar__cell-session--wide-only"]
+                              : undefined
+                          }
+                        >
                           <button
                             type="button"
                             className={`${styles.calendar__chip} ${
@@ -558,15 +575,37 @@ export function CalendarClient({
                         </li>
                       );
                     })}
-                    {overflow > 0 ? (
-                      <li>
+                    {compactOverflow > 0 ? (
+                      <li
+                        className={
+                          overflow > 0
+                            ? undefined
+                            : styles["calendar__cell-more--compact-only"]
+                        }
+                      >
+                        {/* 브레이크포인트마다 노출 칩 수가 달라 "+N" 값도 다르다.
+                            접근 가능한 이름은 보이는 텍스트 + sr-only 문구로 구성하고
+                            aria-label 은 쓰지 않는다. */}
                         <button
                           type="button"
                           className={styles["calendar__chip-more"]}
                           onClick={() => handleSelectDate(cell.dateKey)}
-                          aria-label={`${cell.dateKey} 세션 ${overflow}개 더 보기`}
                         >
-                          <strong>+{overflow}개의 세션</strong>
+                          <span className={styles["calendar__sr-only"]}>
+                            {cell.dateKey}{" "}
+                          </span>
+                          <strong className={styles["calendar__chip-more-desktop"]}>
+                            +{overflow}개의 세션
+                          </strong>
+                          <strong className={styles["calendar__chip-more-mobile"]}>
+                            +{compactOverflow}
+                            <span className={styles["calendar__sr-only"]}>
+                              개의 세션
+                            </span>
+                          </strong>
+                          <span className={styles["calendar__sr-only"]}>
+                            {" "}더 보기
+                          </span>
                         </button>
                       </li>
                     ) : null}
@@ -594,7 +633,10 @@ export function CalendarClient({
                             : "G"}
                         </span>
                         <span className={styles["calendar__google-count-mobile"]}>
-                          G {dayGoogleEvents.length}
+                          {/* 두 자리는 핀 폭(날짜 숫자 옆 ≈22px)에 안 들어간다 — 정확한 수는 aria-label 에 있다. */}
+                          {dayGoogleEvents.length > 9
+                            ? "G+"
+                            : `G${dayGoogleEvents.length}`}
                         </span>
                       </strong>
                     </button>
