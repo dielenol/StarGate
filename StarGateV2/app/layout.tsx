@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Noto_Sans_KR } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+import { STRIP_INJECTED_USER_SELECT_SCRIPT } from "@/lib/runtime/strip-injected-user-select";
+
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -28,85 +30,6 @@ const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
   : process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
     : new URL("http://localhost:43849");
-
-const stripInjectedUserSelectScript = `
-(() => {
-  const USER_SELECT_PATTERN = /(?:^|;)\\s*(?:-webkit-|-ms-)?user-select\\s*:/i;
-  const USER_SELECT_DECLARATION = /(?:^|;)\\s*(?:-webkit-|-ms-)?user-select\\s*:[^;]*/gi;
-
-  const stripElement = (element) => {
-    if (!(element instanceof Element)) {
-      return;
-    }
-
-    const style = element.getAttribute("style");
-    if (!style || !USER_SELECT_PATTERN.test(style)) {
-      return;
-    }
-
-    // style.removeProperty() 는 남은 선언 전체를 CSSOM 형식("width: 100%;")으로
-    // 재직렬화해 React SSR 원본("width:100%")과 raw 문자열이 달라진다 →
-    // hydration mismatch 경고. user-select 선언만 도려내 나머지 바이트를 보존한다.
-    const stripped = style
-      .replace(USER_SELECT_DECLARATION, "")
-      .replace(/^\\s*;\\s*/, "");
-
-    if (!stripped.trim()) {
-      element.removeAttribute("style");
-    } else if (stripped !== style) {
-      element.setAttribute("style", stripped);
-    }
-  };
-
-  const stripTree = (root) => {
-    if (root instanceof Element) {
-      stripElement(root);
-    }
-
-    if ("querySelectorAll" in root) {
-      root
-        .querySelectorAll("[style]")
-        .forEach(stripElement);
-    }
-  };
-
-  const stripDocumentOnce = () => stripTree(document.documentElement);
-
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (mutation.type === "attributes") {
-        stripElement(mutation.target);
-        continue;
-      }
-      mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === Node.ELEMENT_NODE) stripTree(node);
-      });
-    }
-  });
-
-  const startBoundedObserver = () => {
-    stripDocumentOnce();
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["style"],
-      childList: true,
-      subtree: true,
-    });
-  };
-
-  startBoundedObserver();
-  if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      () => window.setTimeout(() => observer.disconnect(), 3000),
-      { once: true },
-    );
-  } else {
-    window.setTimeout(() => observer.disconnect(), 3000);
-  }
-  window.addEventListener("pageshow", stripDocumentOnce);
-})();
-`;
 
 export const metadata: Metadata = {
   title: "NOVUS ORDO",
@@ -149,9 +72,10 @@ export default function RootLayout({
       className={`${jetbrainsMono.variable} ${notoSansKr.variable}`}
     >
       <head>
+        {/* 확장 프로그램이 주입한 인라인 user-select로 인한 hydration mismatch 방지 */}
         <script
           id="strip-injected-user-select"
-          dangerouslySetInnerHTML={{ __html: stripInjectedUserSelectScript }}
+          dangerouslySetInnerHTML={{ __html: STRIP_INJECTED_USER_SELECT_SCRIPT }}
         />
       </head>
       <body>
