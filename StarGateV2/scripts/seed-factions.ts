@@ -195,9 +195,9 @@ async function main(): Promise<void> {
   }
 
   // DB 연결 (dry-run도 upsert 판정 위해 읽기용 연결).
-  // NOTE: P3-5(unreachable URI 시 timeout 단축)는 shared-db의 initServerless가
-  // serverSelectionTimeoutMS 를 아직 투과하지 않아 이번 라운드에서는 적용 보류.
-  // 기본값(30s)이 그대로 적용되므로 도달 불가 URI에서 dry-run도 최대 30초 대기한다.
+  // NOTE: P3-5(unreachable URI 시 timeout 단축)는 아직 적용하지 않았다.
+  // serverSelectionTimeoutMS 를 넘기지 않으므로 MONGODB_URI 쿼리 값(없으면 기본 30s)이 적용되어
+  // 도달 불가 URI에서는 dry-run도 그만큼(기본 최대 30초) 대기한다.
   try {
     initServerless({ uri: MONGODB_URI, dbName: DB_NAME });
   } catch (err) {
