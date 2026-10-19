@@ -49,7 +49,7 @@
 
 - shared-db가 MongoClient에 `maxPoolSize`만 넘겨 서버 선택·연결 타임아웃이 드라이버 기본값 30초였다. DB 장애 때 `auth()` jwt 콜백의 사용자 조회를 포함한 ERP 요청이 30초씩 매달렸다. Vercel 함수 기본 타임아웃(300초)은 이를 끊지 못했고, `maxDuration` 10초인 `admin/vtt-runtime`은 오류 응답 전에 504로 잘렸다.
 - `lib/db/init.ts`에서 `serverSelectionTimeoutMS`·`connectTimeoutMS`를 5초로 지정했다. Vercel에서 드라이버는 poll 모니터링을 써서 heartbeat 소켓 타임아웃도 5초가 되고, 응답 없는 서버에 걸린 쿼리를 더 빨리 끊는다. shared-db는 두 옵션을 선택 필드로만 노출했다. 지정 값이 URI 쿼리보다 우선하기 때문에, 전역 기본값을 두면 스크립트가 URI로 넣은 15초를 덮어쓰게 된다.
-- 감수한 점: Atlas 선거가 5초를 넘기면 primary가 필요한 요청 일부가 실패할 수 있다. `withTransaction` 경로는 드라이버가 최대 120초까지 재시도하므로 이 상한이 적용되지 않는다(기존과 같음).
+- 감수한 점: Atlas 선거가 5초를 넘기면 primary가 필요한 요청 일부가 실패할 수 있다. `withTransaction`의 120초 재시도는 일시 오류 라벨이 붙은 실패에만 적용된다. 서버 선택 실패에는 라벨이 붙지 않으므로 트랜잭션 요청도 같은 상한에서 끝난다(닫힌 포트 실측: 콜백 1회 시도 후 선택 타임아웃에 실패).
 - 검증: 닫힌 포트 URI로 실제 `init.ts`를 import해 `getDb()` 실패 5.0초 확인(옵션 없는 비교군 30.0초). shared-db `test:client` 5건(응답 없는 서버의 `connectTimeoutMS` 음성 대조 포함). `pnpm typecheck`, `pnpm lint`, 정적 이중 리뷰·런타임 검증 P1 없음
 - 관련 구현 커밋: `ab3e436a`, `439f3dae`
 - 후속 작업: 배포 후 Vercel 로그에서 `MongoServerSelectionError`·`MongoNetworkTimeoutError` 빈도를 확인한다. push·배포는 하지 않았다.
