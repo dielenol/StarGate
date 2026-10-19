@@ -1,9 +1,9 @@
 /**
- * Edge Runtime 경량 Proxy.
+ * 경량 Proxy (Next 16 proxy — Node.js 런타임).
  *
- * mongodb 드라이버는 Edge Runtime 에서 사용 불가하므로, 여기서는
- * 세션 쿠키 존재 여부만 확인하고 실제 인증·길드 멤버 검증은
- * 서버 컴포넌트 / API 라우트의 `auth()` 호출에서 수행한다.
+ * 세션 쿠키 존재 여부만 확인한다. 토큰 검증은 서버 컴포넌트 / API 라우트의 `auth()`가 하고,
+ * 길드 멤버 검증은 로그인 시점(`lib/auth/config.ts` signIn 콜백)에만 한다 — 이후 탈퇴는 JWT 만료 전까지 반영되지 않는다.
+ * 쿠키 이름은 환경(NODE_ENV)에 따라 달라진다 — `lib/auth/cookies.ts` 참조.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
