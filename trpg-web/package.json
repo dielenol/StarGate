@@ -4,7 +4,7 @@
   "description": "StarGate TRPG 세션 캘린더 웹앱 — Discord OAuth + 월간 캘린더 + 세션 생성/편집",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3001",
     "build": "pnpm --filter @stargate/shared-db build && next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
