@@ -7,25 +7,47 @@
   padding: 24px 32px 48px;
 }
 
+/* 헤더는 세 그룹 — 월 이동(‹ 제목 › 오늘로) / 보조 도구(룰렛·Google·필터) / 주 액션(+ 일정 생성)과 계정 메뉴.
+   데스크톱은 한 줄, 1280px 아래는 "월 이동 | 액션" 위에 도구 줄이 붙는 두 줄 (아래 미디어 쿼리). */
 .calendar__header {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "month tools actions";
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px 20px;
   margin-bottom: 16px;
 }
 
-.calendar__title-wrap {
+.calendar__month {
+  grid-area: month;
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
 }
 
 .calendar__title {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  /* 달이 바뀌어도 ‹ › 가 흔들리지 않도록 숫자 폭을 고정한다. */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.calendar__tools {
+  grid-area: tools;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.calendar__actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .calendar__today {
@@ -82,30 +104,55 @@
   outline-offset: 2px;
 }
 
-.calendar__mine-toggle {
-  padding: 6px 12px;
-  background: var(--accent-soft-2);
-  color: var(--accent-text);
-  border: 1px solid rgba(88, 101, 242, 0.34);
-  border-radius: 6px;
-  font-size: 13px;
+/* 세션 필터 세그먼트 — 라벨은 고정이고 눌린 쪽(aria-pressed)이 현재 상태다.
+   "내 세션" 쪽은 내 세션 칩과 같은 accent 로 눌려 색 의미가 이어진다. */
+.calendar__filter {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.calendar__filter-option {
+  min-height: 26px;
+  padding: 3px 10px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 0;
+  border-radius: 5px;
+  font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.calendar__mine-toggle:hover {
-  background: var(--accent-soft-4);
-  border-color: rgba(142, 155, 255, 0.56);
-  color: var(--accent-text-strong);
+.calendar__filter-option:hover {
+  color: var(--text);
 }
 
-.calendar__mine-toggle--active {
-  background: rgba(88, 101, 242, 0.24);
-  border-color: var(--accent-border-strong);
+.calendar__filter-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.calendar__filter-option[aria-pressed="true"] {
+  background: var(--control-bg);
+  color: var(--text);
+  box-shadow:
+    0 0 0 1px var(--border-strong),
+    var(--shadow-sm);
+}
+
+.calendar__filter-option--mine[aria-pressed="true"] {
+  background: var(--accent-soft-3);
   color: var(--accent-text-strong);
+  box-shadow: 0 0 0 1px var(--accent-border);
 }
 
 .calendar__google-toggle {
@@ -163,6 +210,11 @@
 
 .calendar__create-btn {
   position: relative;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 7px 12px;
   background: var(--accent);
   color: #fff;
@@ -170,6 +222,7 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   transition: background 0.15s ease;
 }
 
@@ -177,10 +230,9 @@
   background: var(--accent-hover);
 }
 
-.calendar__controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.calendar__create-icon {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .calendar__nav {
@@ -203,6 +255,7 @@
 }
 
 .calendar__sign-out {
+  width: 100%;
   padding: 8px 14px;
   background: transparent;
   color: var(--text-muted);
@@ -219,20 +272,112 @@
   border-color: var(--border-strong);
 }
 
+/* 계정 메뉴 — 프로필 칩이 트리거, 아래로 비모달 disclosure 가 열린다. */
+.calendar__account {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
 .calendar__profile {
   position: relative;
-  max-width: 160px;
-  padding: 7px 10px;
+  max-width: 200px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px 5px 5px;
   color: var(--text);
   background: var(--accent-soft-2);
   /* 테두리는 ::before 의 스펙트럼 링이 그린다 (Spectrum accent 섹션). */
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 999px;
   font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+
+.calendar__profile:hover {
+  background: var(--accent-soft-4);
+}
+
+.calendar__profile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 22px 아바타엔 MemberAvatar 기본 2px 테두리가 무거워 1px 로 줄인다. */
+.calendar__profile-avatar {
+  border-width: 1px;
+}
+
+.calendar__profile-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar__profile-caret {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.calendar__profile[aria-expanded="true"] .calendar__profile-caret {
+  transform: rotate(180deg);
+}
+
+.calendar__account-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  width: 232px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface-frosted);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+}
+
+.calendar__account-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.calendar__account-eyebrow {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.calendar__account-name {
+  color: var(--text);
+  font-size: 14px;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.calendar__account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .calendar__error {
@@ -271,15 +416,17 @@
   font-weight: 700;
 }
 
+/* 데스크톱은 오른쪽 320px 열을 항상 예약한다 — 날짜 선택 여부와 무관하게 그리드 폭이 같다.
+   비어 있을 땐 플레이스홀더 패널이 그 자리를 채운다. 1280px 아래는 패널이 바텀시트가 된다. */
 .calendar__body {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
   align-items: stretch;
   gap: 16px;
 }
 
 .calendar__board {
   min-width: 0;
-  flex: 1;
 }
 
 .calendar__weekdays {
@@ -430,6 +577,27 @@
 
 .calendar__cell:hover {
   background: var(--bg-elev-2);
+}
+
+/* 지난 날짜 — 셀·숫자·칩을 한 톤 낮춘다 (globals.css 의 --past-*). 앞 달 꼬리는 뒤의 --out 이 이긴다. */
+.calendar__cell--past {
+  background: var(--past-bg);
+  color: var(--past-text);
+}
+
+.calendar__cell--past .calendar__cell-day {
+  color: var(--past-text);
+}
+
+/* 의미 색(공휴일·주말)은 80% 만 섞어 지난 날짜에서도 대비 3:1 이상을 지킨다. */
+.calendar__cell--past .calendar__cell-day--sun,
+.calendar__cell--past .calendar__cell-day--holiday,
+.calendar__cell--past .calendar__holiday-label {
+  color: color-mix(in srgb, var(--holiday-text) 80%, var(--past-bg));
+}
+
+.calendar__cell--past .calendar__cell-day--sat {
+  color: color-mix(in srgb, var(--saturday-text) 80%, var(--past-bg));
 }
 
 .calendar__cell--out {
@@ -652,11 +820,12 @@
   outline-offset: -2px;
 }
 
+/* 세션 색은 의미로만 — 내 세션(--mine)은 accent, 다른 세션은 중립. 빨강은 오류·경고 전용. */
 .calendar__chip {
-  --session-panel-bg: var(--accent-soft-1);
-  --session-panel-bg-hover: var(--accent-soft-3);
-  --session-panel-border: var(--accent-border);
-  --session-panel-time: var(--accent-border-strong);
+  --session-panel-bg: var(--neutral-soft-subtle);
+  --session-panel-bg-hover: var(--neutral-soft);
+  --session-panel-border: var(--neutral-border-strong);
+  --session-panel-time: var(--text-muted);
 
   display: flex;
   align-items: center;
@@ -676,41 +845,44 @@
   overflow: hidden;
 }
 
-.calendar__cell-sessions li:nth-child(4n + 2) .calendar__chip {
-  --session-panel-bg: rgba(35, 165, 90, 0.08);
-  --session-panel-bg-hover: rgba(35, 165, 90, 0.14);
-  --session-panel-border: rgba(35, 165, 90, 0.55);
-  --session-panel-time: var(--session-green);
-}
-
-.calendar__cell-sessions li:nth-child(4n + 3) .calendar__chip {
-  --session-panel-bg: rgba(250, 166, 26, 0.08);
-  --session-panel-bg-hover: rgba(250, 166, 26, 0.14);
-  --session-panel-border: rgba(250, 166, 26, 0.55);
-  --session-panel-time: var(--session-yellow);
-}
-
-.calendar__cell-sessions li:nth-child(4n) .calendar__chip {
-  --session-panel-bg: rgba(237, 66, 69, 0.08);
-  --session-panel-bg-hover: rgba(237, 66, 69, 0.14);
-  --session-panel-border: rgba(237, 66, 69, 0.52);
-  --session-panel-time: var(--session-red);
-}
-
 .calendar__chip:hover {
   background: var(--session-panel-bg-hover);
 }
 
 .calendar__chip--mine {
+  --session-panel-bg: var(--accent-soft-5);
+  --session-panel-bg-hover: var(--accent-soft-6);
+  --session-panel-border: var(--accent-text);
   --session-panel-time: var(--accent-text-strong);
 
-  background: var(--accent-soft-5);
-  border-left-color: var(--accent-text);
-  box-shadow: inset 0 0 0 1px rgba(199, 208, 255, 0.26);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 
-.calendar__chip--mine:hover {
-  background: rgba(88, 101, 242, 0.3);
+/* 지난 날짜의 칩 — 셀과 함께 가라앉되 내 세션은 accent 를 희미하게 남긴다. */
+.calendar__cell--past .calendar__chip {
+  --session-panel-bg: var(--neutral-soft-subtle);
+  --session-panel-bg-hover: var(--neutral-soft);
+  --session-panel-border: var(--neutral-border);
+  --session-panel-time: var(--past-text);
+
+  color: var(--past-text);
+  box-shadow: none;
+}
+
+.calendar__cell--past .calendar__chip--mine {
+  --session-panel-bg: var(--accent-soft-1);
+  --session-panel-bg-hover: var(--accent-soft-3);
+  --session-panel-border: var(--accent-border);
+  --session-panel-time: color-mix(in srgb, var(--accent-text) 70%, var(--past-bg));
+}
+
+.calendar__cell--past .calendar__chip-count,
+.calendar__cell--past .calendar__chip--mine::after,
+.calendar__cell--past .calendar__chip-more,
+.calendar__cell--past .calendar__chip-more strong,
+.calendar__cell--past .calendar__google-summary,
+.calendar__cell--past .calendar__google-count {
+  color: var(--past-text);
 }
 
 .calendar__chip--mine::after {
@@ -718,7 +890,7 @@
   flex: 0 0 auto;
   padding: 1px 5px;
   background: var(--neutral-soft);
-  border: 1px solid rgba(199, 208, 255, 0.4);
+  border: 1px solid var(--accent-border);
   border-radius: 999px;
   color: var(--text);
   font-size: 10px;
@@ -795,7 +967,6 @@
 .dayPanel {
   position: relative;
   width: 320px;
-  flex: 0 0 320px;
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -887,14 +1058,44 @@
   border-color: var(--accent-hover);
 }
 
-.dayPanel__create:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+/* 지난 날짜엔 생성 버튼 대신 이유를 보여준다. */
+.dayPanel__notice {
+  padding: 9px 12px;
+  color: var(--text-muted);
+  background: var(--neutral-soft-subtle);
+  border: 1px dashed var(--neutral-border);
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: center;
+  word-break: keep-all;
 }
 
-.dayPanel__create:disabled:hover {
-  background: var(--accent);
-  border-color: var(--accent);
+.dayPanel--past .dayPanel__title {
+  color: var(--text-muted);
+}
+
+/* 날짜를 고르기 전의 오른쪽 열 — 자리만 지키는 안내 패널. */
+.dayPanel--placeholder {
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+  background: var(--surface-muted);
+  border: 1px dashed var(--border-strong);
+  text-align: center;
+}
+
+.dayPanel--placeholder .dayPanel__eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.dayPanel__placeholder-text {
+  max-width: 220px;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: keep-all;
 }
 
 .dayPanel__list {
@@ -906,47 +1107,21 @@
   overflow-y: auto;
 }
 
+/* 패널 항목도 칩과 같은 규칙 — 내 세션만 accent, 나머지는 중립. */
 .dayPanel__item {
-  --session-panel-bg: var(--accent-soft-1);
-  --session-panel-bg-hover: var(--accent-soft-3);
-  --session-panel-border: var(--accent-border);
-  --session-panel-time: var(--accent-border-strong);
+  --session-panel-bg: var(--neutral-soft-subtle);
+  --session-panel-bg-hover: var(--neutral-soft);
+  --session-panel-border: var(--neutral-border-strong);
+  --session-panel-time: var(--text-muted);
 
   background: var(--session-panel-bg);
-  border: 1px solid var(--accent-soft-5);
+  border: 1px solid var(--neutral-border);
   border-left: 2px solid var(--session-panel-border);
   border-radius: 8px;
   overflow: hidden;
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
-}
-
-.dayPanel__item:nth-child(4n + 2) {
-  --session-panel-bg: rgba(35, 165, 90, 0.08);
-  --session-panel-bg-hover: rgba(35, 165, 90, 0.14);
-  --session-panel-border: rgba(35, 165, 90, 0.55);
-  --session-panel-time: var(--session-green);
-
-  border-color: rgba(35, 165, 90, 0.22);
-}
-
-.dayPanel__item:nth-child(4n + 3) {
-  --session-panel-bg: rgba(250, 166, 26, 0.08);
-  --session-panel-bg-hover: rgba(250, 166, 26, 0.14);
-  --session-panel-border: rgba(250, 166, 26, 0.55);
-  --session-panel-time: var(--session-yellow);
-
-  border-color: rgba(250, 166, 26, 0.24);
-}
-
-.dayPanel__item:nth-child(4n) {
-  --session-panel-bg: rgba(237, 66, 69, 0.08);
-  --session-panel-bg-hover: rgba(237, 66, 69, 0.14);
-  --session-panel-border: rgba(237, 66, 69, 0.52);
-  --session-panel-time: var(--session-red);
-
-  border-color: rgba(237, 66, 69, 0.22);
 }
 
 .dayPanel__item:hover {
@@ -960,14 +1135,19 @@
 }
 
 .dayPanel__item--mine {
-  background: rgba(88, 101, 242, 0.18);
-  border-color: var(--accent-border-strong);
-  box-shadow: inset 0 0 0 1px rgba(142, 160, 255, 0.26);
+  --session-panel-bg: var(--accent-soft-5);
+  --session-panel-bg-hover: var(--accent-soft-6);
+  --session-panel-border: var(--accent-text);
+  --session-panel-time: var(--accent-text-strong);
+
+  border-color: var(--accent-border);
+  border-left-color: var(--session-panel-border);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 
 .dayPanel__item--mine:hover,
 .dayPanel__item--mine.dayPanel__item--focused {
-  background: rgba(88, 101, 242, 0.26);
+  background: var(--session-panel-bg-hover);
   border-color: var(--accent-text);
 }
 
@@ -1052,9 +1232,10 @@
   min-width: 0;
 }
 
+/* 참여자 알약 — 본인만 accent, 나머지는 중립. */
 .dayPanel__participant {
-  --participant-bg: var(--accent-soft-4);
-  --participant-border: rgba(88, 101, 242, 0.42);
+  --participant-bg: var(--neutral-soft-subtle);
+  --participant-border: var(--neutral-border);
   --participant-color: var(--text);
 
   display: inline-flex;
@@ -1071,26 +1252,12 @@
   line-height: 1.35;
 }
 
-.dayPanel__participant:nth-child(4n + 2) {
-  --participant-bg: rgba(35, 165, 90, 0.14);
-  --participant-border: rgba(35, 165, 90, 0.42);
-}
-
-.dayPanel__participant:nth-child(4n + 3) {
-  --participant-bg: rgba(250, 166, 26, 0.14);
-  --participant-border: rgba(250, 166, 26, 0.42);
-}
-
-.dayPanel__participant:nth-child(4n) {
-  --participant-bg: rgba(237, 66, 69, 0.13);
-  --participant-border: rgba(237, 66, 69, 0.4);
-}
-
 .dayPanel__participant--self {
-  --participant-bg: var(--accent-soft-6);
-  --participant-border: var(--neutral-border-strong);
+  --participant-bg: var(--accent-soft-5);
+  --participant-border: var(--accent-border);
+  --participant-color: var(--accent-text-strong);
 
-  box-shadow: 0 0 0 1px rgba(88, 101, 242, 0.32);
+  box-shadow: 0 0 0 1px var(--accent-soft-6);
 }
 
 .dayPanel__participant span:first-child,
@@ -1656,9 +1823,11 @@ a.dayPanel__google-event:hover {
   padding: 0;
 }
 
+/* 상세 모달의 참여자 알약도 패널과 같은 규칙 (본인만 accent). */
 .modal__participant {
-  --participant-bg: var(--accent-soft-4);
-  --participant-border: rgba(88, 101, 242, 0.42);
+  --participant-bg: var(--neutral-soft-subtle);
+  --participant-border: var(--neutral-border);
+  --participant-color: var(--text);
 
   display: inline-flex;
   align-items: center;
@@ -1668,32 +1837,18 @@ a.dayPanel__google-event:hover {
   background: var(--participant-bg);
   border: 1px solid var(--participant-border);
   border-radius: 999px;
-  color: var(--text);
+  color: var(--participant-color);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.35;
 }
 
-.modal__participant:nth-child(4n + 2) {
-  --participant-bg: rgba(35, 165, 90, 0.14);
-  --participant-border: rgba(35, 165, 90, 0.42);
-}
-
-.modal__participant:nth-child(4n + 3) {
-  --participant-bg: rgba(250, 166, 26, 0.14);
-  --participant-border: rgba(250, 166, 26, 0.42);
-}
-
-.modal__participant:nth-child(4n) {
-  --participant-bg: rgba(237, 66, 69, 0.13);
-  --participant-border: rgba(237, 66, 69, 0.4);
-}
-
 .modal__participant--self {
-  --participant-bg: var(--accent-soft-6);
-  --participant-border: var(--neutral-border-strong);
+  --participant-bg: var(--accent-soft-5);
+  --participant-border: var(--accent-border);
+  --participant-color: var(--accent-text-strong);
 
-  box-shadow: 0 0 0 1px rgba(88, 101, 242, 0.32);
+  box-shadow: 0 0 0 1px var(--accent-soft-6);
 }
 
 .modal__participant span:first-child,
@@ -1997,7 +2152,7 @@ a.dayPanel__google-event:hover {
   opacity: 1;
 }
 
-/* 선택한 날짜 패널: 왼쪽 3px 띠를 세로 스펙트럼으로. */
+/* 선택한 날짜 패널: 왼쪽 3px 띠를 세로 스펙트럼으로. 플레이스홀더에는 띠가 없다. */
 .dayPanel::before {
   position: absolute;
   top: -1px;
@@ -2010,9 +2165,25 @@ a.dayPanel__google-event:hover {
   pointer-events: none;
 }
 
+.dayPanel--placeholder::before {
+  display: none;
+}
+
 @keyframes spectrum-sweep {
   to {
     --brand-spectrum-angle: 360deg;
+  }
+}
+
+@keyframes sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -2028,24 +2199,93 @@ a.dayPanel__google-event:hover {
   }
 }
 
+/* ── Below desktop: two-row header + bottom-sheet panel ── */
+/* 오른쪽 열을 예약할 폭이 없다. 패널을 뷰포트 하단에 고정한 비모달 바텀시트로 띄워
+   탭한 셀의 반응이 바로 보이고 그리드는 자리를 지킨다. 시트가 가리는 아래쪽 행은
+   .calendar--panel-open 의 바닥 여백만큼 더 스크롤해서 볼 수 있다. */
+@media (max-width: 1279px) {
+  .calendar {
+    --sheet-max-height: min(60dvh, 560px);
+  }
+
+  /* 아래 태블릿·모바일 블록의 .calendar padding 보다 우선해야 하므로 특이도를 올린다. */
+  .calendar.calendar--panel-open {
+    padding-bottom: calc(var(--sheet-max-height) + 24px);
+  }
+
+  .calendar__header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "month actions"
+      "tools tools";
+  }
+
+  .calendar__body {
+    display: block;
+  }
+
+  .dayPanel {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: auto;
+    max-height: var(--sheet-max-height);
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-left: 1px solid var(--border-strong);
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+    box-shadow: var(--shadow-panel);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* 시트가 스크롤돼도 날짜와 닫기 버튼은 위에 붙어 있다 (top 음수값은 시트 padding-top 상쇄). */
+  .dayPanel__header {
+    position: sticky;
+    top: -14px;
+    z-index: 1;
+    background: var(--surface-frosted);
+  }
+
+  .dayPanel::before {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand-spectrum-stops));
+    border-radius: 14px 14px 0 0;
+  }
+
+  .dayPanel--placeholder {
+    display: none;
+  }
+
+  .dayPanel__list {
+    overflow: visible;
+  }
+}
+
+/* 등장 애니메이션은 이 블록이 reduce 블록보다 뒤에 있어 같은 특이도로 덮지 않도록 no-preference 로 한정한다. */
+@media (max-width: 1279px) and (prefers-reduced-motion: no-preference) {
+  .dayPanel {
+    animation: sheet-rise 0.2s ease-out;
+  }
+}
+
 @media (min-width: 768px) and (max-width: 1279px) {
   .calendar {
     max-width: 100%;
     padding: 22px 20px 40px;
   }
 
-  .calendar__body {
-    flex-direction: column;
-  }
-
+  /* 태블릿에선 시트를 가운데 720px 로 모은다. */
   .dayPanel {
-    width: 100%;
-    flex-basis: auto;
-    max-height: none;
-  }
-
-  .dayPanel__list {
-    overflow: visible;
+    width: min(100%, 720px);
+    margin: 0 auto;
   }
 
   .calendar__grid {
@@ -2064,32 +2304,21 @@ a.dayPanel__google-event:hover {
   }
 
   .calendar__header {
-    align-items: flex-start;
-    gap: 10px;
+    gap: 8px 10px;
   }
 
-  .calendar__title-wrap {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 8px;
+  .calendar__month {
+    gap: 6px;
   }
 
   .calendar__title {
-    width: 100%;
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .calendar__today,
-  .calendar__mine-toggle,
-  .calendar__google-toggle,
-  .calendar__create-btn,
-  .calendar__sign-out {
+  .calendar__google-toggle {
     padding: 7px 10px;
     font-size: 12px;
-  }
-
-  .calendar__controls {
-    width: 100%;
   }
 
   .calendar__nav {
@@ -2097,23 +2326,60 @@ a.dayPanel__google-event:hover {
     height: 34px;
   }
 
-  .calendar__sign-out {
-    margin-left: auto;
+  /* 도구 줄은 한 줄을 넘기지 않는다 — 아주 좁은 기기에선 가로 스크롤. 포커스 링이 잘리지 않게 2px 여유. */
+  .calendar__tools {
+    flex-wrap: nowrap;
+    margin: -2px;
+    padding: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .calendar__body {
-    flex-direction: column;
-    gap: 12px;
+  .calendar__tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .calendar__roulette,
+  .calendar__google-toggle {
+    flex: 0 0 auto;
+  }
+
+  /* 주 액션은 accent "+" 아이콘 버튼으로 줄이고 라벨은 보조기기용으로만 남긴다. */
+  .calendar__create-btn {
+    width: 34px;
+    padding: 0;
+  }
+
+  .calendar__create-icon {
+    font-size: 20px;
+  }
+
+  .calendar__create-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* 계정 트리거는 아바타만. */
+  .calendar__profile {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .calendar__profile-name,
+  .calendar__profile-caret {
+    display: none;
   }
 
   .dayPanel {
-    width: 100%;
-    flex-basis: auto;
-    padding: 12px;
-  }
-
-  .dayPanel__list {
-    overflow: visible;
+    padding: 12px 12px calc(14px + env(safe-area-inset-bottom, 0px));
   }
 
   .dayPanel__sessionButton {
@@ -2216,6 +2482,10 @@ a.dayPanel__google-event:hover {
     background: var(--holiday-text);
     border-radius: 50%;
     line-height: 5px;
+  }
+
+  .calendar__cell--past .calendar__holiday-label {
+    background: color-mix(in srgb, var(--holiday-text) 80%, var(--past-bg));
   }
 
   /* Google 핀이 있는 날은 숫자 옆 폭이 모자라 점이 핀 밑에 깔린다 — 점은 보조기기용으로만

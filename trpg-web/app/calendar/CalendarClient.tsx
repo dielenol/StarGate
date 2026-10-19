@@ -1,12 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
+import { MemberAvatar } from "@/app/roulette/MemberAvatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/components/ToastProvider";
 import {
@@ -109,9 +117,13 @@ export function CalendarClient({
     initialFocusedSessionId,
   );
   const [showMineOnly, setShowMineOnly] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [googleSettingsOpen, setGoogleSettingsOpen] = useState(
     initialGoogleStatus === "connected",
   );
+  const accountRef = useRef<HTMLDivElement | null>(null);
+  const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const accountMenuId = useId();
   const [googleCallbackStatus] = useState(initialGoogleStatus);
   const [detailModalSession, setDetailModalSession] =
     useState<TrpgSessionView | null>(
@@ -164,6 +176,45 @@ export function CalendarClient({
     }
     router.replace("/calendar", { scroll: false });
   }, [googleCallbackStatus, router, showToast]);
+
+  // 계정 메뉴는 비모달 disclosure — 바깥 pointerdown 과 Esc 로 닫는다. Esc 는 document 에서 받는다:
+  // macOS Safari/Firefox 는 버튼 클릭에 포커스를 주지 않아 래퍼의 onKeyDown 에는 키가 닿지 않는다.
+  // Tab 이탈은 래퍼의 onBlur 가 맡는다.
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!accountRef.current?.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key !== "Escape" ||
+        event.isComposing ||
+        event.defaultPrevented
+      ) {
+        return;
+      }
+      const active = document.activeElement;
+      // 포커스가 메뉴 밖의 다른 위젯에 있으면 그쪽 Esc 에 양보한다.
+      if (
+        active &&
+        active !== document.body &&
+        !accountRef.current?.contains(active)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      setAccountMenuOpen(false);
+      accountTriggerRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [accountMenuOpen]);
 
   const sessions = useMemo(
     () => sessionsQuery.data ?? [],
@@ -224,7 +275,9 @@ export function CalendarClient({
     if (!selectedDate) return [];
     return googleEventsByDate.get(selectedDate) ?? [];
   }, [googleEventsByDate, selectedDate]);
-  const selectedDateCanCreate = selectedDate ? selectedDate >= todayKey : true;
+  const selectedDateIsPast = selectedDate ? selectedDate < todayKey : false;
+  const currentUserDisplayName =
+    currentMember?.displayName ?? currentUserName ?? currentUserDiscordId;
 
   function handlePrev() {
     setSelectedDate(null);
@@ -244,6 +297,15 @@ export function CalendarClient({
 
   async function handleSignOut() {
     await signOut({ callbackUrl: "/login" });
+  }
+
+  function handleAccountBlur(event: React.FocusEvent<HTMLDivElement>) {
+    // Safari 는 버튼 클릭 때 relatedTarget 이 null 이라 여기서 닫으면 메뉴 항목 클릭이 유실된다.
+    // null 은 무시하고(바깥 클릭은 pointerdown 리스너가 처리) 키보드 Tab 이탈만 닫는다.
+    const next = event.relatedTarget;
+    if (next instanceof Node && !accountRef.current?.contains(next)) {
+      setAccountMenuOpen(false);
+    }
   }
 
   function handleOpenCreate(dateKey = todayKey) {
@@ -272,12 +334,32 @@ export function CalendarClient({
   }, []);
 
   return (
-    <main className={styles.calendar}>
+    <main
+      className={`${styles.calendar} ${
+        selectedDate ? styles["calendar--panel-open"] : ""
+      }`}
+    >
       <header className={styles.calendar__header}>
-        <div className={styles["calendar__title-wrap"]}>
+        <div className={styles.calendar__month}>
+          <button
+            className={styles.calendar__nav}
+            type="button"
+            onClick={handlePrev}
+            aria-label="이전 달"
+          >
+            ‹
+          </button>
           <h1 className={styles.calendar__title}>
             {year}년 {String(month).padStart(2, "0")}월
           </h1>
+          <button
+            className={styles.calendar__nav}
+            type="button"
+            onClick={handleNext}
+            aria-label="다음 달"
+          >
+            ›
+          </button>
           <button
             className={styles.calendar__today}
             type="button"
@@ -285,20 +367,13 @@ export function CalendarClient({
           >
             오늘로
           </button>
+        </div>
+
+        <div className={styles.calendar__tools}>
           <Link className={styles.calendar__roulette} href="/roulette">
             <span aria-hidden="true">●</span>
             다채 룰렛
           </Link>
-          <button
-            className={`${styles["calendar__mine-toggle"]} ${
-              showMineOnly ? styles["calendar__mine-toggle--active"] : ""
-            }`}
-            type="button"
-            aria-pressed={showMineOnly}
-            onClick={() => setShowMineOnly((prev) => !prev)}
-          >
-            {showMineOnly ? "전체 세션 보기" : "내 세션만 보기"}
-          </button>
           {googleConnection.enabled ? (
             <button
               className={`${styles["calendar__google-toggle"]} ${
@@ -331,43 +406,99 @@ export function CalendarClient({
               ) : null}
             </button>
           ) : null}
+          <div
+            className={styles.calendar__filter}
+            role="group"
+            aria-label="세션 필터"
+          >
+            <button
+              className={styles["calendar__filter-option"]}
+              type="button"
+              aria-pressed={!showMineOnly}
+              onClick={() => setShowMineOnly(false)}
+            >
+              전체
+            </button>
+            <button
+              className={`${styles["calendar__filter-option"]} ${
+                styles["calendar__filter-option--mine"]
+              }`}
+              type="button"
+              aria-pressed={showMineOnly}
+              onClick={() => setShowMineOnly(true)}
+            >
+              내 세션
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.calendar__actions}>
           <button
             className={styles["calendar__create-btn"]}
             type="button"
             onClick={() => handleOpenCreate()}
           >
-            + 일정 생성
+            <span className={styles["calendar__create-icon"]} aria-hidden="true">
+              +
+            </span>
+            <span className={styles["calendar__create-label"]}>일정 생성</span>
           </button>
-        </div>
-
-        <div className={styles.calendar__controls}>
-          <button
-            className={styles.calendar__nav}
-            type="button"
-            onClick={handlePrev}
-            aria-label="이전 달"
+          {/* 프로필·테마·로그아웃은 disclosure 메뉴로 모은다 — 모바일 헤더를 2줄로 유지. */}
+          <div
+            className={styles.calendar__account}
+            ref={accountRef}
+            onBlur={handleAccountBlur}
           >
-            ‹
-          </button>
-          <button
-            className={styles.calendar__nav}
-            type="button"
-            onClick={handleNext}
-            aria-label="다음 달"
-          >
-            ›
-          </button>
-          <span className={styles.calendar__profile} title="현재 로그인 사용자">
-            {currentMember?.displayName ?? currentUserName ?? currentUserDiscordId}
-          </span>
-          <ThemeToggle />
-          <button
-            className={styles["calendar__sign-out"]}
-            type="button"
-            onClick={handleSignOut}
-          >
-            로그아웃
-          </button>
+            <button
+              className={styles.calendar__profile}
+              type="button"
+              ref={accountTriggerRef}
+              aria-label={`${currentUserDisplayName} 계정 메뉴`}
+              aria-expanded={accountMenuOpen}
+              aria-controls={accountMenuOpen ? accountMenuId : undefined}
+              onClick={() => setAccountMenuOpen((prev) => !prev)}
+            >
+              <MemberAvatar
+                avatarUrl={currentMember?.avatarUrl ?? null}
+                discordUserId={currentUserDiscordId}
+                name={currentUserDisplayName}
+                size={22}
+                className={styles["calendar__profile-avatar"]}
+              />
+              <span className={styles["calendar__profile-name"]}>
+                {currentUserDisplayName}
+              </span>
+              <span className={styles["calendar__profile-caret"]} aria-hidden="true">
+                ▾
+              </span>
+            </button>
+            {accountMenuOpen ? (
+              <div
+                id={accountMenuId}
+                className={styles["calendar__account-menu"]}
+              >
+                <p className={styles["calendar__account-identity"]}>
+                  <span className={styles["calendar__account-eyebrow"]}>
+                    로그인 계정
+                  </span>
+                  <span className={styles["calendar__account-name"]}>
+                    {currentUserDisplayName}
+                  </span>
+                </p>
+                <div className={styles["calendar__account-row"]}>
+                  <span>테마</span>
+                  <ThemeToggle />
+                </div>
+                <button
+                  className={styles["calendar__sign-out"]}
+                  type="button"
+                  onClick={handleSignOut}
+                >
+                  로그아웃
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -430,28 +561,6 @@ export function CalendarClient({
       ) : null}
 
       <div className={styles.calendar__body}>
-        {selectedDate ? (
-          <DateSessionsPanel
-            dateKey={selectedDate}
-            sessions={selectedDateSessions}
-            googleEvents={selectedDateGoogleEvents}
-            showGoogleSection={
-              googleEventsEnabled && !googleQueryNeedsReconnect
-            }
-            focusedSessionId={focusedSessionId}
-            members={members}
-            currentUserDiscordId={currentUserDiscordId}
-            currentUserName={currentUserName}
-            onCreate={() => handleOpenCreate(selectedDate)}
-            canCreate={selectedDateCanCreate}
-            onOpenSession={handleOpenSessionDetail}
-            onClose={() => {
-              setSelectedDate(null);
-              setFocusedSessionId(null);
-            }}
-          />
-        ) : null}
-
         <section className={styles.calendar__board} aria-label="월간 캘린더">
           <div className={styles.calendar__weekdays}>
             {WEEKDAY_ICON_ITEMS.map((item) => (
@@ -496,7 +605,8 @@ export function CalendarClient({
               );
               const isToday = cell.dateKey === todayKey;
               const isSelected = cell.dateKey === selectedDate;
-              const canCreateOnDate = cell.dateKey >= todayKey;
+              const isPast = cell.dateKey < todayKey;
+              const canCreateOnDate = !isPast;
               const holidayInfo = getKoreanHolidayInfo(cell.dateKey);
               const weekday = getKstWeekday(cell.dateKey);
               const dayToneClass = holidayInfo
@@ -512,9 +622,9 @@ export function CalendarClient({
                   key={cell.dateKey}
                   className={`${styles.calendar__cell} ${
                     cell.inMonth ? "" : styles["calendar__cell--out"]
-                  } ${isToday ? styles["calendar__cell--today"] : ""} ${
-                    isSelected ? styles["calendar__cell--selected"] : ""
-                  }`}
+                  } ${isPast ? styles["calendar__cell--past"] : ""} ${
+                    isToday ? styles["calendar__cell--today"] : ""
+                  } ${isSelected ? styles["calendar__cell--selected"] : ""}`}
                 >
                   <div
                     className={styles["calendar__cell-head"]}
@@ -660,6 +770,40 @@ export function CalendarClient({
             })}
           </div>
         </section>
+
+        {/* 데스크톱(≥1280px)은 오른쪽 열을 항상 예약해 날짜를 눌러도 그리드가 밀리지 않는다.
+            그 아래 폭에서는 패널이 바텀시트로 뜨고 플레이스홀더는 CSS 가 숨긴다. */}
+        {selectedDate ? (
+          <DateSessionsPanel
+            dateKey={selectedDate}
+            sessions={selectedDateSessions}
+            googleEvents={selectedDateGoogleEvents}
+            showGoogleSection={
+              googleEventsEnabled && !googleQueryNeedsReconnect
+            }
+            focusedSessionId={focusedSessionId}
+            members={members}
+            currentUserDiscordId={currentUserDiscordId}
+            currentUserName={currentUserName}
+            onCreate={() => handleOpenCreate(selectedDate)}
+            isPastDate={selectedDateIsPast}
+            onOpenSession={handleOpenSessionDetail}
+            onClose={() => {
+              setSelectedDate(null);
+              setFocusedSessionId(null);
+            }}
+          />
+        ) : (
+          <div
+            className={`${styles.dayPanel} ${styles["dayPanel--placeholder"]}`}
+          >
+            <p className={styles.dayPanel__eyebrow}>날짜를 선택하세요</p>
+            <p className={styles["dayPanel__placeholder-text"]}>
+              달력에서 날짜를 누르면 그날의 세션과 Google 일정이 여기에
+              표시됩니다.
+            </p>
+          </div>
+        )}
       </div>
 
       {createModalDate ? (
@@ -708,7 +852,8 @@ interface DateSessionsPanelProps {
   currentUserDiscordId: string;
   currentUserName: string | null;
   onCreate: () => void;
-  canCreate: boolean;
+  /** 오늘 이전 날짜 — 생성 버튼 대신 안내 문구를 보여준다. */
+  isPastDate: boolean;
   onOpenSession: (session: TrpgSessionView) => void;
   onClose: () => void;
 }
@@ -723,7 +868,7 @@ function DateSessionsPanel({
   currentUserDiscordId,
   currentUserName,
   onCreate,
-  canCreate,
+  isPastDate,
   onOpenSession,
   onClose,
 }: DateSessionsPanelProps) {
@@ -735,10 +880,17 @@ function DateSessionsPanel({
   const currentUser = { discordId: currentUserDiscordId, name: currentUserName };
 
   return (
-    <aside className={styles.dayPanel} aria-label={`${dateKey} 세션 정보`}>
+    <aside
+      className={`${styles.dayPanel} ${
+        isPastDate ? styles["dayPanel--past"] : ""
+      }`}
+      aria-label={`${dateKey} 세션 정보`}
+    >
       <header className={styles.dayPanel__header}>
         <div>
-          <p className={styles.dayPanel__eyebrow}>선택한 날짜</p>
+          <p className={styles.dayPanel__eyebrow}>
+            {isPastDate ? "지난 날짜" : "선택한 날짜"}
+          </p>
           <h2 className={styles.dayPanel__title}>{formatPanelDate(dateKey)}</h2>
         </div>
         <button
@@ -756,14 +908,19 @@ function DateSessionsPanel({
         <span>개 세션</span>
       </div>
 
-      <button
-        className={styles.dayPanel__create}
-        type="button"
-        onClick={onCreate}
-        disabled={!canCreate}
-      >
-        + 이 날짜에 일정 생성
-      </button>
+      {isPastDate ? (
+        <p className={styles.dayPanel__notice}>
+          지난 날짜에는 일정을 만들 수 없습니다.
+        </p>
+      ) : (
+        <button
+          className={styles.dayPanel__create}
+          type="button"
+          onClick={onCreate}
+        >
+          + 이 날짜에 일정 생성
+        </button>
+      )}
 
       {sessions.length > 0 ? (
         <ul className={styles.dayPanel__list}>

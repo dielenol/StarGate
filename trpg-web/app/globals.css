@@ -60,10 +60,10 @@
 
   --holiday-text: light-dark(#b22f36, #e26b6f);
   --saturday-text: light-dark(#4057c8, #6e8bff);
-  --session-blue: light-dark(#334fc2, #8ea0ff);
-  --session-green: light-dark(#0b5b35, #69e8a1);
-  --session-yellow: light-dark(#704300, #ffc45c);
-  --session-red: light-dark(#982a32, #ff8588);
+  /* 지난 날짜 셀 — bg-elev 보다 한 톤 가라앉은 면과 text-muted 보다 옅은 글자.
+     셀은 여전히 클릭되는 요소라 past-text 는 past-bg 위에서 4.5:1 이상(라이트 4.57, 다크 4.98). */
+  --past-bg: light-dark(#f3f4f8, #141720);
+  --past-text: light-dark(#65707f, #7d8898);
   --google-blue: light-dark(#1a5fb4, #8ab4f8);
 
   --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.16);
