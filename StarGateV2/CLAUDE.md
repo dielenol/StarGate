@@ -54,7 +54,7 @@ app/
 lib/
 ├── auth/config.ts             # NextAuth 설정
 ├── auth/rbac.ts               # RBAC 유틸 (역할 계층 검증)
-├── db/client.ts               # MongoClient 싱글톤 (global 캐싱, maxPoolSize: 5)
+├── db/client.ts               # shared-db getClient/getDb 위임 shim (deprecated, 하위 호환용)
 ├── db/init.ts                 # shared-db serverless 초기화 (사이드이펙트)
 ├── db/collections.ts          # 컬렉션 헬퍼
 ├── db/sessions.ts             # shared-db 세션/참여 집계 함수 re-export 래퍼 (`import "./init"` 포함)
