@@ -214,12 +214,17 @@ async function main(): Promise<void> {
   }
 
   // DB 연결.
-  // NOTE: P3-5(unreachable URI 시 timeout 단축)는 아직 적용하지 않았다.
-  // serverSelectionTimeoutMS 를 넘기지 않으므로 MONGODB_URI 쿼리 값(없으면 기본 30s)이 적용된다.
+  // 도달 불가 URI에서 드라이버 기본값(30초)만큼 매달리지 않게 서버 선택 대기를 줄이고, 연결을 먼저 한 번
+  // 확인해 실패하면 대기 1회로 끝낸다. dry-run은 미리보기라 5초, 실제 쓰기는 다른 운영 스크립트와 같은 값인 15초.
   try {
-    initServerless({ uri: MONGODB_URI, dbName: DB_NAME });
+    initServerless({
+      uri: MONGODB_URI,
+      dbName: DB_NAME,
+      serverSelectionTimeoutMS: DRY_RUN ? 5_000 : 15_000,
+    });
+    await getClient();
   } catch (err) {
-    console.error("[seed-institutions] initServerless 실패:", err);
+    console.error("[seed-institutions] DB 연결 실패:", err);
     if (DRY_RUN) {
       console.warn("[seed-institutions] dry-run: 연결 없이 계획만 출력합니다.");
       for (const entry of INSTITUTIONS) {
