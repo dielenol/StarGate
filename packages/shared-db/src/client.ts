@@ -1,4 +1,4 @@
-import { MongoClient, type Db } from "mongodb";
+import { MongoClient, type Db, type MongoClientOptions } from "mongodb";
 
 /* ── Config ── */
 
@@ -8,6 +8,32 @@ export interface SharedDbConfig {
   dbName?: string;
   /** @default serverless: 5, long-running: 10 */
   maxPoolSize?: number;
+  /**
+   * 서버 선택(사용 가능한 서버 탐색) 대기 상한(ms).
+   * 생략 시 URI 쿼리 값 → 드라이버 기본값 30000. 지정 시 URI 쿼리보다 우선한다.
+   */
+  serverSelectionTimeoutMS?: number;
+  /**
+   * 소켓 연결(TCP·TLS·핸드셰이크) 대기 상한(ms). 서버 모니터 heartbeat 소켓 타임아웃으로도 쓰여
+   * (poll: 이 값, streaming: 이 값 + heartbeatFrequencyMS) 초과 시 드라이버가 진행 중인 쿼리까지 끊는다.
+   * 생략 시 URI 쿼리 값 → 드라이버 기본값 30000. 지정 시 URI 쿼리보다 우선한다.
+   */
+  connectTimeoutMS?: number;
+}
+
+/**
+ * 두 모드가 공유하는 MongoClient 옵션 구성.
+ * 생략된 타임아웃은 undefined 로 넘긴다 — 드라이버가 걸러내고 URI 쿼리/기본값을 쓴다.
+ */
+function clientOptions(
+  config: SharedDbConfig,
+  defaultMaxPoolSize: number,
+): MongoClientOptions {
+  return {
+    maxPoolSize: config.maxPoolSize ?? defaultMaxPoolSize,
+    serverSelectionTimeoutMS: config.serverSelectionTimeoutMS,
+    connectTimeoutMS: config.connectTimeoutMS,
+  };
 }
 
 /* ── Internal state ── */
@@ -65,9 +91,7 @@ export async function connect(config: SharedDbConfig): Promise<void> {
   mode = "long-running";
   dbName = config.dbName ?? DEFAULT_DB_NAME;
 
-  const client = new MongoClient(config.uri, {
-    maxPoolSize: config.maxPoolSize ?? 10,
-  });
+  const client = new MongoClient(config.uri, clientOptions(config, 10));
 
   longRunningConnectPromise = (async () => {
     try {
@@ -110,9 +134,10 @@ export async function getClient(): Promise<MongoClient> {
           "[shared-db] Serverless mode: initServerless() must be called first.",
         );
       }
-      const client = new MongoClient(serverlessConfig.uri, {
-        maxPoolSize: serverlessConfig.maxPoolSize ?? 5,
-      });
+      const client = new MongoClient(
+        serverlessConfig.uri,
+        clientOptions(serverlessConfig, 5),
+      );
       g.__sharedDbClientPromise = client.connect().catch(async (err) => {
         delete g.__sharedDbClientPromise;
         await client.close().catch(() => {});
