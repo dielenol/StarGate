@@ -1,8 +1,4 @@
-@property --login-ring-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
+/* 링 색과 회전 각도는 globals.css 의 공용 토큰(--brand-spectrum-stops, @property --brand-spectrum-angle)을 쓴다. */
 
 .login {
   --login-motion-state: running;
@@ -29,16 +25,6 @@
 }
 
 .login__panel {
-  --login-ring-gradient: conic-gradient(
-    from var(--login-ring-angle),
-    #ff647f,
-    #ffab66,
-    #eddb70,
-    #74dba0,
-    #6ab6ff,
-    #bc8bfa,
-    #ff647f
-  );
   position: relative;
   z-index: 1;
   width: 100%;
@@ -54,13 +40,18 @@
   backdrop-filter: blur(14px);
 }
 
-/* 패널 테두리를 따라 천천히 도는 무지개 링. ::after 는 같은 링을 번지게 한 은은한 빛 번짐이다. */
+/* 패널 테두리를 따라 천천히 도는 무지개 링. ::after 는 같은 링을 번지게 한 은은한 빛 번짐이다.
+   그라데이션은 회전 애니메이션이 도는 이 의사 요소 안에서 직접 선언해야 한다 — 부모 변수에
+   넣으면 var() 가 부모 시점의 각도(0deg)로 굳어 링이 돌지 않는다. */
 .login__panel::before,
 .login__panel::after {
   position: absolute;
   inset: -1px;
   padding: 1px;
-  background: var(--login-ring-gradient);
+  background: conic-gradient(
+    from var(--brand-spectrum-angle),
+    var(--brand-spectrum-stops)
+  );
   border-radius: 12px;
   content: "";
   pointer-events: none;
@@ -85,7 +76,7 @@
 
 @keyframes ring-sweep {
   to {
-    --login-ring-angle: 360deg;
+    --brand-spectrum-angle: 360deg;
   }
 }
 
