@@ -18,7 +18,7 @@ TRPG "Stargate" 운영을 위한 모노레포. 디스코드 봇 2개 + 웹앱 2�
 - **Framework**: Next.js 16 (App Router, Turbopack)
 - **UI**: React 19, CSS Modules (BEM 네이밍)
 - **서버 상태**: TanStack Query v5 (클라이언트 캐싱 + 뮤테이션)
-- **DB**: MongoDB 7 (직접 연결, maxPoolSize: 5)
+- **DB**: MongoDB 7 (직접 연결, maxPoolSize: 5, 서버 선택·연결 타임아웃 5초)
 - **인증**: next-auth 5 beta (Credentials Provider, JWT)
 - **배포**: Vercel (서버리스)
 

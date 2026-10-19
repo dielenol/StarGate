@@ -93,7 +93,7 @@ NPC/세력(Faction)/기관(Institution) 3개 도메인 구조화. 상세는 [doc
 ## DB 연결
 
 - `stargate` — 통합 DB (users, characters, wiki_pages, sessions, session_responses 등)
-- 연결: `@stargate/shared-db` + `lib/db/init.ts` (serverless, `maxPoolSize: 5`)
+- 연결: `@stargate/shared-db` + `lib/db/init.ts` (serverless, `maxPoolSize: 5`, 서버 선택·연결 타임아웃 5초)
 - `lib/db/sessions.ts` — shared-db의 `findSessionsByGuildInMonth` / `findUpcomingSessionsByGuild` / `countParticipationByUserId`를 `import "./init"` 사이드이펙트와 함께 re-export. 세션 집계가 필요한 라우트/서버 컴포넌트는 이 래퍼를 import해 초기화 순서를 보장한다.
 
 ## API Route 패턴
