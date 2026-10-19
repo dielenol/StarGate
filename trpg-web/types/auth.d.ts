@@ -16,5 +16,7 @@ declare module "next-auth" {
 declare module "@auth/core/jwt" {
   interface JWT {
     discordUserId?: string;
+    // 마지막 길드 멤버 확인 시각 (epoch ms). lib/auth/config.ts jwt 콜백이 갱신한다.
+    membershipCheckedAt?: number;
   }
 }
