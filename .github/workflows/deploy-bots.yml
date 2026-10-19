@@ -160,7 +160,8 @@ jobs:
        inputs.target == 'worker-shadow' &&
        inputs.confirm_worker_shadow_mode == true)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 아래 DEPLOY_VERIFY_TIMEOUT_SECONDS(20분)에 checkout·revision 계산 여유를 더한 값
+    timeout-minutes: 25
     environment: stargate-worker-deploy
     steps:
       - uses: actions/checkout@v4
@@ -175,5 +176,8 @@ jobs:
           CHANGED_PATH: stargate-worker/package.json
           HEALTH_URL: https://realtime.ordonet.co.kr/readyz
           EXPECTED_SOURCE_REVISION: ${{ steps.source-revision.outputs.value }}
+          # shared-db 변경처럼 봇 3개가 함께 빌드되면 worker 준비까지 기본 10분을 넘긴다
+          # (2026-08-13·08-27·08-28·10-19 타임아웃, 10-19 실측 약 11.5분 뒤 준비 완료).
+          DEPLOY_VERIFY_TIMEOUT_SECONDS: "1200"
         run: |
           bash deploy/trigger-stargate-worker-deploy.sh

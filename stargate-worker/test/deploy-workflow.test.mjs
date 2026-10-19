@@ -65,3 +65,26 @@ test("초기 shadow 배포의 수동 확인 경계는 유지한다", () => {
   assert.match(workerJob, /inputs\.target == 'worker-shadow'/);
   assert.match(workerJob, /inputs\.confirm_worker_shadow_mode == true/);
 });
+
+test("worker 준비 확인 대기는 job timeout 안에서 끝난다", () => {
+  const workerJob = workflow.slice(workflow.indexOf("  deploy-worker:\n"));
+  const jobTimeoutMinutes = Number(
+    workerJob.match(/^ {4}timeout-minutes: (\d+)$/m)?.[1],
+  );
+  const verifyTimeoutSeconds = Number(
+    workerJob.match(/DEPLOY_VERIFY_TIMEOUT_SECONDS: "(\d+)"/)?.[1],
+  );
+  const scriptDefaultSeconds = Number(
+    deployScript.match(/DEPLOY_VERIFY_TIMEOUT_SECONDS:-(\d+)/)?.[1],
+  );
+  assert.ok(jobTimeoutMinutes > 0, "deploy-worker timeout-minutes 가 없다");
+  assert.ok(
+    verifyTimeoutSeconds > scriptDefaultSeconds,
+    `봇 동시 빌드 시 10분을 넘기므로 스크립트 기본값(${scriptDefaultSeconds}초)보다 길어야 한다`,
+  );
+  // 준비 확인이 끝나기 전에 job 이 먼저 취소되면 실패 원인이 가려진다.
+  assert.ok(
+    verifyTimeoutSeconds + 120 <= jobTimeoutMinutes * 60,
+    `준비 확인 ${verifyTimeoutSeconds}s 가 job timeout ${jobTimeoutMinutes}m 에 닿는다`,
+  );
+});
