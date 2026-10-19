@@ -37,7 +37,11 @@ mock.module("@/lib/env", {
   },
 });
 
+// lib/auth/cookies.ts는 모듈 로드 시점의 NODE_ENV로 쿠키 이름을 정한다.
+// 운영 설정(Auth.js 기본 쿠키 이름)을 검증하도록 config import 전에 production으로 고정한다.
+process.env.NODE_ENV = "production";
 await import("../../lib/auth/config.ts");
+const { SESSION_COOKIE_NAMES } = await import("../../lib/auth/cookies.ts");
 
 function fixture(t, member = { discordUserId: DISCORD_ID }, identity = { id: DISCORD_ID }) {
   const cookies = new Map();
@@ -148,6 +152,11 @@ for (const issuer of ["https://discord.com", null]) {
       flow.errors.map((error) => error.cause?.err?.message ?? error.message).join("\n"),
     );
     assert.equal(flow.hasSession(), true);
+    // proxy.ts가 운영 Auth.js가 발급한 세션 쿠키 이름을 인식해야 보호 경로가 열린다.
+    assert.ok(
+      SESSION_COOKIE_NAMES.some((name) => flow.cookies.has(name)),
+      [...flow.cookies.keys()].join(", "),
+    );
     assert.deepEqual(flow.memberLookups, [["test-guild", DISCORD_ID]]);
     assert.equal(flow.exchanges.length, 1);
     assert.equal(flow.exchanges[0].get("code"), "test-authorization-code");
