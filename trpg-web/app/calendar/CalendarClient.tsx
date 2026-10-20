@@ -334,7 +334,9 @@ export function CalendarClient({
       // signout POST 가 네트워크 오류이거나 JSON 이 아닌 응답이면 여기로 온다 — 메뉴를 열어 둔 채 알린다.
       // CSRF 조회 실패는 next-auth 가 삼키고 서버가 /login?error=MissingCSRF 로 보낸다(로그인 화면이 표시).
       console.error("[trpg-web] 로그아웃 실패", error);
-      showToast("로그아웃에 실패했습니다. 다시 시도해주세요.");
+      showToast("로그아웃에 실패했습니다. 다시 시도해주세요.", {
+        tone: "error",
+      });
     }
   }
 

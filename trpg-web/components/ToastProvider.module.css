@@ -41,6 +41,15 @@
   animation: toast-progress 3s linear forwards;
 }
 
+/* 실패 변형 — 왼쪽 띠·진행 띠·라벨만 danger 로 바꾸고 면·글자는 그대로 둔다. */
+.toast--error {
+  border-left-color: var(--danger);
+}
+
+.toast--error::after {
+  background: var(--danger);
+}
+
 .toast--closing {
   animation: toast-exit 0.22s ease-in forwards;
 }
@@ -59,6 +68,10 @@
   color: var(--success);
   font-size: 12px;
   font-weight: 800;
+}
+
+.toast--error .toast__label {
+  color: var(--danger);
 }
 
 .toast__message {
