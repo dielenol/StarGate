@@ -24,13 +24,13 @@ import {
 import { useTrpgMembers } from "@/hooks/queries/useTrpgMembers";
 import { useTrpgSessions } from "@/hooks/queries/useTrpgSessions";
 import { yearMonthFromDateKey } from "@/lib/calendar/date-key";
+import { formatKoreanDate } from "@/lib/calendar/format";
 import {
   getKoreanHolidayInfo,
   getKstWeekday,
 } from "@/lib/calendar/korean-holidays";
 import {
   buildCalendarGrid,
-  currentKstDateString,
   currentKstYearMonth,
   shiftMonth,
   type CalendarCell,
@@ -49,7 +49,6 @@ import { SessionDetailModal } from "./SessionDetailModal";
 
 import styles from "./styles.module.css";
 
-const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 const WEEKDAY_ICON_ITEMS = [
   { label: "Sun", ariaLabel: "일요일", toneClass: "calendar__weekday--sun" },
   { label: "Mon", ariaLabel: "월요일", toneClass: "calendar__weekday--mon" },
@@ -73,6 +72,11 @@ interface Props {
   currentUserName?: string | null;
   initialYear: number;
   initialMonth: number;
+  /**
+   * 요청 시점의 KST 오늘 날짜 키(`YYYY-MM-DD`). 서버 page 가 계산해 내려준다 —
+   * 오늘 링·지난 날짜 셀·생성 가드·패널 안내가 SSR 과 hydration 에서 같은 값을 본다.
+   */
+  todayKey: string;
   initialSessions: TrpgSessionView[];
   initialMembers: TrpgMemberView[];
   initialGoogleConnection: GoogleCalendarConnectionView;
@@ -91,11 +95,17 @@ function isUserSession(
   );
 }
 
+/** 셀 여백 버튼의 접근 가능한 이름. 패널을 닫은 뒤 포커스를 돌려줄 때 같은 문자열로 찾는다. */
+function dateCellButtonLabel(dateKey: string): string {
+  return `${dateKey} 세션 목록 보기`;
+}
+
 export function CalendarClient({
   currentUserDiscordId,
   currentUserName = null,
   initialYear,
   initialMonth,
+  todayKey,
   initialSessions,
   initialMembers,
   initialGoogleConnection,
@@ -123,6 +133,7 @@ export function CalendarClient({
   );
   const accountRef = useRef<HTMLDivElement | null>(null);
   const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
   const accountMenuId = useId();
   const [googleCallbackStatus] = useState(initialGoogleStatus);
   const [detailModalSession, setDetailModalSession] =
@@ -131,9 +142,6 @@ export function CalendarClient({
         initialSessions.find((session) => session.id === initialFocusedSessionId) ??
         null,
     );
-
-  // "오늘"은 컴포넌트 라이프타임 동안 고정 — 매 렌더 재계산하지 않는다.
-  const todayKey = useMemo(() => currentKstDateString(), []);
 
   // 초기 prefetch 결과는 초기 연·월에서만 유효.
   const isInitialMonth = year === initialYear && month === initialMonth;
@@ -276,6 +284,10 @@ export function CalendarClient({
     return googleEventsByDate.get(selectedDate) ?? [];
   }, [googleEventsByDate, selectedDate]);
   const selectedDateIsPast = selectedDate ? selectedDate < todayKey : false;
+  const isModalOpen =
+    createModalDate !== null ||
+    detailModalSession !== null ||
+    googleSettingsOpen;
   const currentUserDisplayName =
     currentMember?.displayName ?? currentUserName ?? currentUserDiscordId;
 
@@ -292,11 +304,20 @@ export function CalendarClient({
   function handleToday() {
     setSelectedDate(null);
     setFocusedSessionId(null);
-    setYearMonth(currentKstYearMonth());
+    // "오늘" 의 출처는 서버가 내려준 todayKey 하나다 — 클라이언트 시계로 달을 고르면
+    // 자정을 넘긴 탭에서 오늘 링이 없는 달로 이동한다.
+    setYearMonth(yearMonthFromDateKey(todayKey) ?? currentKstYearMonth());
   }
 
   async function handleSignOut() {
-    await signOut({ callbackUrl: "/login" });
+    try {
+      await signOut({ callbackUrl: "/login" });
+    } catch (error) {
+      // signout POST 가 네트워크 오류이거나 JSON 이 아닌 응답이면 여기로 온다 — 메뉴를 열어 둔 채 알린다.
+      // CSRF 조회 실패는 next-auth 가 삼키고 서버가 /login?error=MissingCSRF 로 보낸다(로그인 화면이 표시).
+      console.error("[trpg-web] 로그아웃 실패", error);
+      showToast("로그아웃에 실패했습니다. 다시 시도해주세요.");
+    }
   }
 
   function handleAccountBlur(event: React.FocusEvent<HTMLDivElement>) {
@@ -327,6 +348,26 @@ export function CalendarClient({
     setSelectedDate(session.date);
     setFocusedSessionId(session.id);
     setDetailModalSession(session);
+  }
+
+  function handleClosePanel() {
+    const closedDate = selectedDate;
+    setSelectedDate(null);
+    setFocusedSessionId(null);
+    // 패널이 언마운트되면 닫기 버튼에 있던 포커스가 body 로 떨어진다 — 다음 프레임에
+    // 닫기 직전 날짜의 셀 버튼으로 돌려준다. 모달이 열려 있으면 포커스는 모달 안에 있고
+    // 모달이 닫힐 때 스스로 복원하므로 건드리지 않는다.
+    if (closedDate === null || isModalOpen) return;
+    requestAnimationFrame(() => {
+      // 그사이 사용자가 다른 곳에 포커스를 줬으면 가로채지 않는다.
+      const active = document.activeElement;
+      if (active && active !== document.body) return;
+      gridRef.current
+        ?.querySelector<HTMLButtonElement>(
+          `button[aria-label="${dateCellButtonLabel(closedDate)}"]`,
+        )
+        ?.focus();
+    });
   }
 
   const handleCloseGoogleSettings = useCallback(() => {
@@ -589,7 +630,7 @@ export function CalendarClient({
             ))}
           </div>
 
-          <div className={styles.calendar__grid}>
+          <div className={styles.calendar__grid} ref={gridRef}>
             {grid.map((cell) => {
               const daySessions = sessionsByDate.get(cell.dateKey) ?? [];
               const dayGoogleEvents =
@@ -762,7 +803,7 @@ export function CalendarClient({
                   <button
                     type="button"
                     className={styles["calendar__cell-fill"]}
-                    aria-label={`${cell.dateKey} 세션 목록 보기`}
+                    aria-label={dateCellButtonLabel(cell.dateKey)}
                     onClick={() => handleSelectDate(cell.dateKey)}
                   />
                 </div>
@@ -788,10 +829,7 @@ export function CalendarClient({
             onCreate={() => handleOpenCreate(selectedDate)}
             isPastDate={selectedDateIsPast}
             onOpenSession={handleOpenSessionDetail}
-            onClose={() => {
-              setSelectedDate(null);
-              setFocusedSessionId(null);
-            }}
+            onClose={handleClosePanel}
           />
         ) : (
           <div
@@ -891,7 +929,7 @@ function DateSessionsPanel({
           <p className={styles.dayPanel__eyebrow}>
             {isPastDate ? "지난 날짜" : "선택한 날짜"}
           </p>
-          <h2 className={styles.dayPanel__title}>{formatPanelDate(dateKey)}</h2>
+          <h2 className={styles.dayPanel__title}>{formatKoreanDate(dateKey)}</h2>
         </div>
         <button
           className={styles.dayPanel__close}
@@ -1082,14 +1120,4 @@ function getGoogleCallbackMessage(status: string): string {
     default:
       return "Google Calendar 연결에 실패했습니다. 잠시 후 다시 시도해주세요.";
   }
-}
-
-function formatPanelDate(dateKey: string): string {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const weekday =
-    WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
-  return `${year}년 ${String(month).padStart(2, "0")}월 ${String(day).padStart(
-    2,
-    "0",
-  )}일 (${weekday})`;
 }

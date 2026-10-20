@@ -9,6 +9,7 @@ import { useCancelTrpgSession } from "@/hooks/mutations/useCancelTrpgSession";
 import { useUpdateTrpgSession } from "@/hooks/mutations/useUpdateTrpgSession";
 import { useModalA11y } from "@/hooks/useModalA11y";
 
+import { formatKoreanDate } from "@/lib/calendar/format";
 import { resolveMemberName } from "@/lib/trpg/member-name";
 
 import styles from "./styles.module.css";
@@ -214,7 +215,9 @@ export function SessionDetailModal({
             <dl className={styles.modal__dl}>
               <div className={styles.modal__row}>
                 <dt className={styles.modal__dt}>날짜</dt>
-                <dd className={styles.modal__dd}>{session.date}</dd>
+                <dd className={styles.modal__dd}>
+                  {formatKoreanDate(session.date)}
+                </dd>
               </div>
               <div className={styles.modal__row}>
                 <dt className={styles.modal__dt}>시작</dt>

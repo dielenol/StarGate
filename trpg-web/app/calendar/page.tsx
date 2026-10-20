@@ -18,7 +18,10 @@ import {
 import type { TrpgMemberView } from "@/app/api/trpg/members/route";
 import { auth } from "@/lib/auth/config";
 import { yearMonthFromDateKey } from "@/lib/calendar/date-key";
-import { currentKstYearMonth } from "@/lib/calendar/month";
+import {
+  currentKstDateString,
+  currentKstYearMonth,
+} from "@/lib/calendar/month";
 import { getGoogleCalendarConnectionView } from "@/lib/db/google-calendar-connections";
 import { toTrpgMemberViews } from "@/lib/discord/avatar";
 import { TRPG_GUILD_ID } from "@/lib/env";
@@ -65,6 +68,9 @@ export default async function CalendarPage({
   const initialFocusedSessionId =
     linkedSession?.status === "open" ? linkedSession._id?.toString() : null;
   const { year, month } = linkedYearMonth ?? currentKstYearMonth();
+  // "오늘"은 요청 시점에 서버가 한 번 계산해 내려준다 — 클라이언트가 자정 전후로 다시 계산하면
+  // SSR 마크업(지난 날짜 셀·오늘 링)과 hydration 결과가 어긋난다.
+  const todayKey = currentKstDateString();
 
   const googleCalendarEnabled = isGoogleCalendarEnabled();
   const disabledGoogleConnection: GoogleCalendarConnectionView = {
@@ -105,6 +111,7 @@ export default async function CalendarPage({
       currentUserName={session.user.name ?? null}
       initialYear={year}
       initialMonth={month}
+      todayKey={todayKey}
       initialSessions={initialSessions}
       initialMembers={initialMembers}
       initialGoogleConnection={initialGoogleConnection}
