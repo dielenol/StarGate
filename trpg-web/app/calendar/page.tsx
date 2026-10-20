@@ -67,10 +67,12 @@ export default async function CalendarPage({
   const initialSelectedDate = linkedYearMonth ? linkedDate : null;
   const initialFocusedSessionId =
     linkedSession?.status === "open" ? linkedSession._id?.toString() : null;
-  const { year, month } = linkedYearMonth ?? currentKstYearMonth();
   // "오늘"은 요청 시점에 서버가 한 번 계산해 내려준다 — 클라이언트가 자정 전후로 다시 계산하면
-  // SSR 마크업(지난 날짜 셀·오늘 링)과 hydration 결과가 어긋난다.
-  const todayKey = currentKstDateString();
+  // SSR 마크업(지난 날짜 셀·오늘 링)과 hydration 결과가 어긋난다. 기본 월과 todayKey 가 같은
+  // 시각에서 나오도록 now 를 한 번만 읽는다(말일 자정 경계에서 둘이 갈리지 않게).
+  const now = new Date();
+  const { year, month } = linkedYearMonth ?? currentKstYearMonth(now);
+  const todayKey = currentKstDateString(now);
 
   const googleCalendarEnabled = isGoogleCalendarEnabled();
   const disabledGoogleConnection: GoogleCalendarConnectionView = {

@@ -226,19 +226,24 @@ export function CalendarClient({
   }, [accountMenuOpen]);
 
   // 탭을 자정 넘겨 둔 채 다시 보이면 서버가 내려준 todayKey 가 어제로 남는다 — KST 날짜가 바뀌었으면
-  // 서버 컴포넌트를 다시 실행해 새 todayKey(와 prefetch)를 받는다. 클라이언트에서 todayKey 를
-  // 다시 계산하지 않는 이유: 과거 날짜 거부는 서버 API 가 자기 시계로 하므로 기준은 서버 하나여야
-  // 하고, 시계가 틀린 기기도 서버 값만 쓰게 된다. refresh 는 선택 날짜·열린 모달 같은 클라이언트
-  // 상태를 유지한다.
+  // 서버 컴포넌트를 다시 실행해 새 todayKey 를 받는다(세션 목록은 TanStack 캐시를 그대로 쓴다).
+  // 클라이언트에서 todayKey 를 다시 계산하지 않는 이유: 과거 날짜 거부는 서버 API 가 자기 시계로
+  // 하므로 기준은 서버 하나여야 하고, 시계가 틀린 기기도 서버 값만 쓰게 된다(날짜가 바뀌었는지
+  // 감지하는 시점만 기기 시계에 의존한다). refresh 는 선택 날짜·열린 모달 같은 클라이언트 상태를
+  // 유지한다. 오프라인에서 refresh 하면 Next 가 RSC 요청 실패를 브라우저 내비게이션으로 폴백해
+  // 오프라인 페이지가 뜨고 모달 입력이 유실되므로, 연결이 없으면 건너뛰고 online 이벤트에서 다시 본다.
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const resyncIfDayChanged = () => {
       if (document.visibilityState !== "visible") return;
       if (currentKstDateString() === todayKey) return;
+      if (!navigator.onLine) return;
       router.refresh();
     };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("visibilitychange", resyncIfDayChanged);
+    window.addEventListener("online", resyncIfDayChanged);
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", resyncIfDayChanged);
+      window.removeEventListener("online", resyncIfDayChanged);
     };
   }, [router, todayKey]);
 
