@@ -31,6 +31,7 @@ import {
 } from "@/lib/calendar/korean-holidays";
 import {
   buildCalendarGrid,
+  currentKstDateString,
   currentKstYearMonth,
   shiftMonth,
   type CalendarCell,
@@ -223,6 +224,23 @@ export function CalendarClient({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [accountMenuOpen]);
+
+  // 탭을 자정 넘겨 둔 채 다시 보이면 서버가 내려준 todayKey 가 어제로 남는다 — KST 날짜가 바뀌었으면
+  // 서버 컴포넌트를 다시 실행해 새 todayKey(와 prefetch)를 받는다. 클라이언트에서 todayKey 를
+  // 다시 계산하지 않는 이유: 과거 날짜 거부는 서버 API 가 자기 시계로 하므로 기준은 서버 하나여야
+  // 하고, 시계가 틀린 기기도 서버 값만 쓰게 된다. refresh 는 선택 날짜·열린 모달 같은 클라이언트
+  // 상태를 유지한다.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      if (currentKstDateString() === todayKey) return;
+      router.refresh();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [router, todayKey]);
 
   const sessions = useMemo(
     () => sessionsQuery.data ?? [],
