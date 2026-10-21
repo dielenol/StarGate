@@ -38,10 +38,12 @@
   background: var(--success);
   content: "";
   transform-origin: left center;
-  animation: toast-progress 3s linear forwards;
+  /* 길이는 ToastProvider 가 톤별 상수를 --toast-visible-duration 으로 내려준다(JS 자동 닫기 타이머와 단일 출처). */
+  animation: toast-progress var(--toast-visible-duration) linear forwards;
 }
 
-/* 실패 변형 — 왼쪽 띠·진행 띠·라벨만 danger 로 바꾸고 면·글자는 그대로 둔다. */
+/* 실패 변형 — 왼쪽 띠·진행 띠·라벨만 danger 로 바꾸고 면·글자는 그대로 둔다.
+   진행 띠 길이는 .toast::after 가 같은 변수로 받으므로(실패는 더 길다) 여기서 따로 적지 않는다. */
 .toast--error {
   border-left-color: var(--danger);
 }
@@ -51,9 +53,13 @@
 }
 
 .toast--closing {
-  animation: toast-exit 0.22s ease-in forwards;
+  animation: toast-exit var(--toast-exit-duration) ease-in forwards;
 }
 
+/* 진행 띠 멈춤 — 퇴장 중이거나, 자동 닫기가 멈춘 동안(.toast--paused: 마우스를 올려 둔·안쪽에 포커스가 있는·
+   터치로 탭해 고정한 상태 — ToastProvider 가 JS 타이머를 멈추는 같은 시점에 붙인다). 재시작이 아니라
+   애니메이션 일시정지라 재개하면 남은 구간이 타이머의 남은 시간과 같이 이어진다. */
+.toast--paused::after,
 .toast--closing::after {
   animation-play-state: paused;
 }
