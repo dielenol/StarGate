@@ -36,6 +36,11 @@ import {
   shiftMonth,
   type CalendarCell,
 } from "@/lib/calendar/month";
+import {
+  msUntilServerKstMidnightAtDevice,
+  resolveServerToDeviceOffsetMs,
+  resolveTodayResyncKey,
+} from "@/lib/calendar/today-resync";
 import { GoogleCalendarClientError } from "@/lib/google-calendar/client";
 import type {
   GoogleCalendarConnectionView,
@@ -79,6 +84,12 @@ interface Props {
    */
   todayKey: string;
   initialSessions: TrpgSessionView[];
+  /**
+   * 서버가 `initialSessions` 를 읽은 시각(epoch ms, 서버 시계). `todayKey` 와 같은 `now` 에서 나와야 한다 —
+   * 기기 시계로 환산해 `useTrpgSessions` 의 `initialDataUpdatedAt` 으로 넘기고(쓰임은 그쪽 JSDoc 참고),
+   * 이 시각의 다음 KST 자정이 todayKey 재동기화 타이머의 기준이다.
+   */
+  initialFetchedAt: number;
   initialMembers: TrpgMemberView[];
   initialGoogleConnection: GoogleCalendarConnectionView;
   initialGoogleStatus?: string | null;
@@ -96,7 +107,7 @@ function isUserSession(
   );
 }
 
-/** 셀 여백 버튼의 접근 가능한 이름. 패널을 닫은 뒤 포커스를 돌려줄 때 같은 문자열로 찾는다. */
+/** 셀 여백 버튼의 접근 가능한 이름(렌더 전용). 패널을 닫은 뒤의 포커스 복귀는 `data-date-key` 로 찾는다. */
 function dateCellButtonLabel(dateKey: string): string {
   return `${dateKey} 세션 목록 보기`;
 }
@@ -108,6 +119,7 @@ export function CalendarClient({
   initialMonth,
   todayKey,
   initialSessions,
+  initialFetchedAt,
   initialMembers,
   initialGoogleConnection,
   initialGoogleStatus = null,
@@ -135,6 +147,8 @@ export function CalendarClient({
   const accountRef = useRef<HTMLDivElement | null>(null);
   const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
+  /** todayKey 재동기화를 이미 시도한 `${기기 KST 날짜}|${todayKey}` 조합 — 같은 조합으로는 다시 refresh 하지 않는다. */
+  const resyncAttemptRef = useRef<string | null>(null);
   const accountMenuId = useId();
   const [googleCallbackStatus] = useState(initialGoogleStatus);
   const [detailModalSession, setDetailModalSession] =
@@ -146,9 +160,15 @@ export function CalendarClient({
 
   // 초기 prefetch 결과는 초기 연·월에서만 유효.
   const isInitialMonth = year === initialYear && month === initialMonth;
+  // 문서에서 가장 새 payload 로 잰 오프셋(lib/calendar/today-resync 참고) — refresh 로 더 새 initialFetchedAt
+  // 이 오면 다시 재고, 뒤로 가기로 옛 payload 가 복원되면 앞서 잰 값을 유지한다.
+  const serverToDeviceOffsetMs = resolveServerToDeviceOffsetMs(initialFetchedAt);
 
   const sessionsQuery = useTrpgSessions(year, month, {
     initialData: isInitialMonth ? initialSessions : undefined,
+    initialDataUpdatedAt: isInitialMonth
+      ? initialFetchedAt + serverToDeviceOffsetMs
+      : undefined,
   });
   const membersQuery = useTrpgMembers({ initialData: initialMembers });
   const googleConnectionQuery = useGoogleCalendarConnection(
@@ -228,24 +248,76 @@ export function CalendarClient({
   // 탭을 자정 넘겨 둔 채 다시 보이면 서버가 내려준 todayKey 가 어제로 남는다 — KST 날짜가 바뀌었으면
   // 서버 컴포넌트를 다시 실행해 새 todayKey 를 받는다(세션 목록은 TanStack 캐시를 그대로 쓴다).
   // 클라이언트에서 todayKey 를 다시 계산하지 않는 이유: 과거 날짜 거부는 서버 API 가 자기 시계로
-  // 하므로 기준은 서버 하나여야 하고, 시계가 틀린 기기도 서버 값만 쓰게 된다(날짜가 바뀌었는지
-  // 감지하는 시점만 기기 시계에 의존한다). refresh 는 선택 날짜·열린 모달 같은 클라이언트 상태를
-  // 유지한다. 오프라인에서 refresh 하면 Next 가 RSC 요청 실패를 브라우저 내비게이션으로 폴백해
-  // 오프라인 페이지가 뜨고 모달 입력이 유실되므로, 연결이 없으면 건너뛰고 online 이벤트에서 다시 본다.
+  // 하므로 기준은 서버 하나여야 하고, 시계가 틀린 기기도 서버 값만 쓰게 된다. refresh 는 선택 날짜·열린
+  // 모달 같은 클라이언트 상태를 유지한다. 오프라인에서 refresh 하면 Next 가 RSC 요청 실패를 브라우저
+  // 내비게이션으로 폴백해 오프라인 페이지가 뜨고 모달 입력이 유실되므로, 연결이 없으면 건너뛰고 online
+  // 이벤트에서 다시 본다. 경로는 둘이다.
+  // - 이벤트 경로(마운트 직후, visibilitychange·focus·online): 기기 날짜가 todayKey 보다 앞설 때만, 같은
+  //   `${기기 날짜}|${todayKey}` 조합은 한 번만 refresh 한다(resolveTodayResyncKey). focus 는 macOS 앱
+  //   전환처럼 visibilityState 가 visible 인 채로 돌아와 visibilitychange 가 오지 않는 경우를 잡는다 —
+  //   조합 가드가 있어 포커스가 오갈 때마다 refresh 가 반복되지는 않는다.
+  // - 서버 자정 타이머: 서버가 payload 를 만든 시각(initialFetchedAt)의 다음 KST 자정을 문서 오프셋으로
+  //   기기 시각으로 환산해 그 5초 뒤에 발화한다(5초는 타이머 정밀도·서버 인스턴스 간 시계 차 여유 —
+  //   전달 지연은 발화를 늦출 뿐이다). 기기 자정이 아니라 서버 자정이므로 기기 시계가 빠르든 느리든 서버
+  //   날짜가 바뀐 뒤에 발화한다 — 그래서 기기 날짜와
+  //   비교하지 않고 조합도 기록하지 않는다(visible·online 가드만). 그 자정이 이미 지난 payload(뒤로 가기
+  //   복원, SSR 과 hydration 사이의 자정)면 5초 뒤에 바로 확인한다. refresh 로 새 payload 가 오면
+  //   initialFetchedAt·오프셋이 바뀌어 이 effect 가 다시 실행되며 다음 자정 타이머를 새로 건다. 숨김·
+  //   오프라인이라 건너뛰면 그 사실을 serverDayChangePending 에 남겨 다음 visibilitychange·focus·online 이
+  //   기기 날짜와 무관하게 refresh 하게 한다(기기가 느리면 이벤트 경로만으로는 다음 타이머까지 침묵한다).
+  //   건너뛰어 새 payload 가 오지 않아도 타이머가 사라지지 않게, 발화할
+  //   때마다 발화 시각(서버 시계)의 다음 자정으로 다시 건다. 활성 타이머는 항상 하나이고 cleanup 이
+  //   마지막 것을 지운다.
+  // 알려진 한계: 오프셋은 가장 새 payload 를 받은 시점에 잰 것이라, 그 뒤 기기 시계가 5초 넘게 뛰면
+  // (수동 변경·NTP 보정) 다음 타이머가 그만큼 이르거나 늦다. 이르면 같은 todayKey 를 받지만 그 payload 로
+  // 오프셋이 다시 재어져 실제 자정 5초 뒤에 한 번 더 refresh 하고, 늦으면 그 차이만큼 "오늘" 이 늦게
+  // 바뀐다(그사이 이벤트 경로가 기기 날짜로 먼저 잡을 수 있다). 데이터는 서버 API 가 과거 날짜를 거부해
+  // 안전하다.
   useEffect(() => {
+    const canRefresh = () =>
+      document.visibilityState === "visible" && navigator.onLine;
+    // 자정 타이머가 refresh 를 건너뛴 상태. 지역 변수라 refresh 로 새 payload 가 와 effect 가 다시 실행되면 사라진다.
+    let serverDayChangePending = false;
     const resyncIfDayChanged = () => {
-      if (document.visibilityState !== "visible") return;
-      if (currentKstDateString() === todayKey) return;
-      if (!navigator.onLine) return;
+      if (!canRefresh()) return;
+      const attemptKey = resolveTodayResyncKey(
+        currentKstDateString(),
+        todayKey,
+        resyncAttemptRef.current,
+        serverDayChangePending,
+      );
+      if (attemptKey === null) return;
+      serverDayChangePending = false;
+      resyncAttemptRef.current = attemptKey;
       router.refresh();
     };
+    let midnightTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleServerMidnightCheck = (serverEpochMs: number) => {
+      midnightTimer = setTimeout(
+        () => {
+          if (canRefresh()) router.refresh();
+          else serverDayChangePending = true;
+          scheduleServerMidnightCheck(Date.now() - serverToDeviceOffsetMs);
+        },
+        msUntilServerKstMidnightAtDevice(
+          serverEpochMs,
+          serverToDeviceOffsetMs,
+          Date.now(),
+        ) + 5_000,
+      );
+    };
+    resyncIfDayChanged();
+    scheduleServerMidnightCheck(initialFetchedAt);
     document.addEventListener("visibilitychange", resyncIfDayChanged);
+    window.addEventListener("focus", resyncIfDayChanged);
     window.addEventListener("online", resyncIfDayChanged);
     return () => {
+      clearTimeout(midnightTimer);
       document.removeEventListener("visibilitychange", resyncIfDayChanged);
+      window.removeEventListener("focus", resyncIfDayChanged);
       window.removeEventListener("online", resyncIfDayChanged);
     };
-  }, [router, todayKey]);
+  }, [initialFetchedAt, router, serverToDeviceOffsetMs, todayKey]);
 
   const sessions = useMemo(
     () => sessionsQuery.data ?? [],
@@ -389,7 +461,7 @@ export function CalendarClient({
       if (active && active !== document.body) return;
       gridRef.current
         ?.querySelector<HTMLButtonElement>(
-          `button[aria-label="${dateCellButtonLabel(closedDate)}"]`,
+          `button[data-date-key="${CSS.escape(closedDate)}"]`,
         )
         ?.focus();
     });
@@ -828,6 +900,7 @@ export function CalendarClient({
                   <button
                     type="button"
                     className={styles["calendar__cell-fill"]}
+                    data-date-key={cell.dateKey}
                     aria-label={dateCellButtonLabel(cell.dateKey)}
                     onClick={() => handleSelectDate(cell.dateKey)}
                   />

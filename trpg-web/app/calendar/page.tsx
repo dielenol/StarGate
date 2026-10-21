@@ -73,6 +73,8 @@ export default async function CalendarPage({
   const now = new Date();
   const { year, month } = linkedYearMonth ?? currentKstYearMonth(now);
   const todayKey = currentKstDateString(now);
+  // initialSessions 조회 직전 시각(몇 ms 보수적) — useTrpgSessions 의 initialDataUpdatedAt 으로 쓰인다.
+  const initialFetchedAt = now.getTime();
 
   const googleCalendarEnabled = isGoogleCalendarEnabled();
   const disabledGoogleConnection: GoogleCalendarConnectionView = {
@@ -115,6 +117,7 @@ export default async function CalendarPage({
       initialMonth={month}
       todayKey={todayKey}
       initialSessions={initialSessions}
+      initialFetchedAt={initialFetchedAt}
       initialMembers={initialMembers}
       initialGoogleConnection={initialGoogleConnection}
       initialGoogleStatus={googleStatus}

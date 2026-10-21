@@ -15,7 +15,16 @@ export const trpgSessionKeys = {
 export function useTrpgSessions(
   year: number,
   month: number,
-  options?: { initialData?: TrpgSessionView[] },
+  options?: {
+    initialData?: TrpgSessionView[];
+    /**
+     * `initialData` 를 읽은 시각(epoch ms, **기기 시계 기준**). 주지 않으면 TanStack 은 쿼리가 만들어진
+     * 시각을 기준으로 잡아, 월을 옮겼다가 gc 뒤에 돌아왔을 때 오래된 prefetch 가 방금 받은 데이터처럼
+     * staleTime 동안 신선하게 다시 시드된다. TanStack 은 이 값을 기기 `Date.now()` 와 비교하므로
+     * 서버 시각은 그대로 넘기지 말고 기기 시각으로 환산해 넘긴다(CalendarClient 참고).
+     */
+    initialDataUpdatedAt?: number;
+  },
 ) {
   return useQuery({
     queryKey: trpgSessionKeys.byMonth(year, month),
@@ -31,5 +40,6 @@ export function useTrpgSessions(
       return res.json();
     },
     initialData: options?.initialData,
+    initialDataUpdatedAt: options?.initialDataUpdatedAt,
   });
 }

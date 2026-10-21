@@ -5,6 +5,7 @@
  */
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_LENGTH = 7;
 const CALENDAR_WEEK_ROWS = 6;
 const CALENDAR_TOTAL_CELLS = WEEK_LENGTH * CALENDAR_WEEK_ROWS;
@@ -23,6 +24,16 @@ export function currentKstYearMonth(now: Date = new Date()): KstYearMonth {
 export function currentKstDateString(now: Date = new Date()): string {
   const kst = new Date(now.getTime() + KST_OFFSET_MS);
   return kst.toISOString().slice(0, 10);
+}
+
+/**
+ * 다음 KST 자정(= 15:00 UTC)까지 남은 ms. 범위는 항상 `(0, DAY_MS]` — `now` 가 자정 정각이면
+ * 다음 자정까지인 하루 전체를 돌려준다. KST 는 DST 가 없어 UTC 고정 오프셋만으로 계산한다.
+ */
+export function msUntilNextKstMidnight(now: Date): number {
+  const sinceKstMidnight =
+    ((now.getTime() + KST_OFFSET_MS) % DAY_MS + DAY_MS) % DAY_MS;
+  return DAY_MS - sinceKstMidnight;
 }
 
 export function shiftMonth(
