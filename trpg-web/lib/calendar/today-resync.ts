@@ -3,9 +3,23 @@
  * CalendarClient 의 재동기화 effect 가 쓰고, 테스트는 tests/calendar/today-resync.test.mjs 와
  * tests/calendar/server-midnight.test.mjs 가 한다.
  *
- * - 이벤트 경로(마운트 직후, visibilitychange·focus·online): `resolveTodayResyncKey` — 기기 날짜 기준.
- * - 서버 자정 타이머: `msUntilServerKstMidnightAtDevice` — 서버 시각 기준. 서버 시계와 기기 시계의 차이는
- *   `resolveServerToDeviceOffsetMs` 가 payload 의 생성 시각으로 잰다.
+ * 왜 다시 받아오나: 탭을 자정 넘겨 둔 채 두면 서버가 내려준 todayKey 가 어제로 남는다. 클라이언트에서 todayKey 를
+ * 다시 계산하지 않는 이유는 과거 날짜 거부를 서버 API 가 자기 시계로 하므로 기준이 서버 하나여야 하고, 시계가
+ * 틀린 기기도 서버 값만 쓰게 되기 때문이다. refresh 는 선택 날짜·열린 모달 같은 클라이언트 상태를 유지하고,
+ * 세션 목록은 TanStack 캐시를 그대로 쓴다. 경로는 둘이다.
+ *
+ * - 이벤트 경로(마운트 직후, visibilitychange·focus·online): `resolveTodayResyncKey` — 기기 날짜 기준. focus 는
+ *   macOS 앱 전환처럼 visibilityState 가 visible 인 채로 돌아와 visibilitychange 가 오지 않는 경우를 잡는다.
+ * - 서버 자정 타이머: `serverMidnightCheckDelayMs` — 서버 시각 기준. 서버 시계와 기기 시계의 차이는
+ *   `resolveServerToDeviceOffsetMs` 가 payload 의 생성 시각으로 잰다. refresh 로 새 payload 가 오면
+ *   initialFetchedAt·오프셋이 바뀌어 effect 가 다시 실행되며 다음 자정 타이머를 새로 건다. 활성 타이머는 항상
+ *   하나이고 cleanup 이 마지막 것을 지운다.
+ *
+ * 두 경로 모두 탭이 보이고 온라인일 때만 refresh 한다. 오프라인에서 refresh 하면 Next 가 RSC 요청 실패를 브라우저
+ * 내비게이션으로 폴백해 오프라인 페이지가 뜨고 모달 입력이 유실되므로, 연결이 없으면 건너뛰고 online 이벤트에서
+ * 다시 본다. 자정 타이머가 숨김·오프라인으로 건너뛴 사실은 effect 지역 변수 `serverDayChangePending` 에 남겨
+ * 다음 visibilitychange·focus·online 이 기기 날짜와 무관하게 refresh 하게 한다(`resolveTodayResyncKey` 의
+ * `serverDayChanged`).
  */
 
 import { msUntilNextKstMidnight } from "./month";
@@ -42,9 +56,9 @@ export function resolveTodayResyncKey(
  *
  * 서버 자정은 `serverEpochMs + msUntilNextKstMidnight(serverEpochMs)`(서버 시계)이고, 두 시계는 같은 속도로
  * 가므로 오프셋(기기 시각 − 서버 시각)만 더하면 기기 시각이 된다. 기기 시계로 자정을 재면 기기가 빠른 만큼
- * 서버 자정 전에 발화해 같은 todayKey 를 받고, 느린 만큼 늦게 발화한다. 발화 뒤 다시 걸 때는 발화 시각을 서버
- * 시계로 환산한 값(`deviceNowMs − serverToDeviceOffsetMs`)을 `serverEpochMs` 로 주면 되고, 그 결과는 항상
- * `(0, DAY_MS]` 라 타이머가 곧바로 다시 발화하지 않는다.
+ * 서버 자정 전에 발화해 같은 todayKey 를 받고, 느린 만큼 늦게 발화한다. `serverEpochMs` 에 발화 시각을 서버
+ * 시계로 환산한 값(`deviceNowMs − serverToDeviceOffsetMs`)을 주면 결과는 항상 `(0, DAY_MS]` 다 — 재무장은
+ * `serverMidnightCheckDelayMs` 참조.
  */
 export function msUntilServerKstMidnightAtDevice(
   serverEpochMs: number,
@@ -58,11 +72,42 @@ export function msUntilServerKstMidnightAtDevice(
   return Math.max(0, serverMidnightAtDeviceMs - deviceNowMs);
 }
 
+/** 서버 자정 타이머의 여유 — 타이머 정밀도·서버 인스턴스 간 시계 차를 덮는다. 전달 지연은 발화를 늦출 뿐이다. */
+export const SERVER_MIDNIGHT_CHECK_SLACK_MS = 5_000;
+
+/**
+ * CalendarClient 가 서버 자정 타이머를 거는 지연(ms): 서버 시각 `serverEpochMs` 의 다음 KST 자정을 기기 시각으로
+ * 환산한 시점(`msUntilServerKstMidnightAtDevice`)의 `SERVER_MIDNIGHT_CHECK_SLACK_MS` 뒤. 기기 자정이 아니라 서버
+ * 자정이므로 기기 시계가 빠르든 느리든 서버 날짜가 바뀐 뒤에 발화한다 — 그래서 타이머 경로는 기기 날짜와 비교하지
+ * 않고 조합도 기록하지 않는다(visible·online 가드만). 그 자정이 이미 지난 payload(뒤로 가기 복원, SSR 과 hydration
+ * 사이의 자정)면 여유 뒤에 바로 확인한다. 발화할 때마다 발화 시각을 서버 시계로 환산한 값을 `serverEpochMs` 로 주어
+ * 다음 자정으로 다시 건다 — 건너뛰어 새 payload 가 오지 않아도 타이머가 사라지지 않고, 결과가 항상
+ * `(SLACK, DAY_MS + SLACK]` 라 곧바로 다시 발화하지도 않는다.
+ *
+ * 알려진 한계: 오프셋은 가장 새 payload 를 받은 시점에 잰 것이라, 그 뒤 기기 시계가 여유보다 크게 뛰면(수동 변경·
+ * NTP 보정) 다음 타이머가 그만큼 이르거나 늦다. 이르면 같은 todayKey 를 받지만 그 payload 로 오프셋이 다시 재어져
+ * 실제 자정의 여유 뒤에 한 번 더 refresh 하고, 늦으면 그 차이만큼 "오늘" 이 늦게 바뀐다(그사이 이벤트 경로가 기기
+ * 날짜로 먼저 잡을 수 있다). 데이터는 서버 API 가 과거 날짜를 거부해 안전하다.
+ */
+export function serverMidnightCheckDelayMs(
+  serverEpochMs: number,
+  serverToDeviceOffsetMs: number,
+  deviceNowMs: number,
+): number {
+  return (
+    msUntilServerKstMidnightAtDevice(
+      serverEpochMs,
+      serverToDeviceOffsetMs,
+      deviceNowMs,
+    ) + SERVER_MIDNIGHT_CHECK_SLACK_MS
+  );
+}
+
 /**
  * 서버 시각 → 기기 시각 오프셋(`기기 시각 − 서버 시각`, ms). 서버가 payload 를 만든 시각 `serverEpochMs` 와
  * 그것을 받은 기기 시각 `deviceNowMs` 의 차로 잰다. 전달 지연만큼 커지는 오차는 staleTime 60초·자정 타이머
- * 여유 5초에 비해 무시할 수 있고, 방향이 "서버 시각을 실제보다 뒤로" 라 자정 타이머는 늦게 발화할지언정 서버
- * 자정 전에 발화하지 않는다.
+ * 여유(`SERVER_MIDNIGHT_CHECK_SLACK_MS`)에 비해 무시할 수 있고, 방향이 "서버 시각을 실제보다 뒤로" 라 자정
+ * 타이머는 늦게 발화할지언정 서버 자정 전에 발화하지 않는다.
  *
  * 쓰임 둘. TanStack 은 신선도를 기기 `Date.now()` 로 재므로 서버 epoch(initialFetchedAt)를 그대로
  * `initialDataUpdatedAt` 에 넘기면 두 시계의 차이가 staleTime 에 섞인다(기기가 느리면 오래된 prefetch 가

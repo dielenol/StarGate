@@ -37,9 +37,9 @@ import {
   type CalendarCell,
 } from "@/lib/calendar/month";
 import {
-  msUntilServerKstMidnightAtDevice,
   resolveServerToDeviceOffsetMs,
   resolveTodayResyncKey,
+  serverMidnightCheckDelayMs,
 } from "@/lib/calendar/today-resync";
 import { GoogleCalendarClientError } from "@/lib/google-calendar/client";
 import type {
@@ -245,34 +245,13 @@ export function CalendarClient({
     };
   }, [accountMenuOpen]);
 
-  // 탭을 자정 넘겨 둔 채 다시 보이면 서버가 내려준 todayKey 가 어제로 남는다 — KST 날짜가 바뀌었으면
-  // 서버 컴포넌트를 다시 실행해 새 todayKey 를 받는다(세션 목록은 TanStack 캐시를 그대로 쓴다).
-  // 클라이언트에서 todayKey 를 다시 계산하지 않는 이유: 과거 날짜 거부는 서버 API 가 자기 시계로
-  // 하므로 기준은 서버 하나여야 하고, 시계가 틀린 기기도 서버 값만 쓰게 된다. refresh 는 선택 날짜·열린
-  // 모달 같은 클라이언트 상태를 유지한다. 오프라인에서 refresh 하면 Next 가 RSC 요청 실패를 브라우저
-  // 내비게이션으로 폴백해 오프라인 페이지가 뜨고 모달 입력이 유실되므로, 연결이 없으면 건너뛰고 online
-  // 이벤트에서 다시 본다. 경로는 둘이다.
-  // - 이벤트 경로(마운트 직후, visibilitychange·focus·online): 기기 날짜가 todayKey 보다 앞설 때만, 같은
-  //   `${기기 날짜}|${todayKey}` 조합은 한 번만 refresh 한다(resolveTodayResyncKey). focus 는 macOS 앱
-  //   전환처럼 visibilityState 가 visible 인 채로 돌아와 visibilitychange 가 오지 않는 경우를 잡는다 —
-  //   조합 가드가 있어 포커스가 오갈 때마다 refresh 가 반복되지는 않는다.
-  // - 서버 자정 타이머: 서버가 payload 를 만든 시각(initialFetchedAt)의 다음 KST 자정을 문서 오프셋으로
-  //   기기 시각으로 환산해 그 5초 뒤에 발화한다(5초는 타이머 정밀도·서버 인스턴스 간 시계 차 여유 —
-  //   전달 지연은 발화를 늦출 뿐이다). 기기 자정이 아니라 서버 자정이므로 기기 시계가 빠르든 느리든 서버
-  //   날짜가 바뀐 뒤에 발화한다 — 그래서 기기 날짜와
-  //   비교하지 않고 조합도 기록하지 않는다(visible·online 가드만). 그 자정이 이미 지난 payload(뒤로 가기
-  //   복원, SSR 과 hydration 사이의 자정)면 5초 뒤에 바로 확인한다. refresh 로 새 payload 가 오면
-  //   initialFetchedAt·오프셋이 바뀌어 이 effect 가 다시 실행되며 다음 자정 타이머를 새로 건다. 숨김·
-  //   오프라인이라 건너뛰면 그 사실을 serverDayChangePending 에 남겨 다음 visibilitychange·focus·online 이
-  //   기기 날짜와 무관하게 refresh 하게 한다(기기가 느리면 이벤트 경로만으로는 다음 타이머까지 침묵한다).
-  //   건너뛰어 새 payload 가 오지 않아도 타이머가 사라지지 않게, 발화할
-  //   때마다 발화 시각(서버 시계)의 다음 자정으로 다시 건다. 활성 타이머는 항상 하나이고 cleanup 이
-  //   마지막 것을 지운다.
-  // 알려진 한계: 오프셋은 가장 새 payload 를 받은 시점에 잰 것이라, 그 뒤 기기 시계가 5초 넘게 뛰면
-  // (수동 변경·NTP 보정) 다음 타이머가 그만큼 이르거나 늦다. 이르면 같은 todayKey 를 받지만 그 payload 로
-  // 오프셋이 다시 재어져 실제 자정 5초 뒤에 한 번 더 refresh 하고, 늦으면 그 차이만큼 "오늘" 이 늦게
-  // 바뀐다(그사이 이벤트 경로가 기기 날짜로 먼저 잡을 수 있다). 데이터는 서버 API 가 과거 날짜를 거부해
-  // 안전하다.
+  // 탭을 자정 넘겨 둔 채 두면 서버가 내려준 todayKey 가 어제로 남는다 — KST 날짜가 바뀌었으면 서버 컴포넌트를
+  // 다시 실행해 새 todayKey 를 받는다("오늘" 의 기준은 서버 시계 하나, 클라이언트 상태는 유지). 경로는 둘이다.
+  // - 이벤트 경로(마운트 직후, visibilitychange·focus·online): 기기 날짜가 앞설 때만 조합당 1회(resolveTodayResyncKey).
+  // - 서버 자정 타이머: 서버 자정 + 여유 뒤 발화, 발화마다 다음 자정으로 재무장(serverMidnightCheckDelayMs).
+  // 둘 다 탭이 보이고 온라인일 때만 refresh 한다 — 오프라인 refresh 는 Next 가 브라우저 내비게이션으로 폴백해
+  // 오프라인 페이지가 뜨고 모달 입력이 유실된다. 타이머가 건너뛴 자정은 serverDayChangePending 으로 다음 이벤트에 넘긴다.
+  // 근거와 알려진 한계는 lib/calendar/today-resync.ts 의 JSDoc 참조.
   useEffect(() => {
     const canRefresh = () =>
       document.visibilityState === "visible" && navigator.onLine;
@@ -299,11 +278,11 @@ export function CalendarClient({
           else serverDayChangePending = true;
           scheduleServerMidnightCheck(Date.now() - serverToDeviceOffsetMs);
         },
-        msUntilServerKstMidnightAtDevice(
+        serverMidnightCheckDelayMs(
           serverEpochMs,
           serverToDeviceOffsetMs,
           Date.now(),
-        ) + 5_000,
+        ),
       );
     };
     resyncIfDayChanged();

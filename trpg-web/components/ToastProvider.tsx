@@ -72,7 +72,7 @@ function isHoverlessPointer(pointerType: string) {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  /** 토스트별 자동 닫기 카운트다운. 화면에서 사라진 토스트의 것은 아래 effect 가 정리한다. */
+  /** 토스트별 자동 닫기 카운트다운. 커밋된 `toasts` 를 기준으로 아래 effect 가 만들고 정리한다. */
   const [countdowns] = useState(() => new Map<string, PausableCountdown>());
   const exitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -94,6 +94,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [countdowns],
   );
 
+  /** 상태만 바꾼다 — 카운트다운은 이 토스트가 커밋된 뒤 아래 effect 가 만든다. */
   const showToast = useCallback(
     (message: string, options?: ShowToastOptions) => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -104,14 +105,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           { id, message, tone, closing: false, paused: false },
         ].slice(-3),
       );
-      countdowns.set(
-        id,
-        createPausableCountdown(TOAST_VISIBLE_MS[tone], () =>
-          dismissToast(id),
-        ),
-      );
     },
-    [countdowns, dismissToast],
+    [],
   );
 
   /** 카운트다운을 바꾼 뒤 `paused` 를 상태에 비춘다 — 달라졌을 때만 새 배열을 만들어 불필요한 렌더를 피한다. */
@@ -156,15 +151,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [updateCountdown],
   );
 
-  // 화면에서 사라진 토스트(퇴장 완료·3개 초과로 밀림)의 카운트다운을 취소하고 맵에서 지운다.
+  // 커밋된 `toasts` 와 카운트다운 맵을 맞춘다 — 표시 중(closing 아님)인 토스트는 카운트다운이 있고, 그 밖의
+  // 것(퇴장 중·퇴장 완료·3개 초과로 밀림)은 없다. 생성을 showToast 가 아니라 여기서 하는 이유: setToasts 가
+  // 커밋되기 전에 다른 토스트의 hover·포커스가 updateCountdown → setToasts 로 먼저 커밋되면, 그 커밋의 toasts 에
+  // 없는 새 토스트의 카운트다운을 정리가 지워 버려 자동 닫기·hover 가 모두 죽는다. 같은 effect 가 커밋 기준으로
+  // 둘 다 맡으면 순서와 무관하고, dev Fast Refresh 로 언마운트 cleanup 이 맵을 비워도 다음 실행이 다시 만든다
+  // (남은 시간·hold 는 처음으로 돌아간다).
   useEffect(() => {
-    const shown = new Set(toasts.map((toast) => toast.id));
+    const shown = new Set<string>();
+    for (const toast of toasts) {
+      if (toast.closing) continue;
+      shown.add(toast.id);
+      if (countdowns.has(toast.id)) continue;
+      countdowns.set(
+        toast.id,
+        createPausableCountdown(TOAST_VISIBLE_MS[toast.tone], () =>
+          dismissToast(toast.id),
+        ),
+      );
+    }
     for (const [id, countdown] of countdowns) {
       if (shown.has(id)) continue;
       countdown.cancel();
       countdowns.delete(id);
     }
-  }, [toasts, countdowns]);
+  }, [toasts, countdowns, dismissToast]);
 
   useEffect(() => {
     const exitTimers = exitTimersRef.current;

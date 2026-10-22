@@ -2,14 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { msUntilNextKstMidnight } from "../../lib/calendar/month.ts";
-import { msUntilServerKstMidnightAtDevice } from "../../lib/calendar/today-resync.ts";
+import {
+  msUntilServerKstMidnightAtDevice,
+  SERVER_MIDNIGHT_CHECK_SLACK_MS,
+  serverMidnightCheckDelayMs,
+} from "../../lib/calendar/today-resync.ts";
 
-// CalendarClient 는 todayKey 재동기화 자정 타이머를 이 값 + 5초로 건다 — 서버가 payload 를 만든 시각
-// (initialFetchedAt, 서버 시계)의 다음 KST 자정(15:00 UTC)을 문서 오프셋(기기 시각 − 서버 시각)으로 기기 시각으로
-// 환산한 뒤 Date.now() 와의 차. 발화하면 발화 시각을 서버 시계로 환산해 같은 함수로 다음 자정에 다시 건다.
+// CalendarClient 는 todayKey 재동기화 자정 타이머를 serverMidnightCheckDelayMs 로 건다 — 서버가 payload 를 만든
+// 시각(initialFetchedAt, 서버 시계)의 다음 KST 자정(15:00 UTC)을 문서 오프셋(기기 시각 − 서버 시각)으로 기기 시각으로
+// 환산한 뒤 Date.now() 와의 차(msUntilServerKstMidnightAtDevice)에 SERVER_MIDNIGHT_CHECK_SLACK_MS 를 더한 값.
+// 발화하면 발화 시각을 서버 시계로 환산해 같은 함수로 다음 자정에 다시 건다.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const SLACK_MS = 5_000;
+const SLACK_MS = SERVER_MIDNIGHT_CHECK_SLACK_MS;
 /** 2026-10-21 KST 자정. */
 const MIDNIGHT = Date.parse("2026-10-20T15:00:00.000Z");
 
@@ -67,9 +72,8 @@ test("re-arming from the firing moment fires once per server day even when the d
     let deviceNow = serverEpochMs + offset;
     const firedAtServer = [];
     for (let day = 0; day < 3; day += 1) {
-      const delay =
-        msUntilServerKstMidnightAtDevice(serverEpochMs, offset, deviceNow) +
-        SLACK_MS;
+      // effect 의 scheduleServerMidnightCheck 와 같은 호출.
+      const delay = serverMidnightCheckDelayMs(serverEpochMs, offset, deviceNow);
       assert.ok(
         delay > SLACK_MS && delay <= DAY_MS + SLACK_MS,
         `${offset}/${day}: ${delay}`,
@@ -96,6 +100,9 @@ test("re-arming never yields an immediate timer", () => {
       const ms = msUntilServerKstMidnightAtDevice(serverNow, offset, serverNow + offset);
       assert.ok(ms > 0 && ms <= DAY_MS, `${offset}/${serverNow}: ${ms}`);
       assert.equal(ms, msUntilNextKstMidnight(new Date(serverNow)));
+      // effect 가 실제로 거는 지연은 여유보다 항상 크다.
+      const delay = serverMidnightCheckDelayMs(serverNow, offset, serverNow + offset);
+      assert.ok(delay > SLACK_MS && delay <= DAY_MS + SLACK_MS, `${offset}/${serverNow}: ${delay}`);
     }
   }
 });
