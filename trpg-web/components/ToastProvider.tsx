@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -152,12 +153,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   // 커밋된 `toasts` 와 카운트다운 맵을 맞춘다 — 표시 중(closing 아님)인 토스트는 카운트다운이 있고, 그 밖의
-  // 것(퇴장 중·퇴장 완료·3개 초과로 밀림)은 없다. 생성을 showToast 가 아니라 여기서 하는 이유: setToasts 가
-  // 커밋되기 전에 다른 토스트의 hover·포커스가 updateCountdown → setToasts 로 먼저 커밋되면, 그 커밋의 toasts 에
-  // 없는 새 토스트의 카운트다운을 정리가 지워 버려 자동 닫기·hover 가 모두 죽는다. 같은 effect 가 커밋 기준으로
-  // 둘 다 맡으면 순서와 무관하고, dev Fast Refresh 로 언마운트 cleanup 이 맵을 비워도 다음 실행이 다시 만든다
-  // (남은 시간·hold 는 처음으로 돌아간다).
-  useEffect(() => {
+  // 것(퇴장 중·퇴장 완료·3개 초과로 밀림)은 없다. 생성과 정리를 커밋 기준 한 곳에서 하면 showToast 와 커밋 사이의
+  // 순서를 가정할 필요가 없다(transition 안에서 불려도 안전). layout effect 라 커밋과 같은 태스크에서 만들어져
+  // 새 토스트의 첫 hover·포커스를 놓치지 않는다. dev Fast Refresh 로 cleanup 이 맵을 비워도 다음 실행이 다시
+  // 만든다(남은 시간·hold 는 처음으로 돌아간다).
+  useLayoutEffect(() => {
     const shown = new Set<string>();
     for (const toast of toasts) {
       if (toast.closing) continue;
