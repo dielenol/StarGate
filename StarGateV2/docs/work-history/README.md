@@ -94,6 +94,7 @@ route 구조를 `docs/work-history/routes/` 아래에 그대로 반영한다.
 
 - [`/`](routes/index.md)
 - [`/login`](routes/login.md)
+- [`/maintenance`](routes/maintenance.md)
 - [`/world`](routes/world.md)
 - [`/world/b`](routes/world/b.md)
 - [`/world/c`](routes/world/c.md)
