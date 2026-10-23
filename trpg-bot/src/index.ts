@@ -9,10 +9,6 @@
  *   4. trpg_sessions 생성/수정/취소 알림 폴링 + 24h 리마인드 폴링
  *   5. YouTube 오디오 검색·재생과 길드별 음성 대기열
  *
- * 비활성 파일 (`commands/session-*`, `scheduler/close-checker`, `scheduler/reminder-checker`,
- * `handlers/button-handler`, `utils/result-card-image`) 은 코드만 보존되어 있으며
- * 본 진입점에서 import 되지 않는다.
- *
  * @module index
  */
 

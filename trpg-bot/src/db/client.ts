@@ -1,20 +1,15 @@
 /**
- * MongoDB 연결 관리 — shared-db 로 이전됨 (shim)
+ * MongoDB 연결 관리 — `@stargate/shared-db` long-running 모드 위임
  *
- * 자체 MongoClient 싱글톤을 제거하고 `@stargate/shared-db` 의 long-running
- * 모드 connect/close 와 sync accessor 를 위임한다. DB 이름은 통합 DB
- * (`stargate`) 로 전환 — 기존 `trpg_bot` 하드코딩은 제거.
+ * 봇 기동 시 한 번 연결하고 종료 시 닫는다. DB 이름은 통합 DB(`stargate`)이며
+ * 테스트·스테이징만 `MONGODB_DB_NAME` 으로 바꾼다.
  *
- * @deprecated 신규 호출처는 `@stargate/shared-db` 의 connect/close/getClientSync
- * 를 직접 사용하세요.
  * @module db/client
  */
 
-import type { MongoClient } from "mongodb";
 import {
   close as sharedClose,
   connect as sharedConnect,
-  getClientSync,
 } from "@stargate/shared-db";
 
 import { config } from "../config.js";
@@ -36,13 +31,4 @@ export async function connectDb(): Promise<void> {
 /** MongoDB 연결을 종료합니다. 프로세스 종료 시 호출. */
 export async function closeDb(): Promise<void> {
   await sharedClose();
-}
-
-/**
- * MongoDB 클라이언트를 반환합니다. (`connectDb` 호출 후에만 사용)
- *
- * 기존 호출처 호환용 shim — sync getClientSync 를 위임.
- */
-export function getClient(): MongoClient {
-  return getClientSync();
 }
