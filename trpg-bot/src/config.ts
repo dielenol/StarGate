@@ -1,16 +1,64 @@
 /**
  * 환경변수 검증 및 내보내기
  *
- * 봇 실행에 필요한 DISCORD_TOKEN, DISCORD_CLIENT_ID, MONGODB_URI 및
- * Phase 2 신규 추가 변수 (TRPG_GUILD_ID, TRPG_FALLBACK_CHANNEL_ID,
- * TRPG_MUSIC_CHANNEL_ID, TRPG_ALERT_USER_ID, TRPG_ALERT_CHANNEL_ID,
- * TRPG_WEB_BASE_URL, polling/reminder interval) 를
- * process.env 에서 읽어 검증 후 반환합니다.
+ * 필수 값(DISCORD_TOKEN, DISCORD_CLIENT_ID, MONGODB_URI, TRPG_GUILD_ID,
+ * TRPG_FALLBACK_CHANNEL_ID, TRPG_WEB_BASE_URL)이 없거나 형식이 틀리면 기동을
+ * 막는다. 주기 값은 허용 범위를 벗어나면 경고 후 기본값을 쓰고, 선택 기능
+ * (음악·운영 알림·생존 신호)은 값이 없으면 해당 기능만 꺼진다.
  *
  * @module config
  */
 
 import "dotenv/config";
+
+/** setTimeout/setInterval 이 받는 최대 지연(32비트 부호 정수). 넘기면 1ms 로 동작한다. */
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
+
+/**
+ * 주기·지연 환경변수(ms)를 읽는다.
+ *
+ * 미설정이면 기본값, 숫자가 아니거나 `[min, max]` 밖이면 경고 후 기본값을 쓴다.
+ * 0ms 폴링 루프나 32비트 타이머 오버플로(사실상 1ms 반복)를 막기 위한 공통 경계.
+ */
+function readIntervalMs(
+  name: string,
+  defaultMs: number,
+  { min, max }: { min: number; max: number },
+): number {
+  const raw = process.env[name]?.trim();
+  if (!raw) return defaultMs;
+  const n = Number(raw);
+  const upper = Math.min(max, MAX_TIMER_DELAY_MS);
+  if (!Number.isFinite(n) || n < min || n > upper) {
+    console.warn(
+      `[config] ${name}=${raw} 은 허용 범위(${min}~${upper}ms)를 벗어나 기본값 ${defaultMs}ms 를 사용합니다.`,
+    );
+    return defaultMs;
+  }
+  return Math.floor(n);
+}
+
+/** `0` / `false` / `off` 이면 false, 그 외(미설정 포함)는 기본값을 따르는 on/off 플래그. */
+function readBooleanFlag(name: string, defaultValue: boolean): boolean {
+  const v = process.env[name]?.trim().toLowerCase();
+  if (!v) return defaultValue;
+  if (v === "0" || v === "false" || v === "off") return false;
+  return true;
+}
+
+/** http(s) URL 인지 검증한다. 형식이 틀리면 사유 문자열, 정상이면 null. */
+function invalidHttpUrlReason(value: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return "URL 형식이 아닙니다";
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return `http/https 가 아닌 스킴(${parsed.protocol})입니다`;
+  }
+  return null;
+}
 
 /** 환경변수에서 Discord 봇 토큰을 읽어 반환합니다. */
 function getDiscordToken(): string {
@@ -101,34 +149,43 @@ function getTrpgAlertChannelId(): string | undefined {
 }
 
 /**
- * trpg-web 베이스 URL (Phase 2 필수).
+ * trpg-web 베이스 URL (필수).
  *
  * `/세션확인` 응답 + DM 알림 본문에 첨부할 외부 캘린더 링크 (예: `${base}/calendar`).
+ * 스킴이 빠진 값(`dache-calender.vercel.app`)은 모든 링크 버튼을 깨뜨리므로 기동을 막는다.
  */
 function getTrpgWebBaseUrl(): string {
   const url = process.env.TRPG_WEB_BASE_URL?.trim();
   if (!url) {
     throw new Error("TRPG_WEB_BASE_URL 환경변수가 설정되지 않았습니다.");
   }
+  const reason = invalidHttpUrlReason(url);
+  if (reason) {
+    throw new Error(
+      `TRPG_WEB_BASE_URL 이 올바르지 않습니다: ${reason}. 예: https://dache-calender.vercel.app`,
+    );
+  }
   return url.replace(/\/+$/, "");
 }
 
-/** 생성 알림 폴링 주기(ms). default 60_000 (1분). */
+/** 생성·수정·취소 알림 폴링 주기(ms). default 60_000 (1분), 허용 10초~10분. */
 function getTrpgPollingIntervalMs(): number {
-  const v = process.env.TRPG_POLLING_INTERVAL_MS?.trim();
-  if (!v) return 60_000;
-  const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return 60_000;
-  return Math.floor(n);
+  return readIntervalMs("TRPG_POLLING_INTERVAL_MS", 60_000, {
+    min: 10_000,
+    max: 10 * 60_000,
+  });
 }
 
-/** 24h 리마인드 폴링 주기(ms). default 300_000 (5분). */
+/**
+ * 리마인드 폴링 주기(ms). default 300_000 (5분), 허용 30초~15분.
+ *
+ * 리마인드 조회 창은 목표 시각 ± 2×주기이므로, 주기가 길면 그만큼 일찍 발송된다.
+ */
 function getTrpgReminderIntervalMs(): number {
-  const v = process.env.TRPG_REMINDER_INTERVAL_MS?.trim();
-  if (!v) return 300_000;
-  const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return 300_000;
-  return Math.floor(n);
+  return readIntervalMs("TRPG_REMINDER_INTERVAL_MS", 300_000, {
+    min: 30_000,
+    max: 15 * 60_000,
+  });
 }
 
 /**
@@ -136,8 +193,7 @@ function getTrpgReminderIntervalMs(): number {
  * `TRPG_REMINDER_1H=0` / `false` / `off` 이면 24시간 전 리마인드만 보낸다.
  */
 function isTrpgReminder1hEnabled(): boolean {
-  const v = process.env.TRPG_REMINDER_1H?.trim().toLowerCase();
-  return v !== "0" && v !== "false" && v !== "off";
+  return readBooleanFlag("TRPG_REMINDER_1H", true);
 }
 
 /**
@@ -145,26 +201,48 @@ function isTrpgReminder1hEnabled(): boolean {
  * `TRPG_MUSIC_HEALTHCHECK=0` / `false` / `off` 이면 비활성.
  */
 function isMusicHealthcheckEnabled(): boolean {
-  const v = process.env.TRPG_MUSIC_HEALTHCHECK?.trim().toLowerCase();
-  return v !== "0" && v !== "false" && v !== "off";
+  return readBooleanFlag("TRPG_MUSIC_HEALTHCHECK", true);
 }
 
-/** 음악 자동 점검 주기(ms). default 86_400_000 (24시간). */
+/** 음악 자동 점검 주기(ms). default 86_400_000 (24시간), 허용 10분~7일. */
 function getMusicHealthcheckIntervalMs(): number {
-  const v = process.env.TRPG_MUSIC_HEALTHCHECK_INTERVAL_MS?.trim();
-  if (!v) return 86_400_000;
-  const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return 86_400_000;
-  return Math.floor(n);
+  return readIntervalMs("TRPG_MUSIC_HEALTHCHECK_INTERVAL_MS", 86_400_000, {
+    min: 10 * 60_000,
+    max: 7 * 86_400_000,
+  });
 }
 
-/** 기동 후 첫 점검까지의 지연(ms). default 60_000 (1분). */
+/** 기동 후 첫 점검까지의 지연(ms). default 60_000 (1분), 허용 0~1시간. */
 function getMusicHealthcheckStartDelayMs(): number {
-  const v = process.env.TRPG_MUSIC_HEALTHCHECK_START_DELAY_MS?.trim();
-  if (!v) return 60_000;
-  const n = Number(v);
-  if (!Number.isFinite(n) || n < 0) return 60_000;
-  return Math.floor(n);
+  return readIntervalMs("TRPG_MUSIC_HEALTHCHECK_START_DELAY_MS", 60_000, {
+    min: 0,
+    max: 60 * 60_000,
+  });
+}
+
+/**
+ * 생존 신호 파일 경로. 봇이 게이트웨이(모든 shard Ready)가 정상일 때 주기적으로 mtime 을
+ * 갱신하고, Docker HEALTHCHECK 가 이 파일의 나이를 검사한다. default `/tmp/trpg-bot-heartbeat`.
+ */
+function getHeartbeatFilePath(): string {
+  return process.env.TRPG_HEARTBEAT_FILE?.trim() || "/tmp/trpg-bot-heartbeat";
+}
+
+/**
+ * 생존 신호 push URL (선택). Uptime Kuma Push·Healthchecks.io 같은 외부 감시가
+ * 받을 GET 주소. 형식이 틀리면 경고 후 push 만 끈다(봇 기동은 계속).
+ */
+function getHeartbeatPushUrl(): string | undefined {
+  const url = process.env.TRPG_HEARTBEAT_URL?.trim();
+  if (!url) return undefined;
+  const reason = invalidHttpUrlReason(url);
+  if (reason) {
+    console.warn(
+      `[config] TRPG_HEARTBEAT_URL 이 올바르지 않아 외부 생존 신호를 끕니다: ${reason}`,
+    );
+    return undefined;
+  }
+  return url;
 }
 
 /**
@@ -180,12 +258,11 @@ function getMusicHealthcheckVideoUrl(): string {
 }
 
 /**
- * 마감 시 결과 카드 PNG 첨부(Puppeteer) 사용 여부.
+ * `/세션확인` 월간 캘린더 PNG(Puppeteer) 생성 여부.
  * `RESULT_CARD_IMAGE=0` / `false` / `off` 이면 비활성(임베드만 전송).
  */
 export function isResultCardImageEnabled(): boolean {
-  const v = process.env.RESULT_CARD_IMAGE?.trim().toLowerCase();
-  return v !== "0" && v !== "false" && v !== "off";
+  return readBooleanFlag("RESULT_CARD_IMAGE", true);
 }
 
 /** 검증된 환경 설정 객체 */
@@ -208,4 +285,6 @@ export const config = {
   musicHealthcheckIntervalMs: getMusicHealthcheckIntervalMs(),
   musicHealthcheckStartDelayMs: getMusicHealthcheckStartDelayMs(),
   musicHealthcheckVideoUrl: getMusicHealthcheckVideoUrl(),
+  heartbeatFilePath: getHeartbeatFilePath(),
+  heartbeatPushUrl: getHeartbeatPushUrl(),
 } as const;

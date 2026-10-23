@@ -10,6 +10,7 @@
 import {
   close as sharedClose,
   connect as sharedConnect,
+  getDb,
 } from "@stargate/shared-db";
 
 import { config } from "../config.js";
@@ -31,4 +32,10 @@ export async function connectDb(): Promise<void> {
 /** MongoDB 연결을 종료합니다. 프로세스 종료 시 호출. */
 export async function closeDb(): Promise<void> {
   await sharedClose();
+}
+
+/** MongoDB 에 ping 명령을 보낸다. 생존 신호 기록·`/상태` 진단용 — 실패하면 throw. */
+export async function pingDb(): Promise<void> {
+  const db = await getDb();
+  await db.command({ ping: 1 });
 }
