@@ -18,6 +18,7 @@ import { trpgDiscordIdSchema } from "./trpg-session.schema.js";
 export const trpgNotificationKindSchema = z.enum([
   "creation",
   "reminder24h",
+  "reminder1h",
   "update",
   "cancellation",
 ]);
@@ -42,6 +43,8 @@ export const recordTrpgNotificationInputSchema = z.object({
   deliveryMethod: trpgNotificationDeliveryMethodSchema,
   attemptedAt: dateSchema.optional(),
   error: z.string().max(2048).nullable().optional(),
+  /** 회차 키 (리마인드: `"${date} ${startTime}"`, 수정: queuedAt ISO). 단일 회차는 생략 */
+  roundKey: z.string().max(64).nullable().optional(),
 });
 
 export type TrpgNotificationKindValue = z.infer<

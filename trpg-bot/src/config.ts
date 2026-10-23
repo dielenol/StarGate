@@ -132,6 +132,15 @@ function getTrpgReminderIntervalMs(): number {
 }
 
 /**
+ * 시작 1시간 전 리마인드 사용 여부. 기본 활성.
+ * `TRPG_REMINDER_1H=0` / `false` / `off` 이면 24시간 전 리마인드만 보낸다.
+ */
+function isTrpgReminder1hEnabled(): boolean {
+  const v = process.env.TRPG_REMINDER_1H?.trim().toLowerCase();
+  return v !== "0" && v !== "false" && v !== "off";
+}
+
+/**
  * 음악 재생 경로 일일 자동 점검 사용 여부.
  * `TRPG_MUSIC_HEALTHCHECK=0` / `false` / `off` 이면 비활성.
  */
@@ -194,6 +203,7 @@ export const config = {
   trpgWebBaseUrl: getTrpgWebBaseUrl(),
   trpgPollingIntervalMs: getTrpgPollingIntervalMs(),
   trpgReminderIntervalMs: getTrpgReminderIntervalMs(),
+  trpgReminder1hEnabled: isTrpgReminder1hEnabled(),
   musicHealthcheckEnabled: isMusicHealthcheckEnabled(),
   musicHealthcheckIntervalMs: getMusicHealthcheckIntervalMs(),
   musicHealthcheckStartDelayMs: getMusicHealthcheckStartDelayMs(),

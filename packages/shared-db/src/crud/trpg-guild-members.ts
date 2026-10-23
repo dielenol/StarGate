@@ -82,11 +82,28 @@ export async function findTrpgGuildMember(
 }
 
 /**
+ * 여러 디스코드 ID 를 한 번에 조회한다 (탈퇴자 포함). 캐시에 없는 ID 는 결과에
+ * 빠진다 — 알림 스케줄러가 세션당 1회로 탈퇴 여부를 묶어 볼 때 사용.
+ */
+export async function findTrpgGuildMembersByDiscordIds(
+  guildId: string,
+  discordUserIds: string[],
+): Promise<TrpgGuildMember[]> {
+  if (discordUserIds.length === 0) return [];
+  const col = await trpgGuildMembersCol();
+  return col.find({ guildId, discordUserId: { $in: discordUserIds } }).toArray();
+}
+
+/**
  * 멤버 이탈을 기록한다. `leftAt` 을 set + `lastSyncedAt` 동기화.
  *
  * 미존재 멤버에는 영향 없음 (upsert 하지 않음 — 이탈자는 캐시에 존재해야만 의미).
  * 반환값: `true` 이면 한 건이 매칭되어 이탈 기록 적용됨, `false` 이면 캐시에
  * 해당 멤버가 없어 no-op. 호출처가 동기화 누락을 감지하는 데 사용한다.
+ *
+ * `options.onlyIfSyncedBefore` 가 있으면 `lastSyncedAt` 이 그 시각보다 이르고
+ * 아직 `leftAt` 이 없는 행만 이탈 처리한다 — 전체 동기화가 fetch 하는 동안
+ * GuildMemberAdd/Update 이벤트로 갱신된 멤버를 이탈자로 오판하지 않기 위함.
  *
  * `matchedCount` 기준 — 이미 동일 시각으로 leftAt 이 박혀 있어도 멱등 호출의
  * 성공으로 간주.
@@ -95,10 +112,17 @@ export async function markTrpgGuildMemberLeft(
   guildId: string,
   discordUserId: string,
   leftAt: Date,
+  options: { onlyIfSyncedBefore?: Date } = {},
 ): Promise<boolean> {
   const col = await trpgGuildMembersCol();
   const result = await col.updateOne(
-    { guildId, discordUserId },
+    {
+      guildId,
+      discordUserId,
+      ...(options.onlyIfSyncedBefore
+        ? { lastSyncedAt: { $lt: options.onlyIfSyncedBefore }, leftAt: null }
+        : {}),
+    },
     {
       $set: {
         leftAt,

@@ -6,7 +6,7 @@
  *   1. `/세션확인` 슬래시 처리
  *   2. `/도움말`, `/roll`, `/r` 슬래시 처리
  *   3. 길드 멤버 동기화 (ClientReady + GuildMember* 이벤트 + 24h 재동기화)
- *   4. trpg_sessions 생성/수정/취소 알림 폴링 + 24h 리마인드 폴링
+ *   4. trpg_sessions 생성/수정/취소 알림 폴링 + 시작 24h·1h 전 리마인드 폴링
  *   5. YouTube 오디오 검색·재생과 길드별 음성 대기열
  *
  * @module index
@@ -26,7 +26,10 @@ import { startMusicHealthcheck } from "./music/music-healthcheck.js";
 import { MusicService } from "./music/music-service.js";
 import { startTrpgCancellationNotificationChecker } from "./scheduler/trpg-cancellation-notification-checker.js";
 import { startTrpgNotificationChecker } from "./scheduler/trpg-notification-checker.js";
-import { startTrpgReminderChecker } from "./scheduler/trpg-reminder-checker.js";
+import {
+  startTrpgReminder1hChecker,
+  startTrpgReminderChecker,
+} from "./scheduler/trpg-reminder-checker.js";
 import { startTrpgUpdateNotificationChecker } from "./scheduler/trpg-update-notification-checker.js";
 import {
   markGuildMemberLeftFromDiscord,
@@ -77,10 +80,12 @@ function notifyOperator(event: OperatorAlertEvent): void {
 }
 
 /** 폴링 스케줄러 cleanup 핸들 — shutdown 에서 호출 */
-let stopNotificationChecker: (() => void) | null = null;
-let stopUpdateNotificationChecker: (() => void) | null = null;
-let stopCancellationNotificationChecker: (() => void) | null = null;
-let stopReminderChecker: (() => void) | null = null;
+let stopNotificationChecker: (() => void | Promise<void>) | null = null;
+let stopUpdateNotificationChecker: (() => void | Promise<void>) | null = null;
+let stopCancellationNotificationChecker: (() => void | Promise<void>) | null =
+  null;
+let stopReminderChecker: (() => void | Promise<void>) | null = null;
+let stopReminder1hChecker: (() => void | Promise<void>) | null = null;
 let stopDailyMemberSync: (() => void) | null = null;
 let stopMusicHealthcheck: (() => void) | null = null;
 
@@ -200,17 +205,29 @@ client.once(Events.ClientReady, async (readyClient) => {
   }
 
   // 24h 주기 재동기화 — GuildMemberAdd/Remove 이벤트 누락 보정용 안전망
-  stopDailyMemberSync = startGuildMemberDailySync(client, config.trpgGuildId);
+  stopDailyMemberSync = startGuildMemberDailySync(client, config.trpgGuildId, {
+    operatorAlerts,
+  });
 
-  stopNotificationChecker = startTrpgNotificationChecker(client);
+  const schedulerOptions = { operatorAlerts };
+  stopNotificationChecker = startTrpgNotificationChecker(client, schedulerOptions);
   console.log("[TRPG Bot] 세션 생성 알림 폴링 시작");
-  stopUpdateNotificationChecker = startTrpgUpdateNotificationChecker(client);
+  stopUpdateNotificationChecker = startTrpgUpdateNotificationChecker(
+    client,
+    schedulerOptions,
+  );
   console.log("[TRPG Bot] 세션 수정 알림 폴링 시작");
   stopCancellationNotificationChecker =
-    startTrpgCancellationNotificationChecker(client);
+    startTrpgCancellationNotificationChecker(client, schedulerOptions);
   console.log("[TRPG Bot] 세션 취소 알림 폴링 시작");
-  stopReminderChecker = startTrpgReminderChecker(client);
+  stopReminderChecker = startTrpgReminderChecker(client, schedulerOptions);
   console.log("[TRPG Bot] 24h 리마인드 폴링 시작");
+  stopReminder1hChecker = startTrpgReminder1hChecker(client, schedulerOptions);
+  console.log(
+    stopReminder1hChecker
+      ? "[TRPG Bot] 1h 리마인드 폴링 시작"
+      : "[TRPG Bot] 1h 리마인드 비활성 (TRPG_REMINDER_1H)",
+  );
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -286,6 +303,7 @@ async function shutdown(signal: string): Promise<void> {
   if (stopUpdateNotificationChecker) stopUpdateNotificationChecker();
   if (stopCancellationNotificationChecker) stopCancellationNotificationChecker();
   if (stopReminderChecker) stopReminderChecker();
+  if (stopReminder1hChecker) stopReminder1hChecker();
   if (stopDailyMemberSync) stopDailyMemberSync();
   if (stopMusicHealthcheck) stopMusicHealthcheck();
 

@@ -23,6 +23,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test:credits": "pnpm build && node --test src/crud/__tests__/credits-atomicity.test.mjs",
+    "test:trpg": "pnpm build && node --test src/crud/__tests__/trpg-session-notification-state.test.mjs",
     "test:client": "pnpm build && node --test src/__tests__/*.test.mjs"
   },
   "dependencies": {

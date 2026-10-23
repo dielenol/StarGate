@@ -16,6 +16,30 @@ import type { ObjectId } from "mongodb";
 /** trpg 세션 상태: open(접수 중) / cancelled(취소) */
 export type TrpgSessionStatus = "open" | "cancelled";
 
+/** 리마인드 슬롯: 시작 24시간 전 / 시작 1시간 전 */
+export type TrpgReminderSlot = "24h" | "1h";
+
+/**
+ * 리마인드 회차 — claim/mark 필터에 넣는 스냅샷.
+ * 발송 중 재일정되면 mark 가 불일치해 lease 만 해제되고 다음 tick 이 새 회차를 처리한다.
+ */
+export interface TrpgReminderRound {
+  slot: TrpgReminderSlot;
+  date: string;
+  startTime: string;
+}
+
+/**
+ * 수정 알림 baseline — 대기 중인 수정 알림이 "어느 상태 대비" 변경인지 고정한다.
+ * 연속 수정은 이 baseline 대비 최신 문서로 변경 요약을 다시 계산해 한 번만 발송한다.
+ */
+export interface TrpgSessionUpdateBaseline {
+  title: string;
+  date: string;
+  startTime: string;
+  participantDiscordIds: string[];
+}
+
 /** DB 에 저장되는 trpg 세션 문서 */
 export interface TrpgSession {
   _id?: ObjectId;
@@ -34,6 +58,14 @@ export interface TrpgSession {
 
   /** 생성 알림 발송 완료 시각 */
   notificationSentAt?: Date | null;
+  /**
+   * 생성 알림을 마지막으로 선점한 시각. 한 번 찍히면 release·mark·재일정이 지우지
+   * 않으며 값의 유무만 판정에 쓴다(발송 도중 멈춘 세션 = "일부는 안내받았을 수 있는
+   * 세션"). 배포 전 문서에는 없다(= 선점 이력 없음으로 취급).
+   * `$min` 으로 바꾸지 말 것 — 생성 시 null 로 초기화되는데 BSON 정렬에서 null 이
+   * Date 보다 작아 영영 찍히지 않는다.
+   */
+  notificationClaimedAt?: Date | null;
   /** 생성 알림 발송권 선점 만료 시각 */
   notificationClaimLeaseUntil?: Date | null;
 
@@ -41,6 +73,11 @@ export interface TrpgSession {
   reminderSentAt?: Date | null;
   /** 24h 리마인드 발송권 선점 만료 시각 */
   reminderClaimLeaseUntil?: Date | null;
+
+  /** 1h 리마인드 발송 완료 시각 (재일정 시 24h 와 함께 초기화) */
+  reminder1hSentAt?: Date | null;
+  /** 1h 리마인드 발송권 선점 만료 시각 */
+  reminder1hClaimLeaseUntil?: Date | null;
 
   /** 취소 알림 발송 대기열 적재 시각 */
   cancellationNotificationQueuedAt?: Date | null;
@@ -59,6 +96,8 @@ export interface TrpgSession {
   updateNotificationRecipientDiscordIds?: string[] | null;
   /** 수정 알림에 표시할 변경 요약 */
   updateNotificationChanges?: string[] | null;
+  /** 대기 중인 수정 알림의 기준 상태 (연속 수정 병합용). 발송·해제되면 null */
+  updateNotificationBaseline?: TrpgSessionUpdateBaseline | null;
 
   createdAt: Date;
   updatedAt: Date;
