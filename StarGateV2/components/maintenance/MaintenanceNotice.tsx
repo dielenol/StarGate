@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { IconCaution, IconRecovery } from "@/components/icons";
+import { IconCaution, IconRecovery, IconSecurity } from "@/components/icons";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
 
 import type { MaintenanceState } from "@/lib/maintenance/schedule";
@@ -123,81 +123,89 @@ export default function MaintenanceNotice({
   return (
     <main className={styles.notice} aria-labelledby="maintenance-title">
       <div className={styles.notice__masthead}>
-        <Image
-          src={resolvePublicAssetPath("/assets/StarGate_logo.webp")}
-          alt=""
-          width={42}
-          height={42}
-          priority
-        />
-        <span>NOVUS ORDO</span>
+        <div className={styles.notice__brand}>
+          <Image
+            src={resolvePublicAssetPath("/assets/StarGate_logo.webp")}
+            alt=""
+            width={42}
+            height={42}
+            priority
+          />
+          <div><strong>NOVUS ORDO</strong><span>정보보안 통제실</span></div>
+        </div>
+        <p className={styles.notice__classification}>SECURITY DIRECTIVE<span>긴급 통제 공지</span></p>
       </div>
 
       <article className={styles.notice__document}>
-        <header className={styles.notice__header}>
-          <p className={styles.notice__eyebrow}>SYSTEM SECURITY NOTICE</p>
-          <span className={styles.notice__badge}>
-            <IconCaution aria-hidden />
-            긴급 점검
-          </span>
-          <h1 id="maintenance-title">ERP 긴급 보안 점검 안내</h1>
-          <p className={styles.notice__suspension}>TEMPORARY SUSPENSION</p>
-        </header>
-
-        <div className={styles.notice__rule} aria-hidden />
-
-        <div className={styles.notice__body}>
-          <p className={styles.notice__lead}>
-            비인가 접근 징후가 확인되어 내부 업무망을 일시 차단했습니다.
-            <br />
-            기록 무결성 확인과 접근 권한 재검증을 진행하고 있습니다.
-          </p>
-
-          <dl className={styles.notice__details}>
-            <div>
-              <dt>점검 일정</dt>
-              <dd>
-                <time dateTime={displayWindow.startsAt}>{KST_FORMATTER.format(new Date(displayWindow.startsAt))}</time>
-                <span aria-hidden> — </span>
-                <time dateTime={displayWindow.endsAt}>{KST_FORMATTER.format(new Date(displayWindow.endsAt))}</time>
-                <small>KST</small>
-              </dd>
-            </div>
-            <div>
-              <dt>대상 범위</dt>
-              <dd>ERP 전체 서비스</dd>
-            </div>
-            <div>
-              <dt>진행 업무</dt>
-              <dd>기록 무결성 검사 · 접근 경로 재검증</dd>
-            </div>
-          </dl>
-
-          <section className={styles.notice__countdown} aria-label="점검 종료까지 남은 시간">
-            <IconRecovery aria-hidden />
-            <div>
-              <p>점검 종료까지</p>
-              <strong>{formatCountdown(remaining)}</strong>
-            </div>
-          </section>
-
-          <p className={styles.notice__resume}>
-            점검 종료 시 업무망이 자동으로 재개됩니다.
-          </p>
-          <a className={styles.notice__retry} href="/erp">
-            접속 다시 확인
-          </a>
+        <div className={styles.notice__alert}>
+          <span><IconCaution aria-hidden />긴급 보안 통제 발령</span>
+          <span className={styles.notice__alertCode}>EMERGENCY LOCKDOWN</span>
         </div>
 
+        <header className={styles.notice__header}>
+          <div className={styles.notice__intro}>
+            <p className={styles.notice__eyebrow}>UNAUTHORIZED ACCESS DETECTED</p>
+            <h1 id="maintenance-title">내부 업무망<span>긴급 봉쇄</span></h1>
+            <p className={styles.notice__lead}>비인가 접근 징후가 감지되어<br />ERP의 모든 업무 기능을 즉시 중지했습니다.</p>
+            <p className={styles.notice__description}>추가 침입과 기록 훼손을 방지하기 위해 접속 경로를 격리했습니다. 현재 기록 무결성 확인 및 접근 권한 재검증을 진행하고 있습니다.</p>
+          </div>
+          <div className={styles.notice__seal}>
+            <span className={styles.notice__sealLabel}>RESTRICTED NETWORK</span>
+            <div className={styles.notice__sealIcon} aria-hidden="true"><IconSecurity /></div>
+            <strong>ACCESS DENIED</strong>
+            <p>ERP 접근 전면 차단</p>
+            <span className={styles.notice__sealCaption}>조회 · 기록 · 업무 처리 중지</span>
+          </div>
+        </header>
+
+        <section className={styles.notice__response} aria-label="보안 대응 현황">
+          <div className={styles.notice__responseItem}>
+            <span className={styles.notice__step} aria-hidden="true">01</span>
+            <div><span className={styles.notice__state}>차단 적용</span><h2>업무망 긴급 격리</h2></div>
+            <span className={styles.notice__statusDot} aria-hidden="true" />
+          </div>
+          <div className={styles.notice__responseItem}>
+            <span className={styles.notice__step} aria-hidden="true">02</span>
+            <div><span className={styles.notice__state}>확인 중</span><h2>기록 무결성 검사</h2></div>
+            <span className={styles.notice__statusDot} aria-hidden="true" />
+          </div>
+          <div className={styles.notice__responseItem}>
+            <span className={styles.notice__step} aria-hidden="true">03</span>
+            <div><span className={styles.notice__state}>재검증 중</span><h2>접근 권한 재검증</h2></div>
+            <span className={styles.notice__statusDot} aria-hidden="true" />
+          </div>
+        </section>
+
+        <div className={styles.notice__body}>
+          <section className={styles.notice__scope} aria-labelledby="maintenance-scope">
+            <h2 id="maintenance-scope" className={styles.notice__sectionTitle}>통제 범위 및 점검 일정</h2>
+            <dl className={styles.notice__details}>
+              <div><dt>차단 범위</dt><dd>ERP 전체 서비스<span className={styles.notice__tag}>접속 불가</span></dd></div>
+              <div><dt>통제 시작</dt><dd><time dateTime={displayWindow.startsAt}>{KST_FORMATTER.format(new Date(displayWindow.startsAt))}</time><small>KST</small></dd></div>
+              <div><dt>재개 예정</dt><dd><time dateTime={displayWindow.endsAt}>{KST_FORMATTER.format(new Date(displayWindow.endsAt))}</time><small>KST</small></dd></div>
+            </dl>
+          </section>
+          <section className={styles.notice__recovery} aria-label="점검 종료까지 남은 시간">
+            <div className={styles.notice__countdown}>
+              <p><IconRecovery aria-hidden />업무망 자동 재개까지</p>
+              <strong>{formatCountdown(remaining)}</strong>
+              <span className={styles.notice__timeUnit} aria-hidden="true">HOURS : MINUTES : SECONDS</span>
+            </div>
+            <p className={styles.notice__resume}>점검 종료 시 업무망이 자동으로 재개됩니다.</p>
+            <a className={styles.notice__retry} href="/erp">접속 상태 다시 확인<span aria-hidden="true">↗</span></a>
+          </section>
+        </div>
+
+        <aside className={styles.notice__warning} aria-label="보안 유의사항">
+          <IconCaution aria-hidden />
+          <p><strong>비공식 복구 요청에 응하지 마십시오.</strong> 출처가 확인되지 않은 접속 링크와 인증 정보 요청은 즉시 무시하십시오.</p>
+        </aside>
         <footer className={styles.notice__footer}>
-          <p>NOVUS ORDO · 정보보안 통제실</p>
-          <p>점검 중 출처가 확인되지 않은 복구 안내나 접속 요청에 응하지 마십시오.</p>
+          <p>NOVUS ORDO <span>정보보안 통제실</span></p>
+          <p>업무망 격리 · 보안 점검 진행 중</p>
         </footer>
       </article>
-
-      <Link href="/" className={styles.notice__archiveLink}>
-        공식 공개 아카이브로 이동
-      </Link>
+      <Link className={styles.notice__archiveLink} href="/">공식 공개 아카이브로 이동<span aria-hidden="true">↗</span></Link>
     </main>
   );
 }
