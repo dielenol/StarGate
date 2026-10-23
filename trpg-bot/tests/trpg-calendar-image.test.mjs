@@ -6,20 +6,11 @@ import { promisify } from "node:util";
 
 import puppeteer from "puppeteer";
 
+import { applyTestEnv } from "./helpers/test-env.mjs";
+
 const execFileAsync = promisify(execFile);
 
-const requiredEnv = {
-  DISCORD_TOKEN: "test-token",
-  DISCORD_CLIENT_ID: "test-client",
-  MONGODB_URI: "mongodb://127.0.0.1:27017/test",
-  TRPG_GUILD_ID: "test-guild",
-  TRPG_FALLBACK_CHANNEL_ID: "test-channel",
-  TRPG_WEB_BASE_URL: "https://example.test",
-};
-
-for (const [key, value] of Object.entries(requiredEnv)) {
-  process.env[key] ||= value;
-}
+applyTestEnv();
 const { buildTrpgCalendarHtml } = await import(
   "../dist/utils/trpg-calendar-image.js"
 );
