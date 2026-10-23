@@ -26,6 +26,8 @@ import { PageHeadProvider } from "@/components/ui/PageHead/PageHeadContext";
 
 import styles from "./layout.module.css";
 import ERPHeader from "./ERPHeader";
+import ErpMaintenanceGate from "@/components/maintenance/ErpMaintenanceGate";
+import { getMaintenanceState } from "@/lib/maintenance/schedule";
 
 /**
  * ERP 트리는 항상 dynamic 렌더 — auth() 결과가 cache 되어 로그아웃 사용자에게
@@ -39,6 +41,8 @@ export default async function ERPLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const maintenance = getMaintenanceState();
+  if (maintenance.phase === "active") redirect("/maintenance");
   const session = await getActiveSession();
 
   if (!session?.user) {
@@ -79,6 +83,7 @@ export default async function ERPLayout({
     : getRealtimeClientMode();
 
   return (
+    <ErpMaintenanceGate initialState={maintenance}>
     <SessionWrapper session={session}>
       <QueryProvider>
         <RealtimeProvider mode={realtimeClientMode}>
@@ -127,5 +132,6 @@ export default async function ERPLayout({
         </RealtimeProvider>
       </QueryProvider>
     </SessionWrapper>
+    </ErpMaintenanceGate>
   );
 }

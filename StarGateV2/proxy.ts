@@ -21,6 +21,7 @@ import {
   resolveAuthSessionCookieName,
 } from "@/lib/auth/session-runtime";
 import { buildTrustedErpRequestHeaders } from "@/lib/erp/local-page-lock-bypass";
+import { getMaintenanceState, isErpPath, isErpApiPath, maintenanceRetryAfter } from "@/lib/maintenance/schedule";
 
 const SESSION_COOKIE_NAMES = [
   "authjs.session-token",
@@ -64,8 +65,24 @@ async function readSessionToken(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isErpPage = pathname === "/erp" || pathname.startsWith("/erp/");
-  const isErpApi = pathname === "/api/erp" || pathname.startsWith("/api/erp/");
+  const isErpPage = isErpPath(pathname);
+  const isErpApi = isErpApiPath(pathname);
+  const maintenance = getMaintenanceState();
+  if ((isErpPage || isErpApi) && maintenance.phase === "active") {
+    const headers = {
+      "Cache-Control": "no-store, max-age=0",
+      "Retry-After": maintenanceRetryAfter(maintenance),
+    };
+    // 인증/역할/로컬 우회보다 먼저 검사한다. Server Action도 실행 전에 중단한다.
+    if (isErpPage && (request.method === "GET" || request.method === "HEAD")) {
+      return NextResponse.redirect(new URL("/maintenance", request.url), { status: 307, headers });
+    }
+    return NextResponse.json({
+      code: "ERP_MAINTENANCE",
+      error: "긴급 보안 점검으로 ERP 이용이 일시 중단되었습니다.",
+      endsAt: maintenance.endsAt,
+    }, { status: 503, headers });
+  }
   const hasSession = SESSION_COOKIE_NAMES.some(
     (name) => hasCookieOrChunk(request, name),
   );
