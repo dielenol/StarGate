@@ -146,7 +146,7 @@ test("점검이 실패하면 운영 알림을 critical 로 보낸다", async () 
   assert.match(alerts[0].context["프로필0"], /HTTP 403/);
 });
 
-test("정상일 때는 알리지 않고, 실패 후 복구되면 한 번만 알린다", async () => {
+test("기동 후 첫 정상은 한 번 알리고, 이후 정상일 때는 알리지 않으며, 실패 후 복구되면 한 번만 알린다", async () => {
   const alerts = [];
   const states = ["healthy", "down", "healthy", "healthy"];
   let index = 0;
@@ -181,7 +181,119 @@ test("정상일 때는 알리지 않고, 실패 후 복구되면 한 번만 알�
   await new Promise((resolve) => setTimeout(resolve, 90));
   stop();
 
-  assert.deepEqual(alerts, ["music-healthcheck", "music-healthcheck-recovered"]);
+  assert.deepEqual(alerts, [
+    "music-healthcheck-startup",
+    "music-healthcheck",
+    "music-healthcheck-recovered",
+  ]);
+});
+
+function report(state) {
+  return {
+    state,
+    videoUrl: VIDEO,
+    durationMs: 1,
+    profiles: [
+      {
+        profile: 0,
+        label: "primary",
+        playerClients: "visionos",
+        ok: state === "healthy",
+        qualityMode: null,
+        httpStatus: state === "healthy" ? 206 : 403,
+        failureStage: state === "healthy" ? null : "fetch",
+        detail: state === "healthy" ? null : "미디어 응답이 HTTP 403 입니다.",
+      },
+    ],
+  };
+}
+
+const quietAlerts = {
+  notify: async () => ({ suppressed: false, dm: "sent", channel: "sent" }),
+};
+
+test("결과가 나쁘면 기본 주기보다 짧은 간격으로 다시 점검한다", async () => {
+  let calls = 0;
+  const stop = startMusicHealthcheck({
+    videoUrl: VIDEO,
+    intervalMs: 60_000,
+    unhealthyIntervalMs: 5,
+    startDelayMs: 0,
+    operatorAlerts: quietAlerts,
+    describePotProvider: async () => "미설정",
+    probe: async () => {
+      calls += 1;
+      return report("down");
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  stop();
+  assert.ok(calls >= 3, `calls=${calls}`);
+});
+
+test("정상이면 기본 주기까지 다시 점검하지 않는다", async () => {
+  let calls = 0;
+  const stop = startMusicHealthcheck({
+    videoUrl: VIDEO,
+    intervalMs: 60_000,
+    unhealthyIntervalMs: 5,
+    startDelayMs: 0,
+    operatorAlerts: quietAlerts,
+    probe: async () => {
+      calls += 1;
+      return report("healthy");
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  stop();
+  assert.equal(calls, 1);
+});
+
+test("점검은 겹쳐 실행하지 않고, 중단하면 진행 중인 점검을 취소한다", async () => {
+  let running = 0;
+  let maxRunning = 0;
+  let lastSignal;
+  const stop = startMusicHealthcheck({
+    videoUrl: VIDEO,
+    intervalMs: 1,
+    unhealthyIntervalMs: 1,
+    startDelayMs: 0,
+    operatorAlerts: quietAlerts,
+    describePotProvider: async () => "미설정",
+    probe: async (_videoUrl, signal) => {
+      lastSignal = signal;
+      running += 1;
+      maxRunning = Math.max(maxRunning, running);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      running -= 1;
+      return report("down");
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  stop();
+  assert.equal(maxRunning, 1);
+  assert.equal(lastSignal.aborted, true);
+});
+
+test("실패 알림에는 POT provider 응답 여부와 다음 점검 시각을 싣는다", async () => {
+  const alerts = [];
+  const stop = startMusicHealthcheck({
+    videoUrl: VIDEO,
+    intervalMs: 86_400_000,
+    startDelayMs: 0,
+    operatorAlerts: {
+      notify: async (event) => {
+        alerts.push(event);
+        return { suppressed: false, dm: "sent", channel: "sent" };
+      },
+    },
+    describePotProvider: async () => "http://127.0.0.1:4416 · 응답 없음",
+    probe: async () => report("down"),
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  stop();
+  assert.equal(alerts[0].context.POT, "http://127.0.0.1:4416 · 응답 없음");
+  assert.equal(alerts[0].context.다음점검, "60분 뒤");
 });
 
 test("중단 이후에는 알림을 보내지 않는다", async () => {

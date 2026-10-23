@@ -1,14 +1,11 @@
 /**
  * 신규 trpg 세션 생성 알림 폴링 스케줄러
  *
- * 흐름:
- *   - `TRPG_POLLING_INTERVAL_MS` 주기로 `findUnnotifiedTrpgSessions(now)` 폴링.
- *   - 각 세션마다:
- *       1. `claimNotification` 으로 atomic 발송권 선점 (false 면 skip)
- *       2. `participantDiscordIds` 각각에 DM (실패 시 폴백 채널 멘션)
- *       3. 시도 결과를 `recordNotificationAttempt` 로 적재
- *       4. 전 발송 완료 후 `markNotificationSent`
- *   - 에러 가드: 한 세션 처리 실패가 다른 세션에 영향 없도록 try/catch.
+ * `TRPG_POLLING_INTERVAL_MS` 주기로 `findUnnotifiedTrpgSessions(now)` 를 폴링하고
+ * 공용 팩토리(`createNotificationScheduler`)로 발송한다. 종류별 규칙:
+ *   - 단일 회차(roundKey 없음) — 사용자별 중복 가드는 세션 단위.
+ *   - 수신자는 참가자에서 GM 을 제외한 목록.
+ *   - 세션 시작 시각이 이미 지났으면 DM 없이 완료 처리.
  *
  * @module scheduler/trpg-notification-checker
  */
@@ -16,129 +13,67 @@
 import {
   claimNotification,
   findUnnotifiedTrpgSessions,
-  hasDeliveredNotificationAttempt,
   markNotificationSent,
-  recordNotificationAttempt,
+  releaseNotificationClaim,
 } from "@stargate/shared-db";
 
 import type { Client } from "discord.js";
-import type { TrpgSession } from "@stargate/shared-db";
+
+import type { SchedulerStartOptions } from "./default-scheduler-deps.js";
+import type { NotificationSchedulerSpec } from "./notification-scheduler.js";
 
 import { config } from "../config.js";
-import { sendDmOrFallback } from "../utils/dm-with-fallback.js";
-import { buildTrpgSessionDmMessage } from "../utils/trpg-session-message.js";
+import { createDefaultSchedulerDeps } from "./default-scheduler-deps.js";
+import {
+  createNotificationScheduler,
+  hasSessionStarted,
+  recipientsWithoutGameMaster,
+} from "./notification-scheduler.js";
 
-/** lease 기간 — claim 후 발송 완료까지 5분 안에 끝낸다고 가정 */
-const LEASE_DURATION_MS = 5 * 60 * 1000;
+/** 생성 알림 스케줄러가 쓰는 DB 접근 — 테스트에서 가짜로 교체한다 */
+export interface CreationSchedulerDb {
+  find: typeof findUnnotifiedTrpgSessions;
+  claim: typeof claimNotification;
+  mark: typeof markNotificationSent;
+  release: typeof releaseNotificationClaim;
+}
 
-async function processSession(
-  client: Client,
-  session: TrpgSession,
-): Promise<void> {
-  const sessionId = session._id?.toString();
-  if (!sessionId) return;
+const DEFAULT_DB: CreationSchedulerDb = {
+  find: findUnnotifiedTrpgSessions,
+  claim: claimNotification,
+  mark: markNotificationSent,
+  release: releaseNotificationClaim,
+};
 
-  const leaseUntil = new Date(Date.now() + LEASE_DURATION_MS);
-  const claimed = await claimNotification(sessionId, leaseUntil);
-  if (!claimed) return;
-
-  const payload = buildTrpgSessionDmMessage({
-    kind: "creation",
-    session,
-    sessionId,
-    baseUrl: config.trpgWebBaseUrl,
-  });
-
-  for (const userId of session.participantDiscordIds) {
-    try {
-      const alreadyDelivered = await hasDeliveredNotificationAttempt({
-        sessionId,
-        discordUserId: userId,
-        kind: "creation",
-      });
-      if (alreadyDelivered) continue;
-
-      const result = await sendDmOrFallback(client, userId, payload, {
-        fallbackChannelId: config.trpgFallbackChannelId,
-        mentionUser: true,
-      });
-
-      await recordNotificationAttempt({
-        sessionId,
-        discordUserId: userId,
-        kind: "creation",
-        deliveryMethod: result.method,
-        error: result.error ?? null,
-      });
-
-      if (result.method === "failed") {
-        console.warn(
-          `[trpg-notification] 발송 실패 — session=${sessionId} user=${userId} error=${result.error}`,
-        );
-      }
-    } catch (err) {
-      // 개별 사용자 발송 중 unhandled — 로그만 남기고 다음 사용자 진행
-      console.error(
-        `[trpg-notification] 사용자 처리 예외 session=${sessionId} user=${userId}:`,
-        err,
-      );
-      try {
-        await recordNotificationAttempt({
-          sessionId,
-          discordUserId: userId,
-          kind: "creation",
-          deliveryMethod: "failed",
-          error: err instanceof Error ? err.message : String(err),
-        });
-      } catch (logErr) {
-        console.error("[trpg-notification] 로그 적재 실패:", logErr);
-      }
-    }
-  }
-
-  await markNotificationSent(sessionId);
+export function createCreationNotificationSpec(
+  db: Partial<CreationSchedulerDb> = {},
+): NotificationSchedulerSpec {
+  const d = { ...DEFAULT_DB, ...db };
+  return {
+    name: "creation",
+    logKind: "creation",
+    messageKind: "creation",
+    intervalMs: config.trpgPollingIntervalMs,
+    find: (now) => d.find(now),
+    claim: (sessionId, _session, leaseUntil) => d.claim(sessionId, leaseUntil),
+    mark: (sessionId) => d.mark(sessionId),
+    release: (sessionId, leaseUntil) => d.release(sessionId, leaseUntil),
+    roundKey: () => null,
+    recipients: (session) => recipientsWithoutGameMaster(session),
+    skipReason: (session, now) =>
+      hasSessionStarted(session, now) ? "세션 시작 시각 경과" : null,
+  };
 }
 
 /**
- * 폴링 스케줄러 시작. 반환되는 함수를 호출하면 인터벌이 정리된다.
- *
- * tick 재진입 가드: DB/네트워크 지연으로 tick 이 interval 보다 오래 걸리면
- * 동시 실행될 수 있다. tickInFlight 플래그로 직전 tick 미완료 시 skip.
+ * 폴링 스케줄러 시작. 반환되는 함수를 호출하면 인터벌이 정리되고 진행 중 tick 을 기다린다.
  */
-export function startTrpgNotificationChecker(client: Client): () => void {
-  const intervalMs = config.trpgPollingIntervalMs;
-
-  let tickInFlight = false;
-  const tick = async (): Promise<void> => {
-    if (tickInFlight) return;
-    tickInFlight = true;
-    try {
-      const now = new Date();
-      const sessions = await findUnnotifiedTrpgSessions(now);
-      for (const session of sessions) {
-        try {
-          await processSession(client, session);
-        } catch (err) {
-          console.error(
-            "[trpg-notification] 세션 처리 실패:",
-            session._id?.toString(),
-            err,
-          );
-        }
-      }
-    } catch (err) {
-      console.error("[trpg-notification] tick 실패:", err);
-    } finally {
-      tickInFlight = false;
-    }
-  };
-
-  // 즉시 한 번 실행 (기동 직후 미발송 세션 처리)
-  void tick();
-
-  const handle = setInterval(() => {
-    void tick();
-  }, intervalMs);
-
-  return () => clearInterval(handle);
+export function startTrpgNotificationChecker(
+  client: Client,
+  options: SchedulerStartOptions,
+): () => Promise<void> {
+  return createNotificationScheduler(
+    createCreationNotificationSpec(),
+    createDefaultSchedulerDeps(client, options),
+  ).start();
 }

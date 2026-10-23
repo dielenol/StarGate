@@ -8,7 +8,17 @@ const DEFAULT_ALERT_COOLDOWN_MS = 10 * 60_000;
 const MAX_DESCRIPTION_LENGTH = 1_500;
 const MAX_FIELD_VALUE_LENGTH = 1_024;
 
-export type OperatorAlertSeverity = "warning" | "critical";
+/** `info` 는 복구·정상 확인처럼 조치가 필요 없는 안내 */
+export type OperatorAlertSeverity = "info" | "warning" | "critical";
+
+const SEVERITY_STYLE: Record<
+  OperatorAlertSeverity,
+  { color: number; icon: string }
+> = {
+  info: { color: 0x57f287, icon: "✅" },
+  warning: { color: 0xfee75c, icon: "⚠️" },
+  critical: { color: 0xed4245, icon: "🚨" },
+};
 
 export interface OperatorAlertEvent {
   /** 같은 장애가 반복될 때 중복 전송을 막는 안정적인 식별자. */
@@ -87,15 +97,12 @@ export function sanitizeOperatorAlertValue(value: unknown): string {
 }
 
 export function buildOperatorAlertEmbed(event: OperatorAlertEvent): EmbedBuilder {
-  const severity = event.severity ?? "critical";
+  const style = SEVERITY_STYLE[event.severity ?? "critical"];
   const embed = new EmbedBuilder()
-    .setColor(severity === "critical" ? 0xed4245 : 0xfee75c)
+    .setColor(style.color)
     .setAuthor({ name: "다채봇 운영 알림" })
     .setTitle(
-      `${severity === "critical" ? "🚨" : "⚠️"} ${truncate(
-        sanitizeOperatorAlertValue(event.title),
-        240,
-      )}`,
+      `${style.icon} ${truncate(sanitizeOperatorAlertValue(event.title), 240)}`,
     )
     .setDescription(
       truncate(

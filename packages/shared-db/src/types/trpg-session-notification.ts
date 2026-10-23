@@ -14,10 +14,11 @@
 
 import type { ObjectId } from "mongodb";
 
-/** 알림 종류: 세션 생성 / 시작 24h 전 리마인드 / 세션 수정 / 세션 취소 */
+/** 알림 종류: 세션 생성 / 시작 24h 전 리마인드 / 시작 1h 전 리마인드 / 세션 수정 / 세션 취소 */
 export type TrpgNotificationKind =
   | "creation"
   | "reminder24h"
+  | "reminder1h"
   | "update"
   | "cancellation";
 
@@ -33,4 +34,12 @@ export interface TrpgSessionNotification {
   deliveryMethod: TrpgNotificationDeliveryMethod;
   attemptedAt: Date;
   error?: string | null;
+  /**
+   * 회차 키 — 같은 세션·종류라도 회차가 바뀌면(재일정, 재수정) 다시 발송해야 하므로
+   * 사용자별 중복 가드는 회차 단위로 판정한다.
+   *   - reminder24h / reminder1h: `"${date} ${startTime}"`
+   *   - update: `updateNotificationQueuedAt.toISOString()`
+   *   - creation / cancellation: 단일 회차라 null
+   */
+  roundKey?: string | null;
 }

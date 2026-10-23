@@ -4,8 +4,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "test": "pnpm build && node --test tests/*.test.mjs",
+    "build": "node ../scripts/clean-package-dist.mjs && tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm build && DOTENV_CONFIG_PATH=/dev/null node --test tests/*.test.mjs",
     "start": "node dist/index.js",
     "run": "pnpm build && pnpm start",
     "dev": "tsx src/index.ts"

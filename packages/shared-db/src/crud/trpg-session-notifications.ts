@@ -1,7 +1,7 @@
 /**
  * trpg_session_notifications CRUD 리포지토리
  *
- * 세션 생성 알림 / 24h 리마인드의 발송 시도 결과 로그.
+ * 세션 생성 알림 / 24h·1h 리마인드 / 수정 / 취소 의 발송 시도 결과 로그.
  * DM 성공 / fallback 채널 발송 / 완전 실패 를 운영 추적용으로 저장.
  *
  * 진입 시점 검증:
@@ -41,14 +41,21 @@ export async function recordNotificationAttempt(
     deliveryMethod: validated.deliveryMethod,
     attemptedAt: validated.attemptedAt ?? new Date(),
     error: validated.error ?? null,
+    roundKey: validated.roundKey ?? null,
   });
 }
 
-/** 같은 세션/종류/유저에 대해 이미 성공적으로 전달된 기록이 있는지 확인한다. */
+/**
+ * 같은 세션/종류/유저에 대해 이미 성공적으로 전달된 기록이 있는지 확인한다.
+ *
+ * `roundKey` 가 주어지면 정확히 같은 회차의 행만 인정한다 — 배포 전에 적재된
+ * 무키 행은 불일치로 보아, 이미 리마인드된 세션도 재일정 후 다시 받는다.
+ * `roundKey` 가 없으면(생성·취소) 회차와 무관하게 판정한다.
+ */
 export async function hasDeliveredNotificationAttempt(
   input: Pick<
     RecordTrpgNotificationInput,
-    "sessionId" | "discordUserId" | "kind"
+    "sessionId" | "discordUserId" | "kind" | "roundKey"
   >,
 ): Promise<boolean> {
   if (!ObjectId.isValid(input.sessionId)) return false;
@@ -60,6 +67,7 @@ export async function hasDeliveredNotificationAttempt(
     discordUserId: input.discordUserId,
     kind,
     deliveryMethod: { $in: ["dm", "fallback"] },
+    ...(input.roundKey != null ? { roundKey: input.roundKey } : {}),
   });
   return existing !== null;
 }

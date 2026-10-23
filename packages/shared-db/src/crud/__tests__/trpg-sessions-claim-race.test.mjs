@@ -3,9 +3,14 @@
  *
  * 시나리오:
  *   1. `claimNotification` 동시 호출 10회 — 정확히 1회만 true 반환.
- *   2. `claimReminder` 동시 호출 10회 — 정확히 1회만 true 반환.
- *   3. `updateTrpgSession` 의 date 변경과 다른 워커의 cancel 이 동시 — 둘 다 정합성 유지.
+ *   2. `claimCancellationNotification` 동시 10회 — 생성 DM 이 나간 뒤 취소한 세션만 대기열에 적재.
+ *   3. `claimReminder` 동시 호출 10회 — 정확히 1회만 true 반환.
  *   4. lease 만료 후 다시 claim 가능.
+ *   5. 재일정 후 리마인드 재 claim — 발송 중 재일정되면 mark 가 회차 불일치로 false.
+ *   6. 연속 2회 수정 — 첫 대기 시점 baseline 이 보존되고 변경 요약이 병합되며 회차는 재발급된다.
+ *   7. 생성 DM 전 수정·취소 — 대기열을 적재하지 않는다. 단 한 번이라도 선점된 세션은 적재하고,
+ *      생성 알림이 완료(notificationSentAt)되기 전에는 수정 알림 claim 이 실패한다.
+ *   8. `updateTrpgSession` 의 date 변경과 다른 워커의 cancel 이 동시 — 둘 다 정합성 유지.
  *
  * MONGODB_URI 가 없으면 skip.
  */
@@ -21,15 +26,19 @@ import {
   claimCancellationNotification,
   claimNotification,
   claimReminder,
+  claimUpdateNotification,
   createTrpgSession,
   ensureAllIndexes,
   findUnnotifiedCancelledTrpgSessions,
+  findUnnotifiedUpdatedTrpgSessions,
   findTrpgSessionById,
   getClient,
   initServerless,
   markCancellationNotificationSent,
   markNotificationSent,
   markReminderSent,
+  releaseNotificationClaim,
+  releaseReminderClaim,
   trpgSessionsCol,
   updateTrpgSession,
 } from "../../../dist/index.js";
@@ -60,6 +69,11 @@ const HAS_DB =
   process.env.MONGODB_URI.length > 0;
 const TEST_DB_NAME = "stargate_test_trpg_claim_race";
 const TEST_GUILD = "test-guild-trpg-claim";
+
+/** 리마인드 claim/mark 에 넘길 회차 스냅샷 */
+function reminderRound(session, slot = "24h") {
+  return { slot, date: session.date, startTime: session.startTime };
+}
 
 before(async () => {
   if (!HAS_DB) return;
@@ -107,7 +121,7 @@ test(
 );
 
 test(
-  "RACE: claimCancellationNotification 동시 10회 — 정확히 1회만 true",
+  "RACE: claimCancellationNotification 동시 10회 — 생성 DM 후 취소한 세션은 정확히 1회만 true",
   { skip: !HAS_DB && "MONGODB_URI 없음" },
   async () => {
     const sessionId = await createTrpgSession({
@@ -120,13 +134,16 @@ test(
       participantDiscordIds: ["p1", "p2"],
     });
 
+    // 생성 DM 이 먼저 나가야 취소 알림 대기열에 적재된다 (B5).
+    assert.equal(await markNotificationSent(sessionId), true);
+
     const cancelRes = await cancelTrpgSession(sessionId, "creator-cancel");
     assert.equal(cancelRes.kind, "cancelled");
 
     const pending = await findUnnotifiedCancelledTrpgSessions(new Date());
     assert.ok(
       pending.some((s) => String(s._id) === sessionId),
-      "취소된 세션은 취소 알림 후보로 조회되어야 함",
+      "생성 DM 후 취소된 세션은 취소 알림 후보로 조회되어야 함",
     );
 
     const leaseUntil = new Date(Date.now() + 5 * 60 * 1000);
@@ -143,7 +160,7 @@ test(
       `claimCancellationNotification 은 10회 중 정확히 1회만 true 여야 하지만 ${trueCount}회 true`,
     );
 
-    await markCancellationNotificationSent(sessionId);
+    assert.equal(await markCancellationNotificationSent(sessionId), true);
     const afterMark = await claimCancellationNotification(sessionId, leaseUntil);
     assert.equal(
       afterMark,
@@ -166,10 +183,15 @@ test(
       createdByUsername: "creator",
       participantDiscordIds: ["p1"],
     });
+    // 리마인드 선행조건: 생성 DM 이 먼저 나가야 claim 된다.
+    await markNotificationSent(sessionId);
+    const session = await findTrpgSessionById(sessionId);
 
     const leaseUntil = new Date(Date.now() + 5 * 60 * 1000);
     const results = await Promise.all(
-      Array.from({ length: 10 }, () => claimReminder(sessionId, leaseUntil)),
+      Array.from({ length: 10 }, () =>
+        claimReminder(sessionId, leaseUntil, reminderRound(session)),
+      ),
     );
 
     const trueCount = results.filter((v) => v === true).length;
@@ -236,6 +258,242 @@ test(
       second,
       true,
       "lease 만료 후에는 다른 워커가 claim 가능해야 함",
+    );
+  },
+);
+
+test(
+  "ROUND: 재일정 후 리마인드 재 claim — 발송 중 재일정되면 mark 회차 불일치",
+  { skip: !HAS_DB && "MONGODB_URI 없음" },
+  async () => {
+    const sessionId = await createTrpgSession({
+      guildId: TEST_GUILD,
+      title: "reschedule reminder",
+      date: "2026-06-08",
+      startTime: "20:00",
+      createdByDiscordId: "creator-reschedule",
+      createdByUsername: "creator",
+      participantDiscordIds: ["p1"],
+    });
+    await markNotificationSent(sessionId);
+    const original = await findTrpgSessionById(sessionId);
+    const oldRound = reminderRound(original);
+
+    // 워커 A 가 옛 회차를 선점한 채 발송 중 … 그 사이 GM 이 재일정.
+    const leaseUntil = new Date(Date.now() + 5 * 60 * 1000);
+    assert.equal(await claimReminder(sessionId, leaseUntil, oldRound), true);
+    const updateRes = await updateTrpgSession(sessionId, "creator-reschedule", {
+      startTime: "21:00",
+    });
+    assert.equal(updateRes.kind, "updated");
+    assert.equal(
+      updateRes.session.reminderClaimLeaseUntil?.getTime(),
+      leaseUntil.getTime(),
+      "활성 lease 는 updateTrpgSession 이 지우지 않는다",
+    );
+    assert.equal(updateRes.session.reminderSentAt, null);
+
+    // 옛 회차로 mark → 불일치 → false. 워커는 자기 lease 만 해제한다.
+    assert.equal(await markReminderSent(sessionId, oldRound), false);
+    await releaseReminderClaim(sessionId, leaseUntil, "24h");
+
+    const after = await findTrpgSessionById(sessionId);
+    assert.equal(after.reminderSentAt, null, "옛 회차 mark 는 발송 완료로 남지 않는다");
+    assert.equal(after.reminderClaimLeaseUntil, null, "release 로 lease 가 풀린다");
+
+    // 옛 회차로는 더 이상 claim 되지 않고 새 회차로만 claim 된다.
+    const nextLease = new Date(Date.now() + 5 * 60 * 1000);
+    assert.equal(await claimReminder(sessionId, nextLease, oldRound), false);
+    assert.equal(await claimReminder(sessionId, nextLease, reminderRound(after)), true);
+    assert.equal(await markReminderSent(sessionId, reminderRound(after)), true);
+    const done = await findTrpgSessionById(sessionId);
+    assert.ok(done.reminderSentAt instanceof Date);
+    assert.equal(done.reminderClaimLeaseUntil, null);
+  },
+);
+
+test(
+  "MERGE: 연속 2회 수정 — 첫 대기 시점 baseline 보존, 변경 요약 병합",
+  { skip: !HAS_DB && "MONGODB_URI 없음" },
+  async () => {
+    const sessionId = await createTrpgSession({
+      guildId: TEST_GUILD,
+      title: "merge A",
+      date: "2026-06-09",
+      startTime: "20:00",
+      createdByDiscordId: "creator-merge",
+      createdByUsername: "creator",
+      participantDiscordIds: ["creator-merge", "p1"],
+    });
+    await markNotificationSent(sessionId);
+
+    const first = await updateTrpgSession(sessionId, "creator-merge", {
+      title: "merge B",
+    });
+    assert.equal(first.kind, "updated");
+    const queuedAt = first.session.updateNotificationQueuedAt;
+    assert.ok(queuedAt instanceof Date);
+    assert.deepEqual(first.session.updateNotificationBaseline, {
+      title: "merge A",
+      date: "2026-06-09",
+      startTime: "20:00",
+      participantDiscordIds: ["creator-merge", "p1"],
+    });
+
+    const second = await updateTrpgSession(sessionId, "creator-merge", {
+      title: "merge C",
+      participantDiscordIds: ["creator-merge", "p2"],
+    });
+    assert.equal(second.kind, "updated");
+    assert.ok(
+      second.session.updateNotificationQueuedAt instanceof Date &&
+        second.session.updateNotificationQueuedAt.getTime() > queuedAt.getTime(),
+      "대기 중 수정은 회차(queuedAt)를 새로 발급한다 — 부분 수신자도 누적 요약을 다시 받는다",
+    );
+    assert.equal(second.session.updateNotificationSentAt, null);
+    assert.deepEqual(
+      second.session.updateNotificationBaseline,
+      first.session.updateNotificationBaseline,
+      "baseline 은 첫 대기 시점 그대로",
+    );
+    assert.deepEqual(second.session.updateNotificationChanges, [
+      "세션 제목 변경: merge A → merge C",
+      "참가 대상 변경: 추가 1명, 제외 1명",
+    ]);
+    assert.deepEqual(
+      [...second.session.updateNotificationRecipientDiscordIds].sort(),
+      ["creator-merge", "p1", "p2"],
+    );
+
+    const pending = await findUnnotifiedUpdatedTrpgSessions(new Date());
+    assert.equal(
+      pending.filter((s) => String(s._id) === sessionId).length,
+      1,
+      "대기열에는 한 회차만 남는다",
+    );
+
+    // 되돌리면 대기 해제.
+    const revert = await updateTrpgSession(sessionId, "creator-merge", {
+      title: "merge A",
+      participantDiscordIds: ["creator-merge", "p1"],
+    });
+    assert.equal(revert.kind, "updated");
+    assert.equal(revert.session.updateNotificationQueuedAt, null);
+    assert.equal(revert.session.updateNotificationBaseline, null);
+    assert.equal(revert.session.updateNotificationChanges, null);
+  },
+);
+
+test(
+  "B5: 생성 DM 전 수정·취소 — 대기열을 적재하지 않는다",
+  { skip: !HAS_DB && "MONGODB_URI 없음" },
+  async () => {
+    const sessionId = await createTrpgSession({
+      guildId: TEST_GUILD,
+      title: "before creation dm",
+      date: "2026-06-10",
+      startTime: "20:00",
+      createdByDiscordId: "creator-b5",
+      createdByUsername: "creator",
+      participantDiscordIds: ["p1"],
+    });
+
+    const updated = await updateTrpgSession(sessionId, "creator-b5", {
+      title: "edited before dm",
+    });
+    assert.equal(updated.kind, "updated");
+    assert.equal(updated.session.title, "edited before dm");
+    assert.equal(
+      updated.session.updateNotificationQueuedAt,
+      null,
+      "생성 DM 전 수정은 수정 알림을 쌓지 않는다",
+    );
+
+    const cancelled = await cancelTrpgSession(sessionId, "creator-b5");
+    assert.equal(cancelled.kind, "cancelled");
+    const after = await findTrpgSessionById(sessionId);
+    assert.equal(after.status, "cancelled");
+    assert.equal(
+      after.cancellationNotificationQueuedAt,
+      null,
+      "생성 DM 전 취소는 취소 알림을 쌓지 않는다",
+    );
+    const pending = await findUnnotifiedCancelledTrpgSessions(new Date());
+    assert.ok(!pending.some((s) => String(s._id) === sessionId));
+
+    // 반대로 생성 lease 가 활성(발송 중)이면 수정 알림을 쌓는다.
+    const inFlightId = await createTrpgSession({
+      guildId: TEST_GUILD,
+      title: "creation in flight",
+      date: "2026-06-10",
+      startTime: "21:00",
+      createdByDiscordId: "creator-b5",
+      createdByUsername: "creator",
+      participantDiscordIds: ["p1"],
+    });
+    const creationLease = new Date(Date.now() + 5 * 60 * 1000);
+    assert.equal(await claimNotification(inFlightId, creationLease), true);
+    const queued = await updateTrpgSession(inFlightId, "creator-b5", {
+      title: "edited while sending",
+    });
+    assert.equal(queued.kind, "updated");
+    const queuedAt = queued.session.updateNotificationQueuedAt;
+    assert.ok(queuedAt instanceof Date);
+
+    // 생성 알림이 완료되기 전에는 수정 알림을 claim 하지 않는다 (수정 DM 이 생성 DM 보다 먼저 가지 않게).
+    assert.equal(
+      await claimUpdateNotification(
+        inFlightId,
+        new Date(Date.now() + 5 * 60 * 1000),
+        queuedAt,
+      ),
+      false,
+      "생성 알림 발송 중에는 수정 알림을 선점하지 않는다",
+    );
+
+    // 일부만 보낸 뒤 종료 → lease 해제(mark 없음). 선점 흔적(notificationClaimedAt)이 남아
+    // "안내받은 세션" 으로 판정되므로 후속 수정·취소 대기열을 쌓는다.
+    await releaseNotificationClaim(inFlightId, creationLease);
+    const aborted = await findTrpgSessionById(inFlightId);
+    assert.equal(aborted.notificationSentAt, null);
+    assert.equal(aborted.notificationClaimLeaseUntil, null);
+    assert.ok(aborted.notificationClaimedAt instanceof Date, "release 는 선점 흔적을 지우지 않는다");
+
+    const afterAbort = await updateTrpgSession(inFlightId, "creator-b5", {
+      date: "2026-06-11",
+    });
+    assert.equal(afterAbort.kind, "updated");
+    assert.ok(
+      afterAbort.session.updateNotificationQueuedAt instanceof Date &&
+        afterAbort.session.updateNotificationQueuedAt.getTime() > queuedAt.getTime(),
+      "부분 발송 뒤 수정은 새 회차로 대기열에 남는다",
+    );
+    assert.equal(
+      await claimUpdateNotification(
+        inFlightId,
+        new Date(Date.now() + 5 * 60 * 1000),
+        afterAbort.session.updateNotificationQueuedAt,
+      ),
+      false,
+      "생성 lease 가 풀려도 생성 알림이 완료(notificationSentAt)되기 전에는 선점하지 않는다",
+    );
+    assert.equal(await markNotificationSent(inFlightId), true);
+    assert.equal(
+      await claimUpdateNotification(
+        inFlightId,
+        new Date(Date.now() + 5 * 60 * 1000),
+        afterAbort.session.updateNotificationQueuedAt,
+      ),
+      true,
+      "생성 알림 완료 뒤에는 수정 알림을 선점할 수 있다",
+    );
+
+    const cancelledAfterAbort = await cancelTrpgSession(inFlightId, "creator-b5");
+    assert.equal(cancelledAfterAbort.kind, "cancelled");
+    const finalDoc = await findTrpgSessionById(inFlightId);
+    assert.ok(
+      finalDoc.cancellationNotificationQueuedAt instanceof Date,
+      "부분 발송 뒤 취소는 취소 알림을 쌓는다",
     );
   },
 );

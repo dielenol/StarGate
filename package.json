@@ -12,6 +12,7 @@
     "build:registra-bot": "pnpm --filter registrar-bot build",
     "test:registra-bot": "pnpm --filter registrar-bot test",
     "build:trpg-bot": "pnpm --filter trpg-discord-bot build",
+    "test:trpg-bot": "pnpm --filter @stargate/shared-db test:trpg && pnpm --filter trpg-discord-bot test",
     "build:bots": "pnpm --filter registrar-bot build && pnpm --filter trpg-discord-bot build"
   },
   "devDependencies": {
