@@ -1,0 +1,73 @@
+.log {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 22px 22px 20px;
+  border: 1px solid #ffffff14;
+  background: linear-gradient(180deg, #111014e6, #0a0a0ce6);
+}
+
+.log__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.log__title { margin: 0; font-size: 15px; font-weight: 700; }
+.log__title span { display: block; margin-bottom: 6px; color: var(--gold); font: 500 11px var(--font-mono); letter-spacing: .2em; }
+.log__rec { display: flex; align-items: center; gap: 7px; color: var(--breach); font: 500 11px var(--font-mono); letter-spacing: .16em; }
+.log__rec i { width: 7px; height: 7px; border-radius: 50%; background: var(--breach); box-shadow: 0 0 10px var(--breach); animation: log-blink 1.2s steps(1) infinite; }
+
+.log__lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  height: 336px;
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  overflow: hidden;
+  border: 1px solid #ffffff0d;
+  background: #040405;
+  font: 12px/1.65 var(--font-mono);
+  list-style: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 32%);
+  mask-image: linear-gradient(transparent, #000 32%);
+}
+
+.log__line { display: grid; grid-template-columns: auto 9.5ch minmax(0, 1fr); gap: 12px; color: var(--ink-1); animation: log-in 260ms ease-out; }
+.log__line time { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.log__tag { color: var(--ink-2); }
+.log__tag::before { content: "["; }
+.log__tag::after { content: "]"; }
+.log__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.log__line--alert .log__tag,
+.log__line--alert .log__text { color: #ff8476; }
+.log__line--warn .log__tag,
+.log__line--warn .log__text { color: var(--amber); }
+.log__line--ok .log__tag,
+.log__line--ok .log__text { color: var(--gold); }
+.log__line--threat { margin-inline: -8px; padding-inline: 8px; background: #ff4d3d1c; box-shadow: inset 2px 0 var(--breach); }
+.log__line--threat .log__tag,
+.log__line--threat .log__text { color: #ff6b5c; }
+.log__line--latest .log__text { animation: log-type 700ms steps(24) both; }
+
+.log__prompt { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--gold); }
+.log__prompt i { width: 8px; height: 15px; background: var(--gold); animation: log-blink 1s steps(1) infinite; }
+
+@keyframes log-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+@keyframes log-type {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0); }
+}
+
+@keyframes log-blink {
+  50% { opacity: 0; }
+}
+
+@media (max-width: 560px) {
+  .log { padding: 18px 16px; }
+  .log__lines { height: 300px; padding: 12px; font-size: 11px; }
+  .log__line { grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; }
+  .log__tag { display: none; }
+}

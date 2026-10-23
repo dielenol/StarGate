@@ -1,13 +1,24 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
-import { IconCaution, IconRecovery, IconSecurity } from "@/components/icons";
 import { resolvePublicAssetPath } from "@/lib/asset-path";
+import {
+  RECOVERY_STAGES,
+  formatKstClock,
+  incidentCode,
+  recoveryProgress,
+  recoveryStageIndex,
+} from "@/lib/maintenance/recovery";
 
 import type { MaintenanceState } from "@/lib/maintenance/schedule";
+
+import CorruptedEmblem from "./CorruptedEmblem";
+import GlitchText from "./GlitchText";
+import IncidentBulletin from "./IncidentBulletin";
+import RecoveryLog from "./RecoveryLog";
+import SectorMatrix from "./SectorMatrix";
 
 import styles from "./MaintenanceNotice.module.css";
 
@@ -26,6 +37,10 @@ const KST_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   minute: "2-digit",
   hour12: false,
 });
+
+const METER_SEGMENTS = 40;
+const TICKER_COPIES = [0, 1, 2, 3];
+const STAGE_STATE_LABELS = { done: "완료", active: "진행 중", pending: "대기" } as const;
 
 function formatCountdown(milliseconds: number) {
   const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1_000));
@@ -120,92 +135,149 @@ export default function MaintenanceNotice({
     };
   }, [startsAt, endsAt, serverNow, preview]);
 
+  // 복구율과 화면 손상도는 서버 기준 현재 시각에서 결정론적으로 계산한다.
+  const now = Date.parse(displayWindow.endsAt) - remaining;
+  const progress = recoveryProgress(displayWindow.startsAt, displayWindow.endsAt, now);
+  const stageIndex = recoveryStageIndex(progress);
+  const stage = RECOVERY_STAGES[stageIndex];
+  const corruption = 1 - progress;
+  const percent = Math.floor(progress * 1_000) / 10;
+  const filledSegments = Math.floor(progress * METER_SEGMENTS);
+  const incident = incidentCode(displayWindow.startsAt);
+  const startedAt = KST_FORMATTER.format(new Date(displayWindow.startsAt));
+  const resumesAt = KST_FORMATTER.format(new Date(displayWindow.endsAt));
+  const atmosphere = {
+    "--corruption": corruption.toFixed(3),
+    "--emblem": `url("${resolvePublicAssetPath("/assets/StarGate_logo_watermark.webp")}")`,
+  } as CSSProperties;
+
   return (
-    <main className={styles.notice} aria-labelledby="maintenance-title">
-      <div className={styles.notice__masthead}>
-        <div className={styles.notice__brand}>
-          <Image
-            src={resolvePublicAssetPath("/assets/StarGate_logo.webp")}
-            alt=""
-            width={42}
-            height={42}
-            priority
-          />
-          <div><strong>NOVUS ORDO</strong><span>정보보안 통제실</span></div>
-        </div>
-        <p className={styles.notice__classification}>SECURITY DIRECTIVE<span>긴급 통제 공지</span></p>
-      </div>
-
-      <article className={styles.notice__document}>
-        <div className={styles.notice__alert}>
-          <span><IconCaution aria-hidden />긴급 보안 통제 발령</span>
-          <span className={styles.notice__alertCode}>EMERGENCY LOCKDOWN</span>
-        </div>
-
-        <header className={styles.notice__header}>
-          <div className={styles.notice__intro}>
-            <p className={styles.notice__eyebrow}>UNAUTHORIZED ACCESS DETECTED</p>
-            <h1 id="maintenance-title">내부 업무망<span>긴급 봉쇄</span></h1>
-            <p className={styles.notice__lead}>비인가 접근 징후가 감지되어<br />ERP의 모든 업무 기능을 즉시 중지했습니다.</p>
-            <p className={styles.notice__description}>추가 침입과 기록 훼손을 방지하기 위해 접속 경로를 격리했습니다. 현재 기록 무결성 확인 및 접근 권한 재검증을 진행하고 있습니다.</p>
-          </div>
-          <div className={styles.notice__seal}>
-            <span className={styles.notice__sealLabel}>RESTRICTED NETWORK</span>
-            <div className={styles.notice__sealIcon} aria-hidden="true"><IconSecurity /></div>
-            <strong>ACCESS DENIED</strong>
-            <p>ERP 접근 전면 차단</p>
-            <span className={styles.notice__sealCaption}>조회 · 기록 · 업무 처리 중지</span>
-          </div>
-        </header>
-
-        <section className={styles.notice__response} aria-label="보안 대응 현황">
-          <div className={styles.notice__responseItem}>
-            <span className={styles.notice__step} aria-hidden="true">01</span>
-            <div><span className={styles.notice__state}>차단 적용</span><h2>업무망 긴급 격리</h2></div>
-            <span className={styles.notice__statusDot} aria-hidden="true" />
-          </div>
-          <div className={styles.notice__responseItem}>
-            <span className={styles.notice__step} aria-hidden="true">02</span>
-            <div><span className={styles.notice__state}>확인 중</span><h2>기록 무결성 검사</h2></div>
-            <span className={styles.notice__statusDot} aria-hidden="true" />
-          </div>
-          <div className={styles.notice__responseItem}>
-            <span className={styles.notice__step} aria-hidden="true">03</span>
-            <div><span className={styles.notice__state}>재검증 중</span><h2>접근 권한 재검증</h2></div>
-            <span className={styles.notice__statusDot} aria-hidden="true" />
-          </div>
-        </section>
-
-        <div className={styles.notice__body}>
-          <section className={styles.notice__scope} aria-labelledby="maintenance-scope">
-            <h2 id="maintenance-scope" className={styles.notice__sectionTitle}>통제 범위 및 점검 일정</h2>
-            <dl className={styles.notice__details}>
-              <div><dt>차단 범위</dt><dd>ERP 전체 서비스<span className={styles.notice__tag}>접속 불가</span></dd></div>
-              <div><dt>통제 시작</dt><dd><time dateTime={displayWindow.startsAt}>{KST_FORMATTER.format(new Date(displayWindow.startsAt))}</time><small>KST</small></dd></div>
-              <div><dt>재개 예정</dt><dd><time dateTime={displayWindow.endsAt}>{KST_FORMATTER.format(new Date(displayWindow.endsAt))}</time><small>KST</small></dd></div>
-            </dl>
-          </section>
-          <section className={styles.notice__recovery} aria-label="점검 종료까지 남은 시간">
-            <div className={styles.notice__countdown}>
-              <p><IconRecovery aria-hidden />업무망 자동 재개까지</p>
-              <strong>{formatCountdown(remaining)}</strong>
-              <span className={styles.notice__timeUnit} aria-hidden="true">HOURS : MINUTES : SECONDS</span>
+    <main
+      className={[styles.notice, styles[`notice--${stage.code.toLowerCase()}`]].filter(Boolean).join(" ")}
+      style={atmosphere}
+      aria-labelledby="maintenance-title"
+    >
+      <div className={styles.notice__fx} aria-hidden="true" />
+      <div className={styles.notice__screen}>
+        <div className={styles.notice__frame}>
+          <header className={styles.notice__masthead}>
+            <div className={styles.notice__brand}>
+              <CorruptedEmblem className={styles.notice__logo} />
+              <div><strong>NOVUS ORDO</strong><span className={styles.notice__brandSub}>보안관제센터 · 사고 대응</span></div>
             </div>
-            <p className={styles.notice__resume}>점검 종료 시 업무망이 자동으로 재개됩니다.</p>
-            <a className={styles.notice__retry} href="/erp">접속 상태 다시 확인<span aria-hidden="true">↗</span></a>
-          </section>
-        </div>
+            <p className={styles.notice__live}>
+              <span className={styles.notice__liveBadge}><i aria-hidden="true" />LIVE</span>
+              <span className={styles.notice__incident}>{incident}</span>
+              <span className={styles.notice__threat}>SEV-1 · CRITICAL</span>
+            </p>
+          </header>
 
-        <aside className={styles.notice__warning} aria-label="보안 유의사항">
-          <IconCaution aria-hidden />
-          <p><strong>비공식 복구 요청에 응하지 마십시오.</strong> 출처가 확인되지 않은 접속 링크와 인증 정보 요청은 즉시 무시하십시오.</p>
-        </aside>
-        <footer className={styles.notice__footer}>
-          <p>NOVUS ORDO <span>정보보안 통제실</span></p>
-          <p>업무망 격리 · 보안 점검 진행 중</p>
-        </footer>
-      </article>
-      <Link className={styles.notice__archiveLink} href="/">공식 공개 아카이브로 이동<span aria-hidden="true">↗</span></Link>
+          <div className={styles.notice__ticker} aria-hidden="true">
+            <div className={styles.notice__tickerTrack}>
+              {TICKER_COPIES.map((copy) => (
+                <span key={copy}>
+                  {stage.ticker.map((item) => <span key={item}>{item}</span>)}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <section className={styles.notice__hero}>
+            <CorruptedEmblem className={styles.notice__watermark} />
+            <div>
+              <p className={styles.notice__eyebrow}>
+                <i aria-hidden="true" />SYSTEM BREACH DETECTED · {formatKstClock(Date.parse(displayWindow.startsAt))} KST
+              </p>
+              <h1 id="maintenance-title" className={styles.notice__title}>
+                <span className={styles.notice__srOnly}>내부망 침해, 복구 진행 중</span>
+                <GlitchText text="내부망 침해" intensity={corruption} className={styles.notice__titleBreach} />
+                <span className={styles.notice__titleRecover} aria-hidden="true">
+                  복구 진행 중<i className={styles.notice__cursor} />
+                </span>
+              </h1>
+              <p className={styles.notice__lead}>
+                {startedAt}, 내부 업무망(ERP)에서 <strong>탈취된 관리자 계정</strong>을 이용한 비인가 접근이 확인되었습니다.
+                보안관제센터는 즉시 전 구역을 격리하고 복구 절차에 착수했습니다.
+              </p>
+              <dl className={styles.notice__facts}>
+                <div><dt>최초 탐지</dt><dd><time dateTime={displayWindow.startsAt}>{startedAt}</time></dd></div>
+                <div><dt>침입 경로</dt><dd className={styles.notice__pending}>분석 중</dd></div>
+                <div><dt>피해 범위</dt><dd>ERP 전 구역</dd></div>
+                <div><dt>재개 예정</dt><dd><time dateTime={displayWindow.endsAt}>{resumesAt}</time></dd></div>
+              </dl>
+            </div>
+
+            <section className={styles.notice__status} aria-labelledby="recovery-status-title">
+              <div className={styles.notice__statusHead}>
+                <h2 id="recovery-status-title">RECOVERY STATUS</h2>
+                <span>STAGE {String(stageIndex + 1).padStart(2, "0")} / {String(RECOVERY_STAGES.length).padStart(2, "0")}</span>
+              </div>
+              <div className={styles.notice__statusBody}>
+                <div>
+                  <p className={styles.notice__percent}>
+                    <strong>{percent.toFixed(1).padStart(4, "0")}<small>%</small></strong>
+                    <span>전체 복구율 · {stage.label}</span>
+                  </p>
+                  <div
+                    className={styles.notice__meter}
+                    role="progressbar"
+                    aria-label="전체 복구율"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={percent}
+                  >
+                    {Array.from({ length: METER_SEGMENTS }, (_, index) => {
+                      const state = index < filledSegments ? "filled" : index === filledSegments ? "active" : "empty";
+                      return <i key={index} className={styles[`notice__meterCell--${state}`]} />;
+                    })}
+                  </div>
+                  <ol className={styles.notice__stages}>
+                    {RECOVERY_STAGES.map((item, index) => {
+                      const state = index < stageIndex ? "done" : index === stageIndex ? "active" : "pending";
+                      return (
+                        <li key={item.code} className={[styles.notice__stage, styles[`notice__stage--${state}`]].filter(Boolean).join(" ")}>
+                          <span>{String(index + 1).padStart(2, "0")}</span>{" "}
+                          {item.label}{" "}
+                          <em>{STAGE_STATE_LABELS[state]}</em>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+                <div>
+                  <div className={styles.notice__countdown}>
+                    <p>업무망 자동 재개까지</p>
+                    <strong>{formatCountdown(remaining)}</strong>
+                    <span aria-hidden="true">HOURS : MINUTES : SECONDS</span>
+                  </div>
+                  <a className={styles.notice__retry} href="/erp">접속 상태 다시 확인<span aria-hidden="true">↗</span></a>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <div className={styles.notice__ops}>
+            <SectorMatrix progress={progress} />
+            <RecoveryLog startsAt={displayWindow.startsAt} endsAt={displayWindow.endsAt} now={now} />
+          </div>
+
+          <div className={styles.notice__section}>
+            <IncidentBulletin startsAt={displayWindow.startsAt} endsAt={displayWindow.endsAt} now={now} />
+          </div>
+
+          <footer className={styles.notice__footer}>
+            <div className={styles.notice__footerMeta}>
+              <p>NOVUS ORDO 보안관제센터<span>{incident} · 대응 종료 시 업무망 자동 재개</span></p>
+              <Link className={styles.notice__archiveLink} href="/">공식 공개 아카이브로 이동<span aria-hidden="true">↗</span></Link>
+            </div>
+          </footer>
+        </div>
+      </div>
+      {preview && (
+        <p className={styles.notice__preview}>
+          PREVIEW · 시작 +{Math.floor((now - Date.parse(displayWindow.startsAt)) / 60_000)}분
+        </p>
+      )}
     </main>
   );
 }
