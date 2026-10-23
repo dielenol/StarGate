@@ -8,6 +8,7 @@ import {
 } from "@discordjs/voice";
 import { Collection } from "discord.js";
 
+import { MusicPanelError } from "../dist/music/music-panel.js";
 import {
   GuildMusicSession,
   MusicService,
@@ -910,4 +911,303 @@ test("예약 슬롯은 해석 완료 전에도 100곡 대기열 상한을 지킨
       error instanceof MusicUserError && /취소되었습니다/.test(error.message),
   );
   await service.destroyAll();
+});
+
+function deferredResource() {
+  let resolve;
+  let reject;
+  const promise = new Promise((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+}
+
+test("곡을 준비하는 중 일시정지하면 재생이 시작되는 즉시 멈춘다", async () => {
+  const pending = deferredResource();
+  const { session, player } = createSession({
+    createAudioResource: () => pending.promise,
+  });
+  session.enqueue(track(1));
+  await waitFor(() => session.snapshot().current !== null, "준비가 시작되지 않았습니다.");
+
+  assert.equal(session.pause(), "pending");
+  assert.equal(session.snapshot().paused, true);
+
+  pending.resolve(managedResource(track(1)));
+  await waitFor(
+    () => player.state.status === AudioPlayerStatus.Paused,
+    "재생 시작 직후 일시정지되지 않았습니다.",
+  );
+  assert.equal(session.snapshot().paused, true);
+  session.disconnect();
+});
+
+test("준비 중 남긴 일시정지는 재개하면 취소된다", async () => {
+  const pending = deferredResource();
+  const { session, player } = createSession({
+    createAudioResource: () => pending.promise,
+  });
+  session.enqueue(track(1));
+  await waitFor(() => session.snapshot().current !== null, "준비가 시작되지 않았습니다.");
+  assert.equal(session.pause(), "pending");
+  assert.equal(session.resume(), true);
+
+  pending.resolve(managedResource(track(1)));
+  await waitFor(
+    () => player.state.status === AudioPlayerStatus.Playing,
+    "재생이 시작되지 않았습니다.",
+  );
+  assert.equal(session.snapshot().paused, false);
+  assert.equal(session.pause(), "paused");
+  session.disconnect();
+});
+
+test("준비 중 일시정지한 곡이 준비에 실패하고 대기열이 비면 일시정지 예약을 버린다", async () => {
+  const pending = deferredResource();
+  let calls = 0;
+  const { session, player } = createSession({
+    createAudioResource: async (item) => {
+      calls += 1;
+      if (calls === 1) return pending.promise;
+      return managedResource(item);
+    },
+  });
+  session.enqueue(track(1));
+  await waitFor(() => session.snapshot().current !== null, "준비가 시작되지 않았습니다.");
+  assert.equal(session.pause(), "pending");
+  assert.equal(session.snapshot().paused, true);
+
+  // 준비 실패 → 대기열 빔 → 예약된 일시정지는 이어받을 곡이 없다.
+  pending.reject(new Error("스트림 준비 실패"));
+  await waitFor(
+    () => session.snapshot().current === null && session.snapshot().paused === false,
+    "대기열이 비었는데도 일시정지 예약이 남아 있습니다.",
+  );
+
+  // 다음 요청곡은 멈추지 않고 시작한다.
+  session.enqueue(track(2));
+  await waitFor(() => player.played.length === 1, "다음 곡이 시작되지 않았습니다.");
+  assert.equal(player.state.status, AudioPlayerStatus.Playing);
+  assert.equal(session.snapshot().paused, false);
+  session.disconnect();
+});
+
+test("재생 중인 곡이 없으면 일시정지할 대상이 없다고 알린다", () => {
+  const { session } = createSession();
+  assert.equal(session.pause(), "none");
+  session.disconnect();
+});
+
+test("일시정지 중 음량을 바꿔 다시 연 곡도 멈춘 상태로 이어진다", async () => {
+  const { session, player } = createSession();
+  session.enqueue(track(1));
+  await waitFor(() => player.played.length === 1, "재생이 시작되지 않았습니다.");
+  assert.equal(session.pause(), "paused");
+
+  const change = session.setVolume(50);
+  assert.equal(change.appliedToCurrentTrack, true);
+  assert.equal(change.keptPaused, true);
+  await waitFor(() => player.played.length === 2, "곡을 다시 열지 않았습니다.");
+  await waitFor(
+    () => player.state.status === AudioPlayerStatus.Paused,
+    "다시 연 곡이 일시정지 상태로 이어지지 않았습니다.",
+  );
+  session.disconnect();
+});
+
+test("셔플은 현재 곡을 빼고 예약곡 순서만 섞는다", async () => {
+  const { session, player } = createSession();
+  session.enqueue(track(1));
+  session.enqueueMany([track(2), track(3), track(4)]);
+  await waitFor(() => player.played.length === 1, "재생이 시작되지 않았습니다.");
+
+  // 항상 0을 내는 난수 → Fisher–Yates 가 매번 첫 칸과 바꾼다: [2,3,4] → [3,4,2]
+  assert.equal(session.shuffle(() => 0), 3);
+  const snapshot = session.snapshot();
+  assert.equal(snapshot.current?.videoId, "video-1");
+  assert.deepEqual(
+    snapshot.upcoming.map((item) => item.videoId),
+    ["video-3", "video-4", "video-2"],
+  );
+  session.disconnect();
+});
+
+test("셔플은 예약곡이 2곡 미만이면 거부한다", async () => {
+  const { session } = createSession();
+  session.enqueue(track(1));
+  session.enqueue(track(2));
+  await waitFor(() => session.snapshot().current !== null, "재생이 시작되지 않았습니다.");
+  assert.throws(() => session.shuffle(), MusicUserError);
+  session.disconnect();
+});
+
+test("번호 삭제는 대기열에 보이는 번호의 예약곡을 빼고 범위 밖이면 거부한다", async () => {
+  const { session, player } = createSession();
+  session.enqueue(track(1));
+  session.enqueueMany([track(2), track(3)]);
+  await waitFor(() => player.played.length === 1, "재생이 시작되지 않았습니다.");
+
+  assert.equal(session.removeAt(2).videoId, "video-3");
+  assert.deepEqual(
+    session.snapshot().upcoming.map((item) => item.videoId),
+    ["video-2"],
+  );
+  assert.throws(() => session.removeAt(2), /1-1 사이/);
+  assert.throws(() => session.removeAt(0), MusicUserError);
+  session.disconnect();
+});
+
+function serviceWithSessions({
+  connectSession,
+  inspectRuntime,
+  panel,
+  now,
+  onRuntimeReady,
+  resolveTrack,
+} = {}) {
+  const sessions = [];
+  const connections = [];
+  const service = new MusicService({}, "guild-id", "music-channel-id", {
+    panel: panel ?? new FakePanel(),
+    resolveTrack:
+      resolveTrack ??
+      (async (query) => metadata(Number(query.replace(/\D/g, "")) || 1)),
+    inspectRuntime:
+      inspectRuntime ?? (async () => ({ ytDlpVersion: "test", ffmpegVersion: "test" })),
+    describePotProvider: async () => "미설정",
+    now,
+    onRuntimeReady,
+    connectSession:
+      connectSession ??
+      (async (channel, sessionPanel, onDestroyed) => {
+        const connection = new FakeConnection();
+        connection.joinConfig = { channelId: channel.id };
+        connections.push(connection);
+        const session = new GuildMusicSession(
+          channel.guild.id,
+          channel.id,
+          connection,
+          sessionPanel,
+          onDestroyed,
+          new FakePlayer(),
+          {
+            createAudioResource: async (item) => managedResource(item),
+            idleDisconnectMs: 1_000,
+            emptyChannelDisconnectMs: 1_000,
+          },
+        );
+        sessions.push(session);
+        return session;
+      }),
+  });
+  return { service, sessions, connections };
+}
+
+function voiceState(guild, id, channelId) {
+  return { id, guild, channelId, client: { user: { id: "bot-user" } } };
+}
+
+test("관리자가 봇을 다른 음성 채널로 옮기면 새 채널 기준으로 제어한다", async () => {
+  const { service, connections } = serviceWithSessions();
+  await service.initialize();
+  const { guild, voiceA, voiceB } = createGuildAndChannels();
+  await service.resolveAndEnqueue(enqueueRequest(guild, voiceA, "user-1", "곡 1"));
+
+  connections[0].joinConfig.channelId = voiceB.id;
+  service.handleVoiceStateUpdate(
+    voiceState(guild, "bot-user", voiceA.id),
+    voiceState(guild, "bot-user", voiceB.id),
+  );
+
+  assert.throws(() => service.skip(guild.id, voiceA.id), /같은 음성 채널/);
+  assert.equal(service.skip(guild.id, voiceB.id)?.videoId, "video-1");
+  await service.destroyAll();
+});
+
+test("곡을 해석하거나 연결하는 중 퇴장하면 처리 중 요청을 취소한다", async () => {
+  let resolverStarted;
+  const started = new Promise((resolve) => {
+    resolverStarted = resolve;
+  });
+  const { service } = serviceWithSessions({
+    // 취소 신호가 올 때까지 끝나지 않는 해석
+    resolveTrack: (_query, options) =>
+      new Promise((_resolve, reject) => {
+        options?.signal?.addEventListener(
+          "abort",
+          () => reject(options.signal.reason),
+          { once: true },
+        );
+        resolverStarted();
+      }),
+  });
+  await service.initialize();
+  const { guild, voiceA, voiceB } = createGuildAndChannels();
+  const request = service.resolveAndEnqueue(
+    enqueueRequest(guild, voiceA, "user-1", "곡 1"),
+  );
+  await started;
+
+  await assert.rejects(() => service.leave(guild.id, voiceB.id), /같은 음성 채널/);
+  await service.leave(guild.id, voiceA.id);
+  await assert.rejects(request, /취소되었습니다/);
+  await assert.rejects(
+    () => service.leave(guild.id, voiceA.id),
+    /재생 중인 음악이 없습니다/,
+  );
+  await service.destroyAll();
+});
+
+test("런타임 준비가 일시적으로 실패하면 1분 뒤 음악 요청에서 다시 준비한다", async () => {
+  let clock = 0;
+  let attempts = 0;
+  const readyCalls = [];
+  const { service } = serviceWithSessions({
+    now: () => clock,
+    onRuntimeReady: (runtime) => readyCalls.push(runtime),
+    inspectRuntime: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error("yt-dlp --version timeout");
+      return { ytDlpVersion: "retry", ffmpegVersion: "test" };
+    },
+  });
+  await assert.rejects(() => service.initialize(), /timeout/);
+  const { guild, voiceA } = createGuildAndChannels();
+
+  clock = 30_000;
+  await assert.rejects(
+    service.resolveAndEnqueue(enqueueRequest(guild, voiceA, "user-1", "곡 1")),
+    (error) => error instanceof MusicUserError && /timeout/.test(error.message),
+  );
+  assert.equal(attempts, 1);
+
+  clock = 61_000;
+  const result = await service.resolveAndEnqueue(
+    enqueueRequest(guild, voiceA, "user-1", "곡 1"),
+  );
+  assert.equal(attempts, 2);
+  assert.equal(result.startedImmediately, true);
+  assert.deepEqual(readyCalls, [{ ytDlpVersion: "retry", ffmpegVersion: "test" }]);
+  await service.destroyAll();
+});
+
+test("전용 채널 설정 오류는 음악 요청마다 다시 시도하지 않는다", async () => {
+  let clock = 0;
+  let initializeCalls = 0;
+  const panel = new FakePanel();
+  panel.initialize = async () => {
+    initializeCalls += 1;
+    throw new MusicPanelError("TRPG_MUSIC_CHANNEL_ID 환경변수가 설정되지 않았습니다.");
+  };
+  const { service } = serviceWithSessions({ panel, now: () => clock });
+  await assert.rejects(() => service.initialize(), MusicPanelError);
+  const { guild, voiceA } = createGuildAndChannels();
+
+  clock = 10 * 60_000;
+  await assert.rejects(
+    service.resolveAndEnqueue(enqueueRequest(guild, voiceA, "user-1", "곡 1")),
+    /환경변수가 설정되지 않았습니다/,
+  );
+  assert.equal(initializeCalls, 1);
 });

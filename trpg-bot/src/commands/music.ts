@@ -1,4 +1,4 @@
-/** `/음악` 한글 서브커맨드의 YouTube 재생·제어 핸들러. */
+/** `/음악` 한글 서브커맨드와 상태판 버튼의 YouTube 재생·제어 핸들러. */
 
 import {
   ChannelType,
@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 
 import type {
+  ButtonInteraction,
   ChatInputCommandInteraction,
   Guild,
   VoiceBasedChannel,
@@ -16,13 +17,20 @@ import { config } from "../config.js";
 import {
   MUSIC_PLAYLIST_OPTION,
   MUSIC_QUERY_OPTION,
+  MUSIC_REMOVE_POSITION_OPTION,
   MUSIC_REPEAT_MODE_OPTION,
   MUSIC_VOLUME_OPTION,
   MusicSubcommand,
   type MusicSubcommandName,
 } from "../slash/ko-names.js";
 import {
+  MusicButtonAction,
+  nextMusicRepeatMode,
+  parseMusicButtonAction,
+} from "../music/music-panel.js";
+import {
   MusicService,
+  type MusicPauseResult,
   type QueueSnapshot,
 } from "../music/music-service.js";
 import {
@@ -39,6 +47,14 @@ const MAX_QUEUE_LINES = 10;
 const PRIVATE_REPLY_FLAGS =
   MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds;
 const EDIT_REPLY_FLAGS = MessageFlags.SuppressEmbeds;
+
+type MusicInteraction = ChatInputCommandInteraction | ButtonInteraction;
+
+const PAUSE_REPLY: Record<MusicPauseResult, string> = {
+  paused: "⏸️ 재생을 일시정지했습니다.",
+  pending: "⏸️ 곡을 준비하고 있어, 재생이 시작되는 즉시 일시정지합니다.",
+  none: "현재 일시정지할 음악이 없습니다.",
+};
 
 function escapeMarkdown(value: string): string {
   return value.replace(/([\\*_`~|\[\]()])/g, "\\$1");
@@ -110,7 +126,9 @@ async function handlePlaylist(
   service: MusicService,
   guild: Guild,
 ): Promise<void> {
-  const voiceChannel = await requireUserVoiceChannel(interaction, guild);
+  const voiceChannel = await requireUserVoiceChannel(interaction, guild, {
+    requireBotPermissions: true,
+  });
   const query = interaction.options.getString(MUSIC_PLAYLIST_OPTION, true);
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -142,7 +160,7 @@ async function handlePlaylist(
 }
 
 async function replyError(
-  interaction: ChatInputCommandInteraction,
+  interaction: MusicInteraction,
   message: string,
 ): Promise<void> {
   if (interaction.deferred || interaction.replied) {
@@ -160,7 +178,7 @@ async function replyError(
   });
 }
 
-function requireGuild(interaction: ChatInputCommandInteraction): Guild {
+function requireGuild(interaction: MusicInteraction): Guild {
   if (!interaction.inGuild() || !interaction.guild) {
     throw new MusicUserError("음악 명령은 서버 채널에서만 사용할 수 있습니다.");
   }
@@ -170,9 +188,7 @@ function requireGuild(interaction: ChatInputCommandInteraction): Guild {
   return interaction.guild;
 }
 
-function requireMusicCommandChannel(
-  interaction: ChatInputCommandInteraction,
-): void {
+function requireMusicCommandChannel(interaction: MusicInteraction): void {
   const channelId = config.trpgMusicChannelId;
   if (!channelId) {
     throw new MusicUserError(
@@ -186,9 +202,16 @@ function requireMusicCommandChannel(
   }
 }
 
+/**
+ * 명령을 쓴 사용자가 들어가 있는 음성 채널.
+ *
+ * 봇의 연결·말하기 권한은 새로 연결하는 재생 요청에서만 확인한다 — 재생 중
+ * 권한이 바뀌어도 일시정지·건너뛰기·퇴장으로 봇을 멈추거나 내보낼 수 있어야 한다.
+ */
 async function requireUserVoiceChannel(
-  interaction: ChatInputCommandInteraction,
+  interaction: MusicInteraction,
   guild: Guild,
+  { requireBotPermissions }: { requireBotPermissions: boolean },
 ): Promise<VoiceBasedChannel> {
   const channel = guild.voiceStates.cache.get(interaction.user.id)?.channel;
   if (!channel) {
@@ -197,6 +220,7 @@ async function requireUserVoiceChannel(
   if (channel.type !== ChannelType.GuildVoice) {
     throw new MusicUserError("일반 음성 채널에서만 음악을 재생할 수 있습니다.");
   }
+  if (!requireBotPermissions) return channel;
 
   const botMember = guild.members.me ?? (await guild.members.fetchMe());
   const permissions = channel.permissionsFor(botMember);
@@ -227,7 +251,9 @@ async function handlePlay(
   service: MusicService,
   guild: Guild,
 ): Promise<void> {
-  const voiceChannel = await requireUserVoiceChannel(interaction, guild);
+  const voiceChannel = await requireUserVoiceChannel(interaction, guild, {
+    requireBotPermissions: true,
+  });
   const query = interaction.options.getString(MUSIC_QUERY_OPTION, true);
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -260,16 +286,20 @@ async function handleControl(
     | typeof MusicSubcommand.queue
   >,
 ): Promise<void> {
-  const voiceChannel = await requireUserVoiceChannel(interaction, guild);
-  if (subcommandName === MusicSubcommand.reset) {
+  const voiceChannel = await requireUserVoiceChannel(interaction, guild, {
+    requireBotPermissions: false,
+  });
+  if (
+    subcommandName === MusicSubcommand.reset ||
+    subcommandName === MusicSubcommand.leave
+  ) {
+    // 연결 중인 세션을 기다릴 수 있어 3초 응답 창을 먼저 확보한다.
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   }
   let content: string;
   switch (subcommandName) {
     case MusicSubcommand.pause:
-      content = service.pause(guild.id, voiceChannel.id)
-        ? "⏸️ 재생을 일시정지했습니다."
-        : "현재 일시정지할 음악이 없습니다.";
+      content = PAUSE_REPLY[service.pause(guild.id, voiceChannel.id)];
       break;
     case MusicSubcommand.resume:
       content = service.resume(guild.id, voiceChannel.id)
@@ -315,6 +345,9 @@ async function handleControl(
       } else {
         lines.push("다음 곡부터 적용됩니다.");
       }
+      if (change.keptPaused) {
+        lines.push("일시정지 상태는 그대로 유지됩니다.");
+      }
       if (!isDefaultVolume(change.volumePercent)) {
         lines.push(
           `기본값(${VOLUME_CLIPPING_THRESHOLD_PERCENT}%)이 아니면 무손실 Opus 전달 대신 FFmpeg 변환 경로를 사용합니다.`,
@@ -328,6 +361,20 @@ async function handleControl(
       content = lines.join("\n");
       break;
     }
+    case MusicSubcommand.shuffle: {
+      const count = service.shuffle(guild.id, voiceChannel.id);
+      content = `🔀 예약곡 ${count}곡의 순서를 섞었습니다.`;
+      break;
+    }
+    case MusicSubcommand.remove: {
+      const position = interaction.options.getInteger(
+        MUSIC_REMOVE_POSITION_OPTION,
+        true,
+      );
+      const removed = service.removeAt(guild.id, voiceChannel.id, position);
+      content = `🗑️ 대기열 ${position}번 ${trackLink(removed)}을 뺐습니다.`;
+      break;
+    }
     case MusicSubcommand.reset: {
       const result = await service.reset(guild.id, voiceChannel.id);
       content = [
@@ -337,7 +384,7 @@ async function handleControl(
       break;
     }
     case MusicSubcommand.leave:
-      service.leave(guild.id, voiceChannel.id);
+      await service.leave(guild.id, voiceChannel.id);
       content = "👋 재생을 종료하고 음성 채널에서 나갔습니다.";
       break;
   }
@@ -399,6 +446,76 @@ export async function handleMusicCommand(
     await replyError(
       interaction,
       "음악 명령을 처리하는 중 오류가 발생했습니다. 잠시 뒤 다시 시도해 주세요.",
+    );
+  }
+}
+
+/** 상태판 버튼 customId 인지 — index.ts 라우터가 사용한다. */
+export function isMusicButtonCustomId(customId: string): boolean {
+  return parseMusicButtonAction(customId) !== null;
+}
+
+/**
+ * 상태판 버튼 처리. 슬래시 제어 명령과 같은 규칙(운영 길드·전용 채널·봇과 같은
+ * 음성 채널)을 따르고, 성공하면 응답 없이 상태판 갱신으로 결과를 보여준다.
+ */
+export async function handleMusicButton(
+  interaction: ButtonInteraction,
+  service: MusicService,
+): Promise<void> {
+  const action = parseMusicButtonAction(interaction.customId);
+  if (!action) return;
+  try {
+    const guild = requireGuild(interaction);
+    requireMusicCommandChannel(interaction);
+    const voiceChannel = await requireUserVoiceChannel(interaction, guild, {
+      requireBotPermissions: false,
+    });
+    switch (action) {
+      case MusicButtonAction.togglePause: {
+        const snapshot = service.getSnapshot(guild.id);
+        if (snapshot?.paused) {
+          service.resume(guild.id, voiceChannel.id);
+        } else if (service.pause(guild.id, voiceChannel.id) === "none") {
+          throw new MusicUserError("현재 일시정지할 음악이 없습니다.");
+        }
+        break;
+      }
+      case MusicButtonAction.skip:
+        if (!service.skip(guild.id, voiceChannel.id)) {
+          throw new MusicUserError("현재 건너뛸 음악이 없습니다.");
+        }
+        break;
+      case MusicButtonAction.repeat: {
+        const current =
+          service.getSnapshot(guild.id)?.repeatMode ?? MusicRepeatMode.off;
+        service.setRepeatMode(
+          guild.id,
+          voiceChannel.id,
+          nextMusicRepeatMode(current),
+        );
+        break;
+      }
+      case MusicButtonAction.shuffle:
+        service.shuffle(guild.id, voiceChannel.id);
+        break;
+    }
+    await interaction.deferUpdate();
+  } catch (error) {
+    if (error instanceof MusicUserError) {
+      await replyError(interaction, error.message);
+      return;
+    }
+    console.error(`[music] 상태판 버튼 처리 실패 action=${action}:`, error);
+    void service.reportUnexpectedCommandFailure(error, {
+      commandName: `button:${action}`,
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      userId: interaction.user.id,
+    });
+    await replyError(
+      interaction,
+      "음악 버튼을 처리하는 중 오류가 발생했습니다. 잠시 뒤 다시 시도해 주세요.",
     );
   }
 }

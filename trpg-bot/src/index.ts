@@ -2,7 +2,8 @@
  * 다채봇(trpg-bot) 진입점
  *
  * 책임:
- *   1. 슬래시 명령 처리 (`/세션확인`, `/roll`, `/r`, `/도움말`, `/음악`)
+ *   1. 슬래시 명령 처리 (`/세션확인`, `/내세션`, `/일정투표`, `/roll`, `/r`, `/비밀굴림`,
+ *      `/도움말`, `/음악`, `/상태`)와 음악 상태판·세션확인 컴포넌트 라우팅
  *   2. 길드 멤버 동기화 (ClientReady + GuildMember* 이벤트 + 24h 재동기화)
  *   3. trpg_sessions 생성·수정·취소 알림 폴링 + 시작 전 리마인드 폴링
  *   4. YouTube 오디오 검색·재생과 길드별 음성 대기열
@@ -25,18 +26,33 @@ import {
 } from "discord.js";
 
 import type {
+  ButtonInteraction,
   ChatInputCommandInteraction,
   RepliableInteraction,
+  StringSelectMenuInteraction,
 } from "discord.js";
+import type { MusicRuntimeInfo } from "./music/youtube-source.js";
 
 import { config } from "./config.js";
 import { closeDb, connectDb, pingDb } from "./db/client.js";
 
 import { handleDiceRoll, isDiceRollCommandName } from "./commands/dice-roll.js";
 import { handleHelpCommand } from "./commands/help.js";
-import { handleMusicCommand } from "./commands/music.js";
+import {
+  handleMusicButton,
+  handleMusicCommand,
+  isMusicButtonCustomId,
+} from "./commands/music.js";
+import { handleMySessions } from "./commands/my-sessions.js";
 import { ACTIVE_COMMANDS, registerCommands } from "./commands/register.js";
-import { handleTrpgSessionCheck } from "./commands/trpg-session-check.js";
+import { handleSchedulePoll } from "./commands/schedule-poll.js";
+import { handleSecretRoll } from "./commands/secret-roll.js";
+import { handleStatusCommand } from "./commands/status.js";
+import {
+  handleSessionCheckComponent,
+  handleTrpgSessionCheck,
+  isSessionCheckCustomId,
+} from "./commands/trpg-session-check.js";
 import { startMusicHealthcheck } from "./music/music-healthcheck.js";
 import { MusicService } from "./music/music-service.js";
 import { startTrpgCancellationNotificationChecker } from "./scheduler/trpg-cancellation-notification-checker.js";
@@ -52,10 +68,15 @@ import {
   syncAllGuildMembers,
   upsertGuildMemberFromDiscord,
 } from "./services/member-sync.js";
+import { stopSchedulePollFinalizers } from "./services/schedule-poll.js";
 import {
   HELP_NAME,
   isMusicCommandName,
+  MY_SESSIONS_NAME,
+  SCHEDULE_POLL_NAME,
+  SECRET_ROLL_NAME,
   SESSION_CHECK_NAME,
+  STATUS_NAME,
 } from "./slash/ko-names.js";
 import { startHeartbeat } from "./utils/heartbeat.js";
 import {
@@ -76,6 +97,9 @@ const IGNORABLE_INTERACTION_ERROR_CODES = new Set([
 
 const INTERACTION_FAILURE_MESSAGE =
   "명령을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+
+const STALE_COMPONENT_MESSAGE =
+  "더 이상 사용할 수 없는 버튼입니다. 명령을 다시 실행해 주세요.";
 
 // Guilds: 기본 길드 정보 / GuildMembers: 멤버 fetch + add/remove/update 이벤트
 // Partials: GuildMemberRemove 가 cleanup 으로 partial 객체를 전달할 수 있으므로
@@ -99,8 +123,32 @@ const musicService = new MusicService(
   client,
   config.trpgGuildId,
   config.trpgMusicChannelId,
-  { operatorAlerts },
+  {
+    operatorAlerts,
+    // 기동 시 준비에 실패했다가 늦게 성공해도 그때 자동 점검을 시작한다.
+    onRuntimeReady: (runtime) => startMusicHealthcheckOnce(runtime),
+  },
 );
+
+/**
+ * 음악 경로 자동 점검을 한 번만 시작한다. YouTube 정책 변화는 서버 IP 에서만
+ * 재현되므로 점검도 봇 안에서 수행한다.
+ */
+function startMusicHealthcheckOnce(runtime: MusicRuntimeInfo): void {
+  if (!config.musicHealthcheckEnabled || stopMusicHealthcheck || isShuttingDown()) {
+    return;
+  }
+  stopMusicHealthcheck = startMusicHealthcheck({
+    videoUrl: config.musicHealthcheckVideoUrl,
+    intervalMs: config.musicHealthcheckIntervalMs,
+    startDelayMs: config.musicHealthcheckStartDelayMs,
+    operatorAlerts,
+    ytDlpVersion: runtime.ytDlpVersion,
+  });
+  console.log(
+    `[TRPG Bot] 음악 자동 점검 시작 — 주기=${config.musicHealthcheckIntervalMs}ms`,
+  );
+}
 
 function notifyOperator(event: OperatorAlertEvent): void {
   void operatorAlerts.notify(event).catch((error) => {
@@ -235,25 +283,14 @@ client.once(Events.ClientReady, async (readyClient) => {
   }
 
   try {
+    // 성공하면 onRuntimeReady 가 자동 점검을 시작한다.
     const runtime = await musicService.initialize();
     console.log(
       `[TRPG Bot] 음악 런타임 준비 완료 — yt-dlp=${runtime.ytDlpVersion}, ${runtime.ffmpegVersion}`,
     );
-    // YouTube 정책 변화는 서버 IP 에서만 재현되므로 점검도 봇 안에서 수행한다.
-    if (config.musicHealthcheckEnabled) {
-      stopMusicHealthcheck = startMusicHealthcheck({
-        videoUrl: config.musicHealthcheckVideoUrl,
-        intervalMs: config.musicHealthcheckIntervalMs,
-        startDelayMs: config.musicHealthcheckStartDelayMs,
-        operatorAlerts,
-        ytDlpVersion: runtime.ytDlpVersion,
-      });
-      console.log(
-        `[TRPG Bot] 음악 자동 점검 시작 — 주기=${config.musicHealthcheckIntervalMs}ms`,
-      );
-    }
   } catch (err) {
     // 음악 기능만 비활성화하고 기존 세션 조회·알림 책임은 계속 수행한다.
+    // 일시적 실패면 다음 음악 요청에서 다시 준비한다.
     console.error("[TRPG Bot] 음악 런타임 준비 실패:", err);
   }
 
@@ -313,8 +350,24 @@ async function routeChatInputCommand(
     case SESSION_CHECK_NAME:
       await handleTrpgSessionCheck(interaction);
       return;
+    case MY_SESSIONS_NAME:
+      await handleMySessions(interaction);
+      return;
+    case SCHEDULE_POLL_NAME:
+      await handleSchedulePoll(interaction);
+      return;
+    case SECRET_ROLL_NAME:
+      await handleSecretRoll(interaction);
+      return;
     case HELP_NAME:
       await handleHelpCommand(interaction);
+      return;
+    case STATUS_NAME:
+      await handleStatusCommand(interaction, {
+        gatewayPingMs: () => client.ws.ping,
+        pingDb,
+        music: musicService,
+      });
       return;
   }
   if (isDiceRollCommandName(interaction.commandName)) {
@@ -324,6 +377,30 @@ async function routeChatInputCommand(
   if (isMusicCommandName(interaction.commandName)) {
     await handleMusicCommand(interaction, musicService);
   }
+}
+
+/** 버튼·선택 메뉴를 customId 접두사로 기능별 핸들러에 보낸다. */
+async function routeComponent(
+  interaction: ButtonInteraction | StringSelectMenuInteraction,
+): Promise<void> {
+  if (interaction.isButton() && isMusicButtonCustomId(interaction.customId)) {
+    await handleMusicButton(interaction, musicService);
+    return;
+  }
+  if (isSessionCheckCustomId(interaction.customId)) {
+    await handleSessionCheckComponent(interaction);
+    return;
+  }
+  // 옛 버전 메시지의 버튼 등 — 응답하지 않으면 "상호작용 실패"만 보인다.
+  await interaction.reply({
+    content: STALE_COMPONENT_MESSAGE,
+    flags: MessageFlags.Ephemeral,
+  });
+}
+
+/** 운영 알림 key 가 customId 의 가변 부분(연·월 등)마다 늘지 않게 기능 접두사만 남긴다. */
+function componentLabel(customId: string): string {
+  return `component:${customId.split(":").slice(0, 3).join(":")}`;
 }
 
 /**
@@ -372,15 +449,28 @@ async function handleInteractionFailure(
 }
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-  try {
-    await routeChatInputCommand(interaction);
-  } catch (error) {
-    await handleInteractionFailure(
-      interaction,
-      `/${interaction.commandName}`,
-      error,
-    );
+  if (interaction.isChatInputCommand()) {
+    try {
+      await routeChatInputCommand(interaction);
+    } catch (error) {
+      await handleInteractionFailure(
+        interaction,
+        `/${interaction.commandName}`,
+        error,
+      );
+    }
+    return;
+  }
+  if (interaction.isButton() || interaction.isStringSelectMenu()) {
+    try {
+      await routeComponent(interaction);
+    } catch (error) {
+      await handleInteractionFailure(
+        interaction,
+        componentLabel(interaction.customId),
+        error,
+      );
+    }
   }
 });
 
@@ -468,6 +558,7 @@ async function shutdown(signal: string, exitCode = 0): Promise<void> {
   stopDailyMemberSync?.();
   stopMusicHealthcheck?.();
   stopHeartbeat?.();
+  stopSchedulePollFinalizers();
   await runShutdownStep(
     "알림 스케줄러",
     () =>

@@ -33,7 +33,8 @@ import {
   type AudioResourceRequestOptions,
   type ManagedAudioResource,
 } from "./audio-source.js";
-import { MusicPanel } from "./music-panel.js";
+import { MusicPanel, MusicPanelError } from "./music-panel.js";
+import { describePotProvider } from "./pot-provider.js";
 import {
   MusicRepeatMode,
   MusicOperationAbortedError,
@@ -68,6 +69,8 @@ const VOICE_READY_TIMEOUT_MS = 30_000;
 const MAX_CONCURRENT_RESOLUTIONS_PER_GUILD = 2;
 const PLAYBACK_FAILURE_ALERT_THRESHOLD = 3;
 const PLAYBACK_FAILURE_WINDOW_MS = 60 * 60_000;
+/** 런타임 준비가 일시적으로 실패한 뒤 다음 음악 요청에서 다시 시도하기까지의 최소 간격 */
+const RUNTIME_RETRY_INTERVAL_MS = 60_000;
 /** yt-dlp 정수 초 메타데이터와 컨테이너 패딩 차이만 정상 종료로 허용한다. */
 const PLAYBACK_END_TOLERANCE_MS = 5_000;
 
@@ -144,6 +147,11 @@ export interface MusicServiceDependencies {
   inspectRuntime: () => Promise<MusicRuntimeInfo>;
   connectSession: SessionConnector;
   maxConcurrentResolutionsPerGuild: number;
+  /** 런타임 준비가 처음 성공했을 때(기동 시 또는 늦은 재시도) 한 번 호출 */
+  onRuntimeReady: (runtime: MusicRuntimeInfo) => void;
+  /** 운영 알림 진단용 POT provider 상태 한 줄 */
+  describePotProvider: () => Promise<string>;
+  now: () => number;
 }
 
 type AudioResourceFactory = (
@@ -211,8 +219,18 @@ export interface MusicVolumeChange {
   appliedToCurrentTrack: boolean;
   /** 이어듣기를 시작한 지점(초). 라이브이거나 즉시 반영이 아니면 null. */
   resumedFromSeconds: number | null;
+  /** 일시정지 중에 바꿔 다시 연 곡도 일시정지 상태로 이어지는지. */
+  keptPaused: boolean;
   track: MusicTrack | null;
 }
+
+/**
+ * `/음악 일시정지` 결과.
+ * - `paused`: 재생 중이던 곡을 멈췄다
+ * - `pending`: 곡을 준비하는 중이라, 재생이 시작되는 즉시 멈춘다
+ * - `none`: 멈출 곡이 없다
+ */
+export type MusicPauseResult = "paused" | "pending" | "none";
 
 export class GuildMusicSession {
   private readonly dependencies: GuildMusicSessionDependencies;
@@ -234,11 +252,18 @@ export class GuildMusicSession {
   private pendingSeekSeconds = 0;
   /** 현재 resource가 원본 트랙에서 시작한 재생 위치(초). */
   private currentSeekSeconds = 0;
+  /**
+   * 다음에 Playing 으로 전환되는 순간 멈춘다. 준비 중(Buffering)인 곡은
+   * `AudioPlayer.pause()` 가 거부하므로 일시정지 의도를 여기에 남겨 둔다.
+   */
+  private pauseOnNextPlaying = false;
+  /** 연결 정보가 잠시 비는 동안(재연결 중) 쓸 마지막 음성 채널 */
+  private lastVoiceChannelId: string;
   private destroyed = false;
 
   constructor(
     readonly guildId: string,
-    readonly voiceChannelId: string,
+    voiceChannelId: string,
     private readonly connection: VoiceConnection,
     private readonly panel: MusicPanel,
     private readonly onDestroyed: (
@@ -248,6 +273,7 @@ export class GuildMusicSession {
     private readonly player: AudioPlayer = createMusicAudioPlayer(),
     dependencies: Partial<GuildMusicSessionDependencies> = {},
   ) {
+    this.lastVoiceChannelId = voiceChannelId;
     this.dependencies = {
       ...DEFAULT_SESSION_DEPENDENCIES,
       ...dependencies,
@@ -275,6 +301,15 @@ export class GuildMusicSession {
       ) {
         this.handlePlaybackEnded(playbackPositionMs);
       } else if (this.current && oldState.status !== newState.status) {
+        if (
+          newState.status === AudioPlayerStatus.Playing &&
+          this.pauseOnNextPlaying
+        ) {
+          this.pauseOnNextPlaying = false;
+          // Paused 전환 이벤트가 다시 들어와 상태판을 갱신한다.
+          this.player.pause(true);
+          return;
+        }
         this.syncPanel();
       }
     });
@@ -386,6 +421,17 @@ export class GuildMusicSession {
     );
   }
 
+  /**
+   * 봇이 실제로 들어가 있는 음성 채널. 관리자가 봇을 다른 채널로 옮기면
+   * `@discordjs/voice` 가 갱신하는 joinConfig 를 따라가므로, 제어 권한·자동 퇴장·
+   * 상태판 모두 옮겨 간 채널 기준으로 동작한다.
+   */
+  get voiceChannelId(): string {
+    const current = this.connection.joinConfig?.channelId;
+    if (current) this.lastVoiceChannelId = current;
+    return this.lastVoiceChannelId;
+  }
+
   get totalTrackCount(): number {
     return this.queue.length + (this.current ? 1 : 0);
   }
@@ -432,22 +478,90 @@ export class GuildMusicSession {
       currentQualityMode: this.currentQualityMode,
       upcoming: [...this.queue],
       repeatMode: this.repeatMode,
-      paused:
-        this.player.state.status === AudioPlayerStatus.Paused ||
-        this.player.state.status === AudioPlayerStatus.AutoPaused,
+      paused: this.isPaused(),
     };
   }
 
-  pause(): boolean {
-    const changed = this.player.pause(true);
+  pause(): MusicPauseResult {
+    if (this.player.pause(true)) {
+      this.syncPanel();
+      return "paused";
+    }
+    if (this.current && !this.isPlayerPaused()) {
+      // 곡을 준비하는 중 — 재생이 시작되는 즉시 멈춘다.
+      this.pauseOnNextPlaying = true;
+      this.syncPanel();
+      return "pending";
+    }
+    return "none";
+  }
+
+  resume(): boolean {
+    if (this.pauseOnNextPlaying) {
+      this.pauseOnNextPlaying = false;
+      this.syncPanel();
+      return true;
+    }
+    const changed = this.player.unpause();
     if (changed) this.syncPanel();
     return changed;
   }
 
-  resume(): boolean {
-    const changed = this.player.unpause();
-    if (changed) this.syncPanel();
-    return changed;
+  /**
+   * 예약곡 순서를 무작위로 섞는다(현재 곡 제외). 섞은 곡 수를 반환한다.
+   * @param random 테스트용 난수 주입 (기본 `Math.random`)
+   */
+  shuffle(random: () => number = Math.random): number {
+    if (this.destroyed) {
+      throw new MusicUserError("음성 연결이 종료되었습니다. 다시 시도해 주세요.");
+    }
+    if (this.queue.length < 2) {
+      throw new MusicUserError("섞을 예약곡이 2곡 이상 있어야 합니다.");
+    }
+    for (let i = this.queue.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(random() * (i + 1));
+      [this.queue[i], this.queue[j]] = [this.queue[j], this.queue[i]];
+    }
+    this.syncPanel();
+    return this.queue.length;
+  }
+
+  /** `/음악 대기열`에 보이는 번호(1부터)의 예약곡을 뺀다. */
+  removeAt(position: number): MusicTrack {
+    if (this.destroyed) {
+      throw new MusicUserError("음성 연결이 종료되었습니다. 다시 시도해 주세요.");
+    }
+    if (this.queue.length === 0) {
+      throw new MusicUserError("삭제할 예약곡이 없습니다.");
+    }
+    if (!Number.isInteger(position) || position < 1 || position > this.queue.length) {
+      throw new MusicUserError(
+        `대기열 번호는 1-${this.queue.length} 사이로 입력해 주세요.`,
+      );
+    }
+    const [removed] = this.queue.splice(position - 1, 1);
+    this.syncPanel();
+    return removed;
+  }
+
+  /** 관리자가 봇을 다른 음성 채널로 옮겼을 때 — 새 채널 기준으로 다시 판단한다. */
+  handleBotMoved(channel: VoiceBasedChannel): void {
+    if (this.destroyed) return;
+    this.clearEmptyChannelTimer();
+    this.syncPanel();
+    this.handleVoiceMembershipChanged(channel);
+  }
+
+  private isPlayerPaused(): boolean {
+    return (
+      this.player.state.status === AudioPlayerStatus.Paused ||
+      this.player.state.status === AudioPlayerStatus.AutoPaused
+    );
+  }
+
+  /** 실제로 멈췄거나, 준비가 끝나면 멈출 예정인지 */
+  private isPaused(): boolean {
+    return this.isPlayerPaused() || this.pauseOnNextPlaying;
   }
 
   setRepeatMode(mode: MusicRepeatModeValue): MusicRepeatModeValue {
@@ -480,6 +594,7 @@ export class GuildMusicSession {
         previousVolumePercent: previous,
         appliedToCurrentTrack: false,
         resumedFromSeconds: null,
+        keptPaused: false,
         track: this.current,
       };
     }
@@ -491,6 +606,8 @@ export class GuildMusicSession {
     const resumeSeconds = track.isLive
       ? 0
       : Math.floor(playbackPositionMs / 1_000);
+    // 일시정지 중에 음량을 미리 바꿔 두는 경우 — 다시 연 곡도 멈춘 채로 둔다.
+    const keepPaused = this.isPaused();
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
@@ -501,6 +618,7 @@ export class GuildMusicSession {
     // 재예약 전에 player 를 확실히 비운다 (조기 종료 재시도 경로와 같은 이유).
     this.player.stop(true);
     this.pendingSeekSeconds = resumeSeconds;
+    this.pauseOnNextPlaying = keepPaused;
     this.queue.unshift(track);
     this.syncPanel();
     this.queueStart();
@@ -509,6 +627,7 @@ export class GuildMusicSession {
       previousVolumePercent: previous,
       appliedToCurrentTrack: true,
       resumedFromSeconds: track.isLive ? null : resumeSeconds,
+      keptPaused: keepPaused,
       track,
     };
   }
@@ -526,6 +645,7 @@ export class GuildMusicSession {
     this.currentUsesForcedTranscode = false;
     this.currentSeekSeconds = 0;
     this.pendingSeekSeconds = 0;
+    this.pauseOnNextPlaying = false;
     this.recentError = null;
     this.disposeActiveResource();
     this.player.stop(true);
@@ -544,6 +664,7 @@ export class GuildMusicSession {
     this.forceTranscodeTrack = null;
     this.pendingSeekSeconds = 0;
     this.currentSeekSeconds = 0;
+    this.pauseOnNextPlaying = false;
     this.recentError = null;
     this.repeatMode = MusicRepeatMode.off;
     this.disposeActiveResource();
@@ -598,6 +719,12 @@ export class GuildMusicSession {
     if (this.destroyed || this.current !== null) return;
     const next = this.queue.shift();
     if (!next) {
+      // 준비 중 남긴 일시정지는 이어받을 곡이 없으면 버린다 — 다음 요청곡이 멈춘 채
+      // 시작하지 않게 한다. (다음 곡이 있으면 그 곡이 일시정지 의도를 잇는다.)
+      if (this.pauseOnNextPlaying) {
+        this.pauseOnNextPlaying = false;
+        this.syncPanel();
+      }
       this.scheduleIdleDisconnect();
       return;
     }
@@ -768,11 +895,13 @@ export class GuildMusicSession {
     const resumeSeconds = track.isLive
       ? 0
       : Math.floor(Math.max(0, playbackPositionMs) / 1_000);
+    const keepPaused = this.isPaused();
     this.playbackToken += 1;
     this.current = null;
     this.currentQualityMode = null;
     this.currentUsesForcedTranscode = false;
     this.currentSeekSeconds = 0;
+    this.pauseOnNextPlaying = keepPaused;
     this.recentError = recentError;
     this.disposeActiveResource();
     // 오류 이벤트 직후 늦게 도착하는 이전 resource의 Idle 전환이 재시도 곡을
@@ -891,6 +1020,7 @@ export class GuildMusicSession {
     this.forceTranscodeTrack = null;
     this.pendingSeekSeconds = 0;
     this.currentSeekSeconds = 0;
+    this.pauseOnNextPlaying = false;
     this.repeatMode = MusicRepeatMode.off;
     this.clearIdleTimer();
     this.clearEmptyChannelTimer();
@@ -914,9 +1044,7 @@ export class GuildMusicSession {
       upcoming: this.queue,
       repeatMode: this.repeatMode,
       volumePercent: this.volumePercent,
-      paused:
-        this.player.state.status === AudioPlayerStatus.Paused ||
-        this.player.state.status === AudioPlayerStatus.AutoPaused,
+      paused: this.isPaused(),
       recentError: this.recentError,
       notice,
     });
@@ -987,8 +1115,16 @@ export class MusicService {
   private readonly inspectRuntime: () => Promise<MusicRuntimeInfo>;
   private readonly connectSession: SessionConnector;
   private readonly maxConcurrentResolutionsPerGuild: number;
+  private readonly onRuntimeReady?: (runtime: MusicRuntimeInfo) => void;
+  private readonly describePotProvider: () => Promise<string>;
+  private readonly now: () => number;
   private runtimeInfo: MusicRuntimeInfo | null = null;
   private runtimeError: string | null = "음악 재생 런타임을 아직 확인하지 않았습니다.";
+  /** 설정 오류(전용 채널 없음 등)는 재시작 전까지 다시 시도해도 같다 */
+  private runtimeErrorPermanent = false;
+  private runtimeReadyNotified = false;
+  private lastInitializeAttemptAt: number | null = null;
+  private initializing: Promise<MusicRuntimeInfo> | null = null;
 
   constructor(
     client: Client,
@@ -1025,15 +1161,42 @@ export class MusicService {
         ? Math.floor(resolutionLimit)
         : MAX_CONCURRENT_RESOLUTIONS_PER_GUILD,
     );
+    this.onRuntimeReady = dependencies.onRuntimeReady;
+    this.describePotProvider =
+      dependencies.describePotProvider ?? (() => describePotProvider());
+    this.now = dependencies.now ?? Date.now;
   }
 
+  /**
+   * 상태판과 yt-dlp·FFmpeg 런타임을 준비한다. 동시에 여러 번 불러도 한 번만 실행한다.
+   * 실패하면 음악 명령은 막히지만, 일시적 실패면 다음 음악 요청에서 다시 시도한다.
+   */
   async initialize(): Promise<MusicRuntimeInfo> {
+    if (!this.initializing) {
+      this.initializing = this.runInitialize().finally(() => {
+        this.initializing = null;
+      });
+    }
+    return this.initializing;
+  }
+
+  private async runInitialize(): Promise<MusicRuntimeInfo> {
+    this.lastInitializeAttemptAt = this.now();
     let panelReady = false;
     try {
       await this.panel.initialize();
       panelReady = true;
       this.runtimeInfo = await this.inspectRuntime();
       this.runtimeError = null;
+      this.runtimeErrorPermanent = false;
+      if (!this.runtimeReadyNotified) {
+        this.runtimeReadyNotified = true;
+        try {
+          this.onRuntimeReady?.(this.runtimeInfo);
+        } catch (callbackError) {
+          console.error("[music] 런타임 준비 콜백 실패:", callbackError);
+        }
+      }
       return this.runtimeInfo;
     } catch (error) {
       this.runtimeInfo = null;
@@ -1041,6 +1204,7 @@ export class MusicService {
         error instanceof Error
           ? error.message
           : "음악 재생 런타임 확인에 실패했습니다.";
+      this.runtimeErrorPermanent = error instanceof MusicPanelError;
       if (panelReady) {
         this.panel.updateIdle(
           "음악 기능을 준비하지 못했습니다. 운영자가 재생 런타임을 확인해야 합니다.",
@@ -1060,6 +1224,16 @@ export class MusicService {
 
   getRuntimeInfo(): MusicRuntimeInfo | null {
     return this.runtimeInfo;
+  }
+
+  /** 런타임이 준비되지 않았으면 그 원인 (`/상태` 진단용) */
+  getRuntimeError(): string | null {
+    return this.runtimeError;
+  }
+
+  /** 현재 음성 채널에 연결된 길드 세션 수 (`/상태` 진단용) */
+  get activeSessionCount(): number {
+    return this.sessions.size;
   }
 
   /** 사용자 입력 오류가 아닌 음악 명령 예외를 운영자에게 알린다. */
@@ -1087,12 +1261,32 @@ export class MusicService {
     });
   }
 
-  private assertRuntimeReady(): void {
-    if (this.runtimeError) throw new MusicUserError(this.runtimeError);
+  /**
+   * 런타임이 준비되지 않았으면, 일시적 실패이고 마지막 시도에서 1분이 지났을 때만
+   * 다시 준비해 본다(부팅 순간의 REST 5xx·yt-dlp 콜드스타트 지연 복구).
+   */
+  private async ensureRuntimeReady(): Promise<void> {
+    if (!this.runtimeError) return;
+    const retryDue =
+      !this.runtimeErrorPermanent &&
+      (this.lastInitializeAttemptAt === null ||
+        this.now() - this.lastInitializeAttemptAt >= RUNTIME_RETRY_INTERVAL_MS);
+    if (retryDue) {
+      try {
+        await this.initialize();
+        return;
+      } catch {
+        /* runtimeError 가 새 원인으로 갱신됐다 */
+      }
+    }
+    throw new MusicUserError(
+      this.runtimeError ?? "음악 재생 런타임을 준비하지 못했습니다.",
+    );
   }
 
   async resolveAndEnqueue(request: EnqueueRequest): Promise<EnqueueResult> {
-    this.assertRuntimeReady();
+    // 준비된 상태면 기다리지 않는다 — 예약 슬롯을 같은 틱에 선점해야 동시 요청 제한이 맞다.
+    if (this.runtimeError) await this.ensureRuntimeReady();
     const reservation = this.reserveTrackRequest(
       request.guild.id,
       request.voiceChannel.id,
@@ -1146,7 +1340,7 @@ export class MusicService {
   async resolveAndEnqueuePlaylist(
     request: EnqueueRequest,
   ): Promise<PlaylistEnqueueResult> {
-    this.assertRuntimeReady();
+    if (this.runtimeError) await this.ensureRuntimeReady();
     const reservation = this.reserveTrackRequest(
       request.guild.id,
       request.voiceChannel.id,
@@ -1219,9 +1413,23 @@ export class MusicService {
     return this.sessions.get(guildId)?.snapshot() ?? null;
   }
 
-  pause(guildId: string, voiceChannelId: string): boolean {
+  pause(guildId: string, voiceChannelId: string): MusicPauseResult {
     const session = this.requireSession(guildId, voiceChannelId);
     return session.pause();
+  }
+
+  shuffle(guildId: string, voiceChannelId: string): number {
+    const session = this.requireSession(guildId, voiceChannelId);
+    return session.shuffle();
+  }
+
+  removeAt(
+    guildId: string,
+    voiceChannelId: string,
+    position: number,
+  ): MusicTrack {
+    const session = this.requireSession(guildId, voiceChannelId);
+    return session.removeAt(position);
   }
 
   resume(guildId: string, voiceChannelId: string): boolean {
@@ -1300,18 +1508,58 @@ export class MusicService {
     return { removedTracks: 0, cancelledRequests };
   }
 
-  leave(guildId: string, voiceChannelId: string): void {
-    const session = this.requireSession(guildId, voiceChannelId);
+  /**
+   * 재생·대기열·음성 연결을 모두 정리한다. 음성 채널에 연결하는 중(또는 곡을
+   * 해석하는 중)이어도 처리 중 요청을 취소하고, 연결이 끝나는 즉시 나간다.
+   */
+  async leave(guildId: string, voiceChannelId: string): Promise<void> {
+    const session = this.sessions.get(guildId);
+    if (session) {
+      this.assertSameChannel(session, voiceChannelId);
+      this.cancelPendingTrackRequests(guildId);
+      session.disconnect();
+      return;
+    }
+
+    const pendingSession = this.pendingSessions.get(guildId);
+    const activeVoiceChannelId =
+      pendingSession?.voiceChannelId ?? this.reservedVoiceChannelIds.get(guildId);
+    if (!activeVoiceChannelId) {
+      throw new MusicUserError("현재 재생 중인 음악이 없습니다.");
+    }
+    if (activeVoiceChannelId !== voiceChannelId) {
+      throw new MusicUserError("봇과 같은 음성 채널에서 명령을 사용해 주세요.");
+    }
     this.cancelPendingTrackRequests(guildId);
-    session.disconnect();
+    if (!pendingSession) return;
+    try {
+      const connected = await pendingSession.promise;
+      connected.disconnect();
+    } catch {
+      // 연결 자체가 실패했으면 이미 나가 있는 상태다.
+    }
   }
 
   handleVoiceStateUpdate(oldState: VoiceState, newState: VoiceState): void {
     const session = this.sessions.get(oldState.guild.id);
+    if (!session) return;
+
+    // 관리자가 봇을 다른 음성 채널로 옮긴 경우 — 새 채널의 청취자 기준으로 다시 판단한다.
+    const botUserId = newState.client.user?.id;
     if (
-      !session ||
-      (oldState.channelId !== session.voiceChannelId &&
-        newState.channelId !== session.voiceChannelId)
+      botUserId &&
+      newState.id === botUserId &&
+      newState.channelId &&
+      oldState.channelId !== newState.channelId
+    ) {
+      const moved = newState.guild.channels.cache.get(newState.channelId);
+      if (moved?.isVoiceBased()) session.handleBotMoved(moved);
+      return;
+    }
+
+    if (
+      oldState.channelId !== session.voiceChannelId &&
+      newState.channelId !== session.voiceChannelId
     ) {
       return;
     }
@@ -1585,10 +1833,20 @@ export class MusicService {
     this.playbackFailures.set(event.guildId, next);
     if (next.timestamps.length < PLAYBACK_FAILURE_ALERT_THRESHOLD) return;
 
-    void this.notifyOperator({
+    void this.notifyRecurringPlaybackFailure(event, next.timestamps.length);
+  }
+
+  private async notifyRecurringPlaybackFailure(
+    event: MusicPlaybackFailureEvent,
+    failureCount: number,
+  ): Promise<void> {
+    const pot = await this.describePotProvider().catch(
+      () => getPotProviderBaseUrl() ?? "미설정",
+    );
+    await this.notifyOperator({
       key: `music-playback-recurring-${event.guildId}`,
       title: "음악 재생 실패가 반복되고 있습니다",
-      description: `최근 1시간 안에 재생 실패가 ${next.timestamps.length}회 발생했습니다. 중간에 복구된 곡도 포함합니다. YouTube 추출 상태와 네트워크·FFmpeg 로그를 확인해 주세요.`,
+      description: `최근 1시간 안에 재생 실패가 ${failureCount}회 발생했습니다. 중간에 복구된 곡도 포함합니다. YouTube 추출 상태와 네트워크·FFmpeg 로그를 확인해 주세요.`,
       error: event.error,
       context: {
         길드: event.guildId,
@@ -1599,7 +1857,7 @@ export class MusicService {
         // 서버 로그에 접근하지 않고도 원인을 좁힐 수 있게 런타임 구성을 함께 싣는다.
         "yt-dlp": this.runtimeInfo?.ytDlpVersion ?? "unknown",
         playerClient: getPlayerClients(),
-        POT: getPotProviderBaseUrl() ?? "미설정",
+        POT: pot,
       },
     });
   }
