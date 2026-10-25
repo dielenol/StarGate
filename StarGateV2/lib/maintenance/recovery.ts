@@ -1,5 +1,5 @@
 /**
- * 침해 복구 연출 상태. 점검 구간의 경과 시간만으로 복구율·단계·구역·로그·공지를 정하므로
+ * 침해 복구 연출 상태. 점검 시작 후 경과 시간만으로 복구율·단계·구역·로그·공지를 정하므로
  * 같은 시각에 접속한 요원은 모두 같은 화면을 본다.
  */
 
@@ -39,23 +39,23 @@ type LogTemplate = { tag: string; tone: RecoveryTone; text: string };
  */
 export const RECOVERY_UPDATES: readonly RecoveryUpdate[] = [
   { minute: 0, label: "탐지", tone: "alert", text: "관리자 계정으로 비인가 접근이 탐지되었습니다. 해당 계정을 즉시 정지했습니다." },
-  { minute: 2, label: "격리", tone: "alert", text: "ERP 전 구역을 외부망에서 분리하고 접속 중이던 요원 세션을 모두 종료했습니다." },
+  { minute: 2, label: "격리", tone: "alert", text: "공개 홈페이지·로그인·ERP를 포함한 사이트 전체의 외부 접속을 차단했습니다." },
   { minute: 14, label: "분석", tone: "alert", text: "접근 기록과 변조 흔적을 분석하고 있습니다. 침입 경로는 아직 확인되지 않았습니다." },
   { minute: 47, label: "차단", tone: "alert", text: "추가 확산 경로를 차단했습니다. 남아 있는 악성 프로세스를 제거하고 있습니다." },
   { minute: 92, label: "정화", tone: "warn", text: "확산 차단을 마치고 오염 구역 정화를 시작했습니다. 일부 기록에서 변조가 확인되어 백업과 대조하고 있습니다." },
   { minute: 185, label: "정화", tone: "warn", text: "인증 계통을 우선 정화하고 있습니다. 신원조회 데이터는 손상 범위가 가장 넓어 복원에 시간이 더 걸립니다." },
   { minute: 364, label: "복원", tone: "ok", text: "오염 구역 정화를 마쳤습니다. 백업 스냅샷을 기준으로 기록 복원을 시작했습니다." },
   { minute: 718, label: "검증", tone: "ok", text: "기록 복원이 마무리 단계에 들어섰습니다. 무결성 최종 검증을 시작했습니다." },
-  { minute: 900, label: "재개 준비", tone: "ok", text: "요원 접근 권한 재발급을 준비하고 있습니다. 예정된 시각에 업무망을 재개합니다." },
+  { minute: 900, label: "점검 계속", tone: "warn", text: "추가 보안 검증을 계속하고 있습니다. 별도 안내가 있을 때까지 사이트 전체의 접속 제한을 유지하며 재개 일정은 추후 공지합니다." },
 ];
 
-/** 단계는 복구율 `until` 미만까지 유지된다. 마지막 단계는 종료까지 이어진다. */
+/** 단계는 복구율 `until` 미만까지 유지된다. 마지막 단계는 별도 재개 결정까지 이어진다. */
 export const RECOVERY_STAGES = [
   {
     code: "CONTAINMENT",
     label: "침해 확산 차단",
     until: 0.15,
-    ticker: ["비인가 침입 감지", "내부망 전 구역 긴급 격리", "ERP 전 기능 중지", "관리자 권한 탈취 확인", "출처 불명 복구 요청 무시", "BREACH CONTAINMENT IN PROGRESS"],
+    ticker: ["비인가 침입 감지", "사이트 전체 긴급 격리", "공개 홈페이지·로그인·ERP 이용 중지", "관리자 권한 탈취 확인", "출처 불명 복구 요청 무시", "BREACH CONTAINMENT IN PROGRESS"],
   },
   {
     code: "PURGE",
@@ -71,9 +71,9 @@ export const RECOVERY_STAGES = [
   },
   {
     code: "VERIFY",
-    label: "무결성 최종 검증",
+    label: "추가 보안 검증",
     until: Number.POSITIVE_INFINITY,
-    ticker: ["무결성 최종 검증", "접근 권한 재발급 준비", "업무망 재개 대기", "FINAL VERIFICATION"],
+    ticker: ["추가 보안 검증 계속", "사이트 전체 접속 제한 유지", "재개 일정 추후 공지", "SECURITY REVIEW IN PROGRESS"],
   },
 ] as const;
 
@@ -90,6 +90,9 @@ export const RECOVERY_SECTORS = [
 ] as const;
 
 export const SECTOR_COLUMNS = 24;
+
+/** 시간 경과만으로 검증 완료나 서비스 재개를 나타내지 않는다. */
+export const RECOVERY_PENDING_PROGRESS = 0.94;
 
 /** 1보다 클수록 초반에 빠르게 오르고 종료에 가까울수록 느려진다. */
 const RECOVERY_CURVE = 1.7;
@@ -112,7 +115,7 @@ const OPENING_LOG: readonly LogTemplate[] = [
   { tag: "ALERT", tone: "alert", text: "관리자 계정 비정상 로그인 탐지" },
   { tag: "ALERT", tone: "threat", text: "관리자 권한 탈취 · 변조 페이지 배포 확인" },
   { tag: "LOCK", tone: "alert", text: "내부망 전 구역 긴급 격리 발령" },
-  { tag: "LOCK", tone: "warn", text: "ERP 전 기능 중지 · 외부 접속 차단" },
+  { tag: "LOCK", tone: "warn", text: "사이트 전체 이용 중지 · 외부 접속 차단" },
   { tag: "TRACE", tone: "warn", text: "침입 경로 분석 착수" },
 ];
 
@@ -144,8 +147,8 @@ const LOG_TEMPLATES: readonly (readonly LogTemplate[])[] = [
   [
     { tag: "AUDIT", tone: "info", text: "요원 접근 권한 재검증 {n}건" },
     { tag: "VERIFY", tone: "ok", text: "{sector} 해시 체인 검증 통과" },
-    { tag: "OK", tone: "ok", text: "업무망 재개 준비 {pct}%" },
-    { tag: "AUDIT", tone: "info", text: "사고 기록 봉인 · 분석 보고서 작성" },
+    { tag: "HOLD", tone: "warn", text: "사이트 전체 접속 제한 유지 · 추가 검증 중" },
+    { tag: "AUDIT", tone: "info", text: "사고 기록 분석 계속 · 후속 안내 준비" },
   ],
 ];
 
@@ -191,7 +194,7 @@ export function recoveryProgress(startsAt: string, endsAt: string, now: number):
   const end = Date.parse(endsAt);
   if (!Number.isFinite(start) || !Number.isFinite(end) || !Number.isFinite(now) || end <= start) return 0;
   const elapsed = Math.min(1, Math.max(0, (now - start) / (end - start)));
-  return 1 - (1 - elapsed) ** RECOVERY_CURVE;
+  return Math.min(RECOVERY_PENDING_PROGRESS, 1 - (1 - elapsed) ** RECOVERY_CURVE);
 }
 
 export function recoveryStageIndex(progress: number): number {
@@ -199,6 +202,7 @@ export function recoveryStageIndex(progress: number): number {
 }
 
 export function sectorRows(progress: number): SectorRow[] {
+  progress = Math.min(RECOVERY_PENDING_PROGRESS, progress);
   return RECOVERY_SECTORS.map((sector, row) => {
     const cells = Array.from({ length: SECTOR_COLUMNS }, (_, column): SectorState => {
       const seed = (row * SECTOR_COLUMNS + column) * 5;
@@ -273,7 +277,7 @@ export function recoveryLog(startsAt: string, endsAt: string, now: number, count
   return lines;
 }
 
-/** 게시된 공지(최신순)와 점검 종료 전에 예정된 다음 공지 시각(HH:MM)을 돌려준다. */
+/** 게시된 공지(최신순)와 안내 기준 시각 전에 예정된 다음 공지 시각(HH:MM)을 돌려준다. */
 export function recoveryUpdates(startsAt: string, endsAt: string, now: number): {
   published: PublishedUpdate[];
   next: string | null;

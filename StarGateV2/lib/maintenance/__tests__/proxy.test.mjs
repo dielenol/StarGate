@@ -11,7 +11,7 @@ const { NextRequest, NextResponse } = require("next/server");
 const source = readFileSync(new URL("../../../proxy.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 
-function loadProxy(now) {
+function loadProxy(now, env = {}) {
   let authCalls = 0;
   const exports = {};
   const modules = {
@@ -21,54 +21,65 @@ function loadProxy(now) {
     "@/lib/auth/guest": { isGuestRestrictedErpRequest: () => false },
     "@/lib/auth/session-runtime": { readAuthSecrets: () => { authCalls++; return []; } },
     "@/lib/erp/local-page-lock-bypass": { buildTrustedErpRequestHeaders: (headers) => headers },
-    "@/lib/maintenance/schedule": { ...schedule, getMaintenanceState: () => schedule.getMaintenanceState({}, now) },
+    "@/lib/maintenance/schedule": { ...schedule, getMaintenanceState: () => schedule.getMaintenanceState(env, now) },
   };
   vm.runInNewContext(compiled, {
     exports,
     require: (id) => { assert.ok(id in modules, `unexpected module ${id}`); return modules[id]; },
-    URL, process: { env: {} },
+    URL, process: { env: { NODE_ENV: "production" } },
   });
-  return { proxy: exports.proxy, authCalls: () => authCalls };
+  return { proxy: exports.proxy, config: exports.config, authCalls: () => authCalls };
 }
 
 const start = Date.parse(schedule.ERP_MAINTENANCE_WINDOW.startsAt);
 const end = Date.parse(schedule.ERP_MAINTENANCE_WINDOW.endsAt);
 
-test("활성 점검은 로그인·GM 형태 쿠키·로컬 우회·RSC 요청보다 먼저 차단한다", async () => {
+test("공개·로그인·ERP·확장자 경로가 권한·RSC 헤더보다 먼저 봉쇄된다", async () => {
   const fixture = loadProxy(start);
-  for (const path of ["/erp", "/erp/characters/123", "/erp/admin/users?_rsc=probe"]) {
+  assert.deepEqual(Array.from(fixture.config.matcher), ["/:path*"]);
+  for (const path of ["/", "/world", "/login", "/apply", "/survey/x", "/erp", "/erp/admin/users?_rsc=probe", "/download.json", "/assets/probe.html", "/_next/data/id/index.json"]) {
     for (const method of ["GET", "HEAD"]) {
       const response = await fixture.proxy(new NextRequest(`http://localhost:43849${path}`, {
         method,
         headers: { Cookie: "authjs.session-token=synthetic-not-a-token", RSC: "1", "x-stargate-erp-local-access": "1" },
       }));
-      assert.equal(response.status, 307);
+      assert.equal(response.status, 307, path);
       assert.equal(response.headers.get("location"), "http://localhost:43849/maintenance");
       assert.match(response.headers.get("cache-control"), /no-store/);
-      assert.equal(response.headers.get("retry-after"), "57600");
     }
   }
   assert.equal(fixture.authCalls(), 0);
 });
 
-test("모든 ERP API 메서드와 page Server Action은 실행 전에 503을 받는다", async () => {
+test("인증·ERP·cron·worker를 포함한 모든 API 메서드와 Server Action을 차단한다", async () => {
   const fixture = loadProxy(start);
-  for (const path of ["/api/erp", "/api/erp/credits", "/api/erp/inventory/123"]) {
+  for (const path of ["/api", "/api/erp", "/api/auth/session", "/api/auth/callback/credentials", "/api/cron/test", "/api/worker/test", "/api/vtt/test", "/api/maintenance/write"]) {
     for (const method of ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
       const response = await fixture.proxy(new NextRequest(`http://localhost:43849${path}`, { method }));
-      assert.equal(response.status, 503);
-      assert.equal((await response.json()).code, "ERP_MAINTENANCE");
+      assert.equal(response.status, 503, `${path} ${method}`);
+      const payload = await response.json();
+      assert.equal(payload.code, "SITE_MAINTENANCE");
+      assert.equal(payload.resumePolicy, "manual");
+      assert.equal(payload.endsAt, undefined);
       assert.match(response.headers.get("cache-control"), /no-store/);
     }
   }
-  const action = await fixture.proxy(new NextRequest("http://localhost:43849/erp", { method: "POST", headers: { "Next-Action": "synthetic-probe" } }));
-  assert.equal(action.status, 503);
+  for (const path of ["/", "/erp", "/maintenance", "/api/maintenance", "/_next/static/probe.js", "/assets/StarGate_logo_watermark.webp"]) {
+    const action = await fixture.proxy(new NextRequest(`http://localhost:43849${path}`, { method: "POST", headers: { "Next-Action": "synthetic-probe" } }));
+    assert.equal(action.status, 503, path);
+  }
   assert.equal(fixture.authCalls(), 0);
 });
 
-test("점검 전·종료 경계에는 기존 인증과 라우팅으로 복귀한다", async () => {
-  for (const now of [start - 1, end]) {
+test("안내 시각 및 2개월 이후도 차단하며 명시적 해제만 원래 경로로 복귀한다", async () => {
+  for (const now of [end, end + 62 * 86_400_000]) {
     const { proxy } = loadProxy(now);
+    assert.equal((await proxy(new NextRequest("http://localhost:43849/"))).status, 307);
+    assert.equal((await proxy(new NextRequest("http://localhost:43849/api/erp/dashboard"))).status, 503);
+  }
+  for (const [now, env] of [[start - 1, {}], [end, { ERP_MAINTENANCE_DISABLED: "1" }]]) {
+    const { proxy } = loadProxy(now, env);
+    assert.equal((await proxy(new NextRequest("http://localhost:43849/"))).headers.get("x-middleware-next"), "1");
     const page = await proxy(new NextRequest("http://localhost:43849/erp"));
     assert.equal(page.headers.get("location"), "http://localhost:43849/login");
     const api = await proxy(new NextRequest("http://localhost:43849/api/erp/dashboard"));
@@ -77,10 +88,13 @@ test("점검 전·종료 경계에는 기존 인증과 라우팅으로 복귀한
   }
 });
 
-test("공개 메인·로그인·점검 조회·유사 접두 경로는 격리 대상이 아니다", async () => {
+test("공지와 필요한 정적 리소스의 읽기만 통과한다", async () => {
   const { proxy } = loadProxy(start);
-  for (const path of ["/", "/world", "/login", "/api/maintenance", "/api/auth/session", "/erplease", "/api/erplease"]) {
-    const response = await proxy(new NextRequest(`http://localhost:43849${path}`));
-    assert.equal(response.headers.get("x-middleware-next"), "1");
+  for (const path of ["/maintenance", "/api/maintenance", "/_next/static/chunks/app.js", "/assets/StarGate_logo_watermark.webp", "/assets/favicon.ico"]) {
+    for (const method of ["GET", "HEAD"]) {
+      const response = await proxy(new NextRequest(`http://localhost:43849${path}`, { method }));
+      assert.equal(response.headers.get("x-middleware-next"), "1", path);
+    }
   }
+  assert.equal((await proxy(new NextRequest("http://localhost:43849/maintenance/preview"))).status, 307);
 });

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { resolvePublicAssetPath } from "@/lib/asset-path";
@@ -60,6 +59,7 @@ export default function MaintenanceNotice({
   preview = false,
 }: MaintenanceNoticeProps) {
   const [remaining, setRemaining] = useState(() => Math.max(0, Date.parse(endsAt) - serverNow));
+  const [currentTime, setCurrentTime] = useState(serverNow);
   const [displayWindow, setDisplayWindow] = useState({ startsAt, endsAt });
 
   useEffect(() => {
@@ -83,9 +83,9 @@ export default function MaintenanceNotice({
         if (!response.ok) throw new Error("maintenance status unavailable");
         const status: MaintenanceState = await response.json();
         if (disposed) return;
-        if (["off", "scheduled", "ended", "invalid"].includes(status.phase)) {
+        if (status.phase === "off") {
           navigating = true;
-          window.location.replace("/erp");
+          window.location.replace("/");
           nextCheck = Number.POSITIVE_INFINITY;
           return;
         }
@@ -97,6 +97,7 @@ export default function MaintenanceNotice({
         endTime = nextEnd;
         origin = performance.now();
         setDisplayWindow({ startsAt: status.startsAt, endsAt: status.endsAt });
+        setCurrentTime(referenceNow);
         setRemaining(Math.max(0, endTime - referenceNow));
         nextCheck = origin + 15_000;
       } catch {
@@ -112,12 +113,9 @@ export default function MaintenanceNotice({
       if (disposed || navigating) return;
       const now = performance.now();
       const left = Math.max(0, endTime - referenceNow - (now - origin));
+      setCurrentTime(referenceNow + (now - origin));
       setRemaining(left);
       if (now >= nextCheck) void checkStatus();
-      else if (left === 0 && nextCheck > now + 5_000) {
-        nextCheck = now;
-        void checkStatus();
-      }
     }
     // 절전 복귀 시 monotonic clock의 OS 차이에 의존하지 않고 서버를 확인한다.
     const onFocus = () => { void checkStatus(); };
@@ -136,7 +134,7 @@ export default function MaintenanceNotice({
   }, [startsAt, endsAt, serverNow, preview]);
 
   // 복구율과 화면 손상도는 서버 기준 현재 시각에서 결정론적으로 계산한다.
-  const now = Date.parse(displayWindow.endsAt) - remaining;
+  const now = currentTime;
   const progress = recoveryProgress(displayWindow.startsAt, displayWindow.endsAt, now);
   const stageIndex = recoveryStageIndex(progress);
   const stage = RECOVERY_STAGES[stageIndex];
@@ -145,7 +143,6 @@ export default function MaintenanceNotice({
   const filledSegments = Math.floor(progress * METER_SEGMENTS);
   const incident = incidentCode(displayWindow.startsAt);
   const startedAt = KST_FORMATTER.format(new Date(displayWindow.startsAt));
-  const resumesAt = KST_FORMATTER.format(new Date(displayWindow.endsAt));
   const atmosphere = {
     "--corruption": corruption.toFixed(3),
     "--emblem": `url("${resolvePublicAssetPath("/assets/StarGate_logo_watermark.webp")}")`,
@@ -189,21 +186,21 @@ export default function MaintenanceNotice({
                 <i aria-hidden="true" />SYSTEM BREACH DETECTED · {formatKstClock(Date.parse(displayWindow.startsAt))} KST
               </p>
               <h1 id="maintenance-title" className={styles.notice__title}>
-                <span className={styles.notice__srOnly}>내부망 침해, 복구 진행 중</span>
-                <GlitchText text="내부망 침해" intensity={corruption} className={styles.notice__titleBreach} />
+                <span className={styles.notice__srOnly}>전산망 침해, 복구 진행 중</span>
+                <GlitchText text="전산망 침해" intensity={corruption} className={styles.notice__titleBreach} />
                 <span className={styles.notice__titleRecover} aria-hidden="true">
                   복구 진행 중<i className={styles.notice__cursor} />
                 </span>
               </h1>
               <p className={styles.notice__lead}>
-                {startedAt}, 내부 업무망(ERP)에서 <strong>탈취된 관리자 계정</strong>을 이용한 비인가 접근이 확인되었습니다.
-                보안관제센터는 즉시 전 구역을 격리하고 복구 절차에 착수했습니다.
+                {startedAt}, 노부스 오르도 통합 전산망에서 <strong>탈취된 관리자 계정</strong>을 이용한 비인가 접근이 확인되었습니다.
+                보안관제센터는 사이트 전체를 격리하고 복구 절차에 착수했습니다. 공개 홈페이지·로그인·ERP 이용을 모두 중단합니다.
               </p>
               <dl className={styles.notice__facts}>
                 <div><dt>최초 탐지</dt><dd><time dateTime={displayWindow.startsAt}>{startedAt}</time></dd></div>
                 <div><dt>침입 경로</dt><dd className={styles.notice__pending}>분석 중</dd></div>
-                <div><dt>피해 범위</dt><dd>ERP 전 구역</dd></div>
-                <div><dt>재개 예정</dt><dd><time dateTime={displayWindow.endsAt}>{resumesAt}</time></dd></div>
+                <div><dt>접속 제한</dt><dd>사이트 전체</dd></div>
+                <div><dt>재개 일정</dt><dd className={styles.notice__pending}>추후 별도 공지</dd></div>
               </dl>
             </div>
 
@@ -245,12 +242,21 @@ export default function MaintenanceNotice({
                   </ol>
                 </div>
                 <div>
-                  <div className={styles.notice__countdown}>
-                    <p>업무망 자동 재개까지</p>
-                    <strong>{formatCountdown(remaining)}</strong>
-                    <span aria-hidden="true">HOURS : MINUTES : SECONDS</span>
+                  <div className={styles.notice__countdown} aria-live="polite">
+                    {remaining > 0 ? (
+                      <>
+                        <p>다음 상황 안내까지</p>
+                        <strong aria-live="off">{formatCountdown(remaining)}</strong>
+                        <span aria-hidden="true">HOURS : MINUTES : SECONDS</span>
+                      </>
+                    ) : (
+                      <>
+                        <p>보안 점검 계속</p>
+                        <p className={styles.notice__continued}>보안 점검이 계속되고 있습니다. 서비스 재개 일정은 추후 별도 공지하겠습니다.</p>
+                      </>
+                    )}
                   </div>
-                  <a className={styles.notice__retry} href="/erp">접속 상태 다시 확인<span aria-hidden="true">↗</span></a>
+                  <p className={styles.notice__scheduleNote}>별도 안내가 있을 때까지 접속 제한을 유지합니다.</p>
                 </div>
               </div>
             </section>
@@ -267,8 +273,7 @@ export default function MaintenanceNotice({
 
           <footer className={styles.notice__footer}>
             <div className={styles.notice__footerMeta}>
-              <p>NOVUS ORDO 보안관제센터<span>{incident} · 대응 종료 시 업무망 자동 재개</span></p>
-              <Link className={styles.notice__archiveLink} href="/">공식 공개 아카이브로 이동<span aria-hidden="true">↗</span></Link>
+              <p>NOVUS ORDO 보안관제센터<span>{incident} · 사이트 전체 보안 점검 · 재개 일정 추후 공지</span></p>
             </div>
           </footer>
         </div>

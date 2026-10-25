@@ -6,6 +6,11 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { STRIP_INJECTED_USER_SELECT_SCRIPT } from "@/lib/runtime/strip-injected-user-select";
 
 import "./globals.css";
+import SiteMaintenanceGate from "@/components/maintenance/SiteMaintenanceGate";
+import { getMaintenanceState } from "@/lib/maintenance/schedule";
+
+// 예약·수동 해제 상태를 빌드 시점의 HTML에 고정하지 않는다.
+export const dynamic = "force-dynamic";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -66,6 +71,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const maintenance = getMaintenanceState();
   return (
     <html
       lang="ko"
@@ -79,8 +85,8 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {children}
-        <SpeedInsights />
+        <SiteMaintenanceGate initialState={maintenance}>{children}</SiteMaintenanceGate>
+        {maintenance.phase !== "active" && <SpeedInsights />}
       </body>
     </html>
   );

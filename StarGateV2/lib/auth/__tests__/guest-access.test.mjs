@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import test from "node:test";
 
 import {
@@ -124,7 +125,11 @@ test("proxy는 게스트 JWT를 검증하고 ERP API 쓰기를 공통 차단한�
   assert.match(source, /authToken\.token\.isGuest === true/);
   assert.match(source, /headers\.append\("Vary", "Cookie"\)/);
   assert.match(source, /status: 403/);
-  assert.match(source, /"\/api\/erp\/:path\*"/);
+  const matcher = JSON.parse(source.match(/matcher:\s*(\[[^\]]+\])/)[1]);
+  const { unstable_doesMiddlewareMatch } = createRequire(import.meta.url)("next/experimental/testing/server");
+  for (const url of ["/api/erp", "/api/erp/credits", "/api/erp/inventory/123"]) {
+    assert.equal(unstable_doesMiddlewareMatch({ config: { matcher }, nextConfig: {}, url }), true, url);
+  }
 });
 
 test("Auth.js secret rotation과 secure cookie 선택 순서를 공유한다", () => {

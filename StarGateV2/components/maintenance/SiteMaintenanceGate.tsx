@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import type { MaintenanceState } from "@/lib/maintenance/schedule";
 
-/** 열린 업무 탭도 예약 시각에 닫는다. 요청의 최종 차단은 서버 proxy가 담당한다. */
-export default function ErpMaintenanceGate({ initialState, children }: {
+/** 새로 로드된 공개·인증·ERP 탭도 공지로 전환한다. 요청의 최종 차단은 서버 proxy가 담당한다. */
+export default function SiteMaintenanceGate({ initialState, children }: {
   initialState: MaintenanceState;
   children: ReactNode;
 }) {
+  const pathname = usePathname();
+  const isNotice = pathname === "/maintenance" || pathname === "/maintenance/preview";
   const [blocked, setBlocked] = useState(initialState.phase === "active");
 
   useEffect(() => {
+    if (isNotice) return;
     let disposed = false;
     let navigating = false;
     let controller: AbortController | undefined;
@@ -74,7 +78,7 @@ export default function ErpMaintenanceGate({ initialState, children }: {
       window.removeEventListener("pageshow", refresh);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [initialState]);
+  }, [initialState, isNotice]);
 
-  return blocked ? <p role="status">긴급 보안 점검 안내로 이동 중입니다.</p> : children;
+  return blocked && !isNotice ? <p role="status">긴급 보안 점검 안내로 이동 중입니다.</p> : children;
 }
