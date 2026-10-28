@@ -4,8 +4,11 @@ import assert from "node:assert/strict";
 import {
   MusicPanel,
   MusicPanelError,
+  buildMusicPanelComponents,
   buildMusicPanelEmbed,
   idleMusicPanelView,
+  nextMusicRepeatMode,
+  parseMusicButtonAction,
 } from "../dist/music/music-panel.js";
 import { MusicRepeatMode } from "../dist/music/types.js";
 
@@ -234,4 +237,139 @@ test("전용 채널 ID가 없으면 공개 메시지를 만들지 않고 음악 
 
   await assert.rejects(() => panel.initialize(), MusicPanelError);
   assert.equal(fetchCount, 0);
+});
+
+function playingView(overrides = {}) {
+  return {
+    connected: true,
+    voiceChannelId: "voice-channel-id",
+    current: track(1),
+    currentQualityMode: "opus-passthrough",
+    upcoming: [track(2), track(3)],
+    paused: false,
+    repeatMode: MusicRepeatMode.off,
+    volumePercent: 100,
+    recentError: null,
+    notice: null,
+    ...overrides,
+  };
+}
+
+test("연결된 상태판에는 일시정지·건너뛰기·반복·셔플 버튼을 붙이고 유휴 상태판에서는 뺀다", () => {
+  const [row] = buildMusicPanelComponents(playingView()).map((item) => item.toJSON());
+  assert.deepEqual(
+    row.components.map((button) => button.custom_id),
+    [
+      "trpg:music:v1:toggle-pause",
+      "trpg:music:v1:skip",
+      "trpg:music:v1:repeat",
+      "trpg:music:v1:shuffle",
+    ],
+  );
+  assert.equal(row.components[0].label, "일시정지");
+  assert.equal(row.components[3].disabled, false);
+
+  const paused = buildMusicPanelComponents(
+    playingView({ paused: true, upcoming: [track(2)], repeatMode: MusicRepeatMode.track }),
+  )[0].toJSON();
+  assert.equal(paused.components[0].label, "재개");
+  assert.equal(paused.components[2].label, "반복: 현재 곡");
+  assert.equal(paused.components[3].disabled, true);
+
+  assert.deepEqual(buildMusicPanelComponents(idleMusicPanelView()), []);
+});
+
+test("반복 버튼은 끔 → 현재 곡 → 대기열 → 끔 순서로 바꾼다", () => {
+  assert.equal(nextMusicRepeatMode(MusicRepeatMode.off), MusicRepeatMode.track);
+  assert.equal(nextMusicRepeatMode(MusicRepeatMode.track), MusicRepeatMode.queue);
+  assert.equal(nextMusicRepeatMode(MusicRepeatMode.queue), MusicRepeatMode.off);
+  assert.equal(parseMusicButtonAction("trpg:music:v1:shuffle"), "shuffle");
+  assert.equal(parseMusicButtonAction("trpg:music:v1:leave"), null);
+});
+
+function panelClient(editImpl) {
+  const message = {
+    author: { id: "bot-user" },
+    embeds: [{ footer: { text: "다채봇 음악 상태판 · 기존 메시지" } }],
+    edit: editImpl,
+  };
+  const channel = {
+    type: 0,
+    guildId: "guild-id",
+    messages: {
+      async fetch() {
+        return { find: (predicate) => (predicate(message) ? message : undefined) };
+      },
+    },
+    async send() {
+      return message;
+    },
+  };
+  return { user: { id: "bot-user" }, channels: { fetch: async () => channel } };
+}
+
+test("상태판 편집이 일시적으로 실패하면 같은 화면을 백오프 뒤 다시 보낸다", async () => {
+  const titles = [];
+  let failNext = false;
+  const client = panelClient(async function edit(payload) {
+    if (failNext) {
+      failNext = false;
+      throw Object.assign(new Error("Service Unavailable"), { status: 503 });
+    }
+    titles.push(payload.embeds[0].toJSON().title);
+    return this;
+  });
+  const errors = [];
+  const panel = new MusicPanel(
+    client,
+    "guild-id",
+    "music-channel-id",
+    (error) => errors.push(error),
+    [5, 5, 5],
+  );
+  await panel.initialize();
+  failNext = true;
+  panel.update(playingView());
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  await panel.flush();
+
+  assert.equal(errors.length, 1);
+  assert.deepEqual(titles, ["⏹️ 재생 대기 중", "▶️ 현재 재생 중"]);
+});
+
+test("재시도 백오프 중에 flush 하면 타이머를 기다리지 않고 마지막 화면을 보낸다", async () => {
+  const titles = [];
+  let failNext = false;
+  const client = panelClient(async function edit(payload) {
+    if (failNext) {
+      failNext = false;
+      throw Object.assign(new Error("Service Unavailable"), { status: 503 });
+    }
+    titles.push(payload.embeds[0].toJSON().title);
+    return this;
+  });
+  const panel = new MusicPanel(client, "guild-id", "music-channel-id", () => {}, [60_000]);
+  await panel.initialize();
+  failNext = true;
+  panel.update(playingView());
+  await panel.flush();
+
+  assert.deepEqual(titles, ["⏹️ 재생 대기 중", "▶️ 현재 재생 중"]);
+});
+
+test("권한 오류로 실패한 상태판 편집은 다시 시도하지 않는다", async () => {
+  let attempts = 0;
+  const client = panelClient(async function edit() {
+    attempts += 1;
+    if (attempts > 1) {
+      throw Object.assign(new Error("Missing Permissions"), { code: 50_013 });
+    }
+    return this;
+  });
+  const panel = new MusicPanel(client, "guild-id", "music-channel-id", () => {}, [5, 5, 5]);
+  await panel.initialize();
+  panel.update(playingView());
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  await panel.flush();
+  assert.equal(attempts, 2);
 });

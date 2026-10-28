@@ -1,13 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-process.env.DISCORD_TOKEN ||= "test-token";
-process.env.DISCORD_CLIENT_ID ||= "test-client-id";
-process.env.MONGODB_URI ||= "mongodb://localhost:27017/test";
-process.env.TRPG_GUILD_ID ||= "test-guild-id";
-process.env.TRPG_FALLBACK_CHANNEL_ID ||= "test-channel-id";
-process.env.TRPG_MUSIC_CHANNEL_ID ||= "test-music-channel-id";
-process.env.TRPG_WEB_BASE_URL ||= "https://example.test";
+import { applyTestEnv } from "./helpers/test-env.mjs";
+
+applyTestEnv();
 
 const { ACTIVE_COMMANDS } = await import("../dist/commands/register.js");
 const {
@@ -23,11 +19,39 @@ const {
 } = await import("../dist/slash/ko-names.js");
 const { MusicRepeatMode } = await import("../dist/music/types.js");
 
-test("활성 명령은 세션·주사위·도움말·한글 음악 루트 다섯 개만 등록한다", () => {
+test("활성 명령은 세션·주사위·도움말·음악·운영 명령만 등록한다", () => {
   assert.deepEqual(
     ACTIVE_COMMANDS.map((command) => command.name),
-    ["세션확인", "roll", "r", HELP_NAME, MUSIC_ROOT],
+    ["세션확인", "내세션", "일정투표", "roll", "r", "비밀굴림", HELP_NAME, MUSIC_ROOT, "상태"],
   );
+});
+
+test("모든 명령은 서버 채널 전용이고 /상태 만 서버 관리 권한자에게 보인다", () => {
+  for (const command of ACTIVE_COMMANDS) {
+    assert.deepEqual(command.contexts, [0], command.name);
+  }
+  const status = ACTIVE_COMMANDS.find((command) => command.name === "상태");
+  assert.equal(status.default_member_permissions, "32");
+  assert.ok(
+    ACTIVE_COMMANDS.filter((command) => command.name !== "상태").every(
+      (command) => command.default_member_permissions === null,
+    ),
+  );
+});
+
+test("필수 옵션은 선택 옵션보다 앞에 등록한다 (Discord 규칙)", () => {
+  for (const command of ACTIVE_COMMANDS) {
+    const options = command.options.filter((option) => option.type !== 1);
+    const firstOptional = options.findIndex((option) => !option.required);
+    if (firstOptional === -1) continue;
+    assert.ok(
+      options.slice(firstOptional).every((option) => !option.required),
+      `${command.name}: 선택 옵션 뒤에 필수 옵션이 있습니다`,
+    );
+  }
+  const poll = ACTIVE_COMMANDS.find((command) => command.name === "일정투표");
+  assert.equal(poll.options.length, 14);
+  assert.ok(poll.options.length <= 25);
 });
 
 test("도움말은 전체·세션·주사위·음악 주제를 선택할 수 있다", () => {
@@ -40,7 +64,7 @@ test("도움말은 전체·세션·주사위·음악 주제를 선택할 수 있
   );
 });
 
-test("음악 기능은 아홉 개 한글 서브커맨드로 묶인다", () => {
+test("음악 기능은 MusicSubcommand 의 한글 서브커맨드와 같은 순서로 등록된다", () => {
   assert.equal(isMusicCommandName(MUSIC_ROOT), true);
   assert.equal(isMusicCommandName("play"), false);
 

@@ -24,6 +24,7 @@ export * from "./stock-promotions.js";
 export * from "./stock-scheduled-events.js";
 export * from "./trades.js";
 export * from "./trpg-sessions.js";
+export * from "./trpg-session-notification-state.js";
 export * from "./trpg-guild-members.js";
 export * from "./trpg-session-notifications.js";
 export * from "./worker.js";

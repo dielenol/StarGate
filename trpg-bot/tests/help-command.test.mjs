@@ -2,13 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 
-process.env.DISCORD_TOKEN ||= "test-token";
-process.env.DISCORD_CLIENT_ID ||= "test-client-id";
-process.env.MONGODB_URI ||= "mongodb://localhost:27017/test";
-process.env.TRPG_GUILD_ID ||= "test-guild-id";
-process.env.TRPG_FALLBACK_CHANNEL_ID ||= "test-channel-id";
-process.env.TRPG_MUSIC_CHANNEL_ID ||= "test-music-channel-id";
-process.env.TRPG_WEB_BASE_URL ||= "https://example.test";
+import { applyTestEnv } from "./helpers/test-env.mjs";
+
+applyTestEnv();
 
 const { buildHelpEmbed, handleHelpCommand } = await import(
   "../dist/commands/help.js"
@@ -23,10 +19,23 @@ test("전체 도움말은 현재 활성화된 세션·주사위·음악 명령�
   ].join("\n");
 
   assert.match(text, /세션확인/);
+  assert.match(text, /\/내세션/);
+  assert.match(text, /\/일정투표/);
   assert.match(text, /\/roll/);
   assert.match(text, /\/r/);
+  assert.match(text, /\/비밀굴림/);
   assert.match(text, /\/음악/);
+  assert.match(text, /\/상태/);
   assert.match(text, /\/도움말 기능:YouTube 음악/);
+});
+
+test("세션 도움말은 내세션 필터·월 이동·선택 메뉴·일정 투표를 안내한다", () => {
+  const embed = buildHelpEmbed(HelpTopic.session, "test-music-channel-id").toJSON();
+  const text = embed.fields.map((field) => `${field.name}\n${field.value}`).join("\n");
+  assert.match(text, /내세션/);
+  assert.match(text, /이전 달/);
+  assert.match(text, /선택 메뉴/);
+  assert.match(text, /\/일정투표/);
 });
 
 test("음악 도움말은 전용 채널·상태판·전체 제어 명령과 음질 정책을 설명한다", () => {
@@ -47,16 +56,28 @@ test("음악 도움말은 전용 채널·상태판·전체 제어 명령과 음�
     "재개",
     "건너뛰기",
     "반복",
+    "볼륨",
+    "셔플",
+    "삭제",
     "초기화",
     "대기열",
     "퇴장",
   ]) {
-    assert.match(text, new RegExp(command));
+    assert.match(text, new RegExp(`/음악 ${command}`));
   }
   assert.match(text, /상태판/);
+  assert.match(text, /버튼/);
   assert.match(text, /재인코딩 없이/);
-  assert.match(text, /볼륨·EQ는 제공하지 않습니다/);
+  assert.match(text, /EQ는 제공하지 않습니다/);
+  assert.doesNotMatch(text, /볼륨·EQ는 제공하지 않습니다/);
   assert.match(text, /사용자 음량/);
+});
+
+test("주사위 도움말은 목표치 판정과 연산자 규칙을 안내한다", () => {
+  const embed = buildHelpEmbed(HelpTopic.dice, "test-music-channel-id").toJSON();
+  const text = embed.fields.map((field) => field.value).join("\n");
+  assert.match(text, /1d100\+10 >= 65/);
+  assert.match(text, /연산자가 필요합니다/);
 });
 
 test("모든 도움말 임베드는 Discord 필드 길이 제한 안에 있다", () => {

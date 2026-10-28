@@ -8,7 +8,7 @@ TRPG "Stargate" 운영을 위한 모노레포. 디스코드 봇 2개 + 웹앱 2�
 |----------|------|------|-------|
 | `StarGateV2/` | 공식 웹앱 (랜딩 + ERP) | Next.js 16, React 19, MongoDB, next-auth 5 beta | `novusweb` |
 | `registra-bot/` | 디스코드 세션 일정 참여 관리 봇 (주 길드) | Node.js, discord.js, MongoDB | `registra` |
-| `trpg-bot/` | 디스코드 세션 일정 참여 관리 봇 (별도 길드/채널) | Node.js, discord.js | `trbot` |
+| `trpg-bot/` | 다채봇 — trpg-web 세션 알림·캘린더 조회·일정 투표·주사위·YouTube 음악 (별도 길드) | Node.js, discord.js, MongoDB | `trbot` |
 | `trpg-web/` | TRPG 세션 캘린더 웹앱 (Discord OAuth + 월간 캘린더 + 세션 생성/편집) | Next.js 16, React 19, MongoDB, next-auth 5 beta | `trweb` |
 | `deploy/` | 배포 스크립트 / PM2 ecosystem | Shell, CJS | - |
 
@@ -105,4 +105,9 @@ pnpm dev         # 개발 서버
 pnpm build       # 프로덕션 빌드
 pnpm lint        # ESLint
 pnpm typecheck   # 타입 체크
+
+cd trpg-bot
+pnpm dev         # tsx 개발 실행
+pnpm typecheck   # 타입 체크
+pnpm test        # dist 정리·빌드 후 node --test (로컬 .env 미사용)
 ```

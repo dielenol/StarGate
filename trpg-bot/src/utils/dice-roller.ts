@@ -20,11 +20,30 @@ export type DiceRollDetail = {
   mode: "sum" | "success" | "botch";
 };
 
+/**
+ * 결과 표시용 식 조각. 주사위 항은 개별 결과와 함께, 연산자·상수·괄호는 원문
+ * 순서 그대로 담아 `1d20 [6] - 1d4 [4]`처럼 실제 계산과 같은 모양으로 보여준다.
+ */
+export type DiceRollDisplayPart =
+  | { kind: "text"; text: string }
+  | { kind: "dice"; notation: string; values: string };
+
+export type DiceComparisonOperator = ">=" | "<=" | ">" | "<" | "=";
+
+/** `식 >= 목표` 형태의 범용 판정 결과 */
+export type DiceRollComparison = {
+  operator: DiceComparisonOperator;
+  target: number;
+  passed: boolean;
+};
+
 export type DiceRollSet = {
   expression: string;
   index: number;
   total: number;
   details: DiceRollDetail[];
+  parts: DiceRollDisplayPart[];
+  comparison: DiceRollComparison | null;
 };
 
 export type DiceRollResult = {
@@ -73,6 +92,7 @@ type DiceEntry = {
 type EvalValue = {
   value: number;
   details: DiceRollDetail[];
+  parts: DiceRollDisplayPart[];
 };
 
 type RollOptions = {
@@ -84,6 +104,17 @@ export class DiceRollError extends Error {
     super(message);
     this.name = "DiceRollError";
   }
+}
+
+/**
+ * 숫자 리터럴·비교 목표치·연산 결과가 JS 로 안전하게 표현되는지 확인한다.
+ * 긴 자릿수 입력은 Infinity 가 되어 결과에 `Infinity` 가 표시되므로 거부한다.
+ */
+function assertSafeNumber(value: number): number {
+  if (!Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER) {
+    throw new DiceRollError("숫자가 너무 큽니다.");
+  }
+  return value;
 }
 
 function createEmptyFlags(): DiceRollFlags {
@@ -169,11 +200,17 @@ function expandAlias(expression: string): string {
   return expression;
 }
 
+/**
+ * 식 앞의 반복 횟수(`6 4d6 k3`)를 떼어낸다.
+ *
+ * 공백 뒤가 연산자·비교 기호면(`5 + 1d20`) 반복이 아니라 앞에 쓴 보정치이므로
+ * 그대로 둔다. 반복 형태인데 횟수가 범위를 벗어나면 다른 식으로 해석하지 않고 거부한다.
+ */
 function extractRepeat(expression: string): {
   repeat: number;
   expression: string;
 } {
-  const repeatMatch = /^(\d+)\s+(.+)$/.exec(expression.trim());
+  const repeatMatch = /^(\d+)\s+(?![+\-*/<>=])(.+)$/.exec(expression.trim());
   if (!repeatMatch) {
     return { repeat: 1, expression };
   }
@@ -184,13 +221,60 @@ function extractRepeat(expression: string): {
     repeat < 2 ||
     repeat > MAX_SETS_PER_SEGMENT
   ) {
-    return { repeat: 1, expression };
+    throw new DiceRollError(
+      `반복 횟수는 2-${MAX_SETS_PER_SEGMENT}회 사이여야 합니다. 예: \`6 4d6 k3\``,
+    );
   }
 
   return {
     repeat,
     expression: repeatMatch[2].trim(),
   };
+}
+
+const COMPARISON_PATTERN = /^(.*?)\s*(>=|<=|==|=|>|<)\s*(-?\d+(?:\.\d+)?)$/;
+
+/**
+ * 식 끝의 범용 판정(`1d100+10 >= 65`, `2d6 <= 7`)을 떼어낸다.
+ * 비교 기호가 있는데 `식 기호 숫자` 형태가 아니면 거부한다.
+ */
+function extractComparison(expression: string): {
+  expression: string;
+  comparison: { operator: DiceComparisonOperator; target: number } | null;
+} {
+  if (!/[<>=]/.test(expression)) {
+    return { expression, comparison: null };
+  }
+  const match = COMPARISON_PATTERN.exec(expression.trim());
+  if (!match || /[<>=]/.test(match[1])) {
+    throw new DiceRollError(
+      "판정은 식 끝에 `>= 65`처럼 비교 기호와 숫자 하나만 쓸 수 있습니다. 예: `1d100+10 >= 65`",
+    );
+  }
+  const operator = (match[2] === "==" ? "=" : match[2]) as DiceComparisonOperator;
+  return {
+    expression: match[1].trim(),
+    comparison: { operator, target: assertSafeNumber(Number(match[3])) },
+  };
+}
+
+function compareTotal(
+  total: number,
+  operator: DiceComparisonOperator,
+  target: number,
+): boolean {
+  switch (operator) {
+    case ">=":
+      return total >= target;
+    case "<=":
+      return total <= target;
+    case ">":
+      return total > target;
+    case "<":
+      return total < target;
+    case "=":
+      return total === target;
+  }
 }
 
 function randomInt(rng: Rng, min: number, max: number): number {
@@ -244,6 +328,10 @@ function validateDice(count: number, sides: DiceSides, modifier: DiceModifier): 
 
   const maxValue = maxSideValue(sides);
   const minValue = minSideValue(sides);
+  if (sides.kind === "fudge" && modifier.reroll) {
+    // 리롤 기준은 1 이상의 정수라 -1·0·1 중 원하는 값만 다시 굴리게 표현할 수 없다.
+    throw new DiceRollError("Fudge 주사위(dF)에는 리롤 옵션(r/ir)을 쓸 수 없습니다.");
+  }
   if (modifier.reroll?.infinite && modifier.reroll.threshold >= maxValue) {
     throw new DiceRollError("무한 리롤 조건이 모든 결과를 리롤하게 만듭니다.");
   }
@@ -407,7 +495,12 @@ function rollDiceTerm({
         let guard = 0;
         while (value <= modifier.reroll.threshold) {
           guard += 1;
-          if (guard > MAX_CHAIN_ROLLS_PER_DIE) break;
+          if (guard > MAX_CHAIN_ROLLS_PER_DIE) {
+            // 조건을 만족하지 못한 값을 조용히 채택하지 않는다.
+            throw new DiceRollError(
+              `무한 리롤 조건을 ${MAX_CHAIN_ROLLS_PER_DIE}회 안에 만족하지 못했습니다. 리롤 기준을 낮춰 주세요.`,
+            );
+          }
           value = rollOne(sides, rng);
           rolls.push(value);
         }
@@ -441,20 +534,19 @@ function rollDiceTerm({
   applySelection(entries, modifier);
   const { total, mode } = calculateDiceTotal(entries, modifier);
   const displayEntries = flags.unsorted ? entries : sortByLowest(entries);
+  const values = flags.hideResults
+    ? "(개별 결과 숨김)"
+    : `[${displayEntries.map(displayEntry).join(", ")}]`;
 
   return {
     value: total,
-    details: [
-      {
-        notation,
-        values: flags.hideResults
-          ? "(개별 결과 숨김)"
-          : `[${displayEntries.map(displayEntry).join(", ")}]`,
-        total,
-        mode,
-      },
-    ],
+    details: [{ notation, values, total, mode }],
+    parts: [{ kind: "dice", notation, values }],
   };
+}
+
+function textPart(text: string): DiceRollDisplayPart {
+  return { kind: "text", text };
 }
 
 class ExpressionParser {
@@ -475,6 +567,15 @@ class ExpressionParser {
     flags: DiceRollFlags;
     totalResultCount: { value: number };
   }) {
+    // 공백을 지우면 `1d20 5`가 d205, `2d6 1d4`가 2d61(+d4 옵션)로 조용히 바뀐다.
+    // 숫자·면·닫는 괄호 뒤 공백 다음에 숫자·여는 괄호가 오면 연산자 누락으로 거부한다.
+    // (`4d6 k3`, `2d20 d1`처럼 공백 뒤 옵션 문자는 허용)
+    const missingOperator = /[\d%)]\s+[\d(]/.exec(expression);
+    if (missingOperator) {
+      throw new DiceRollError(
+        `항 사이에 연산자(+, -, *, /)가 필요합니다: '${missingOperator[0].replace(/\s+/g, " ")}'. 예: \`1d20+5\``,
+      );
+    }
     this.text = expression.replace(/\s+/g, "");
     this.rng = rng;
     this.flags = flags;
@@ -504,8 +605,11 @@ class ExpressionParser {
       const op = this.consume();
       const right = this.parseTerm();
       left = {
-        value: op === "+" ? left.value + right.value : left.value - right.value,
+        value: assertSafeNumber(
+          op === "+" ? left.value + right.value : left.value - right.value,
+        ),
         details: [...left.details, ...right.details],
+        parts: [...left.parts, textPart(` ${op} `), ...right.parts],
       };
     }
     return left;
@@ -520,8 +624,11 @@ class ExpressionParser {
         throw new DiceRollError("0으로 나눌 수 없습니다.");
       }
       left = {
-        value: op === "*" ? left.value * right.value : left.value / right.value,
+        value: assertSafeNumber(
+          op === "*" ? left.value * right.value : left.value / right.value,
+        ),
         details: [...left.details, ...right.details],
+        parts: [...left.parts, textPart(` ${op} `), ...right.parts],
       };
     }
     return left;
@@ -538,6 +645,7 @@ class ExpressionParser {
       return {
         value: -value.value,
         details: value.details,
+        parts: [textPart("-"), ...value.parts],
       };
     }
     return this.parsePrimary();
@@ -551,7 +659,10 @@ class ExpressionParser {
         throw new DiceRollError("닫는 괄호가 없습니다.");
       }
       this.consume();
-      return value;
+      return {
+        ...value,
+        parts: [textPart("("), ...value.parts, textPart(")")],
+      };
     }
 
     const dice = this.tryParseDice();
@@ -562,6 +673,7 @@ class ExpressionParser {
       return {
         value: number,
         details: [],
+        parts: [textPart(formatNumber(number))],
       };
     }
 
@@ -718,7 +830,7 @@ class ExpressionParser {
       if (fraction.length === 0) {
         throw new DiceRollError("소수점 뒤 숫자가 없습니다.");
       }
-      return Number(`${digits}.${fraction}`);
+      return assertSafeNumber(Number(`${digits}.${fraction}`));
     }
 
     if (this.peek()?.toLowerCase() === "d") {
@@ -726,7 +838,7 @@ class ExpressionParser {
       return null;
     }
 
-    return Number(digits);
+    return assertSafeNumber(Number(digits));
   }
 
   private readDigits(): string {
@@ -775,7 +887,11 @@ export function rollDiceExpression(
 
   const rng = options.rng ?? Math.random;
   const flags = createEmptyFlags();
-  const preparedSegments: { expression: string; repeat: number }[] = [];
+  const preparedSegments: {
+    expression: string;
+    repeat: number;
+    comparison: { operator: DiceComparisonOperator; target: number } | null;
+  }[] = [];
   const rolls: DiceRollSet[] = [];
   const totalResultCount = { value: 0 };
 
@@ -785,11 +901,16 @@ export function rollDiceExpression(
 
     const aliased = expandAlias(stripped.expression);
     const repeated = extractRepeat(aliased);
-    if (repeated.expression.length === 0) {
-      throw new DiceRollError("반복할 주사위 식을 입력해 주세요.");
+    const compared = extractComparison(repeated.expression);
+    if (compared.expression.length === 0) {
+      throw new DiceRollError("굴릴 주사위 식을 입력해 주세요.");
     }
 
-    preparedSegments.push(repeated);
+    preparedSegments.push({
+      expression: compared.expression,
+      repeat: repeated.repeat,
+      comparison: compared.comparison,
+    });
   }
 
   for (const segment of preparedSegments) {
@@ -806,6 +927,17 @@ export function rollDiceExpression(
         index: i + 1,
         total: result.value,
         details: result.details,
+        parts: result.parts,
+        comparison: segment.comparison
+          ? {
+              ...segment.comparison,
+              passed: compareTotal(
+                result.value,
+                segment.comparison.operator,
+                segment.comparison.target,
+              ),
+            }
+          : null,
       });
     }
   }

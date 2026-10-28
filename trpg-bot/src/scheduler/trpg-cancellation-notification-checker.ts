@@ -1,14 +1,12 @@
 /**
  * trpg 세션 취소 알림 폴링 스케줄러
  *
- * 흐름:
- *   - `TRPG_POLLING_INTERVAL_MS` 주기로 `findUnnotifiedCancelledTrpgSessions(now)` 폴링.
- *   - 각 세션마다:
- *       1. `claimCancellationNotification` 으로 atomic 발송권 선점 (false 면 skip)
- *       2. `participantDiscordIds` 각각에 DM (실패 시 폴백 채널 멘션)
- *       3. 시도 결과를 `recordNotificationAttempt` 로 적재
- *       4. 전 발송 완료 후 `markCancellationNotificationSent`
- *   - 취소 알림 후보는 shared-db 에서 `cancellationNotificationQueuedAt` 이 있는 문서로 제한한다.
+ * `TRPG_POLLING_INTERVAL_MS` 주기로 `findUnnotifiedCancelledTrpgSessions(now)` 를 폴링하고
+ * 공용 팩토리(`createNotificationScheduler`)로 발송한다. 종류별 규칙:
+ *   - 후보는 shared-db 에서 `cancellationNotificationQueuedAt` 이 있는 문서로 제한
+ *     (생성 DM 전 취소는 대기열에 적재되지 않는다).
+ *   - 단일 회차(roundKey 없음). 수신자는 참가자에서 GM 을 제외한 목록.
+ *   - 세션 시작 시각이 이미 지났으면 DM 없이 완료 처리.
  *
  * @module scheduler/trpg-cancellation-notification-checker
  */
@@ -16,129 +14,67 @@
 import {
   claimCancellationNotification,
   findUnnotifiedCancelledTrpgSessions,
-  hasDeliveredNotificationAttempt,
   markCancellationNotificationSent,
-  recordNotificationAttempt,
+  releaseCancellationNotificationClaim,
 } from "@stargate/shared-db";
 
 import type { Client } from "discord.js";
-import type { TrpgSession } from "@stargate/shared-db";
+
+import type { SchedulerStartOptions } from "./default-scheduler-deps.js";
+import type { NotificationSchedulerSpec } from "./notification-scheduler.js";
 
 import { config } from "../config.js";
-import { sendDmOrFallback } from "../utils/dm-with-fallback.js";
-import { buildTrpgSessionDmMessage } from "../utils/trpg-session-message.js";
+import { createDefaultSchedulerDeps } from "./default-scheduler-deps.js";
+import {
+  createNotificationScheduler,
+  hasSessionStarted,
+  recipientsWithoutGameMaster,
+} from "./notification-scheduler.js";
 
-/** lease 기간 — claim 후 발송 완료까지 5분 안에 끝낸다고 가정 */
-const LEASE_DURATION_MS = 5 * 60 * 1000;
+/** 취소 알림 스케줄러가 쓰는 DB 접근 — 테스트에서 가짜로 교체한다 */
+export interface CancellationSchedulerDb {
+  find: typeof findUnnotifiedCancelledTrpgSessions;
+  claim: typeof claimCancellationNotification;
+  mark: typeof markCancellationNotificationSent;
+  release: typeof releaseCancellationNotificationClaim;
+}
 
-async function processSession(
-  client: Client,
-  session: TrpgSession,
-): Promise<void> {
-  const sessionId = session._id?.toString();
-  if (!sessionId) return;
+const DEFAULT_DB: CancellationSchedulerDb = {
+  find: findUnnotifiedCancelledTrpgSessions,
+  claim: claimCancellationNotification,
+  mark: markCancellationNotificationSent,
+  release: releaseCancellationNotificationClaim,
+};
 
-  const leaseUntil = new Date(Date.now() + LEASE_DURATION_MS);
-  const claimed = await claimCancellationNotification(sessionId, leaseUntil);
-  if (!claimed) return;
-
-  const payload = buildTrpgSessionDmMessage({
-    kind: "cancellation",
-    session,
-    sessionId,
-    baseUrl: config.trpgWebBaseUrl,
-  });
-
-  for (const userId of session.participantDiscordIds) {
-    try {
-      const alreadyDelivered = await hasDeliveredNotificationAttempt({
-        sessionId,
-        discordUserId: userId,
-        kind: "cancellation",
-      });
-      if (alreadyDelivered) continue;
-
-      const result = await sendDmOrFallback(client, userId, payload, {
-        fallbackChannelId: config.trpgFallbackChannelId,
-        mentionUser: true,
-      });
-
-      await recordNotificationAttempt({
-        sessionId,
-        discordUserId: userId,
-        kind: "cancellation",
-        deliveryMethod: result.method,
-        error: result.error ?? null,
-      });
-
-      if (result.method === "failed") {
-        console.warn(
-          `[trpg-cancellation] 발송 실패 — session=${sessionId} user=${userId} error=${result.error}`,
-        );
-      }
-    } catch (err) {
-      console.error(
-        `[trpg-cancellation] 사용자 처리 예외 session=${sessionId} user=${userId}:`,
-        err,
-      );
-      try {
-        await recordNotificationAttempt({
-          sessionId,
-          discordUserId: userId,
-          kind: "cancellation",
-          deliveryMethod: "failed",
-          error: err instanceof Error ? err.message : String(err),
-        });
-      } catch (logErr) {
-        console.error("[trpg-cancellation] 로그 적재 실패:", logErr);
-      }
-    }
-  }
-
-  await markCancellationNotificationSent(sessionId);
+export function createCancellationNotificationSpec(
+  db: Partial<CancellationSchedulerDb> = {},
+): NotificationSchedulerSpec {
+  const d = { ...DEFAULT_DB, ...db };
+  return {
+    name: "cancellation",
+    logKind: "cancellation",
+    messageKind: "cancellation",
+    intervalMs: config.trpgPollingIntervalMs,
+    find: (now) => d.find(now),
+    claim: (sessionId, _session, leaseUntil) => d.claim(sessionId, leaseUntil),
+    mark: (sessionId) => d.mark(sessionId),
+    release: (sessionId, leaseUntil) => d.release(sessionId, leaseUntil),
+    roundKey: () => null,
+    recipients: (session) => recipientsWithoutGameMaster(session),
+    skipReason: (session, now) =>
+      hasSessionStarted(session, now) ? "세션 시작 시각 경과" : null,
+  };
 }
 
 /**
- * 취소 알림 폴링 시작. 반환되는 함수를 호출하면 인터벌이 정리된다.
- *
- * tick 재진입 가드: DB/네트워크 지연으로 tick 이 interval 보다 오래 걸리면
- * 동시 실행될 수 있다. tickInFlight 플래그로 직전 tick 미완료 시 skip.
+ * 취소 알림 폴링 시작. 반환되는 함수를 호출하면 인터벌이 정리되고 진행 중 tick 을 기다린다.
  */
 export function startTrpgCancellationNotificationChecker(
   client: Client,
-): () => void {
-  const intervalMs = config.trpgPollingIntervalMs;
-
-  let tickInFlight = false;
-  const tick = async (): Promise<void> => {
-    if (tickInFlight) return;
-    tickInFlight = true;
-    try {
-      const now = new Date();
-      const sessions = await findUnnotifiedCancelledTrpgSessions(now);
-      for (const session of sessions) {
-        try {
-          await processSession(client, session);
-        } catch (err) {
-          console.error(
-            "[trpg-cancellation] 세션 처리 실패:",
-            session._id?.toString(),
-            err,
-          );
-        }
-      }
-    } catch (err) {
-      console.error("[trpg-cancellation] tick 실패:", err);
-    } finally {
-      tickInFlight = false;
-    }
-  };
-
-  void tick();
-
-  const handle = setInterval(() => {
-    void tick();
-  }, intervalMs);
-
-  return () => clearInterval(handle);
+  options: SchedulerStartOptions,
+): () => Promise<void> {
+  return createNotificationScheduler(
+    createCancellationNotificationSpec(),
+    createDefaultSchedulerDeps(client, options),
+  ).start();
 }

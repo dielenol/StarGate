@@ -14,7 +14,15 @@ POT_PROVIDER_ENTRY="/opt/pot-provider/build/main.js"
 if [[ "${POT_PROVIDER_DISABLED:-0}" != "1" && -f "$POT_PROVIDER_ENTRY" ]]; then
   # 봇 로그와 섞여도 구분되게 접두사를 붙이고, provider 가 죽어도 봇은 계속 실행한다
   # (yt-dlp 는 provider 부재를 경고로만 처리하고 PO token 없이 해석한다).
-  node "$POT_PROVIDER_ENTRY" 2>&1 | sed -u 's/^/[pot-provider] /' &
+  # provider 가 OOM·예외로 종료되면 5초 뒤 다시 띄운다. 컨테이너 종료 신호는
+  # dumb-init 이 프로세스 그룹 전체에 전달하므로 이 루프도 함께 끝난다.
+  (
+    while true; do
+      node "$POT_PROVIDER_ENTRY" 2>&1 | sed -u 's/^/[pot-provider] /' || true
+      echo "[pot-provider] 종료되어 5초 후 다시 기동합니다."
+      sleep 5
+    done
+  ) &
   echo "[trpg-bot] POT provider 를 기동했습니다 (127.0.0.1:4416)."
 else
   echo "[trpg-bot] POT provider 를 사용하지 않습니다 (POT_PROVIDER_DISABLED=${POT_PROVIDER_DISABLED:-0})."

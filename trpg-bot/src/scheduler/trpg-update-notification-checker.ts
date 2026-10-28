@@ -1,6 +1,14 @@
 /**
  * trpg 세션 수정 알림 폴링 스케줄러
  *
+ * `TRPG_POLLING_INTERVAL_MS` 주기로 `findUnnotifiedUpdatedTrpgSessions(now)` 를 폴링하고
+ * 공용 팩토리(`createNotificationScheduler`)로 발송한다. 종류별 규칙:
+ *   - 회차 = `updateNotificationQueuedAt` (roundKey 는 ISO 문자열). claim/mark 필터에
+ *     스냅샷을 넣어 발송 중 새 회차가 쌓이면 mark 가 불일치해 lease 만 해제된다.
+ *   - 수신자는 대기열 스냅샷(`updateNotificationRecipientDiscordIds`, 제외된 참가자 포함)
+ *     에서 GM 을 제외한 목록. 스냅샷이 없으면 현재 참가자.
+ *   - 세션 시작 시각이 이미 지났으면 DM 없이 완료 처리.
+ *
  * @module scheduler/trpg-update-notification-checker
  */
 
@@ -8,117 +16,82 @@ import {
   claimUpdateNotification,
   findUnnotifiedUpdatedTrpgSessions,
   markUpdateNotificationSent,
-  recordNotificationAttempt,
+  releaseUpdateNotificationClaim,
 } from "@stargate/shared-db";
 
 import type { Client } from "discord.js";
 import type { TrpgSession } from "@stargate/shared-db";
 
+import type { SchedulerStartOptions } from "./default-scheduler-deps.js";
+import type { NotificationSchedulerSpec } from "./notification-scheduler.js";
+
 import { config } from "../config.js";
-import { sendDmOrFallback } from "../utils/dm-with-fallback.js";
-import { buildTrpgSessionDmMessage } from "../utils/trpg-session-message.js";
+import { createDefaultSchedulerDeps } from "./default-scheduler-deps.js";
+import {
+  createNotificationScheduler,
+  hasSessionStarted,
+  recipientsWithoutGameMaster,
+} from "./notification-scheduler.js";
 
-const LEASE_DURATION_MS = 5 * 60 * 1000;
-
-function updateRecipients(session: TrpgSession): string[] {
-  return session.updateNotificationRecipientDiscordIds?.length
-    ? session.updateNotificationRecipientDiscordIds
-    : session.participantDiscordIds;
+/** 수정 알림 스케줄러가 쓰는 DB 접근 — 테스트에서 가짜로 교체한다 */
+export interface UpdateSchedulerDb {
+  find: typeof findUnnotifiedUpdatedTrpgSessions;
+  claim: typeof claimUpdateNotification;
+  mark: typeof markUpdateNotificationSent;
+  release: typeof releaseUpdateNotificationClaim;
 }
 
-async function processSession(
-  client: Client,
-  session: TrpgSession,
-): Promise<void> {
-  const sessionId = session._id?.toString();
-  if (!sessionId) return;
+const DEFAULT_DB: UpdateSchedulerDb = {
+  find: findUnnotifiedUpdatedTrpgSessions,
+  claim: claimUpdateNotification,
+  mark: markUpdateNotificationSent,
+  release: releaseUpdateNotificationClaim,
+};
 
-  const leaseUntil = new Date(Date.now() + LEASE_DURATION_MS);
-  const claimed = await claimUpdateNotification(sessionId, leaseUntil);
-  if (!claimed) return;
+/** 회차 스냅샷 — 대기열이 없는 문서(queuedAt null)는 claim 이 실패하도록 epoch 0 */
+function queuedAtOf(session: TrpgSession): Date {
+  return session.updateNotificationQueuedAt ?? new Date(0);
+}
 
-  const payload = buildTrpgSessionDmMessage({
-    kind: "update",
+export function updateRoundKey(session: TrpgSession): string | null {
+  return session.updateNotificationQueuedAt?.toISOString() ?? null;
+}
+
+export function updateRecipients(session: TrpgSession): string[] {
+  const snapshot = session.updateNotificationRecipientDiscordIds;
+  return recipientsWithoutGameMaster(
     session,
-    sessionId,
-    baseUrl: config.trpgWebBaseUrl,
-  });
-
-  for (const userId of updateRecipients(session)) {
-    try {
-      const result = await sendDmOrFallback(client, userId, payload, {
-        fallbackChannelId: config.trpgFallbackChannelId,
-        mentionUser: true,
-      });
-
-      await recordNotificationAttempt({
-        sessionId,
-        discordUserId: userId,
-        kind: "update",
-        deliveryMethod: result.method,
-        error: result.error ?? null,
-      });
-
-      if (result.method === "failed") {
-        console.warn(
-          `[trpg-update] 발송 실패 — session=${sessionId} user=${userId} error=${result.error}`,
-        );
-      }
-    } catch (err) {
-      console.error(
-        `[trpg-update] 사용자 처리 예외 session=${sessionId} user=${userId}:`,
-        err,
-      );
-      try {
-        await recordNotificationAttempt({
-          sessionId,
-          discordUserId: userId,
-          kind: "update",
-          deliveryMethod: "failed",
-          error: err instanceof Error ? err.message : String(err),
-        });
-      } catch (logErr) {
-        console.error("[trpg-update] 로그 적재 실패:", logErr);
-      }
-    }
-  }
-
-  await markUpdateNotificationSent(sessionId);
+    snapshot?.length ? snapshot : session.participantDiscordIds,
+  );
 }
 
-export function startTrpgUpdateNotificationChecker(client: Client): () => void {
-  const intervalMs = config.trpgPollingIntervalMs;
-
-  let tickInFlight = false;
-  const tick = async (): Promise<void> => {
-    if (tickInFlight) return;
-    tickInFlight = true;
-    try {
-      const now = new Date();
-      const sessions = await findUnnotifiedUpdatedTrpgSessions(now);
-      for (const session of sessions) {
-        try {
-          await processSession(client, session);
-        } catch (err) {
-          console.error(
-            "[trpg-update] 세션 처리 실패:",
-            session._id?.toString(),
-            err,
-          );
-        }
-      }
-    } catch (err) {
-      console.error("[trpg-update] tick 실패:", err);
-    } finally {
-      tickInFlight = false;
-    }
+export function createUpdateNotificationSpec(
+  db: Partial<UpdateSchedulerDb> = {},
+): NotificationSchedulerSpec {
+  const d = { ...DEFAULT_DB, ...db };
+  return {
+    name: "update",
+    logKind: "update",
+    messageKind: "update",
+    intervalMs: config.trpgPollingIntervalMs,
+    find: (now) => d.find(now),
+    claim: (sessionId, session, leaseUntil) =>
+      d.claim(sessionId, leaseUntil, queuedAtOf(session)),
+    mark: (sessionId, session) => d.mark(sessionId, queuedAtOf(session)),
+    release: (sessionId, leaseUntil) => d.release(sessionId, leaseUntil),
+    roundKey: updateRoundKey,
+    recipients: updateRecipients,
+    skipReason: (session, now) =>
+      hasSessionStarted(session, now) ? "세션 시작 시각 경과" : null,
   };
+}
 
-  void tick();
-
-  const handle = setInterval(() => {
-    void tick();
-  }, intervalMs);
-
-  return () => clearInterval(handle);
+export function startTrpgUpdateNotificationChecker(
+  client: Client,
+  options: SchedulerStartOptions,
+): () => Promise<void> {
+  return createNotificationScheduler(
+    createUpdateNotificationSpec(),
+    createDefaultSchedulerDeps(client, options),
+  ).start();
 }

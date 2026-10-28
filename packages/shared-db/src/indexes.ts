@@ -658,6 +658,18 @@ export async function ensureSessionReportIndexes(
 }
 
 /**
+ * trpg_sessions 1h 리마인드 스케줄러 후보 스캔 인덱스
+ * (`findDueReminderSessions(…, "1h")`: status + reminder1hSentAt + date 범위).
+ *
+ * 라이브 생성은 운영자 preflight 가 승인 후 수행하므로 `ensureAllIndexes` 의
+ * trpg_sessions 목록에는 넣지 않는다 (HONOR/NOVEX 와 같은 분리 승인 정책).
+ */
+export const TRPG_SESSION_REMINDER_1H_INDEX_DEFINITION: IndexDescription = {
+  key: { status: 1, reminder1hSentAt: 1, date: 1, startTime: 1 },
+  name: "trpg_sessions_reminder1h_pending",
+};
+
+/**
  * 모든 컬렉션의 인덱스를 생성한다.
  * long-running 모드에서는 connect() 후 직접 호출,
  * serverless 모드에서는 필요 시 빌드 스크립트 등에서 1회 실행.
@@ -1245,6 +1257,7 @@ export async function ensureAllIndexes(): Promise<void> {
       },
       {
         // 24h 리마인드 스케줄러: 미발송 + 시작 시각 윈도우 스캔.
+        // 1h 리마인드용은 `TRPG_SESSION_REMINDER_1H_INDEX_DEFINITION` — 운영자 preflight 로 생성.
         key: { status: 1, reminderSentAt: 1, date: 1, startTime: 1 },
         name: "trpg_sessions_reminder_pending",
       },
