@@ -212,7 +212,7 @@
       "category": "SPECIAL",
       "price": 0,
       "description": "리처드가 해쉬에게 건넨 야구공 크기의 전자기 교란 장치.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/richard-emp-grenade.webp",
       "isAvailable": false,
       "isPublic": false,
       "tags": [
@@ -245,7 +245,7 @@
       "category": "SPECIAL",
       "price": 0,
       "description": "리처드가 해쉬에게 건넨 야구공 크기의 전자기 교란 장치.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/richard-emp-grenade.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [

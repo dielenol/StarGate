@@ -5,7 +5,7 @@ name: "리처드의 소형 EMP 수류탄"
 category: "SPECIAL"
 price: 0
 description: "리처드가 해쉬에게 건넨 야구공 크기의 전자기 교란 장치."
-previewImage: ""
+previewImage: "/assets/catalog/special/richard-emp-grenade.webp"
 isAvailable: false
 isPublic: false
 tags: ["NOSB-S1E8-MARGARET-RECOVERY-PART1", "마가렛 회수", "리처드", "해쉬 테거", "EMP 수류탄"]
