@@ -178,7 +178,7 @@
 
 .mapPin__label {
   position: absolute;
-  top: 18px;
+  top: var(--pin-label-y);
   left: var(--pin-label-x, 0px);
   z-index: 6;
   display: flex;

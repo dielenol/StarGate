@@ -114,6 +114,12 @@ const OPERATION_REPORT_NUMBER_PRESETS: Record<
     number: "07.5",
     sortOrder: 109,
   },
+  "NOSB-S1E8-MARGARET-RECOVERY-PART1": {
+    series: "regular",
+    sequence: 8,
+    number: "08",
+    sortOrder: 109.5,
+  },
   "NOSB-MINI-S1E1-NEW-DUBLIN": {
     series: "mini",
     sequence: 1,
@@ -196,6 +202,10 @@ function getPresetByTitle(
     if (/1\s*부|part\s*1/u.test(title)) {
       return OPERATION_REPORT_NUMBER_PRESETS["NOSB-MINI-LULLABY-PART1"];
     }
+  }
+
+  if (/마가렛\s*회수/u.test(title) && /(?<!\d)1\s*부|\bpart\s*1\b/u.test(title)) {
+    return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E8-MARGARET-RECOVERY-PART1"];
   }
 
   if (

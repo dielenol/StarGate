@@ -7,6 +7,41 @@ const { buildOperationReportNumbering } = await import(
 
 const createdAt = "2026-07-12T00:00:00.000Z";
 
+test("마가렛 회수 1부는 정규 08이고 정규와 미니 사이에 정렬한다", () => {
+  const previous = {
+    sessionId: "NOSB-S1E7-DESIRE-PART2",
+    sessionTitle: "욕구 2부",
+    createdAt,
+  };
+  const current = {
+    sessionId: "NOSB-S1E8-MARGARET-RECOVERY-PART1",
+    sessionTitle: "작전 보고서 S1E8: 마가렛 회수 1부",
+    createdAt,
+  };
+  const mini = {
+    sessionId: "NOSB-MINI-LULLABY-PART2",
+    sessionTitle: "빈 창고의 자장가 2부",
+    createdAt,
+  };
+  const legacy = { ...current, sessionId: "LEGACY-RECOVERY" };
+  const later = {
+    ...current,
+    sessionId: "LATER-RECOVERY",
+    sessionTitle: "마가렛 회수 part 10",
+    reportNumber: "10",
+  };
+
+  const numbered = buildOperationReportNumbering([mini, current, previous]);
+
+  assert.deepEqual(
+    numbered.map(({ number }) => number),
+    ["07.5", "08", "MINI07.5"],
+  );
+  assert.equal(numbered[1]?.series, "regular");
+  assert.equal(buildOperationReportNumbering([legacy])[0]?.number, "08");
+  assert.equal(buildOperationReportNumbering([later])[0]?.number, "10");
+});
+
 test("S1E5 악 2부를 정규 보고서 05.5로 고정한다", () => {
   const reports = [
     {

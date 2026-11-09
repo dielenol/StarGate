@@ -29,6 +29,7 @@ interface PinCardLayout {
   x: number;
   y: number;
   labelX?: number;
+  labelY?: number;
 }
 
 const REPORT_CARD_SIZE = 66;
@@ -46,6 +47,7 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   // 파리 회차는 유럽 MINI 카드와 겹치지 않도록 아래 행에 배치한다.
   "07": { x: 88, y: 56, labelX: -132 },
   "07.5": { x: 176, y: 56, labelX: -132 },
+  "08": { x: -82, y: 36, labelX: -48, labelY: 114 },
   MINI01: { x: -92, y: -112 },
   MINI02: { x: 0, y: -94 },
   MINI03: { x: 0, y: -112 },
@@ -72,6 +74,7 @@ function getPinLineStyle(layout: PinCardLayout) {
     "--pin-line-length": `${length.toFixed(4)}px`,
     "--pin-line-angle": `${angle.toFixed(4)}deg`,
     "--pin-label-x": `${Math.round(layout.labelX ?? layout.x / 2)}px`,
+    "--pin-label-y": `${layout.labelY ?? 18}px`,
   };
 }
 
