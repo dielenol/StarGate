@@ -87,6 +87,7 @@ docs/lore/
 - [노부스 오르도 1부 근거·검증 원장](session-sync/nosb-s1e9-novus-ordo-part1-coverage.md)
 - [노부스 오르도 1부 등록 검토안과 도트 시안](session-sync/nosb-s1e9-novus-ordo-part1-user-review.md)
 - [노부스 오르도 1부 제한 열람 등록안](session-sync/nosb-s1e9-novus-ordo-part1-limited-review-payload.json)
+- [노부스 오르도 1부 운영 등록 데이터](../../StarGateV2/scripts/seed-payloads/nosb-s1e9-novus-ordo-part1-v-20261109.json)
 - [노부스 오르도 1부 동기화·검증 기록](session-sync/nosb-s1e9-novus-ordo-part1-execution.md)
 
 - [빈 창고의 자장가 1부 보고서 초안](session-sync/nosb-mini-lullaby-part1-report.md)
