@@ -60,6 +60,7 @@ const {
   relatedCatalogItemsForReport,
   relatedCatalogItemsForWiki,
   relatedReportsForCatalogItem,
+  relatedWikiForCatalogItem,
 } = await import("../catalog/related.ts");
 const { filterCharacterByClearance, filterCharacterForLoreLinks } =
   await import("../personnel.ts");
@@ -625,4 +626,63 @@ test("명시적 report graph key는 대상의 역링크에서도 추론 없이 �
     ).map((entry) => entry.id),
     ["char-3"],
   );
+});
+
+const part1SessionId = "NOSB-S1E8-MARGARET-RECOVERY-PART1";
+const part2SessionId = "NOSB-S1E8-MARGARET-RECOVERY-PART2";
+const part1Citation = `[[report:${part1SessionId}|마가렛 회수 1부]]`;
+
+function recoveryCatalogItems() {
+  const [item] = makeItems();
+  return [
+    { ...item, slug: "council-vaccine-prototype", name: "백신 시제품", description: part1SessionId },
+    { ...item, slug: "mr-odd-usb", name: "오드의 USB", description: part1SessionId },
+    { ...item, slug: "portable-emp-launcher", name: "휴대용 EMP 총", description: part2SessionId },
+  ];
+}
+
+test("보고서 인용은 이전 회차 물품을 승계하지 않고 명시한 물품과 자체 회차만 연결한다", () => {
+  const [oldItem, carriedItem, ownItem] = recoveryCatalogItems();
+  const part2 = makeReport({
+    sessionId: part2SessionId,
+    sessionTitle: "마가렛 회수 2부",
+    summary: part1Citation,
+    relatedCatalogSlugs: [carriedItem.slug],
+  });
+  const items = [oldItem, carriedItem, ownItem];
+
+  assert.deepEqual(
+    relatedCatalogItemsForReport(part2, items).map((entry) => entry.key),
+    [carriedItem.slug, ownItem.slug],
+  );
+  assert.deepEqual(relatedReportsForCatalogItem(oldItem, [part2]), []);
+  assert.equal(relatedReportsForCatalogItem(carriedItem, [part2])[0]?.id, part2._id);
+  assert.equal(relatedReportsForCatalogItem(ownItem, [part2])[0]?.id, part2._id);
+
+  const legacy = { ...part2, sessionId: "LEGACY-RECOVERY" };
+  assert.equal(relatedCatalogItemsForReport(legacy, [oldItem])[0]?.key, oldItem.slug);
+  assert.equal(relatedReportsForCatalogItem(oldItem, [legacy])[0]?.id, legacy._id);
+});
+
+test("위키의 자체 회차를 인용보다 우선하고 다른 회차 물품의 명시 링크는 유지한다", () => {
+  const [oldItem, carriedItem, ownItem] = recoveryCatalogItems();
+  const page = makeWikiPage({
+    title: "작전 보고서 마가렛 회수 2부",
+    category: "작전 보고서",
+    content: `${part1Citation}\n이전 기록의 백신 시제품 언급\n[[catalog:MR-ODD-USB|회수 물증]]`,
+  });
+  for (const identifiedPage of [
+    { ...page, tags: [part2SessionId] },
+    { ...page, title: `${page.title} (${part2SessionId})` },
+  ]) {
+    assert.deepEqual(
+      relatedCatalogItemsForWiki(identifiedPage, [oldItem, carriedItem, ownItem]).map((entry) => entry.key),
+      [carriedItem.slug, ownItem.slug],
+    );
+    assert.deepEqual(relatedWikiForCatalogItem(oldItem, [identifiedPage]), []);
+    assert.equal(relatedWikiForCatalogItem(carriedItem, [identifiedPage])[0]?.id, page._id);
+  }
+
+  assert.equal(relatedCatalogItemsForWiki(page, [oldItem])[0]?.key, oldItem.slug);
+  assert.equal(relatedWikiForCatalogItem(oldItem, [page])[0]?.id, page._id);
 });

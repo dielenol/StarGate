@@ -42,6 +42,44 @@ test("마가렛 회수 1부는 정규 08이고 정규와 미니 사이에 정렬
   assert.equal(buildOperationReportNumbering([later])[0]?.number, "10");
 });
 
+test("마가렛 회수 2부는 정규 08.5로 08 다음, 미니 앞에 정렬한다", () => {
+  const reports = [
+    { sessionId: "NOSB-MINI-LULLABY-PART2", sessionTitle: "빈 창고의 자장가 2부", createdAt },
+    { sessionId: "NOSB-S1E8-MARGARET-RECOVERY-PART2", sessionTitle: "후속 기록", createdAt },
+    { sessionId: "NOSB-S1E8-MARGARET-RECOVERY-PART1", sessionTitle: "마가렛 회수 1부", createdAt },
+    { sessionId: "NOSB-MINI-S1E1-NEW-DUBLIN", sessionTitle: "뉴 더블린", createdAt },
+    { sessionId: "NOSB-S1E7-DESIRE-PART2", sessionTitle: "욕구 2부", createdAt },
+  ];
+
+  assert.deepEqual(
+    buildOperationReportNumbering(reports).map(({ number, series, sequence }) =>
+      [number, series, sequence],
+    ),
+    [
+      ["07.5", "regular", 7.5],
+      ["08", "regular", 8],
+      ["08.5", "regular", 8.5],
+      ["MINI01", "mini", 1],
+      ["MINI07.5", "mini", 7.5],
+    ],
+  );
+});
+
+test("마가렛과 마거렛 제목은 실제 회차에 해당할 때만 분할 번호를 찾는다", () => {
+  for (const [sessionTitle, expected] of [
+    ["마가렛 회수 2부", "08.5"],
+    ["마거렛 회수 PART 2", "08.5"],
+    ["마거렛 회수 1부", "08"],
+    ["마가렛 회수 12부", "12"],
+    ["마거렛 회수 part 20", "12"],
+  ]) {
+    const [result] = buildOperationReportNumbering([
+      { sessionId: "LEGACY-RECOVERY", sessionTitle, createdAt, reportNumber: "12" },
+    ]);
+    assert.equal(result.number, expected, sessionTitle);
+  }
+});
+
 test("S1E5 악 2부를 정규 보고서 05.5로 고정한다", () => {
   const reports = [
     {

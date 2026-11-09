@@ -120,6 +120,12 @@ const OPERATION_REPORT_NUMBER_PRESETS: Record<
     number: "08",
     sortOrder: 109.5,
   },
+  "NOSB-S1E8-MARGARET-RECOVERY-PART2": {
+    series: "regular",
+    sequence: 8.5,
+    number: "08.5",
+    sortOrder: 109.75,
+  },
   "NOSB-MINI-S1E1-NEW-DUBLIN": {
     series: "mini",
     sequence: 1,
@@ -204,8 +210,13 @@ function getPresetByTitle(
     }
   }
 
-  if (/마가렛\s*회수/u.test(title) && /(?<!\d)1\s*부|\bpart\s*1\b/u.test(title)) {
-    return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E8-MARGARET-RECOVERY-PART1"];
+  if (/마[가거]렛\s*회수/u.test(title)) {
+    if (/(?<!\d)2\s*부|\bpart\s*2\b/u.test(title)) {
+      return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E8-MARGARET-RECOVERY-PART2"];
+    }
+    if (/(?<!\d)1\s*부|\bpart\s*1\b/u.test(title)) {
+      return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E8-MARGARET-RECOVERY-PART1"];
+    }
   }
 
   if (

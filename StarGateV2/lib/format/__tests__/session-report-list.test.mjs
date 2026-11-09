@@ -28,7 +28,6 @@ test("저장 좌표를 범위 안으로 보정하고 위치 메타를 유지한�
         locationLabel: "격리 구역",
         mapPrecision: "confirmed",
       }),
-      0,
     ),
     {
       x: 100,
@@ -41,7 +40,7 @@ test("저장 좌표를 범위 안으로 보정하고 위치 메타를 유지한�
 
 test("legacy 본문 키워드의 한반도·맨해튼 위치 fallback을 보존한다", () => {
   assert.deepEqual(
-    getSessionReportMapPoint(report({ summary: "한국 현장 작전" }), 0),
+    getSessionReportMapPoint(report({ summary: "한국 현장 작전" })),
     {
       x: 81.55,
       y: 42,
@@ -52,7 +51,6 @@ test("legacy 본문 키워드의 한반도·맨해튼 위치 fallback을 보존�
   assert.deepEqual(
     getSessionReportMapPoint(
       report({ highlights: ["Manhattan contact established"] }),
-      0,
     ),
     {
       x: 27.5,
@@ -78,4 +76,29 @@ test("목록 DTO는 지도에 필요한 필드만 남기고 본문을 제외한�
   assert.equal(item.createdAt, "2026-08-13T00:00:00.000Z");
   assert.equal("summary" in item, false);
   assert.equal("highlights" in item, false);
+});
+
+test("좌표가 있는 정규 보고서를 추가해도 미분류 카드 위치를 유지한다", () => {
+  const mapped = report({
+    _id: "mapped-report",
+    sessionId: "NOSB-S1E8-MARGARET-RECOVERY-PART2",
+    mapX: 27.5,
+    mapY: 40.4,
+  });
+  const unlocated = [
+    report({ _id: "first", sessionId: "NOSB-MINI-LULLABY-PART1" }),
+    report({ _id: "second", sessionId: "NOSB-MINI-LULLABY-PART2" }),
+  ];
+  const before = buildClientSessionReportList(unlocated);
+  const [first, ...after] = buildClientSessionReportList([...unlocated, mapped]);
+
+  assert.equal(first.number, "08.5");
+  assert.deepEqual(after, before);
+  assert.deepEqual(
+    after.map(({ mapPoint }) => mapPoint),
+    [
+      { x: 48, y: 70, label: "위치 미분류", precision: "estimated" },
+      { x: 65, y: 61, label: "위치 미분류", precision: "estimated" },
+    ],
+  );
 });

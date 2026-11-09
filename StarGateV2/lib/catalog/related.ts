@@ -112,6 +112,23 @@ function pageTextValues(page: WikiPage): string[] {
   );
 }
 
+function contextExactSessionKeys(
+  declaredValues: string[],
+  fallbackValues: string[],
+): string[] {
+  const declaredKeys = extractExactSessionKeys(...declaredValues);
+  return declaredKeys.length > 0
+    ? declaredKeys
+    : extractExactSessionKeys(...fallbackValues);
+}
+
+function explicitWikiCatalogSlugs(content: string): Set<string> {
+  const links = content.normalize("NFKC").matchAll(
+    /\[\[\s*(?:catalog|item|카탈로그):([^\]|\r\n]+)(?:\|[^\r\n]*?)?\]\]/giu,
+  );
+  return new Set(Array.from(links, ([, slug]) => normalizeTerm(slug)).filter(Boolean));
+}
+
 function pageAllowsSessionKeyCatalogMatch(page: WikiPage): boolean {
   const category = page.category.toLowerCase();
   const title = page.title.toLowerCase();
@@ -230,14 +247,16 @@ export function relatedWikiForCatalogItem(
 ): RelatedWikiLink[] {
   const terms = catalogItemSearchTerms(item);
   const itemExactSessionKeys = catalogItemExactSessionKeys(item);
-  if (terms.length === 0) return [];
+  const itemSlug = normalizeTerm(item.slug?.normalize("NFKC") ?? "");
+  if (terms.length === 0 && !itemSlug) return [];
 
   return pages
     .filter((page) => {
-      const pageExactSessionKeys = extractExactSessionKeys(
-        page.title,
-        page.content,
-        ...page.tags,
+      if (itemSlug && explicitWikiCatalogSlugs(page.content).has(itemSlug)) return true;
+
+      const pageExactSessionKeys = contextExactSessionKeys(
+        [page.title, ...page.tags],
+        [page.content],
       );
       if (
         itemExactSessionKeys.length > 0 &&
@@ -277,11 +296,15 @@ export function relatedReportsForCatalogItem(
   return reports
     .filter((report) => {
       if (itemSlug && report.relatedCatalogSlugs?.includes(itemSlug)) return true;
-      const reportExactKeys = extractExactSessionKeys(
+      const reportSessionValues = [
         report.sessionId,
         report.sessionTitle,
         report.summary,
         ...report.highlights,
+      ];
+      const reportExactKeys = contextExactSessionKeys(
+        [report.sessionId],
+        reportSessionValues,
       );
       if (exactSessionKeys.size > 0 || reportExactKeys.length > 0) {
         if (intersects(reportExactKeys, exactSessionKeys)) return true;
@@ -289,25 +312,11 @@ export function relatedReportsForCatalogItem(
           return false;
         }
       } else {
-        const reportKeys = extractSessionKeys(
-          report.sessionId,
-          report.sessionTitle,
-          report.summary,
-          ...report.highlights,
-        );
+        const reportKeys = extractSessionKeys(...reportSessionValues);
         if (reportKeys.some((key) => sessionKeys.has(key))) return true;
       }
 
-      const reportText = [
-        report.sessionId,
-        report.sessionTitle,
-        report.summary,
-        ...report.highlights,
-        ...report.participants,
-        report.locationLabel,
-      ]
-        .filter((value): value is string => Boolean(value))
-        .join(" ");
+      const reportText = reportTextValues(report).join(" ");
 
       return terms.some((term) => includesTerm(reportText, term));
     })
@@ -326,8 +335,8 @@ export function relatedCatalogItemsForReport(
   const contextValues = reportTextValues(report);
   const contextText = contextValues.join(" ");
   const contextSessionKeys = new Set(extractSessionKeys(...contextValues));
-  const contextExactSessionKeys = new Set(
-    extractExactSessionKeys(...contextValues),
+  const exactSessionKeys = new Set(
+    contextExactSessionKeys([report.sessionId], contextValues),
   );
   const explicitSlugs = new Set(report.relatedCatalogSlugs ?? []);
 
@@ -338,7 +347,7 @@ export function relatedCatalogItemsForReport(
         item,
         contextText,
         contextSessionKeys,
-        contextExactSessionKeys,
+        exactSessionKeys,
         {
           allowSessionKeyMatch: true,
         },
@@ -356,18 +365,20 @@ export function relatedCatalogItemsForWiki(
   const contextValues = pageTextValues(page);
   const contextText = contextValues.join(" ");
   const contextSessionKeys = new Set(extractSessionKeys(...contextValues));
-  const contextExactSessionKeys = new Set(
-    extractExactSessionKeys(...contextValues),
+  const exactSessionKeys = new Set(
+    contextExactSessionKeys([page.title, ...page.tags], contextValues),
   );
   const allowSessionKeyMatch = pageAllowsSessionKeyCatalogMatch(page);
+  const explicitSlugs = explicitWikiCatalogSlugs(page.content);
 
   return items
     .filter((item) =>
+      explicitSlugs.has(normalizeTerm(item.slug?.normalize("NFKC") ?? "")) ||
       itemMatchesContext(
         item,
         contextText,
         contextSessionKeys,
-        contextExactSessionKeys,
+        exactSessionKeys,
         {
           allowSessionKeyMatch,
         },

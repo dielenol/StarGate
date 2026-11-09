@@ -48,6 +48,8 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   "07": { x: 88, y: 56, labelX: -132 },
   "07.5": { x: 176, y: 56, labelX: -132 },
   "08": { x: -82, y: 36, labelX: -48, labelY: 114 },
+  // 뉴욕만의 기존 카드 사이에 배치해 브라질 쪽 카드와 분리한다.
+  "08.5": { x: -105, y: -38, labelX: -48, labelY: 114 },
   MINI01: { x: -92, y: -112 },
   MINI02: { x: 0, y: -94 },
   MINI03: { x: 0, y: -112 },

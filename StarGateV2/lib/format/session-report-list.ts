@@ -58,8 +58,7 @@ function getCoordinate(value: number): number {
 
 export function getSessionReportMapPoint(
   report: SessionReportListSource,
-  index: number,
-): SessionReportMapPoint {
+): SessionReportMapPoint | null {
   const text = normalizeReportText(report);
 
   if (
@@ -103,9 +102,16 @@ export function getSessionReportMapPoint(
     };
   }
 
+  return null;
+}
+
+// 이전 미분류 카드 위치에서 시작하는 지도 표시용 슬롯이다.
+const FIRST_UNLOCATED_MAP_SLOT = 20;
+
+function getUnlocatedMapPoint(slot: number): SessionReportMapPoint {
   return {
-    x: 18 + ((index * 17) % 62),
-    y: 58 + ((index * 7) % 16),
+    x: 18 + ((slot * 17) % 62),
+    y: 58 + ((slot * 7) % 16),
     label: "위치 미분류",
     precision: "estimated",
   };
@@ -114,8 +120,10 @@ export function getSessionReportMapPoint(
 export function buildClientSessionReportList(
   reports: readonly SessionReportListSource[],
 ): ClientSessionReportListItem[] {
+  let nextUnlocatedSlot = FIRST_UNLOCATED_MAP_SLOT;
+
   return buildOperationReportNumbering(reports).map(
-    ({ report, number, series }, index) => ({
+    ({ report, number, series }) => ({
       _id: report._id?.toString() ?? "",
       sessionTitle: report.sessionTitle,
       gmName: report.gmName,
@@ -125,7 +133,8 @@ export function buildClientSessionReportList(
           : report.createdAt,
       number,
       series,
-      mapPoint: getSessionReportMapPoint(report, index),
+      mapPoint:
+        getSessionReportMapPoint(report) ?? getUnlocatedMapPoint(nextUnlocatedSlot++),
     }),
   );
 }
