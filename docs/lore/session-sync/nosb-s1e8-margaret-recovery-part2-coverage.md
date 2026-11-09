@@ -4,7 +4,7 @@
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| NOSB-S1E8-MARGARET-RECOVERY-PART2 | docs/lore/session-sync/nosb-s1e8-margaret-recovery-part2-limited-review-payload.json | available | partial |
+| NOSB-S1E8-MARGARET-RECOVERY-PART2 | StarGateV2/scripts/seed-payloads/nosb-s1e8-margaret-recovery-part2-v-20261109.json | available | partial |
 
 ## 원문과 작업 범위
 

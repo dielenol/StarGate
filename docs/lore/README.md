@@ -79,7 +79,8 @@ docs/lore/
 - [마가렛 회수 2부 근거·검증 원장](session-sync/nosb-s1e8-margaret-recovery-part2-coverage.md)
 - [마가렛 회수 2부 사용자 검토안](session-sync/nosb-s1e8-margaret-recovery-part2-user-review.md)
 - [마가렛 회수 2부 제한 열람 등록안](session-sync/nosb-s1e8-margaret-recovery-part2-limited-review-payload.json)
-- [마가렛 회수 2부 준비·검증 기록](session-sync/nosb-s1e8-margaret-recovery-part2-execution.md)
+- [마가렛 회수 2부 운영 등록 데이터](../../StarGateV2/scripts/seed-payloads/nosb-s1e8-margaret-recovery-part2-v-20261109.json)
+- [마가렛 회수 2부 동기화·검증 기록](session-sync/nosb-s1e8-margaret-recovery-part2-execution.md)
 
 - [빈 창고의 자장가 1부 보고서 초안](session-sync/nosb-mini-lullaby-part1-report.md)
 - [빈 창고의 자장가 1부 전체 대상·결정 목록](session-sync/nosb-mini-lullaby-part1-sync-review.json)

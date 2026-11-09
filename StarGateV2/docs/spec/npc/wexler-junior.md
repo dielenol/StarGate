@@ -11,13 +11,13 @@ weight: 미상
 factionCode: MILITARY
 department: USA
 isPublic: false
-loreTags: [미국, 대통령, 웩슬러]
-appearsInEvents: []
+loreTags: [미국, 대통령, 웩슬러, S1E8]
+appearsInEvents: [NOSB-S1E8-MARGARET-RECOVERY-PART2]
 source: manual
 previewImage: /assets/npcs/Wexler-Junior-profile.webp
 mainImage: /assets/npcs/Wexler-Junior-profile.webp
 createdAt: 2026-09-07T00:00:00Z
-updatedAt: 2026-09-07T00:00:00Z
+updatedAt: 2026-11-09T10:00:19Z
 ---
 
 ## 대사
@@ -43,3 +43,6 @@ updatedAt: 2026-09-07T00:00:00Z
 
 ## 관계 (참고)
 - **WEXLER (캘빈 R. 웩슬러)**: 아버지이자 현 미합중국 부통령.
+
+## 작전 출현
+- **08.5 마가렛 회수 2부** — 캘빈 R. 웩슬러가 작성한 연설문을 받아 생중계 담화에서 미국 계엄령과 대노부스 오르도 선전포고를 발표했다.
