@@ -54,3 +54,12 @@
 - 검증: `pnpm typecheck`, `pnpm lint`, `git diff --check` 통과. 실제 `LoginPage`·`LoginForm`과 CSS를 사용하는 임시 로컬 화면에서 밝은 자동완성 배경을 재현해 수정 전·후를 비교했다. 320·390·1440px에서 이중 윤곽 제거와 가로 넘침 없음, 수동 입력·비밀번호 표시/숨김·Tab 포커스·빈 입력 오류 및 오류 테두리를 확인했다. 브라우저 경고·오류 0건.
 - 검증 경계: 기존 `http://localhost:43849/login`은 점검 공지로 이동하여 별도 로컬 화면에서 인증 응답을 모의했다. 실제 계정 로그인과 브라우저 저장 계정의 네이티브 자동완성 호출은 검증하지 않았다. 점검 설정·인증 서버·DB 변경과 push·운영 배포는 수행하지 않았다.
 - 관련 커밋: `f106f15d`
+
+## 2026-11-09 · 버그 수정 · Discord OAuth 발급자 검증
+
+- Discord 승인 뒤 돌아온 정상 인증 응답을 Auth.js가 잘못된 발급자로 거부하는 오류를 수정했다. Discord provider의 기대 발급자를 `https://discord.com`으로 지정하고 기존 PKCE와 계정·권한 검증을 유지했다.
+- 운영 `/api/auth/callback/discord` 로그의 `CallbackRouteError` 및 `unexpected "iss" (issuer) response parameter value`를 확인했고, 실제 인증 설정과 설치된 Auth.js로 같은 실패를 재현했다.
+- 검증: 회귀 테스트 4/4, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check` 통과. 정상 발급자·발급자 파라미터 없는 콜백의 세션 생성과 잘못된 발급자·PKCE 쿠키 누락의 토큰 교환 및 DB 접근 차단을 검증했다. 인증 위험 리뷰와 독립 코드 리뷰에서 조치 사항은 없었다.
+- 검증 경계: Discord 응답·DB·자격증명은 테스트에서 모의했다. 운영 화면에서 Discord 로그인 화면까지 이동함을 확인했지만 이 수정의 운영 배포와 실제 계정 로그인 완료 검증은 수행하지 않았다. 로컬 `localhost:43849`를 점유한 별도 임시 미리보기 서버의 `fixture-nosb91` 설정은 이번 수정에 포함하지 않는다.
+- 관련 커밋: `d7633c2b`
+- 후속 작업: 승인된 운영 배포 후 실제 Discord 로그인 성공과 콜백 오류 소멸을 확인한다.
