@@ -124,6 +124,7 @@ export const CATALOG_ITEM_IMAGE_BY_SLUG = {
     "special",
     "conductor-record-spindle",
   ),
+  "council-vaccine-prototype": catalogAsset("special", "council-vaccine-prototype"),
   "golden-dawn-cultist-mask": catalogAsset(
     "special",
     "golden-dawn-cultist-mask",
@@ -138,10 +139,12 @@ export const CATALOG_ITEM_IMAGE_BY_SLUG = {
     "special",
     "montauk-slaughter-hound-appearance-plate",
   ),
+  "mr-odd-usb": catalogAsset("special", "mr-odd-usb"),
   "nhi-rocket-engine-adaptation-document": catalogAsset(
     "special",
     "nhi-rocket-engine-adaptation-document",
   ),
+  "richard-emp-grenade": catalogAsset("special", "richard-emp-grenade"),
   "used-aurora-virus-syringe": catalogAsset(
     "special",
     "used-aurora-virus-syringe",

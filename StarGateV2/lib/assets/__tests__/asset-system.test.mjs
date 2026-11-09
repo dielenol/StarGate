@@ -746,6 +746,18 @@ test("NPC·상점·카탈로그 레지스트리의 경로는 실제 배포 자�
     "/assets/catalog/special/conductor-corpse.webp",
   );
   assert.equal(
+    getCatalogItemImageSrc("richard-emp-grenade"),
+    "/assets/catalog/special/richard-emp-grenade.webp",
+  );
+  assert.equal(
+    getCatalogItemImageSrc("mr-odd-usb"),
+    "/assets/catalog/special/mr-odd-usb.webp",
+  );
+  assert.equal(
+    getCatalogItemImageSrc("council-vaccine-prototype"),
+    "/assets/catalog/special/council-vaccine-prototype.webp",
+  );
+  assert.equal(
     getCatalogItemImageSrc("white-rose-assistant-call"),
     "/assets/catalog/consumables/white-rose-assistant-call.webp",
   );

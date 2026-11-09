@@ -25,6 +25,7 @@ import { listVisibleSessionReports } from "@/lib/db/session-reports";
 import { listWikiPages } from "@/lib/db/wiki";
 import { formatDate } from "@/lib/format/date";
 import { getCatalogItemImageSrc } from "@/lib/assets/catalog";
+import { buildWikiAutoLinkTargets } from "@/lib/wiki-auto-links";
 import { renderMarkdown } from "@/lib/wiki-render";
 
 import Box from "@/components/ui/Box/Box";
@@ -34,6 +35,7 @@ import Eyebrow from "@/components/ui/Eyebrow/Eyebrow";
 import PageHead from "@/components/ui/PageHead/PageHead";
 import Tag, { type TagTone } from "@/components/ui/Tag/Tag";
 
+import { replaceUnresolvedExplicitMarkup } from "../../../explicit-link-fallback";
 import styles from "./page.module.css";
 
 interface CatalogItemPageProps {
@@ -103,7 +105,6 @@ export default async function CatalogItemPage({
   const isCurator = hasRole(session.user.role, "V");
 
   const scope = catalogScopeForItemCategory(item.category);
-  const contentHtml = renderMarkdown(itemMarkdown(item));
   const image = previewImage(item);
   const tone = categoryTone(item.category);
   const itemIdentifier = itemKey(item) || "—";
@@ -118,6 +119,15 @@ export default async function CatalogItemPage({
   const visiblePages = isCurator
     ? allPages
     : allPages.filter((page) => page.isPublic === true);
+  const contentLinks = buildWikiAutoLinkTargets({
+    catalogItems: [],
+    characters: [],
+    reports: allReports,
+    wikiPages: visiblePages,
+  });
+  const contentHtml = replaceUnresolvedExplicitMarkup(
+    renderMarkdown(itemMarkdown(item), { links: contentLinks, maxAutoLinksTotal: 0 }),
+  );
   const relatedWiki = relatedWikiForCatalogItem(item, visiblePages);
   const relatedReports = relatedReportsForCatalogItem(item, allReports);
 
