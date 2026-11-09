@@ -74,6 +74,12 @@ docs/lore/
 - [마가렛 회수 1부 회원 공개 검토 데이터](session-sync/nosb-s1e8-margaret-recovery-part1-publication-proposal.json)
 - [마가렛 회수 1부 공적 검토안](session-sync/nosb-s1e8-margaret-recovery-part1-honors-review.json)
 - [마가렛 회수 1부 준비·검증 기록](session-sync/nosb-s1e8-margaret-recovery-part1-execution.md)
+- [마가렛 회수 2부 보고서 검토본](session-sync/nosb-s1e8-margaret-recovery-part2-report.md)
+- [마가렛 회수 2부 전체 대상·결정 목록](session-sync/nosb-s1e8-margaret-recovery-part2-sync-review.json)
+- [마가렛 회수 2부 근거·검증 원장](session-sync/nosb-s1e8-margaret-recovery-part2-coverage.md)
+- [마가렛 회수 2부 사용자 검토안](session-sync/nosb-s1e8-margaret-recovery-part2-user-review.md)
+- [마가렛 회수 2부 제한 열람 등록안](session-sync/nosb-s1e8-margaret-recovery-part2-limited-review-payload.json)
+- [마가렛 회수 2부 준비·검증 기록](session-sync/nosb-s1e8-margaret-recovery-part2-execution.md)
 
 - [빈 창고의 자장가 1부 보고서 초안](session-sync/nosb-mini-lullaby-part1-report.md)
 - [빈 창고의 자장가 1부 전체 대상·결정 목록](session-sync/nosb-mini-lullaby-part1-sync-review.json)

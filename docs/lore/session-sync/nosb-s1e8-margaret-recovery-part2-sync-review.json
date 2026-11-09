@@ -1,0 +1,3045 @@
+{
+  "version": 1,
+  "sessionId": "NOSB-S1E8-MARGARET-RECOVERY-PART2",
+  "subjects": [
+    {
+      "id": "operation",
+      "name": "마가렛 회수 2부",
+      "kind": "event",
+      "evidence": "p1 19:32:50–55에 8-2 및 마거렛 회수 선언, p110 23:11:39 종료. p46 21:13:36에 뉴욕 재대치."
+    },
+    {
+      "id": "new-york",
+      "name": "미국 뉴욕 골목과 옥상",
+      "kind": "place",
+      "evidence": "p2–15 골목 대치, p12 19:57:25 뉴욕 잠식 예측, p45–46 21:13:36 특정 좌표의 옥상."
+    },
+    {
+      "id": "shelter",
+      "name": "운연의 보호소와 파괴된 헬기",
+      "kind": "place",
+      "evidence": "p6 19:44:03–53에 핀치가 무너진 헬기 및 파괴 현장을 지난다. 08에는 보호소 습격과 헬기 추락이 기록된다."
+    },
+    {
+      "id": "margaret",
+      "name": "마가렛 / 메리골드 / 줄루 2",
+      "kind": "agent",
+      "evidence": "p3 19:38:00 ‘메리골드’, p7–15 줄루 2의 반응·심상세계·생포, p35 격리 장면."
+    },
+    {
+      "id": "john-wong",
+      "name": "존 웡",
+      "kind": "person",
+      "evidence": "p7 19:46:56에 시체로 명시, p18 20:11:59에 부통령이 사망을 언급."
+    },
+    {
+      "id": "wong-body-voice",
+      "name": "존 웡 시신의 발화",
+      "kind": "entity",
+      "evidence": "p7 19:47:20–27 시신의 관절·입 움직임, p8 19:47:34–20 마가렛에게 이용당한다고 경고."
+    },
+    {
+      "id": "stark",
+      "name": "스타크 일로니손",
+      "kind": "agent",
+      "evidence": "p3 19:36:02–19:38:00 생포 명령, p41–42 오드 권한 M-1 승계, p50–51 사살 명령·일시 지휘 일임, p64·69 공병 지시."
+    },
+    {
+      "id": "pinch",
+      "name": "휘트모어 핀치 / 피펫",
+      "kind": "agent",
+      "evidence": "p5–6 위치 신호 추적, p14–15 마취·받아냄, p37–38 수석 제안 수락, p87 22:28:41 해쉬 치료, p98–102 불칼 회수."
+    },
+    {
+      "id": "unyeon",
+      "name": "운연 / 백진연",
+      "kind": "agent",
+      "evidence": "p11–15 마가렛 심상 대화 및 핀치에게 인계, p63·69·76·87·90 반혼연 회복."
+    },
+    {
+      "id": "zeno",
+      "name": "제노 박사",
+      "kind": "person",
+      "evidence": "p10 19:50:41–19:51:26 무전으로 개입, p35–38 격리 확인 및 핀치의 승진 제안."
+    },
+    {
+      "id": "registrar",
+      "name": "레지스트라 / 아그네타 스톨",
+      "kind": "person",
+      "evidence": "p10 19:51:42–51 드론 및 잠식 계측 보고, p39–40 20:56:55–21:00:06 수잔 신호와 인원 배정. 기존 신원 문서의 레지스트라 호칭과 직무가 일치."
+    },
+    {
+      "id": "recovery-force",
+      "name": "오르도 전투원·회수팀 A·생체관리팀",
+      "kind": "person",
+      "evidence": "p9 19:49:58–19:50:13 전투원이 분해됨, p17 20:09:13 회수팀 투입, p54·61 호출 부대."
+    },
+    {
+      "id": "dead-hand",
+      "name": "프로젝트 데드 핸드",
+      "kind": "concept",
+      "evidence": "p9 19:49:33–49 붉은 지면 잠식, p10 19:51:03 제노가 프로젝트로 지칭, p25 20:26:11 원로 진행 발언."
+    },
+    {
+      "id": "world-thermal-threat",
+      "name": "뉴욕 잠식 54분 예측과 드론",
+      "kind": "event",
+      "evidence": "p10 19:51:42–51 드론 준비, p12 19:57:25 레지스트라 예측, p15 20:06:23 열에너지 감소."
+    },
+    {
+      "id": "mindscape",
+      "name": "마가렛의 심상세계와 부산 기억",
+      "kind": "concept",
+      "evidence": "p11 19:53:12–54:35에 운연 대면 및 가족·부산 기억, p14 20:04:28–20:05:27 분리."
+    },
+    {
+      "id": "pipette-doll",
+      "name": "핀치의 형상을 한 심상 속 인형",
+      "kind": "entity",
+      "evidence": "p14 20:03:53에 마가렛이 위의 떠다니는 인형을 본다."
+    },
+    {
+      "id": "forced-navigation",
+      "name": "핀치 단말의 위치 안내",
+      "kind": "item",
+      "evidence": "p5 19:41:53–19:43:01 단말 앱이 스스로 실행되고 두 위치를 안내, p47 핀치가 수잔에게 감사를 표함."
+    },
+    {
+      "id": "margaret-chamber",
+      "name": "마가렛 격리 장치·산소마스크",
+      "kind": "item",
+      "evidence": "p35 20:50:06–43 산소마스크와 격리 플라스틱, p36 제노의 말을 확인."
+    },
+    {
+      "id": "hand-sample",
+      "name": "마가렛의 손 확보 제안",
+      "kind": "item",
+      "evidence": "p10 19:51:21–26 제노가 머리 제거와 손을 언급. p14–15 실제로는 마취·생포."
+    },
+    {
+      "id": "old-tracker",
+      "name": "8-1 마가렛 추적용 소형 송신기",
+      "kind": "item",
+      "evidence": "08 p16–21 인계 근거와 08.5 p5의 별개 단말 안내를 비교."
+    },
+    {
+      "id": "kim-lee",
+      "name": "킴라박 리",
+      "kind": "agent",
+      "evidence": "p17–18 무전 관측·백악관 보고 및 잔류 명령, p51·95 수잔 사격, p101 22:55:51 해쉬 부축."
+    },
+    {
+      "id": "distorted-mouth",
+      "name": "구강이 뒤틀린 신원 미확인 인물",
+      "kind": "person",
+      "evidence": "p17 20:10:07 킴라박이 잠시 관측하고 떠난다."
+    },
+    {
+      "id": "wexler-senior",
+      "name": "캘빈 R. 웩슬러 부통령",
+      "kind": "person",
+      "evidence": "p18–19 부통령의 회수 확인 및 계엄 준비, p109 23:06:08–51 ‘Son’과 연설문 전달. 기존 미합중국 부통령과 부자관계 명세."
+    },
+    {
+      "id": "wexler-junior",
+      "name": "웩슬러 주니어",
+      "kind": "person",
+      "evidence": "p106 23:02:58 ‘아빠’, p109 부통령이 연설문을 전달, p110 23:11:14 직접 이름과 대통령 선언. 기존 명세·사용자 초상 일치."
+    },
+    {
+      "id": "white-house",
+      "name": "백악관과 미국 행정부",
+      "kind": "institution",
+      "evidence": "p17–19 백악관 통신과 계엄 준비, p106–110 백악관 담화."
+    },
+    {
+      "id": "cia",
+      "name": "CIA 및 미 방첩 라인",
+      "kind": "institution",
+      "evidence": "p1 존 웡의 CIA 표기, p18 부통령의 회수 보고 수신."
+    },
+    {
+      "id": "black-pyramid",
+      "name": "블랙 피라미드",
+      "kind": "place",
+      "evidence": "p18 20:12:34 잔류 지시, p97 22:51:09 수잔의 미래 발언."
+    },
+    {
+      "id": "black-docs",
+      "name": "검은 비준 서류",
+      "kind": "item",
+      "evidence": "p18 20:13:44–p19 20:14:02 부통령이 검은 서류로 준비 지시."
+    },
+    {
+      "id": "secret-facilities",
+      "name": "각국 비밀시설과 러시아 벙커 자료",
+      "kind": "place",
+      "evidence": "p42 21:05:24–46 USB로 접근·위치 목록 취득."
+    },
+    {
+      "id": "broadcast-preparation",
+      "name": "장군·보좌관 및 대통령 프레스룸",
+      "kind": "person",
+      "evidence": "p107 23:03:55–57 합류, p108 23:04:15–37 연락 연결 보고, p109 대통령 생중계."
+    },
+    {
+      "id": "international",
+      "name": "NATO·중국·러시아 및 각국 지도자",
+      "kind": "institution",
+      "evidence": "p108 23:04:15–37 연결 보고, p110 23:10:29–42 대통령이 정보 공유·경고를 발표."
+    },
+    {
+      "id": "us-declaration",
+      "name": "미국 계엄과 대노부스 오르도 선전포고",
+      "kind": "event",
+      "evidence": "p109–110 23:07:30–23:11:14 생중계에서 발표."
+    },
+    {
+      "id": "susans-flashback",
+      "name": "수잔의 과거 훈련과 오르도 면접",
+      "kind": "event",
+      "evidence": "p19–23 탑 붕괴 배경, 마네킹의 훈련, 백악관 응답 및 오드 면접."
+    },
+    {
+      "id": "mannequin",
+      "name": "수잔에게 지시하는 마네킹",
+      "kind": "entity",
+      "evidence": "p20–21 20:16:25–20:18:09 칠판과 암살 지시."
+    },
+    {
+      "id": "bin-laden",
+      "name": "과거 회상의 사살 표적",
+      "kind": "person",
+      "evidence": "p22 20:18:47–20:19:32 사격, p23 20:20:18 빈 라덴으로 지칭."
+    },
+    {
+      "id": "odd",
+      "name": "Mr. 오드",
+      "kind": "person",
+      "evidence": "p23 20:20:56–21:38 과거 면접, p41–42 USB 권한 출처. 08 원문 p14에 피격 사망 기록."
+    },
+    {
+      "id": "odd-dispatch",
+      "name": "오드 명의의 옥상 호출",
+      "kind": "event",
+      "evidence": "p46 21:15:03 단말에 오드 명의 호출. p41–42 권한 승계 후 발생."
+    },
+    {
+      "id": "susan",
+      "name": "수잔 델라웨어 / 클레이보얀스",
+      "kind": "person",
+      "evidence": "p48 파리 폭발 자백, p55 미래 예시자, p89 22:31:37–44 되감기 불가 진술, p99 22:54:13 움직임 소실 및 p103 사후 처리."
+    },
+    {
+      "id": "paris",
+      "name": "프랑스 파리의 수습 현장",
+      "kind": "place",
+      "evidence": "p30 20:39:09–39:28 ‘며칠 전’, p31 20:40:54 각화된 감염자 사이의 손."
+    },
+    {
+      "id": "otilia",
+      "name": "오틸리아 발트만",
+      "kind": "agent",
+      "evidence": "p32 20:41:44의 서술과 p38 20:54:58 제노의 공석 언급. 08은 앞선 사망 진술을 보존했다."
+    },
+    {
+      "id": "moss",
+      "name": "닥터 모스",
+      "kind": "person",
+      "evidence": "p37 20:52:35–53:09 제노의 인간화 설명, p54 21:26:03 크로노스 회귀 언급, 기존 운영 기록 사망."
+    },
+    {
+      "id": "paris-forms",
+      "name": "파리의 각화 감염자 형체와 구조 인력",
+      "kind": "entity",
+      "evidence": "p30–31 각화 형체 및 전투원의 수습, p32–33 과학자가 생체 상태를 확인."
+    },
+    {
+      "id": "maria-original",
+      "name": "기존 요원 마리아",
+      "kind": "agent",
+      "evidence": "p32 20:41:28 원래 마리아의 사망을 명시하고 관측 개체가 마리아가 아님을 설명."
+    },
+    {
+      "id": "maria-impostor",
+      "name": "마리아의 이름으로 행동한 미확인 개체",
+      "kind": "entity",
+      "evidence": "p32 20:41:28–42:51 신원 분리 명시, p33–34 섭취·신체 적응, p46–51 현장 지휘, p99–103 수잔 사후 접촉."
+    },
+    {
+      "id": "susan-foresight",
+      "name": "미래 예시·시간인지 간섭과 잔상",
+      "kind": "concept",
+      "evidence": "p55 21:28:10 미래 예시, p60 21:36:14 시간인지간섭자 호칭, p89 22:31:37–44 되감기 제한·잔상 관측."
+    },
+    {
+      "id": "clock",
+      "name": "크로노스와 수잔 장면의 시계",
+      "kind": "item",
+      "evidence": "p24 20:22:08, p97 22:51:24 같은 황동 시계 프레임. 수잔이 자정을 언급한다."
+    },
+    {
+      "id": "illuminati",
+      "name": "광명회",
+      "kind": "faction",
+      "evidence": "p48 21:18:39–48 수잔이 마지막 스파이와 그런 척을 언급."
+    },
+    {
+      "id": "odyssey",
+      "name": "오디세이 기지",
+      "kind": "place",
+      "evidence": "p48 21:18:20 수잔이 다른 단어와 함께 언급."
+    },
+    {
+      "id": "elders",
+      "name": "첫번째·두번째·세번째 원로와 회의",
+      "kind": "person",
+      "evidence": "p24–28 총리 교체·프로젝트 발언과 가면 아래 공격. p28에서 네베드의 목격이 서술된다."
+    },
+    {
+      "id": "round-table",
+      "name": "원탁 기사단과 원로 수호 임무",
+      "kind": "institution",
+      "evidence": "08의 임명 기록, p24–29의 원로 보호 및 네베드 이탈 선택, p96 수잔이 원로 곁을 예상했다는 발언."
+    },
+    {
+      "id": "elder-victim",
+      "name": "흰 면포를 쓴 임신한 여성",
+      "kind": "person",
+      "evidence": "p26 20:30:01 끌려옴, p27 20:32:06 공격, p28 20:34:08 피해."
+    },
+    {
+      "id": "garrett",
+      "name": "개럿 클라이맥",
+      "kind": "person",
+      "evidence": "p26 20:29:48–20:31:00 부하 지휘와 여성 인계, p28 20:33:13–37 경배."
+    },
+    {
+      "id": "neved",
+      "name": "키아나 오 캘러핸 / 네베드",
+      "kind": "agent",
+      "evidence": "p29 20:38:36 복귀 신청, p53 21:25:32 보이콧, p65 21:47:24 참전, p89–90 잔상 판단 전달, p95 22:47:33–40 방어·검격."
+    },
+    {
+      "id": "clans",
+      "name": "갈로글라와 원로 수하 전사들",
+      "kind": "faction",
+      "evidence": "p26–28 개럿 부하들이 원로 경배, 08 및 미니 회차의 갈로글라 문맥."
+    },
+    {
+      "id": "amalia",
+      "name": "사무총장 아말리아 프레드리카 본 에센",
+      "kind": "person",
+      "evidence": "p43–45 사무총장 호명, 현직 직함과 리처드의 보좌관 맥락이 기존 명세와 일치."
+    },
+    {
+      "id": "richard",
+      "name": "리처드 / R",
+      "kind": "person",
+      "evidence": "p43–45 총장 보좌관 리처드와 사무총장의 대면, p44 21:11:17 지시 직후 멈춤."
+    },
+    {
+      "id": "november",
+      "name": "노벰버 1과 기억·복종 지시",
+      "kind": "concept",
+      "evidence": "p44 21:09:59–11:25 ‘입력’, ‘버그’, 호명, 정지. p45 마지막 연결고리 요구."
+    },
+    {
+      "id": "white-rose",
+      "name": "화이트로즈와 사무총장의 ‘장난감 조직’",
+      "kind": "faction",
+      "evidence": "기존 R은 화이트로즈 수장. p44 21:10:19에는 ‘장난감 조직’이라는 말만 등장."
+    },
+    {
+      "id": "hash",
+      "name": "해쉬 테거 / 인덱서",
+      "kind": "agent",
+      "evidence": "p50 사살 요구, p64·69·76 주사기총 사용, p99 22:53:17–54:13 수잔 사망 직전 행동, p104 편지 발견."
+    },
+    {
+      "id": "siyu",
+      "name": "시유",
+      "kind": "agent",
+      "evidence": "p51 명령에 대한 반응, p65 기절, p90 22:34:22–32 잔상 경고 전달, p102 키아나에 대한 질문."
+    },
+    {
+      "id": "woody",
+      "name": "우디 (03)",
+      "kind": "agent",
+      "evidence": "p55 첫 전투 대면, p90 22:34:40 잔상에 타격 감각, p102 22:56:41 수잔의 단말 회수."
+    },
+    {
+      "id": "accel",
+      "name": "엘 볼라도르 / 악셀",
+      "kind": "agent",
+      "evidence": "p50–51 전기톱 돌격, p64 지뢰 구간 ‘컷’, p96 이후 p99–101 다시 대화·관측."
+    },
+    {
+      "id": "aegis",
+      "name": "발레리아 아젠트 / 이지스",
+      "kind": "agent",
+      "evidence": "p55 21:30:21 방패, p64 공격 시도, p93까지 전투 참가."
+    },
+    {
+      "id": "chronos",
+      "name": "크로노스",
+      "kind": "agent",
+      "evidence": "p54 회귀 진술, p60 EMP 시도, p64 21:43:24 다음 공격 차단 시도, p89–90 수잔의 대응 방식을 판단."
+    },
+    {
+      "id": "jaktil",
+      "name": "작틸 / 작틸리아",
+      "kind": "person",
+      "evidence": "p52–53 핀치와 현장, p58 21:33:25 벌레가 드러난 행동, p82 22:18:55 ‘작틸리아’, p87·90 편지 전달."
+    },
+    {
+      "id": "light-child",
+      "name": "기존 광체 소녀",
+      "kind": "person",
+      "evidence": "08 이전 신원 기록과 08의 미확정 후보. 08.5 p100 22:55:24 작틸이 ‘빛이 세상을 정화’를 말함."
+    },
+    {
+      "id": "engineering",
+      "name": "오르도 공병·지뢰탐지반·탐지견",
+      "kind": "person",
+      "evidence": "p59 21:33:47 호출, p61 도착, p64·69 지뢰 해체·바리케이드 지시."
+    },
+    {
+      "id": "susan-roof",
+      "name": "수잔 옥상 대치와 사후 관측",
+      "kind": "event",
+      "evidence": "p46–55 대치, p56–96 전투, p97–105 사망과 이후 정리."
+    },
+    {
+      "id": "midnight",
+      "name": "자정과 예견된 미래",
+      "kind": "concept",
+      "evidence": "p97 22:51:35 ‘곧 자정’, p98 22:52:09 ‘막을 수 없어요’, p104–105 각 인물 해석."
+    },
+    {
+      "id": "susan-trap",
+      "name": "옥상의 지뢰·수류탄·엄폐물",
+      "kind": "item",
+      "evidence": "p56–62 사격과 지뢰, p64·69 공병 해체와 차폐물, p78 탐지."
+    },
+    {
+      "id": "susan-phone",
+      "name": "수잔의 휴대전화",
+      "kind": "item",
+      "evidence": "p102 22:56:41 우디가 챙김. 이후 본문에 내용·반납 기록 없음."
+    },
+    {
+      "id": "odd-usb",
+      "name": "Mr. 오드의 USB",
+      "kind": "item",
+      "evidence": "p40 21:00:43 스타크가 꺼냄, p41–42 권한·자료 확인. 08에서 먼저 인계받은 기존 품목."
+    },
+    {
+      "id": "pipette-gun",
+      "name": "피펫의 마취 주사기총",
+      "kind": "item",
+      "evidence": "p14 20:04:18–32 목에 주사침과 무장 도판, p15 안정화, p37 제노가 마취제라고 지칭."
+    },
+    {
+      "id": "anesthetic",
+      "name": "피펫이 사용한 마취제와 주사침",
+      "kind": "item",
+      "evidence": "p14 주사침 적중, p37 20:52:53 제노가 마취제로 설명."
+    },
+    {
+      "id": "kerub",
+      "name": "커룹의 불칼",
+      "kind": "item",
+      "evidence": "p79 22:13:44–14:47 수잔 사용·대여 주장, p98–99 핀치 회수·반납 의사, p102 GM 재확인."
+    },
+    {
+      "id": "portable-emp",
+      "name": "휴대용 EMP 총과 모호한 발사체 표기",
+      "kind": "item",
+      "evidence": "p58 21:33:26 휴대용 EMP 총, p60 21:37:16–26 총 발사와 수류탄 형태의 물체 절단."
+    },
+    {
+      "id": "richard-emp",
+      "name": "8-1 리처드의 소형 EMP 수류탄",
+      "kind": "item",
+      "evidence": "08의 해쉬 수령. 08.5 p60 발사체의 주인·이름·붉은 버튼 등 해당 물품 식별 특징 부재."
+    },
+    {
+      "id": "inactivated-vaccine",
+      "name": "인덱서의 광원화 바이러스 사백신",
+      "kind": "item",
+      "evidence": "06.5 사백신 대응·사용 주사기 수습과 별개로, p64 21:43:32 해쉬가 사백신 장전·발포, p66–67 적중과 해쉬의 해석."
+    },
+    {
+      "id": "council-vaccine",
+      "name": "8-1 세계이사회 백신 시제품",
+      "kind": "item",
+      "evidence": "08에서 운연의 시제품 인계. 08.5 p64의 명칭은 광원화 바이러스 사백신, p109 대통령은 사업 독점 제보만 발표."
+    },
+    {
+      "id": "hash-syringe",
+      "name": "인덱서 주사기총·신경안정물질·정신파괴물질",
+      "kind": "item",
+      "evidence": "p64 21:43:32 장전과 발사, p69·71 신경안정물질과 반응, p76·82·88·93 정신파괴물질의 전투 기술 사용."
+    },
+    {
+      "id": "charred-letter",
+      "name": "작틸이 건넨 타다 만 편지",
+      "kind": "item",
+      "evidence": "p87 22:28:46 작틸→해쉬, p90 22:35:07 전달 확인, p104 22:59:03 해쉬가 발견."
+    },
+    {
+      "id": "stimpack",
+      "name": "스팀팩",
+      "kind": "item",
+      "evidence": "p58 21:33:41 킴라박 사용 상태, p64·76 추가 사용, p75 시유 사용."
+    },
+    {
+      "id": "censor-3",
+      "name": "ZULU-0028 파쇄음절탄 CENSOR-3",
+      "kind": "item",
+      "evidence": "p93 22:40:48 키아나가 파쇄음절탄을 장전, p94 22:42:08 GM이 사격 확인. 기존 명세와 구매 불가 설정을 대조."
+    },
+    {
+      "id": "thermite",
+      "name": "키아나의 테르밋 수류탄",
+      "kind": "item",
+      "evidence": "p82 22:18:59 투척과 p84 22:21:47 이후 전투 중 화염."
+    },
+    {
+      "id": "ordinary-gear",
+      "name": "권총·리볼버·샷건·방패·단검·전기톱·대검·장비",
+      "kind": "item",
+      "evidence": "p22 리볼버, p50–55 전기톱·단검·방패·권총, p56 샷건, p95 대검."
+    },
+    {
+      "id": "field-purchases",
+      "name": "샌드위치·라테·사탕·소다",
+      "kind": "item",
+      "evidence": "p29 20:35:02 편의점 샌드위치, p47 수잔 라테, p49 해쉬 사탕, p100 크로노스 소다."
+    },
+    {
+      "id": "historical-costs",
+      "name": "공병·실험적 치료의 전투 비용",
+      "kind": "event",
+      "evidence": "p59 21:33:47 500 크레딧 공병, p87 22:28:41 500 크레딧 치료 규칙."
+    },
+    {
+      "id": "market",
+      "name": "백신 독점과 국제 공조 발표의 경제 맥락",
+      "kind": "event",
+      "evidence": "p108 연락 연결 보고, p109 23:08:14 백신 사업 독점 주장. 상장 법인·계약·가격 미지정."
+    },
+    {
+      "id": "cheney",
+      "name": "딕 체니와 8-1 세계이사회 공격",
+      "kind": "person",
+      "evidence": "08에 세계이사회 참석과 생존. 08.5 p109 드론으로 후원자를 죽였다는 담화에는 딕 체니 실명·새 목격 없음."
+    },
+    {
+      "id": "metro-zulu",
+      "name": "8-1 메트로 독성 개체 / 현장 호칭 줄루 7",
+      "kind": "entity",
+      "evidence": "08 p70–93의 개체와 표적 달팽이. 08.5 p3–15의 줄루 2 및 p60의 줄루 여부 대화는 별건."
+    },
+    {
+      "id": "space-zero",
+      "name": "8-1 스페이스 제로·요한 스미스 및 파리 의혹",
+      "kind": "institution",
+      "evidence": "08에 텍사스의 요한 관련 상충 증언, 08.5 p48 수잔 자백은 협력자와 실행 경위까지 밝히지 않는다."
+    },
+    {
+      "id": "ordo",
+      "name": "노부스 오르도",
+      "kind": "institution",
+      "evidence": "p9–17 회수, p39–46 인원 조율, p109–110 미국 대통령의 고발과 선전포고."
+    },
+    {
+      "id": "sectors",
+      "name": "마누스 섹터 A와 연구기획처",
+      "kind": "institution",
+      "evidence": "p10 무전 개입, p29 섹터 A 전근 선택, p37 연구실 접근, p46 섹터 A 출동."
+    },
+    {
+      "id": "rescue-drones",
+      "name": "레지스트라의 구급 드론",
+      "kind": "event",
+      "evidence": "p68 21:52:49–21:53:37 파견, 핀치가 위급 인원의 우선 이용을 권한다."
+    },
+    {
+      "id": "rooftop-injuries",
+      "name": "옥상전의 일시적 다운·회복",
+      "kind": "event",
+      "evidence": "p64–72 엘·시유·운연·크로노스·아젠트·킴라박 및 지원 인력의 다운과 이후 활동."
+    },
+    {
+      "id": "anonymous-source",
+      "name": "미국 담화의 익명 정보원",
+      "kind": "event",
+      "evidence": "p109–110 제보 인용. 이름·소속·자료 진본은 공개되지 않음."
+    },
+    {
+      "id": "white-house-staff",
+      "name": "백악관의 익명 비서와 참모",
+      "kind": "event",
+      "evidence": "p106 23:02:26 익명 비서, p107 23:03:55–57 장군·보좌관."
+    },
+    {
+      "id": "buried-news",
+      "name": "블랙 피라미드·자정의 미확정 예견",
+      "kind": "event",
+      "evidence": "p97 22:51:05–35, p98 22:52:09의 경고와 p104–105의 별개 해석."
+    }
+  ],
+  "coverage": [
+    {
+      "subjectId": "operation",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "정규 08.5로 08과 이어진 뉴욕 생포, 옥상 전투, 미국의 담화를 기록한다."
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "같은 작전 내용을 위키에서도 찾도록 원본과 동일한 도판·캡션의 제한 열람 위키판을 만든다.",
+          "target": "s1e8-margaret-recovery-part2"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "new-york",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "지도는 08과 같은 뉴욕 기준점에 별도 08.5 카드를 두고 정확한 건물 주소는 적지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "shelter",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "앞 회차에서 이어진 피해 현장으로 기록한다. 보호소 주민의 최종 피해는 합산하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "margaret",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "지면 잠식, 친구를 원한다는 말, 마취와 회수 뒤의 바이탈 안정 및 격리를 구분한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "동일 신원과 기존 별칭을 보존한다. 생포·격리 관측을 사건에 연결하되 사망이나 새 형식의 줄루 등록을 만들지 않는다.",
+          "target": "MARGARET"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "괴물로 불린 경험과 친구를 원한다는 진술을 사건 당시 표현으로 기록한다."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "핀치·운연의 보호와 제노의 통제 요구를 분리한다."
+        }
+      }
+    },
+    {
+      "subjectId": "john-wong",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "08의 피격 뒤 08.5에서 사망이 확인된다. 시신의 발화 원인과 사수 식별은 분리한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 미국/CIA 신원을 사망 확인 후보로 기록한다. 확인일은 2026-10-11이며 실제 사망 시각은 특정하지 않는다.",
+          "target": "JOHN_WONG",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p7 19:46:56에 시체로 명시, p18 20:11:59에 부통령이 사망을 언급.",
+            "expectedPath": "/erp/personnel?group=MILITARY&sub=USA · 미국",
+            "deathRecord": "사망 확인 2026-10-11 19:46:56, 당시 시체 확인. 실제 사망 시각 미상. 승인 뒤 미국의 사망 인원 목록.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "미국 기존 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "wong-body-voice",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "시신 발화는 직접 관측. 발화 주체, 매개와 독립 인격은 미확정으로 적는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "stark",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "회수 및 원격 지휘를 기록하고, USB를 통한 권한 승계와 이전 직책을 구분한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "기존 CLOWN의 캐릭터 카드가 J다. 원문 M-1 권한 승계를 반영하려면 캐릭터 기록의 M 및 감독관 역할 표기 범위를 정한다.",
+          "target": "CLOWN"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "권한 승계 후 직접 출전과 원격 지휘를 구분하는 판단을 근거로 남긴다."
+        },
+        "honors": {
+          "action": "update",
+          "reason": "생포 방향 설정과 별도 옥상전 지휘·공병 투입의 독립 근거로 지휘 공적을 제안한다."
+        }
+      }
+    },
+    {
+      "subjectId": "pinch",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "마가렛의 생포와 구조, 제노와의 합의, 후반 치료와 회수 기여를 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "연구실 전체 접근과 최고 수석 직책은 기록한다. 기존 J에서 새 인가 등급으로 바꿀 근거는 없다.",
+          "target": "PIPETTE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "친구의 의사를 염려하고 치료·보호하는 행동을 기존 성격 문장과 구분한다."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "마가렛과의 우정, 제노와의 조건부 합의, 작틸의 보호를 기록한다."
+        },
+        "honors": {
+          "action": "update",
+          "reason": "마가렛 회수·동료 치료의 독립 근거를 회원 공개안의 공적 예비 심사에 포함한다. V 보고서에서 발급하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "unyeon",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "회수 전 마가렛에게 선택을 묻고, 옥상전에서는 동료를 여러 차례 치료했다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원에 이번 작전의 확인된 행동을 연결하는 안. 제한 열람 검토 동안 기존 공개 프로필의 표시값을 보호한다.",
+          "target": "UNYEON"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "마가렛의 선택을 먼저 묻고 나중에 동료들을 반복 치유한 행동을 근거로 남긴다."
+        },
+        "honors": {
+          "action": "skip",
+          "reason": "마가렛 대화와 반복 치유에 기여했다. 보고서당 최대 세 건 심사에서 직접 결과가 확인된 피펫·키아나·스타크를 우선 제안한다."
+        }
+      }
+    },
+    {
+      "subjectId": "zeno",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "손 확보 제안은 실행과 구분한다. 격리 및 핀치에게 연구실 접근을 제안한 행위는 확인됐다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 연구기구 및 V 유지. 이번 회차의 지휘·격리 행위를 추가하는 안이다.",
+          "target": "DOCTOR_ZENO",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p10 19:50:41–19:51:26 무전으로 개입, p35–38 격리 확인 및 핀치의 승진 제안.",
+            "expectedPath": "/erp/personnel?group=SECRETARIAT&sub=RESEARCH · 사무국 연구기구",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "기존 사무국 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "registrar",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "회수 관측과 옥상전 인원 배정을 별개 기여로 기록한다. ‘레지스틸’은 스타크가 부른 표현에 한정한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 일정 총괄 비서·M 유지. 일회 인원 배정 위임을 영구적 인사권으로 바꾸지 않는다.",
+          "target": "REGISTRAR",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p10 19:51:42–51 드론 및 잠식 계측 보고, p39–40 20:56:55–21:00:06 수잔 신호와 인원 배정. 기존 신원 문서의 레지스트라 호칭과 직무가 일치.",
+            "expectedPath": "/erp/personnel?group=SECRETARIAT&sub=HQ · 사무총장실",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "기존 사무국 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "recovery-force",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장 인력 손실과 후속 투입을 구분한다. 사망 인원·개인 이름은 미확인이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "dead-hand",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "관측된 현상과 제노의 설명을 분리한다. 잠식 규모 예측은 실현 피해로 적지 않는다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 프로젝트 위키의 발현 기록에 뉴욕 잠식과 정지 경위를 추가할 안. 공개 문서 본문은 통합 공개 검토 대상으로 묶는다.",
+          "target": "project-dead-hand"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "world-thermal-threat",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "예측 시간·범위와 진정 뒤 실제 상태를 분리한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "mindscape",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "심상 장면으로 기록한다. 부산을 회수 작전 좌표로 추가하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "pipette-doll",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "심상 속 대상에 한정. 실제 인형 회수나 새로운 격리 개체를 만들 근거가 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "forced-navigation",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "앱과 핀치의 도착은 기록한다. 신호 발신인과 08의 소형 송신기 관계를 확정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "margaret-chamber",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "회수 뒤 생체 격리의 시각 근거다. 설계·장비 모델이나 신규 물품 지급 근거는 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "hand-sample",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "지시는 들렸지만 손 채취·분리의 결과는 확인되지 않았다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "old-tracker",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "이 회차에 같은 실물이 부착되거나 회수됐다는 근거가 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "kim-lee",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "옥상전 사격과 부상자 지원을 기록한다. 비밀 지휘선은 내부 근거로 분리한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 섹터 A의 요원 신원을 보존한다. 별도 지휘선·추정 사수 정보를 공개 신원에 합치지 않는다.",
+          "target": "KIMLEE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "distorted-mouth",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "시신·존 웡·킴라박과의 동일성 근거가 없어 내부 장면 단서로 보존한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "wexler-senior",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "대통령과 별개 인물. 계엄 준비와 부친이 작성한 연설문 전달을 구분한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "미국 정치인과 기존 외부 배치를 유지한다. 숨은 접선과 선전 발언의 출처를 공개 신원 문장에 넣지 않는다.",
+          "target": "WEXLER",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p18–19 부통령의 회수 확인 및 계엄 준비, p109 23:06:08–51 ‘Son’과 연설문 전달. 기존 미합중국 부통령과 부자관계 명세.",
+            "expectedPath": "/erp/personnel?group=MILITARY&sub=USA · 미국",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "미국 기존 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "wexler-junior",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "대통령 생중계의 계엄과 대오르도 선전포고를 확인한다. 제보 내용은 발표자의 주장이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "create",
+          "reason": "기존 비공개 명세와 사용자 제공 전용 초상을 사용해 대통령 신원 등록안을 준비한다. 아버지 신원은 그대로 연결한다.",
+          "target": "WEXLER_JUNIOR",
+          "placement": {
+            "basis": "affiliation",
+            "source": "대통령 직함과 기존 미국 인사 분류를 적용한다. p106 23:02:58 ‘아빠’, p109 부통령이 연설문을 전달, p110 23:11:14 직접 이름과 대통령 선언. 기존 명세·사용자 초상 일치.",
+            "expectedPath": "/erp/personnel?group=MILITARY&sub=USA · 미국",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "미국 기존 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "연설 전 역사적 평가를 묻는 발언을 기존 명세의 성격 문장과 분리한다."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "부통령이 아버지로 직접 등장하고 작성한 연설문을 전한 관계를 보존한다."
+        }
+      }
+    },
+    {
+      "subjectId": "white-house",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "확인된 대통령 담화와 미국 행정부의 배경을 기록한다. 대외 공조의 실제 집행은 별개다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "cia",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "존 웡 신원의 기존 CIA 소속에 한정하고 비밀 지휘 구조는 외부 공개에서 분리한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "black-pyramid",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "직접 관측된 잔류 명령과 수잔이 말한 미래상을 구분한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "black-docs",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "준비 명령만 기록한다. 이름·완성과 보관이 확인된 문헌은 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "secret-facilities",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "시설명이나 실제 좌표를 공개 기록에 추가하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "broadcast-preparation",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "연락 연결 보고를 NATO·러시아·중국의 공동 선전포고로 확대하지 않는다. 개별 인명 없음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "international",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "연락과 공유 발언만 기록하고 공식 참전이나 동맹 성립을 추정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "us-declaration",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "계엄 선포와 선전포고는 확인된 발표다. 감염자 은닉·백신 독점·드론 책임·줄루의 목적은 익명 제보를 인용한 주장이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "susans-flashback",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "비선형 회상 자료로 분리한다. 현재 작전의 사상자 또는 현장 시간으로 취급하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "mannequin",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "훈련 장면의 실체와 운영 주체는 확인되지 않았다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "bin-laden",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "세계관 내 회상 자료에 한정한다. 현실 역사와 동일한 사건으로 기록하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "odd",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "면접은 회상이고 08.5의 현장 생존 출현으로 세지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "08.5는 회상·승계의 관련 보고서로만 연결한다. 08의 사망일과 기존 역할 갱신은 08의 후속 보정으로 분리한다.",
+          "target": "MR_ODD",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p23 20:20:56–21:38 과거 면접, p41–42 USB 권한 출처. 08 원문 p14에 피격 사망 기록.",
+            "expectedPath": "/erp/personnel?group=MANUS&sub=SECTOR_A · 알파 섹터",
+            "deathRecord": "08에서 확인된 사망의 별도 보정에 따른다. 08.5는 과거 면접과 권한 출처만 보강한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "알파 섹터 기존 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "odd-dispatch",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "표시된 명의와 실제 발신자를 구분한다. 오드 생존이나 스타크 발신을 확정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "susan",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "파리·광명회 발언은 증언. 옥상전의 예측·잔상·불칼과 수잔의 사망을 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 현장 전략 고문·H는 이력으로 보존한다. 사망 확인을 별도 상태로 기록하고 조직을 광명회로 자동 변경하지 않는다.",
+          "target": "CLAIRVOYANCE",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p48 파리 폭발 자백, p55 미래 예시자, p89 22:31:37–44 되감기 불가 진술, p99 22:54:13 움직임 소실 및 p103 사후 처리.",
+            "expectedPath": "/erp/personnel?group=MANUS&sub=SECTOR_A · 알파 섹터",
+            "deathRecord": "사망 확인 2026-10-11 22:54:13, 현장 사망·사후 처리 확인. 승인 뒤 알파 섹터 사망 인원 목록.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "알파 섹터 기존 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "선견 주장과 조롱·후회 등 실제 발화를 구분하고 본래 동기를 단정하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "paris",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "파리 수습을 뉴욕 사건과 다른 시점으로 표시한다. 사상자 규모와 직접 원인은 미확인이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "otilia",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "파리 각화와 연구직 공석의 언급을 따로 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "8-2는 공석과 관련 행위를 추가 확인한다. 이 회차 단독으로 실제 사망일이나 새 생사 판정을 만들지 않는다.",
+          "target": "OTILIA"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "moss",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "연구 이력과 크로노스의 인과 주장을 증언으로 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "확정된 기존 사망 상태는 보존하고 08.5 현장 출현으로 세지 않는다.",
+          "target": "DOCTOR_MOSS",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p37 20:52:35–53:09 제노의 인간화 설명, p54 21:26:03 크로노스 회귀 언급, 기존 운영 기록 사망.",
+            "expectedPath": "/erp/personnel?group=SECRETARIAT&sub=RESEARCH · 사무국 연구기구",
+            "deathRecord": "이미 운영에 기록된 사망과 해당 확인 사건을 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "기존 사무국 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "paris-forms",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "수습 관측을 남긴다. 사체 수·개체 코드·표본 채취를 추정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "maria-original",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "파리 수습 자료의 신원 대조를 별도 보존하고, 후반의 ‘마리아’ 행동을 기존 요원에게 쓰지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "사망은 원문 확인, 실제 사망 시각은 미확인. 기존 신원/플레이어 소유 이력은 보존하고 공개 생사 표시 시점은 신원 분리 결정과 묶는다.",
+          "target": "MARIA"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "maria-impostor",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장 기록상의 호명과 실제 신원을 분리한다. 비공개 신원 대조 자료로 보존한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "기존 마리아 신원에 합치지 않는다. 독립 개체 문서와 별도 신원 등록 중 확정 범위가 필요하다.",
+          "target": "MARIA_IMPERSONATOR_CANDIDATE",
+          "placement": {
+            "basis": "unknown",
+            "source": "세션에서 정규 소속을 확인할 수 없다. p32 20:41:28–42:51 신원 분리 명시, p33–34 섭취·신체 적응, p46–51 현장 지휘, p99–103 수잔 사후 접촉.",
+            "expectedPath": "신원 등록·분류 승인 전 작전보고서 내부 단서 · 배치 미확정",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "정규 신원 분류가 확인될 때 해당 조직의 탭·표시 이름을 검증한다.",
+            "icon": "전용 문장 선택 전"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "현장 일시 지휘 관계를 기존 마리아에게 합치지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "susan-foresight",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "예시와 실제 되감기를 구분한다. 전투 잔상에 타격이 전달된 관측을 보존한다."
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "수잔의 미래 예시, 크로노스의 시간 개입, 동일 능력으로 단정할 수 없는 근거를 분리한 개념 문서 제안.",
+          "target": "time-perception-interference"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "clock",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "전환 장면의 표식. 숫자의 의미와 실물 소유는 확정되지 않았다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "illuminati",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "발언의 지시 대상과 가입·파리의 배후는 검증되지 않았다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "기존 광명회 문서의 소속은 보존한다. 다의적인 자백은 작전보고서에만 증언으로 둔다.",
+          "target": "illuminati"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "odyssey",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "이번 회차에는 신규 방문·격리·지휘 관계의 근거가 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "elders",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "개별 원로의 이름, 공식 종족, 정치 공작의 실행은 미확정. 회의의 시간 관계도 별도 표시한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "round-table",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "08 이후의 임무 이탈 선택을 추가한다. 원로 자체와 기사단 전체를 동일 집단으로 쓰지 않는다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 제한 열람 위키에 임명 뒤 원로 보호 임무와 섹터 A 복귀 신청을 보강할 안.",
+          "target": "round-table-knights"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "elder-victim",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "신원·사망 확정·태아 결과를 추정하지 않고 네베드의 결정에 영향을 준 목격으로 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "garrett",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "기존 개럿과 같은 인물로 기록한다. 원로에게 복종하는 장면의 행동을 정규 배치와 분리한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "섹터 B 정규 배치와 인가 미등록을 보존한다. 기존 8-1의 원탁 직함·겸임 선택은 이 장면만으로 확정되지 않는다.",
+          "target": "GARRETT_CLIMAC",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p26 20:29:48–20:31:00 부하 지휘와 여성 인계, p28 20:33:13–37 경배.",
+            "expectedPath": "/erp/personnel?group=MANUS&sub=SECTOR_B · 브라보 섹터",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "브라보 섹터 기존 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "neved",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "복귀 신청과 실제 참전의 차이, 잔상 대응과 종결 검격을 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 마누스 섹터 A와 G를 유지한다. 복귀 신청은 확인되지만 행정 승인 문서나 새 등급은 없다.",
+          "target": "네베드"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "원로 앞의 환멸, 명령 거부와 다시 참전하는 판단을 별개 행동으로 기록한다."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "개럿·원로와의 지휘 경위 및 시유에게 잔상 정보를 전한 행위를 연결한다."
+        },
+        "honors": {
+          "action": "update",
+          "reason": "잔상 취약점 판단·결전 방어의 독립 근거를 회원 공개안의 공적 예비 심사에 포함한다. V 보고서에서 발급하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "clans",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "행동을 목격한 전사들에 한정한다. 모든 갈로글라·욤스비킹의 조직적 가담은 미확정이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "amalia",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "사무총장과 보좌관의 비공개 면담은 별도 근거에 보존한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 사무총장실·V 유지. 비밀 지시와 가족 표현은 공개 신원에 추가하기 전 범위 검토가 필요하다.",
+          "target": "AMALIA_FREDRIKA_VON_ESSEN",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p43–45 사무총장 호명, 현직 직함과 리처드의 보좌관 맥락이 기존 명세와 일치.",
+            "expectedPath": "/erp/personnel?group=SECRETARIAT&sub=HQ · 사무총장실",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "기존 사무국 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "richard",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "면담이 있었다. 발언에 나온 기술적 식별과 지시 결과의 범위는 제한 보존한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "정규 화이트로즈와 보좌관 명칭 유지. ‘노벰버 1’ 별칭 공개와 인간·합성체 분류는 유보한다.",
+          "target": "WHITE_ROSE_R",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 신원 배치와 동일한 조직이다. p43–45 총장 보좌관 리처드와 사무총장의 대면, p44 21:11:17 지시 직후 멈춤.",
+            "expectedPath": "/erp/personnel?group=CIVIL&sub=WHITE_ROSE · 화이트로즈",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "확인한 기존 조직 분류를 사용한다.",
+            "icon": "화이트로즈 기존 문장"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "november",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "직접 관측된 정지와 명령을 분리한다. 기억 소거 완료·조직원·출생을 확정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "white-rose",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "장난감 조직이 화이트로즈를 가리키는지, 수잔과 연결되는지 내부 근거로 보존한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "hash",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "전투의 실험적 대응과 전투 뒤 행동을 분리한다. 편지 본문은 미열람이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원에 이번 작전의 확인된 행동을 연결하는 안. 제한 열람 검토 동안 기존 공개 프로필의 표시값을 보호한다.",
+          "target": "INDEXER"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "격분과 탈진을 본래 성격으로 일반화하지 않고 장면에서 드러난 행동을 기록한다."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "작틸이 편지를 인계한 행위와 킴라박의 부축을 사건 관계로 연결한다."
+        }
+      }
+    },
+    {
+      "subjectId": "siyu",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "기절을 사망으로 기록하지 않는다. 키아나의 전술 정보를 큰 소리로 전달했다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원에 이번 작전의 확인된 행동을 연결하는 안. 제한 열람 검토 동안 기존 공개 프로필의 표시값을 보호한다.",
+          "target": "TIGER298"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "woody",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "잔상 타격 관측과 통신 단말 수습을 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원에 이번 작전의 확인된 행동을 연결하는 안. 제한 열람 검토 동안 기존 공개 프로필의 표시값을 보호한다.",
+          "target": "WD-(𝓃)"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "accel",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "전투 중 이탈을 사망으로 해석하지 않는다. 전투 뒤 행동과 분리해 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원에 이번 작전의 확인된 행동을 연결하는 안. 제한 열람 검토 동안 기존 공개 프로필의 표시값을 보호한다.",
+          "target": "ACCEL"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "aegis",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "기존 섹터 C 요원의 합류와 엄폐를 기록한다. 섹터 이동으로 해석하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원에 이번 작전의 확인된 행동을 연결하는 안. 제한 열람 검토 동안 기존 공개 프로필의 표시값을 보호한다.",
+          "target": "AEGIS"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "chronos",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장에서 실제 회귀가 있었다고 단정하지 않는다. 시간 감속과 대화가 통하지 않는다는 판단을 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "기존 신원에 이번 작전의 확인된 행동을 연결하는 안. 제한 열람 검토 동안 기존 공개 프로필의 표시값을 보호한다.",
+          "target": "TIME"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "jaktil",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "작틸과 작틸리아는 이 회차의 같은 화자. 광체 소녀와의 동일성은 별도 대조가 필요하다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "현장 행동과 핀치·해쉬 관계를 검토한다. 독립 신원·분류·소속·전용 초상은 확정되지 않았다.",
+          "target": "JAKTIL",
+          "placement": {
+            "basis": "unknown",
+            "source": "세션에서 정규 소속을 확인할 수 없다. p52–53 핀치와 현장, p58 21:33:25 벌레가 드러난 행동, p82 22:18:55 ‘작틸리아’, p87·90 편지 전달.",
+            "expectedPath": "신원 등록·분류 승인 전 작전보고서 내부 단서 · 배치 미확정",
+            "deathRecord": "이 회차에서 확인된 새 사망 근거가 없다. 기존 생사 표시를 보존한다.",
+            "hierarchy": "정규 신원 분류가 확인될 때 해당 조직의 탭·표시 이름을 검증한다.",
+            "icon": "전용 문장 선택 전"
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "핀치에게 의지하고 해쉬에게 편지를 건넨 행동은 별도 신원 결정 전 근거에만 둔다."
+        }
+      }
+    },
+    {
+      "subjectId": "light-child",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "유사한 빛 언급만으로 두 인물의 기록을 병합하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "engineering",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "스타크의 현장 지원으로 기록한다. 이 작전의 과거 호출 비용을 새로 정산할 자료는 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "susan-roof",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "회피와 잔상 파악, 수잔의 사망과 미확정 예견을 기록한다. 마리아로 불린 개체의 사후 관측은 분리한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "midnight",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "예견의 내용과 성취는 미확정. 사망이 계획이었다는 해석은 확정으로 쓰지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "susan-trap",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "전장 배치·폭발·해체를 기록한다. 지뢰 종류나 보급품 수령 근거는 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "susan-phone",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "물리 회수 사실을 기록한다. 내용과 장기 보관이 확인되면 증거품 등록을 다시 검토한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "odd-usb",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "내용 미확인 상태에서 읽고 권한을 승계한 사건을 새로 기록한다. 비밀 자료 상세는 제한 보존한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "merge",
+          "reason": "기존 품목의 획득 경위·아이콘을 이어 쓴다. 확인한 내용은 제한 열람 범위의 설명 보강안이다.",
+          "target": "mr-odd-usb"
+        },
+        "catalogPreview": {
+          "action": "merge",
+          "reason": "8-1에 사용자가 채택한 USB 아이콘과 운영 정적 경로를 재사용한다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "실물 한 점의 마지막 확인자는 스타크. 개인 재고 이관을 새로 실행할 근거는 없다."
+        }
+      }
+    },
+    {
+      "subjectId": "pipette-gun",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "단독 장비 사용과 마가렛 생포를 연결한다. 약제 성분·사거리·최종 보관은 미확인이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "식별 가능한 전용 마취 무장을 비매품 특수 물품으로 제안한다. 해쉬의 주사기총과는 병합하지 않는다.",
+          "target": "pipette-anesthetic-syringe-gun"
+        },
+        "catalogPreview": {
+          "action": "review",
+          "reason": "청록 원통 약실·은색 링·회색 그립을 p14 도판에 맞춘 새 검수용 아이콘이다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "발사 사용자는 피펫. 장비 지급·잔여 약제·반납 근거는 없다."
+        }
+      }
+    },
+    {
+      "subjectId": "anesthetic",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "투여 직후 상태의 안정화를 기록한다. 성분·용기·잔여 수량은 독립 품목으로 식별할 수 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "kerub",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "전투 사용과 반납 목적의 회수를 기록한다. 기존 박애솔 취득 경위를 재작성하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "merge",
+          "reason": "기존 ZULU-1004 전리품의 사용·회수 이력에 추가할 안. 정식 대여 승인·영구 소유는 확인되지 않았다.",
+          "target": "kerub-fireblade"
+        },
+        "catalogPreview": {
+          "action": "merge",
+          "reason": "기존 커룹의 불칼 전용 아이콘을 그대로 사용한다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "회수자는 피펫이며 반납 의사를 말했다. 최종 반납 기록이 없고 개인 소유로 전환하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "portable-emp",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "크로노스의 지뢰 무력화 시도가 막혔다. 리처드의 수류탄이나 탄환의 정확한 관계는 확정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "merge",
+          "reason": "기존 병기부 품목의 사용 이력을 제안한다. 성능·가격·탄약·보급은 기존 설정을 보존한다.",
+          "target": "portable-emp-launcher"
+        },
+        "catalogPreview": {
+          "action": "merge",
+          "reason": "기존 휴대용 EMP 총의 전용 WebP를 사용한다."
+        }
+      }
+    },
+    {
+      "subjectId": "richard-emp",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "크로노스의 기존 휴대용 EMP 총과 분리한다. 8-1 품목의 소비·파괴는 미확인이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "inactivated-vaccine",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "발포와 수잔의 반응만 기록한다. 수잔 감염·임상 효능·조성은 확정하지 않는다."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 광원화 바이러스 문서에서 사백신 사용 관측과 세계이사회 시제품의 구분을 보강할 안.",
+          "target": "aurora-virus"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "반복 사용된 인덱서의 사백신을 특수 연구 물품으로 제안한다. 이사회 시제품 및 사용된 주사기 표본과 분리한다.",
+          "target": "indexer-inactivated-aurora-vaccine"
+        },
+        "catalogPreview": {
+          "action": "review",
+          "reason": "밀봉 카트리지의 모양·색은 원문 미확인 사항을 보완하는 대표 도판이다."
+        }
+      }
+    },
+    {
+      "subjectId": "council-vaccine",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "대통령 발언을 시제품의 새 투약이나 인덱서 사백신과의 동일성 근거로 쓰지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "hash-syringe",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "기존 장전·기술 사용으로 기록한다. 피펫 총과 동일 모델, 분리된 규격품이나 구매·소유는 확인되지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "charred-letter",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장 인계와 남은 단서를 기록한다. 발신인·내용·열람 결과는 미상이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "review",
+          "reason": "후속 단서로 보존한다. 편지는 현재 사건·관계 기록을 권장하며, 독립 목록이 필요할 때만 증거품으로 준비한다.",
+          "target": "jaktil-charred-letter"
+        },
+        "catalogPreview": {
+          "action": "review",
+          "reason": "그을린 접지 형태는 대표 도판이다. 읽을 수 있는 글·문장·발신인은 넣지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "해쉬의 물리적 수령은 확인됐으나 게임 인벤토리 지급이나 판매 물품이 아니다."
+        }
+      }
+    },
+    {
+      "subjectId": "stimpack",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "기존 소모품 사용 이력으로 연결한다. 잔량·기존 정산 여부는 이 로그에서 확인되지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "이미 등록된 스팀팩으로 링크한다. 전투마다 같은 공용 품목의 설명을 새로 쓰지 않는다.",
+          "target": "stimpack"
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "과거 실제 사용은 기록하되 이미 차감됐는지 확인되지 않아 중복 차감하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "censor-3",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "키아나의 기존 특수탄 사용으로 기록한다. 일반 탄창·재고 수량을 추정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "merge",
+          "reason": "기존 파쇄음절탄의 사용 근거만 추가하는 안. 상점·제작·소유 수량 규칙은 보존한다.",
+          "target": "zulu-0028-censor-3"
+        },
+        "catalogPreview": {
+          "action": "merge",
+          "reason": "기존 파쇄음절탄 전용 아이콘을 사용한다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "사격 1회는 확인되며 사용 당시 장부 처리·잔량은 확인되지 않아 재차 차감하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "thermite",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장 사용으로 기록한다. 재고·보급과 기존 세열 수류탄의 동일성 근거는 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "ordinary-gear",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "이름·모델·별도 보관이 확인된 품목을 제외하고 개인 전투 장비로 기록한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "field-purchases",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "장면의 소품으로 근거를 보존한다. 식별된 구입 기록·상품 코드가 없다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "별도 품목으로 등록할 근거가 없는 작전 맥락 또는 대상이다."
+        }
+      }
+    },
+    {
+      "subjectId": "historical-costs",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "지원과 치료를 기록한다. 실제 이전 잔액 변경·중복 여부를 정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "전투 당시 규칙을 기록한다. 과거 크레딧 잔액 변경 여부가 없으므로 새 차감은 추가하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "market",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "미국 담화의 발언으로 남긴다. 기존 증시 시세와 인과를 추정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "상장 회사 특정이나 공시·계약·시세 근거가 없다. 백신 독점 주장은 정치적 발언에 한정한다."
+        }
+      }
+    },
+    {
+      "subjectId": "cheney",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "이 회차의 신규 신원 자료는 없으며 08의 기존 제안을 임의로 결론내리지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "metro-zulu",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "마가렛과 수잔의 기록을 메트로 개체 번호·모스맨 판정에 사용하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "정규 신원조회 항목을 새로 만들거나 바꿀 근거가 없는 대상이다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "space-zero",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "새 자백은 기존 요한의 역할·회사 주가·파리 폭파의 독립 확인 근거가 아니다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "ordo",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "회수 조직·옥상 대응 조직 및 대외 선언 대상. 고발의 진위를 분리한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "sectors",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "기관의 영구 소속과 이번 현장 역할을 구분한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "rescue-drones",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "전투 지원 행위로 기록한다. 모델·보급·잔량은 확인되지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "rooftop-injuries",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "다운을 사망·부활 능력·영구적 손상으로 확정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "anonymous-source",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "미국 측 발표의 인용 출처다. 수잔, 화이트로즈와 동일 출처라고 단정하지 않는다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "white-house-staff",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "개인 신원 정보 없이 배경 인원으로만 보존한다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    },
+    {
+      "subjectId": "buried-news",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "예견의 실제 장면과 후속 결말은 미확정이다."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "독립 문서가 필요한 새 설정은 작전보고서 위키판에 기록하는 범위를 넘지 않는다."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "인물 신원 기록에 해당하지 않는다."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않는다."
+        }
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "maria-impostor-personnel",
+      "subjectId": "maria-impostor",
+      "surface": "personnel",
+      "confirmed": "원문은 원래 마리아가 사망했고 이후 개체가 마리아를 흉내 낸다고 밝힌다.",
+      "recommendation": "현재 마리아 신원과 분리하고 후반 행동은 제한 기록으로 보존한다. 별도 독립 신원은 등록 범위가 정해진 뒤 준비한다.",
+      "evidence": "p32 20:41:28–42:51, p46–51 현장 지휘, p99–103 전투 뒤 행동.",
+      "question": "마리아를 흉내 낸 개체를 별도 제한 신원으로 관리할까요, 아니면 이번에는 사건 근거만 남길까요?",
+      "alternatives": [
+        "사건 근거에만 남기고 기존 마리아와 분리",
+        "별도 제한 신원으로 준비하고 식별명·분류·초상 결정"
+      ],
+      "impact": "별도 등록 시 마리아의 출현 기록·권한·초상과 개체의 기록이 각각 관리된다.",
+      "status": "pending"
+    },
+    {
+      "id": "jaktil-personnel",
+      "subjectId": "jaktil",
+      "surface": "personnel",
+      "confirmed": "작틸과 작틸리아는 같은 화자이며, 핀치와 함께 싸우고 해쉬에게 편지를 건넸다.",
+      "recommendation": "광체 소녀와 병합하지 않고 별도 이름의 사건 기록을 유지한다. 독립 신원은 소속과 초상 선택 뒤 등록한다.",
+      "evidence": "p52–53, p58 21:33:25, p82 22:18:55, p87 22:28:46.",
+      "question": "작틸을 독립 신원으로 준비할까요, 아니면 광체 소녀와 관계가 확정될 때까지 사건에만 남길까요?",
+      "alternatives": [
+        "독립 신원은 보류하고 작틸 명칭으로 사건만 기록",
+        "독립 신원으로 준비하고 분류·배치·전용 초상 결정"
+      ],
+      "impact": "별도 등록 시 기존 광체 소녀의 인적 정보와 출현이 섞이지 않는다.",
+      "status": "pending"
+    },
+    {
+      "id": "pipette-gun-catalogPreview",
+      "subjectId": "pipette-gun",
+      "surface": "catalogPreview",
+      "confirmed": "회수 현장에서 마취 주사침을 쏜 장비가 도판에 보인다.",
+      "recommendation": "청록 원통 약실과 은색 고정 링을 살린 아이콘으로 채택을 검토한다.",
+      "evidence": "p14 20:04:18–32의 장면과 p37 20:52:53 마취제 설명.",
+      "question": "피펫의 마취 주사기총의 도트 아이콘을 채택할까요?",
+      "alternatives": [
+        "제시한 도트 아이콘 채택",
+        "외형을 수정해 다시 검수",
+        "이번에는 작전 기록에만 보존"
+      ],
+      "impact": "채택하면 물품 정보의 목록·상세 미리보기에 연결할 준비를 한다. 웹 이미지 공개는 별도 범위다.",
+      "status": "pending"
+    },
+    {
+      "id": "inactivated-vaccine-catalogPreview",
+      "subjectId": "inactivated-vaccine",
+      "surface": "catalogPreview",
+      "confirmed": "인덱서가 광원화 바이러스 사백신을 장전해 발사했다.",
+      "recommendation": "기존 이사회 시제품과 다른 밀봉 카트리지 도판을 사용한다. 용기와 색은 대표 외형이다.",
+      "evidence": "p64 21:43:32, p66–67 적중과 후속 해석.",
+      "question": "인덱서의 광원화 바이러스 사백신의 도트 아이콘을 채택할까요?",
+      "alternatives": [
+        "제시한 도트 아이콘 채택",
+        "외형을 수정해 다시 검수",
+        "이번에는 작전 기록에만 보존"
+      ],
+      "impact": "채택하면 물품 정보의 목록·상세 미리보기에 연결할 준비를 한다. 웹 이미지 공개는 별도 범위다.",
+      "status": "pending"
+    },
+    {
+      "id": "charred-letter-catalogPreview",
+      "subjectId": "charred-letter",
+      "surface": "catalogPreview",
+      "confirmed": "작틸이 타다 만 편지 한 장을 해쉬에게 주었고 해쉬가 나중에 다시 발견했다.",
+      "recommendation": "우선 편지를 사건 기록에 남긴다. 별도 등록을 선택할 경우 글이 없는 그을린 종이 도판을 사용한다.",
+      "evidence": "p87 22:28:46, p90 22:35:07, p104 22:59:03.",
+      "question": "편지를 별도 물품으로 준비한다면 이 도트 아이콘을 사용할까요?",
+      "alternatives": [
+        "별도 등록 시 도트 아이콘 채택",
+        "별도 등록 시 외형 수정",
+        "작전 기록에만 보존"
+      ],
+      "impact": "채택하면 물품 정보의 목록·상세 미리보기에 연결할 준비를 한다. 웹 이미지 공개는 별도 범위다.",
+      "status": "pending"
+    },
+    {
+      "id": "stark-personnel",
+      "subjectId": "stark",
+      "surface": "personnel",
+      "confirmed": "오드의 USB를 확인한 스타크에게 오드의 권한과 M-1 위치가 부여됐다. 기존 캐릭터 카드는 J다.",
+      "recommendation": "직책은 감독관·M-1로 기록하고, 캐릭터 카드 등급을 갱신한다면 ERP에서 지원하는 M을 사용한다.",
+      "evidence": "p41 21:02:49–21:04:23, p42 21:04:58–21:05:46의 권한과 자료 접근 서술.",
+      "question": "스타크의 캐릭터 카드도 M과 감독관 직책으로 맞출까요, 아니면 이번에는 작전보고서에만 승계를 기록할까요?",
+      "alternatives": [
+        "캐릭터 카드의 표시를 M·감독관으로 맞춤",
+        "작전보고서에 기록하고 캐릭터 카드 변경은 보류"
+      ],
+      "impact": "캐릭터 신원에 표시되는 등급과 직책을 고치는 결정이다. 로그인 계정 권한은 별개의 운영 설정이다.",
+      "status": "pending"
+    },
+    {
+      "id": "charred-letter-catalog",
+      "subjectId": "charred-letter",
+      "surface": "catalog",
+      "confirmed": "작틸이 편지 한 장을 해쉬에게 건넸고 나중에도 같은 편지가 확인됐다.",
+      "recommendation": "현재는 사건·인계 관계로 남기는 것이 적절하다. 이후 내용이나 공식 보관이 밝혀지면 증거품 등록을 검토한다.",
+      "evidence": "p87 22:28:46, p90 22:35:07, p104 22:59:03.",
+      "question": "편지를 카탈로그에서 별도로 추적할까요?",
+      "alternatives": [
+        "작전 기록과 관계에만 보존",
+        "비매품 증거 항목으로 별도 준비"
+      ],
+      "impact": "별도 등록하면 읽지 않은 편지도 물품 검색 결과에 등장한다.",
+      "status": "pending"
+    }
+  ]
+}
