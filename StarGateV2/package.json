@@ -66,7 +66,7 @@
     "sync:research-discord": "pnpm --filter @stargate/shared-db exec tsx ../../StarGateV2/scripts/sync-research-discord-cards.ts"
   },
   "engines": {
-    "node": ">=22.6.0"
+    "node": "24.x"
   },
   "keywords": [
     "nextjs",
