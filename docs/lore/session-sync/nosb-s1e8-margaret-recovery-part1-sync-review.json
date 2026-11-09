@@ -1,0 +1,2090 @@
+{
+  "version": 1,
+  "sessionId": "NOSB-S1E8-MARGARET-RECOVERY-PART1",
+  "subjects": [
+    {
+      "id": "odd",
+      "name": "Mr. 오드",
+      "kind": "person",
+      "evidence": "확인됨 / p10 20:47 직위해제 본인 진술, p12–14 USB 전달과 20:54:04 사망 확인."
+    },
+    {
+      "id": "stark",
+      "name": "스타크 일로니손",
+      "kind": "agent",
+      "evidence": "확인됨 / p7–14 오드 회동·USB 확보, p64–87 메트로 대응, p117 전투원의 감독관 호칭."
+    },
+    {
+      "id": "odds-usb",
+      "name": "Mr. 오드의 USB",
+      "kind": "item",
+      "evidence": "확인됨 / p12 20:52:18 및 p14 20:53:15 스타크가 획득. 내용은 미상."
+    },
+    {
+      "id": "chronos-clock",
+      "name": "크로노스의 시계",
+      "kind": "item",
+      "evidence": "확인됨 / p15 20:55:15 시계 진행. p33·111 반복 장면."
+    },
+    {
+      "id": "woody",
+      "name": "우디",
+      "kind": "agent",
+      "evidence": "확인됨 / p16–17 위버루트와 대화, p66 구슬을 감쌈, p85–86 엘 볼라도르 회복."
+    },
+    {
+      "id": "weaverroot",
+      "name": "위버루트",
+      "kind": "entity",
+      "evidence": "확인됨 / p16–17 우디를 분신이라 부르며 감정에 동조한 오래된 나무."
+    },
+    {
+      "id": "otilia",
+      "name": "오틸리아 발트만",
+      "kind": "agent",
+      "evidence": "확인됨 / p16 20:57:29 진행 서술에서 파리 사망을 명시. p24 연구진은 이전 수용체로 비교."
+    },
+    {
+      "id": "margaret",
+      "name": "마가렛 / 메리골드",
+      "kind": "agent",
+      "evidence": "확인됨 / p2–3·18, p94–100, p112–120 마가렛과 줄루 2 표기 및 보호소·대치 기록."
+    },
+    {
+      "id": "pinch-doll",
+      "name": "피펫 인형",
+      "kind": "item",
+      "evidence": "확인됨 / p3 20:36:02 메리골드가 꺼진 TV와 피펫 인형을 바라봄."
+    },
+    {
+      "id": "pinch",
+      "name": "휘트모어 핀치 / 피펫",
+      "kind": "agent",
+      "evidence": "확인됨 / p65 22:37, p83–84 23:04–05 분석과 전달, p91–93 좌표 수신·이동."
+    },
+    {
+      "id": "kimlee",
+      "name": "킴라박 리",
+      "kind": "agent",
+      "evidence": "확인됨 / p19–22 비밀 지시, p64–87 메트로 대응, p119–120 저격. 7화 1부 비공개 결정 적용."
+    },
+    {
+      "id": "wexler",
+      "name": "캘빈 R. 웩슬러 부통령",
+      "kind": "person",
+      "evidence": "확인됨 / p18–22 부통령의 지시. 7화 1부의 현직 부통령과 연결."
+    },
+    {
+      "id": "wexler-junior",
+      "name": "웩슬러 대통령",
+      "kind": "person",
+      "evidence": "확인됨 / p58 재무위 의장의 대통령 금리 인하 압박 언급. 본인 현장 등장 없음."
+    },
+    {
+      "id": "us-intelligence",
+      "name": "미국 방첩기관 / 헬기 조종 인력",
+      "kind": "institution",
+      "evidence": "확인됨 / p20 방첩기관 지시 언급, p111–118 존 웡과 헬기·사격."
+    },
+    {
+      "id": "dead-hand",
+      "name": "프로젝트 데드 핸드",
+      "kind": "concept",
+      "evidence": "확인됨 / p21 21:10:28 파일, p98 23:26:05 마가렛의 질문. 발전 가능성은 문서 주장."
+    },
+    {
+      "id": "tracker",
+      "name": "마가렛 추적용 소형 송신기",
+      "kind": "item",
+      "evidence": "확인됨 / p22 21:12:33~21:13:03 웩슬러가 킴라박에게 넘긴 이어폰 크기 장치."
+    },
+    {
+      "id": "zeno",
+      "name": "닥터 제노",
+      "kind": "person",
+      "evidence": "확인됨 / p23 21:14:29~21:14:41 연구실에서 기록 개시·보고 요구."
+    },
+    {
+      "id": "jaktil",
+      "name": "작틸 / 작틸리아",
+      "kind": "person",
+      "evidence": "확인됨 / p24–29 연구실 아이·이동식 명명, p64–88 메트로 참가·역병 발현. p23·28 장면 표기 잼틸리아."
+    },
+    {
+      "id": "light-child",
+      "name": "광체 소녀",
+      "kind": "person",
+      "evidence": "검토필요 / 변곡점 2부 연구동 이송 결정과 8화 p24 연구 관측. 동일 인물이라고 명시한 대사 없음."
+    },
+    {
+      "id": "dongsik",
+      "name": "이동식",
+      "kind": "agent",
+      "evidence": "확인됨 / p24–28 아이와 놀고 명명·안내, p64·71–73 보호와 엄폐 지시."
+    },
+    {
+      "id": "study-staff",
+      "name": "연구진·관측 담당자·집게를 든 운반자",
+      "kind": "person",
+      "evidence": "확인됨 / p23–30 연구진 평가·접종실·구슬 운반, p65 녹아내린 과학자."
+    },
+    {
+      "id": "toys",
+      "name": "곰 인형과 오리 인형",
+      "kind": "item",
+      "evidence": "확인됨 / p24·26–27 작틸이 곰 인형을 들고, 이동식에게 오리 인형을 받음."
+    },
+    {
+      "id": "zulu-562",
+      "name": "줄루 562 감염 바이러스",
+      "kind": "entity",
+      "evidence": "증언 / p28 21:26:42 방송의 식인 충동 경고. p29 드릴 처치와 늑대화는 화면 관측."
+    },
+    {
+      "id": "lab-infected",
+      "name": "처치 중 감염자와 늑대화 피접종자",
+      "kind": "person",
+      "evidence": "확인됨 / p29 실험동 머리 처치와 별도의 늑대화 장면."
+    },
+    {
+      "id": "yuhoe",
+      "name": "츠키시로 쿠즈하 / 유회",
+      "kind": "agent",
+      "evidence": "확인됨 / p30–32 파리 이후 참배, p71·75–85 작틸과 엄폐·이동·호계부 사용."
+    },
+    {
+      "id": "paris-family",
+      "name": "파리 폭격 기억 속 어머니와 아이",
+      "kind": "person",
+      "evidence": "확인됨 / p31 유회의 회상. p16 우디에게 폭격 희생이 서술됨."
+    },
+    {
+      "id": "hash",
+      "name": "해쉬 테거 / 인덱서",
+      "kind": "agent",
+      "evidence": "확인됨 / p33–40 오틸리아 상실·EMP 수령, p100–111 텍사스 접촉과 사용 유보."
+    },
+    {
+      "id": "richard",
+      "name": "리처드 / R",
+      "kind": "person",
+      "evidence": "확인됨 / p36–40 총장 보좌관 리처드가 해쉬를 만나 EMP를 주고 요한 제거를 요구."
+    },
+    {
+      "id": "emp",
+      "name": "리처드의 소형 EMP 수류탄",
+      "kind": "item",
+      "evidence": "확인됨 / p38–40 야구공 크기 1개 획득, p109–110 해쉬가 꺼냈으나 사용 유보."
+    },
+    {
+      "id": "neved",
+      "name": "키아나 오 캘러핸 / 네베드",
+      "kind": "agent",
+      "evidence": "확인됨 / p41–46 원로가 섹터 A에서 원탁으로 임명. p45 개럿이 상급 기사단원이라 밝힘."
+    },
+    {
+      "id": "garrett",
+      "name": "개럿 클라이맥",
+      "kind": "person",
+      "evidence": "확인됨 / p42–45 원로가 사령관 개럿을 수장 인계자로 호출, 키아나에게 지휘권 명시."
+    },
+    {
+      "id": "round-table",
+      "name": "원탁 기사단",
+      "kind": "institution",
+      "evidence": "확인됨 / p42·44 원로 수호를 위한 임명·갈로글라와 욤스비킹의 통합 선언."
+    },
+    {
+      "id": "elder",
+      "name": "첫번째 원로와 원로들",
+      "kind": "person",
+      "evidence": "확인됨 / p41–46 수호대 임명과 합병 선언, 첫번째 원로의 발언."
+    },
+    {
+      "id": "clans",
+      "name": "갈로글라·욤스비킹",
+      "kind": "faction",
+      "evidence": "확인됨 / p44 원로의 통합 선언. 증언 / p45 개럿의 장로 동의 주장."
+    },
+    {
+      "id": "kiana-family",
+      "name": "사이먼·코너와 섹터 A 병사들",
+      "kind": "person",
+      "evidence": "확인됨 / p46 연회 동석 병사들, 사이먼 회상과 아버지 동의에 대한 키아나의 의문."
+    },
+    {
+      "id": "accel",
+      "name": "엘 볼라도르",
+      "kind": "agent",
+      "evidence": "확인됨 / p48–50 아젠트와 휴식, p64–87 메트로 전투."
+    },
+    {
+      "id": "aegis",
+      "name": "발레리아 아젠트 / 이지스",
+      "kind": "agent",
+      "evidence": "확인됨 / p48–50 휴게실, p64·87 방패 준비·메트로 교전."
+    },
+    {
+      "id": "zulu-896",
+      "name": "줄루 896",
+      "kind": "entity",
+      "evidence": "확인됨 / p49–50 휴게실 바깥 전투원 피습. 개체 형태와 대응 결과 미상."
+    },
+    {
+      "id": "blanche",
+      "name": "블랑셰 데 로랑 / 세계이사회장",
+      "kind": "person",
+      "evidence": "확인됨 / p51–60 세계이사회장·고양이 언급·드론 피격 사망. 기존 세계이사회장 신원 일치."
+    },
+    {
+      "id": "council",
+      "name": "세계이사회와 백신 배분안",
+      "kind": "institution",
+      "evidence": "확인됨 / p51–52 의장 발언·합의 요청, p57–65 공격과 생존자 우회 대피."
+    },
+    {
+      "id": "cheney",
+      "name": "딕 체니",
+      "kind": "person",
+      "evidence": "확인됨 / p51–63 백신 논의 반발과 드론 공격 생존. 7화 1부 백악관 매파 모임과 대조."
+    },
+    {
+      "id": "arbiter",
+      "name": "제레마이어 폴",
+      "kind": "person",
+      "evidence": "확인됨 / p58–59 재무위 의장이 생방송에서 금리 문제를 말한 직후 쓰러짐."
+    },
+    {
+      "id": "siyu",
+      "name": "시유",
+      "kind": "agent",
+      "evidence": "확인됨 / p52–62 의장 호위·드론 제압·대피 유도, p71–72 작틸 제지."
+    },
+    {
+      "id": "drones",
+      "name": "이사회 공격 드론·보안 요원·생존 이사회원",
+      "kind": "event",
+      "evidence": "확인됨 / p57–65 공격·대피, p89–91 제어실 CCTV의 사보타주."
+    },
+    {
+      "id": "susan",
+      "name": "수잔 델라웨어 / 클레이보얀스",
+      "kind": "person",
+      "evidence": "확인됨 / p52–55 운연과 접촉, p89–93 CCTV와 좌표 발신, p112 마가렛이 아니라 수잔이라고 식별되는 장면."
+    },
+    {
+      "id": "unyeon",
+      "name": "운연 / 백진연",
+      "kind": "agent",
+      "evidence": "확인됨 / p52–55 수잔 접촉, p94–100 보호소, p112–116 마가렛 보호와 헬기 추락."
+    },
+    {
+      "id": "shelter",
+      "name": "뉴욕의 운연 보호소",
+      "kind": "place",
+      "evidence": "확인됨 / p94–100 두 아이와 마가렛 체류, p111–116 헬기 공격."
+    },
+    {
+      "id": "children",
+      "name": "보호소의 소년과 소녀",
+      "kind": "person",
+      "evidence": "확인됨 / p95–96 반쯤 감염이 멎은 두 아이, p114 23:58:22 둘 다 사살."
+    },
+    {
+      "id": "vaccine",
+      "name": "세계이사회 백신 프로토타입",
+      "kind": "item",
+      "evidence": "확인됨 / p96 23:22:52~23:23:08 운연이 여러 시제품을 꺼냄. 반복 접종 필요."
+    },
+    {
+      "id": "aurora-virus",
+      "name": "광원화 바이러스",
+      "kind": "concept",
+      "evidence": "확인됨 / p51–52 백신 배분 논의 및 p95–96 감염 진행이 일부 멎은 아이와 시제품."
+    },
+    {
+      "id": "hash-vaccine",
+      "name": "해쉬 테거의 백신",
+      "kind": "item",
+      "evidence": "확인됨 / p96 진행 서술이 이사회 시제품의 반복 접종 필요성을 해쉬 백신과 대비."
+    },
+    {
+      "id": "pyramid",
+      "name": "블랙 피라미드·의회장·메트로",
+      "kind": "place",
+      "evidence": "확인됨 / p38 블랙 피라미드, p57–91 의회장에서 메트로까지 긴급 대응."
+    },
+    {
+      "id": "zulu-5959",
+      "name": "ZULU-5959 장밋빛 시냅스",
+      "kind": "entity",
+      "evidence": "확인됨 / p65 피펫 식별, p66–69 발광 뒤 말끝과 통증, p87–88 종료 뒤 해제."
+    },
+    {
+      "id": "metro-zulu",
+      "name": "메트로 독성 개체 / 현장 호칭 줄루 7",
+      "kind": "entity",
+      "evidence": "확인됨 / p70–87 큰 해골, 독극물 범람, 손의 달팽이가 약점, 내부 새끼 성장 가능."
+    },
+    {
+      "id": "time",
+      "name": "크로노스",
+      "kind": "agent",
+      "evidence": "확인됨 / p15 시계 진행, p64 시간선 언급, p79–81 감속 뒤 독성 개체의 행동이 멈춤."
+    },
+    {
+      "id": "engineering",
+      "name": "오르도 공병·판자·무디",
+      "kind": "person",
+      "evidence": "확인됨 / p71–86 스타크의 공병 호출·판자 지원, 우디가 무디를 후방 배치."
+    },
+    {
+      "id": "stimpack",
+      "name": "스팀팩",
+      "kind": "item",
+      "evidence": "확인됨 / p76 22:50:11 킴라박이 목에 사용하며 곧이어 사격."
+    },
+    {
+      "id": "starbase",
+      "name": "스타베이스 7",
+      "kind": "place",
+      "evidence": "확인됨 / p100 23:31:51~23:32:03 텍사스 소재 요한 매입 부지, p101–104 카지노·지하 접근."
+    },
+    {
+      "id": "johan",
+      "name": "요한 스미스",
+      "kind": "person",
+      "evidence": "확인됨 / p104–111 지하에서 본인으로 소개된 요한과 해쉬 대면. 미래 연산과 책임 관련 발언은 증언."
+    },
+    {
+      "id": "johan-proxy",
+      "name": "요한의 카지노 대역과 동일 외형 대역들",
+      "kind": "entity",
+      "evidence": "확인됨 / p102–104 대역이 주인님 행세를 증언하고 동일 외형 여럿이 나타남."
+    },
+    {
+      "id": "space-zero",
+      "name": "스페이스 제로와 파리 사보타주 의혹",
+      "kind": "institution",
+      "evidence": "증언 / p39 리처드가 격리실 제작·로열티·사보타주를 주장. p105–110 요한과 상충."
+    },
+    {
+      "id": "john",
+      "name": "존 웡",
+      "kind": "person",
+      "evidence": "확인됨 / p111–118 헬기 접근·추락 탈출·마가렛 조준, p120 급소 피격 후 쓰러짐."
+    },
+    {
+      "id": "sniper",
+      "name": "골목 저격과 마가렛의 최종 확보 여부",
+      "kind": "event",
+      "evidence": "확인됨 / p119–120 킴라박 스코프·저격 판정 뒤 존 웡 피격. 1부가 그 자리에서 종료."
+    },
+    {
+      "id": "market",
+      "name": "파리 후속 뉴스와 금융 발표",
+      "kind": "event",
+      "evidence": "확인됨 / p6 뉴스는 파리 사태와 주가 하락을 보도, p58 재무위 공개발언."
+    }
+  ],
+  "coverage": [
+    {
+      "subjectId": "odd",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "뉴욕 인근 피격 사망과 USB 전달을 기록. p78 화자 표시는 현장 서술이므로 재등장 근거에서 제외."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "직위해제·피격 사망 및 스타크에게 남긴 USB를 반영할 안. M은 생전 기록으로 보존.",
+          "target": "MR_ODD",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 마누스 섹터 A 감독관. p10 직위해제와 p14 사망.",
+            "expectedPath": "/erp/personnel?group=MANUS&sub=SECTOR_A · 마누스 알파 섹터 사망 인원",
+            "deathRecord": "p14 사망 확인. 적용 시 섹터 A 사망 인원으로 분류.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 마누스·알파 섹터 문장과 오드 초상 사용."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "스타크에게 물품 인계를 부탁했고 가족을 빗댄 애정을 표현. 실제 친자 관계를 만들지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "stark",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "USB 회수·응급 연락·공병 지원·감독관 호칭을 확인 범위로 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "등장·오드와의 접촉·공병 지원을 기록. 정식 임명장이나 등급 변경 근거가 없어 기존 직함·J 보존.",
+          "target": "CLOWN"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "오드가 피격되자 자료를 회수하고 즉시 911에 연락한 행동 기록."
+        }
+      }
+    },
+    {
+      "subjectId": "odds-usb",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "오드의 유류 자료와 스타크가 확보한 경위를 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "내용 미확인 작전 증거품으로 비매품 기록 제안.",
+          "target": "mr-odd-usb"
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "실물 1점 수령은 확인됨. 개인 소유·이미 지급했는지 확인되지 않아 인벤토리 원장 재정산 제외."
+        }
+      }
+    },
+    {
+      "subjectId": "chronos-clock",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "반복되는 작전 경과 표식으로 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "회차에서 별도 취득하거나 전달한 물품이 아님."
+        }
+      }
+    },
+    {
+      "subjectId": "woody",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "파리 이후의 슬픔과 메트로 지원 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "위버루트 면담·구슬 대응·포자 지원 등 등장 기록.",
+          "target": "WD-(𝓃)"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "동료의 상실을 슬퍼하고 위버루트에게 판단을 재고한다고 밝힘."
+        }
+      }
+    },
+    {
+      "subjectId": "weaverroot",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "우디와의 문답 기록. 창조 방식이나 위버우드 숲과 동일 개체라는 단정 보류."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "위버우드의 관련 개체·접촉 절에 우디와의 대화 기록 제안.",
+          "target": "weaverwood"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "말하는 나무 개체로 문헌화. 개인 신원조회·권한 기록 근거 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "otilia",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "파리 이후 사망 확인과 작틸 연구 비교를 분리해 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "8화는 이전 파리 사망을 확인한 근거다. 실제 사망 시각과 당시 사건의 판정이 정리되기 전에는 이 회차 날짜로 기존 신원조회 생사 값을 갱신하지 않음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "margaret",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "핀치를 찾다가 운연의 보호소에 머물고 습격 뒤 골목 대치에 이른 경과를 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "메리골드·줄루 2는 기존 인물 별칭 맥락으로 보존. 수잔의 외형 착오 장면을 신원 합병 근거로 삼지 않음.",
+          "target": "MARGARET"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "핀치에 대한 신뢰와 운연의 보호를 사건 관계로 기록."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "핀치와 친구들을 떠올리고 운연에게 자신의 존재가 어떤 의미인지 직접 질문함."
+        }
+      }
+    },
+    {
+      "subjectId": "pinch-doll",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "오프닝의 정물 단서로 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "제작자·특성·최종 보관이 확인되지 않은 장면 소품."
+        }
+      }
+    },
+    {
+      "subjectId": "pinch",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "분홍 구슬 식별, 달팽이 약점 전달, 마가렛을 찾으러 이동한 경과."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "메트로 식별·대응 및 뉴욕 이동을 기존 신원과 연결.",
+          "target": "PIPETTE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "honors": {
+          "action": "create",
+          "reason": "구슬 경고와 달팽이 표적 식별이 독립된 판단 근거. 정보·판단 공적 제안."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "과거 격리 지식을 현장에 적용하고 불안 속에서 친구를 찾기로 결정."
+        }
+      }
+    },
+    {
+      "subjectId": "kimlee",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "동료들과 확인한 메트로 행동만 본문에 기록. 숨은 지휘선과 대치 저격 주체는 내부 근거에 보존."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "공개 가능한 메트로 대응만 연결. 공식 소속·직함·권한 보존.",
+          "target": "KIMLEE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "visuals": {
+          "action": "skip",
+          "reason": "부통령 회동과 저격 사수 컷은 공개 경로에 두지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "wexler",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "미국 측 비밀 지휘 대화는 내부 근거에 보존하고 일반 작전 서술에는 생략."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "기존 사용자 결정에 따라 비밀 지휘선과 관계를 신원조회에 추가하지 않음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "wexler-junior",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "공개 생방송 발언의 정책 맥락만 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "9화용 별도 신원 준비는 유지. 이번 자료는 새 인물 직접 등장이나 독립 행동 근거가 아님."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "us-intelligence",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장 존 웡의 행동과 헬기 공격을 기록. 조종 인력의 개인 신원 및 지휘선은 일반 본문에서 확정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "dead-hand",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "연구 구상과 마가렛의 질문을 분리. 발전소 실현·효율은 확정하지 않음."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 프로젝트 문서에 망자의 물리 현상과 발전 응용이 제안됐음을 문서 주장으로 보강.",
+          "target": "project-dead-hand"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "tracker",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "송신기 인계와 목적은 내부 근거에 한정. 부착 여부와 헬기 좌표 입수 경로는 미확인."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "비밀 지휘선과 연결되는 특정 장비라 공개 항목을 만들지 않음."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "현장 인계 1점. 운용 지시와 실물 전달만 확인되며 개인 지급 상태는 미확인."
+        }
+      }
+    },
+    {
+      "subjectId": "zeno",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "제노의 관측과 연구진의 별도 평가 발언을 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "관측실 등장만 추가. 기존 프로젝트 지휘권·V 보존.",
+          "target": "DOCTOR_ZENO",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 사무국 연구 기구 소속. p23 연구 관측.",
+            "expectedPath": "/erp/personnel?group=SECRETARIAT&sub=RESEARCH · 사무국 연구 기구",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 연구 기구 문장과 전용 초상 사용."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "jaktil",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "작틸의 첫 확인된 명명·이동·메트로 행동을 독립된 관측으로 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "광체 소녀와 동일인인지, 독립 신원인지, 플레이어 요원인지 확인 필요.",
+          "target": "JAKTIL",
+          "placement": {
+            "basis": "unknown",
+            "source": "p24–29 연구 관측·인계는 확인. 정규 소속과 현재 캐릭터 유형은 미확정.",
+            "expectedPath": "독립 NPC로 확정 시 미배정 인원 · 연구동 관측 대상. 기존 인물이라면 해당 인물의 목록 사용.",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "연구시설 관측은 임명 근거가 아님. 기존 분류를 이용할 수 있는지 신원 확정 뒤 확인.",
+            "icon": "작전 컷은 가로 장면. 독립 신원 확정 시 전용 초상 제공 또는 무이미지 선택."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "personality": {
+          "action": "skip",
+          "reason": "아이의 호기심은 관측됨. 저장 대상 신원과 유형 확인 전 근거에만 보존."
+        }
+      }
+    },
+    {
+      "subjectId": "light-child",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "작틸과 동일하다는 설명을 본문에 추가하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "신원 대조 후보. 기존 인물의 기록과 공개 상태를 보존."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "dongsik",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "관측실 인계와 메트로 보호 행동을 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "작틸과 접촉, 이름 부여·보호를 등장 기록에 추가할 안. 작틸 신원 연결은 확인 뒤.",
+          "target": "LEE DONGSIK"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "아이의 호기심을 놀이로 받아주고 넘어질 때 받아낸 후 위험 구간에서 엄폐를 안내함."
+        }
+      }
+    },
+    {
+      "subjectId": "study-staff",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "집단 행위와 과학자 관측을 기록. 서로 동일인인지는 확정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "실명과 지속되는 개인 신원 근거 없는 관측·현장 인력."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "toys",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "작틸과 이동식의 놀이·신뢰 맥락."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "격리실 놀이 소품으로만 등장. 고유 기능이나 회수 기록 없음."
+        }
+      }
+    },
+    {
+      "subjectId": "zulu-562",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "방송 지침은 인용·증언으로, 드릴과 접종 후 늑대화는 별도 관측으로 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "감염자와 늑대화 인간이 같은 바이러스 반응이라는 증거가 없어 독립 분류 보류."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "lab-infected",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "서로 다른 관측 사례로 남기고 제압 결과나 구체적 원인 미확인 표기."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "익명 사례이며 신원·생사·약물 이름을 확정할 수 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "yuhoe",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "신단을 치우는 장면과 메트로에서 아이를 보호한 행동 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "파리 기억과 아이의 보호 행동을 기존 신원에 연결.",
+          "target": "YUHOE"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "파리 피해의 책임을 돌아보고 위험 구간에서 아이를 품에 안고 이동함."
+        }
+      }
+    },
+    {
+      "subjectId": "paris-family",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "파리에서 이어진 기억으로 기록. 이 회차의 현장 참가나 개인 사망 원장에는 올리지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "hash",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "리처드와 요한의 상충하는 증언, 해쉬의 확인된 행동을 분리."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "오틸리아 상실, 리처드의 의뢰와 스타베이스 7 선택을 기존 신원에 연결.",
+          "target": "INDEXER"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "리처드 의뢰 및 요한과의 대면 관계를 연결. 배후 단정은 배제."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "분노 속에서도 요한에게 EMP를 쓰는 결정을 유보함."
+        }
+      }
+    },
+    {
+      "subjectId": "richard",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "화이트로즈 발언과 사보타주 의혹은 리처드의 주장으로 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "해쉬와 의뢰 관계 기록. 직함·소속·초상 보존.",
+          "target": "WHITE_ROSE_R",
+          "placement": {
+            "basis": "affiliation",
+            "source": "7화 1부에서 통합된 화이트로즈 수장 겸 총장 보좌관.",
+            "expectedPath": "/erp/personnel?group=CIVIL&sub=WHITE_ROSE · 화이트로즈",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 화이트로즈 문장과 미상 초상 보존."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "해쉬에게 EMP와 제거 의뢰를 전달한 직접 행동만 연결."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "해쉬의 복수심을 자극한 뒤 의뢰를 제시한 행동과 대화."
+        }
+      }
+    },
+    {
+      "subjectId": "emp",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "시설·기계 교란용 물품과 확인된 보관 경위. 검증되지 않은 살상·위력은 단정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "기존 휴대용 EMP 총과 형태·운용이 다르므로 비매품 별도 정보 항목 제안.",
+          "target": "richard-emp-grenade"
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "해쉬가 마지막까지 들고 있음. 보유량 반영 여부 불명이라 추가 지급은 제외."
+        }
+      }
+    },
+    {
+      "subjectId": "neved",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "원탁 임명과 개럿 지휘 아래 배치, 기존 부대와의 연회를 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "원탁 임명은 확정. 실제 목록 소속과 권한등급 전환은 운영 분류·등급 확인이 필요.",
+          "target": "네베드"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "개럿과 새 지휘 관계. 사이먼·아버지는 회상·추측의 맥락만 보존."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "승진의 자부심 뒤 개럿 지휘와 일족 통합을 마주하고 반발·수용을 표현."
+        }
+      }
+    },
+    {
+      "subjectId": "garrett",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장 사령관 역할과 기존 개럿 신원 연속성을 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "섹터 B 경호원에서 원탁 수장으로 불린 역할은 확정. 정규 배치와 내부 등급은 확인 필요.",
+          "target": "GARRETT_CLIMAC",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 섹터 B 경호원. p42–45 원탁 수장·사령관 역할.",
+            "expectedPath": "/erp/personnel?group=MANUS&sub=SECTOR_B · 마누스 브라보 섹터 기존 위치 유지. 원탁 정규 목록과 겸임은 GM 결정 뒤 이동.",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "원탁 하위 조직은 현재 목록에 없음. 조직 등록과 배치 확인 필요.",
+            "icon": "현재 브라보 섹터 문장과 개럿 전용 초상 유지. 원탁 전용 문장 근거 없음."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "키아나를 자기 지휘 아래에 두고 복종을 요구함."
+        }
+      }
+    },
+    {
+      "subjectId": "round-table",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "조직 목적·수장·상급 기사 확인. 통합의 실제 이행과 일족 전체 이전은 미확인."
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "지속 조직을 기록하는 독립 위키. 정규 하위 분류와 문장은 별도 확인.",
+          "target": "round-table-knights"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "elder",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "직책으로만 표기하고 타 원로들과 개인 동일성을 추정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "발언 직책은 분명하지만 이름·기존 신원·독립 등급을 알 수 없어 원탁 문서에서 보존."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "clans",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "통합 발표와 동의 주장 구분. 기존 인원 일괄 소속 변경은 근거 부족."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "원탁 기사단 문서에 두 일족의 합병 선언을 기록.",
+          "target": "round-table-knights"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "kiana-family",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "병사들은 연회 동석 집단, 가족은 회상으로 구분."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "가족의 직접 등장·통합 승인 증거가 없어 기존 신원 수정 보류."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "accel",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "휴식과 메트로 근접 교전 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "메트로 전투와 우디의 지원 수령 기록. 게임 내 패배는 실제 부상과 분리.",
+          "target": "ACCEL"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "aegis",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "기지 휴식에서 긴급 출동과 독성 개체 교전으로 전환."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "방패를 들고 현장에 합류한 행동과 메트로 교전 기록.",
+          "target": "AEGIS"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "zulu-896",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "격리 사고의 별도 목격으로 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "번호 외 단일 사건만 확인돼 독립 개체 분류·정식 제목 제안 보류."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "blanche",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "백신 배분안과 시유에게 한 조언, 피격 사망을 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "사망 확인·시유 호위 및 조언 추가 제안. 기존 V는 등록값과 역사 보존.",
+          "target": "BLANCHE_DE_LAURENT",
+          "placement": {
+            "basis": "affiliation",
+            "source": "세계이사회장 단일 기록. p55–56 고양이·어린 시절 사업 단서와 기존 초상·직함 일치.",
+            "expectedPath": "/erp/personnel?group=COUNCIL · 세계이사회 사망 인원",
+            "deathRecord": "p60 사망 확인. 적용 시 세계이사회 사망 인원으로 분류.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 세계이사회 문장과 블랑셰 초상 사용."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "시유에게 탈출구를 남기라고 충고한 새 행동을 기존 성격 문장과 분리."
+        }
+      }
+    },
+    {
+      "subjectId": "council",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "필수 인재 우선 배분 제안과 드론 공격을 기록. 안건 가결 또는 보급 완료는 미확인."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "세계이사회 문서에 백신 배분 논의와 공격을 보강할 안.",
+          "target": "world-council"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "cheney",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "세계이사회 참석 인사로 보존. 현재 행정부 직책을 가정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "review",
+          "reason": "미국 측 인사로 연속 등장. 역할·전용 초상 또는 무이미지·독립 등록 범위 확인.",
+          "target": "DICK_CHENEY",
+          "placement": {
+            "basis": "operational",
+            "source": "7화 백악관 미국 측 매파 모임, p51–63 이사회 참석·미국 언급.",
+            "expectedPath": "/erp/personnel?group=MILITARY&sub=USA · 미국 관련 인사 운영 분류 제안. 정규 직책·이사회 직책 미상.",
+            "deathRecord": "p61 생존 확인. 사망 인원으로 분류하지 않음.",
+            "hierarchy": "기존 군부의 미국 분류 재사용 제안. 참석만으로 세계이사회 정규 의원 단정 금지.",
+            "icon": "미국 분류의 기존 문장. 제공된 가로 컷은 전용 인물 초상으로 쓰지 않음."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "arbiter",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "쓰러짐까지 기록. 독극물·사망·드론 공격과 같은 배후는 미확인."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "생방송 등장과 쓰러짐만 반영. 등급 V와 생사 상태는 유지.",
+          "target": "ARBITER",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 노부스 오르도 사무국 재무위 의장.",
+            "expectedPath": "/erp/personnel?group=SECRETARIAT&sub=FINANCE · 사무국 재무",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 재무 기구 문장·초상 사용."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "siyu",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "이사회 호위, 대피, 메트로 진입 및 아이 보호를 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "현장 호위와 메트로 대응 기록. 열네 살은 당시 자기 진술로 기록하고 현재 나이 값은 보존.",
+          "target": "TIGER298"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "honors": {
+          "action": "create",
+          "reason": "의회 대피와 메트로 작틸 보호가 서로 다른 구조·보호 공적 근거."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "의장의 조언에 고민하면서도 공격 직후 생존자를 확인하고 임무를 이어감."
+        }
+      }
+    },
+    {
+      "subjectId": "drones",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "해킹 드론의 공격·사망·우회 대피를 기록. 보안 요원 개인 신원과 특정 살해 행위자는 미확정."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "세계이사회 기존 문서에 공격과 대피 맥락 추가 제안.",
+          "target": "world-council"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "모델·회수·소유가 확인되지 않은 기지 설비."
+        }
+      }
+    },
+    {
+      "subjectId": "susan",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "확인된 행동을 사건별로 보존. 안개 발생·보안 사망·위장 작동 방식 또는 최종 동기는 미확정."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "확인된 접촉과 발신만 연결할 안. 소속·H·비밀 정체는 변경 근거 없음.",
+          "target": "CLAIRVOYANCE",
+          "placement": {
+            "basis": "affiliation",
+            "source": "7화 신원 수잔 델라웨어 및 기존 섹터 A 고문.",
+            "expectedPath": "/erp/personnel?group=MANUS&sub=SECTOR_A · 마누스 알파 섹터",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 알파 섹터 문장·수잔 초상 사용."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "운연과 접촉 및 핀치에게 좌표를 발신한 행동. 공모의 범위를 단정하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "unyeon",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "아이들에게 백신을 가져오고 마가렛을 보호한 경과. CCTV에서 직접 살해한 자로 특정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "마가렛·피난 아동 보호 및 헬기 대응을 연결.",
+          "target": "UNYEON"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "honors": {
+          "action": "create",
+          "reason": "마가렛 차폐와 공격 헬기 추락이라는 독립된 행동을 구조·보호 공적 후보로 검토."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "마가렛을 보호한 관계, 수잔과 직접 접촉을 기록."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "마가렛을 수단이나 위협이 아닌 인격으로 대하고 공격 때 실제 보호 행동을 함."
+        }
+      }
+    },
+    {
+      "subjectId": "shelter",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "보호소의 기능과 공격 경과를 기록. 주소·추적 경로는 불명."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "주소·공식 명칭이 불명인 사건 현장. 독립 공개 위치 기록 대신 보고서에 수록."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "children",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "두 아이의 일시 보호와 사망. 특정 가족·작틸·광체 소녀와 연결하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "실명·이전 신원 근거가 없는 두 인물. 신원 사망 목록에 별도 생성하지 않음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "vaccine",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "해쉬 백신과 별도 시제품. 실제 그 자리에서 접종이 완료됐다는 기록 없음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "create",
+          "reason": "효과 한계가 확인된 의료 증거품을 비판매 정보로 등록 제안.",
+          "target": "council-vaccine-prototype"
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "정확 수량과 투여 결과가 미확인이므로 지급·소모 정산 제외."
+        }
+      }
+    },
+    {
+      "subjectId": "aurora-virus",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "백신 배분 제안과 주기접종 시제품은 구분. 정확한 효능·양산·승인은 미확인."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "광원화 바이러스에 세계이사회 시제품의 관측 범위만 추가할 안.",
+          "target": "aurora-virus"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "hash-vaccine",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "별도 백신과 비교한 진술만 기록. 이번 회차 추가 투약 또는 획득 근거 없음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "새 백신 종류나 신규 소유·사용으로 등록할 근거 없음."
+        }
+      }
+    },
+    {
+      "subjectId": "pyramid",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "뉴욕만 작전 거점과 메트로 진입로·제어실 사건 연결."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 블랙 피라미드 위키에 이사회 공격과 메트로 사고의 장소 연결 제안.",
+          "target": "black-pyramid"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "zulu-5959",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "이번 현장에서 발광과 언어·통증이 시간상 이어짐을 기록. 개체 일반 법칙은 단정하지 않음."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "기존 장밋빛 시냅스 문서에 제한된 메트로 관측을 추가할 안.",
+          "target": "zulu-5959-rose-synapse"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "merge",
+          "reason": "기존 격리 표본의 관련 보고서로 연결. 신규 표본 회수·수량 변경 근거 없음.",
+          "target": "zulu-5959-rose-synapse-specimen"
+        }
+      }
+    },
+    {
+      "subjectId": "metro-zulu",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "현장 호칭은 보존하고 달팽이 제압과 재성장 위험을 기술. 완전 사멸·재격리 완료 미확인."
+        },
+        "wiki": {
+          "action": "review",
+          "reason": "기존 ZULU-0007 모스맨과 다른 외형·작용. 공식 식별 번호 확인 필요."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "달팽이·독극물의 회수와 실물 보관 확인이 없어 표본 생성 보류."
+        }
+      }
+    },
+    {
+      "subjectId": "time",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "회귀 선언 없이 확인된 시간 감속과 경고를 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "메트로 행동 제한과 기존 시계 관측을 사건에 연결.",
+          "target": "TIME"
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "personality": {
+          "action": "skip",
+          "reason": "상황 판단·능력 사용을 본래 성향의 새 단정으로 확대하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "engineering",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "아군 지원 자원과 임시 발판을 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "공병은 단역 집단, 무디는 우디 분체 운용. 별도 지속 신원·인벤토리 근거 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "stimpack",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "메트로 전투에서 사용한 기존 소모품을 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "merge",
+          "reason": "기존 스팀팩 참조. 기능·가격·재고를 새로 추정하지 않음.",
+          "target": "stimpack"
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "사용 장면은 확인됨. 기존 장부 반영 여부 불명으로 중복 차감 방지."
+        }
+      }
+    },
+    {
+      "subjectId": "starbase",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "카지노와 지하 접촉 시설, 접근 주체와 경과를 기록."
+        },
+        "wiki": {
+          "action": "create",
+          "reason": "텍사스의 지속 장소로 독립 문서. 스페이스 제로 소유권·정확 주소 추정 금지.",
+          "target": "starbase-7"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "johan",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "본체와 대역을 구분해 해쉬의 선택과 요한의 경고를 기록."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "현재 신원에 대역 공개와 대면을 추가할 안. 회사 직함·외부 권한 없음 유지.",
+          "target": "JOHAN_SMITH",
+          "placement": {
+            "basis": "affiliation",
+            "source": "변곡점 2부의 텍사스 스페이스 제로 CEO와 현장 신원 대조.",
+            "expectedPath": "/erp/personnel?group=CIVIL&sub=SPACE_ZERO · 스페이스 제로",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 스페이스 제로 문장·대표 초상 보존."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "relations": {
+          "action": "update",
+          "reason": "해쉬에게 선택을 촉구하고 안내를 지시한 대면 관계."
+        },
+        "personality": {
+          "action": "update",
+          "reason": "미래를 계산한다는 진술과 해쉬를 보내 주라고 지시한 행동을 분리."
+        }
+      }
+    },
+    {
+      "subjectId": "johan-proxy",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "카지노의 대역을 본체와 분리. 몇 년간 어느 접촉이 대역이었는지는 증언 범위."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "스타베이스 7 문서에 동일 외형 대역을 관측한 사실을 기록.",
+          "target": "starbase-7"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "개체별 식별자·이름·독립 행적 미확인. 기존 요한 신원에 카지노 접객 행동을 전부 합치지 않음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "space-zero",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "제작·로열티·배후 발언은 상충하는 증언으로 인용. 파리 폭파자를 확정하지 않음."
+        },
+        "wiki": {
+          "action": "merge",
+          "reason": "스페이스 제로 관련 문서는 CEO와 텍사스 기록을 연결하되 계약·폭파 단정 보류.",
+          "target": "space-zero"
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "비공개 접촉과 증언, 공시·시세·계약 조건 확인 없음. SPZ 신규 시세 이벤트 제외."
+        }
+      }
+    },
+    {
+      "subjectId": "john",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "헬기 공격과 골목 대치의 행동·피격을 기록. 존 웡 사망과 공개 저격자 신원은 확정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "update",
+          "reason": "피격까지 반영. 사망 필드·숨은 지휘선은 보존.",
+          "target": "JOHN_WONG",
+          "placement": {
+            "basis": "affiliation",
+            "source": "기존 CIA 고위 요원과 p111–120 화자 일치.",
+            "expectedPath": "/erp/personnel?group=MILITARY&sub=USA · 미국",
+            "deathRecord": "사망 근거 없음. 기존 목록 유지.",
+            "hierarchy": "기존 인원 분류와 소속을 재사용.",
+            "icon": "기존 미국 분류 문장·전용 초상 사용."
+          }
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        }
+      }
+    },
+    {
+      "subjectId": "sniper",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "피격 및 대치 상태까지 기록. 사수 정보는 기존 비공개 기준으로 내부 원장에 보존."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "visuals": {
+          "action": "skip",
+          "reason": "p118 사수 식별 장면은 회원용 보고서·위키판과 공개 경로에서 제외."
+        }
+      }
+    },
+    {
+      "subjectId": "market",
+      "surfaces": {
+        "report": {
+          "action": "update",
+          "reason": "보도와 발표 시점의 공적 맥락을 남김. 신규 시세·변동률·정책 결론은 확정하지 않음."
+        },
+        "wiki": {
+          "action": "skip",
+          "reason": "이 회차에서 확인한 내용은 작전보고서 위키판에 싣고 독립 항목은 추가하지 않음."
+        },
+        "personnel": {
+          "action": "skip",
+          "reason": "독립 신원조회 연결이나 변경에 해당하는 인물 기록 없음."
+        },
+        "catalog": {
+          "action": "skip",
+          "reason": "등록할 물품이나 표본에 해당하지 않음."
+        },
+        "economy": {
+          "action": "skip",
+          "reason": "파리 사태는 기존 시장 종료 이벤트의 배경. 새로운 가격/거래 변경을 뒷받침하는 근거 없음."
+        }
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "jaktil-personnel",
+      "subjectId": "jaktil",
+      "surface": "personnel",
+      "confirmed": "이동식이 관측 중인 아이를 작틸이라 이름 지었고 메트로에도 동행했다.",
+      "recommendation": "작전보고서에서는 작틸로 기록하고 신원조회 신규 생성·광체 소녀 병합은 자료를 확인할 때까지 보류.",
+      "evidence": "p24 연구진의 이전 오틸리아 수용체 비교, p26 명명, p79 역병 발현. 변곡점 2부 광체 소녀는 연구동 이송 결정까지만 확인.",
+      "question": "작틸은 기존 광체 소녀, 별도 NPC, 별도 플레이어 캐릭터 중 어느 신원인가요?",
+      "alternatives": [
+        "동일인으로 확인해 기존 광체 소녀에 연결",
+        "별도 NPC로 등록 검토",
+        "별도 플레이어 캐릭터와 연결",
+        "작전보고서에만 보존"
+      ],
+      "impact": "신원이 확정되면 기존 기록과 연결하거나 새 인원 기록을 준비한다. 별도 NPC라면 전용 초상 또는 무이미지와 공개 범위를 함께 정한다.",
+      "status": "pending"
+    },
+    {
+      "id": "neved-personnel",
+      "subjectId": "neved",
+      "surface": "personnel",
+      "confirmed": "원로는 네베드를 섹터 A에서 원탁 기사단으로 임명했다. 개럿은 그를 상급 기사단원이라고 불렀다.",
+      "recommendation": "정식 소속 선택 전 임명은 보고서·위키에 기록하고 현재 신원조회 섹터 A와 G는 보존.",
+      "evidence": "p42 21:57:12~21:57:38, p45 22:03:37~22:04:10. 원탁 전용 조직 항목과 권한등급 선언을 찾지 못함.",
+      "question": "네베드를 원탁으로 옮길 때 어느 조직 목록에 두고 기존 G 등급을 유지할까요?",
+      "alternatives": [
+        "소속과 등급 결정 전 기존 구조화 필드 유지",
+        "GM 지정 원탁 소속과 유지 또는 변경 등급을 함께 등록"
+      ],
+      "impact": "실제 신원조회 소속과 접근 등급에 영향을 주며 새 조직 목록 및 문장 연결을 확인해야 한다.",
+      "status": "pending"
+    },
+    {
+      "id": "garrett-personnel",
+      "subjectId": "garrett",
+      "surface": "personnel",
+      "confirmed": "기존 개럿과 동일인으로 대조되며 원탁 기사단 수장·사령관으로 나타났다.",
+      "recommendation": "사건상 직함은 기록하되 섹터 B 정규 배치와 미등록 인가 등급은 확인 전 보존.",
+      "evidence": "p42 21:59:22, p43 22:00:18, p45 22:03:37~22:03:45. 기존 신원은 MANUS 섹터 B, 권한등급 없음.",
+      "question": "개럿은 원탁 전속인가요, 섹터 B 겸임인가요? 별도 내부 권한등급이 확정됐다면 함께 알려주세요.",
+      "alternatives": [
+        "원탁 지휘 역할만 기록하고 정규 배치 보존",
+        "GM 지정 소속·겸임·권한으로 신원조회 수정"
+      ],
+      "impact": "원탁을 정규 소속으로 채택하면 신원조회 분류 이동과 조직 아이콘이 필요하다.",
+      "status": "pending"
+    },
+    {
+      "id": "cheney-personnel",
+      "subjectId": "cheney",
+      "surface": "personnel",
+      "confirmed": "딕 체니는 세계이사회 논의에 참석했고 드론 공격에서 살아남았다.",
+      "recommendation": "미국 측 회의 참석 인사로 신원조회 등록을 제안한다. 공식 직함 미상, 내부 권한 없음, 전용 초상 없이는 무이미지.",
+      "evidence": "7화 1부 백악관 회동과 8화 p51–63의 발언·생존. 운영 신원에서 정확 이름 후보 없음.",
+      "question": "딕 체니를 미국 관련 인사로 독립 등록할까요?",
+      "alternatives": [
+        "보고서에만 기록",
+        "미국 관련 인사로 독립 등록하고 전용 초상 제공 또는 무이미지 선택"
+      ],
+      "impact": "독립 등록하면 세계이사회 공격과 관련 보고서를 인물 화면에서 함께 열 수 있다.",
+      "status": "pending"
+    },
+    {
+      "id": "metro-zulu-wiki",
+      "subjectId": "metro-zulu",
+      "surface": "wiki",
+      "confirmed": "메트로의 큰 해골형 독성 개체는 현장에서 줄루 7로 불렸다. 손의 달팽이가 대응 표적이었다.",
+      "recommendation": "현장 호칭을 붙인 미확인 메트로 개체로 본문에 기록하고 기존 모스맨 위키와 분리.",
+      "evidence": "p70–87의 생김새·행동과 운영 ZULU-0007 나방/모스맨 문서의 등록 내용이 다름.",
+      "question": "메트로 독성 개체의 공식 격리 번호나 이름이 있나요?",
+      "alternatives": [
+        "번호 미확정으로 보고서에만 보존",
+        "GM 제공 식별자로 별도 개체 문서 등록",
+        "공식 기록에 근거해 기존 문서에 변형 사례로 추가"
+      ],
+      "impact": "공식 식별자를 받으면 개체 위키와 보고서의 관련 문서를 연결한다.",
+      "status": "pending"
+    }
+  ]
+}

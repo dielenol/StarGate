@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "reviewedSources": [
+    {
+      "sourceKey": "NOSB-S1E8-MARGARET-RECOVERY-PART1",
+      "contentHash": "acc5bca8a2d9e5396e46950089fbc29bf5cbef17b0e99c90ef9d48db376fb0c6",
+      "outcome": "AWARDED"
+    }
+  ],
+  "items": [
+    {
+      "sourceKey": "NOSB-S1E8-MARGARET-RECOVERY-PART1",
+      "codename": "PIPETTE",
+      "category": "INTELLIGENCE_JUDGMENT",
+      "title": "독성 역의 표적을 찾은 눈",
+      "citation": "휘트모어 핀치는 장밋빛 시냅스의 접촉 위험을 경고하고, 해골의 손에 든 달팽이를 교전 표적으로 지목했다.",
+      "evidence": [
+        {
+          "section": "HIGHLIGHT",
+          "index": 5
+        },
+        {
+          "section": "HIGHLIGHT",
+          "index": 6
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E8-MARGARET-RECOVERY-PART1",
+      "codename": "TIGER298",
+      "category": "RESCUE_PROTECTION",
+      "title": "이사회와 메트로의 방패",
+      "citation": "시유는 이사회 공격 중 드론을 떨어뜨리고 대피를 유도했다. 메트로에서는 독성 개체로 달려가던 작틸을 붙잡아 엄폐시켰다.",
+      "evidence": [
+        {
+          "section": "HIGHLIGHT",
+          "index": 3
+        },
+        {
+          "section": "HIGHLIGHT",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "sourceKey": "NOSB-S1E8-MARGARET-RECOVERY-PART1",
+      "codename": "UNYEON",
+      "category": "RESCUE_PROTECTION",
+      "title": "총화 속에서 열린 피난로",
+      "citation": "운연은 연기로 마가렛을 가려 총격을 막고, 마가렛이 피신한 뒤 공격 헬기를 끌어내려 추락시켰다.",
+      "evidence": [
+        {
+          "section": "HIGHLIGHT",
+          "index": 8
+        },
+        {
+          "section": "HIGHLIGHT",
+          "index": 9
+        }
+      ]
+    }
+  ]
+}
