@@ -105,7 +105,8 @@
 .login__input { width: 100%; min-width: 0; height: 54px; padding: 0 14px; border: 0; border-radius: inherit; outline: none; background: transparent; color: #f1ecdc; font: 16px var(--font-body); caret-color: var(--gold); }
 .login__input::placeholder { color: #8d9083; font-size: 14px; }
 .login__input:read-only { opacity: 0.7; }
-.login__input:-webkit-autofill { -webkit-text-fill-color: #f1ecdc; box-shadow: 0 0 0 100px #141613 inset; }
+/* Keep the native autofill background out of the inset shadow’s antialiased edge. */
+.login__input:-webkit-autofill { -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: #f1ecdc; box-shadow: 0 0 0 100px #141613 inset; }
 .login__reveal { flex-shrink: 0; min-height: 44px; min-width: 48px; margin-right: 5px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: #c2bda9; font: 12px var(--font-body); cursor: pointer; }
 .login__reveal:hover:not(:disabled) { color: var(--gold); background: rgba(201, 168, 90, 0.07); }
 .login__field-error, .login__caps-note { margin: 8px 0 0; font-size: 12px; line-height: 1.5; }
