@@ -5,7 +5,7 @@ name: "Mr. 오드의 USB"
 category: "SPECIAL"
 price: 0
 description: "오드가 피격 직후 스타크에게 인계를 부탁한 저장 장치. 내용은 확인되지 않았다."
-previewImage: ""
+previewImage: "/assets/catalog/special/mr-odd-usb.webp"
 isAvailable: false
 isPublic: false
 tags: ["NOSB-S1E8-MARGARET-RECOVERY-PART1", "마가렛 회수", "Mr. 오드", "스타크 일로니손", "USB"]

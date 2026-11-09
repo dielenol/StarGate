@@ -5,7 +5,7 @@ name: "세계이사회 백신 시제품"
 category: "SPECIAL"
 price: 0
 description: "운연이 보호소로 가져온, 반복 접종이 필요한 세계이사회 백신 시제품."
-previewImage: ""
+previewImage: "/assets/catalog/special/council-vaccine-prototype.webp"
 isAvailable: false
 isPublic: false
 tags: ["NOSB-S1E8-MARGARET-RECOVERY-PART1", "마가렛 회수", "세계이사회", "광원화", "백신 시제품", "운연"]

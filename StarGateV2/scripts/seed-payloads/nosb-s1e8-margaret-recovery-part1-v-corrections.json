@@ -128,5 +128,61 @@
         "오르도 전투원과 존 웡이 마가렛과 대치했다. 존 웡은 저격을 받아 쓰러졌으며 생사는 미확인이다."
       ]
     }
+  },
+  {
+    "collection": "master_items",
+    "type": "update",
+    "filter": {
+      "slug": "mr-odd-usb",
+      "code": "MR_ODD_USB",
+      "category": "SPECIAL",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "previewImage": ""
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/special/mr-odd-usb.webp"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "slug": "mr-odd-usb",
+      "code": "MR_ODD_USB",
+      "category": "SPECIAL",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "previewImage": "/assets/catalog/special/mr-odd-usb.webp"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "update",
+    "filter": {
+      "slug": "council-vaccine-prototype",
+      "code": "COUNCIL_VACCINE_PROTOTYPE",
+      "category": "SPECIAL",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "previewImage": ""
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/special/council-vaccine-prototype.webp"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "slug": "council-vaccine-prototype",
+      "code": "COUNCIL_VACCINE_PROTOTYPE",
+      "category": "SPECIAL",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "previewImage": "/assets/catalog/special/council-vaccine-prototype.webp"
+    }
   }
 ]

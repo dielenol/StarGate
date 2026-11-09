@@ -149,7 +149,7 @@
       "category": "SPECIAL",
       "price": 0,
       "description": "오드가 피격 직후 스타크에게 인계를 부탁한 저장 장치. 내용은 확인되지 않았다.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/mr-odd-usb.webp",
       "isAvailable": false,
       "isPublic": false,
       "tags": [
@@ -182,7 +182,7 @@
       "category": "SPECIAL",
       "price": 0,
       "description": "오드가 피격 직후 스타크에게 인계를 부탁한 저장 장치. 내용은 확인되지 않았다.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/mr-odd-usb.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
@@ -275,7 +275,7 @@
       "category": "SPECIAL",
       "price": 0,
       "description": "운연이 보호소로 가져온, 반복 접종이 필요한 세계이사회 백신 시제품.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/council-vaccine-prototype.webp",
       "isAvailable": false,
       "isPublic": false,
       "tags": [
@@ -309,7 +309,7 @@
       "category": "SPECIAL",
       "price": 0,
       "description": "운연이 보호소로 가져온, 반복 접종이 필요한 세계이사회 백신 시제품.",
-      "previewImage": "",
+      "previewImage": "/assets/catalog/special/council-vaccine-prototype.webp",
       "isAvailable": false,
       "isPublic": true,
       "tags": [
