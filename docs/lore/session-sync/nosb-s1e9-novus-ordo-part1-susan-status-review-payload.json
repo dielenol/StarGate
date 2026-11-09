@@ -1,0 +1,34 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "filter": {
+      "type": "NPC",
+      "codename": "CLAIRVOYANCE",
+      "isPublic": true,
+      "updatedAt": "2026-09-08T03:58:08.206Z",
+      "lifeStatus": {
+        "$exists": false
+      }
+    },
+    "update": {
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-10-11T00:00:00.000Z",
+        "lifeStatusEventId": "NOSB-S1E8-MARGARET-RECOVERY-PART2"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "type": "NPC",
+      "codename": "CLAIRVOYANCE",
+      "isPublic": true,
+      "agentLevel": "H",
+      "department": "SECTOR_A",
+      "lore.mainImage": "/assets/npcs/Clairvoyance-profile.webp",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-10-11T00:00:00.000Z",
+      "lifeStatusEventId": "NOSB-S1E8-MARGARET-RECOVERY-PART2"
+    }
+  }
+]

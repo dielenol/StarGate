@@ -1,0 +1,98 @@
+[
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "slug": "ordo-nonlethal-frequency-device",
+      "code": "ORDO_NONLETHAL_FREQUENCY_DEVICE",
+      "name": "오르도 비살상용 고주파 장치",
+      "category": "SPECIAL",
+      "description": "뉴욕 동부에서 원로 근위대가 사용한 포획 장치다.",
+      "loreMd": "근위대는 포획을 위해 비살상 고주파 장치를 운용했다. 본체의 상세 형상과 전투 성능은 확인되지 않았다.\n\n[[report:NOSB-S1E9-NOVUS-ORDO-PART1|노부스 오르도 1부]]",
+      "source": "NOVUS ORDO 사무국 기록통제실 보존본 「S1E9 노부스 오르도 1부」",
+      "tags": [
+        "NOSB-S1E9-NOVUS-ORDO-PART1",
+        "뉴욕 동부",
+        "작전 기록"
+      ],
+      "previewImage": "/assets/catalog/special/ordo-nonlethal-frequency-device.webp",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "createdAt": "2026-10-25T11:20:38.000Z",
+      "updatedAt": "2026-11-09T12:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "slug": "crown-strength-enhancer",
+      "code": "CROWN_STRENGTH_ENHANCER",
+      "name": "왕관의 근력강화제",
+      "category": "SPECIAL",
+      "description": "ZULU-0040 왕관에서 나온 노란 액체를 담은 샘플러 앰플이다.",
+      "loreMd": "핀치가 마가렛에게 투여하자 마가렛이 다시 일어섰다. 현장에서 투여했으며 별도 보관분과 효과의 지속 시간은 확인되지 않았다.\n\n[[report:NOSB-S1E9-NOVUS-ORDO-PART1|노부스 오르도 1부]]",
+      "source": "NOVUS ORDO 사무국 기록통제실 보존본 「S1E9 노부스 오르도 1부」",
+      "tags": [
+        "NOSB-S1E9-NOVUS-ORDO-PART1",
+        "뉴욕 동부",
+        "작전 기록"
+      ],
+      "previewImage": "/assets/catalog/special/crown-strength-enhancer.webp",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "createdAt": "2026-10-25T11:20:38.000Z",
+      "updatedAt": "2026-11-09T12:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "slug": "rod-of-god-35-orbital-weapon",
+      "code": "ROD_OF_GOD_35_ORBITAL_WEAPON",
+      "name": "신의 지팡이 3.5",
+      "category": "SPECIAL",
+      "description": "미합중국이 블랙 피라미드를 타격하는 데 운용한 궤도 무기 플랫폼이다.",
+      "loreMd": "원통형 발사체 플랫폼과 시설에 떨어진 공격이 관측됐다. 작전에서 회수된 기록은 없다.\n\n[[report:NOSB-S1E9-NOVUS-ORDO-PART1|노부스 오르도 1부]]",
+      "source": "NOVUS ORDO 사무국 기록통제실 보존본 「S1E9 노부스 오르도 1부」",
+      "tags": [
+        "NOSB-S1E9-NOVUS-ORDO-PART1",
+        "뉴욕 동부",
+        "작전 기록"
+      ],
+      "previewImage": "/assets/catalog/special/rod-of-god-35-orbital-weapon.webp",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "createdAt": "2026-10-25T11:20:38.000Z",
+      "updatedAt": "2026-11-09T12:00:00.000Z"
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "slug": "cueto-reinforced-suit",
+      "code": "CUETO_REINFORCED_SUIT",
+      "name": "쿠에토 대령의 강화복",
+      "category": "SPECIAL",
+      "description": "뉴욕 동부에서 쿠에토 대령이 착용한 강화복이다.",
+      "loreMd": "맘모스가 쿠에토를 제압한 뒤 킴라박 리가 강화복을 노획했다고 보고했다. 공식 인계와 최종 보관 위치는 확인되지 않았다.\n\n[[report:NOSB-S1E9-NOVUS-ORDO-PART1|노부스 오르도 1부]]",
+      "source": "NOVUS ORDO 사무국 기록통제실 보존본 「S1E9 노부스 오르도 1부」",
+      "tags": [
+        "NOSB-S1E9-NOVUS-ORDO-PART1",
+        "뉴욕 동부",
+        "작전 기록"
+      ],
+      "previewImage": "/assets/catalog/special/cueto-reinforced-suit.webp",
+      "isPublic": false,
+      "isAvailable": false,
+      "price": 0,
+      "createdAt": "2026-10-25T11:20:38.000Z",
+      "updatedAt": "2026-11-09T12:00:00.000Z"
+    }
+  }
+]
