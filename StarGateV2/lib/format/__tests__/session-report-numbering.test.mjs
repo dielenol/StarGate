@@ -80,6 +80,33 @@ test("마가렛과 마거렛 제목은 실제 회차에 해당할 때만 분할 
   }
 });
 
+test("노부스 오르도 1부는 08.5 다음의 정규 09로 표시한다", () => {
+  const current = {
+    sessionId: "NOSB-S1E9-NOVUS-ORDO-PART1",
+    sessionTitle: "작전 보고서 S1E9: 노부스 오르도 1부",
+    createdAt,
+  };
+  const previous = {
+    sessionId: "NOSB-S1E8-MARGARET-RECOVERY-PART2",
+    sessionTitle: "마가렛 회수 2부",
+    createdAt,
+  };
+  const mini = {
+    sessionId: "NOSB-MINI-S1E1-NEW-DUBLIN",
+    sessionTitle: "뉴 더블린",
+    createdAt,
+  };
+
+  assert.deepEqual(
+    buildOperationReportNumbering([mini, current, previous]).map(
+      ({ number, series }) => [number, series],
+    ),
+    [["08.5", "regular"], ["09", "regular"], ["MINI01", "mini"]],
+  );
+  const legacy = { ...current, sessionId: "LEGACY-S1E9-PART1" };
+  assert.equal(buildOperationReportNumbering([legacy])[0]?.number, "09");
+});
+
 test("S1E5 악 2부를 정규 보고서 05.5로 고정한다", () => {
   const reports = [
     {
