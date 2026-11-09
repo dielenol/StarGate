@@ -476,9 +476,11 @@ export function formatShortReporterName(name: string): string {
     return personName[1].replace(/\s+/g, " ");
   }
 
-  return trimmed
+  const departmentName = trimmed
     .replace(/^NOVUS ORDO\s*/i, "")
     .replace(/^사무국\s*/, "")
-    .replace(/^기록통제실\s*/, "")
     .trim();
+
+  const shortName = departmentName.replace(/^기록통제실\s*/, "").trim();
+  return shortName || departmentName || trimmed;
 }

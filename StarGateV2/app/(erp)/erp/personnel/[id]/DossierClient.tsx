@@ -900,6 +900,11 @@ export default function DossierClient({
         appearance,
       })),
   ];
+  const referenceReports = currentRelatedReports.filter(
+    (report) =>
+      !knownFieldEventIds.has(report.sessionId) &&
+      !appearanceBySessionId.has(report.sessionId),
+  );
   const fieldEventCount = canIdentity ? fieldActivityRows.length : 0;
   const relationCount = canIdentity ? relations.length : 0;
   const lastFieldEvent = fieldActivityRows.at(-1)?.eventCode;
@@ -1724,6 +1729,33 @@ export default function DossierClient({
             </div>
           )}
         </Box>
+        {referenceReports.length > 0 ? (
+          <Box>
+            <PanelTitle>관련 작전 보고서</PanelTitle>
+            <nav aria-label="관련 작전 보고서" className={styles.eventList}>
+              {referenceReports.map((report) => (
+                <Link
+                  key={report.id}
+                  href={`/erp/sessions/report/${report.id}`}
+                  className={`${styles.eventCard} ${styles["eventCard--linked"]}`}
+                >
+                  <div className={styles.eventCard__head}>
+                    <span className={styles.eventCode}>{report.sessionId}</span>
+                    {report.createdAt ? (
+                      <span className={styles.eventMeta}>
+                        {formatDate(report.createdAt)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className={styles.eventTitle}>{report.sessionTitle}</div>
+                  {report.locationLabel ? (
+                    <p className={styles.eventDesc}>{report.locationLabel}</p>
+                  ) : null}
+                </Link>
+              ))}
+            </nav>
+          </Box>
+        ) : null}
       </>
     );
   };
