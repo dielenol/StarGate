@@ -60,6 +60,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     DiscordProvider({
       clientId: discordClientId,
       clientSecret: discordClientSecret,
+      // Discord의 iss 응답을 Auth.js 기본값(authjs.dev) 대신 실제 발급자로 검증한다.
+      issuer: "https://discord.com",
     }),
     CredentialsProvider({
       name: "credentials",
