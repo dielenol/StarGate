@@ -4,7 +4,7 @@
 
 | sessionId | report payload | source availability | audit status |
 |---|---|---|---|
-| NOSB-S1E9-NOVUS-ORDO-PART2 | docs/lore/session-sync/nosb-s1e9-novus-ordo-part2-limited-review-payload.json | available | partial |
+| NOSB-S1E9-NOVUS-ORDO-PART2 | StarGateV2/scripts/seed-payloads/nosb-s1e9-novus-ordo-part2-v-20261110.json | available | partial |
 
 ## 원문과 기준
 
