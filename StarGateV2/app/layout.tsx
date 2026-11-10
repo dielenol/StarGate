@@ -9,9 +9,6 @@ import "./globals.css";
 import SiteMaintenanceGate from "@/components/maintenance/SiteMaintenanceGate";
 import { getMaintenanceState } from "@/lib/maintenance/schedule";
 
-// 예약·수동 해제 상태를 빌드 시점의 HTML에 고정하지 않는다.
-export const dynamic = "force-dynamic";
-
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -71,6 +68,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // force-dynamic 없이 정적으로 렌더해도 된다.
+  // - 일정이 null이면 상태가 시각과 무관하게 off라 빌드 시점 HTML과 요청 시점 판정이 같다.
+  // - 일정을 다시 켤 때는 proxy matcher 확장과 force-dynamic 복원을 함께 한다(lib/maintenance/schedule.ts 체크리스트).
   const maintenance = getMaintenanceState();
   return (
     <html
@@ -85,7 +85,10 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <SiteMaintenanceGate initialState={maintenance}>{children}</SiteMaintenanceGate>
+        {/* off면 게이트를 마운트하지 않아 상태 폴링과 타이머가 생기지 않는다. */}
+        {maintenance.phase === "off" ? children : (
+          <SiteMaintenanceGate initialState={maintenance}>{children}</SiteMaintenanceGate>
+        )}
         {maintenance.phase !== "active" && <SpeedInsights />}
       </body>
     </html>

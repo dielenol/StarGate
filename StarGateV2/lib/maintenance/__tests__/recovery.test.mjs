@@ -7,7 +7,7 @@ import ts from "typescript";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as recovery from "../recovery.ts";
-import { ERP_MAINTENANCE_WINDOW } from "../schedule.ts";
+import { LAST_MAINTENANCE_WINDOW } from "../schedule.ts";
 import {
   RECOVERY_STAGES,
   RECOVERY_PENDING_PROGRESS,
@@ -22,7 +22,7 @@ import {
   sectorRows,
 } from "../recovery.ts";
 
-const { startsAt, endsAt } = ERP_MAINTENANCE_WINDOW;
+const { startsAt, endsAt } = LAST_MAINTENANCE_WINDOW;
 const start = Date.parse(startsAt);
 const end = Date.parse(endsAt);
 const SECTOR_ORDER = ["corrupted", "quarantined", "recovering", "restored"];

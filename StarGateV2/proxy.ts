@@ -147,6 +147,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // 공개 페이지·인증·API·Server Action을 모두 검사한다. 정적 예외는 위에서 정확히 제한한다.
-  matcher: ["/:path*"],
+  // 봉쇄 일정(ERP_MAINTENANCE_WINDOW)이 없으면 ERP 경로만 검사한다.
+  // 봉쇄를 다시 켤 때는 ["/:path*"]로 바꿔 공개 페이지·인증·API·Server Action을 모두 검사한다.
+  // lib/maintenance/__tests__/proxy.test.mjs의 일관성 테스트가 이 짝을 강제한다.
+  // `/erp/:path*` 만으로는 path-to-regexp 동작 차이로 `/erp` 자체가 누락될 수 있어 두 패턴을 명시한다.
+  matcher: ["/erp", "/erp/:path*", "/api/erp", "/api/erp/:path*"],
 };
