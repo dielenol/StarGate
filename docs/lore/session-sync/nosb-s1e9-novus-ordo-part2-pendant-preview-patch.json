@@ -1,0 +1,25 @@
+[
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "filter": {
+      "slug": "siyu-family-pendant",
+      "code": "SIYU_FAMILY_PENDANT",
+      "previewImage": "",
+      "isPublic": true,
+      "updatedAt": "2026-09-10T06:12:22.446Z"
+    },
+    "update": {
+      "$set": {
+        "previewImage": "/assets/catalog/special/siyu-family-pendant.webp"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "slug": "siyu-family-pendant",
+      "code": "SIYU_FAMILY_PENDANT",
+      "isPublic": true,
+      "previewImage": "/assets/catalog/special/siyu-family-pendant.webp"
+    }
+  }
+]

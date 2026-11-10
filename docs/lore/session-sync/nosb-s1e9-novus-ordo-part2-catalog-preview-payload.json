@@ -1,0 +1,52 @@
+[
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "code": "ELDER_CORONET",
+      "slug": "elder-coronet",
+      "name": "원로의 왕관",
+      "category": "SPECIAL",
+      "price": 0,
+      "description": "줄루 2400 원로들이 착용한 왕관이다. 현장에는 짙은 금속 띠와 가시처럼 솟은 장식의 왕관이 관측됐다.",
+      "previewImage": "/assets/catalog/special/elder-coronet.webp",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-S1E9-NOVUS-ORDO-PART2",
+        "원로의 왕관"
+      ],
+      "source": "session-log",
+      "createdAt": "2026-11-08T11:10:38.000Z",
+      "updatedAt": "2026-11-10T02:49:00.000Z",
+      "lore": {
+        "acquisition": "마리아의 모습을 한 존재가 원로 세 명의 왕관을 겹쳐 쓰고 첫 번째 원로의 왕관도 가져갔다. 마지막 확인 수량은 네 점이다. 이후 행선은 확인되지 않았다."
+      }
+    }
+  },
+  {
+    "collection": "master_items",
+    "type": "catalog-item",
+    "payload": {
+      "code": "PRESIDENTIAL_EARPIECE",
+      "slug": "presidential-earpiece",
+      "name": "대통령 이어폰",
+      "category": "SPECIAL",
+      "price": 0,
+      "description": "킴라박 리가 착용했던 소형 무선 수신기. 미합중국 대통령과 부통령이 참여하는 회선으로 연결됐다.",
+      "previewImage": "/assets/catalog/special/presidential-earpiece.webp",
+      "isAvailable": false,
+      "isPublic": false,
+      "tags": [
+        "NOSB-S1E9-NOVUS-ORDO-PART2",
+        "대통령 이어폰"
+      ],
+      "source": "session-log",
+      "createdAt": "2026-11-08T11:10:38.000Z",
+      "updatedAt": "2026-11-10T02:49:00.000Z",
+      "lore": {
+        "acquisition": "해쉬가 킴라박 리의 귀에서 빼서 착용하고 통신한 뒤 주머니에 넣었다. 킴라박 리가 돌려달라고 요구했으나 인계는 관측되지 않았다."
+      }
+    }
+  }
+]

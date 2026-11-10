@@ -1,0 +1,64 @@
+[
+  {
+    "collection": "characters",
+    "type": "NPC",
+    "filter": {
+      "type": "NPC",
+      "codename": "REGISTRAR",
+      "isPublic": true,
+      "updatedAt": "2026-08-27T02:07:26.200Z",
+      "lifeStatus": {
+        "$exists": false
+      }
+    },
+    "update": {
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-11-08T13:53:33.000Z",
+        "lifeStatusEventId": "NOSB-S1E9-NOVUS-ORDO-PART2"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "type": "NPC",
+      "codename": "REGISTRAR",
+      "isPublic": true,
+      "agentLevel": "M",
+      "department": "HQ",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-11-08T13:53:33.000Z",
+      "lifeStatusEventId": "NOSB-S1E9-NOVUS-ORDO-PART2"
+    }
+  },
+  {
+    "collection": "characters",
+    "type": "AGENT",
+    "filter": {
+      "type": "AGENT",
+      "codename": "PIPETTE",
+      "isPublic": true,
+      "updatedAt": "2026-10-11T15:35:46.620Z",
+      "lifeStatus": {
+        "$exists": false
+      }
+    },
+    "update": {
+      "$set": {
+        "lifeStatus": "DECEASED",
+        "lifeStatusAt": "2026-11-08T15:40:05.000Z",
+        "lifeStatusEventId": "NOSB-S1E9-NOVUS-ORDO-PART2"
+      }
+    },
+    "upsert": false,
+    "postcondition": {
+      "type": "AGENT",
+      "codename": "PIPETTE",
+      "isPublic": true,
+      "agentLevel": "J",
+      "department": "SECTOR_A",
+      "lifeStatus": "DECEASED",
+      "lifeStatusAt": "2026-11-08T15:40:05.000Z",
+      "lifeStatusEventId": "NOSB-S1E9-NOVUS-ORDO-PART2"
+    }
+  }
+]
