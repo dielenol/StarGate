@@ -80,7 +80,7 @@ test("마가렛과 마거렛 제목은 실제 회차에 해당할 때만 분할 
   }
 });
 
-test("노부스 오르도 1부는 08.5 다음의 정규 09로 표시한다", () => {
+test("노부스 오르도 1·2부는 08.5 다음, 미니 이전에 정규 09·09.5로 표시한다", () => {
   const current = {
     sessionId: "NOSB-S1E9-NOVUS-ORDO-PART1",
     sessionTitle: "작전 보고서 S1E9: 노부스 오르도 1부",
@@ -96,15 +96,34 @@ test("노부스 오르도 1부는 08.5 다음의 정규 09로 표시한다", () 
     sessionTitle: "뉴 더블린",
     createdAt,
   };
+  const next = {
+    sessionId: "NOSB-S1E9-NOVUS-ORDO-PART2",
+    sessionTitle: "노부스 오르도 후속 기록",
+    createdAt,
+  };
 
   assert.deepEqual(
-    buildOperationReportNumbering([mini, current, previous]).map(
+    buildOperationReportNumbering([mini, next, current, previous]).map(
       ({ number, series }) => [number, series],
     ),
-    [["08.5", "regular"], ["09", "regular"], ["MINI01", "mini"]],
+    [["08.5", "regular"], ["09", "regular"], ["09.5", "regular"], ["MINI01", "mini"]],
   );
   const legacy = { ...current, sessionId: "LEGACY-S1E9-PART1" };
   assert.equal(buildOperationReportNumbering([legacy])[0]?.number, "09");
+});
+
+test("S1E9 이전 문서도 정확한 2부 표기에서만 09.5를 찾는다", () => {
+  for (const [sessionTitle, expected] of [
+    ["S1E9 노부스 오르도 2부", "09.5"],
+    ["S1E9 Novus Ordo PART 2", "09.5"],
+    ["S1E9 노부스 오르도 12부", "12"],
+    ["S1E9 Novus Ordo part 20", "12"],
+  ]) {
+    const [report] = buildOperationReportNumbering([
+      { sessionId: "LEGACY-S1E9", sessionTitle, createdAt, reportNumber: "12" },
+    ]);
+    assert.equal(report.number, expected, sessionTitle);
+  }
 });
 
 test("S1E5 악 2부를 정규 보고서 05.5로 고정한다", () => {

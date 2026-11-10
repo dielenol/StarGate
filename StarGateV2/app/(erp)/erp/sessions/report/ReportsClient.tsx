@@ -52,6 +52,7 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   "08.5": { x: -105, y: -38, labelX: -48, labelY: 114 },
   // 뉴욕 기준점의 왼쪽으로 펼쳐 브라질 카드와 모바일 지도 경계를 피한다.
   "09": { x: -154, y: 40, labelX: -54, labelY: 114 },
+  "09.5": { x: -153, y: -121, labelX: -54, labelY: 114 },
   MINI01: { x: -92, y: -112 },
   MINI02: { x: 0, y: -94 },
   MINI03: { x: 0, y: -112 },

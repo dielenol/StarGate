@@ -132,6 +132,12 @@ const OPERATION_REPORT_NUMBER_PRESETS: Record<
     number: "09",
     sortOrder: 109.875,
   },
+  "NOSB-S1E9-NOVUS-ORDO-PART2": {
+    series: "regular",
+    sequence: 9.5,
+    number: "09.5",
+    sortOrder: 109.9375,
+  },
   "NOSB-MINI-S1E1-NEW-DUBLIN": {
     series: "mini",
     sequence: 1,
@@ -225,8 +231,13 @@ function getPresetByTitle(
     }
   }
 
-  if (/\bs1e9\b/u.test(title) && /(?<!\d)1\s*부|\bpart\s*1\b/u.test(title)) {
-    return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E9-NOVUS-ORDO-PART1"];
+  if (/\bs1e9\b/u.test(title)) {
+    if (/(?<!\d)2\s*부|\bpart\s*2\b/u.test(title)) {
+      return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E9-NOVUS-ORDO-PART2"];
+    }
+    if (/(?<!\d)1\s*부|\bpart\s*1\b/u.test(title)) {
+      return OPERATION_REPORT_NUMBER_PRESETS["NOSB-S1E9-NOVUS-ORDO-PART1"];
+    }
   }
 
   if (
