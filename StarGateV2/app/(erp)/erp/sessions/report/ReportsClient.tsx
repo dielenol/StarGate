@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 import type { ClientSessionReportListItem } from "@/lib/format/session-report-list";
 
@@ -14,8 +21,14 @@ import {
 } from "@/lib/format/session-report";
 
 import Box from "@/components/ui/Box/Box";
+import Button from "@/components/ui/Button/Button";
 import PanelTitle from "@/components/ui/PanelTitle/PanelTitle";
-import { IconReportDocument, IconReportMini } from "@/components/icons";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconReportDocument,
+  IconReportMini,
+} from "@/components/icons";
 import LinkPendingProbe from "@/components/erp/NavPending/LinkPendingProbe";
 
 import styles from "./page.module.css";
@@ -38,10 +51,11 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   "01.5": { x: -82, y: -112 },
   "02": { x: 86, y: -112 },
   "02.5": { x: 88, y: -92 },
+  "03": { ...DEFAULT_PIN_CARD_LAYOUT, labelX: -34 },
   "04": { x: -86, y: -112, labelX: -132 },
   "04.5": { x: 86, y: -96, labelX: 132 },
   "05": { x: -86, y: -112, labelX: -132 },
-  "05.5": { x: 86, y: -96, labelX: 132 },
+  "05.5": { x: 86, y: -96, labelX: 106 },
   "06": { x: -86, y: -112, labelX: -132 },
   "06.5": { x: 86, y: -96, labelX: 132 },
   // 파리 회차는 유럽 MINI 카드와 겹치지 않도록 아래 행에 배치한다.
@@ -54,11 +68,12 @@ const REPORT_PIN_CARD_LAYOUTS: Record<string, PinCardLayout> = {
   "09": { x: -154, y: 40, labelX: -54, labelY: 114 },
   "09.5": { x: -153, y: -121, labelX: -54, labelY: 114 },
   MINI01: { x: -92, y: -112 },
-  MINI02: { x: 0, y: -94 },
+  // 최소 지도 폭에서도 주변 정규 회차의 카드와 번호를 가리지 않게 분산한다.
+  MINI02: { x: 20, y: 120, labelY: 0 },
   MINI03: { x: 0, y: -112 },
-  MINI04: { x: -92, y: -94 },
-  MINI05: { x: 92, y: -112, labelX: 132 },
-  MINI06: { x: 92, y: -94, labelX: 132 },
+  MINI04: { x: 70, y: -34, labelY: 42 },
+  MINI05: { x: 24, y: -160, labelX: 132 },
+  MINI06: { x: -16, y: -165, labelX: 132 },
   MINI07: { x: -32, y: 36 },
   "MINI07.5": { x: 32, y: 36 },
 };
@@ -83,6 +98,107 @@ function getPinLineStyle(layout: PinCardLayout) {
   };
 }
 
+type MapScrollPosition = "fit" | "start" | "middle" | "end";
+
+function ReportMapViewport({ children }: { children: ReactNode }) {
+  const viewportId = useId();
+  const hintId = useId();
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const overviewWindowRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<MapScrollPosition>("fit");
+  const canScroll = position !== "fit";
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const stage = stageRef.current;
+    const overviewWindow = overviewWindowRef.current;
+    if (!viewport || !stage || !overviewWindow) return;
+
+    const updatePosition = () => {
+      const { clientWidth, scrollWidth } = viewport;
+      const maxScroll = scrollWidth - clientWidth;
+      if (maxScroll <= 1) {
+        setPosition("fit");
+        return;
+      }
+
+      const offset = Math.min(maxScroll, Math.max(0, viewport.scrollLeft));
+      overviewWindow.style.left = `${(offset / scrollWidth) * 100}%`;
+      overviewWindow.style.width = `${(clientWidth / scrollWidth) * 100}%`;
+
+      if (offset <= 1) setPosition("start");
+      else if (maxScroll - offset <= 1) setPosition("end");
+      else setPosition("middle");
+    };
+
+    const observer = new ResizeObserver(updatePosition);
+    observer.observe(viewport);
+    observer.observe(stage);
+    viewport.addEventListener("scroll", updatePosition, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      viewport.removeEventListener("scroll", updatePosition);
+    };
+  }, []);
+
+  function move(direction: -1 | 1) {
+    const viewport = viewportRef.current;
+    const atEdge = direction === -1 ? position === "start" : position === "end";
+    if (viewport && !atEdge) {
+      viewport.scrollBy({ left: direction * viewport.clientWidth * 0.8 });
+    }
+  }
+
+  return (
+    <>
+      <div className={styles.mapNavigation} hidden={!canScroll}>
+        <p className={styles.mapHint} id={hintId}>
+          <strong>지도 이동</strong>
+          <span>좌우로 밀기</span>
+        </p>
+        <div className={styles.mapControls}>
+          <Button
+            className={styles.mapStep}
+            aria-label="지도를 왼쪽으로 이동"
+            aria-controls={viewportId}
+            aria-disabled={position === "start"}
+            onClick={() => move(-1)}
+          >
+            <IconChevronLeft aria-hidden />
+          </Button>
+          <div className={styles.mapOverview} aria-hidden>
+            <div className={styles.mapOverviewWindow} ref={overviewWindowRef} />
+          </div>
+          <Button
+            className={styles.mapStep}
+            aria-label="지도를 오른쪽으로 이동"
+            aria-controls={viewportId}
+            aria-disabled={position === "end"}
+            onClick={() => move(1)}
+          >
+            <IconChevronRight aria-hidden />
+          </Button>
+        </div>
+      </div>
+      <div
+        className={styles.mapViewport}
+        id={viewportId}
+        ref={viewportRef}
+        role="region"
+        aria-label="작전 보고서 지도"
+        aria-describedby={canScroll ? hintId : undefined}
+        tabIndex={canScroll ? 0 : undefined}
+      >
+        <div className={styles.mapStage} ref={stageRef} role="list">
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function ReportsClient({
   initialReports,
   initialReportsUpdatedAt,
@@ -103,7 +219,7 @@ export default function ReportsClient({
       {reports.length === 0 ? (
         <div className={styles.empty}>작성된 작전 보고서가 없습니다.</div>
       ) : (
-        <div className={styles.mapStage} role="list">
+        <ReportMapViewport>
           <div className={styles.mapOverlay} aria-hidden />
           {reports.map((report) => {
             const id = report._id;
@@ -165,7 +281,7 @@ export default function ReportsClient({
               </Link>
             );
           })}
-        </div>
+        </ReportMapViewport>
       )}
     </Box>
   );

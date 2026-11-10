@@ -1,19 +1,106 @@
 .mapBox {
+  --map-image: url("/assets/world-view/novus-ordo-world-map.webp");
+
   overflow: hidden;
   border-radius: var(--radius-sm);
 }
 
-.mapStage {
-  position: relative;
+.mapNavigation,
+.mapViewport {
   width: min(100%, 1360px);
   margin-inline: auto;
+}
+
+.mapNavigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mapNavigation[hidden] {
+  display: none;
+}
+
+.mapHint {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.mapHint strong {
+  color: var(--gold);
+}
+
+.mapControls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.mapControls .mapStep {
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  padding: 0;
+}
+
+.mapStep svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mapOverview {
+  position: relative;
+  width: 72px;
   aspect-ratio: 1625 / 968;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background:
+    linear-gradient(rgba(4, 4, 4, 0.4), rgba(4, 4, 4, 0.4)),
+    var(--map-image) center / 100% 100% no-repeat,
+    var(--bg-2);
+}
+
+.mapOverviewWindow {
+  position: absolute;
+  inset-block: 0;
+  border: 1px solid var(--gold);
+  background: rgba(201, 168, 90, 0.24);
+}
+
+.mapViewport {
+  overflow: auto hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.mapViewport:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.mapStage {
+  position: relative;
+  width: 100%;
+  /* Keep the northern report cards inside the map at its narrowest. */
+  min-width: 920px;
+  aspect-ratio: 1625 / 968;
+  overflow: hidden;
+  background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.36)),
-    url("/assets/world-view/novus-ordo-world-map.webp") center / 100% 100% no-repeat,
+    var(--map-image) center / 100% 100% no-repeat,
     var(--bg-2);
 }
 
@@ -44,13 +131,16 @@
   --report-accent: var(--gold);
   --report-accent-dim: var(--gold-dim);
   --report-accent-glow: rgba(201, 168, 90, 0.24);
+  --pin-card-size: 66px;
+  --pin-anchor-x: calc(var(--pin-card-size) / 2 - var(--pin-card-x, 0px));
+  --pin-anchor-y: calc(0px - var(--pin-card-y, -106px));
 
   position: absolute;
-  left: var(--x);
-  top: var(--y);
+  left: calc(var(--x) - var(--pin-anchor-x));
+  top: calc(var(--y) - var(--pin-anchor-y));
   display: block;
-  width: 0;
-  height: 0;
+  width: var(--pin-card-size);
+  height: var(--pin-card-size);
   color: inherit;
   text-align: center;
   text-decoration: none;
@@ -67,7 +157,12 @@
 
 .mapPin:hover .mapPin__report,
 .mapPin:focus-visible .mapPin__report {
-  transform: translateX(-50%) scale(1.04);
+  transform: scale(1.04);
+}
+
+.mapPin:focus-visible .mapPin__report {
+  outline: 2px solid var(--report-accent);
+  outline-offset: -4px;
 }
 
 .mapPin--estimated {
@@ -90,20 +185,16 @@
 
 .mapPin__report {
   position: absolute;
-  top: var(--pin-card-y, -106px);
-  left: var(--pin-card-x, 0px);
+  inset: 0;
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 66px;
-  height: 66px;
   border: 1px solid var(--report-accent-dim);
   border-radius: var(--radius-sm);
   background:
     radial-gradient(circle at center, color-mix(in srgb, var(--report-accent) 20%, transparent), transparent 62%),
     rgba(4, 4, 4, 0.78);
   pointer-events: auto;
-  transform: translateX(-50%);
   transform-origin: 50% 100%;
   transition:
     border-color 0.15s ease,
@@ -112,8 +203,8 @@
 
 .mapPin__stem {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: var(--pin-anchor-y);
+  left: var(--pin-anchor-x);
   z-index: 0;
   width: 1px;
   height: var(--pin-line-length, 40px);
@@ -127,8 +218,8 @@
 
 .mapPin__dot {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: var(--pin-anchor-y);
+  left: var(--pin-anchor-x);
   z-index: 1;
   width: 11px;
   height: 11px;
@@ -173,13 +264,15 @@
 
 .mapPin--mini .mapPin__number {
   right: -9px;
-  width: 54px;
+  width: max-content;
+  min-width: 54px;
+  padding-inline: 3px;
 }
 
 .mapPin__label {
   position: absolute;
-  top: var(--pin-label-y);
-  left: var(--pin-label-x, 0px);
+  top: calc(var(--pin-anchor-y) + var(--pin-label-y));
+  left: calc(var(--pin-anchor-x) + var(--pin-label-x, 0px));
   z-index: 6;
   display: flex;
   width: 240px;
@@ -252,24 +345,18 @@
 }
 
 @media (max-width: 800px) {
-  .mapBox {
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .mapStage {
-    width: 100%;
-    min-width: 680px;
-    aspect-ratio: 1625 / 968;
-  }
-
-  .mapPin__report {
-    width: 56px;
-    height: 56px;
+  .mapPin {
+    --pin-card-size: 56px;
   }
 
   .reportIcon {
     width: 43px;
     height: 43px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapViewport {
+    scroll-behavior: auto;
   }
 }
