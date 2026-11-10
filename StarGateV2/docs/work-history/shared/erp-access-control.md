@@ -34,3 +34,12 @@
 - 검증: 집중 테스트 39/39, gate lifecycle 28/28, 타입 검사·lint·build 및 로컬 production HTTP 50건 통과. 12월 27일 서버 시각에서도 `active` 유지와 안내 시각 이후 1440px·390px 공지 화면을 확인했다.
 - 관련 커밋: `6ae095d9`
 - 운영 경계: 운영 소스 `e0c9b6d3`를 배포하고 실제 도메인의 HTTP 50건을 검증했다. 별도 사용자 재개 지시 후 root gate·전역 polling·임시 `force-dynamic`을 제거하고 정상 캐시·인증·권한을 검증한다. 환경변수만 해제한 채 이 임시 구조를 영구 유지하지 않는다. [운영 기록](../../deployment/site-lockdown-20261025.md) 참조.
+
+## 2026-11-10 · 기능 변경 · 사이트 봉쇄 기본 꺼짐과 재활성화 절차
+
+- 2026-10-25 봉쇄 정책을 main에 병합하고 운영 일정 `ERP_MAINTENANCE_WINDOW`를 `null`로 두어 기본 상태를 `off`로 바꿨다. 일정이 없으면 시각과 무관하게 `off`다. 운영의 시작·종료 환경변수로는 켤 수 없고, `ERP_MAINTENANCE_DISABLED=1`은 일정이 있어도 끄는 스위치로 남는다.
+- 꺼진 동안 root `SiteMaintenanceGate`를 렌더하지 않아 15초 상태 확인이 사라진다. 루트 `force-dynamic`을 제거해 공개 정적 페이지 11개를 복원했고, proxy matcher도 ERP 경로 4개로 되돌렸다.
+- 다시 켤 때는 일정 값, proxy matcher(`["/:path*"]`), 루트 `force-dynamic`을 함께 바꾼다. 일정과 matcher의 짝은 테스트가 강제한다.
+- 검증: 집중 테스트 41/41, `pnpm lint`·`pnpm typecheck`·`pnpm build` 통과. 로컬 production HTTP와 headless 관찰로 차단·503·상태 조회가 없음을 확인했다. 운영 env 키를 이름만 조회해 `ERP_MAINTENANCE_*`가 없음을 확인했다.
+- 관련 커밋: `9ed7e878`
+- 운영 경계: [운영 기록](../../deployment/site-lockdown-20261025.md)의 2026-11-10 재개 항목 참조.

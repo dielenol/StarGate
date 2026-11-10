@@ -177,3 +177,11 @@
 - 검증: 집중 테스트 39/39, gate lifecycle 28/28, 타입 검사·lint·build 및 로컬 production HTTP 50건 통과. 서버 시각을 12월 27일로 둔 상태에서도 `active`가 유지됨을 확인했다.
 - 관련 커밋: `6ae095d9`
 - 운영 경계: 운영 소스 `e0c9b6d3`를 배포하고 실제 도메인의 HTTP 50건을 검증했다. 외부 봇·직접 DB 접속·이미 실행 중인 요청은 중단 대상이 아니다. 재개 전 정상 권한·캐시 흐름 검증과 임시 전역 gate 정리가 필요하다. [운영 기록](../../deployment/site-lockdown-20261025.md) 참조.
+
+## 2026-11-10 · 기능 변경 · ERP 접속 제한 해제
+
+- 운영 봉쇄 일정을 비워 ERP 레이아웃의 공지 이동과 proxy의 503 차단이 동작하지 않는다. 로그인하지 않은 접근은 다시 callbackUrl을 보존한 채 `/login`으로 이동한다.
+- proxy matcher를 봉쇄 전의 ERP 경로 4개로 되돌렸다. 봉쇄를 다시 켤 때는 일정·matcher·강제 동적 렌더링을 함께 바꾼다. 절차는 `lib/maintenance/schedule.ts` 체크리스트에 있고, 일정과 matcher의 짝은 테스트가 강제한다.
+- 검증: 집중 테스트 41/41, 타입 검사·lint·build 통과. 로컬 production에서 `/erp`는 `/login`으로, `/erp/wiki`는 `/login?callbackUrl=%2Ferp%2Fwiki`로 이동했다. 인증 없는 ERP API는 401이었고 503은 없었다.
+- 관련 커밋: `9ed7e878`
+- 운영 경계: 로그인 후 실제 쓰기 동작은 운영 배포 뒤 확인한다. [운영 기록](../../deployment/site-lockdown-20261025.md) 참조.

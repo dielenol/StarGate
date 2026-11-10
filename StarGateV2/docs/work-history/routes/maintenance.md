@@ -42,3 +42,11 @@
 - 검증: 집중 테스트 39/39, gate lifecycle 28/28, `pnpm typecheck`, `pnpm lint`, `pnpm build` 통과. 로컬 production HTTP 50건과 서버 시각을 12월 27일로 둔 `active` 유지, 안내 시각 이후 1440px 데스크톱·390px 모바일 화면을 확인했다.
 - 관련 커밋: `6ae095d9`
 - 운영 경계: 운영 소스 `e0c9b6d3`를 배포하고 실제 도메인의 HTTP 50건 및 1280px·390px 화면을 검증했다. 봉쇄·복구 절차는 [운영 기록](../../deployment/site-lockdown-20261025.md)을 따른다.
+
+## 2026-11-10 · 기능 변경 · 봉쇄 해제 후 공지 화면 비활성
+
+- 운영 봉쇄 일정이 비어 `/maintenance`는 홈으로 이동하고 `/api/maintenance`는 `phase: "off"`를 반환한다. 침해 복구 연출 화면은 코드로 보존한다.
+- 개발 전용 `/maintenance/preview`는 일정이 없어도 마지막 봉쇄 일정(2026-10-25 20:00 KST)으로 공지를 미리 본다. 운영에서는 404다.
+- 검증: 집중 테스트 41/41, 타입 검사·lint·build 통과. 로컬 production에서 `/maintenance`는 `/`로 이동했고, `/api/maintenance`는 off, `/maintenance/preview`는 404였다.
+- 관련 커밋: `9ed7e878`
+- 운영 경계: 다시 켜는 절차는 [운영 기록](../../deployment/site-lockdown-20261025.md)을 따른다.
