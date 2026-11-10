@@ -210,24 +210,8 @@
 .notice__countdown strong { display: block; margin: 10px 0 6px; color: #f3dfaa; font: 500 clamp(36px, 3.4vw, 46px)/1 var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .notice__countdown span { color: var(--ink-3); font: 500 9px var(--font-mono); letter-spacing: .22em; }
 
-.notice__retry {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 46px;
-  margin-top: 14px;
-  padding: 0 16px;
-  border: 1px solid #c9a85a73;
-  color: #efdcaa;
-  background: #c9a85a12;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 160ms ease, border-color 160ms ease;
-}
-.notice__retry:hover { border-color: var(--gold); background: #c9a85a26; }
-.notice__retry:focus-visible,
-.notice__archiveLink:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.notice__countdown .notice__continued { margin-top: 10px; color: #f3dfaa; font-size: 16px; line-height: 1.7; word-break: keep-all; overflow-wrap: anywhere; }
+.notice__scheduleNote { margin: 14px 0 0; color: var(--ink-2); font-size: 12px; line-height: 1.7; word-break: keep-all; }
 
 /* ── 작전 현황 · 흔적 · 하단 ── */
 .notice__ops { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); gap: 20px; width: var(--content); }
@@ -237,8 +221,6 @@
 .notice__footerMeta { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; padding-top: 12px; border-top: 1px solid #ffffff10; }
 .notice__footerMeta p { margin: 0; color: var(--ink-2); font: 12px/1.6 var(--font-mono); letter-spacing: .06em; }
 .notice__footerMeta p span { margin-left: 12px; color: var(--ink-2); }
-.notice__archiveLink { display: flex; align-items: center; gap: 12px; min-height: 44px; color: var(--ink-1); font-size: 13px; text-decoration: none; }
-.notice__archiveLink:hover { color: var(--gold); }
 
 .notice__preview { position: fixed; right: 12px; bottom: 12px; z-index: 40; margin: 0; padding: 6px 10px; border: 1px dashed #c9a85a80; color: var(--gold); background: #000000cc; font: 500 11px var(--font-mono); letter-spacing: .12em; }
 

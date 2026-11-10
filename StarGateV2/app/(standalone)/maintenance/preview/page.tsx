@@ -20,8 +20,7 @@ export default async function MaintenancePreviewPage({ searchParams }: Maintenan
   if (process.env.NODE_ENV !== "development") notFound();
   const { minutes } = await searchParams;
   const start = Date.parse(ERP_MAINTENANCE_WINDOW.startsAt);
-  const end = Date.parse(ERP_MAINTENANCE_WINDOW.endsAt);
   const offset = typeof minutes === "string" && minutes.trim() !== "" ? Number(minutes) : 5;
-  const serverNow = Math.min(end - 60_000, start + (Number.isFinite(offset) ? Math.max(0, offset) : 5) * 60_000);
+  const serverNow = start + (Number.isFinite(offset) ? Math.max(0, offset) : 5) * 60_000;
   return <MaintenanceNotice {...ERP_MAINTENANCE_WINDOW} serverNow={serverNow} preview />;
 }

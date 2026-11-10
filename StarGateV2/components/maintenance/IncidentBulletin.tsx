@@ -3,7 +3,7 @@ import { recoveryUpdates } from "@/lib/maintenance/recovery";
 import styles from "./IncidentBulletin.module.css";
 
 const GUIDANCE = [
-  "업무망이 재개될 때까지 ERP 접속을 시도하지 마십시오. 재개되면 이 화면이 자동으로 전환됩니다.",
+  "사이트 전체의 접속이 제한됩니다. 서비스 재개 일정은 추후 별도 공지를 확인하십시오.",
   "보안관제센터를 사칭한 연락이나 출처가 확인되지 않은 링크·파일에 응하지 마십시오.",
   "보안관제센터는 메신저나 외부 링크로 인증 정보를 요구하지 않습니다.",
   "이상 징후를 발견하면 즉시 담당 관리자에게 보고하십시오.",

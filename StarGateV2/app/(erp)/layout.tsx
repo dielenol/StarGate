@@ -26,7 +26,6 @@ import { PageHeadProvider } from "@/components/ui/PageHead/PageHeadContext";
 
 import styles from "./layout.module.css";
 import ERPHeader from "./ERPHeader";
-import ErpMaintenanceGate from "@/components/maintenance/ErpMaintenanceGate";
 import { getMaintenanceState } from "@/lib/maintenance/schedule";
 
 /**
@@ -83,7 +82,6 @@ export default async function ERPLayout({
     : getRealtimeClientMode();
 
   return (
-    <ErpMaintenanceGate initialState={maintenance}>
     <SessionWrapper session={session}>
       <QueryProvider>
         <RealtimeProvider mode={realtimeClientMode}>
@@ -132,6 +130,5 @@ export default async function ERPLayout({
         </RealtimeProvider>
       </QueryProvider>
     </SessionWrapper>
-    </ErpMaintenanceGate>
   );
 }

@@ -21,7 +21,7 @@ import {
   resolveAuthSessionCookieName,
 } from "@/lib/auth/session-runtime";
 import { buildTrustedErpRequestHeaders } from "@/lib/erp/local-page-lock-bypass";
-import { getMaintenanceState, isErpPath, isErpApiPath, maintenanceRetryAfter } from "@/lib/maintenance/schedule";
+import { getMaintenanceState, isErpPath, isErpApiPath, isMaintenanceResource, maintenanceRetryAfter } from "@/lib/maintenance/schedule";
 
 const SESSION_COOKIE_NAMES = [
   "authjs.session-token",
@@ -68,19 +68,22 @@ export async function proxy(request: NextRequest) {
   const isErpPage = isErpPath(pathname);
   const isErpApi = isErpApiPath(pathname);
   const maintenance = getMaintenanceState();
-  if ((isErpPage || isErpApi) && maintenance.phase === "active") {
+  const readOnly = request.method === "GET" || request.method === "HEAD";
+  const maintenanceResource = readOnly && isMaintenanceResource(pathname, process.env.NODE_ENV);
+  if (!maintenanceResource && maintenance.phase === "active") {
     const headers = {
       "Cache-Control": "no-store, max-age=0",
-      "Retry-After": maintenanceRetryAfter(maintenance),
+      "Retry-After": maintenanceRetryAfter(),
     };
     // 인증/역할/로컬 우회보다 먼저 검사한다. Server Action도 실행 전에 중단한다.
-    if (isErpPage && (request.method === "GET" || request.method === "HEAD")) {
+    if (readOnly && pathname !== "/api" && !pathname.startsWith("/api/")) {
       return NextResponse.redirect(new URL("/maintenance", request.url), { status: 307, headers });
     }
     return NextResponse.json({
-      code: "ERP_MAINTENANCE",
-      error: "긴급 보안 점검으로 ERP 이용이 일시 중단되었습니다.",
-      endsAt: maintenance.endsAt,
+      code: "SITE_MAINTENANCE",
+      error: "보안 침해 대응으로 사이트 전체 이용이 중단되었습니다. 재개 일정은 추후 공지합니다.",
+      nextUpdateAt: maintenance.endsAt,
+      resumePolicy: maintenance.resumePolicy,
     }, { status: 503, headers });
   }
   const hasSession = SESSION_COOKIE_NAMES.some(
@@ -144,7 +147,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // `/erp/:path*` 만으로는 path-to-regexp 동작 차이로 `/erp` 자체가 누락될 수 있어
-  // 명시적으로 두 패턴 등록. 가드 우회 (인증 없이 대시보드 접근) 사고 방지.
-  matcher: ["/erp", "/erp/:path*", "/api/erp", "/api/erp/:path*"],
+  // 공개 페이지·인증·API·Server Action을 모두 검사한다. 정적 예외는 위에서 정확히 제한한다.
+  matcher: ["/:path*"],
 };

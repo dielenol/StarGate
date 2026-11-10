@@ -5,14 +5,14 @@ import { getMaintenanceState } from "@/lib/maintenance/schedule";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "ERP 긴급 보안 점검 안내 · NOVUS ORDO",
+  title: "사이트 전체 긴급 보안 점검 안내 · NOVUS ORDO",
   robots: { index: false, follow: false },
 };
 
 export default function MaintenancePage() {
   const state = getMaintenanceState();
   if (state.phase !== "active" || !state.startsAt || !state.endsAt) {
-    redirect("/erp");
+    redirect("/");
   }
   return <MaintenanceNotice startsAt={state.startsAt} endsAt={state.endsAt} serverNow={state.serverNow} />;
 }
