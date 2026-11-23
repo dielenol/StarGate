@@ -92,3 +92,13 @@
 - 검증: 집중 테스트 47/47, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 빌드 manifest 비교, JTEST 토와스키·아케론·연구소 조회, 최종 critical risk review
 - 관련 커밋: `c39f7c34`
 - 운영 경계: 라이브 구매·연구·라이선스·인덱스 mutation은 실행하지 않았다.
+
+## 2026-11-23 · 기능 추가 · 병기부 운영 중지 스위치
+
+- `ARMORY_BUREAU_ENABLED`가 `true`가 아니면 병기부 전체를 운영 중지로 취급한다. 영향 경로는 `/erp/equipment-shop`과 하위 `lab`·`towaski`·`acheron`·`strategic`·`custom`·`simulator`다.
+- 중지 중 일반 사용자는 운영 중지 안내만 보고, GM은 상단 안내 띠와 함께 열람만 할 수 있다. JTEST·로컬 미리보기·운영 잠금 해제도 중지 중에는 열람 권한을 주지 않는다.
+- 구매·방어구 의뢰·자격시험·연구 시작/기여/가속/적용·공방 의뢰와 수령은 GM 포함 503 `ARMORY_BUREAU_SUSPENDED`로 거부하고, 카탈로그·연구·공방 조회는 GM만 허용한다.
+- 병기부 메뉴 잠금을 강제하고 중지 중 잠금 해제 요청은 409로 거부한다. 샘플 연구소(`/erp/research`)는 대상이 아니다.
+- 검증: core 50/50, worker 137/137, 중지 계약 테스트 3/3, `pnpm typecheck`, `pnpm lint`, `pnpm build`. 로컬 GM과 임시 일반 계정으로 7개 화면·API 13종·잠금 해제 거부를 확인했고, 스위치를 켠 상태에서 기존 동작 복귀도 확인했다. 웹 계약 테스트 전체에는 이 변경과 무관한 기존 실패 2건(`integration-connections`, `workshop-request`)이 남아 있다.
+- 관련 커밋: `37bd7c19`
+- 운영 경계: 라이브 구매·연구·공방 상태 변경과 알림 발송은 실행하지 않았다. 배포하면 환경변수 없이 중지 상태가 되며, 재개하려면 웹과 worker 양쪽에 `ARMORY_BUREAU_ENABLED=true`가 필요하다.

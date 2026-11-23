@@ -114,3 +114,12 @@
 - 검증: worker 전체 134건, Discord outbox 17건, MongoDB 7 replica-set 통합 테스트 1건, shared/worker build, 웹 typecheck/lint, critical 리뷰 P0/P1 없음
 - 관련 구현 커밋: `e87fa675`, `b7700aef`
 - 운영 경계: Web·worker 배포와 기존 정기 일정 중단 및 단발 실행 일정 등록을 완료했다. 종료 계획 등록은 도구 실행 제한으로 사용자 직접 실행을 요청한 상태이며 공시·가격 적용 완료는 아직 확인하지 않았다.
+
+## 2026-11-23 · 기능 추가 · 병기부 운영 중지 시 Discord 전달 정지
+
+- `ARMORY_BUREAU_ENABLED`가 `true`가 아니면 `ameri-dm`·`research-card`·`research-ranking` consumer를 비밀값 검증 전에 무동작 consumer로 대체한다.
+- `research.daily-ranking` 작업은 게시 없이 성공 회차로 기록해 주기 누락 경보가 울리지 않게 한다.
+- 통합 상태 점검은 중지 중 연구 카드·연구 랭킹·공방 DM 지연과 오류를 집계에서 제외한다. 공용 `integration_outbox` consumer는 그대로 동작하므로 중지 전에 쌓인 항목은 전달된다.
+- 검증: worker 137/137, core 50/50, worker `typecheck`
+- 관련 커밋: `37bd7c19`
+- 운영 경계: Discord 비밀값이 없는 로컬에서 테스트로만 확인했다. 실제 발송 모드 worker 실행은 확인하지 않았다.
