@@ -1,4 +1,5 @@
 import { isResearchDailyRankingCadenceOverdue } from "@stargate/core";
+import { isArmoryBureauSuspended } from "@stargate/core/domain/armory-bureau-suspension";
 import {
   RESEARCH_RANKING_STATE_COLLECTION,
   RESEARCH_RANKING_STATE_ID,
@@ -16,11 +17,14 @@ const STALE_AFTER_MS = 10 * 60_000;
 const DESIRED_STATE_SOURCES: Array<{
   collectionName: string;
   stateId?: string;
+  /** 병기부 운영 중지 중에는 발송 consumer 가 멈추므로 감시에서도 제외한다. */
+  armoryBureau?: true;
 }> = [
-  { collectionName: "research_discord_cards" },
+  { collectionName: "research_discord_cards", armoryBureau: true },
   {
     collectionName: RESEARCH_RANKING_STATE_COLLECTION,
     stateId: RESEARCH_RANKING_STATE_ID,
+    armoryBureau: true,
   },
   {
     collectionName: "shop_restock_notifications",
@@ -161,6 +165,7 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
   constructor(
     private readonly options: {
       enabledConsumers?: readonly WorkerConsumerName[];
+      armoryBureauSuspended?: boolean;
     } = {},
   ) {}
 
@@ -168,6 +173,13 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
     const db = await getDb();
     const now = new Date();
     const staleBefore = new Date(now.getTime() - STALE_AFTER_MS);
+    // 중지 중 멈춘 병기부 발송(연구 카드·랭킹·아메리 DM)을 지연 장애로 경보하지 않는다.
+    const armoryBureauSuspended =
+      this.options.armoryBureauSuspended ?? isArmoryBureauSuspended();
+    const desiredStateSources = DESIRED_STATE_SOURCES.filter(
+      (source) => !(armoryBureauSuspended && source.armoryBureau),
+    );
+    const skippedWhileSuspended = Promise.resolve(0);
     const [
       dead,
       retrying,
@@ -196,7 +208,7 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
           leaseUntil: { $lte: now },
         }),
         Promise.all(
-          DESIRED_STATE_SOURCES.map(async ({ collectionName, stateId }) =>
+          desiredStateSources.map(async ({ collectionName, stateId }) =>
             db
               .collection<DesiredStateDocument>(collectionName)
               .countDocuments(
@@ -204,24 +216,32 @@ export class IntegrationHealthProbeConsumer implements DueWorkConsumerPort {
               ),
           ),
         ),
-        db
-          .collection<DesiredStateDocument>(RESEARCH_RANKING_STATE_COLLECTION)
-          .countDocuments({
-            _id: RESEARCH_RANKING_STATE_ID,
-            deliveryUnknownRevision: { $exists: true },
-          }),
-        db.collection("equipment_workshop_requests").countDocuments({
-          "discordDmDelivery.lastError": { $exists: true, $ne: "" },
-        }),
-        db.collection("equipment_workshop_requests").countDocuments({
-          discordDmOutbox: {
-            $elemMatch: {
-              availableAt: { $lte: staleBefore },
-              sentAt: { $exists: false },
-              skippedAt: { $exists: false },
-            },
-          },
-        }),
+        armoryBureauSuspended
+          ? skippedWhileSuspended
+          : db
+              .collection<DesiredStateDocument>(
+                RESEARCH_RANKING_STATE_COLLECTION,
+              )
+              .countDocuments({
+                _id: RESEARCH_RANKING_STATE_ID,
+                deliveryUnknownRevision: { $exists: true },
+              }),
+        armoryBureauSuspended
+          ? skippedWhileSuspended
+          : db.collection("equipment_workshop_requests").countDocuments({
+              "discordDmDelivery.lastError": { $exists: true, $ne: "" },
+            }),
+        armoryBureauSuspended
+          ? skippedWhileSuspended
+          : db.collection("equipment_workshop_requests").countDocuments({
+              discordDmOutbox: {
+                $elemMatch: {
+                  availableAt: { $lte: staleBefore },
+                  sentAt: { $exists: false },
+                  skippedAt: { $exists: false },
+                },
+              },
+            }),
         db.collection("bureaucrat_votes").countDocuments({
           $or: [
             { "publication.lastError": { $exists: true, $ne: "" } },

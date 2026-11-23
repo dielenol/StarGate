@@ -32,6 +32,10 @@ import { createEquipmentWorkshopDiscordDmOutboxEvent } from "@/lib/equipment-sho
 import { notifyUser, notifyUsers } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { enqueueEquipmentWorkshopWebhook } from "@/lib/outbox/integration";
+import {
+  armoryBureauMutationBlockedResponse,
+  armoryBureauReadBlockedResponse,
+} from "@/lib/equipment-shop/suspension";
 
 interface UpdateWorkshopRequestBody {
   requestId?: unknown;
@@ -53,6 +57,8 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const armorySuspended = armoryBureauReadBlockedResponse(session.user.role);
+  if (armorySuspended) return armorySuspended;
 
   if (session.user.isGuest) {
     return NextResponse.json(
@@ -80,6 +86,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -361,6 +369,8 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const session = await getActiveSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

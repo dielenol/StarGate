@@ -10,6 +10,7 @@ test("domain consumer는 opt-in된 종류만 만들고 필요한 secret을 선�
   const consumers = createDefaultDomainConsumers(
     ["ameri-dm", "research-ranking", "shop-restock", "stock-market-wire"],
     {
+      ARMORY_BUREAU_ENABLED: "true",
       AMERI_DISCORD_BOT_TOKEN: "test-ameri-token",
       DISCORD_WEBHOOK_RESEARCH_URL:
         "https://discord.com/api/webhooks/research/token",
@@ -25,9 +26,51 @@ test("domain consumer는 opt-in된 종류만 만들고 필요한 secret을 선�
   );
 
   assert.throws(
-    () => createDefaultDomainConsumers(["research-card"], {}),
+    () =>
+      createDefaultDomainConsumers(["research-card"], {
+        ARMORY_BUREAU_ENABLED: "true",
+      }),
     DomainConsumerConfigurationError,
   );
+});
+
+test("병기부 운영 중지 중에는 발송 consumer를 secret 없이 no-op gate로 유지한다", async () => {
+  const consumers = createDefaultDomainConsumers(
+    [
+      "ameri-dm",
+      "research-card",
+      "research-ranking",
+      "shop-restock",
+      "stock-market-wire",
+    ],
+    {
+      DISCORD_WEBHOOK_SHOP_URL:
+        "https://discord.com/api/webhooks/shop/token",
+      DISCORD_WEBHOOK_STOCK_URL:
+        "https://discord.com/api/webhooks/stock/token",
+    },
+  );
+
+  assert.deepEqual(
+    consumers.map((consumer) => consumer.name),
+    [
+      "ameri-dm",
+      "research-card",
+      "research-ranking",
+      "shop-restock",
+      "stock-market-wire",
+    ],
+  );
+  for (const consumer of consumers.slice(0, 3)) {
+    assert.equal(
+      consumer.constructor.name,
+      "ArmoryBureauSuspendedGateConsumer",
+    );
+    assert.deepEqual(await consumer.tick(), { observedDue: 0 });
+  }
+  for (const consumer of consumers.slice(3)) {
+    assert.equal(consumer.constructor.name, "DiscordDesiredStateConsumer");
+  }
 });
 
 test("research-lab consumer는 별도 운영 flag 전에는 mutation gate로 유지한다", async () => {

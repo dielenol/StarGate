@@ -63,6 +63,10 @@ import {
   type TowaskiLicenseSlug,
 } from "@/lib/equipment-shop/licenses";
 import { notifyUser } from "@/lib/notifications/events";
+import {
+  armoryBureauMutationBlockedResponse,
+  armoryBureauReadBlockedResponse,
+} from "@/lib/equipment-shop/suspension";
 
 const MAX_LICENSE_TEST_REQUEST_BYTES = 32_768;
 
@@ -337,6 +341,8 @@ export async function GET(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const armorySuspended = armoryBureauReadBlockedResponse(session.user.role);
+  if (armorySuspended) return armorySuspended;
   const requestId = new URL(request.url).searchParams.get("requestId")?.trim();
   if (!requestId || !isValidIdempotencyKey(requestId)) {
     return NextResponse.json(
@@ -452,6 +458,8 @@ async function waitForCurrentTowaskiLicense(
 }
 
 export async function POST(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const declaredContentLength = Number(
     request.headers.get("content-length") ?? 0,
   );

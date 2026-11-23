@@ -28,12 +28,15 @@ import {
   expandEquipmentShopCatalogZones,
   toEquipmentShopCatalogItem,
 } from "@/lib/equipment-shop/catalog";
+import { armoryBureauReadBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const armorySuspended = armoryBureauReadBlockedResponse(session.user.role);
+  if (armorySuspended) return armorySuspended;
   const isGM = hasRole(session.user.role, "GM");
   const ownerId = getOwnedDataViewerId(session.user);
   const canUseAllPlayerServices =

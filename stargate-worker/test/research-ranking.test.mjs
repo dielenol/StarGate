@@ -226,6 +226,7 @@ test("새 일일 revision은 retry backoff만 해제하고 격리 오류 원인�
 test("daily ranking handler는 KST 일일 slot과 취소 신호를 전달한다", async () => {
   let received;
   const handlers = createDefaultScheduledJobHandlers({
+    isArmoryBureauSuspended: () => false,
     async requestResearchRanking(date, generatedAt, dependencies) {
       received = { date, generatedAt, signal: dependencies.signal };
       return {
@@ -252,4 +253,35 @@ test("daily ranking handler는 KST 일일 slot과 취소 신호를 전달한다"
   });
   assert.equal(summary.contributors, 3);
   assert.equal(summary.mutated, true);
+});
+
+test("병기부 운영 중지 중 daily ranking handler는 게시 요청 없이 슬롯만 성공 처리한다", async () => {
+  let requested = false;
+  const handlers = createDefaultScheduledJobHandlers({
+    isArmoryBureauSuspended: () => true,
+    async requestResearchRanking() {
+      requested = true;
+      return {
+        status: "requested",
+        contributorCount: 3,
+        sourceRevision: "source-hash",
+      };
+    },
+  });
+  const summary = await handlers.require("research.daily-ranking").execute({
+    jobName: "research.daily-ranking",
+    slotKey: "2026-08-22",
+    requestedAt: new Date("2026-08-22T12:00:00.000Z"),
+    mode: "active",
+    signal: new AbortController().signal,
+  });
+
+  assert.equal(requested, false);
+  assert.deepEqual(summary, {
+    date: "2026-08-22",
+    contributors: 0,
+    announcement: "suspended",
+    sourceRevision: null,
+    mutated: false,
+  });
 });

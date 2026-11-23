@@ -10,12 +10,15 @@ import {
   issueArmorReferralToken,
 } from "@/lib/equipment-shop/armor-referral";
 import { toEquipmentShopCatalogItem } from "@/lib/equipment-shop/catalog";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 interface ArmorReferralBody {
   key?: unknown;
 }
 
 export async function POST(request: NextRequest) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -18,6 +18,7 @@ import {
 } from "@/lib/assets/npcs";
 
 import EquipmentShopComingSoon from "../EquipmentShopComingSoon";
+import EquipmentShopSuspendedNotice from "../EquipmentShopSuspendedNotice";
 import { requireEquipmentShopSession } from "../_access";
 import { buildEquipmentShopCatalogResponse } from "../_data";
 
@@ -87,9 +88,10 @@ function fallbackAttackerProfile(sessionUser: {
 }
 
 export default async function EquipmentShopSimulatorPage() {
-  const { session, canPreview } = await requireEquipmentShopSession("/erp/equipment-shop/simulator");
+  const { session, canPreview, suspended } =
+    await requireEquipmentShopSession("/erp/equipment-shop/simulator");
   if (!canPreview) {
-    return <EquipmentShopComingSoon />;
+    return <EquipmentShopComingSoon suspended={suspended} />;
   }
 
   let attacker = fallbackAttackerProfile(session.user);
@@ -161,10 +163,13 @@ export default async function EquipmentShopSimulatorPage() {
   ]);
 
   return (
-    <EquipmentSimulatorClient
-      attacker={attacker}
-      equippedWeapons={equippedWeapons}
-      initialCatalog={catalog}
-    />
+    <>
+      {suspended ? <EquipmentShopSuspendedNotice /> : null}
+      <EquipmentSimulatorClient
+        attacker={attacker}
+        equippedWeapons={equippedWeapons}
+        initialCatalog={catalog}
+      />
+    </>
   );
 }

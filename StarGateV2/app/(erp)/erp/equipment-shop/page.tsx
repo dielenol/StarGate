@@ -6,6 +6,7 @@
 
 import EquipmentShopClient from "./EquipmentShopClient";
 import EquipmentShopComingSoon from "./EquipmentShopComingSoon";
+import EquipmentShopSuspendedNotice from "./EquipmentShopSuspendedNotice";
 import { requireEquipmentShopSession } from "./_access";
 import { loadEquipmentShopPageData } from "./_data";
 
@@ -14,17 +15,20 @@ export const metadata = {
 };
 
 export default async function EquipmentShopPage() {
-  const { canPreview } = await requireEquipmentShopSession();
+  const { canPreview, suspended } = await requireEquipmentShopSession();
   if (!canPreview) {
-    return <EquipmentShopComingSoon />;
+    return <EquipmentShopComingSoon suspended={suspended} />;
   }
 
   const data = await loadEquipmentShopPageData({ requireGm: false });
 
   return (
-    <EquipmentShopClient
-      {...data}
-      mode="hub"
-    />
+    <>
+      {suspended ? <EquipmentShopSuspendedNotice /> : null}
+      <EquipmentShopClient
+        {...data}
+        mode="hub"
+      />
+    </>
   );
 }

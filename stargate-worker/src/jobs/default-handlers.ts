@@ -1,3 +1,4 @@
+import { isArmoryBureauSuspended } from "@stargate/core/domain/armory-bureau-suspension";
 import { grantDailyCreditAllowances } from "@stargate/core/operations/daily-allowance";
 import { isMrBeastSodaStockImpactTickEnabled } from "@stargate/core/domain/mrbeast-soda-stock-impact";
 import { runSessionReminderNotifications } from "@stargate/core/operations/session-reminders";
@@ -67,6 +68,7 @@ export function createDefaultScheduledJobHandlers(
     applyStockMarketShutdown?: typeof applyDueStockMarketShutdown;
     requestStockWire?: typeof requestStockMarketWireState;
     requestResearchRanking?: typeof requestDailyResearchRankingState;
+    isArmoryBureauSuspended?: () => boolean;
   } = {},
 ): ScheduledJobHandlerRegistry {
   return new ScheduledJobHandlerRegistry([
@@ -296,6 +298,19 @@ export function createDefaultScheduledJobHandlers(
       jobName: "research.daily-ranking",
       async execute(context) {
         context.signal.throwIfAborted();
+        // 병기부 운영 중지 중에는 Discord 랭킹 게시 요청을 만들지 않는다.
+        // 슬롯은 성공으로 기록해 일일 cadence 감시가 누락 경보를 내지 않게 한다.
+        if (
+          (dependencies.isArmoryBureauSuspended ?? isArmoryBureauSuspended)()
+        ) {
+          return {
+            date: context.slotKey,
+            contributors: 0,
+            announcement: "suspended",
+            sourceRevision: null,
+            mutated: false,
+          };
+        }
         const result = await (
           dependencies.requestResearchRanking ??
           requestDailyResearchRankingState

@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  ARMORY_BUREAU_SUSPENDED_CODE,
+  isArmoryBureauLockKey,
+  isArmoryBureauSuspended,
+} from "@stargate/core/domain/armory-bureau-suspension";
 
 import { findNavItemByLockKey } from "@/components/erp/nav-config";
 import { jsonWithETag } from "@/lib/api/http-cache";
@@ -51,6 +56,17 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       { error: "유효한 사이드바 페이지와 잠금 상태가 필요합니다." },
       { status: 400 },
+    );
+  }
+
+  if (!locked && isArmoryBureauSuspended() && isArmoryBureauLockKey(lockKey)) {
+    return NextResponse.json(
+      {
+        error:
+          "병기부는 운영 중지 상태라 잠금을 해제할 수 없습니다. ARMORY_BUREAU_ENABLED 설정으로 재개하세요.",
+        code: ARMORY_BUREAU_SUSPENDED_CODE,
+      },
+      { status: 409, headers: NO_STORE_HEADERS },
     );
   }
 

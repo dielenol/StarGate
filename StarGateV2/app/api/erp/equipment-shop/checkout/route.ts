@@ -61,6 +61,7 @@ import {
 } from "@/lib/equipment-shop/licenses";
 import { TOWASKI_BASIC_FIREARM_LICENSE_SLUG } from "@/lib/equipment-shop/license-test";
 import { resolveTowaskiLicenseQualificationStatus } from "@/lib/equipment-shop/license-qualification";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY_PER_ITEM = 1;
@@ -174,6 +175,8 @@ function formatOrderDescription(lines: CheckoutLine[]): string {
 }
 
 export async function POST(request: NextRequest) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

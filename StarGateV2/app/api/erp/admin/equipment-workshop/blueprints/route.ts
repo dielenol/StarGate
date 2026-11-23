@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/equipment-workshop-blueprints";
 import { parseEquipmentWorkshopBlueprint } from "@/lib/equipment-shop/workshop-blueprint";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 function isDuplicateKeyError(error: unknown): boolean {
   return (
@@ -49,6 +50,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const auth = await requireGm();
   if ("response" in auth) return auth.response;
   const validation = parseEquipmentWorkshopBlueprint(
@@ -90,6 +93,8 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const auth = await requireGm();
   if ("response" in auth) return auth.response;
   const body = (await request.json().catch(() => null)) as
@@ -147,6 +152,8 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const auth = await requireGm();
   if ("response" in auth) return auth.response;
   const body = (await request.json().catch(() => null)) as

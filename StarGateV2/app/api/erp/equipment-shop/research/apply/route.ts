@@ -4,6 +4,7 @@ import { hasRole } from "@/lib/auth/rbac";
 import { findEquipmentResearchProjectById } from "@/lib/db/equipment-research";
 import { applyEquipmentResearchProjectNow } from "@/lib/equipment-shop/research-application";
 import { canViewerApplyEquipmentResearchProject } from "@/lib/equipment-shop/research";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 import { requireResearchAccess } from "../_lib";
 
@@ -12,6 +13,8 @@ interface ApplyResearchBody {
 }
 
 export async function POST(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const authResult = await requireResearchAccess();
   if ("response" in authResult) return authResult.response;
 

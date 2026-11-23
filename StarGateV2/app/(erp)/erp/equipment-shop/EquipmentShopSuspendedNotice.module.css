@@ -1,0 +1,23 @@
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+  padding: 10px 16px;
+  border: 1px solid rgba(197, 160, 89, 0.45);
+  background: rgba(197, 160, 89, 0.08);
+  color: var(--ink-1);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.notice__label {
+  flex: 0 0 auto;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+}

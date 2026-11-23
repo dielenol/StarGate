@@ -12,7 +12,10 @@ import {
   listEquipmentWorkshopOperationsRequests,
   serializeAdminEquipmentWorkshopRequest,
 } from "@/lib/db/equipment-workshop-requests";
+import { isArmoryBureauSuspended } from "@/lib/equipment-shop/suspension";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
+
+import EquipmentShopSuspendedNotice from "../../equipment-shop/EquipmentShopSuspendedNotice";
 
 import EquipmentWorkshopAdminClient from "./EquipmentWorkshopAdminClient";
 
@@ -40,6 +43,7 @@ export default async function EquipmentWorkshopAdminPage() {
         ]}
         title="공방 제작·강화 운영"
       />
+      {isArmoryBureauSuspended() ? <EquipmentShopSuspendedNotice /> : null}
       <EquipmentWorkshopAdminClient
         initialRequests={{ requests: requests.map(serializeAdminEquipmentWorkshopRequest) }}
         initialBlueprints={{

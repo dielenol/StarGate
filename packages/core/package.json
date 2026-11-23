@@ -14,6 +14,10 @@
       "types": "./dist/domain/realtime.d.ts",
       "import": "./dist/domain/realtime.js"
     },
+    "./domain/armory-bureau-suspension": {
+      "types": "./dist/domain/armory-bureau-suspension.d.ts",
+      "import": "./dist/domain/armory-bureau-suspension.js"
+    },
     "./domain/equipment-research": {
       "types": "./dist/domain/equipment-research.d.ts",
       "import": "./dist/domain/equipment-research.js"

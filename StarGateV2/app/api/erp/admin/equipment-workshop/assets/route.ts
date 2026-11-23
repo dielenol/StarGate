@@ -4,6 +4,7 @@ import { put } from "@vercel/blob";
 import { getActiveSession } from "@/lib/auth/active-session";
 import { hasRole } from "@/lib/auth/rbac";
 import { isValidIdempotencyKey } from "@/lib/api/idempotency";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -30,6 +31,8 @@ function detectImageType(bytes: Uint8Array): string | null {
 }
 
 export async function POST(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const session = await getActiveSession();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!hasRole(session.user.role, "GM")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

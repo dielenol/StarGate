@@ -15,6 +15,7 @@ import {
   WorkshopOperationError,
 } from "@/lib/equipment-shop/workshop-operations";
 import { notifyUser } from "@/lib/notifications/events";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 interface RouteContext {
   params: Promise<{ requestId: string; action: string }>;
@@ -38,6 +39,8 @@ function operationError(error: unknown): NextResponse | null {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const session = await getActiveSession();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { requestId, action } = await context.params;

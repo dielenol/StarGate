@@ -28,6 +28,7 @@ import {
 } from "@/lib/equipment-shop/research";
 import { enqueueEquipmentResearchWorkflowStatus } from "@/lib/equipment-shop/research-workflow";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 import {
   chargeResearchCredits,
@@ -122,6 +123,8 @@ async function resolveTargets(args: {
 }
 
 export async function POST(request: Request) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const authResult = await requireResearchAccess();
   if ("response" in authResult) return authResult.response;
 

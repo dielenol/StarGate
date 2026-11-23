@@ -9,6 +9,7 @@ import { getActiveSession } from "@/lib/auth/active-session";
 import { getOwnedDataViewerId } from "@/lib/auth/guest";
 import { hasRole } from "@/lib/auth/rbac";
 import { getErpPageLockOverrides } from "@/lib/db/erp-page-locks";
+import { armoryBureauReadBlockedResponse } from "@/lib/equipment-shop/suspension";
 import { hasLocalErpPreviewAccess } from "@/lib/erp/local-page-access";
 import { findMainCharacterLiteByOwner } from "@/lib/db/characters";
 import { addCredit } from "@/lib/db/credits";
@@ -51,6 +52,11 @@ export async function requireResearchAccess(): Promise<
   if ("response" in authResult) return authResult;
 
   if (hasRole(authResult.session.role, "GM")) return authResult;
+  // 병기부 운영 중지 중에는 로컬 프리뷰·잠금 해제와 무관하게 GM 열람만 허용한다.
+  const armorySuspended = armoryBureauReadBlockedResponse(
+    authResult.session.role,
+  );
+  if (armorySuspended) return { response: armorySuspended };
   if (await hasLocalErpPreviewAccess()) return authResult;
 
   const locked = isNavPathLocked(

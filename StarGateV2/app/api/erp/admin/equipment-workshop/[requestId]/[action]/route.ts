@@ -31,6 +31,7 @@ import {
 import { notifyUser } from "@/lib/notifications/events";
 import { scheduleGmAdminAudit } from "@/lib/notifications/gm-admin-audit";
 import { findShopItemBySlug } from "@/lib/shop/catalog";
+import { armoryBureauMutationBlockedResponse } from "@/lib/equipment-shop/suspension";
 
 interface RouteContext {
   params: Promise<{ requestId: string; action: string }>;
@@ -54,6 +55,8 @@ async function requireGm() {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const auth = await requireGm();
   if ("response" in auth) return auth.response;
   const { requestId, action } = await context.params;
@@ -496,6 +499,8 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const armorySuspended = armoryBureauMutationBlockedResponse();
+  if (armorySuspended) return armorySuspended;
   const auth = await requireGm();
   if ("response" in auth) return auth.response;
   const { requestId, action } = await context.params;

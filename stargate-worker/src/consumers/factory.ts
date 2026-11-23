@@ -1,3 +1,4 @@
+import { isArmoryBureauSuspended } from "@stargate/core/domain/armory-bureau-suspension";
 import {
   RESEARCH_RANKING_STATE_COLLECTION,
   RESEARCH_RANKING_STATE_ID,
@@ -17,6 +18,31 @@ export class ResearchLabActivationGateConsumer implements DueWorkConsumerPort {
   async tick() {
     return { observedDue: 0 };
   }
+}
+
+/** 병기부 운영 중지 중 Discord 발송 consumer 자리를 채우는 no-op gate. */
+export class ArmoryBureauSuspendedGateConsumer implements DueWorkConsumerPort {
+  constructor(readonly name: ArmoryBureauConsumerName) {}
+
+  async tick() {
+    return { observedDue: 0 };
+  }
+}
+
+/** 병기부(공방 아메리 DM · 연구 Discord 카드 · 연구 공로 랭킹)에 속한 consumer. */
+export const ARMORY_BUREAU_CONSUMER_NAMES = [
+  "ameri-dm",
+  "research-card",
+  "research-ranking",
+] as const satisfies readonly WorkerConsumerName[];
+
+export type ArmoryBureauConsumerName =
+  (typeof ARMORY_BUREAU_CONSUMER_NAMES)[number];
+
+function isArmoryBureauConsumerName(
+  name: WorkerConsumerName,
+): name is ArmoryBureauConsumerName {
+  return (ARMORY_BUREAU_CONSUMER_NAMES as readonly string[]).includes(name);
 }
 
 export class DomainConsumerConfigurationError extends Error {
@@ -66,7 +92,12 @@ export function createDefaultDomainConsumers(
   names: readonly WorkerConsumerName[],
   env: NodeJS.ProcessEnv = process.env,
 ): DueWorkConsumerPort[] {
+  const armoryBureauSuspended = isArmoryBureauSuspended(env);
   return names.map((name) => {
+    // 중지 중에는 secret 검증보다 먼저 gate 로 바꿔 Discord 발송을 만들지 않는다.
+    if (armoryBureauSuspended && isArmoryBureauConsumerName(name)) {
+      return new ArmoryBureauSuspendedGateConsumer(name);
+    }
     switch (name) {
       case "ameri-dm":
         return new AmeriDmConsumer({
